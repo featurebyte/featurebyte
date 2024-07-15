@@ -113,7 +113,9 @@ async def test_session_manager__no_credentials(snowflake_feature_store):
     session_manager = SessionManager(credentials={})
     with pytest.raises(ValueError) as exc:
         _ = await session_manager.get_session(snowflake_feature_store)
-    assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(exc.value)
+    assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(
+        exc.value
+    )
 
 
 @pytest.mark.asyncio
@@ -157,7 +159,9 @@ async def cached_session_setup(
 
     assert len(session_cache) == 0
     snowflake_feature_store = FeatureStore(**snowflake_feature_store_params, type="snowflake")
-    with mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query") as mock_execute_query:
+    with mock.patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
         mock_execute_query.side_effect = _side_effect
         session = await session_manager.get_session(snowflake_feature_store, timeout=0.5)
 
@@ -177,7 +181,9 @@ async def test_session_manager__invalidate_cache_when_execute_query_failed(
 
     # simulate exception during query execution
     assert session_cache_key in session_cache
-    with mock.patch("featurebyte.session.base.BaseSession.get_async_query_stream") as mock_get_async_query_stream:
+    with mock.patch(
+        "featurebyte.session.base.BaseSession.get_async_query_stream"
+    ) as mock_get_async_query_stream:
         exc_message = "Some error"
         mock_get_async_query_stream.side_effect = Exception(exc_message)
         with pytest.raises(Exception, match=exc_message):

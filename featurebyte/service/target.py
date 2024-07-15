@@ -77,7 +77,9 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         self.entity_service = entity_service
         self.entity_serving_names_service = entity_serving_names_service
 
-    async def prepare_target_model(self, data: TargetCreate, sanitize_for_definition: bool) -> TargetModel:
+    async def prepare_target_model(
+        self, data: TargetCreate, sanitize_for_definition: bool
+    ) -> TargetModel:
         """
         Prepare the target model by pruning the query graph
 
@@ -216,7 +218,9 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
                         all_parents_ids.append(parent.id)
 
                 if set(all_parents_ids).intersection(set(entity_ids)):
-                    raise DocumentCreationError("Target entity ids must not include any parent entity ids") from exc
+                    raise DocumentCreationError(
+                        "Target entity ids must not include any parent entity ids"
+                    ) from exc
 
                 await self.target_namespace_service.create_document(
                     data=TargetNamespaceCreate(
@@ -232,7 +236,9 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
                 )
         return await self.get_document(document_id=insert_id)
 
-    async def get_sample_entity_serving_names(self, target_id: ObjectId, count: int) -> List[Dict[str, str]]:
+    async def get_sample_entity_serving_names(
+        self, target_id: ObjectId, count: int
+    ) -> List[Dict[str, str]]:
         """
         Get sample entity serving names for a target
 

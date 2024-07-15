@@ -62,7 +62,9 @@ def get_source_count_expr(
     Select
     """
     return expressions.select(
-        expressions.alias_(expressions.Count(this=expressions.Star()), alias="row_count", quoted=True)
+        expressions.alias_(
+            expressions.Count(this=expressions.Star()), alias="row_count", quoted=True
+        )
     ).from_(get_fully_qualified_table_name(source.dict()))
 
 
@@ -108,7 +110,9 @@ def get_row_count_sql(table_expr: Select, source_type: SourceType) -> str:
     str
     """
     expr = expressions.select(
-        expressions.alias_(expressions.Count(this=expressions.Star()), alias="row_count", quoted=True)
+        expressions.alias_(
+            expressions.Count(this=expressions.Star()), alias="row_count", quoted=True
+        )
     ).from_(table_expr.subquery())
     return sql_to_string(expr, source_type=source_type)
 
@@ -136,7 +140,8 @@ def select_and_rename_columns(
     """
     if columns_rename_mapping:
         column_exprs = [
-            alias_(quoted_identifier(col), columns_rename_mapping.get(col, col), quoted=True) for col in columns
+            alias_(quoted_identifier(col), columns_rename_mapping.get(col, col), quoted=True)
+            for col in columns
         ]
     else:
         column_exprs = [quoted_identifier(col) for col in columns]

@@ -49,7 +49,9 @@ NODE_PARAMS = {"name": "node_name", "parameters": {"value": None}}
         (PowerNode(**NODE_PARAMS), "feat1.pow(feat2)", "np.power(feat1, feat2)"),
     ],
 )
-def test_derive_on_demand_function(node, odfv_config, udf_config, expected_odfv_expr, expected_udf_expr):
+def test_derive_on_demand_function(
+    node, odfv_config, udf_config, expected_odfv_expr, expected_udf_expr
+):
     """Test derive_on_demand_view_code"""
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
@@ -93,7 +95,8 @@ def test_derive_on_demand_function__isin_node(odfv_config, udf_config):
         config=odfv_config,
     )
     expected_odfv_expr = (
-        "feat1.combine(feat2, " "lambda x, y: False if pd.isna(x) or not isinstance(y, list) else x in y)"
+        "feat1.combine(feat2, "
+        "lambda x, y: False if pd.isna(x) or not isinstance(y, list) else x in y)"
     )
     assert odfv_stats == []
     assert odfv_expr == expected_odfv_expr

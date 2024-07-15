@@ -58,7 +58,9 @@ def simple_feature_fixture(scd_table):
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list_without_online_store", scope="module")
-async def deployed_features_list_without_online_store_fixture(catalog_online_store_disabled, simple_feature):
+async def deployed_features_list_without_online_store_fixture(
+    catalog_online_store_disabled, simple_feature
+):
     """
     Fixture for deployed feature list
     """
@@ -72,7 +74,9 @@ async def deployed_features_list_without_online_store_fixture(catalog_online_sto
         return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
     ):
         deployment = feature_list.deploy(make_production_ready=True)
-        with patch("featurebyte.service.feature_materialize.datetime", autospec=True) as mock_datetime:
+        with patch(
+            "featurebyte.service.feature_materialize.datetime", autospec=True
+        ) as mock_datetime:
             mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
             deployment.enable()
     yield deployment

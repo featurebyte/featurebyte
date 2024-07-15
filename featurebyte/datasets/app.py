@@ -93,7 +93,9 @@ def import_dataset(dataset_name: str) -> None:
 
         logger.debug(f"Extracting files to staging location: {download_folder}")
         with tarfile.open(archive_file) as file_obj:
-            base_objects = filter(lambda x: "/" not in x.path, file_obj.getmembers())  # Filter root level paths
+            base_objects = filter(
+                lambda x: "/" not in x.path, file_obj.getmembers()
+            )  # Filter root level paths
             file_obj.extractall(
                 download_folder,
                 members=filter(

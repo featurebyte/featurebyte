@@ -216,7 +216,9 @@ def test_derive_on_demand_view_code__dictionary_keys(count_dict_feature1, odfv_c
     )
 
 
-def test_derive_on_demand_view_code__dictionary_get_value(count_dict_feature1, item_feature, odfv_config, udf_config):
+def test_derive_on_demand_view_code__dictionary_get_value(
+    count_dict_feature1, item_feature, odfv_config, udf_config
+):
     """Test derive_on_demand_view_code"""
     # test on two operands
     node = GetValueFromDictionaryNode(**NODE_PARAMS, parameters={})
@@ -286,8 +288,28 @@ def test_derive_on_demand_view_code__dictionary_get_value(count_dict_feature1, i
         (
             GetRelativeFrequencyFromDictionaryNode,
             {},
-            pd.Series([np.nan, np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 1.0 / 3.5, np.nan]),
-            pd.Series([np.nan, np.nan, 1.0 / 3, 1.0 / 3, 1.0 / 3, 2.0 / 3, 2.0 / 3, np.nan, np.nan]),
+            pd.Series([
+                np.nan,
+                np.nan,
+                np.nan,
+                1.0 / 3,
+                1.0 / 3,
+                1.0 / 3,
+                2.0 / 3,
+                1.0 / 3.5,
+                np.nan,
+            ]),
+            pd.Series([
+                np.nan,
+                np.nan,
+                1.0 / 3,
+                1.0 / 3,
+                1.0 / 3,
+                2.0 / 3,
+                2.0 / 3,
+                np.nan,
+                np.nan,
+            ]),
         ),
     ],
 )

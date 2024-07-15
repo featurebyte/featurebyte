@@ -58,7 +58,9 @@ async def create_historical_feature_table(
     Create HistoricalFeatureTable by submitting a materialization task
     """
     data = HistoricalFeatureTableCreate(**json.loads(payload))
-    controller: HistoricalFeatureTableController = request.state.app_container.historical_feature_table_controller
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
     return await controller.create_table(
         data=data,
         observation_set=observation_set,
@@ -72,16 +74,24 @@ async def get_historical_feature_table(
     """
     Get HistoricalFeatureTable
     """
-    controller: HistoricalFeatureTableController = request.state.app_container.historical_feature_table_controller
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
     return await controller.get(document_id=historical_feature_table_id)
 
 
-@router.delete("/{historical_feature_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED)
-async def delete_historical_feature_table(request: Request, historical_feature_table_id: PyObjectId) -> Task:
+@router.delete(
+    "/{historical_feature_table_id}", response_model=Task, status_code=HTTPStatus.ACCEPTED
+)
+async def delete_historical_feature_table(
+    request: Request, historical_feature_table_id: PyObjectId
+) -> Task:
     """
     Delete HistoricalFeatureTable
     """
-    controller: HistoricalFeatureTableController = request.state.app_container.historical_feature_table_controller
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
     return await controller.delete_materialized_table(document_id=historical_feature_table_id)
 
 
@@ -140,7 +150,9 @@ async def get_historical_feature_table_info(
     """
     Get HistoricalFeatureTable info
     """
-    controller: HistoricalFeatureTableController = request.state.app_container.historical_feature_table_controller
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
     return await controller.get_info(document_id=historical_feature_table_id, verbose=verbose)
 
 
@@ -151,22 +163,30 @@ async def download_table_as_pyarrow_table(
     """
     Download HistoricalFeatureTable as pyarrow table
     """
-    controller: HistoricalFeatureTableController = request.state.app_container.historical_feature_table_controller
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
     return await controller.download_materialized_table(document_id=historical_feature_table_id)
 
 
 @router.get("/parquet/{historical_feature_table_id}")
-async def download_table_as_parquet(request: Request, historical_feature_table_id: PyObjectId) -> StreamingResponse:
+async def download_table_as_parquet(
+    request: Request, historical_feature_table_id: PyObjectId
+) -> StreamingResponse:
     """
     Download HistoricalFeatureTable as parquet file
     """
-    controller: HistoricalFeatureTableController = request.state.app_container.historical_feature_table_controller
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
     return await controller.download_materialized_table_as_parquet(
         document_id=historical_feature_table_id,
     )
 
 
-@router.patch("/{historical_feature_table_id}/description", response_model=HistoricalFeatureTableModel)
+@router.patch(
+    "/{historical_feature_table_id}/description", response_model=HistoricalFeatureTableModel
+)
 async def update_historical_feature_table_description(
     request: Request,
     historical_feature_table_id: PyObjectId,
@@ -175,7 +195,9 @@ async def update_historical_feature_table_description(
     """
     Update historical_feature_table description
     """
-    controller: HistoricalFeatureTableController = request.state.app_container.historical_feature_table_controller
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
     return await controller.update_description(
         document_id=historical_feature_table_id,
         description=data.description,
@@ -191,7 +213,9 @@ async def update_historical_feature_table(
     """
     Update historical_feature_table
     """
-    controller: HistoricalFeatureTableController = request.state.app_container.historical_feature_table_controller
+    controller: HistoricalFeatureTableController = (
+        request.state.app_container.historical_feature_table_controller
+    )
     return await controller.update_historical_feature_table(
         historical_feature_table_id=historical_feature_table_id,
         data=data,

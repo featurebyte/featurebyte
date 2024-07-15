@@ -36,7 +36,9 @@ def agg_specs_offset(global_graph, latest_value_offset_without_window_feature_no
     """
     Fixture of TileAggregationSpec with unbounded window and offset
     """
-    parent_nodes = global_graph.get_input_node_names(latest_value_offset_without_window_feature_node)
+    parent_nodes = global_graph.get_input_node_names(
+        latest_value_offset_without_window_feature_node
+    )
     assert len(parent_nodes) == 1
     groupby_node = global_graph.get_node_by_name(parent_nodes[0])
     return TileBasedAggregationSpec.from_groupby_query_node(

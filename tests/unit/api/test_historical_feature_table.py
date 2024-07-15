@@ -77,7 +77,10 @@ class TestHistoricalFeatureTable(BaseMaterializedTableApiTest):
             HistoricalFeatureTable.get(name=table_under_test.name)
 
         last_log = caplog.records[-1]
-        assert last_log.msg == "Failed to log featurebyte training data information to mlflow: Random error"
+        assert (
+            last_log.msg
+            == "Failed to log featurebyte training data information to mlflow: Random error"
+        )
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")

@@ -35,7 +35,9 @@ class FeatureListEntityRelationshipValidator:
         self.entity_service = entity_service
         self._id_to_ancestors: Dict[ObjectId, Set[AncestorData]] = defaultdict(set)
 
-    def _update_ancestor_mapping(self, relationship: EntityRelationshipInfo, feature_name: str) -> None:
+    def _update_ancestor_mapping(
+        self, relationship: EntityRelationshipInfo, feature_name: str
+    ) -> None:
         """
         Add ancestor IDs to the ID to ancestor IDs mapping
 
@@ -58,7 +60,9 @@ class FeatureListEntityRelationshipValidator:
                     )
                 )
 
-    async def _validate_relationship(self, relationship: EntityRelationshipInfo, feature_name: str) -> None:
+    async def _validate_relationship(
+        self, relationship: EntityRelationshipInfo, feature_name: str
+    ) -> None:
         """
         Validate relationship by checking if it conflicts with existing relationships
 
@@ -80,8 +84,12 @@ class FeatureListEntityRelationshipValidator:
             for ancestor in parent_ancestors:
                 if ancestor.ancestor_id == relationship.entity_id:
                     ancestor_feature_names = sorted(set(ancestor.feature_names))
-                    entity = await self.entity_service.get_document(document_id=relationship.entity_id)
-                    related_entity = await self.entity_service.get_document(document_id=relationship.related_entity_id)
+                    entity = await self.entity_service.get_document(
+                        document_id=relationship.entity_id
+                    )
+                    related_entity = await self.entity_service.get_document(
+                        document_id=relationship.related_entity_id
+                    )
                     raise EntityRelationshipConflictError(
                         f"Entity '{entity.name}' is an ancestor of "
                         f"'{related_entity.name}' (based on features: {ancestor_feature_names}) "

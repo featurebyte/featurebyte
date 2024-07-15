@@ -39,10 +39,14 @@ class SavableApiObject(ApiObject):
 
     def _check_object_not_been_saved(self, conflict_resolution: ConflictResolution) -> None:
         if self.saved and conflict_resolution == "raise":
-            raise ObjectHasBeenSavedError(f'{type(self).__name__} (id: "{self.id}") has been saved before.')
+            raise ObjectHasBeenSavedError(
+                f'{type(self).__name__} (id: "{self.id}") has been saved before.'
+            )
 
     @typechecked
-    def save(self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None) -> None:
+    def save(
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+    ) -> None:
         """
         Save an object to the persistent data store.
 
@@ -73,13 +77,17 @@ class SavableApiObject(ApiObject):
 
         Save a new Entity object.
 
-        >>> entity = fb.Entity(name="grocerycustomer_example", serving_names=["GROCERYCUSTOMERGUID"])  # doctest: +SKIP
+        >>> entity = fb.Entity(
+        ...     name="grocerycustomer_example", serving_names=["GROCERYCUSTOMERGUID"]
+        ... )  # doctest: +SKIP
         >>> entity.save()  # doctest: +SKIP
         None
 
         Calling save again returns an error.
 
-        >>> entity = fb.Entity(name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"])  # doctest: +SKIP
+        >>> entity = fb.Entity(
+        ...     name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"]
+        ... )  # doctest: +SKIP
         >>> entity.save()  # doctest: +SKIP
         >>> entity.save()  # doctest: +SKIP
         Entity (id: <entity.id>) has been saved before.

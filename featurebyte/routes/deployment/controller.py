@@ -50,7 +50,9 @@ from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.use_case import UseCaseService
 
 
-class DeploymentController(BaseDocumentController[DeploymentModel, DeploymentService, DeploymentList]):
+class DeploymentController(
+    BaseDocumentController[DeploymentModel, DeploymentService, DeploymentList]
+):
     """
     Deployment Controller
     """
@@ -101,7 +103,9 @@ class DeploymentController(BaseDocumentController[DeploymentModel, DeploymentSer
             Primary entity of the use case is not in the feature list's supported serving entities.
         """
         # check if feature list exists
-        feature_list_doc = await self.feature_list_service.get_document_as_dict(document_id=data.feature_list_id)
+        feature_list_doc = await self.feature_list_service.get_document_as_dict(
+            document_id=data.feature_list_id
+        )
 
         context_id = None
         if data.use_case_id:
@@ -131,7 +135,9 @@ class DeploymentController(BaseDocumentController[DeploymentModel, DeploymentSer
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def update_deployment(self, document_id: ObjectId, data: DeploymentUpdate) -> Optional[Task]:
+    async def update_deployment(
+        self, document_id: ObjectId, data: DeploymentUpdate
+    ) -> Optional[Task]:
         """
         Update deployment.
 
@@ -188,7 +194,9 @@ class DeploymentController(BaseDocumentController[DeploymentModel, DeploymentSer
         """
         _ = verbose
         deployment = await self.service.get_document(document_id=document_id)
-        feature_list = await self.feature_list_service.get_document(document_id=deployment.feature_list_id)
+        feature_list = await self.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
+        )
         use_case_name = None
         if deployment.use_case_id:
             use_case = await self.use_case_service.get_document(document_id=deployment.use_case_id)
@@ -200,7 +208,9 @@ class DeploymentController(BaseDocumentController[DeploymentModel, DeploymentSer
             feature_list_version=feature_list.version.to_str(),
             num_feature=len(feature_list.feature_ids),
             enabled=deployment.enabled,
-            serving_endpoint=(f"/deployment/{deployment.id}/online_features" if deployment.enabled else None),
+            serving_endpoint=(
+                f"/deployment/{deployment.id}/online_features" if deployment.enabled else None
+            ),
             created_at=deployment.created_at,
             updated_at=deployment.updated_at,
             description=deployment.description,
@@ -237,15 +247,19 @@ class DeploymentController(BaseDocumentController[DeploymentModel, DeploymentSer
         try:
             result: Optional[OnlineFeaturesResponseModel]
             if feature_list.store_info.feast_enabled and catalog.online_store_id is not None:
-                feast_store = await self.feast_feature_store_service.get_feast_feature_store_for_deployment(
-                    deployment=document
+                feast_store = (
+                    await self.feast_feature_store_service.get_feast_feature_store_for_deployment(
+                        deployment=document
+                    )
                 )
             else:
                 feast_store = None
 
             feast_feature_services = set()
             if feast_store is not None:
-                feast_feature_services.update([fs.name for fs in feast_store.list_feature_services()])
+                feast_feature_services.update([
+                    fs.name for fs in feast_store.list_feature_services()
+                ])
 
             if feast_store and feature_list.versioned_name in feast_feature_services:
                 result = await self.online_serving_service.get_online_features_by_feast(
@@ -260,7 +274,9 @@ class DeploymentController(BaseDocumentController[DeploymentModel, DeploymentSer
                     request_data=data.entity_serving_names,
                 )
         except (FeatureListNotOnlineEnabledError, RuntimeError) as exc:
-            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]) from exc
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc
         assert result is not None, result
         return result
 
@@ -292,14 +308,18 @@ class DeploymentController(BaseDocumentController[DeploymentModel, DeploymentSer
         if not deployment.enabled:
             raise FeatureListNotOnlineEnabledError("Deployment is not enabled.")
 
-        feature_list = await self.feature_list_service.get_document(document_id=deployment.feature_list_id)
+        feature_list = await self.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
+        )
         return await self.online_serving_service.get_request_code_template(
             deployment=deployment,
             feature_list=feature_list,
             language=language,
         )
 
-    async def get_sample_entity_serving_names(self, deployment_id: ObjectId, count: int) -> SampleEntityServingNames:
+    async def get_sample_entity_serving_names(
+        self, deployment_id: ObjectId, count: int
+    ) -> SampleEntityServingNames:
         """
         Get request code template for a given deployment ID.
 
@@ -318,13 +338,17 @@ class DeploymentController(BaseDocumentController[DeploymentModel, DeploymentSer
         deployment: DeploymentModel = await self.service.get_document(deployment_id)
         entity_serving_names = []
         if deployment.serving_entity_ids:
-            entity_serving_names = await self.entity_serving_names_service.get_sample_entity_serving_names(
-                entity_ids=deployment.serving_entity_ids, table_ids=None, count=count
+            entity_serving_names = (
+                await self.entity_serving_names_service.get_sample_entity_serving_names(
+                    entity_ids=deployment.serving_entity_ids, table_ids=None, count=count
+                )
             )
         return SampleEntityServingNames(entity_serving_names=entity_serving_names)
 
 
-class AllDeploymentController(BaseDocumentController[DeploymentModel, AllDeploymentService, DeploymentList]):
+class AllDeploymentController(
+    BaseDocumentController[DeploymentModel, AllDeploymentService, DeploymentList]
+):
     """
     All Deployment Controller
     """
@@ -429,7 +453,9 @@ class AllDeploymentController(BaseDocumentController[DeploymentModel, AllDeploym
         catalog_documents = await self.catalog_service.list_documents_as_dict(
             page_size=0, query_filter={"_id": {"$in": list(catalog_ids)}}
         )
-        deployment_id_to_catalog_name = {doc["_id"]: doc["name"] for doc in catalog_documents["data"]}
+        deployment_id_to_catalog_name = {
+            doc["_id"]: doc["name"] for doc in catalog_documents["data"]
+        }
 
         output = []
         for doc in deployment_data["data"]:

@@ -10,7 +10,9 @@ from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import quoted_identifier
 
 
-def get_deduplicated_expr(adapter: BaseAdapter, table_expr: Select, expected_primary_keys: list[str]) -> Select:
+def get_deduplicated_expr(
+    adapter: BaseAdapter, table_expr: Select, expected_primary_keys: list[str]
+) -> Select:
     """
     Remove duplicate rows based on the provided list of columns
 

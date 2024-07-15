@@ -42,7 +42,9 @@ def test_function_parameter(dtype, default_value, test_value, expected_error_mes
     """Test function parameter constructor"""
     if expected_error_message:
         with pytest.raises(TypeError) as exc:
-            FunctionParameter(name="x", dtype=dtype, default_value=default_value, test_value=test_value)
+            FunctionParameter(
+                name="x", dtype=dtype, default_value=default_value, test_value=test_value
+            )
         assert expected_error_message in str(exc.value)
     else:
         FunctionParameter(name="x", dtype=dtype, default_value=default_value, test_value=test_value)
@@ -73,7 +75,9 @@ def test_function_parameter(dtype, default_value, test_value, expected_error_mes
         ),
     ],
 )
-def test_user_defined_function_model(function_parameters, catalog_id, expected_signature, expected_test_sql):
+def test_user_defined_function_model(
+    function_parameters, catalog_id, expected_signature, expected_test_sql
+):
     """Test UserDefinedFunctionModel"""
     feature_store_id = ObjectId()
     user_defined_function = UserDefinedFunctionModel(

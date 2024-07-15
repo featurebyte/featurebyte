@@ -48,7 +48,9 @@ class DataDescriptionTask(BaseTask[DataDescriptionTaskPayload]):
         """
         await self.task_progress_updater.update_progress(percent=5, message="Running Query")
 
-        result = await self.preview_service.describe(sample=payload.sample, size=payload.size, seed=payload.seed)
+        result = await self.preview_service.describe(
+            sample=payload.sample, size=payload.size, seed=payload.seed
+        )
 
         # store results in temp storage
         await self.task_progress_updater.update_progress(percent=95, message="Saving Result")

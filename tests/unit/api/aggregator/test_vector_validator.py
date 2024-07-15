@@ -34,6 +34,11 @@ def test_validate_vector_aggregate_parameters():
             ):
                 with pytest.raises(ValueError) as exc_info:
                     validate_vector_aggregate_parameters([column_info], column_info.name, agg_func)
-                assert str(exc_info.value) == f"Method {agg_func} is not supported for vector aggregate operations."
+                assert (
+                    str(exc_info.value)
+                    == f"Method {agg_func} is not supported for vector aggregate operations."
+                )
             else:
-                assert not validate_vector_aggregate_parameters([column_info], column_info.name, agg_func)
+                assert not validate_vector_aggregate_parameters(
+                    [column_info], column_info.name, agg_func
+                )

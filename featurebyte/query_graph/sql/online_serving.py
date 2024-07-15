@@ -56,7 +56,9 @@ logger = get_logger(__name__)
 PROGRESS_MESSAGE_COMPUTING_ONLINE_FEATURES = "Computing online features"
 
 
-def get_aggregation_result_names(graph: QueryGraph, nodes: list[Node], source_type: SourceType) -> list[str]:
+def get_aggregation_result_names(
+    graph: QueryGraph, nodes: list[Node], source_type: SourceType
+) -> list[str]:
     """
     Get a list of aggregation result names that correspond to the graph and nodes
 
@@ -82,7 +84,9 @@ def get_aggregation_result_names(graph: QueryGraph, nodes: list[Node], source_ty
     return plan.tile_based_aggregation_result_names
 
 
-def fill_version_placeholders(template_expr: Expression, versions: Dict[str, int]) -> expressions.Select:
+def fill_version_placeholders(
+    template_expr: Expression, versions: Dict[str, int]
+) -> expressions.Select:
     """
     Fill the version placeholders in the SQL template
 
@@ -98,7 +102,8 @@ def fill_version_placeholders(template_expr: Expression, versions: Dict[str, int
     expressions.Select
     """
     placeholders_mapping = {
-        get_version_placeholder(agg_result_name): version for (agg_result_name, version) in versions.items()
+        get_version_placeholder(agg_result_name): version
+        for (agg_result_name, version) in versions.items()
     }
     return cast(
         expressions.Select,
@@ -106,7 +111,9 @@ def fill_version_placeholders(template_expr: Expression, versions: Dict[str, int
     )
 
 
-def fill_version_placeholders_for_query_set(query_set: FeatureQuerySet, versions: Dict[str, int]) -> None:
+def fill_version_placeholders_for_query_set(
+    query_set: FeatureQuerySet, versions: Dict[str, int]
+) -> None:
     """
     Update an FeatureQuerySet in place to replace all feature version placeholders with concrete
     values
@@ -150,7 +157,9 @@ def construct_request_table_query(
     expressions.Select
     """
     expr = select(*[get_qualified_column_identifier(col, "REQ") for col in request_table_columns])
-    expr = expr.select(expressions.alias_(current_timestamp_expr, alias=SpecialColumnName.POINT_IN_TIME))
+    expr = expr.select(
+        expressions.alias_(current_timestamp_expr, alias=SpecialColumnName.POINT_IN_TIME)
+    )
     request_table_columns.append(SpecialColumnName.POINT_IN_TIME)
     if request_table_expr is not None:
         expr = expr.from_(request_table_expr.subquery(alias="REQ"))
@@ -225,7 +234,9 @@ def get_online_store_retrieval_expr(
     return output_expr, plan.feature_names
 
 
-def get_current_timestamp_expr(request_timestamp: Optional[datetime], source_type: SourceType) -> Expression:
+def get_current_timestamp_expr(
+    request_timestamp: Optional[datetime], source_type: SourceType
+) -> Expression:
     """
     Get the sql expression to use for the current timestamp
 
@@ -358,7 +369,9 @@ def get_online_features_query_set(
             graph=graph,
             nodes=node_groups[0],
             current_timestamp_expr=current_timestamp_expr,
-            request_table_columns=maybe_add_row_index_column(request_table_columns, output_include_row_index),
+            request_table_columns=maybe_add_row_index_column(
+                request_table_columns, output_include_row_index
+            ),
             request_table_expr=request_table_expr,
             request_table_details=request_table_details,
             source_type=source_type,
@@ -375,7 +388,9 @@ def get_online_features_query_set(
         return FeatureQuerySet(
             feature_queries=[],
             output_query=output_query,
-            output_table_name=(output_table_details.table_name if output_table_details is not None else None),
+            output_table_name=(
+                output_table_details.table_name if output_table_details is not None else None
+            ),
             progress_message=PROGRESS_MESSAGE_COMPUTING_ONLINE_FEATURES,
         )
 
@@ -427,7 +442,9 @@ def get_online_features_query_set(
     return FeatureQuerySet(
         feature_queries=feature_queries,
         output_query=output_expr,
-        output_table_name=(output_table_details.table_name if output_table_details is not None else None),
+        output_table_name=(
+            output_table_details.table_name if output_table_details is not None else None
+        ),
         progress_message=PROGRESS_MESSAGE_COMPUTING_ONLINE_FEATURES,
     )
 
@@ -551,7 +568,9 @@ async def get_online_features(
     if output_table_details is None:
         assert df_features is not None
         assert isinstance(request_data, pd.DataFrame)
-        df_features = df_features.sort_values(InternalName.TABLE_ROW_INDEX).drop(InternalName.TABLE_ROW_INDEX, axis=1)
+        df_features = df_features.sort_values(InternalName.TABLE_ROW_INDEX).drop(
+            InternalName.TABLE_ROW_INDEX, axis=1
+        )
         df_features.index = request_data.index
         features = []
         prepare_dataframe_for_json(df_features)

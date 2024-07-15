@@ -39,7 +39,9 @@ class GenericFunctionNode(ExpressionNode):
                 node_index += 1
             else:
                 cast_as_timestamp = func_param["dtype"] == DBVarType.TIMESTAMP
-                parameters.append(make_literal_value(func_param["value"], cast_as_timestamp=cast_as_timestamp))
+                parameters.append(
+                    make_literal_value(func_param["value"], cast_as_timestamp=cast_as_timestamp)
+                )
 
         table_node = None
         if input_sql_nodes:

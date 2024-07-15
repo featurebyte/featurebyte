@@ -46,7 +46,9 @@ async def test_create_static_source_table_from_source_table(
     Test creating an StaticSourceTable from a source table
     """
     await static_source_table_service.create_document(static_source_table_from_source_table)
-    loaded_table = await static_source_table_service.get_document(static_source_table_from_source_table.id)
+    loaded_table = await static_source_table_service.get_document(
+        static_source_table_from_source_table.id
+    )
     loaded_table_dict = loaded_table.dict(exclude={"created_at", "updated_at"})
     expected_dict = static_source_table_from_source_table.dict(exclude={"created_at", "updated_at"})
     expected_dict["catalog_id"] = catalog.id

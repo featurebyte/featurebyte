@@ -8,7 +8,9 @@ from featurebyte.api.feature import Feature
 from tests.util.helper import check_sdk_code_generation, get_node
 
 
-def test_aggregate_asat__valid(snowflake_scd_view_with_entity, snowflake_scd_table, gender_entity_id):
+def test_aggregate_asat__valid(
+    snowflake_scd_view_with_entity, snowflake_scd_table, gender_entity_id
+):
     """
     Test valid usage of aggregate_asat
     """
@@ -129,10 +131,14 @@ def test_aggregate_asat__not_backward(snowflake_scd_view_with_entity, gender_ent
     assert isinstance(feature, Feature)
 
 
-def test_aggregate_asat_with_category(snowflake_scd_view_with_entity, snowflake_scd_table, gender_entity_id):
+def test_aggregate_asat_with_category(
+    snowflake_scd_view_with_entity, snowflake_scd_table, gender_entity_id
+):
     """Test aggregate_asat with category"""
     _ = snowflake_scd_table, gender_entity_id
-    feature = snowflake_scd_view_with_entity.groupby("col_boolean", category="col_text").aggregate_asat(
+    feature = snowflake_scd_view_with_entity.groupby(
+        "col_boolean", category="col_text"
+    ).aggregate_asat(
         value_column="col_float",
         method="sum",
         feature_name="asat_feature",

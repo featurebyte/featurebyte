@@ -138,13 +138,17 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             document_id=document_id, exception_class=DocumentDeletionError
         )
         document = await self.service.get_document(document_id=document_id)
-        namespace = await self.target_namespace_service.get_document(document_id=document.target_namespace_id)
+        namespace = await self.target_namespace_service.get_document(
+            document_id=document.target_namespace_id
+        )
         async with self.persistent.start_transaction():
             await self.service.delete_document(document_id=document_id)
             await self.target_namespace_service.update_document(
                 document_id=namespace.id,
                 data=TargetNamespaceServiceUpdate(
-                    target_ids=[target_id for target_id in namespace.target_ids if target_id != document_id]
+                    target_ids=[
+                        target_id for target_id in namespace.target_ids if target_id != document_id
+                    ]
                 ),
             )
 
@@ -169,9 +173,13 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         """
         _ = verbose
         target_doc = await self.service.get_document(document_id=document_id)
-        namespace = await self.target_namespace_service.get_document(document_id=target_doc.target_namespace_id)
+        namespace = await self.target_namespace_service.get_document(
+            document_id=target_doc.target_namespace_id
+        )
         entity_ids = target_doc.entity_ids or []
-        entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(set(entity_ids))
+        entity_brief_info_list = await self.entity_service.get_entity_brief_info_list(
+            set(entity_ids)
+        )
 
         primary_tables = await self.feature_or_target_helper.get_primary_tables(
             target_doc.table_ids,
@@ -181,7 +189,9 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         )
 
         # Get metadata
-        _, target_metadata = await self.feature_or_target_metadata_extractor.extract_from_object(target_doc)
+        _, target_metadata = await self.feature_or_target_metadata_extractor.extract_from_object(
+            target_doc
+        )
 
         return TargetInfo(
             id=document_id,
@@ -219,9 +229,13 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         try:
             return await self.feature_preview_service.preview_target(target_preview=target_preview)
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
-            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]) from exc
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc
 
-    async def get_sample_entity_serving_names(self, target_id: ObjectId, count: int) -> SampleEntityServingNames:
+    async def get_sample_entity_serving_names(
+        self, target_id: ObjectId, count: int
+    ) -> SampleEntityServingNames:
         """
         Get sample entity serving names for target
 
@@ -238,5 +252,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             Sample entity serving names
         """
 
-        entity_serving_names = await self.service.get_sample_entity_serving_names(target_id=target_id, count=count)
+        entity_serving_names = await self.service.get_sample_entity_serving_names(
+            target_id=target_id, count=count
+        )
         return SampleEntityServingNames(entity_serving_names=entity_serving_names)

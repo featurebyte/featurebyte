@@ -30,7 +30,10 @@ class CodeStr(str):
             lexer=lexer,
             formatter=HtmlFormatter(noclasses=True, nobackground=True),
         )
-        return '<div style="margin:30px; padding: 20px; border:1px solid #aaa">' f"{highlighted_code}</div>"
+        return (
+            '<div style="margin:30px; padding: 20px; border:1px solid #aaa">'
+            f"{highlighted_code}</div>"
+        )
 
 
 class InfoDict(Dict[str, Any]):
@@ -101,7 +104,9 @@ class InfoDict(Dict[str, Any]):
             """
             # create html table
             table = doc.createElement("table")
-            _set_element_style(table, {"table-layout": "auto", "width": "100%", "padding": 0, "margin": 0})
+            _set_element_style(
+                table, {"table-layout": "auto", "width": "100%", "padding": 0, "margin": 0}
+            )
 
             # determine max key length for computing column width
             max_key_len = max([len(key) for key in data.keys()] + [0])
@@ -131,7 +136,9 @@ class InfoDict(Dict[str, Any]):
                     # process dictionaries recursively
                     value_elem = doc.createElement("div")
                     _set_element_style(value_elem, {"border": "0", "padding": "0", "margin": "0"})
-                    _populate_html_elem(data=value, doc=doc, elem=value_elem, html_content=html_content)
+                    _populate_html_elem(
+                        data=value, doc=doc, elem=value_elem, html_content=html_content
+                    )
                 elif isinstance(value, list) and len(value) > 0 and isinstance(value[0], dict):
                     # list of dictionaries
                     value_elem = doc.createElement("div")

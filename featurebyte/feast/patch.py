@@ -72,7 +72,9 @@ def augment_response_with_on_demand_transforms(
         # this is an additional step introduced to extract the correct dtypes for the transformed features
         odfv_dtype_map = {
             (
-                f"{odfv.projection.name_to_use()}__{feature.name}" if full_feature_names else feature.name
+                f"{odfv.projection.name_to_use()}__{feature.name}"
+                if full_feature_names
+                else feature.name
             ): feature.dtype.to_value_type()
             for feature in odfv.features
         }
@@ -80,7 +82,9 @@ def augment_response_with_on_demand_transforms(
         # pass the expected dtypes to the proto_values_to_proto_values function
         # (original implementation pass UNKNOWN as the dtype and let the function infer the dtype)
         proto_values = [
-            python_values_to_proto_values(transformed_features_df[feature].values, odfv_dtype_map[feature])
+            python_values_to_proto_values(
+                transformed_features_df[feature].values, odfv_dtype_map[feature]
+            )
             for feature in selected_subset
         ]
 
@@ -205,7 +209,9 @@ def _hash_feature(feature: Field) -> int:
     ))
 
 
-def with_projection(feature_view: BaseFeatureView, feature_view_projection: FeatureViewProjection) -> Any:
+def with_projection(
+    feature_view: BaseFeatureView, feature_view_projection: FeatureViewProjection
+) -> Any:
     """
     Returns a copy of this base feature view with the feature view projection set to
     the given projection.

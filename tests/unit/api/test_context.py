@@ -36,7 +36,9 @@ def test_create_context(catalog, cust_id_entity):
 
     entity_ids = [cust_id_entity.id]
     entity_names = [cust_id_entity.name]
-    context = Context.create(name="test_context", primary_entity=entity_names, description="test_description")
+    context = Context.create(
+        name="test_context", primary_entity=entity_names, description="test_description"
+    )
 
     # Test get context by id and verify attributes
     retrieved_context = Context.get_by_id(context.id)

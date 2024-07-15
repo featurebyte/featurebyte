@@ -84,7 +84,9 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
     # for the nested graph node, the output node is a groupby node
     graph = QueryGraph()
     input_node = add_input_node(graph, input_details)
-    node_graph = add_graph_node(query_graph=graph, input_nodes=[input_node], groupby_node_params=groupby_node_params)
+    node_graph = add_graph_node(
+        query_graph=graph, input_nodes=[input_node], groupby_node_params=groupby_node_params
+    )
     node_proj_2h_avg = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a_2h_average"]},
@@ -93,7 +95,9 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
     )
 
     # check operation structure
-    operation_structure = graph.extract_operation_structure(node=node_proj_2h_avg, keep_all_source_columns=True)
+    operation_structure = graph.extract_operation_structure(
+        node=node_proj_2h_avg, keep_all_source_columns=True
+    )
     common_column_params = {
         "node_names": {"input_1"},
         "node_name": "input_1",
@@ -183,7 +187,9 @@ def test_graph_node__when_graph_node_is_output_node(input_details):
     # for the nested graph node, the output node is a graph node
     graph = QueryGraph()
     input_node = add_input_node(graph, input_details)
-    graph_node = add_graph_node(query_graph=graph, input_nodes=[input_node], groupby_node_params=None)
+    graph_node = add_graph_node(
+        query_graph=graph, input_nodes=[input_node], groupby_node_params=None
+    )
     proj_node = graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},

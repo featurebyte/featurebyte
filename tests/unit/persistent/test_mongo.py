@@ -46,14 +46,18 @@ async def test_insert_one(mongo_persistent, test_document, disable_audit):
     assert results[0]["previous_values"] == {}
 
     # check historical document generator
-    hist_docs_generator = persistent.historical_document_generator(collection_name="data", document_id=inserted_id)
+    hist_docs_generator = persistent.historical_document_generator(
+        collection_name="data", document_id=inserted_id
+    )
     hist_docs = [doc async for _, doc in hist_docs_generator]
     assert hist_docs == [test_document]
 
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": inserted_id}).to_list()
-    await persistent._migrate_audit_records(collection_name="data", document_id=inserted_id, migrate_func=lambda d: d)
+    await persistent._migrate_audit_records(
+        collection_name="data", document_id=inserted_id, migrate_func=lambda d: d
+    )
     after = await client["test"]["__audit__data"].find({"document_id": inserted_id}).to_list()
     assert before == after
 
@@ -67,7 +71,9 @@ async def test_insert_one__duplicate_key__(mongo_persistent, test_document):
     with pytest.raises(DuplicateDocumentError):
         with patch("mongomock_motor.AsyncMongoMockCollection.insert_one") as mock_insert:
             mock_insert.side_effect = DuplicateKeyError("Document exists")
-            await persistent.insert_one(collection_name="data", document=test_document, user_id=None)
+            await persistent.insert_one(
+                collection_name="data", document=test_document, user_id=None
+            )
 
 
 @pytest.mark.parametrize("disable_audit", [False, True])
@@ -111,7 +117,9 @@ async def test_insert_many__duplicate_key__(mongo_persistent, test_documents):
     with pytest.raises(DuplicateDocumentError):
         with patch("mongomock_motor.AsyncMongoMockCollection.insert_many") as mock_insert:
             mock_insert.side_effect = DuplicateKeyError("Document exists")
-            await persistent.insert_many(collection_name="data", documents=test_documents, user_id=None)
+            await persistent.insert_many(
+                collection_name="data", documents=test_documents, user_id=None
+            )
 
 
 @pytest.mark.asyncio
@@ -137,13 +145,19 @@ async def test_find_many(mongo_persistent, test_documents):
     assert total == 3
 
     # test pagination
-    docs, total = await persistent.find(collection_name="data", query_filter={}, page_size=2, page=1)
+    docs, total = await persistent.find(
+        collection_name="data", query_filter={}, page_size=2, page=1
+    )
     assert docs == test_documents[:2]
     assert total == 3
-    docs, total = await persistent.find(collection_name="data", query_filter={}, page_size=2, page=2)
+    docs, total = await persistent.find(
+        collection_name="data", query_filter={}, page_size=2, page=2
+    )
     assert docs == test_documents[2:]
     assert total == 3
-    docs, total = await persistent.find(collection_name="data", query_filter={}, page_size=0, page=2)
+    docs, total = await persistent.find(
+        collection_name="data", query_filter={}, page_size=0, page=2
+    )
     assert docs == test_documents
     assert total == 3
 
@@ -212,14 +226,18 @@ async def test_update_one(mongo_persistent, test_document, disable_audit):
 
     # check historical document generator
     doc_id = results[0]["_id"]
-    hist_docs_generator = persistent.historical_document_generator(collection_name="data", document_id=doc_id)
+    hist_docs_generator = persistent.historical_document_generator(
+        collection_name="data", document_id=doc_id
+    )
     hist_docs = [doc async for _, doc in hist_docs_generator]
     assert hist_docs == [test_documents[0], results[0]]
 
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
-    await persistent._migrate_audit_records(collection_name="data", document_id=doc_id, migrate_func=lambda d: d)
+    await persistent._migrate_audit_records(
+        collection_name="data", document_id=doc_id, migrate_func=lambda d: d
+    )
     after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     assert before == after
 
@@ -311,7 +329,9 @@ async def test_replace_one(mongo_persistent, test_document, test_documents, disa
 
     # check historical document generator
     doc_id = test_documents[0]["_id"]
-    hist_docs_generator = persistent.historical_document_generator(collection_name="data", document_id=doc_id)
+    hist_docs_generator = persistent.historical_document_generator(
+        collection_name="data", document_id=doc_id
+    )
     hist_docs = [doc async for _, doc in hist_docs_generator]
     assert hist_docs == [
         test_documents[0],
@@ -326,7 +346,9 @@ async def test_replace_one(mongo_persistent, test_document, test_documents, disa
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
-    await persistent._migrate_audit_records(collection_name="data", document_id=doc_id, migrate_func=lambda d: d)
+    await persistent._migrate_audit_records(
+        collection_name="data", document_id=doc_id, migrate_func=lambda d: d
+    )
     after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     assert before == after
 
@@ -366,7 +388,9 @@ async def test_delete_one(mongo_persistent, test_documents, disable_audit):
 
     # check historical document generator
     doc_id = test_documents[0]["_id"]
-    hist_docs_generator = persistent.historical_document_generator(collection_name="data", document_id=doc_id)
+    hist_docs_generator = persistent.historical_document_generator(
+        collection_name="data", document_id=doc_id
+    )
     hist_docs = [doc async for _, doc in hist_docs_generator]
     assert hist_docs == [
         test_documents[0],
@@ -376,7 +400,9 @@ async def test_delete_one(mongo_persistent, test_documents, disable_audit):
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
-    await persistent._migrate_audit_records(collection_name="data", document_id=doc_id, migrate_func=lambda d: d)
+    await persistent._migrate_audit_records(
+        collection_name="data", document_id=doc_id, migrate_func=lambda d: d
+    )
     after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     assert before == after
 
@@ -420,7 +446,9 @@ async def test_get_audit_logs(mongo_persistent, test_document):
     persistent, _ = mongo_persistent
 
     # insert a doc
-    inserted_id = await persistent.insert_one(collection_name="data", document=test_document, user_id=None)
+    inserted_id = await persistent.insert_one(
+        collection_name="data", document=test_document, user_id=None
+    )
 
     # update the doc a few times
     for i in range(5):
@@ -433,7 +461,9 @@ async def test_get_audit_logs(mongo_persistent, test_document):
         assert num_updated == 1
 
     # delete the doc
-    num_deleted = await persistent.delete_one(collection_name="data", query_filter={"_id": inserted_id}, user_id=None)
+    num_deleted = await persistent.delete_one(
+        collection_name="data", query_filter={"_id": inserted_id}, user_id=None
+    )
     assert num_deleted == 1
 
     # check retrieve audit logs work as expected

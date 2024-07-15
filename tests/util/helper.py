@@ -140,7 +140,9 @@ def get_node(graph_dict, node_name):
     return next(node for node in graph_dict["nodes"] if node["name"] == node_name)
 
 
-def add_groupby_operation(graph, groupby_node_params, input_node, override_tile_id=None, override_aggregation_id=None):
+def add_groupby_operation(
+    graph, groupby_node_params, input_node, override_tile_id=None, override_aggregation_id=None
+):
     """
     Helper function to add a groupby node
     """
@@ -158,7 +160,9 @@ def add_groupby_operation(graph, groupby_node_params, input_node, override_tile_
                 else override_tile_id
             ),
             "aggregation_id": (
-                get_aggregation_identifier(graph.node_name_to_ref[input_node.name], groupby_node_params)
+                get_aggregation_identifier(
+                    graph.node_name_to_ref[input_node.name], groupby_node_params
+                )
                 if override_aggregation_id is None
                 else override_aggregation_id
             ),
@@ -190,8 +194,12 @@ def check_aggressively_pruned_graph(left_obj_dict, right_obj_dict):
     # here we need to perform (aggressive) pruning & compare the final graph to make sure they are the same
     left_graph = QueryGraph(**dict(left_obj_dict["graph"]))
     right_graph = QueryGraph(**dict(right_obj_dict["graph"]))
-    left_pruned_graph, _ = left_graph.prune(target_node=left_graph.get_node_by_name(left_obj_dict["node_name"]))
-    right_pruned_graph, _ = right_graph.prune(target_node=right_graph.get_node_by_name(right_obj_dict["node_name"]))
+    left_pruned_graph, _ = left_graph.prune(
+        target_node=left_graph.get_node_by_name(left_obj_dict["node_name"])
+    )
+    right_pruned_graph, _ = right_graph.prune(
+        target_node=right_graph.get_node_by_name(right_obj_dict["node_name"])
+    )
     assert left_pruned_graph == right_pruned_graph
 
 
@@ -245,7 +253,8 @@ def check_sdk_code_generation(
 
     # check the final node hash value of two graph to make sure they are the same
     assert (
-        pruned_graph.node_name_to_ref[node.name] == expected_pruned_graph.node_name_to_ref[expected_node.name]
+        pruned_graph.node_name_to_ref[node.name]
+        == expected_pruned_graph.node_name_to_ref[expected_node.name]
     ), sdk_code
 
     if fixture_path:
@@ -254,17 +263,23 @@ def check_sdk_code_generation(
             # escape certain characters so that jinja can handle it properly
             sdk_version = get_version()
             formatted_sdk_code = sdk_code.replace("{", "{{").replace("}", "}}")
-            formatted_sdk_code = formatted_sdk_code.replace(f"SDK version: {sdk_version}", "SDK version: {sdk_version}")
+            formatted_sdk_code = formatted_sdk_code.replace(
+                f"SDK version: {sdk_version}", "SDK version: {sdk_version}"
+            )
 
             # convert the object id to a placeholder
-            formatted_sdk_code = formatted_sdk_code.replace(f"{feature_store_id}", "{feature_store_id}")
+            formatted_sdk_code = formatted_sdk_code.replace(
+                f"{feature_store_id}", "{feature_store_id}"
+            )
             if table_id:
                 formatted_sdk_code = formatted_sdk_code.replace(f"{table_id}", "{table_id}")
 
             # for item table, there is an additional `event_table_id`. Replace the actual `event_table_id` value
             # to {event_table_id} placeholder through kwargs
             for key, value in kwargs.items():
-                formatted_sdk_code = formatted_sdk_code.replace(f"{value}", "{key}".replace("key", key))
+                formatted_sdk_code = formatted_sdk_code.replace(
+                    f"{value}", "{key}".replace("key", key)
+                )
 
             with open(fixture_path, mode="w", encoding="utf-8") as file_handle:
                 file_handle.write(formatted_sdk_code)
@@ -332,7 +347,9 @@ def fb_assert_frame_equal(df, df_expected, dict_like_columns=None, sort_by_colum
         for col in regular_columns:
             if is_numeric_dtype(df_expected[col]):
                 df[col] = df[col].astype(float)
-        pd.testing.assert_frame_equal(df[regular_columns], df_expected[regular_columns], check_dtype=False)
+        pd.testing.assert_frame_equal(
+            df[regular_columns], df_expected[regular_columns], check_dtype=False
+        )
 
     if dict_like_columns:
         for col in dict_like_columns:
@@ -408,7 +425,9 @@ def make_online_request(client, deployment, entity_serving_names):
     return res
 
 
-async def create_observation_table_from_dataframe(session, df, data_source, serving_names_mapping=None):
+async def create_observation_table_from_dataframe(
+    session, df, data_source, serving_names_mapping=None
+):
     """
     Create an ObservationTable from a pandas DataFrame
     """
@@ -419,7 +438,9 @@ async def create_observation_table_from_dataframe(session, df, data_source, serv
         db_table_name,
         database_name=session.database_name,
         schema_name=session.schema_name,
-    ).create_observation_table(f"observation_table_{unique_id}", columns_rename_mapping=serving_names_mapping)
+    ).create_observation_table(
+        f"observation_table_{unique_id}", columns_rename_mapping=serving_names_mapping
+    )
 
 
 async def create_batch_request_table_from_dataframe(session, df, data_source):
@@ -441,7 +462,9 @@ async def get_dataframe_from_materialized_table(session, materialized_table):
     Retrieve pandas DataFrame from a materialized table
     """
     query = sql_to_string(
-        expressions.select("*").from_(get_fully_qualified_table_name(materialized_table.location.table_details.dict())),
+        expressions.select("*").from_(
+            get_fully_qualified_table_name(materialized_table.location.table_details.dict())
+        ),
         source_type=session.source_type,
     )
     return await session.execute_query(query)
@@ -482,7 +505,9 @@ async def compute_historical_feature_table_dataframe_helper(
     historical_feature_table = feature_list.compute_historical_feature_table(
         observation_table, historical_feature_table_name, **kwargs
     )
-    df_historical_features = await get_dataframe_from_materialized_table(session, historical_feature_table)
+    df_historical_features = await get_dataframe_from_materialized_table(
+        session, historical_feature_table
+    )
     return df_historical_features
 
 
@@ -592,7 +617,11 @@ def generate_column_data(var_type, row_number=10, databricks_udf_input=False):
             {} if databricks_udf_input else json.dumps({}),
             {"foo": 1, "bar": 2} if databricks_udf_input else json.dumps({"foo": 1, "bar": 2}),
             {"你好": 1, "世界": 2} if databricks_udf_input else json.dumps({"你好": 1, "世界": 2}),
-            ({"foo": 1, "bar": 2, "baz": 3} if databricks_udf_input else json.dumps({"foo": 1, "bar": 2, "baz": 3})),
+            (
+                {"foo": 1, "bar": 2, "baz": 3}
+                if databricks_udf_input
+                else json.dumps({"foo": 1, "bar": 2, "baz": 3})
+            ),
         ]
         return np.random.choice(selections, size=row_number)
     raise ValueError(f"Unsupported var_type: {var_type}")
@@ -673,7 +702,9 @@ def check_on_demand_feature_function_code_execution(udf_code_state, df):
         raise e
 
 
-def check_on_demand_feature_code_generation(feature_model, sql_fixture_path=None, update_fixtures=False):
+def check_on_demand_feature_code_generation(
+    feature_model, sql_fixture_path=None, update_fixtures=False
+):
     """Check on demand feature view code generation"""
     offline_store_info = feature_model.offline_store_info
     assert offline_store_info.is_decomposed, "OfflineStoreInfo is not decomposed"
@@ -683,13 +714,19 @@ def check_on_demand_feature_code_generation(feature_model, sql_fixture_path=None
     decomposed_graph = offline_store_info.graph
     target_node = decomposed_graph.get_node_by_name(offline_store_info.node_name)
     databricks_specific_inputs = set()
-    for graph_node in decomposed_graph.iterate_nodes(target_node=target_node, node_type=NodeType.GRAPH):
+    for graph_node in decomposed_graph.iterate_nodes(
+        target_node=target_node, node_type=NodeType.GRAPH
+    ):
         assert isinstance(graph_node.parameters, OfflineStoreIngestQueryGraphNodeParameters)
-        df[graph_node.parameters.output_column_name] = generate_column_data(graph_node.parameters.output_dtype)
+        df[graph_node.parameters.output_column_name] = generate_column_data(
+            graph_node.parameters.output_dtype
+        )
         if graph_node.parameters.output_dtype in DBVarType.dictionary_types():
             databricks_specific_inputs.add(graph_node.parameters.output_column_name)
 
-    for node in decomposed_graph.iterate_nodes(target_node=target_node, node_type=NodeType.REQUEST_COLUMN):
+    for node in decomposed_graph.iterate_nodes(
+        target_node=target_node, node_type=NodeType.REQUEST_COLUMN
+    ):
         assert isinstance(node, RequestColumnNode)
         df[node.parameters.column_name] = generate_column_data(node.parameters.dtype)
 
@@ -728,7 +765,9 @@ def check_on_demand_feature_code_generation(feature_model, sql_fixture_path=None
     udf_output = check_on_demand_feature_function_code_execution(udf_code_state, df)
 
     # check the consistency between on demand feature view & on demand feature function
-    pd.testing.assert_series_equal(odfv_output[exp_col_name], udf_output, check_names=False, check_dtype=False)
+    pd.testing.assert_series_equal(
+        odfv_output[exp_col_name], udf_output, check_names=False, check_dtype=False
+    )
 
     # check generated sql code
     if sql_fixture_path:
@@ -770,7 +809,11 @@ async def deploy_feature_list(
     await app_container.deploy_service.create_deployment(
         feature_list_id=feature_list_model.id,
         deployment_id=deployment_id,
-        deployment_name=(feature_list_model.name if deployment_name_override is None else deployment_name_override),
+        deployment_name=(
+            feature_list_model.name
+            if deployment_name_override is None
+            else deployment_name_override
+        ),
         to_enable_deployment=True,
         use_case_id=use_case_model.id,
     )
@@ -852,7 +895,9 @@ async def undeploy_feature_async(feature, app_container):
     async for deployment in app_container.deployment_service.list_documents_iterator(
         query_filter={"name": f"{feature.name}_list"}
     ):
-        await app_container.deploy_service.update_deployment(deployment_id=deployment.id, to_enable_deployment=False)
+        await app_container.deploy_service.update_deployment(
+            deployment_id=deployment.id, to_enable_deployment=False
+        )
 
 
 def tz_localize_if_needed(df, source_type):

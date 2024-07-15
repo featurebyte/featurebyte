@@ -70,13 +70,18 @@ def test_aggregate_asat__latest_not_supported(snowflake_scd_view_with_entity, is
             dict(value_column="col_float", method="latest", name="asat_feature"),
         )
     if is_forward:
-        assert str(exc.value) == "latest aggregation method is not supported for forward_aggregate_asat"
+        assert (
+            str(exc.value)
+            == "latest aggregation method is not supported for forward_aggregate_asat"
+        )
     else:
         assert str(exc.value) == "latest aggregation method is not supported for aggregate_asat"
 
 
 @pytest.mark.parametrize("is_forward", [False, True])
-def test_aggregate_asat__groupby_key_cannot_be_natural_key(snowflake_scd_view_with_entity, is_forward):
+def test_aggregate_asat__groupby_key_cannot_be_natural_key(
+    snowflake_scd_view_with_entity, is_forward
+):
     """
     Test using natural key as groupby key is not allowed
     """

@@ -63,7 +63,9 @@ def validate_offset_string(offset_string: str) -> None:
 
 
 @typechecked
-def validate_job_setting_parameters(period: str, offset: str, blind_spot: str) -> Tuple[int, int, int]:
+def validate_job_setting_parameters(
+    period: str, offset: str, blind_spot: str
+) -> Tuple[int, int, int]:
     """Validate that job setting parameters are correct
 
     Parameters
@@ -145,7 +147,8 @@ def validate_timezone_offset_string(timezone_offset: str) -> None:
     # noqa: DAR401
     """
     exception = ValueError(
-        f"Invalid timezone_offset: {timezone_offset}. Supported format is (+/-)HH:mm, for example," f"+06:00 or -03:00"
+        f"Invalid timezone_offset: {timezone_offset}. Supported format is (+/-)HH:mm, for example,"
+        f"+06:00 or -03:00"
     )
 
     match = re.match(r"([+-])(\d\d):(\d\d)$", timezone_offset)

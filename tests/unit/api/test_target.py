@@ -73,7 +73,9 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
     """
     )
 
-    def test_invalid_operations_with_feature(self, float_target, float_feature, snowflake_event_view_with_entity):
+    def test_invalid_operations_with_feature(
+        self, float_target, float_feature, snowflake_event_view_with_entity
+    ):
         """
         Test invalid operations with feature
         """

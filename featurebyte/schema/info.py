@@ -279,7 +279,9 @@ class FeatureListBriefInfo(FeatureByteBaseModel):
     @classmethod
     def _derive_production_ready_fraction(cls, values: dict[str, Any]) -> Any:
         if "readiness_distribution" in values and values.get("production_ready_fraction") is None:
-            values["production_ready_fraction"] = values["readiness_distribution"].derive_production_ready_fraction()
+            values["production_ready_fraction"] = values[
+                "readiness_distribution"
+            ].derive_production_ready_fraction()
         return values
 
 

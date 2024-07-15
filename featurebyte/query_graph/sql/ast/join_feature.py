@@ -117,7 +117,9 @@ class JoinFeature(TableNode):
             ItemAggregationSpec,
         )
 
-        item_aggregator = ItemAggregator(source_type=source_type, to_inner_join_with_request_table=False)
+        item_aggregator = ItemAggregator(
+            source_type=source_type, to_inner_join_with_request_table=False
+        )
         item_groupby_nodes = list(graph.iterate_nodes(feature_query_node, NodeType.ITEM_GROUPBY))
 
         agg_specs_mapping = defaultdict(list)
@@ -141,9 +143,9 @@ class JoinFeature(TableNode):
                 item_aggregator.update(agg_spec)
                 agg_specs_mapping[agg_spec.node_name].append(agg_spec)
 
-        view_table_expr = select(*[get_qualified_column_identifier(col, "REQ") for col in view_node.columns]).from_(
-            cast(Select, view_node.sql).subquery(alias="REQ")
-        )
+        view_table_expr = select(*[
+            get_qualified_column_identifier(col, "REQ") for col in view_node.columns
+        ]).from_(cast(Select, view_node.sql).subquery(alias="REQ"))
 
         result = item_aggregator.update_aggregation_table_expr(
             table_expr=view_table_expr,

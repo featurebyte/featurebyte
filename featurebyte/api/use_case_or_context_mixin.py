@@ -90,7 +90,9 @@ class UseCaseOrContextMixin(ApiObject):
         >>> use_case.update_default_eda_table(observation_table_name)  # doctest: +SKIP
         """
         observation_table = ObservationTable.get(observation_table_name)
-        self.update(update_payload={"default_eda_table_id": observation_table.id}, allow_update_local=False)
+        self.update(
+            update_payload={"default_eda_table_id": observation_table.id}, allow_update_local=False
+        )
         self.default_eda_table_id = observation_table.id
 
     def list_observation_tables(self) -> pd.DataFrame:
@@ -107,7 +109,9 @@ class UseCaseOrContextMixin(ApiObject):
         >>> use_case.list_observation_tables()  # doctest: +SKIP
         """
         route = f"{self._route}/{self.id}/observation_tables"
-        return self._construct_table_result_df(list(iterate_api_object_using_paginated_routes(route)))
+        return self._construct_table_result_df(
+            list(iterate_api_object_using_paginated_routes(route))
+        )
 
     @typechecked
     def remove_observation_table(self, observation_table_name: str) -> None:

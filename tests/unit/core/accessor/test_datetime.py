@@ -242,7 +242,9 @@ def test_invalid_property__timestamp(timestamp_series, property_name):
     """
     with pytest.raises(ValueError) as exc_info:
         _ = getattr(timestamp_series.dt, property_name)
-    expected_msg = f"Datetime attribute {property_name} is not available for Series with TIMESTAMP type"
+    expected_msg = (
+        f"Datetime attribute {property_name} is not available for Series with TIMESTAMP type"
+    )
     assert expected_msg in str(exc_info.value)
 
 
@@ -253,7 +255,9 @@ def test_invalid_property__timedelta(timedelta_series, property_name):
     """
     with pytest.raises(ValueError) as exc_info:
         _ = getattr(timedelta_series.dt, property_name)
-    expected_msg = f"Datetime attribute {property_name} is not available for Series with TIMEDELTA type"
+    expected_msg = (
+        f"Datetime attribute {property_name} is not available for Series with TIMEDELTA type"
+    )
     assert expected_msg in str(exc_info.value)
 
 
@@ -281,7 +285,9 @@ def test_timezone_offset__manually_specified_column(timestamp_series, varchar_se
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2
     _, tz_offset_node = dt_extract_input_nodes
-    assert timestamp_hour.graph.get_node_by_name(tz_offset_node).parameters.dict() == {"columns": ["PRODUCT_ACTION"]}
+    assert timestamp_hour.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+        "columns": ["PRODUCT_ACTION"]
+    }
 
 
 def test_timezone_offset__invalid_constant(timestamp_series):
@@ -299,7 +305,10 @@ def test_timezone_offset__invalid_column(timestamp_series, int_series):
     """
     with pytest.raises(ValueError) as exc_info:
         _ = timestamp_series.dt.tz_offset(int_series).hour
-    assert str(exc_info.value) == "Only a string type column can be used as the timezone offset column; got INT"
+    assert (
+        str(exc_info.value)
+        == "Only a string type column can be used as the timezone offset column; got INT"
+    )
 
 
 def test_timezone_offset__invalid_series_type(timedelta_series):

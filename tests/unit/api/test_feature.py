@@ -240,7 +240,9 @@ def test_feature_deserialization(
     assert id(deserialized_float_feature.graph.nodes) == id(global_graph.nodes)
 
     # construct another identical float feature with an additional unused column,
-    snowflake_event_view_with_entity["unused_feat"] = 10.0 * snowflake_event_view_with_entity["cust_id"]
+    snowflake_event_view_with_entity["unused_feat"] = (
+        10.0 * snowflake_event_view_with_entity["cust_id"]
+    )
     grouped = snowflake_event_view_with_entity.groupby("cust_id")
     feature_group = grouped.aggregate_over(
         value_column="col_float",
@@ -259,7 +261,9 @@ def test_feature_deserialization(
 
     # as serialization only perform non-aggressive pruning (all travelled nodes are kept)
     # here we need to perform aggressive pruning & compare the final graph to make sure they are the same
-    check_aggressively_pruned_graph(left_obj_dict=float_feature_dict, right_obj_dict=same_float_feature_dict)
+    check_aggressively_pruned_graph(
+        left_obj_dict=float_feature_dict, right_obj_dict=same_float_feature_dict
+    )
 
     # check pruned graph and node_name are set properly
     _pruned_graph, mapped_node = feature_group["sum_1d"].extract_pruned_graph_and_node()
@@ -371,7 +375,9 @@ def test_info(saved_feature):
         "name": "sum_1d",
         "dtype": "FLOAT",
         "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}],
-        "primary_entity": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}],
+        "primary_entity": [
+            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}
+        ],
         "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "catalog"}],
         "table_feature_job_setting": {
             "this": [data_feature_job_setting],
@@ -467,7 +473,9 @@ def test_feature_name__set_name_invalid_from_alias(float_feature):
     new_feature.name = "my_feature_1234"
     with pytest.raises(ValueError) as exc_info:
         new_feature.name = "my_feature_1234_v2"
-    assert str(exc_info.value) == ('Feature "my_feature_1234" cannot be renamed to "my_feature_1234_v2"')
+    assert str(exc_info.value) == (
+        'Feature "my_feature_1234" cannot be renamed to "my_feature_1234_v2"'
+    )
 
 
 def test_feature_name__set_name_invalid_none(float_feature):
@@ -561,7 +569,9 @@ def test_unary_op_inherits_event_table_id(float_feature):
     assert new_feature.table_ids == float_feature.table_ids
 
 
-def test_feature__default_version_info_retrieval(saved_feature, snowflake_event_table, mock_api_object_cache):
+def test_feature__default_version_info_retrieval(
+    saved_feature, snowflake_event_table, mock_api_object_cache
+):
     """
     Test get feature using feature name
     """
@@ -590,7 +600,9 @@ def test_feature__default_version_info_retrieval(saved_feature, snowflake_event_
     assert new_feature_model.table_id_feature_job_settings == [
         TableIdFeatureJobSetting(
             table_id=snowflake_event_table.id,
-            feature_job_setting=FeatureJobSetting(blind_spot="2700s", period="1800s", offset="900s"),
+            feature_job_setting=FeatureJobSetting(
+                blind_spot="2700s", period="1800s", offset="900s"
+            ),
         )
     ]
     assert new_feature_model.definition_hash != feature_model.definition_hash
@@ -647,7 +659,9 @@ def test_create_new_version(saved_feature, snowflake_event_table):
     # check that feature is no longer retrievable
     with pytest.raises(RecordRetrievalException) as exc_info:
         Feature.get_by_id(new_version.id)
-    expected_msg = f'Feature (id: "{new_version.id}") not found. Please save the Feature object first.'
+    expected_msg = (
+        f'Feature (id: "{new_version.id}") not found. Please save the Feature object first.'
+    )
     assert expected_msg in str(exc_info.value)
 
 
@@ -660,11 +674,15 @@ def test_delete_feature(saved_feature):
     with pytest.raises(RecordRetrievalException) as exc_info:
         Feature.get_by_id(saved_feature.id)
 
-    expected_msg = f'Feature (id: "{saved_feature.id}") not found. Please save the Feature object first.'
+    expected_msg = (
+        f'Feature (id: "{saved_feature.id}") not found. Please save the Feature object first.'
+    )
     assert expected_msg in str(exc_info.value)
 
 
-def test_create_new_version__with_data_cleaning_operations(saved_feature, snowflake_event_table, update_fixtures):
+def test_create_new_version__with_data_cleaning_operations(
+    saved_feature, snowflake_event_table, update_fixtures
+):
     """Test creation of new version with table cleaning operations"""
     # check sdk code generation of source feature
     check_sdk_code_generation(saved_feature, to_use_saved_data=True)
@@ -712,7 +730,9 @@ def test_create_new_version__with_data_cleaning_operations(saved_feature, snowfl
 
     # create another new feature version without table cleaning operations
     version_without_clean_ops = new_version.create_new_version(
-        table_cleaning_operations=[TableCleaningOperation(table_name="sf_event_table", column_cleaning_operations=[])]
+        table_cleaning_operations=[
+            TableCleaningOperation(table_name="sf_event_table", column_cleaning_operations=[])
+        ]
     )
     check_sdk_code_generation(version_without_clean_ops, to_use_saved_data=True)
 
@@ -724,13 +744,17 @@ def test_create_new_version__error(float_feature):
             table_feature_job_settings=[
                 TableFeatureJobSetting(
                     table_name="sf_event_table",
-                    feature_job_setting=FeatureJobSetting(blind_spot="45m", period="30m", offset="15m"),
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="45m", period="30m", offset="15m"
+                    ),
                 )
             ],
             table_cleaning_operations=None,
         )
 
-    expected_msg = f'Feature (id: "{float_feature.id}") not found. Please save the Feature object first.'
+    expected_msg = (
+        f'Feature (id: "{float_feature.id}") not found. Please save the Feature object first.'
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -791,11 +815,15 @@ def test_feature__as_default_version(saved_feature):
     assert saved_feature.is_default is False
 
 
-def check_offline_store_ingest_graph_on_composite_feature(feature_model, cust_entity_id, transaction_entity_id):
+def check_offline_store_ingest_graph_on_composite_feature(
+    feature_model, cust_entity_id, transaction_entity_id
+):
     """Check offline store ingest graph on composite feature"""
     # case 1: no entity relationship
     assert feature_model.relationships_info == []
-    ingest_query_graphs = feature_model.offline_store_info.extract_offline_store_ingest_query_graphs()
+    ingest_query_graphs = (
+        feature_model.offline_store_info.extract_offline_store_ingest_query_graphs()
+    )
 
     # check the first offline store ingest query graph
     assert len(ingest_query_graphs) == 2
@@ -806,7 +834,9 @@ def check_offline_store_ingest_graph_on_composite_feature(feature_model, cust_en
         ingest_query_graph1 = ingest_query_graphs[1]
         ingest_query_graph2 = ingest_query_graphs[0]
 
-    assert ingest_query_graph1.output_column_name.startswith(f"__{feature_model.versioned_name}__part")
+    assert ingest_query_graph1.output_column_name.startswith(
+        f"__{feature_model.versioned_name}__part"
+    )
     assert ingest_query_graph1.primary_entity_ids == [transaction_entity_id]
     assert ingest_query_graph1.graph.edges_map == {
         "input_1": ["graph_1"],
@@ -818,7 +848,9 @@ def check_offline_store_ingest_graph_on_composite_feature(feature_model, cust_en
     assert out_node.parameters.columns == ["sum_30m_by_bool"]
 
     # check the second offline store ingest query graph
-    assert ingest_query_graph2.output_column_name.startswith(f"__{feature_model.versioned_name}__part")
+    assert ingest_query_graph2.output_column_name.startswith(
+        f"__{feature_model.versioned_name}__part"
+    )
     assert ingest_query_graph2.node_name == "add_1"
     assert ingest_query_graph2.primary_entity_ids == [cust_entity_id]
     groupby_node1 = ingest_query_graph2.graph.get_node_by_name("groupby_1")
@@ -938,17 +970,23 @@ def test_composite_features(
     # get the offline store ingest query graphs
     feature_model = composite_feature.cached_model
     assert isinstance(feature_model, FeatureModel)
-    check_offline_store_ingest_graph_on_composite_feature(feature_model, cust_id_entity.id, entity.id)
+    check_offline_store_ingest_graph_on_composite_feature(
+        feature_model, cust_id_entity.id, entity.id
+    )
 
 
-def test_offline_store_ingest_query_graphs__without_graph_decomposition(saved_feature, mock_deployment_flow):
+def test_offline_store_ingest_query_graphs__without_graph_decomposition(
+    saved_feature, mock_deployment_flow
+):
     """Test offline store ingest query graphs"""
     _ = mock_deployment_flow
 
     deploy_features_through_api([saved_feature])
     feature_model = saved_feature.cached_model
     assert isinstance(feature_model, FeatureModel)
-    ingest_query_graphs = feature_model.offline_store_info.extract_offline_store_ingest_query_graphs()
+    ingest_query_graphs = (
+        feature_model.offline_store_info.extract_offline_store_ingest_query_graphs()
+    )
     assert len(ingest_query_graphs) == 1
     assert ingest_query_graphs[0].graph == feature_model.graph
     assert ingest_query_graphs[0].node_name == feature_model.node_name
@@ -1027,7 +1065,9 @@ def test_update_readiness_and_default_version_mode__unsaved_feature(float_featur
     _ = float_feature
     with pytest.raises(RecordUpdateException) as exc:
         float_feature.update_readiness(FeatureReadiness.PRODUCTION_READY)
-    expected = f'Feature (id: "{float_feature.id}") not found. Please save the Feature object first.'
+    expected = (
+        f'Feature (id: "{float_feature.id}") not found. Please save the Feature object first.'
+    )
     assert expected in str(exc.value)
 
     with pytest.raises(RecordRetrievalException) as exc:
@@ -1113,8 +1153,12 @@ def test_list_versions(saved_feature):
             "entities": [["customer"]] * 3,
             "primary_entities": [["customer"]] * 3,
             "created_at": [
-                feature_group["new_feat2"].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
-                feature_group["new_feat1"].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
+                feature_group[
+                    "new_feat2"
+                ].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
+                feature_group[
+                    "new_feat1"
+                ].cached_model.created_at.isoformat(),  # DEV-1820: created_at is not synced
                 saved_feature.created_at.isoformat(),
             ],
             "is_default": [True] * 3,
@@ -1140,7 +1184,9 @@ def test_list_versions(saved_feature):
 
     # check documentation of the list_versions
     assert Feature.list_versions.__doc__ == Feature._list_versions.__doc__
-    assert saved_feature.list_versions.__doc__ == saved_feature._list_versions_with_same_name.__doc__
+    assert (
+        saved_feature.list_versions.__doc__ == saved_feature._list_versions_with_same_name.__doc__
+    )
 
 
 @freeze_time("2023-01-20 03:20:00")
@@ -1155,15 +1201,23 @@ def test_get_feature_jobs_status(saved_feature, feature_job_logs, update_fixture
         feature_job_logs["CREATED_AT"] = pd.to_datetime(feature_job_logs["CREATED_AT"])
 
         # extract tile ID and aggregation ID from the feature
-        groupby_node = saved_feature.extract_pruned_graph_and_node()[0].get_node_by_name("groupby_1")
+        groupby_node = saved_feature.extract_pruned_graph_and_node()[0].get_node_by_name(
+            "groupby_1"
+        )
         tile_id = groupby_node.parameters.tile_id
         feature_job_logs["AGGREGATION_ID"] = groupby_node.parameters.aggregation_id
-        feature_job_logs["SESSION_ID"] = feature_job_logs["SESSION_ID"].apply(lambda x: f"{tile_id}|{x.split('|')[1]}")
+        feature_job_logs["SESSION_ID"] = feature_job_logs["SESSION_ID"].apply(
+            lambda x: f"{tile_id}|{x.split('|')[1]}"
+        )
         feature_job_logs.to_csv(log_fixture_path, index=False)
 
-    with patch("featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe") as mock_get_jobs_dataframe:
+    with patch(
+        "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
+    ) as mock_get_jobs_dataframe:
         mock_get_jobs_dataframe.return_value = feature_job_logs
-        job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24, job_duration_tolerance=1700)
+        job_status_result = saved_feature.get_feature_jobs_status(
+            job_history_window=24, job_duration_tolerance=1700
+        )
 
     fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
     if update_fixtures:
@@ -1179,7 +1233,9 @@ def test_get_feature_jobs_status_incomplete_logs(saved_feature, feature_job_logs
     """
     Test get_feature_jobs_status incomplete logs found
     """
-    with patch("featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe") as mock_get_jobs_dataframe:
+    with patch(
+        "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
+    ) as mock_get_jobs_dataframe:
         mock_get_jobs_dataframe.return_value = feature_job_logs[:1]
         job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
     assert job_status_result.job_session_logs.shape == (1, 12)
@@ -1195,7 +1251,9 @@ def test_get_feature_jobs_status_incomplete_logs(saved_feature, feature_job_logs
         "incomplete_jobs": {0: 48},
         "time_since_last": {0: "NaT"},
     })
-    assert_frame_equal(job_status_result.feature_job_summary, expected_feature_job_summary, check_dtype=False)
+    assert_frame_equal(
+        job_status_result.feature_job_summary, expected_feature_job_summary, check_dtype=False
+    )
 
 
 @freeze_time("2023-01-20 03:20:00")
@@ -1203,7 +1261,9 @@ def test_get_feature_jobs_status_empty_logs(saved_feature, feature_job_logs):
     """
     Test get_feature_jobs_status incomplete logs found
     """
-    with patch("featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe") as mock_get_jobs_dataframe:
+    with patch(
+        "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
+    ) as mock_get_jobs_dataframe:
         mock_get_jobs_dataframe.return_value = feature_job_logs[:0]
         job_status_result = saved_feature.get_feature_jobs_status(job_history_window=24)
     assert job_status_result.job_session_logs.shape == (0, 12)
@@ -1219,10 +1279,14 @@ def test_get_feature_jobs_status_empty_logs(saved_feature, feature_job_logs):
         "incomplete_jobs": {0: 48},
         "time_since_last": {0: "NaT"},
     })
-    assert_frame_equal(job_status_result.feature_job_summary, expected_feature_job_summary, check_dtype=False)
+    assert_frame_equal(
+        job_status_result.feature_job_summary, expected_feature_job_summary, check_dtype=False
+    )
 
 
-def test_get_feature_jobs_status_feature_without_tile(saved_scd_table, cust_id_entity, feature_job_logs):
+def test_get_feature_jobs_status_feature_without_tile(
+    saved_scd_table, cust_id_entity, feature_job_logs
+):
     """
     Test get_feature_jobs_status for feature without tile
     """
@@ -1231,7 +1295,9 @@ def test_get_feature_jobs_status_feature_without_tile(saved_scd_table, cust_id_e
     feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
     feature.save()
 
-    with patch("featurebyte.session.snowflake.SnowflakeSession.execute_query") as mock_execute_query:
+    with patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
         mock_execute_query.return_value = feature_job_logs[:0]
         job_status_result = feature.get_feature_jobs_status()
 
@@ -1314,7 +1380,9 @@ def feature_with_clean_column_names_fixture(saved_event_table, cust_id_entity):
     col_names = ["col_int", "col_float", "cust_id"]
     for col_name in col_names:
         col = saved_event_table[col_name]
-        col.update_critical_data_info(cleaning_operations=[MissingValueImputation(imputed_value=-1)])
+        col.update_critical_data_info(
+            cleaning_operations=[MissingValueImputation(imputed_value=-1)]
+        )
 
     saved_event_table.cust_id.as_entity(cust_id_entity.name)
     event_view = saved_event_table.get_view()
@@ -1515,7 +1583,9 @@ def test_feature_create_new_version__multiple_event_table(
     # create new version on event table & check group by params
     new_version = feature.create_new_version(
         table_feature_job_settings=[
-            TableFeatureJobSetting(table_name=main_data_name, feature_job_setting=feature_job_setting),
+            TableFeatureJobSetting(
+                table_name=main_data_name, feature_job_setting=feature_job_setting
+            ),
         ]
     )
     pruned_graph, _ = new_version.extract_pruned_graph_and_node()
@@ -1586,8 +1656,12 @@ def test_list_unsaved_features(
         feature_group = FeatureGroup(  # noqa
             [float_feature, sum_per_category_feature],
         )
-        feature_list_1 = FeatureList([count_per_category_feature_group, sum_per_category_feature], name="FL1")
-        feature_list_2 = FeatureList([float_feature, sum_per_category_feature, count_per_category_feature], name="FL2")  # noqa
+        feature_list_1 = FeatureList(
+            [count_per_category_feature_group, sum_per_category_feature], name="FL1"
+        )
+        feature_list_2 = FeatureList(  # noqa
+            [float_feature, sum_per_category_feature, count_per_category_feature], name="FL2"
+        )
 
         # test list unsaved features
         unsaved_feature_df = list_unsaved_features().sort_values(["name", "variable_name"])
@@ -1677,7 +1751,9 @@ def test_list_unsaved_features(
             "active_catalog",
         ]
         pd.testing.assert_frame_equal(
-            unsaved_feature_df[["variable_name", "name", "catalog", "active_catalog"]].reset_index(drop=True),
+            unsaved_feature_df[["variable_name", "name", "catalog", "active_catalog"]].reset_index(
+                drop=True
+            ),
             expected_df,
         )
 
@@ -1694,7 +1770,9 @@ def test_list_unsaved_features(
             }
         ])
         pd.testing.assert_frame_equal(
-            unsaved_feature_df[["variable_name", "name", "catalog", "active_catalog"]].reset_index(drop=True),
+            unsaved_feature_df[["variable_name", "name", "catalog", "active_catalog"]].reset_index(
+                drop=True
+            ),
             expected_df,
         )
 
@@ -1705,7 +1783,9 @@ def test_list_unsaved_features(
         unsaved_feature_df = list_unsaved_features().sort_values(["name", "variable_name"])
         pd.testing.assert_frame_equal(
             unsaved_feature_df,
-            pd.DataFrame(columns=["object_id", "variable_name", "name", "catalog", "active_catalog"]),
+            pd.DataFrame(
+                columns=["object_id", "variable_name", "name", "catalog", "active_catalog"]
+            ),
         )
     finally:
         activate_and_get_catalog("catalog")
@@ -1760,7 +1840,9 @@ async def test_feature_loading_time(mock_api_object_cache, saved_feature, persis
     # get elapsed time with persistent
     start = time.time()
     for _ in range(sample_size):
-        _ = await persistent.find_one(collection_name="feature", query_filter={"_id": saved_feature.id})
+        _ = await persistent.find_one(
+            collection_name="feature", query_filter={"_id": saved_feature.id}
+        )
     persistent_elapsed_time = time.time() - start
 
     # get end-to-end elapsed time
@@ -1937,7 +2019,9 @@ def test_feature_metadata_extraction(snowflake_event_table):
     dropoff_time = event_view["dropoff_time"]
     trip_distance = event_view["trip_distance"]
     event_view["trip_duration"] = (dropoff_time - pickup_time).dt.second
-    event_view["pickup_week_hour"] = pickup_time.dt.day_of_week.astype(str) + "-" + pickup_time.dt.hour.astype(str)
+    event_view["pickup_week_hour"] = (
+        pickup_time.dt.day_of_week.astype(str) + "-" + pickup_time.dt.hour.astype(str)
+    )
     trip_duration = event_view["trip_duration"]
     filter_cond = (trip_distance > 1) & (trip_duration > 0) & (trip_duration < 10800)
     event_view = event_view[filter_cond]
@@ -1953,7 +2037,9 @@ def test_feature_metadata_extraction(snowflake_event_table):
         offset=None,
     )["total_duration_by_week_hour_28d"]
     point_in_time = RequestColumn.point_in_time()
-    pit_weekday_hour = point_in_time.dt.day_of_week.astype(str) + "-" + point_in_time.dt.hour.astype(str)
+    pit_weekday_hour = (
+        point_in_time.dt.day_of_week.astype(str) + "-" + point_in_time.dt.hour.astype(str)
+    )
     lookup_total_duration = total_duration_by_week_hour_28d.cd.get_value(key=pit_weekday_hour)
     total_distance_by_week_hour_28d = event_view.groupby(
         by_keys=["col_text"], category="pickup_week_hour"

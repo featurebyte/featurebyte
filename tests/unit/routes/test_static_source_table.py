@@ -17,7 +17,9 @@ class TestStaticSourceTableApi(BaseMaterializedTableTestSuite):
 
     class_name = "StaticSourceTable"
     base_route = "/static_source_table"
-    payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/static_source_table.json")
+    payload = BaseMaterializedTableTestSuite.load_payload(
+        "tests/fixtures/request_payloads/static_source_table.json"
+    )
     async_create = True
 
     create_conflict_payload_expected_detail_pairs = [

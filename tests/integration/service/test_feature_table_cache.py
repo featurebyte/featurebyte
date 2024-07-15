@@ -130,7 +130,9 @@ async def test_create_feature_table_cache(
 ):
     """Test create feature table cache"""
     feature_store_model = await feature_store_service.get_document(document_id=feature_store.id)
-    observation_table_model = await observation_table_service.get_document(document_id=observation_table.id)
+    observation_table_model = await observation_table_service.get_document(
+        document_id=observation_table.id
+    )
     feature_list_model = await feature_list_service.get_document(document_id=feature_list.id)
 
     feature_cluster = feature_list_model.feature_clusters[0]
@@ -142,10 +144,14 @@ async def test_create_feature_table_cache(
         feature_list_id=feature_list_model.id,
     )
 
-    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-        observation_table_id=observation_table.id,
+    feature_table_cache = (
+        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+            observation_table_id=observation_table.id,
+        )
     )
-    cached_column_names = [definition.feature_name for definition in feature_table_cache.feature_definitions]
+    cached_column_names = [
+        definition.feature_name for definition in feature_table_cache.feature_definitions
+    ]
     hashes = [definition.definition_hash for definition in feature_table_cache.feature_definitions]
     # Subtract 1 because one of the features is a duplicate and has the same hash
     assert len(cached_column_names) == len(feature_list_model.feature_ids) - 1
@@ -191,9 +197,15 @@ async def test_update_feature_table_cache(
 ):
     """Test update feature table cache"""
     feature_store_model = await feature_store_service.get_document(document_id=feature_store.id)
-    observation_table_model = await observation_table_service.get_document(document_id=observation_table.id)
-    feature_list_model_1 = await feature_list_service.get_document(document_id=two_feature_lists[0].id)
-    feature_list_model_2 = await feature_list_service.get_document(document_id=two_feature_lists[1].id)
+    observation_table_model = await observation_table_service.get_document(
+        document_id=observation_table.id
+    )
+    feature_list_model_1 = await feature_list_service.get_document(
+        document_id=two_feature_lists[0].id
+    )
+    feature_list_model_2 = await feature_list_service.get_document(
+        document_id=two_feature_lists[1].id
+    )
 
     feature_cluster = feature_list_model_1.feature_clusters[0]
     await feature_table_cache_service.create_or_update_feature_table_cache(
@@ -203,10 +215,14 @@ async def test_update_feature_table_cache(
         nodes=feature_cluster.nodes,
         feature_list_id=feature_list_model_1.id,
     )
-    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-        observation_table_id=observation_table.id,
+    feature_table_cache = (
+        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+            observation_table_id=observation_table.id,
+        )
     )
-    features_1_fl = [definition.feature_name for definition in feature_table_cache.feature_definitions]
+    features_1_fl = [
+        definition.feature_name for definition in feature_table_cache.feature_definitions
+    ]
     assert len(features_1_fl) == len(feature_list_model_1.feature_ids)
 
     feature_cluster = feature_list_model_2.feature_clusters[0]
@@ -217,8 +233,10 @@ async def test_update_feature_table_cache(
         nodes=feature_cluster.nodes,
         feature_list_id=feature_list_model_2.id,
     )
-    feature_table_cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-        observation_table_id=observation_table.id,
+    feature_table_cache = (
+        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+            observation_table_id=observation_table.id,
+        )
     )
     features = [definition.feature_name for definition in feature_table_cache.feature_definitions]
     hashes = [definition.definition_hash for definition in feature_table_cache.feature_definitions]
@@ -247,7 +265,9 @@ async def test_update_feature_table_cache(
     df = await session.execute_query(query)
     assert df.shape[0] == observation_table.num_rows
     observation_table_cols = list({col.name for col in observation_table_model.columns_info})
-    assert set(df.columns.tolist()) == set([InternalName.TABLE_ROW_INDEX] + observation_table_cols + features)
+    assert set(df.columns.tolist()) == set(
+        [InternalName.TABLE_ROW_INDEX] + observation_table_cols + features
+    )
 
 
 @pytest.mark.asyncio
@@ -267,7 +287,9 @@ async def test_create_view_from_cache(
 ):
     """Test create view from feature table cache"""
     feature_store_model = await feature_store_service.get_document(document_id=feature_store.id)
-    observation_table_model = await observation_table_service.get_document(document_id=observation_table.id)
+    observation_table_model = await observation_table_service.get_document(
+        document_id=observation_table.id
+    )
     feature_list_model = await feature_list_service.get_document(document_id=feature_list.id)
 
     view_1 = TableDetails(
@@ -284,7 +306,9 @@ async def test_create_view_from_cache(
         feature_cluster = feature_list_model.feature_clusters[0]
         nodes = feature_cluster.nodes[:5]
         observation_table_cols = [col.name for col in observation_table_model.columns_info]
-        feature_names = [feature_cluster.graph.get_node_output_column_name(node.name) for node in nodes]
+        feature_names = [
+            feature_cluster.graph.get_node_output_column_name(node.name) for node in nodes
+        ]
         await feature_table_cache_service.create_view_or_table_from_cache(
             feature_store=feature_store_model,
             observation_table=observation_table_model,
@@ -308,7 +332,9 @@ async def test_create_view_from_cache(
             observation_table.num_rows,
             len(set(feature_names + observation_table_cols)) + 1,
         )
-        assert df.columns.tolist() == ([InternalName.TABLE_ROW_INDEX] + observation_table_cols + feature_names)
+        assert df.columns.tolist() == (
+            [InternalName.TABLE_ROW_INDEX] + observation_table_cols + feature_names
+        )
 
         # update cache table with second feature list
         await feature_table_cache_service.create_view_or_table_from_cache(
@@ -370,7 +396,9 @@ async def test_read_from_cache(
     """Test read from table cache"""
 
     feature_store_model = await feature_store_service.get_document(document_id=feature_store.id)
-    observation_table_model = await observation_table_service.get_document(document_id=observation_table.id)
+    observation_table_model = await observation_table_service.get_document(
+        document_id=observation_table.id
+    )
     feature_list_model = await feature_list_service.get_document(document_id=feature_list.id)
     feature_cluster = feature_list_model.feature_clusters[0]
     await feature_table_cache_service.create_or_update_feature_table_cache(
@@ -381,7 +409,10 @@ async def test_read_from_cache(
         feature_list_id=feature_list_model.id,
     )
 
-    features = [feature_cluster.graph.get_node_output_column_name(node.name) for node in feature_cluster.nodes]
+    features = [
+        feature_cluster.graph.get_node_output_column_name(node.name)
+        for node in feature_cluster.nodes
+    ]
     df = await feature_table_cache_service.read_from_cache(
         feature_store=feature_store_model,
         observation_table=observation_table_model,

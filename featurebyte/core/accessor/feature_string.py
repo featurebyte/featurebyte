@@ -251,7 +251,9 @@ class FeatureStringAccessor(StringAccessor):
         """
         return super().contains(pat=pat, case=case)  # type: ignore[return-value]
 
-    def slice(self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None) -> Feature:
+    def slice(
+        self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None
+    ) -> Feature:
         """
         Slices substring from each string element.
 

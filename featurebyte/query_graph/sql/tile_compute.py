@@ -120,7 +120,9 @@ class OnDemandTileComputePlan:
 
             if tile_table_id not in tile_sqls:
                 # New tile table - get the tile index column, entity columns and tile value columns
-                keys = [f"{agg_id}.{quoted_identifier(key).sql()}" for key in tile_info.entity_columns]
+                keys = [
+                    f"{agg_id}.{quoted_identifier(key).sql()}" for key in tile_info.entity_columns
+                ]
                 if tile_info.value_by_column is not None:
                     keys.append(f"{agg_id}.{quoted_identifier(tile_info.value_by_column).sql()}")
                 tile_sql = select(f"{agg_id}.INDEX", *keys, *tile_info.tile_value_columns).from_(
@@ -205,7 +207,9 @@ class OnDemandTileComputePlan:
         return cte_statements
 
 
-def get_tile_gen_info(graph: QueryGraphModel, node: Node, source_type: SourceType) -> list[TileGenSql]:
+def get_tile_gen_info(
+    graph: QueryGraphModel, node: Node, source_type: SourceType
+) -> list[TileGenSql]:
     """Construct TileGenSql that contains recipe of building tiles
 
     Parameters
@@ -286,7 +290,9 @@ def get_tile_sql(
     """
 
     def get_tile_boundary(point_in_time_expr: Expression) -> Expression:
-        previous_job_epoch_expr = get_previous_job_epoch_expr(adapter.to_epoch_seconds(point_in_time_expr), tile_info)
+        previous_job_epoch_expr = get_previous_job_epoch_expr(
+            adapter.to_epoch_seconds(point_in_time_expr), tile_info
+        )
         return expressions.Anonymous(
             this="TO_TIMESTAMP",
             expressions=[expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)],
@@ -321,7 +327,11 @@ def get_tile_sql(
         # feature window
         start_date_expr = adapter.dateadd_microsecond(
             minus_num_tiles_in_microseconds,
-            get_tile_boundary(expressions.Min(this=expressions.Identifier(this=SpecialColumnName.POINT_IN_TIME.value))),
+            get_tile_boundary(
+                expressions.Min(
+                    this=expressions.Identifier(this=SpecialColumnName.POINT_IN_TIME.value)
+                )
+            ),
         )
     else:
         start_date_expr = get_earliest_tile_start_date_expr(

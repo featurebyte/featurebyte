@@ -50,9 +50,13 @@ class OnDemandFeatureFunctionGlobalState(FeatureByteBaseModel):
 
     node_name_to_post_compute_output: Dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
     input_var_name_to_info: Dict[str, InputArgumentInfo] = Field(default_factory=dict)
-    code_generation_config: OnDemandFunctionCodeGenConfig = Field(default_factory=OnDemandFunctionCodeGenConfig)
+    code_generation_config: OnDemandFunctionCodeGenConfig = Field(
+        default_factory=OnDemandFunctionCodeGenConfig
+    )
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
-    code_generator: CodeGenerator = Field(default_factory=lambda: CodeGenerator(template="on_demand_function.tpl"))
+    code_generator: CodeGenerator = Field(
+        default_factory=lambda: CodeGenerator(template="on_demand_function.tpl")
+    )
 
     @property
     def sql_inputs_info(self) -> List[SQLInputArgumentInfo]:
@@ -81,7 +85,9 @@ class OnDemandFeatureFunctionGlobalState(FeatureByteBaseModel):
             output.append(sql_param_info)
         return output
 
-    def register_input_argument(self, variable_name_prefix: str, py_type: str, column_name: str) -> None:
+    def register_input_argument(
+        self, variable_name_prefix: str, py_type: str, column_name: str
+    ) -> None:
         """
         Register input argument
 
@@ -94,8 +100,12 @@ class OnDemandFeatureFunctionGlobalState(FeatureByteBaseModel):
         column_name: str
             Expected column name to be used in the generated code
         """
-        var_name = self.var_name_generator.get_latest_variable_name(variable_name_prefix=variable_name_prefix)
-        self.input_var_name_to_info[var_name] = InputArgumentInfo(py_type=py_type, column_name=column_name)
+        var_name = self.var_name_generator.get_latest_variable_name(
+            variable_name_prefix=variable_name_prefix
+        )
+        self.input_var_name_to_info[var_name] = InputArgumentInfo(
+            py_type=py_type, column_name=column_name
+        )
 
     def generate_code(self, to_sql: bool = False) -> str:
         """
@@ -152,7 +162,9 @@ class OnDemandFeatureFunctionGlobalState(FeatureByteBaseModel):
 
 
 class OnDemandFeatureFunctionExtractor(
-    BaseGraphExtractor[OnDemandFeatureFunctionGlobalState, FeatureByteBaseModel, OnDemandFeatureFunctionGlobalState]
+    BaseGraphExtractor[
+        OnDemandFeatureFunctionGlobalState, FeatureByteBaseModel, OnDemandFeatureFunctionGlobalState
+    ]
 ):
     """
     On demand feature function extractor
@@ -177,7 +189,9 @@ class OnDemandFeatureFunctionExtractor(
         return branch_state
 
     @staticmethod
-    def _check_for_input_argument_registration(node: Node, global_state: OnDemandFeatureFunctionGlobalState) -> None:
+    def _check_for_input_argument_registration(
+        node: Node, global_state: OnDemandFeatureFunctionGlobalState
+    ) -> None:
         codegen_config = global_state.code_generation_config
         if node.type == NodeType.GRAPH:
             node_params = node.parameters
@@ -251,5 +265,7 @@ class OnDemandFeatureFunctionExtractor(
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )
-        global_state.code_generator.add_statements(statements=[StatementStr(f"return {output_expr}")])
+        global_state.code_generator.add_statements(
+            statements=[StatementStr(f"return {output_expr}")]
+        )
         return global_state

@@ -57,7 +57,9 @@ def apply_column_name_modifiers_columns_info(
     updated_column_info = []
     for col_info in column_infos:
         new_col_info = col_info.copy()
-        new_col_info.name = apply_modifiers_to_column_name(col_info.name, rsuffix=rsuffix, rprefix=rprefix)
+        new_col_info.name = apply_modifiers_to_column_name(
+            col_info.name, rsuffix=rsuffix, rprefix=rprefix
+        )
         updated_column_info.append(new_col_info)
     return updated_column_info
 
@@ -83,7 +85,9 @@ def filter_columns(columns: List[str], exclude_columns: List[str]) -> List[str]:
     return [col for col in columns if col not in exclude_columns_set]
 
 
-def apply_column_name_modifiers(columns: List[str], rsuffix: Optional[str], rprefix: Optional[str]) -> List[str]:
+def apply_column_name_modifiers(
+    columns: List[str], rsuffix: Optional[str], rprefix: Optional[str]
+) -> List[str]:
     """
     Appends the rsuffix to columns if a rsuffix is provided.
 
@@ -103,7 +107,9 @@ def apply_column_name_modifiers(columns: List[str], rsuffix: Optional[str], rpre
     """
     if not rsuffix and not rprefix:
         return columns
-    return [apply_modifiers_to_column_name(col, rsuffix=rsuffix, rprefix=rprefix) for col in columns]
+    return [
+        apply_modifiers_to_column_name(col, rsuffix=rsuffix, rprefix=rprefix) for col in columns
+    ]
 
 
 def filter_columns_info(col_info: List[ColumnInfo], exclude_columns: List[str]) -> List[ColumnInfo]:

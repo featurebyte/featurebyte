@@ -52,7 +52,9 @@ async def test_validate_relationship_info_create__entity_id_error_thrown(
     Test validate_relationship_info_create
     """
     with pytest.raises(ValueError) as exc:
-        await relationship_info_controller._validate_relationship_info_create(relationship_info_create)
+        await relationship_info_controller._validate_relationship_info_create(
+            relationship_info_create
+        )
     assert "entity IDs not found" in str(exc)
 
 
@@ -61,9 +63,13 @@ def entities_fixture(relationship_info_create):
     """
     Create entities
     """
-    entity_1 = Entity(name="entity_1", serving_names=["entity_1"], _id=relationship_info_create.entity_id)
+    entity_1 = Entity(
+        name="entity_1", serving_names=["entity_1"], _id=relationship_info_create.entity_id
+    )
     entity_1.save()
-    entity_2 = Entity(name="entity_2", serving_names=["entity_2"], _id=relationship_info_create.related_entity_id)
+    entity_2 = Entity(
+        name="entity_2", serving_names=["entity_2"], _id=relationship_info_create.related_entity_id
+    )
     entity_2.save()
 
 
@@ -78,7 +84,9 @@ async def test_validate_relationship_info_create__table_id_error_thrown(
 
     # Try to create relationship info again - expect a different error from missing table source
     with pytest.raises(DocumentNotFoundError) as exc:
-        await relationship_info_controller._validate_relationship_info_create(relationship_info_create)
+        await relationship_info_controller._validate_relationship_info_create(
+            relationship_info_create
+        )
     assert "Please save the Table object first" in str(exc)
 
 
@@ -92,7 +100,9 @@ async def event_table_fixture(app_container, snowflake_feature_store):
         payload = json.loads(fhandle.read())
         payload["tabular_source"]["table_details"]["table_name"] = "sf_event_table"
         payload["tabular_source"]["feature_store_id"] = snowflake_feature_store.id
-        event_table = await app_container.event_table_service.create_document(data=EventTableCreate(**payload))
+        event_table = await app_container.event_table_service.create_document(
+            data=EventTableCreate(**payload)
+        )
         yield event_table
 
 

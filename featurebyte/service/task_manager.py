@@ -271,7 +271,9 @@ class TaskManager:
 
         # if time limit is not set default to interval length
         if not time_limit:
-            time_limit = int(datetime.timedelta(**{str(interval.period): interval.every}).total_seconds())
+            time_limit = int(
+                datetime.timedelta(**{str(interval.period): interval.every}).total_seconds()
+            )
 
         periodic_task = PeriodicTask(
             name=name,

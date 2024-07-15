@@ -123,7 +123,9 @@ def build_deps(
     return new_deps
 
 
-def convert_dep_list_str_to_class_def(deps: List[str], mapping: Dict[str, ClassDefinition]) -> List[ClassDefinition]:
+def convert_dep_list_str_to_class_def(
+    deps: List[str], mapping: Dict[str, ClassDefinition]
+) -> List[ClassDefinition]:
     """
     Converts dependencies from a list of strings to a list of ClassDefinitions.
 
@@ -199,7 +201,9 @@ class LazyAppContainer:
             return self.instance_map[key]
 
         # Get deps by doing a depth first traversal through the dependencies
-        deps = get_all_deps_for_key(key, self.app_container_config.get_class_def_mapping(), self.instance_map)
+        deps = get_all_deps_for_key(
+            key, self.app_container_config.get_class_def_mapping(), self.instance_map
+        )
         # Remove deps that have already been built
         filtered_deps = [dep for dep in deps if dep not in self.instance_map]
         ordered_deps = convert_dep_list_str_to_class_def(

@@ -137,7 +137,9 @@ def dataframe_from_arrow_table(arrow_table: pa.Table) -> pd.DataFrame:
         if field.metadata and ARROW_METADATA_DB_VAR_TYPE in field.metadata:
             db_var_type = field.metadata[ARROW_METADATA_DB_VAR_TYPE].decode()
             if db_var_type in encoded_types:
-                dataframe[field.name] = dataframe[field.name].apply(lambda x: json.loads(x) if x else None)
+                dataframe[field.name] = dataframe[field.name].apply(
+                    lambda x: json.loads(x) if x else None
+                )
     return dataframe
 
 
@@ -406,7 +408,9 @@ def is_server_mode() -> bool:
 
 
 @contextmanager
-def timer(message: str, logger: logging.Logger, **logger_kwargs: Any) -> Generator[None, None, None]:
+def timer(
+    message: str, logger: logging.Logger, **logger_kwargs: Any
+) -> Generator[None, None, None]:
     """
     Timer context manager to measure execution time.
 

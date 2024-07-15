@@ -76,7 +76,9 @@ class EventTable(TableApiObject):
         alias="default_feature_job_setting", default=None
     )
     internal_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
-    internal_event_id_column: Optional[StrictStr] = Field(alias="event_id_column", default=None)  # DEV-556
+    internal_event_id_column: Optional[StrictStr] = Field(
+        alias="event_id_column", default=None
+    )  # DEV-556
     internal_event_timestamp_timezone_offset: Optional[StrictStr] = Field(
         alias="event_timestamp_timezone_offset", default=None
     )
@@ -157,7 +159,9 @@ class EventTable(TableApiObject):
         ...             column_name="Amount",
         ...             cleaning_operations=[
         ...                 fb.MissingValueImputation(imputed_value=0),
-        ...                 fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=None),
+        ...                 fb.ValueBeyondEndpointImputation(
+        ...                     type="less_than", end_point=0, imputed_value=None
+        ...                 ),
         ...             ],
         ...         )
         ...     ],
@@ -351,7 +355,9 @@ class EventTable(TableApiObject):
         Update default feature job setting to the new feature job setting.
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
-        >>> event_table.update_default_feature_job_setting(new_feature_job_setting)  # doctest: +SKIP
+        >>> event_table.update_default_feature_job_setting(
+        ...     new_feature_job_setting
+        ... )  # doctest: +SKIP
         """
         self.update(
             update_payload={"default_feature_job_setting": feature_job_setting.dict()},
@@ -439,7 +445,9 @@ class EventTable(TableApiObject):
         ... )
 
         The analysis could also be called with default values.
-        >>> default_analysis = event_table.create_new_feature_job_setting_analysis()  # doctest: +SKIP
+        >>> default_analysis = (
+        ...     event_table.create_new_feature_job_setting_analysis()
+        ... )  # doctest: +SKIP
 
         """
         payload = FeatureJobSettingAnalysisCreate(
@@ -452,7 +460,9 @@ class EventTable(TableApiObject):
             job_time_buffer_setting=job_time_buffer_setting,
             late_data_allowance=late_data_allowance,
         )
-        job_setting_analysis = self.post_async_task(route="/feature_job_setting_analysis", payload=payload.json_dict())
+        job_setting_analysis = self.post_async_task(
+            route="/feature_job_setting_analysis", payload=payload.json_dict()
+        )
         analysis = FeatureJobSettingAnalysis.get_by_id(job_setting_analysis["_id"])
         analysis.display_report()
         return analysis

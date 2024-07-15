@@ -23,9 +23,9 @@ class DimensionTableCreate(TableCreate):
     dimension_id_column: StrictStr
 
     # pydantic validators
-    _special_columns_validator = validator("record_creation_timestamp_column", "dimension_id_column", allow_reuse=True)(
-        TableCreate._special_column_validator
-    )
+    _special_columns_validator = validator(
+        "record_creation_timestamp_column", "dimension_id_column", allow_reuse=True
+    )(TableCreate._special_column_validator)
 
 
 class DimensionTableList(PaginationMixin):

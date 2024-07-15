@@ -29,7 +29,9 @@ def _assert_tutorial_profile_with_api_token(api_token: str) -> None:
     assert config.profile.name == "tutorial"
 
 
-def _assert_profile_with_details(profile_name: str, api_url: str, api_token: Optional[str] = None) -> None:
+def _assert_profile_with_details(
+    profile_name: str, api_url: str, api_token: Optional[str] = None
+) -> None:
     """
     Assert that there's a tutorial profile with the given api token
     """

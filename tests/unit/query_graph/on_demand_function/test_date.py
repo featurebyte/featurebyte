@@ -90,11 +90,15 @@ def test_date_difference(odfv_config, udf_config):
     )
 
 
-@pytest.mark.parametrize("dt_property", [property for property in DatetimeSupportedPropertyType.__args__])
+@pytest.mark.parametrize(
+    "dt_property", [property for property in DatetimeSupportedPropertyType.__args__]
+)
 def test_datetime_extract(odfv_config, udf_config, dt_property):
     """Test DatetimeExtractNode derive_on_demand_view_code"""
     # single input with no timezone offset
-    node = DatetimeExtractNode(name="node_name", parameters={"property": dt_property, "timezone_offset": None})
+    node = DatetimeExtractNode(
+        name="node_name", parameters={"property": dt_property, "timezone_offset": None}
+    )
     node_inputs = [VariableNameStr("feat")]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
@@ -140,7 +144,9 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
     assert udf_expr == f"pd.to_datetime(feat).{dt_property}"
 
     # offset as a timedelta
-    node = DatetimeExtractNode(name="node_name", parameters={"property": dt_property, "timezone_offset": "+06:00"})
+    node = DatetimeExtractNode(
+        name="node_name", parameters={"property": dt_property, "timezone_offset": "+06:00"}
+    )
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=[VariableNameStr("feat")],
         var_name_generator=VariableNameGenerator(),

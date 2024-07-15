@@ -94,7 +94,9 @@ class AggregationInfo:
             output.primary_entity_dtypes = [
                 primary_entity_id_to_dtype_map[entity_id] for entity_id in output.primary_entity_ids
             ]
-            output.feature_job_settings = list(set(self.feature_job_settings + other.feature_job_settings))
+            output.feature_job_settings = list(
+                set(self.feature_job_settings + other.feature_job_settings)
+            )
             output.has_request_column = self.has_request_column or other.has_request_column
             output.has_ingest_graph_node = self.has_ingest_graph_node or other.has_ingest_graph_node
             output.has_ttl_agg_type = self.has_ttl_agg_type or other.has_ttl_agg_type
@@ -120,7 +122,9 @@ class FeatureJobSettingExtractor:
         """
         return FeatureJobSetting(period="1d", offset="0s", blind_spot="0s")
 
-    def _extract_lookup_node_feature_job_setting(self, node: LookupNode) -> Optional[FeatureJobSetting]:
+    def _extract_lookup_node_feature_job_setting(
+        self, node: LookupNode
+    ) -> Optional[FeatureJobSetting]:
         input_node = self.graph.get_input_node(node_name=node.name)
         if input_node.parameters.type == TableDataType.DIMENSION_TABLE:
             return None
@@ -254,7 +258,9 @@ class DecomposePointState:
         -------
         DecomposePointState
         """
-        entity_ancestor_descendant_mapper = EntityAncestorDescendantMapper.create(relationships_info=relationships_info)
+        entity_ancestor_descendant_mapper = EntityAncestorDescendantMapper.create(
+            relationships_info=relationships_info
+        )
         return cls(
             entity_ancestor_descendant_mapper=entity_ancestor_descendant_mapper,
             node_name_to_aggregation_info={},
@@ -288,7 +294,9 @@ class DecomposePointState:
             for source_column in op_struct.columns:
                 if source_column.name in groupby_keys:
                     colname_to_dtype_map[source_column.name] = source_column.dtype
-            aggregation_info.primary_entity_dtypes = [colname_to_dtype_map[key] for key in groupby_keys]
+            aggregation_info.primary_entity_dtypes = [
+                colname_to_dtype_map[key] for key in groupby_keys
+            ]
             assert len(aggregation_info.primary_entity_dtypes) == len(
                 aggregation_info.primary_entity_ids
             ), "Primary entity dtype not matches"
@@ -299,13 +307,17 @@ class DecomposePointState:
                 if source_column.name == node.parameters.entity_column:
                     aggregation_info.primary_entity_dtypes = [source_column.dtype]
                     break
-            assert len(aggregation_info.primary_entity_dtypes) == 1, "Primary entity dtype not found"
+            assert (
+                len(aggregation_info.primary_entity_dtypes) == 1
+            ), "Primary entity dtype not found"
 
         if isinstance(node, RequestColumnNode):
             # request columns introduced by request column node
             aggregation_info.has_request_column = True
 
-        feature_job_setting = FeatureJobSettingExtractor(graph=query_graph).extract_from_agg_node(node=node)
+        feature_job_setting = FeatureJobSettingExtractor(graph=query_graph).extract_from_agg_node(
+            node=node
+        )
         if feature_job_setting:
             aggregation_info.feature_job_settings = [feature_job_setting]
         return aggregation_info
@@ -352,14 +364,18 @@ class DecomposePointState:
             )
 
         # reduce the primary entity ids based on entity relationship
-        aggregation_info.primary_entity_ids = self.entity_ancestor_descendant_mapper.reduce_entity_ids(
-            entity_ids=aggregation_info.primary_entity_ids  # type: ignore
+        aggregation_info.primary_entity_ids = (
+            self.entity_ancestor_descendant_mapper.reduce_entity_ids(
+                entity_ids=aggregation_info.primary_entity_ids  # type: ignore
+            )
         )
 
         # update the mapping
         self.node_name_to_aggregation_info[node.name] = aggregation_info
 
-    def check_input_aggregations(self, agg_info: AggregationInfo, input_node_names: List[str]) -> bool:
+    def check_input_aggregations(
+        self, agg_info: AggregationInfo, input_node_names: List[str]
+    ) -> bool:
         """
         Check whether to split the input nodes into multiple offline store ingest query graphs
 
@@ -385,7 +401,9 @@ class DecomposePointState:
         # Check for conditions where splitting should occur
         split_conditions = []
         for input_agg_info in input_aggregations_info:
-            split_conditions.append(input_agg_info.has_request_column or input_agg_info.has_ingest_graph_node)
+            split_conditions.append(
+                input_agg_info.has_request_column or input_agg_info.has_ingest_graph_node
+            )
 
         # Check if any of the inputs have either request column or ingest graph node, split it
         if any(split_conditions):
@@ -454,7 +472,8 @@ class DecomposePointState:
             List of input node names
         """
         input_aggregations_info = [
-            self.node_name_to_aggregation_info[input_node_name] for input_node_name in input_node_names
+            self.node_name_to_aggregation_info[input_node_name]
+            for input_node_name in input_node_names
         ]
         any_input_has_request_column = False
         any_input_has_ingest_graph_node = False
@@ -478,7 +497,9 @@ class DecomposePointState:
             assert False, "No offline store ingest query graph output node found"
 
 
-class DecomposePointExtractor(BaseGraphExtractor[DecomposePointState, FeatureByteBaseModel, DecomposePointState]):
+class DecomposePointExtractor(
+    BaseGraphExtractor[DecomposePointState, FeatureByteBaseModel, DecomposePointState]
+):
     """
     DecomposePointExtractor class is used to extract information about the decompose point
     used in offline ingest graph decomposition.
@@ -529,7 +550,9 @@ class DecomposePointExtractor(BaseGraphExtractor[DecomposePointState, FeatureByt
             )
             if to_decompose:
                 global_state.decompose_node_names.add(node.name)
-                global_state.update_ingest_graph_node_output_names(input_node_names=input_node_names)
+                global_state.update_ingest_graph_node_output_names(
+                    input_node_names=input_node_names
+                )
                 global_state.node_name_to_aggregation_info[node.name].has_ingest_graph_node = True
         return global_state
 

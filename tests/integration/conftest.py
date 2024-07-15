@@ -571,15 +571,21 @@ def transaction_dataframe(source_type):
     offsets = rng.choice(range(-18, 18, 1), size=data["ëvent_timestamp"].shape[0])
     data["ëvent_timestamp"] = data["ëvent_timestamp"] + pd.Series(offsets) * pd.Timedelta(hours=1)
     formatted_offsets = [f"{i:+03d}:00" for i in offsets]
-    data["ëvent_timestamp"] = pd.to_datetime(data["ëvent_timestamp"].astype(str) + formatted_offsets)
+    data["ëvent_timestamp"] = pd.to_datetime(
+        data["ëvent_timestamp"].astype(str) + formatted_offsets
+    )
     data["tz_offset"] = formatted_offsets
     data["transaction_id"] = [f"T{i}" for i in range(data.shape[0])]
 
     if source_type != "sqlite":
         data["embedding_array"] = [rng.random(10).tolist() for _ in range(row_number)]
         data["array"] = [rng.random(rng.randint(5, 10)).tolist() for _ in range(row_number)]
-        data["flat_dict"] = [{"a": rng.randint(0, 10), "b": rng.randint(0, 10)} for _ in range(row_number)]
-        data["nested_dict"] = [{"a": {"b": rng.randint(0, 10)}, "c": rng.randint(0, 10)} for _ in range(row_number)]
+        data["flat_dict"] = [
+            {"a": rng.randint(0, 10), "b": rng.randint(0, 10)} for _ in range(row_number)
+        ]
+        data["nested_dict"] = [
+            {"a": {"b": rng.randint(0, 10)}, "c": rng.randint(0, 10)} for _ in range(row_number)
+        ]
 
     yield data
 
@@ -664,7 +670,9 @@ def scd_dataframe_fixture(transaction_data):
     dates = pd.to_datetime(transaction_data["ëvent_timestamp"], utc=True).dt.floor("d")
     effective_timestamp_values = pd.date_range(dates.min(), dates.max())
     # Add variations at hour level
-    effective_timestamp_values += pd.to_timedelta(rng.randint(0, 24, len(effective_timestamp_values)), unit="h")
+    effective_timestamp_values += pd.to_timedelta(
+        rng.randint(0, 24, len(effective_timestamp_values)), unit="h"
+    )
     values = [f"STÀTUS_CODE_{i}" for i in range(50)]
 
     num_rows = 1000
@@ -709,7 +717,9 @@ def observation_set(transaction_data_upper_case):
     rng = np.random.RandomState(0)
     spike_mask = rng.randint(0, 2, len(df)).astype(bool)
     spike_shift = pd.to_timedelta(rng.randint(0, 3601, len(df)), unit="s")
-    df.loc[spike_mask, "POINT_IN_TIME"] = df.loc[spike_mask, "POINT_IN_TIME"] + spike_shift[spike_mask]
+    df.loc[spike_mask, "POINT_IN_TIME"] = (
+        df.loc[spike_mask, "POINT_IN_TIME"] + spike_shift[spike_mask]
+    )
     df = df.reset_index(drop=True)
     return df
 
@@ -947,7 +957,9 @@ async def create_snowflake_tile_spec(session, tile_registry_service):
         if tile_spec is not None:
             async for doc in tile_registry_service.list_documents_as_dict_iterator({}):
                 await tile_registry_service.delete_document(doc["_id"])
-            await session.execute_query(f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER")
+            await session.execute_query(
+                f"DROP TABLE IF EXISTS {tile_spec.aggregation_id}_ENTITY_TRACKER"
+            )
             await session.execute_query(f"DROP TABLE IF EXISTS {tile_spec.tile_id}")
 
 
@@ -1049,7 +1061,9 @@ def user_entity_fixture(catalog):
     Fixture for an Entity "User"
     """
     _ = catalog
-    entity = Entity(_id=ObjectId("65b36715208ba8c23717d9a1"), name="User", serving_names=["üser id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a1"), name="User", serving_names=["üser id"]
+    )
     entity.save()
     return entity
 
@@ -1075,7 +1089,9 @@ def customer_entity_fixture(catalog):
     Fixture for an Entity "Customer"
     """
     _ = catalog
-    entity = Entity(_id=ObjectId("65b36715208ba8c23717d9a3"), name="Customer", serving_names=["cust_id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a3"), name="Customer", serving_names=["cust_id"]
+    )
     entity.save()
     return entity
 
@@ -1086,7 +1102,9 @@ def order_entity_fixture(catalog):
     Fixture for an Entity "Order"
     """
     _ = catalog
-    entity = Entity(_id=ObjectId("65b36715208ba8c23717d9a4"), name="Order", serving_names=["order_id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a4"), name="Order", serving_names=["order_id"]
+    )
     entity.save()
     return entity
 
@@ -1097,7 +1115,9 @@ def item_entity_fixture(catalog):
     Fixture for an Entity "Item"
     """
     _ = catalog
-    entity = Entity(_id=ObjectId("65b36715208ba8c23717d9a5"), name="Item", serving_names=["item_id"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a5"), name="Item", serving_names=["item_id"]
+    )
     entity.save()
     return entity
 
@@ -1108,7 +1128,9 @@ def item_type_entity_fixture(catalog):
     Fixture for an Entity "ItemType"
     """
     _ = catalog
-    entity = Entity(_id=ObjectId("664ac92379c46110f9275db1"), name="ItemType", serving_names=["item_type"])
+    entity = Entity(
+        _id=ObjectId("664ac92379c46110f9275db1"), name="ItemType", serving_names=["item_type"]
+    )
     entity.save()
     return entity
 
@@ -1119,7 +1141,9 @@ def status_entity_fixture(catalog):
     Fixture for an Entity "UserStatus"
     """
     _ = catalog
-    entity = Entity(_id=ObjectId("65b36715208ba8c23717d9a6"), name="UserStatus", serving_names=["user_status"])
+    entity = Entity(
+        _id=ObjectId("65b36715208ba8c23717d9a6"), name="UserStatus", serving_names=["user_status"]
+    )
     entity.save()
     return entity
 
@@ -1147,7 +1171,9 @@ def create_transactions_event_table_from_data_source(
         table_name=table_name,
     )
     expected_dtypes = pd.Series({
-        "ËVENT_TIMESTAMP": ("TIMESTAMP_TZ" if data_source.type == SourceType.SNOWFLAKE else "TIMESTAMP"),
+        "ËVENT_TIMESTAMP": (
+            "TIMESTAMP_TZ" if data_source.type == SourceType.SNOWFLAKE else "TIMESTAMP"
+        ),
         "CREATED_AT": "INT",
         "CUST_ID": "INT",
         "ÜSER ID": "INT",
@@ -1420,7 +1446,9 @@ def mock_task_manager(request, persistent, storage):
                     "storage": storage,
                     "catalog_id": payload.catalog_id,
                 }
-                app_container = LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
+                app_container = LazyAppContainer(
+                    app_container_config=app_container_config, instance_map=instance_map
+                )
                 app_container.override_instance_for_test("task_id", UUID(task_id))
                 app_container.override_instance_for_test("progress", Mock())
                 task = app_container.get(TASK_REGISTRY_MAP[payload.command])
@@ -1499,7 +1527,9 @@ def online_store_table_version_service_factory(mongo_database_name, app_containe
     """
 
     def factory():
-        app_container.override_instance_for_test("persistent", get_new_persistent(mongo_database_name)[0])
+        app_container.override_instance_for_test(
+            "persistent", get_new_persistent(mongo_database_name)[0]
+        )
         return app_container.get(OnlineStoreTableVersionService)
 
     return factory
@@ -1655,7 +1685,9 @@ def feature_group_per_category_fixture(event_view):
     Fixture for a FeatureGroup with dictionary features
     """
 
-    feature_group_per_category = event_view.groupby("ÜSER ID", category="PRODUCT_ACTION").aggregate_over(
+    feature_group_per_category = event_view.groupby(
+        "ÜSER ID", category="PRODUCT_ACTION"
+    ).aggregate_over(
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
@@ -1665,13 +1697,13 @@ def feature_group_per_category_fixture(event_view):
     feature_group_per_category["ENTROPY_BY_ACTION_24h"] = feature_counts_24h.cd.entropy()
     feature_group_per_category["MOST_FREQUENT_ACTION_24h"] = feature_counts_24h.cd.most_frequent()
     feature_group_per_category["NUM_UNIQUE_ACTION_24h"] = feature_counts_24h.cd.unique_count()
-    feature_group_per_category["NUM_UNIQUE_ACTION_24h_exclude_missing"] = feature_counts_24h.cd.unique_count(
-        include_missing=False
+    feature_group_per_category["NUM_UNIQUE_ACTION_24h_exclude_missing"] = (
+        feature_counts_24h.cd.unique_count(include_missing=False)
     )
 
     feature_counts_2h = feature_group_per_category["COUNT_BY_ACTION_2h"]
-    feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"] = feature_counts_2h.cd.cosine_similarity(
-        feature_counts_24h
+    feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"] = (
+        feature_counts_2h.cd.cosine_similarity(feature_counts_24h)
     )
 
     return feature_group_per_category

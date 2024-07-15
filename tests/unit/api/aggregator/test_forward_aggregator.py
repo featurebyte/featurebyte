@@ -35,16 +35,21 @@ def test_forward_aggregate_fill_na(forward_aggregator):
     """
     fill_value = 1
     with pytest.raises(ValueError) as exc_info:
-        forward_aggregator.forward_aggregate("col_float", AggFunc.SUM, "7d", "target", fill_value, True)
+        forward_aggregator.forward_aggregate(
+            "col_float", AggFunc.SUM, "7d", "target", fill_value, True
+        )
     assert "Specifying both fill_value and skip_fill_na is not allowed" in str(exc_info.value)
 
     # Verify that the fill value node is there
-    target = forward_aggregator.forward_aggregate("col_float", AggFunc.SUM, "7d", "target", fill_value)
+    target = forward_aggregator.forward_aggregate(
+        "col_float", AggFunc.SUM, "7d", "target", fill_value
+    )
     target_node = target.node
 
     # Check that we have the fill value
     conditional_nodes = [
-        node for node in forward_aggregator.view.graph.iterate_nodes(target_node, NodeType.CONDITIONAL)
+        node
+        for node in forward_aggregator.view.graph.iterate_nodes(target_node, NodeType.CONDITIONAL)
     ]
     assert len(conditional_nodes) == 1
     conditional_node = conditional_nodes[0]
@@ -66,7 +71,9 @@ def test_forward_aggregate(forward_aggregator, offset):
     """
     Test forward_aggregate.
     """
-    target = forward_aggregator.forward_aggregate("col_float", AggFunc.SUM, "7d", "target", offset=offset)
+    target = forward_aggregator.forward_aggregate(
+        "col_float", AggFunc.SUM, "7d", "target", offset=offset
+    )
     # Assert Target is constructed with appropriate values
     assert target.name == "target"
     # assert target.window == "7d"  # TODO: Fix this
@@ -74,7 +81,9 @@ def test_forward_aggregate(forward_aggregator, offset):
     # Assert forward aggregate node has been added into the graph
     view = forward_aggregator.view
     target_node = target.node
-    forward_aggregate_nodes = [node for node in view.graph.iterate_nodes(target_node, NodeType.FORWARD_AGGREGATE)]
+    forward_aggregate_nodes = [
+        node for node in view.graph.iterate_nodes(target_node, NodeType.FORWARD_AGGREGATE)
+    ]
     assert len(forward_aggregate_nodes) == 1
     forward_aggregate_node = forward_aggregate_nodes[0]
     assert forward_aggregate_node.type == NodeType.FORWARD_AGGREGATE
@@ -145,7 +154,9 @@ def test_prepare_node_parameters(forward_aggregator):
         ("col_float", AggFunc.LATEST, "7d", "target", ValueError),
     ],
 )
-def test_validate_parameters(forward_aggregator, value_column, method, window, target_name, expected_error):
+def test_validate_parameters(
+    forward_aggregator, value_column, method, window, target_name, expected_error
+):
     """
     Test validate parameters
     """

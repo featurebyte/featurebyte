@@ -329,7 +329,9 @@ class ViewColumn(Series, SampleMixin):
         --------
         >>> customer_view = catalog.get_view("GROCERYCUSTOMER")
         >>> # Extract operating system from BrowserUserAgent column
-        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains("Windows")
+        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains(
+        ...     "Windows"
+        ... )
         >>> # Create a target from the OperatingSystemIsWindows column
         >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target("UsesWindows")
 
@@ -387,7 +389,9 @@ class ViewColumn(Series, SampleMixin):
         --------
         >>> customer_view = catalog.get_view("GROCERYCUSTOMER")
         >>> # Extract operating system from BrowserUserAgent column
-        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains("Windows")
+        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains(
+        ...     "Windows"
+        ... )
         >>> # Create a feature from the OperatingSystemIsWindows column
         >>> uses_windows = customer_view.OperatingSystemIsWindows.as_feature("UsesWindows")
 
@@ -603,8 +607,13 @@ class GroupByMixin:
         ...     by_keys="GroceryCustomerGuid", category="ProductGroup"
         ... )
         >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
-        >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(  # doctest: +SKIP
-        ...     "TotalCost", method=fb.AggFunc.SUM, feature_names=["CustomerInventory_28d"], windows=["28d"]
+        >>> customer_inventory_28d = (
+        ...     items_by_customer_across_product_group.aggregate_over(  # doctest: +SKIP
+        ...         "TotalCost",
+        ...         method=fb.AggFunc.SUM,
+        ...         feature_names=["CustomerInventory_28d"],
+        ...         windows=["28d"],
+        ...     )
         ... )
         """
 
@@ -612,7 +621,9 @@ class GroupByMixin:
 
         return GroupBy(obj=self, keys=by_keys, category=category)  # type: ignore
 
-    def validate_aggregate_over_parameters(self, keys: list[str], value_column: Optional[str]) -> None:
+    def validate_aggregate_over_parameters(
+        self, keys: list[str], value_column: Optional[str]
+    ) -> None:
         """
         Perform View specific validation on the parameters provided for aggregate_over groupby's.
 
@@ -624,7 +635,9 @@ class GroupByMixin:
             Column to be aggregated
         """
 
-    def validate_simple_aggregate_parameters(self, keys: list[str], value_column: Optional[str]) -> None:
+    def validate_simple_aggregate_parameters(
+        self, keys: list[str], value_column: Optional[str]
+    ) -> None:
         """
         Perform View specific validation on the parameters provided for simple aggregation functions.
 
@@ -960,7 +973,9 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         return set()
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str], FrozenSeries]) -> Union[FrozenSeries, FrozenFrame]:
+    def __getitem__(
+        self, item: Union[str, List[str], FrozenSeries]
+    ) -> Union[FrozenSeries, FrozenFrame]:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
@@ -1119,7 +1134,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         if num_of_matches == 1:
             return calling_col_name, other_join_key
         logger.debug(
-            f"{num_of_matches} matches found for entity id {entity_id}. " f"Unable to automatically return a join key."
+            f"{num_of_matches} matches found for entity id {entity_id}. "
+            f"Unable to automatically return a join key."
         )
         return None
 
@@ -1148,7 +1164,9 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         """
         if on_column is not None:
             if on_column == "":
-                raise ValueError("The `on` column should not be empty. Please provide a value for this parameter.")
+                raise ValueError(
+                    "The `on` column should not be empty. Please provide a value for this parameter."
+                )
             return on_column, other_view.get_join_column()
 
         # Check if the keys are entities
@@ -1211,9 +1229,14 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         )
         current_column_names = {col.name for col in self.columns_info}
         repeated_column_names = []
-        for other_col in apply_column_name_modifiers_columns_info(other_view.columns_info, rsuffix, rprefix):
+        for other_col in apply_column_name_modifiers_columns_info(
+            other_view.columns_info, rsuffix, rprefix
+        ):
             # Raise an error if the name is repeated and will be included in the join result
-            if other_col.name in current_column_names and other_col.name not in right_excluded_columns:
+            if (
+                other_col.name in current_column_names
+                and other_col.name not in right_excluded_columns
+            ):
                 repeated_column_names.append(other_col.name)
         if len(repeated_column_names) > 0:
             raise RepeatedColumnNamesError(
@@ -1346,7 +1369,9 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
 
         left_on, right_on = self._get_join_keys(other_view, on)
         other_view_excluded_columns = other_view.get_excluded_columns_as_other_view(right_on)
-        filtered_other_columns = filter_columns(other_view.columns, exclude_columns=other_view_excluded_columns)
+        filtered_other_columns = filter_columns(
+            other_view.columns, exclude_columns=other_view_excluded_columns
+        )
         right_input_columns = filtered_other_columns
         right_output_columns = apply_column_name_modifiers(filtered_other_columns, rsuffix, rprefix)
 
@@ -1370,14 +1395,18 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         )
 
         # Construct new columns_info
-        filtered_column_infos = filter_columns_info(other_view.columns_info, other_view_excluded_columns)
+        filtered_column_infos = filter_columns_info(
+            other_view.columns_info, other_view_excluded_columns
+        )
         joined_columns_info = combine_column_info_of_views(
             self.columns_info,
             apply_column_name_modifiers_columns_info(filtered_column_infos, rsuffix, rprefix),
         )
 
         # create a new view and return it
-        return self._create_joined_view(new_node_name=node.name, joined_columns_info=joined_columns_info)
+        return self._create_joined_view(
+            new_node_name=node.name, joined_columns_info=joined_columns_info
+        )
 
     def project_target_from_node(
         self,

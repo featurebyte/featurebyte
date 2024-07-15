@@ -88,7 +88,9 @@ def retrieve_all_migration_methods(data_warehouse_migrations_only: bool = False)
         for attr_name in dir(mod):
             attr = getattr(mod, attr_name)
             if inspect.isclass(attr) and issubclass(attr, BaseMigrationServiceMixin):
-                if data_warehouse_migrations_only and not issubclass(attr, DataWarehouseMigrationMixin):
+                if data_warehouse_migrations_only and not issubclass(
+                    attr, DataWarehouseMigrationMixin
+                ):
                     continue
                 for version, migrate_method_name in _extract_migrate_methods(attr):
                     migrate_method_data = {
@@ -287,10 +289,14 @@ async def post_migration_sanity_check(service: BaseMigrationServiceMixin) -> Non
 
         # check audit records
         if i % step_size == 0:
-            async for _ in service.delegate_service.historical_document_generator(document_id=document.id):
+            async for _ in service.delegate_service.historical_document_generator(
+                document_id=document.id
+            ):
                 audit_record_count += 1
 
-    logger.info(f"Successfully loaded {len(docs['data'])} records & {audit_record_count} audit records.")
+    logger.info(
+        f"Successfully loaded {len(docs['data'])} records & {audit_record_count} audit records."
+    )
 
 
 async def run_migration(
@@ -333,7 +339,9 @@ async def run_migration(
         storage=storage,
         redis=redis,
     )
-    schema_metadata = await schema_metadata_service.get_or_create_document(name=MigrationMetadata.SCHEMA_METADATA)
+    schema_metadata = await schema_metadata_service.get_or_create_document(
+        name=MigrationMetadata.SCHEMA_METADATA
+    )
     method_generator = migrate_method_generator(
         user=user,
         persistent=persistent,

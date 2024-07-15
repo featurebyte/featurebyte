@@ -38,7 +38,9 @@ def get_previous_job_epoch_expr_from_settings(
     previous_job_index_expr = expressions.Floor(
         this=expressions.Div(
             this=expressions.Paren(
-                this=expressions.Sub(this=point_in_time_epoch_expr, expression=time_modulo_frequency)
+                this=expressions.Sub(
+                    this=point_in_time_epoch_expr, expression=time_modulo_frequency
+                )
             ),
             expression=frequency,
         )

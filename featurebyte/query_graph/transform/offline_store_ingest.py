@@ -209,7 +209,9 @@ class OfflineStoreIngestQueryGraphTransformer(
                 subgraph_agg_node_name = node_name_to_subgraph_node_name[node_name]
                 subgraph_agg_node = subgraph.get_node_by_name(subgraph_agg_node_name)
                 input_node_names = subgraph.get_input_node_names(subgraph_agg_node)
-                assert len(input_node_names) == 1, "All non-request column agg. nodes expect only 1 input node"
+                assert (
+                    len(input_node_names) == 1
+                ), "All non-request column agg. nodes expect only 1 input node"
                 agg_nodes_info.append(
                     AggregationNodeInfo(
                         node_type=subgraph_agg_node.type,
@@ -218,9 +220,9 @@ class OfflineStoreIngestQueryGraphTransformer(
                     )
                 )
 
-                feature_job_setting = FeatureJobSettingExtractor(graph=subgraph).extract_from_agg_node(
-                    node=subgraph_agg_node
-                )
+                feature_job_setting = FeatureJobSettingExtractor(
+                    graph=subgraph
+                ).extract_from_agg_node(node=subgraph_agg_node)
                 if feature_job_setting:
                     feature_job_settings.append(feature_job_setting)
 
@@ -242,17 +244,23 @@ class OfflineStoreIngestQueryGraphTransformer(
         transformer = QuickGraphStructurePruningTransformer(graph=self.graph)
         subgraph, node_name_map = transformer.transform(target_node_names=[node_name])
         subgraph_output_node = subgraph.get_node_by_name(node_name_map[node_name])
-        aggregation_info = global_state.decompose_point_info.node_name_to_aggregation_info[node_name]
+        aggregation_info = global_state.decompose_point_info.node_name_to_aggregation_info[
+            node_name
+        ]
         other_params = self._prepare_offline_store_ingest_query_specific_node_parameters(
             subgraph=subgraph,
             subgraph_output_node=subgraph_output_node,
             node_name_to_subgraph_node_name=node_name_map,
             aggregation_node_names=global_state.decompose_point_info.aggregation_node_names,
             aggregation_info=aggregation_info,
-            operation_structure=global_state.decompose_point_info.operation_structure_map[node_name],
+            operation_structure=global_state.decompose_point_info.operation_structure_map[
+                node_name
+            ],
         )
         part_num = global_state.ingest_graph_node_counter
-        column_name = f"__{global_state.feature_name}_{global_state.feature_version}__part{part_num}"
+        column_name = (
+            f"__{global_state.feature_name}_{global_state.feature_version}__part{part_num}"
+        )
         graph_node = GraphNode(
             name="graph",
             output_type=subgraph_output_node.output_type,
@@ -277,14 +285,19 @@ class OfflineStoreIngestQueryGraphTransformer(
 
     def _compute(self, global_state: OfflineStoreIngestQueryGraphGlobalState, node: Node) -> None:
         decompose_point_info = global_state.decompose_point_info
-        if node.name not in decompose_point_info.decompose_node_names and node.name != global_state.target_node_name:
+        if (
+            node.name not in decompose_point_info.decompose_node_names
+            and node.name != global_state.target_node_name
+        ):
             return
 
         input_node_names = self.graph.get_input_node_names(node)
         decom_input_nodes = []
         for input_node_name in input_node_names:
             if input_node_name in global_state.node_name_map:
-                decom_input_nodes.append(global_state.get_mapped_decomposed_graph_node(node_name=input_node_name))
+                decom_input_nodes.append(
+                    global_state.get_mapped_decomposed_graph_node(node_name=input_node_name)
+                )
             else:
                 if input_node_name in decompose_point_info.ingest_graph_output_node_names:
                     decom_input_nodes.append(
@@ -302,14 +315,21 @@ class OfflineStoreIngestQueryGraphTransformer(
                         visited_node_names.add(visited_node.name)
 
                     for _node in self.graph.iterate_sorted_nodes():
-                        if _node.name in visited_node_names and _node.name not in global_state.node_name_map:
+                        if (
+                            _node.name in visited_node_names
+                            and _node.name not in global_state.node_name_map
+                        ):
                             sub_input_nodes = [
                                 global_state.get_mapped_decomposed_graph_node(in_node_name)
                                 for in_node_name in self.graph.get_input_node_names(node=_node)
                             ]
-                            global_state.add_operation_to_graph(node=_node, input_nodes=sub_input_nodes)
+                            global_state.add_operation_to_graph(
+                                node=_node, input_nodes=sub_input_nodes
+                            )
 
-                    decom_input_nodes.append(global_state.get_mapped_decomposed_graph_node(node_name=input_node_name))
+                    decom_input_nodes.append(
+                        global_state.get_mapped_decomposed_graph_node(node_name=input_node_name)
+                    )
 
         # add current node to the decomposed graph
         global_state.add_operation_to_graph(node=node, input_nodes=decom_input_nodes)

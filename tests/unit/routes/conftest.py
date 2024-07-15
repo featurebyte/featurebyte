@@ -66,7 +66,9 @@ def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
     Returns a mocked get_feature_store_session.
     """
     _, _ = session_manager, snowflake_execute_query
-    with patch("featurebyte.service.session_manager.SessionManager.get_session") as mocked_get_session:
+    with patch(
+        "featurebyte.service.session_manager.SessionManager.get_session"
+    ) as mocked_get_session:
         mocked_get_session.return_value = SnowflakeSession(
             source_type=SourceType.SNOWFLAKE,
             account="sf_account",
@@ -111,7 +113,9 @@ def location_fixture():
 
 
 @pytest.fixture(name="create_observation_table")
-def create_observation_table_fixture(test_api_client_persistent, location, default_catalog_id, user_id):
+def create_observation_table_fixture(
+    test_api_client_persistent, location, default_catalog_id, user_id
+):
     """
     simulate creating observation table for target input, target_id and context_id
     """

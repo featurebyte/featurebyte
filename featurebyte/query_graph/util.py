@@ -206,7 +206,9 @@ def get_tile_table_identifier_v2(transformations_hash: str, parameters: dict[str
     -------
     str
     """
-    aggregation_id = get_aggregation_identifier(transformations_hash=transformations_hash, parameters=parameters)
+    aggregation_id = get_aggregation_identifier(
+        transformations_hash=transformations_hash, parameters=parameters
+    )
     return f"TILE_{aggregation_id}".upper()
 
 

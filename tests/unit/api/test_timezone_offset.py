@@ -36,7 +36,9 @@ def test_protected_attributes__item_view(
     assert view.timestamp_timezone_offset_column == "tz_offset_event_table"
 
 
-def test_datetime_property_extraction__event_timestamp(snowflake_event_table_with_tz_offset_constant, update_fixtures):
+def test_datetime_property_extraction__event_timestamp(
+    snowflake_event_table_with_tz_offset_constant, update_fixtures
+):
     """
     Test extracting datetime property from event timestamp
     """
@@ -91,7 +93,9 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2
     _, tz_offset_node = dt_extract_input_nodes
-    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {"columns": ["tz_offset"]}
+    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+        "columns": ["tz_offset"]
+    }
 
     expected = textwrap.dedent(
         """
@@ -174,7 +178,9 @@ def test_datetime_property_extraction__manually_specified_timezone_offset_column
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2
     _, tz_offset_node = dt_extract_input_nodes
-    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {"columns": ["tz_offset"]}
+    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+        "columns": ["tz_offset"]
+    }
 
     check_sdk_code_generation(
         view,
@@ -200,7 +206,9 @@ def test_datetime_property_extraction__event_timestamp_in_item_view(
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2
     _, tz_offset_node = dt_extract_input_nodes
-    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {"columns": ["tz_offset_event_table"]}
+    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+        "columns": ["tz_offset_event_table"]
+    }
 
     expected = textwrap.dedent(
         """
@@ -248,7 +256,9 @@ def test_datetime_property_extraction__event_timestamp_in_item_view_joined_scd_v
     """
     view = snowflake_item_table_with_timezone_offset_column.get_view(event_suffix="_event_table")
     view = view.join(snowflake_scd_view, on="cust_id_event_table", rsuffix="_joined")
-    view["customer_age"] = view["event_timestamp_event_table"].dt.year - view["date_of_birth_joined"].dt.year
+    view["customer_age"] = (
+        view["event_timestamp_event_table"].dt.year - view["date_of_birth_joined"].dt.year
+    )
     cond = view["event_timestamp_event_table"].dt.month < view["date_of_birth_joined"].dt.month
     view["customer_age"][cond] = view["customer_age"][cond] - 1
     assert_equal_with_expected_fixture(

@@ -40,7 +40,9 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
         return f'Save batch request table "{payload.name}"'
 
     async def execute(self, payload: BatchRequestTableTaskPayload) -> Any:
-        feature_store = await self.feature_store_service.get_document(document_id=payload.feature_store_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=payload.feature_store_id
+        )
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
         service = self.batch_request_table_service
         location = await service.generate_materialized_table_location(
@@ -54,7 +56,9 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
         await service.add_row_index_column(db_session, location.table_details)
 
         async with self.drop_table_on_error(db_session, location.table_details, payload):
-            columns_info, num_rows = await service.get_columns_info_and_num_rows(db_session, location.table_details)
+            columns_info, num_rows = await service.get_columns_info_and_num_rows(
+                db_session, location.table_details
+            )
             logger.debug("Creating a new BatchRequestTable", extra=location.table_details.dict())
             batch_request_table = BatchRequestTableModel(
                 _id=payload.output_document_id,

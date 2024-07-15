@@ -196,7 +196,9 @@ class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
     @classmethod
     def _extract_recommended_feature_job_setting(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         if "recommended_feature_job_setting" not in values:
-            values["recommended_feature_job_setting"] = values["analysis_result"]["recommended_feature_job_setting"]
+            values["recommended_feature_job_setting"] = values["analysis_result"][
+                "recommended_feature_job_setting"
+            ]
 
         # expose statistics on warehouse jobs
         if "stats_on_wh_jobs" not in values:

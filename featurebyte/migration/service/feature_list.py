@@ -155,7 +155,9 @@ class FeatureListMigrationServiceV6(BaseFeatureListMigrationService):
             )
         }
         for document in documents:
-            document["features"] = [feature_id_to_feature[feature_id] for feature_id in document["feature_ids"]]
+            document["features"] = [
+                feature_id_to_feature[feature_id] for feature_id in document["feature_ids"]
+            ]
         return documents
 
     @staticmethod

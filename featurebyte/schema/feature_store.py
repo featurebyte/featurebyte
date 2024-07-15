@@ -93,7 +93,9 @@ class FeatureStoreSample(FeatureStorePreview):
             node_name = values["node_name"]
             target_node = graph.get_node_by_name(node_name)
             found = False
-            for input_node in graph.iterate_nodes(target_node=target_node, node_type=NodeType.INPUT):
+            for input_node in graph.iterate_nodes(
+                target_node=target_node, node_type=NodeType.INPUT
+            ):
                 column_names = [col.name for col in input_node.parameters.columns]
                 if timestamp_column in column_names:
                     found = True
@@ -101,7 +103,9 @@ class FeatureStoreSample(FeatureStorePreview):
 
         # make sure to_timestamp is lt from_timestamp
         if from_timestamp and to_timestamp:
-            assert from_timestamp < to_timestamp, "from_timestamp must be smaller than to_timestamp."
+            assert (
+                from_timestamp < to_timestamp
+            ), "from_timestamp must be smaller than to_timestamp."
 
         return values
 

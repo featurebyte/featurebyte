@@ -22,7 +22,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
     class_name = "ObservationTable"
     base_route = "/observation_table"
-    payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/observation_table.json")
+    payload = BaseMaterializedTableTestSuite.load_payload(
+        "tests/fixtures/request_payloads/observation_table.json"
+    )
     async_create = True
 
     create_conflict_payload_expected_detail_pairs = [
@@ -114,13 +116,17 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         doc_id = create_success_response.json()["_id"]
 
         context_id = str(ObjectId())
-        context_payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/context.json")
+        context_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/context.json"
+        )
         context_payload["_id"] = context_id
         context_payload["name"] = "test_context"
         response = test_api_client.post("/context", json=context_payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
 
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"context_id": context_id})
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"context_id": context_id}
+        )
         assert response.status_code == HTTPStatus.OK
 
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
@@ -128,12 +134,16 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.json()["context_id"] == context_id
 
     @pytest.mark.asyncio
-    async def test_update_use_case(self, test_api_client_persistent, create_success_response, create_observation_table):
+    async def test_update_use_case(
+        self, test_api_client_persistent, create_success_response, create_observation_table
+    ):
         """Test update use case"""
         test_api_client, _ = test_api_client_persistent
         _ = create_success_response
 
-        use_case_payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/use_case.json")
+        use_case_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
         new_ob_table_id = ObjectId()
         await create_observation_table(
             new_ob_table_id,
@@ -144,21 +154,27 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
 
         doc_id = str(new_ob_table_id)
         use_case_id = str(ObjectId())
-        use_case_payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/use_case.json")
+        use_case_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
         use_case_payload["_id"] = use_case_id
         use_case_payload["name"] = "test_use_case"
         response = test_api_client.post("/use_case", json=use_case_payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
 
         # test add use case
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id})
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id}
+        )
         assert response.status_code == HTTPStatus.OK, response.json()
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert use_case_id in response.json()["use_case_ids"]
 
         # test add use case duplicate
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id})
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id}
+        )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
             response.json()["detail"]
@@ -166,7 +182,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         )
 
         # test remove use case
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"use_case_id_to_remove": use_case_id})
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_remove": use_case_id}
+        )
         assert response.status_code == HTTPStatus.OK
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
@@ -177,7 +195,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         """Test update purpose"""
         test_api_client, _ = test_api_client_persistent
         doc_id = create_success_response.json()["_id"]
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"purpose": "validation_test"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"purpose": "validation_test"}
+        )
         assert response.status_code == HTTPStatus.OK
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
@@ -188,7 +208,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         """Test update name"""
         test_api_client, _ = test_api_client_persistent
         doc_id = create_success_response.json()["_id"]
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"name": "some other name"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"name": "some other name"}
+        )
         assert response.status_code == HTTPStatus.OK
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
@@ -200,14 +222,18 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         doc_id = create_success_response.json()["_id"]
 
         context_id = str(ObjectId())
-        context_payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/context.json")
+        context_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/context.json"
+        )
         context_payload["_id"] = context_id
         context_payload["name"] = "test_context"
         response = test_api_client.post("/context", json=context_payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
 
         use_case_id = str(ObjectId())
-        use_case_payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/use_case.json")
+        use_case_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
         use_case_payload["_id"] = use_case_id
         use_case_payload["name"] = "test_use_case"
         use_case_payload["context_id"] = context_id
@@ -215,9 +241,14 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.CREATED, response.json()
 
         # test add use_case that has different context
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id})
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id}
+        )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == f"Cannot add UseCase {use_case_id} due to mismatched contexts."
+        assert (
+            response.json()["detail"]
+            == f"Cannot add UseCase {use_case_id} due to mismatched contexts."
+        )
 
         # test non_existent use_case_id to add
         non_exist_use_case_id = str(ObjectId())
@@ -227,7 +258,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response.status_code == HTTPStatus.NOT_FOUND
 
         # test use_case_id to remove not already associated with the observation table
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"use_case_id_to_remove": use_case_id})
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_remove": use_case_id}
+        )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
             response.json()["detail"]
@@ -351,7 +384,8 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response = test_api_client.delete(f"target/{use_case_payload['target_id']}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert (
-            response.json()["detail"] == "Target is referenced by ObservationTable: observation_table_from_target_input"
+            response.json()["detail"]
+            == "Target is referenced by ObservationTable: observation_table_from_target_input"
         )
 
     def test_upload_observation_validates_columns(self, test_api_client_persistent):
@@ -381,7 +415,10 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
                 # Call upload route
                 response = test_api_client.post(f"{self.base_route}/upload", data=data, files=files)
                 assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-                assert response.json()["detail"] == "Required column(s) not found: POINT_IN_TIME, cust_id"
+                assert (
+                    response.json()["detail"]
+                    == "Required column(s) not found: POINT_IN_TIME, cust_id"
+                )
 
     @pytest.mark.asyncio
     async def test_create_with_target_column_no_target_422(self, test_api_client_persistent):
@@ -403,7 +440,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         self.setup_creation_route(test_api_client)
 
         # create target namespace
-        payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/target_namespace.json")
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/target_namespace.json"
+        )
         payload["name"] = "other_target"
         payload["default_target_id"] = None
         payload["target_ids"] = []
@@ -418,13 +457,17 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["detail"] == "Required column(s) not found: other_target"
 
     @pytest.mark.asyncio
-    async def test_create_with_target_column_primary_entity_mismatch_422(self, test_api_client_persistent):
+    async def test_create_with_target_column_primary_entity_mismatch_422(
+        self, test_api_client_persistent
+    ):
         """Test create with target column"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
 
         # create target namespace
-        payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/target_namespace.json")
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/target_namespace.json"
+        )
         payload["name"] = "target"
         payload["entity_ids"] = [str(ObjectId())]
         response = test_api_client.post("/target_namespace", json=payload)
@@ -435,10 +478,14 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response = self.post(test_api_client, payload)
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
-        assert response_dict["detail"] == 'Target "target" does not have matching primary entity ids.'
+        assert (
+            response_dict["detail"] == 'Target "target" does not have matching primary entity ids.'
+        )
 
     @pytest.mark.asyncio
-    async def test_create_with_target_column_definition_exists_422(self, test_api_client_persistent):
+    async def test_create_with_target_column_definition_exists_422(
+        self, test_api_client_persistent
+    ):
         """Test create with target column that has a definition"""
         test_api_client, _ = test_api_client_persistent
         self.setup_creation_route(test_api_client)
@@ -457,7 +504,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         self.setup_creation_route(test_api_client)
 
         # create target namespace
-        payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/target_namespace.json")
+        payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/target_namespace.json"
+        )
         payload["name"] = "target"
         payload["default_target_id"] = None
         payload["target_ids"] = []
@@ -473,7 +522,9 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
 
         # Get observation table
-        response = test_api_client.get(f"{self.base_route}/{response_dict['payload']['output_document_id']}")
+        response = test_api_client.get(
+            f"{self.base_route}/{response_dict['payload']['output_document_id']}"
+        )
         assert response.status_code == HTTPStatus.OK, response_dict
         response_dict = response.json()
         assert response_dict["target_namespace_id"] == target_namespace_id
@@ -481,23 +532,32 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         # test delete target namespace
         response = test_api_client.delete(f"/target_namespace/{target_namespace_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-        assert response.json()["detail"] == "TargetNamespace is referenced by ObservationTable: observation_table"
+        assert (
+            response.json()["detail"]
+            == "TargetNamespace is referenced by ObservationTable: observation_table"
+        )
 
     @pytest.mark.asyncio
-    async def test_update_use_case_without_target(self, test_api_client_persistent, create_success_response):
+    async def test_update_use_case_without_target(
+        self, test_api_client_persistent, create_success_response
+    ):
         """Test update use case"""
         test_api_client, _ = test_api_client_persistent
         doc_id = create_success_response.json()["_id"]
 
         use_case_id = str(ObjectId())
-        use_case_payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/use_case.json")
+        use_case_payload = BaseMaterializedTableTestSuite.load_payload(
+            "tests/fixtures/request_payloads/use_case.json"
+        )
         use_case_payload["_id"] = use_case_id
         use_case_payload["name"] = "test_use_case"
         response = test_api_client.post("/use_case", json=use_case_payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
 
         # test add use case
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id})
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"use_case_id_to_add": use_case_id}
+        )
         assert response.status_code == HTTPStatus.OK, response.json()
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK

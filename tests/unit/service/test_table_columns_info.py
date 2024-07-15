@@ -37,7 +37,9 @@ async def test_update_columns_info(
 ):
     """Test update_columns_info"""
     _ = entity, transaction_entity
-    new_entity = await entity_service.create_document(data=EntityCreate(name="an_entity", serving_name="a_name"))
+    new_entity = await entity_service.create_document(
+        data=EntityCreate(name="an_entity", serving_name="a_name")
+    )
     other_table_id = ObjectId("6332fdb21e8f0aabbb414512")
     await entity_service.update_document(
         document_id=new_entity.id,
@@ -124,7 +126,9 @@ async def test_update_columns_info__critical_data_info(
     _ = entity, transaction_entity
     event_table_doc = event_table.dict()
     columns_info = event_table_doc["columns_info"]
-    columns_info[0]["critical_data_info"] = {"cleaning_operations": [{"type": "missing", "imputed_value": 0}]}
+    columns_info[0]["critical_data_info"] = {
+        "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+    }
     columns_info = [{**col, "entity_id": None, "semantic_id": None} for col in columns_info]
     expected_columns_info = copy.deepcopy(columns_info)
 
@@ -178,14 +182,20 @@ async def test_update_entity_table_references(
     table_model = table._get_schema(**table._get_create_payload())
     columns_info = table_model.json_dict()["columns_info"]
     primary_index = [
-        i for i, c in enumerate(table_model.columns_info) if c.name == getattr(table_model, primary_key_column)
+        i
+        for i, c in enumerate(table_model.columns_info)
+        if c.name == getattr(table_model, primary_key_column)
     ][0]
     columns_info[primary_index]["entity_id"] = ObjectId()
     data = update_class(columns_info=columns_info)
-    with patch.object(table_columns_info_service.entity_service, "get_document") as mock_get_document:
+    with patch.object(
+        table_columns_info_service.entity_service, "get_document"
+    ) as mock_get_document:
         mock_get_document.return_value.table_ids = []
         mock_get_document.return_value.primary_table_ids = []
-        with patch.object(table_columns_info_service.entity_service, "update_document") as mock_update_document:
+        with patch.object(
+            table_columns_info_service.entity_service, "update_document"
+        ) as mock_update_document:
             with patch.object(table_columns_info_service, "_update_entity_relationship"):
                 await table_columns_info_service.update_entity_table_references(
                     document=table_model, columns_info=data.columns_info
@@ -246,7 +256,9 @@ def map_entity_id_to_name(entity_docs):
 
 
 @pytest.fixture(name="event_table_entity_initializer")
-def event_table_entity_initializer_fixture(entity_service, relationship_info_service, event_table, user):
+def event_table_entity_initializer_fixture(
+    entity_service, relationship_info_service, event_table, user
+):
     """
     Fixture to initialize event table entities
     """
@@ -361,7 +373,9 @@ async def test_update_entity_relationship(
             ParentEntity(id=entity_id, table_type="event_table", table_id=event_table.id)
             for entity_id in expected_parent_ids
         ]
-        assert sorted(primary_entity.parents, key=key_sorter) == sorted(expected_parents, key=key_sorter)
+        assert sorted(primary_entity.parents, key=key_sorter) == sorted(
+            expected_parents, key=key_sorter
+        )
 
     for entity_id in new_primary_entities:
         primary_entity = await entity_service.get_document(document_id=entity_id)
@@ -370,7 +384,9 @@ async def test_update_entity_relationship(
             ParentEntity(id=entity_id, table_type="event_table", table_id=event_table.id)
             for entity_id in expected_parent_ids
         ]
-        assert sorted(primary_entity.parents, key=key_sorter) == sorted(expected_parents, key=key_sorter)
+        assert sorted(primary_entity.parents, key=key_sorter) == sorted(
+            expected_parents, key=key_sorter
+        )
 
 
 def get_relationships():

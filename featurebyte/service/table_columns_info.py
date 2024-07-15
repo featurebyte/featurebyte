@@ -31,7 +31,9 @@ from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 
-TableDocumentService = Union[EventTableService, ItemTableService, DimensionTableService, SCDTableService]
+TableDocumentService = Union[
+    EventTableService, ItemTableService, DimensionTableService, SCDTableService
+]
 
 
 class TableColumnsInfoService(OpsServiceMixin):
@@ -62,9 +64,16 @@ class TableColumnsInfoService(OpsServiceMixin):
         service: Union[EntityService, SemanticService],
         field_class_name: str,
     ) -> None:
-        id_values = [getattr(col_info, field_name) for col_info in columns_info if getattr(col_info, field_name)]
+        id_values = [
+            getattr(col_info, field_name)
+            for col_info in columns_info
+            if getattr(col_info, field_name)
+        ]
         found_id_values = [
-            doc.id async for doc in service.list_documents_iterator(query_filter={"_id": {"$in": id_values}})
+            doc.id
+            async for doc in service.list_documents_iterator(
+                query_filter={"_id": {"$in": id_values}}
+            )
         ]
         missing_id_values = sorted(set(id_values).difference(found_id_values))
         if missing_id_values:
@@ -148,12 +157,18 @@ class TableColumnsInfoService(OpsServiceMixin):
             update_values = {}
             if update_flag != 0:
                 # table references updated in entity
-                update_action = self.include_object_id if update_flag > 0 else self.exclude_object_id
-                update_values["table_ids"] = update_action(document_ids=entity.table_ids, document_id=document.id)
+                update_action = (
+                    self.include_object_id if update_flag > 0 else self.exclude_object_id
+                )
+                update_values["table_ids"] = update_action(
+                    document_ids=entity.table_ids, document_id=document.id
+                )
 
             if primary_update_flag != 0:
                 # primary table references updated in entity
-                update_action = self.include_object_id if primary_update_flag > 0 else self.exclude_object_id
+                update_action = (
+                    self.include_object_id if primary_update_flag > 0 else self.exclude_object_id
+                )
                 update_values["primary_table_ids"] = update_action(
                     document_ids=entity.primary_table_ids, document_id=document.id
                 )
@@ -171,9 +186,13 @@ class TableColumnsInfoService(OpsServiceMixin):
         parent_entity_ids: List[ObjectId],
     ) -> Tuple[List[ParentEntity], List[ObjectId]]:
         current_parent_entity_ids = {
-            parent.id for parent in parents if parent.table_id == table_id and parent.table_type == table_type
+            parent.id
+            for parent in parents
+            if parent.table_id == table_id and parent.table_type == table_type
         }
-        additional_parent_entity_ids = sorted(set(parent_entity_ids).difference(current_parent_entity_ids))
+        additional_parent_entity_ids = sorted(
+            set(parent_entity_ids).difference(current_parent_entity_ids)
+        )
         output = parents.copy()
         for entity_id in additional_parent_entity_ids:
             output.append(ParentEntity(id=entity_id, table_type=table_type, table_id=table_id))
@@ -189,7 +208,11 @@ class TableColumnsInfoService(OpsServiceMixin):
         removed_parent_entity_ids = []
         output = []
         for parent in parents:
-            if parent.id in parent_entity_ids and parent.table_id == table_id and parent.table_type == table_type:
+            if (
+                parent.id in parent_entity_ids
+                and parent.table_id == table_id
+                and parent.table_type == table_type
+            ):
                 removed_parent_entity_ids.append(parent.id)
                 continue
             output.append(parent)
@@ -222,7 +245,9 @@ class TableColumnsInfoService(OpsServiceMixin):
         # Add relationship info links for new parent entity relationships
         entity_column_name = self._get_column_name_for_entity_id(updated_columns_info, entity_id)
         for new_parent_entity_id in parent_entity_ids_to_add:
-            related_entity_column_name = self._get_column_name_for_entity_id(updated_columns_info, new_parent_entity_id)
+            related_entity_column_name = self._get_column_name_for_entity_id(
+                updated_columns_info, new_parent_entity_id
+            )
             await self.relationship_info_service.create_document(
                 data=RelationshipInfoCreate(
                     name=f"{entity_id}_{new_parent_entity_id}",
@@ -261,7 +286,9 @@ class TableColumnsInfoService(OpsServiceMixin):
                 )
                 for parent_id in new_parent_entity_ids:
                     await self.entity_relationship_service.add_relationship(
-                        parent=ParentEntity(id=parent_id, table_id=document.id, table_type=document.type),
+                        parent=ParentEntity(
+                            id=parent_id, table_id=document.id, table_type=document.type
+                        ),
                         child_id=entity_id,
                     )
 
@@ -307,7 +334,9 @@ class TableColumnsInfoService(OpsServiceMixin):
                 if parents != primary_entity.parents:
                     for parent_id in new_parent_entity_ids:
                         await self.entity_relationship_service.add_relationship(
-                            parent=ParentEntity(id=parent_id, table_id=document.id, table_type=document.type),
+                            parent=ParentEntity(
+                                id=parent_id, table_id=document.id, table_type=document.type
+                            ),
                             child_id=entity_id,
                         )
                     for parent_id in removed_parent_entity_ids:
@@ -322,7 +351,9 @@ class TableColumnsInfoService(OpsServiceMixin):
                     # Remove relationship info links for old parent entity relationships
                     await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
 
-    async def update_entity_table_references(self, document: TableModel, columns_info: List[ColumnInfo]) -> None:
+    async def update_entity_table_references(
+        self, document: TableModel, columns_info: List[ColumnInfo]
+    ) -> None:
         """
         This method prepares table to:
         - update table references in affected entities

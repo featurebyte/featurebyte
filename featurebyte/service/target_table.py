@@ -114,8 +114,12 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
         )
 
         if observation_set_dataframe is not None:
-            observation_set_storage_path = f"target_table/observation_set/{output_document_id}.parquet"
-            await self.temp_storage.put_dataframe(observation_set_dataframe, Path(observation_set_storage_path))
+            observation_set_storage_path = (
+                f"target_table/observation_set/{output_document_id}.parquet"
+            )
+            await self.temp_storage.put_dataframe(
+                observation_set_dataframe, Path(observation_set_storage_path)
+            )
         else:
             observation_set_storage_path = None
 

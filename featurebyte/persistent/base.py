@@ -134,7 +134,9 @@ class Persistent(ABC):
         Optional[Document]
             Retrieved document
         """
-        return await self._find_one(collection_name=collection_name, query_filter=query_filter, projection=projection)
+        return await self._find_one(
+            collection_name=collection_name, query_filter=query_filter, projection=projection
+        )
 
     async def find(
         self,
@@ -597,7 +599,9 @@ class Persistent(ABC):
         migrate_func: Callable[[dict[str, Any]], dict[str, Any]]
             Function to migrate the record from old to new format
         """
-        doc_generator = self.historical_document_generator(collection_name=collection_name, document_id=document_id)
+        doc_generator = self.historical_document_generator(
+            collection_name=collection_name, document_id=document_id
+        )
         previous: dict[str, Any] = {}
         async for audit_doc, doc_dict in doc_generator:
             doc_dict = migrate_func(doc_dict) if doc_dict else {}
@@ -607,7 +611,9 @@ class Persistent(ABC):
             else:
                 original_doc = previous
 
-            previous_values, current_values = get_previous_and_current_values(original_doc, doc_dict)
+            previous_values, current_values = get_previous_and_current_values(
+                original_doc, doc_dict
+            )
 
             updated_audit_doc = AuditDocument(**{
                 **audit_doc.dict(by_alias=True),
@@ -646,7 +652,9 @@ class Persistent(ABC):
         pass
 
     @abstractmethod
-    async def _insert_many(self, collection_name: str, documents: Iterable[Document]) -> list[ObjectId]:
+    async def _insert_many(
+        self, collection_name: str, documents: Iterable[Document]
+    ) -> list[ObjectId]:
         pass
 
     @abstractmethod

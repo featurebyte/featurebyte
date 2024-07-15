@@ -26,7 +26,9 @@ def offline_store_feature_table_service_fixture(app_container):
 @pytest.fixture(name="offline_store_feature_table_dict")
 def offline_store_feature_table_dict_fixture(test_dir, service, user_id):
     """Fixture for OfflineStoreFeatureTableModel"""
-    path = os.path.join(test_dir, "fixtures/offline_store_feature_table/feature_cluster_one_feature.json")
+    path = os.path.join(
+        test_dir, "fixtures/offline_store_feature_table/feature_cluster_one_feature.json"
+    )
     with open(path, "r") as file:
         feature_cluster = FeatureCluster(**json_util.loads(file.read()))
 
@@ -55,7 +57,9 @@ def offline_store_feature_table_dict_fixture(test_dir, service, user_id):
 @pytest.fixture(name="feature_cluster_two_features")
 def feature_cluster_two_features_fixture(test_dir):
     """Fixture for feature_cluster_two_features"""
-    path = os.path.join(test_dir, "fixtures/offline_store_feature_table/feature_cluster_two_features.json")
+    path = os.path.join(
+        test_dir, "fixtures/offline_store_feature_table/feature_cluster_two_features.json"
+    )
     with open(path, "r") as file:
         return FeatureCluster(**json_util.loads(file.read()))
 
@@ -113,7 +117,9 @@ async def test_get_document(offline_store_feature_table, service, offline_store_
     assert table.feature_cluster == offline_store_feature_table_dict["feature_cluster"]
 
     # check the feature cluster is not populated if populate_remote_attributes is False
-    table = await service.get_document(offline_store_feature_table.id, populate_remote_attributes=False)
+    table = await service.get_document(
+        offline_store_feature_table.id, populate_remote_attributes=False
+    )
     assert table.feature_cluster is None
 
 
@@ -130,7 +136,9 @@ async def test_list_documents_iterator(offline_store_feature_table, service):
     assert tables[0].feature_cluster == offline_store_feature_table.feature_cluster
 
     # check the feature cluster is not populated if populate_remote_attributes is False
-    async for table in service.list_documents_iterator(query_filter={}, populate_remote_attributes=False):
+    async for table in service.list_documents_iterator(
+        query_filter={}, populate_remote_attributes=False
+    ):
         assert table.feature_cluster is None
 
 
@@ -149,7 +157,9 @@ async def test_delete_document(offline_store_feature_table, service, storage):
 
 
 @pytest.mark.asyncio
-async def test_update_document(service, offline_store_feature_table, storage, feature_cluster_two_features):
+async def test_update_document(
+    service, offline_store_feature_table, storage, feature_cluster_two_features
+):
     """Test update_document"""
     updated_doc = await service.update_document(
         document_id=offline_store_feature_table.id,
@@ -182,9 +192,13 @@ async def test_update_document(service, offline_store_feature_table, storage, fe
 
 
 @pytest.mark.asyncio
-async def test_update_document__with_failure(service, offline_store_feature_table, feature_cluster_two_features):
+async def test_update_document__with_failure(
+    service, offline_store_feature_table, feature_cluster_two_features
+):
     """Test update_document with failure"""
-    cluster_path = os.path.join(service.storage.base_path, offline_store_feature_table.feature_cluster_path)
+    cluster_path = os.path.join(
+        service.storage.base_path, offline_store_feature_table.feature_cluster_path
+    )
 
     update_data = FeaturesUpdate(
         feature_ids=[ObjectId(), ObjectId()],
@@ -199,7 +213,9 @@ async def test_update_document__with_failure(service, offline_store_feature_tabl
     with patch.object(service, "_move_feature_cluster_to_storage") as mock_move_storage:
         mock_move_storage.side_effect = Exception("Random error")
         with pytest.raises(Exception, match="Random error"):
-            await service.update_document(document_id=offline_store_feature_table.id, data=update_data)
+            await service.update_document(
+                document_id=offline_store_feature_table.id, data=update_data
+            )
 
     # check that feature cluster remote file is deleted
     assert not os.path.exists(cluster_path)

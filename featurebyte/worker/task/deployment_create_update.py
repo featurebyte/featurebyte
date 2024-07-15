@@ -46,7 +46,9 @@ class DeploymentCreateUpdateTask(BaseLockTask[DeploymentCreateUpdateTaskPayload]
             creation_payload = cast(CreateDeploymentPayload, payload.deployment_payload)
             deployment_name = creation_payload.name
         else:
-            deployment = await self.deployment_service.get_document(document_id=payload.output_document_id)
+            deployment = await self.deployment_service.get_document(
+                document_id=payload.output_document_id
+            )
             deployment_name = deployment.name
             if payload.deployment_payload.enabled:
                 action = "Enable"

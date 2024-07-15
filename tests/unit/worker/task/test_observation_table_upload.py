@@ -22,7 +22,9 @@ async def test_get_task_description(catalog, app_container):
         name="Test Observation Table Upload",
         feature_store_id=ObjectId(),
         catalog_id=catalog.id,
-        request_input=UploadedFileInput(type=RequestInputType.UPLOADED_FILE, file_name="random.csv"),
+        request_input=UploadedFileInput(
+            type=RequestInputType.UPLOADED_FILE, file_name="random.csv"
+        ),
         observation_set_storage_path="filepath",
         primary_entity_ids=["63f94ed6ea1f050131379214"],
         file_format="csv",

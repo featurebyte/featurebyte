@@ -122,7 +122,9 @@ async def relationship_grandpa_father_fixture(
     """
     table_id = ObjectId()
     await entity_relationship_service.add_relationship(
-        parent=ParentEntity(id=grandpa_entity_id, table_id=table_id, table_type=TableDataType.DIMENSION_TABLE),
+        parent=ParentEntity(
+            id=grandpa_entity_id, table_id=table_id, table_type=TableDataType.DIMENSION_TABLE
+        ),
         child_id=father_entity_id,
     )
     create_payload = RelationshipInfoCreate(
@@ -151,7 +153,9 @@ async def relationship_granny_father_fixture(
     """
     table_id = ObjectId()
     await entity_relationship_service.add_relationship(
-        parent=ParentEntity(id=granny_entity_id, table_id=table_id, table_type=TableDataType.DIMENSION_TABLE),
+        parent=ParentEntity(
+            id=granny_entity_id, table_id=table_id, table_type=TableDataType.DIMENSION_TABLE
+        ),
         child_id=father_entity_id,
     )
     create_payload = RelationshipInfoCreate(
@@ -176,7 +180,9 @@ async def relationship_father_son_fixture(
     """
     table_id = ObjectId()
     await entity_relationship_service.add_relationship(
-        parent=ParentEntity(id=father_entity_id, table_id=table_id, table_type=TableDataType.DIMENSION_TABLE),
+        parent=ParentEntity(
+            id=father_entity_id, table_id=table_id, table_type=TableDataType.DIMENSION_TABLE
+        ),
         child_id=son_entity_id,
     )
     create_payload = RelationshipInfoCreate(
@@ -201,7 +207,9 @@ async def relationship_mother_son_fixture(
     """
     table_id = ObjectId()
     await entity_relationship_service.add_relationship(
-        parent=ParentEntity(id=mother_entity_id, table_id=table_id, table_type=TableDataType.DIMENSION_TABLE),
+        parent=ParentEntity(
+            id=mother_entity_id, table_id=table_id, table_type=TableDataType.DIMENSION_TABLE
+        ),
         child_id=son_entity_id,
     )
     create_payload = RelationshipInfoCreate(

@@ -7,7 +7,9 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 def test_detect_and_update_column_dtypes(event_table, source_type):
     """Test embedding and flat dict dtypes"""
     specialized_dtype_columns = [
-        col for col in event_table.columns_info if col.dtype in {DBVarType.EMBEDDING, DBVarType.FLAT_DICT}
+        col
+        for col in event_table.columns_info
+        if col.dtype in {DBVarType.EMBEDDING, DBVarType.FLAT_DICT}
     ]
     assert len(specialized_dtype_columns) == 2
     assert specialized_dtype_columns == [

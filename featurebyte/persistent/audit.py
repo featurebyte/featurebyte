@@ -35,7 +35,9 @@ def get_audit_collection_name(collection_name: str) -> str:
     return f"__audit__{collection_name}"
 
 
-def get_audit_doc_name(action_type: AuditActionType, original_doc: Document, updated_doc: Document) -> str:
+def get_audit_doc_name(
+    action_type: AuditActionType, original_doc: Document, updated_doc: Document
+) -> str:
     """
     Retrieve document name for audit log record names
 
@@ -63,7 +65,9 @@ def get_audit_doc_name(action_type: AuditActionType, original_doc: Document, upd
     return f"{action_type.lower()}: {doc_name}"
 
 
-def get_previous_and_current_values(original_doc: Document, updated_doc: Document) -> tuple[Document, Document]:
+def get_previous_and_current_values(
+    original_doc: Document, updated_doc: Document
+) -> tuple[Document, Document]:
     """
     Get values in original document that has been changed in updated document
 
@@ -80,8 +84,12 @@ def get_previous_and_current_values(original_doc: Document, updated_doc: Documen
         Previous values documents (document with values in original document that has been updated)
         and current values documents (document with values in current document that has been updated)
     """
-    previous_values = {key: value for key, value in original_doc.items() if value != updated_doc.get(key, np.nan)}
-    current_values = {key: value for key, value in updated_doc.items() if value != original_doc.get(key, np.nan)}
+    previous_values = {
+        key: value for key, value in original_doc.items() if value != updated_doc.get(key, np.nan)
+    }
+    current_values = {
+        key: value for key, value in updated_doc.items() if value != original_doc.get(key, np.nan)
+    }
     return previous_values, current_values
 
 
@@ -215,7 +223,9 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
             else:
                 updated_doc = {}
 
-            previous_values, current_values = get_previous_and_current_values(original_doc, updated_doc)
+            previous_values, current_values = get_previous_and_current_values(
+                original_doc, updated_doc
+            )
             audit_docs.append(
                 AuditDocument(
                     user_id=user_id,
@@ -227,7 +237,9 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
                 ).dict(by_alias=True)
             )
 
-        await persistent._insert_many(collection_name=get_audit_collection_name(collection_name), documents=audit_docs)
+        await persistent._insert_many(
+            collection_name=get_audit_collection_name(collection_name), documents=audit_docs
+        )
 
     def inner(func: Any) -> Any:
         """

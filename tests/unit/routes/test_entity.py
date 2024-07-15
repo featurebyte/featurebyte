@@ -27,7 +27,8 @@ class TestEntityApi(BaseCatalogApiTestSuite):
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            'Entity (name: "customer") already exists. ' 'Get the existing object by `Entity.get(name="customer")`.',
+            'Entity (name: "customer") already exists. '
+            'Get the existing object by `Entity.get(name="customer")`.',
         ),
         (
             {**payload, "_id": str(ObjectId()), "name": "whatever_name"},
@@ -106,13 +107,17 @@ class TestEntityApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         entity_id = response_dict["_id"]
-        response = test_api_client.patch(f"{self.base_route}/{entity_id}", json={"name": "Customer"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{entity_id}", json={"name": "Customer"}
+        )
         assert response.status_code == HTTPStatus.OK
         result = response.json()
         assert result["name"] == "Customer"
 
         # it is ok if the updated name is the same as the existing one
-        response = test_api_client.patch(f"{self.base_route}/{entity_id}", json={"name": "Customer"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{entity_id}", json={"name": "Customer"}
+        )
         assert response.status_code == HTTPStatus.OK
 
         # test get audit records
@@ -138,10 +143,14 @@ class TestEntityApi(BaseCatalogApiTestSuite):
         """
         test_api_client, _ = test_api_client_persistent
         unknown_entity_id = ObjectId()
-        response = test_api_client.patch(f"{self.base_route}/{unknown_entity_id}", json={"name": "random_name"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{unknown_entity_id}", json={"name": "random_name"}
+        )
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == {
-            "detail": (f'Entity (id: "{unknown_entity_id}") not found. Please save the Entity object first.')
+            "detail": (
+                f'Entity (id: "{unknown_entity_id}") not found. Please save the Entity object first.'
+            )
         }
 
     def test_update_409(self, create_multiple_entries, test_api_client_persistent):
@@ -149,11 +158,14 @@ class TestEntityApi(BaseCatalogApiTestSuite):
         Test entity update (conflict)
         """
         test_api_client, _ = test_api_client_persistent
-        response = test_api_client.patch(f"{self.base_route}/{create_multiple_entries[0]}", json={"name": "customer"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{create_multiple_entries[0]}", json={"name": "customer"}
+        )
         assert response.status_code == HTTPStatus.CONFLICT
         assert response.json() == {
             "detail": (
-                'Entity (name: "customer") already exists. ' 'Get the existing object by `Entity.get(name="customer")`.'
+                'Entity (name: "customer") already exists. '
+                'Get the existing object by `Entity.get(name="customer")`.'
             )
         }
 
@@ -222,7 +234,9 @@ class TestEntityApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
         expected_info_response = {
             "name": "customer",
             "updated_at": None,
@@ -234,7 +248,9 @@ class TestEntityApi(BaseCatalogApiTestSuite):
         assert response_dict.items() > expected_info_response.items(), response_dict
         assert "created_at" in response_dict
 
-        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
         assert response.status_code == HTTPStatus.OK, response.text
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text

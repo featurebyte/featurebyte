@@ -135,7 +135,9 @@ class OnlineStore(OnlineStoreModel, SavableApiObject, DeletableApiObject):
         --------
         Create a online store housed in a Snowflake database
 
-        >>> online_store = fb.OnlineStore.get_or_create(name="online store", details=fb.RedisOnlineStoreDetails())
+        >>> online_store = fb.OnlineStore.get_or_create(
+        ...     name="online store", details=fb.RedisOnlineStoreDetails()
+        ... )
         >>> OnlineStore.list()[["name"]]
                          name
         0        online store

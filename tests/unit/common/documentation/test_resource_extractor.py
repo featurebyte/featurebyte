@@ -154,7 +154,9 @@ def test_get_resource_details__class():
     """
     Test get_resource_details for classes.
     """
-    resource_details = get_resource_details("tests.unit.common.documentation.test_resource_extractor.TestDocumentation")
+    resource_details = get_resource_details(
+        "tests.unit.common.documentation.test_resource_extractor.TestDocumentation"
+    )
     expected_resource_details = ResourceDetails(
         name="TestDocumentation",
         realname="TestDocumentation",
@@ -166,7 +168,9 @@ def test_get_resource_details__class():
         short_description="Class documentation string.",
         long_description="Let's add more lines to this documentation to make this more realistic, and also to make "
         "sure\nthat it is parsed correctly.",
-        parameters=[ParameterDetails(name="constructor_param", type="str", default=None, description=None)],
+        parameters=[
+            ParameterDetails(name="constructor_param", type="str", default=None, description=None)
+        ],
         returns=ParameterDetails(name=None, type=None, default=None, description=None),
         raises=[],
         examples=["Some example code."],
@@ -196,8 +200,12 @@ def test_get_resource_details__method():
         method_type=None,
         short_description="Method documentation string.",
         long_description="Add more description for extra length, and extra parsing!!",
-        parameters=[ParameterDetails(name="arg1", type="int", default=None, description="Some description")],
-        returns=ParameterDetails(name=None, type="str", default=None, description="Some description"),
+        parameters=[
+            ParameterDetails(name="arg1", type="int", default=None, description="Some description")
+        ],
+        returns=ParameterDetails(
+            name=None, type="str", default=None, description="Some description"
+        ),
         raises=[ExceptionDetails(type="Exception", description="Some description")],
         examples=["Some example code."],
         see_also=None,
@@ -257,7 +265,9 @@ def test_get_resource_details__property():
         short_description="Property documentation string.",
         long_description=None,
         parameters=[],
-        returns=ParameterDetails(name=None, type="str", default=None, description="Property string"),
+        returns=ParameterDetails(
+            name=None, type="str", default=None, description="Property string"
+        ),
         raises=[],
         examples=[],
         see_also=None,

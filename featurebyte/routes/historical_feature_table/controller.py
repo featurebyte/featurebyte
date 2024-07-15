@@ -71,7 +71,9 @@ class HistoricalFeatureTableController(
         )
         self.feature_store_service = feature_store_service
         self.feature_list_service = feature_list_service
-        self.historical_features_validation_parameters_service = historical_features_validation_parameters_service
+        self.historical_features_validation_parameters_service = (
+            historical_features_validation_parameters_service
+        )
 
     async def get_payload(
         self,
@@ -82,16 +84,24 @@ class HistoricalFeatureTableController(
             data=table_create, observation_set_dataframe=observation_set_dataframe
         )
 
-    async def get_validation_parameters(self, table_create: HistoricalFeatureTableCreate) -> ValidationParameters:
-        return await self.historical_features_validation_parameters_service.get_validation_parameters(
-            table_create.featurelist_get_historical_features
+    async def get_validation_parameters(
+        self, table_create: HistoricalFeatureTableCreate
+    ) -> ValidationParameters:
+        return (
+            await self.historical_features_validation_parameters_service.get_validation_parameters(
+                table_create.featurelist_get_historical_features
+            )
         )
 
-    async def get_additional_info_params(self, document: BaseFeatureOrTargetTableModel) -> dict[str, Any]:
+    async def get_additional_info_params(
+        self, document: BaseFeatureOrTargetTableModel
+    ) -> dict[str, Any]:
         assert isinstance(document, HistoricalFeatureTableModel)
         if document.feature_list_id is None:
             return {}
-        feature_list = await self.feature_list_service.get_document(document_id=document.feature_list_id)
+        feature_list = await self.feature_list_service.get_document(
+            document_id=document.feature_list_id
+        )
         return {
             "feature_list_name": feature_list.name,
             "feature_list_version": feature_list.version.to_str(),
@@ -116,5 +126,7 @@ class HistoricalFeatureTableController(
         """
         return cast(
             HistoricalFeatureTableModel,
-            await self.service.update_document(historical_feature_table_id, data, return_document=True),
+            await self.service.update_document(
+                historical_feature_table_id, data, return_document=True
+            ),
         )

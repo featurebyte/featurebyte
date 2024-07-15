@@ -31,5 +31,6 @@ async def test_get_task_description(catalog, app_container):
     )
     task = app_container.get(ObservationTableTask)
     assert (
-        await task.get_task_description(payload) == 'Save observation table "Test Observation Table" from source table.'
+        await task.get_task_description(payload)
+        == 'Save observation table "Test Observation Table" from source table.'
     )

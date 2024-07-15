@@ -21,4 +21,7 @@ def test_logging(mock_log_handler):
     # 2022-06-20 14:33:41.328 | DEBUG    | Test Message | {'extra': {'a': 1}}
     assert len(mock_log_handler.records) == 1
     parts = mock_log_handler.records[0].split("|")
-    assert "|".join(parts[1:]) == " DEBUG    | tests.unit.test_logger | test_logging:18 | Test Message | {'a': 1}"
+    assert (
+        "|".join(parts[1:])
+        == " DEBUG    | tests.unit.test_logger | test_logging:18 | Test Message | {'a': 1}"
+    )

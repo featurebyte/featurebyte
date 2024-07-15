@@ -18,7 +18,9 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
 
     class_name = "FeatureListNamespace"
     base_route = "/feature_list_namespace"
-    payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/feature_list_multi.json")
+    payload = BaseCatalogApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/feature_list_multi.json"
+    )
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
 
@@ -48,7 +50,9 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
         api_client, _ = test_api_client_persistent
         self.setup_creation_route(api_client)
 
-        feature_list_payload = self.load_payload("tests/fixtures/request_payloads/feature_list_multi.json")
+        feature_list_payload = self.load_payload(
+            "tests/fixtures/request_payloads/feature_list_multi.json"
+        )
         feature_list_response = api_client.post("/feature_list", json=feature_list_payload)
         feature_list_namespace_id = feature_list_response.json()["feature_list_namespace_id"]
 
@@ -78,7 +82,9 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
 
     def multiple_success_payload_generator(self, api_client):
         """Generate multiple success payloads"""
-        feature_list_payload = self.load_payload("tests/fixtures/request_payloads/feature_list_multi.json")
+        feature_list_payload = self.load_payload(
+            "tests/fixtures/request_payloads/feature_list_multi.json"
+        )
         for i in range(3):
             feature_list_payload = feature_list_payload.copy()
             feature_list_payload["_id"] = str(ObjectId())
@@ -113,9 +119,15 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "name": "sf_feature_list_multiple",
             "created_at": response_dict["created_at"],
             "updated_at": None,
-            "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}],
-            "primary_entity": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}],
-            "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}],
+            "entities": [
+                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
+            ],
+            "primary_entity": [
+                {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
+            ],
+            "tables": [
+                {"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "grocery"}
+            ],
             "feature_namespace_ids": create_response_dict["feature_namespace_ids"],
             "default_feature_ids": response_dict["default_feature_ids"],
             "default_feature_list_id": response_dict["default_feature_list_id"],
@@ -127,5 +139,7 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
             "description": None,
         }
 
-        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
         assert verbose_response.status_code == HTTPStatus.OK, verbose_response.text

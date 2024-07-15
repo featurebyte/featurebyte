@@ -105,7 +105,9 @@ class TestSCDTableApi(BaseTableApiTestSuite):
             "current_flag": "current_value",
         }
         scd_table_data = SCDTableData(**scd_table_dict)
-        input_node = scd_table_data.construct_input_node(feature_store_details=feature_store_details)
+        input_node = scd_table_data.construct_input_node(
+            feature_store_details=feature_store_details
+        )
         graph = QueryGraph()
         inserted_node = graph.add_node(node=input_node, input_nodes=[])
         scd_table_dict["graph"] = graph
@@ -130,7 +132,9 @@ class TestSCDTableApi(BaseTableApiTestSuite):
         }
 
     @pytest.mark.asyncio
-    async def test_surrogate_key_cannot_be_tagged_as_entity(self, test_api_client_persistent, create_success_response):
+    async def test_surrogate_key_cannot_be_tagged_as_entity(
+        self, test_api_client_persistent, create_success_response
+    ):
         """test tag surrogate key as entity"""
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
@@ -154,7 +158,9 @@ class TestSCDTableApi(BaseTableApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
         expected_info_response = {
             "name": self.document_name,
             "record_creation_timestamp_column": None,
@@ -193,7 +199,9 @@ class TestSCDTableApi(BaseTableApiTestSuite):
             "scd_natural_key_id",
         }
 
-        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
         assert response.status_code == HTTPStatus.OK, response.text
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text

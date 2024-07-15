@@ -233,7 +233,9 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
 
     @validator("function_parameters")
     @classmethod
-    def _validate_function_parameters(cls, value: List[FunctionParameter]) -> List[FunctionParameter]:
+    def _validate_function_parameters(
+        cls, value: List[FunctionParameter]
+    ) -> List[FunctionParameter]:
         # check that function parameter name is unique and valid
         func_names = set()
         for func_param in value:

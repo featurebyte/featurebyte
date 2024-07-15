@@ -120,7 +120,11 @@ class ParentEntityLookupService:
         }
         for table_id, table in tables_by_id.items():
             if table.type == TableDataType.ITEM_TABLE:
-                item_table = await self.extended_item_table_service.get_document_with_event_table_model(table_id)
+                item_table = (
+                    await self.extended_item_table_service.get_document_with_event_table_model(
+                        table_id
+                    )
+                )
                 tables_by_id[table_id] = item_table
 
         return EntityLookupStepCreator(
@@ -148,7 +152,9 @@ class ParentEntityLookupService:
         -------
         list[EntityLookupStep]
         """
-        entity_lookup_step_creator = await self.get_entity_lookup_step_creator(entity_relationships_info)
+        entity_lookup_step_creator = await self.get_entity_lookup_step_creator(
+            entity_relationships_info
+        )
 
         join_steps = []
         for info in entity_relationships_info:
@@ -157,10 +163,14 @@ class ParentEntityLookupService:
             join_step = entity_lookup_step_creator.get_entity_lookup_step(
                 info.id,
                 child_serving_name_override=(
-                    entity_info.get_effective_serving_name(child_entity) if entity_info is not None else None
+                    entity_info.get_effective_serving_name(child_entity)
+                    if entity_info is not None
+                    else None
                 ),
                 parent_serving_name_override=(
-                    entity_info.get_effective_serving_name(parent_entity) if entity_info is not None else None
+                    entity_info.get_effective_serving_name(parent_entity)
+                    if entity_info is not None
+                    else None
                 ),
             )
             join_steps.append(join_step)

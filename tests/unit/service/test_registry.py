@@ -72,8 +72,12 @@ async def test_registry_service__project_name_creation(registry_service_map):
     for (_, catalog_name), registry_service in registry_service_map.items():
         deployment.id = ObjectId()
         catalog = Catalog.get(name=catalog_name)
-        with patch("featurebyte.service.deployment.DeploymentService.get_document", return_value=deployment):
-            feast_registry = await registry_service.get_or_create_feast_registry(deployment=deployment)
+        with patch(
+            "featurebyte.service.deployment.DeploymentService.get_document", return_value=deployment
+        ):
+            feast_registry = await registry_service.get_or_create_feast_registry(
+                deployment=deployment
+            )
         expected_table_prefix = catalog_name_to_table_prefix[catalog_name]
         existing_catalog_ids.add(catalog.id)
         existing_project_names.add(feast_registry.name)

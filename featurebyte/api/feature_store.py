@@ -307,7 +307,9 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         """
         self._delete()
 
-    def update_details(self, http_path: Optional[str] = None, warehouse: Optional[str] = None) -> None:
+    def update_details(
+        self, http_path: Optional[str] = None, warehouse: Optional[str] = None
+    ) -> None:
         """
         Updates the details of the feature store.
 
@@ -326,7 +328,9 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         >>> feature_store.update_details(warehouse="feature_engineering")  # doctest: +SKIP
         """
         self.update(
-            update_payload=DatabaseDetailsUpdate(http_path=http_path, warehouse=warehouse).json_dict(),
+            update_payload=DatabaseDetailsUpdate(
+                http_path=http_path, warehouse=warehouse
+            ).json_dict(),
             allow_update_local=False,
             url=f"{self._route}/{self.id}/details",
             skip_update_schema_check=True,

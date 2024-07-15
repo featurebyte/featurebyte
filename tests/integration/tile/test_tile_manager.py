@@ -49,8 +49,12 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager_servi
         create_sql += " USING DELTA"
     await session.execute_query(create_sql)
 
-    await session.execute_query(f"INSERT INTO {temp_entity_table} VALUES ('P1', 'C1', '{last_tile_start_date_1}') ")
-    await session.execute_query(f"INSERT INTO {temp_entity_table} VALUES ('P2', 'C2', '{last_tile_start_date_2}') ")
+    await session.execute_query(
+        f"INSERT INTO {temp_entity_table} VALUES ('P1', 'C1', '{last_tile_start_date_1}') "
+    )
+    await session.execute_query(
+        f"INSERT INTO {temp_entity_table} VALUES ('P2', 'C2', '{last_tile_start_date_2}') "
+    )
 
     await tile_manager_service.update_tile_entity_tracker(
         session, tile_spec=tile_spec, temp_entity_table=entity_table_query
@@ -72,7 +76,9 @@ async def test_update_tile_entity_tracker(tile_spec, session, tile_manager_servi
         f"UPDATE {temp_entity_table} SET LAST_TILE_START_DATE = '{last_tile_start_date_2_new}' WHERE PRODUCT_ACTION = 'P2'"
     )
     last_tile_start_date_3 = "2022-07-08 10:52:14"
-    await session.execute_query(f"INSERT INTO {temp_entity_table} VALUES ('P3', 'C3', '{last_tile_start_date_3}') ")
+    await session.execute_query(
+        f"INSERT INTO {temp_entity_table} VALUES ('P3', 'C3', '{last_tile_start_date_3}') "
+    )
 
     await tile_manager_service.update_tile_entity_tracker(
         session, tile_spec=tile_spec, temp_entity_table=entity_table_query
@@ -103,7 +109,9 @@ async def test_generate_tiles_on_demand(session, tile_spec, tile_manager_service
     await session.execute_query(
         f"CREATE TABLE {temp_entity_table} (PRODUCT_ACTION STRING, CUST_ID STRING, LAST_TILE_START_DATE STRING)"
     )
-    await session.execute_query(f"INSERT INTO {temp_entity_table} VALUES ('P1', 'C1', '{last_tile_start_date_1}') ")
+    await session.execute_query(
+        f"INSERT INTO {temp_entity_table} VALUES ('P1', 'C1', '{last_tile_start_date_1}') "
+    )
 
     tile_spec.tile_sql = tile_spec.tile_sql.replace(
         InternalName.TILE_START_DATE_SQL_PLACEHOLDER, "'2022-06-05 23:33:00'"

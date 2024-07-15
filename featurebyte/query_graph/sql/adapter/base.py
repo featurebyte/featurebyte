@@ -78,7 +78,9 @@ class BaseAdapter(ABC):
 
     @classmethod
     @abstractmethod
-    def str_trim(cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]) -> Expression:
+    def str_trim(
+        cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
+    ) -> Expression:
         """
         Expression to trim leading and / or trailing characters from string
 
@@ -112,7 +114,9 @@ class BaseAdapter(ABC):
         ------
         Expression
         """
-        return expressions.Anonymous(this="CONTAINS", expressions=[expr, make_literal_value(pattern)])
+        return expressions.Anonymous(
+            this="CONTAINS", expressions=[expr, make_literal_value(pattern)]
+        )
 
     @classmethod
     @abstractmethod
@@ -151,7 +155,9 @@ class BaseAdapter(ABC):
 
     @classmethod
     @abstractmethod
-    def dateadd_microsecond(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
+    def dateadd_microsecond(
+        cls, quantity_expr: Expression, timestamp_expr: Expression
+    ) -> Expression:
         """
         Expression to perform DATEADD using microsecond as the time unit
 
@@ -168,7 +174,9 @@ class BaseAdapter(ABC):
         """
 
     @classmethod
-    def datediff_microsecond(cls, timestamp_expr_1: Expression, timestamp_expr_2: Expression) -> Expression:
+    def datediff_microsecond(
+        cls, timestamp_expr_1: Expression, timestamp_expr_2: Expression
+    ) -> Expression:
         """
         Expression to perform DATEDIFF using microsecond as the time unit
 
@@ -267,7 +275,9 @@ class BaseAdapter(ABC):
 
         # Cast type to string first so that integer can be represented nicely ('{"0": 7}' vs
         # '{"0.00000": 7}')
-        category_col_casted = expressions.Cast(this=category_col, to=expressions.DataType.build("TEXT"))
+        category_col_casted = expressions.Cast(
+            this=category_col, to=expressions.DataType.build("TEXT")
+        )
 
         # Replace missing category values since OBJECT_AGG ignores keys that are null
         category_filled_null = expressions.Case(
@@ -284,12 +294,16 @@ class BaseAdapter(ABC):
             alias_(
                 cls.object_agg(
                     key_column=category_filled_null,
-                    value_column=get_qualified_column_identifier(inner_agg_result_name, inner_alias),
+                    value_column=get_qualified_column_identifier(
+                        inner_agg_result_name, inner_alias
+                    ),
                 ),
                 alias=agg_result_name,
                 quoted=True,
             )
-            for inner_agg_result_name, agg_result_name in zip(inner_agg_result_names, agg_result_names)
+            for inner_agg_result_name, agg_result_name in zip(
+                inner_agg_result_names, agg_result_names
+            )
         ]
         agg_expr = (
             select(*outer_group_by_keys, *object_agg_exprs)
@@ -389,7 +403,9 @@ class BaseAdapter(ABC):
 
     @classmethod
     @abstractmethod
-    def get_value_from_dictionary(cls, dictionary_expression: Expression, key_expression: Expression) -> Expression:
+    def get_value_from_dictionary(
+        cls, dictionary_expression: Expression, key_expression: Expression
+    ) -> Expression:
         """
         Get the value from a dictionary based on a key provided.
 
@@ -488,13 +504,17 @@ class BaseAdapter(ABC):
                 this=format_float_positional(sample_percent, trim="-"), is_string=False
             )
         }
-        tablesample_expr = expressions.TableSample(this=nested_select_expr.args["from"].expressions[0], **params)
+        tablesample_expr = expressions.TableSample(
+            this=nested_select_expr.args["from"].expressions[0], **params
+        )
         nested_select_expr.args["from"].set("expressions", [tablesample_expr])
 
         return nested_select_expr
 
     @classmethod
-    def random_sample(cls, select_expr: Select, desired_row_count: int, total_row_count: int, seed: int) -> Select:
+    def random_sample(
+        cls, select_expr: Select, desired_row_count: int, total_row_count: int, seed: int
+    ) -> Select:
         """
         Construct query to randomly sample some number of rows from a table
 
@@ -529,7 +549,11 @@ class BaseAdapter(ABC):
         return (
             select(*original_cols)
             .from_(sampled_expr_with_prob.subquery())
-            .where(expressions.LTE(this=quoted_identifier("prob"), expression=make_literal_value(probability)))
+            .where(
+                expressions.LTE(
+                    this=quoted_identifier("prob"), expression=make_literal_value(probability)
+                )
+            )
             .limit(desired_row_count)
             .order_by(quoted_identifier("prob"))
         )
@@ -582,7 +606,9 @@ class BaseAdapter(ABC):
         """
 
     @classmethod
-    def filter_with_window_function(cls, select_expr: Select, column_names: list[str], condition: Expression) -> Select:
+    def filter_with_window_function(
+        cls, select_expr: Select, column_names: list[str], condition: Expression
+    ) -> Select:
         """
         Construct query to filter with window function
 
@@ -834,7 +860,9 @@ class BaseAdapter(ABC):
                 this="SIN",
                 expressions=[
                     expressions.Div(
-                        this=expressions.paren(expressions.Sub(this=radian_lat_1_expr, expression=radian_lat_2_expr)),
+                        this=expressions.paren(
+                            expressions.Sub(this=radian_lat_1_expr, expression=radian_lat_2_expr)
+                        ),
                         expression=make_literal_value(2),
                     )
                 ],
@@ -845,15 +873,21 @@ class BaseAdapter(ABC):
                 this="SIN",
                 expressions=[
                     expressions.Div(
-                        this=expressions.paren(expressions.Sub(this=radian_lon_1_expr, expression=radian_lon_2_expr)),
+                        this=expressions.paren(
+                            expressions.Sub(this=radian_lon_1_expr, expression=radian_lon_2_expr)
+                        ),
                         expression=make_literal_value(2),
                     )
                 ],
             )
         )
-        mult_expr = expressions.Mul(this=cls._cos_expr(radian_lat_1_expr), expression=cls._cos_expr(radian_lat_2_expr))
+        mult_expr = expressions.Mul(
+            this=cls._cos_expr(radian_lat_1_expr), expression=cls._cos_expr(radian_lat_2_expr)
+        )
         mult_expr = expressions.Mul(this=mult_expr, expression=pow_sin_lon_expr)
-        sqrt_expr = expressions.Sqrt(this=expressions.Add(this=pow_sin_lat_expr, expression=mult_expr))
+        sqrt_expr = expressions.Sqrt(
+            this=expressions.Add(this=pow_sin_lat_expr, expression=mult_expr)
+        )
         asin_expr = cls._asin_expr(sqrt_expr)
         mult_by_2_expr = expressions.Mul(this=make_literal_value(2), expression=asin_expr)
         return expressions.Mul(this=mult_by_2_expr, expression=make_literal_value(6371))

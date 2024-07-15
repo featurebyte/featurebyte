@@ -58,7 +58,9 @@ class SqlExpressionTemplate:
         return rendered_expr
 
     @classmethod
-    def _replace_placeholder(cls, node: expressions.Expression, placeholder_name: str, value: Any) -> Expression:
+    def _replace_placeholder(
+        cls, node: expressions.Expression, placeholder_name: str, value: Any
+    ) -> Expression:
         if isinstance(node, expressions.Identifier) and node.this == placeholder_name:
             if isinstance(value, expressions.Expression):
                 return value

@@ -68,7 +68,9 @@ class BaseRouter:
         self.router.routes = routes_to_keep
 
 
-class BaseApiRouter(BaseRouter, Generic[ObjectModelT, ListObjectModelT, CreateObjectSchemaT, ControllerT]):
+class BaseApiRouter(
+    BaseRouter, Generic[ObjectModelT, ListObjectModelT, CreateObjectSchemaT, ControllerT]
+):
     """
     Base API router.
 

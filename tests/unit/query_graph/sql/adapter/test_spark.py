@@ -20,7 +20,9 @@ class TestSparkAdapter(BaseAdapterTest):
         """
         Test dateadd_second method for spark adapter
         """
-        out = self.adapter.dateadd_second(expressions.Literal.number(100), expressions.Identifier(this="my_timestamp"))
+        out = self.adapter.dateadd_second(
+            expressions.Literal.number(100), expressions.Identifier(this="my_timestamp")
+        )
         expected = "CAST(CAST(CAST(my_timestamp AS TIMESTAMP) AS DOUBLE) + 100 AS TIMESTAMP)"
         assert out.sql() == expected
 
@@ -32,9 +34,7 @@ class TestSparkAdapter(BaseAdapterTest):
             expressions.Identifier(this="t1"),
             expressions.Identifier(this="t2"),
         )
-        expected = (
-            "(CAST(CAST(t2 AS TIMESTAMP) AS DOUBLE) * 1000000.0 - CAST(CAST(t1 AS TIMESTAMP) AS DOUBLE) * 1000000.0)"
-        )
+        expected = "(CAST(CAST(t2 AS TIMESTAMP) AS DOUBLE) * 1000000.0 - CAST(CAST(t1 AS TIMESTAMP) AS DOUBLE) * 1000000.0)"
         assert out.sql() == expected
 
 

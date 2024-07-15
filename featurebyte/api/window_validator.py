@@ -54,7 +54,9 @@ def validate_window(window: str, feature_job_frequency: str) -> None:
     # arbitrary upper bound of 365 days
     upper_bound_timerange_secs = 365 * 24 * 60 * 60
     if window_secs > upper_bound_timerange_secs:
-        raise ValueError(f"window {window} needs to be less than 365 days. Please specify a different time window.")
+        raise ValueError(
+            f"window {window} needs to be less than 365 days. Please specify a different time window."
+        )
 
     time_mod = window_secs % feature_job_frequency_secs
     if time_mod != 0:

@@ -86,7 +86,9 @@ class DatetimeAccessor:
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Series")
 
-    def __init__(self, obj: FrozenSeries, timezone_offset: Optional[Union[str, FrozenSeries]] = None):
+    def __init__(
+        self, obj: FrozenSeries, timezone_offset: Optional[Union[str, FrozenSeries]] = None
+    ):
         if obj.is_datetime:
             self._node_type = NodeType.DT_EXTRACT
             self._property_node_params_map = {
@@ -111,7 +113,9 @@ class DatetimeAccessor:
                 "microsecond": "microsecond",
             }
         else:
-            raise AttributeError(f"Can only use .dt accessor with datetime or timedelta values; got {obj.dtype}")
+            raise AttributeError(
+                f"Can only use .dt accessor with datetime or timedelta values; got {obj.dtype}"
+            )
         self._obj = obj
 
         self._timezone_offset: Optional[Union[str, FrozenSeries]] = None
@@ -296,7 +300,9 @@ class DatetimeAccessor:
 
         >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["PreviousTimestamp"] = view["Timestamp"].lag("GroceryCustomerGuid")
-        >>> view["DaysSincePreviousTimestamp"] = (view["Timestamp"] - view["PreviousTimestamp"]).dt.day
+        >>> view["DaysSincePreviousTimestamp"] = (
+        ...     view["Timestamp"] - view["PreviousTimestamp"]
+        ... ).dt.day
         >>> view.preview(5).filter(regex="Timestamp|Customer")
                             GroceryCustomerGuid           Timestamp   PreviousTimestamp  DaysSincePreviousTimestamp
         0  007a07da-1525-49be-94d1-fc7251f46a66 2022-01-07 12:02:17                 NaT                         NaN
@@ -452,7 +458,9 @@ class DatetimeAccessor:
         return self._make_operation("microsecond")
 
     def _make_operation(self, field_name: str) -> FrozenSeries:
-        var_type = DBVarType.FLOAT if self._node_type == NodeType.TIMEDELTA_EXTRACT else DBVarType.INT
+        var_type = (
+            DBVarType.FLOAT if self._node_type == NodeType.TIMEDELTA_EXTRACT else DBVarType.INT
+        )
         if field_name not in self._property_node_params_map:
             raise ValueError(
                 f"Datetime attribute {field_name} is not available for Series with"
@@ -507,7 +515,9 @@ class DatetimeAccessor:
         if self._timezone_offset is not None:
             return self._timezone_offset
 
-        operation_structure = series.graph.extract_operation_structure(series.node, keep_all_source_columns=True)
+        operation_structure = series.graph.extract_operation_structure(
+            series.node, keep_all_source_columns=True
+        )
         if operation_structure.output_category != NodeOutputCategory.VIEW:
             return None
 
@@ -621,12 +631,17 @@ class DatetimeAccessor:
         Optional[FrozenSeries]
         """
 
-        operation_structure = frame.graph.extract_operation_structure(frame.node, keep_all_source_columns=True)
+        operation_structure = frame.graph.extract_operation_structure(
+            frame.node, keep_all_source_columns=True
+        )
         offset_column_name_in_frame = None
 
         for opstruct_column in operation_structure.columns:
             if isinstance(opstruct_column, SourceDataColumn):
-                if opstruct_column.table_id == table_id and opstruct_column.name == offset_column_name:
+                if (
+                    opstruct_column.table_id == table_id
+                    and opstruct_column.name == offset_column_name
+                ):
                     offset_column_name_in_frame = opstruct_column.name
                     break
 
@@ -679,7 +694,8 @@ class DatetimeAccessor:
             allowed_node_types = {NodeType.INPUT, NodeType.GRAPH, NodeType.JOIN}
             for node_name in opstruct_column.node_names:
                 is_node_type_allowed = any(
-                    node_name.startswith(allowed_node_type) for allowed_node_type in allowed_node_types
+                    node_name.startswith(allowed_node_type)
+                    for allowed_node_type in allowed_node_types
                 )
                 if not is_node_type_allowed:
                     return False

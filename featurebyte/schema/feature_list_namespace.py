@@ -40,7 +40,9 @@ class FeatureListNamespaceUpdate(FeatureByteBaseModel):
     status: Optional[FeatureListStatus] = Field(default=None)
 
 
-class FeatureListNamespaceServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListNamespaceUpdate):
+class FeatureListNamespaceServiceUpdate(
+    BaseDocumentServiceUpdateSchema, FeatureListNamespaceUpdate
+):
     """
     FeatureListNamespace service update schema
     """

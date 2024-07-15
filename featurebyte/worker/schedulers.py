@@ -29,7 +29,10 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
         if not self._task.enabled:
             return schedules.schedstate(False, 9999)  # move behind other tasks.
 
-        if hasattr(self._task, "time_modulo_frequency_second") and self._task.time_modulo_frequency_second is not None:
+        if (
+            hasattr(self._task, "time_modulo_frequency_second")
+            and self._task.time_modulo_frequency_second is not None
+        ):
             # handle due check for jobs with time modulo frequency:
             # - attempt to launch a job as early as possible within the interval
             # - if the last run was in the current interval, we are done
@@ -42,7 +45,9 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
             interval_seconds = datetime.timedelta(**{
                 self._task.interval.period: self._task.interval.every
             }).total_seconds()
-            total_seconds = (now - self.epoch_time).total_seconds() - self._task.time_modulo_frequency_second
+            total_seconds = (
+                now - self.epoch_time
+            ).total_seconds() - self._task.time_modulo_frequency_second
 
             # how many seconds has elapsed since the start of the current interval
             seconds_since_interval_start = total_seconds % interval_seconds

@@ -36,7 +36,9 @@ class RawParameterDetails:
     param_default: Any
 
 
-def get_params(signature: inspect.Signature, type_hints: dict[str, Any]) -> List[RawParameterDetails]:
+def get_params(
+    signature: inspect.Signature, type_hints: dict[str, Any]
+) -> List[RawParameterDetails]:
     """
     Extract parameter details from signature and type hints
 

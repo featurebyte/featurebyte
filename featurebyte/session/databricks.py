@@ -87,7 +87,9 @@ class DatabricksSession(BaseSparkSession):
         self._upload_file_to_storage(path, BytesIO(b"OK"))
         self._delete_file_from_storage(path)
 
-    def upload_file_to_storage(self, local_path: str, remote_path: str, is_binary: bool = True) -> None:
+    def upload_file_to_storage(
+        self, local_path: str, remote_path: str, is_binary: bool = True
+    ) -> None:
         logger.debug(
             "Upload file to storage",
             extra={"remote_path": remote_path, "is_binary": is_binary},

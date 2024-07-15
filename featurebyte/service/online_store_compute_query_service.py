@@ -28,7 +28,9 @@ class OnlineStoreComputeQueryService(
 
     document_class = OnlineStoreComputeQueryModel
 
-    async def list_by_aggregation_id(self, aggregation_id: str) -> AsyncIterator[OnlineStoreComputeQueryModel]:
+    async def list_by_aggregation_id(
+        self, aggregation_id: str
+    ) -> AsyncIterator[OnlineStoreComputeQueryModel]:
         """
         List all documents by aggregation_id
 
@@ -42,10 +44,14 @@ class OnlineStoreComputeQueryService(
         list[OnlineStoreComputeQueryModel]
             List of OnlineStoreComputeQueryModel
         """
-        async for model in self.list_documents_iterator(query_filter={"aggregation_id": aggregation_id}):
+        async for model in self.list_documents_iterator(
+            query_filter={"aggregation_id": aggregation_id}
+        ):
             yield model
 
-    async def list_by_result_names(self, result_names: list[str]) -> AsyncIterator[OnlineStoreComputeQueryModel]:
+    async def list_by_result_names(
+        self, result_names: list[str]
+    ) -> AsyncIterator[OnlineStoreComputeQueryModel]:
         """
         List all documents by aggregation result names
 
@@ -59,7 +65,9 @@ class OnlineStoreComputeQueryService(
         list[OnlineStoreComputeQueryModel]
             List of OnlineStoreComputeQueryModel
         """
-        async for model in self.list_documents_iterator(query_filter={"result_name": {"$in": result_names}}):
+        async for model in self.list_documents_iterator(
+            query_filter={"result_name": {"$in": result_names}}
+        ):
             yield model
 
     async def delete_by_result_name(self, result_name: str) -> None:
@@ -77,7 +85,9 @@ class OnlineStoreComputeQueryService(
             If there is no document with the given result_name
         """
         query_filter = {"result_name": result_name}
-        async for doc in self.list_documents_as_dict_iterator(query_filter=query_filter, projection={"_id": 1}):
+        async for doc in self.list_documents_as_dict_iterator(
+            query_filter=query_filter, projection={"_id": 1}
+        ):
             document_id = doc["_id"]
             break
         else:

@@ -195,7 +195,9 @@ class CatalogGetByIdMixin:
         --------
         Get a saved feature job setting analysis.
 
-        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis_by_id(ObjectId())  # doctest: +SKIP
+        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return FeatureJobSettingAnalysis.get_by_id(id=id)
 
@@ -310,7 +312,9 @@ class CatalogGetByIdMixin:
         --------
         Get a saved historical feature table.
 
-        >>> historiacl_feature_table = catalog.get_historical_feature_table_by_id(ObjectId())  # doctest: +SKIP
+        >>> historiacl_feature_table = catalog.get_historical_feature_table_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return HistoricalFeatureTable.get_by_id(id=id)
 
@@ -333,7 +337,9 @@ class CatalogGetByIdMixin:
         --------
         Get a saved batch request table.
 
-        >>> batch_request_table = catalog.get_batch_request_table_by_id(ObjectId())  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return BatchRequestTable.get_by_id(id=id)
 
@@ -356,7 +362,9 @@ class CatalogGetByIdMixin:
         --------
         Get a saved batch feature table.
 
-        >>> batch_feature_table = catalog.get_batch_feature_table_by_id(ObjectId())  # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return BatchFeatureTable.get_by_id(id=id)
 
@@ -379,7 +387,9 @@ class CatalogGetByIdMixin:
         --------
         Get a saved static source table.
 
-        >>> static_source_table = catalog.get_static_source_table_by_id(ObjectId())  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return StaticSourceTable.get_by_id(id=id)
 
@@ -425,7 +435,9 @@ class CatalogGetByIdMixin:
         --------
         Get a saved user defined function.
 
-        >>> user_defined_function = catalog.get_user_defined_function_by_id(ObjectId())  # doctest: +SKIP
+        >>> user_defined_function = catalog.get_user_defined_function_by_id(
+        ...     ObjectId()
+        ... )  # doctest: +SKIP
         """
         return UserDefinedFunction.get_by_id(id=id)
 

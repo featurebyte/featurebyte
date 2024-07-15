@@ -223,10 +223,14 @@ class GraphReconstructionGlobalState(FeatureByteBaseModel):
     regenerate_groupby_hash: bool
 
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
-    node_name_map: Dict[str, str] = Field(default_factory=dict)  # node_name => reconstructed node_name
+    node_name_map: Dict[str, str] = Field(
+        default_factory=dict
+    )  # node_name => reconstructed node_name
 
 
-class GraphReconstructionTransformer(BaseGraphTransformer[GraphNodeNameMap, GraphReconstructionGlobalState]):
+class GraphReconstructionTransformer(
+    BaseGraphTransformer[GraphNodeNameMap, GraphReconstructionGlobalState]
+):
     """GraphReconstructionTransformer class"""
 
     def _compute(self, global_state: GraphReconstructionGlobalState, node: NodeT) -> None:
@@ -248,7 +252,9 @@ class GraphReconstructionTransformer(BaseGraphTransformer[GraphNodeNameMap, Grap
                 input_node=input_nodes[0],
             )
         else:
-            inserted_node = global_state.graph.add_operation_node(node=node_to_insert, input_nodes=input_nodes)
+            inserted_node = global_state.graph.add_operation_node(
+                node=node_to_insert, input_nodes=input_nodes
+            )
 
         # update node name mapping between original graph & reconstructed graph
         global_state.node_name_map[node.name] = inserted_node.name

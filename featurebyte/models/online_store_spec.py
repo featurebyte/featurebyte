@@ -95,7 +95,9 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
             derived event_table_ids
         """
         output = []
-        for input_node in self.feature.graph.iterate_nodes(target_node=self.feature.node, node_type=NodeType.INPUT):
+        for input_node in self.feature.graph.iterate_nodes(
+            target_node=self.feature.node, node_type=NodeType.INPUT
+        ):
             input_node2 = cast(InputNode, input_node)
             if input_node2.parameters.type == TableDataType.EVENT_TABLE:
                 e_id = input_node2.parameters.id

@@ -23,7 +23,9 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
 
     class_name = "TargetTable"
     base_route = "/target_table"
-    payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/target_table.json")
+    payload = BaseMaterializedTableTestSuite.load_payload(
+        "tests/fixtures/request_payloads/target_table.json"
+    )
     random_id = str(ObjectId())
 
     create_conflict_payload_expected_detail_pairs = [

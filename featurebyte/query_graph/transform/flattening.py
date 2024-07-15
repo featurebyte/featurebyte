@@ -26,7 +26,9 @@ class GraphFlatteningGlobalState(FeatureByteBaseModel):
     skip_flattening_graph_node_types: Set[GraphNodeType] = Field(default_factory=set)
 
 
-class GraphFlatteningTransformer(BaseGraphTransformer[GraphNodeNameMap, GraphFlatteningGlobalState]):
+class GraphFlatteningTransformer(
+    BaseGraphTransformer[GraphNodeNameMap, GraphFlatteningGlobalState]
+):
     """GraphFlatteningTransformer class"""
 
     @staticmethod
@@ -51,7 +53,9 @@ class GraphFlatteningTransformer(BaseGraphTransformer[GraphNodeNameMap, GraphFla
                 input_order = nested_node.parameters.input_order
                 nested_node_name_map[nested_node.name] = graph_input_nodes[input_order].name
             else:
-                inserted_node = global_state.graph.add_operation_node(node=nested_node, input_nodes=input_nodes)
+                inserted_node = global_state.graph.add_operation_node(
+                    node=nested_node, input_nodes=input_nodes
+                )
                 nested_node_name_map[nested_node.name] = inserted_node.name
 
             # node.parameters.output_node_name refers to the node name in the nested graph
@@ -69,12 +73,18 @@ class GraphFlatteningTransformer(BaseGraphTransformer[GraphNodeNameMap, GraphFla
             for input_node_name in self.graph.get_input_node_names(node=node)
         ]
         if isinstance(node, BaseGraphNode) and self._should_flatten(global_state, node):
-            self._flatten_nested_graph(global_state=global_state, node=node, graph_input_nodes=input_nodes)
+            self._flatten_nested_graph(
+                global_state=global_state, node=node, graph_input_nodes=input_nodes
+            )
         else:
-            inserted_node = global_state.graph.add_operation_node(node=node, input_nodes=input_nodes)
+            inserted_node = global_state.graph.add_operation_node(
+                node=node, input_nodes=input_nodes
+            )
             global_state.node_name_map[node.name] = inserted_node.name
 
-    def transform(self, skip_flattening_graph_node_types: Optional[Set[GraphNodeType]] = None) -> GraphNodeNameMap:
+    def transform(
+        self, skip_flattening_graph_node_types: Optional[Set[GraphNodeType]] = None
+    ) -> GraphNodeNameMap:
         """
         Transform the graph by flattening all the nested graph.
 
@@ -87,7 +97,9 @@ class GraphFlatteningTransformer(BaseGraphTransformer[GraphNodeNameMap, GraphFla
         -------
         GraphNodeNameMap
         """
-        types_to_skip = skip_flattening_graph_node_types if skip_flattening_graph_node_types else set()
+        types_to_skip = (
+            skip_flattening_graph_node_types if skip_flattening_graph_node_types else set()
+        )
         global_state = GraphFlatteningGlobalState(skip_flattening_graph_node_types=types_to_skip)
         self._transform(global_state=global_state)
         return global_state.graph, global_state.node_name_map

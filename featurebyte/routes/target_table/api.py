@@ -187,7 +187,9 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         return cast(TargetTableInfo, info)
 
     @staticmethod
-    async def download_table_as_pyarrow_table(request: Request, target_table_id: PyObjectId) -> StreamingResponse:
+    async def download_table_as_pyarrow_table(
+        request: Request, target_table_id: PyObjectId
+    ) -> StreamingResponse:
         """
         Download TargetTable as pyarrow table
         """
@@ -198,7 +200,9 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         return result
 
     @staticmethod
-    async def download_table_as_parquet(request: Request, target_table_id: PyObjectId) -> StreamingResponse:
+    async def download_table_as_parquet(
+        request: Request, target_table_id: PyObjectId
+    ) -> StreamingResponse:
         """
         Download TargetTable as parquet file
         """

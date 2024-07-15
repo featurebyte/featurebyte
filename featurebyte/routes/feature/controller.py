@@ -46,7 +46,9 @@ from featurebyte.service.table import TableService
 from featurebyte.service.tile_job_log import TileJobLogService
 
 
-class FeatureController(BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList]):
+class FeatureController(
+    BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList]
+):
     """
     Feature controller
     """
@@ -104,7 +106,9 @@ class FeatureController(BaseDocumentController[FeatureModelResponse, FeatureServ
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.task_manager.get_task(task_id=str(task_id))
 
-    async def create_feature(self, data: Union[FeatureCreate, FeatureNewVersionCreate]) -> FeatureModelResponse:
+    async def create_feature(
+        self, data: Union[FeatureCreate, FeatureNewVersionCreate]
+    ) -> FeatureModelResponse:
         """
         Create Feature at persistent (GitDB or MongoDB)
 
@@ -125,12 +129,16 @@ class FeatureController(BaseDocumentController[FeatureModelResponse, FeatureServ
             document = await self.feature_facade_service.create_new_version(data=data)
         return await self.get(document_id=document.id)
 
-    async def get(self, document_id: ObjectId, exception_detail: str | None = None) -> FeatureModelResponse:
+    async def get(
+        self, document_id: ObjectId, exception_detail: str | None = None
+    ) -> FeatureModelResponse:
         document = await self.service.get_document(
             document_id=document_id,
             exception_detail=exception_detail,
         )
-        namespace = await self.feature_namespace_service.get_document(document_id=document.feature_namespace_id)
+        namespace = await self.feature_namespace_service.get_document(
+            document_id=document.feature_namespace_id
+        )
         output = FeatureModelResponse(
             **document.dict(by_alias=True),
             is_default=namespace.default_feature_id == document.id,
@@ -220,7 +228,9 @@ class FeatureController(BaseDocumentController[FeatureModelResponse, FeatureServ
             params["version"] = VersionIdentifier.from_str(version).dict()
 
         if feature_list_id:
-            feature_list_document = await self.feature_list_service.get_document(document_id=feature_list_id)
+            feature_list_document = await self.feature_list_service.get_document(
+                document_id=feature_list_id
+            )
             params["query_filter"] = {"_id": {"$in": feature_list_document.feature_ids}}
 
         if feature_namespace_id:
@@ -279,9 +289,13 @@ class FeatureController(BaseDocumentController[FeatureModelResponse, FeatureServ
             Invalid request payload
         """
         try:
-            return await self.feature_preview_service.preview_feature(feature_preview=feature_preview)
+            return await self.feature_preview_service.preview_feature(
+                feature_preview=feature_preview
+            )
         except (MissingPointInTimeColumnError, RequiredEntityNotProvidedError) as exc:
-            raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]) from exc
+            raise HTTPException(
+                status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
+            ) from exc
 
     async def get_info(
         self,
@@ -314,10 +328,14 @@ class FeatureController(BaseDocumentController[FeatureModelResponse, FeatureServ
             document_id=feature.feature_namespace_id,
             verbose=verbose,
         )
-        default_feature = await self.service.get_document(document_id=namespace_info.default_feature_id)
+        default_feature = await self.service.get_document(
+            document_id=namespace_info.default_feature_id
+        )
         versions_info = None
         if verbose:
-            namespace = await self.feature_namespace_service.get_document(document_id=feature.feature_namespace_id)
+            namespace = await self.feature_namespace_service.get_document(
+                document_id=feature.feature_namespace_id
+            )
             versions_info = FeatureBriefInfoList.from_paginated_data(
                 await self.service.list_documents_as_dict(
                     page=1,
@@ -395,7 +413,9 @@ class FeatureController(BaseDocumentController[FeatureModelResponse, FeatureServ
             hour_limit=hour_limit,
         )
 
-    async def get_sample_entity_serving_names(self, feature_id: ObjectId, count: int) -> SampleEntityServingNames:
+    async def get_sample_entity_serving_names(
+        self, feature_id: ObjectId, count: int
+    ) -> SampleEntityServingNames:
         """
         Get sample entity serving names for feature
 
@@ -412,5 +432,7 @@ class FeatureController(BaseDocumentController[FeatureModelResponse, FeatureServ
             Sample entity serving names
         """
 
-        entity_serving_names = await self.service.get_sample_entity_serving_names(feature_id=feature_id, count=count)
+        entity_serving_names = await self.service.get_sample_entity_serving_names(
+            feature_id=feature_id, count=count
+        )
         return SampleEntityServingNames(entity_serving_names=entity_serving_names)

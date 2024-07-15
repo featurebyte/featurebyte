@@ -70,7 +70,10 @@ class GroupBy:
     ... )
     >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
     >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(
-    ...     "TotalCost", method=fb.AggFunc.SUM, feature_names=["CustomerInventory_28d"], windows=["28d"]
+    ...     "TotalCost",
+    ...     method=fb.AggFunc.SUM,
+    ...     feature_names=["CustomerInventory_28d"],
+    ...     windows=["28d"],
     ... )
     """
 
@@ -226,7 +229,10 @@ class GroupBy:
         ... )
         >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
         >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(
-        ...     "TotalCost", method=fb.AggFunc.SUM, feature_names=["CustomerInventory_28d"], windows=["28d"]
+        ...     "TotalCost",
+        ...     method=fb.AggFunc.SUM,
+        ...     feature_names=["CustomerInventory_28d"],
+        ...     windows=["28d"],
         ... )
 
         See Also
@@ -340,7 +346,9 @@ class GroupBy:
         Count number of active cards per customer 12 weeks prior to a point-in-time
 
         >>> feature_12w_before = active_credit_card_by_cust.aggregate_asat(  # doctest: +SKIP
-        ...     method=fb.AggFunc.COUNT, feature_name="Number of Active Credit Cards 12 w before", offset="12w"
+        ...     method=fb.AggFunc.COUNT,
+        ...     feature_name="Number of Active Credit Cards 12 w before",
+        ...     offset="12w",
         ... )
         """
         if backward is False:
@@ -419,7 +427,9 @@ class GroupBy:
         ...     feature_name="InvoiceItemCount",
         ... )
         """
-        return SimpleAggregator(self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names).aggregate(
+        return SimpleAggregator(
+            self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
+        ).aggregate(
             value_column=value_column,
             method=method,
             feature_name=feature_name,
@@ -473,7 +483,10 @@ class GroupBy:
         >>> items_by_invoice = items_view.groupby("GroceryInvoiceGuid")
         >>> # Get the number of items in each invoice
         >>> invoice_item_count = items_by_invoice.forward_aggregate(  # doctest: +SKIP
-        ...     "TotalCost", method=fb.AggFunc.SUM, target_name="TargetCustomerInventory_28d", window="28d"
+        ...     "TotalCost",
+        ...     method=fb.AggFunc.SUM,
+        ...     target_name="TargetCustomerInventory_28d",
+        ...     window="28d",
         ... )
         """
         return ForwardAggregator(
@@ -577,7 +590,9 @@ class GroupBy:
         Count number of active cards per customer 12 weeks after a point-in-time
 
         >>> target_12w_after = active_credit_card_by_cust.forward_aggregate_asat(  # doctest: +SKIP
-        ...     method=fb.AggFunc.COUNT, feature_name="Number of Active Credit Cards 12 w after", offset="12w"
+        ...     method=fb.AggFunc.COUNT,
+        ...     feature_name="Number of Active Credit Cards 12 w after",
+        ...     offset="12w",
         ... )
         """
         return ForwardAsAtAggregator(

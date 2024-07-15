@@ -64,7 +64,9 @@ class EntityServingNamesService:
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
         )
-        unique_values_sql = GraphInterpreter(graph, source_type=feature_store.type).construct_unique_values_sql(
+        unique_values_sql = GraphInterpreter(
+            graph, source_type=feature_store.type
+        ).construct_unique_values_sql(
             node_name=node.name, column_name=column_name, num_rows=num_rows
         )
         result = await db_session.execute_query(unique_values_sql)
@@ -110,7 +112,9 @@ class EntityServingNamesService:
                 else:
                     table_ids.append(entity.table_ids[0])
 
-        tables = self.table_service.list_documents_iterator(query_filter={"_id": {"$in": table_ids}})
+        tables = self.table_service.list_documents_iterator(
+            query_filter={"_id": {"$in": table_ids}}
+        )
 
         feature_store: Optional[FeatureStoreModel] = None
         async for table in tables:
@@ -124,7 +128,9 @@ class EntityServingNamesService:
                     feature_store.id == table.tabular_source.feature_store_id
                 ), "Feature List tables must be in the same feature store"
 
-            entity_columns = [column for column in table.columns_info if column.entity_id in entities]
+            entity_columns = [
+                column for column in table.columns_info if column.entity_id in entities
+            ]
             if entity_columns:
                 for column in entity_columns:
                     # skip if sample values already exists unless column is a primary key for the table
@@ -133,7 +139,9 @@ class EntityServingNamesService:
                     if existing_sample_values and column.name not in table.primary_key_columns:
                         continue
 
-                    entities[column.entity_id]["sample_value"] = await self.get_table_column_unique_values(
+                    entities[column.entity_id][
+                        "sample_value"
+                    ] = await self.get_table_column_unique_values(
                         feature_store=feature_store,
                         table=table,
                         column_name=column.name,
@@ -142,7 +150,9 @@ class EntityServingNamesService:
 
         return [
             {
-                entity["serving_name"][0]: entity["sample_value"][row_idx % len(entity["sample_value"])]
+                entity["serving_name"][0]: entity["sample_value"][
+                    row_idx % len(entity["sample_value"])
+                ]
                 for entity in entities.values()
             }
             for row_idx in range(count)
@@ -165,6 +175,8 @@ class EntityServingNamesService:
         """
         primary_entities = [
             entity
-            async for entity in self.entity_service.list_documents_iterator(query_filter={"_id": {"$in": entity_ids}})
+            async for entity in self.entity_service.list_documents_iterator(
+                query_filter={"_id": {"$in": entity_ids}}
+            )
         ]
         return {entity.id: entity.serving_names[0] for entity in primary_entities}

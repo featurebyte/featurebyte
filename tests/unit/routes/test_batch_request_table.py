@@ -16,7 +16,9 @@ class TestBatchRequestTableApi(BaseMaterializedTableTestSuite):
 
     class_name = "BatchRequestTable"
     base_route = "/batch_request_table"
-    payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/batch_request_table.json")
+    payload = BaseMaterializedTableTestSuite.load_payload(
+        "tests/fixtures/request_payloads/batch_request_table.json"
+    )
 
     create_conflict_payload_expected_detail_pairs = [
         (
@@ -82,11 +84,16 @@ class TestBatchRequestTableApi(BaseMaterializedTableTestSuite):
             "description": None,
         }
 
-    def test_delete_context_of_batch_request_table(self, create_success_response, test_api_client_persistent):
+    def test_delete_context_of_batch_request_table(
+        self, create_success_response, test_api_client_persistent
+    ):
         """Test delete context of batch request table"""
         context_id = create_success_response.json()["context_id"]
 
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.delete(f"/context/{context_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-        assert response.json()["detail"] == "Context is referenced by BatchRequestTable: batch_request_table"
+        assert (
+            response.json()["detail"]
+            == "Context is referenced by BatchRequestTable: batch_request_table"
+        )

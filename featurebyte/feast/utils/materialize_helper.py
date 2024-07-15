@@ -89,7 +89,9 @@ async def materialize_partial(
 
     partial_feature_view = copy.deepcopy(feature_view)
     partial_feature_view.features = _filter_by_name(feature_view.features, columns)
-    partial_feature_view.projection.features = _filter_by_name(feature_view.projection.features, columns)
+    partial_feature_view.projection.features = _filter_by_name(
+        feature_view.projection.features, columns
+    )
 
     # FIXME: This patch modifies the cache used by the SnowflakeOfflineStore to introduce
     # ttl of 10 minutes to recover from a stale connection.

@@ -87,7 +87,9 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
         return func(*args, **kwargs)
 
     def _raise_timeout_exception_in_thread(thread_id: int) -> None:
-        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_ulong(thread_id), ctypes.py_object(TimeoutError))
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+            ctypes.c_ulong(thread_id), ctypes.py_object(TimeoutError)
+        )
         if res > 1:
             ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
             raise ValueError("Exception raise failure")
@@ -540,7 +542,9 @@ class BaseSession(BaseModel):
             return dataframe_from_arrow_stream(buffer)
         except Exception as exc:
             if to_log_error:
-                logger.error("Error executing query", extra={"query": query, "source_type": self.source_type})
+                logger.error(
+                    "Error executing query", extra={"query": query, "source_type": self.source_type}
+                )
 
             # remove session from cache if query fails
             if self._cache_key:
@@ -644,7 +648,9 @@ class BaseSession(BaseModel):
             return pd.DataFrame(all_rows, columns=columns)
         return None
 
-    async def register_table_with_query(self, table_name: str, query: str, temporary: bool = True) -> None:
+    async def register_table_with_query(
+        self, table_name: str, query: str, temporary: bool = True
+    ) -> None:
         """
         Register a temporary table using a Select query
 
@@ -787,7 +793,9 @@ class BaseSession(BaseModel):
                     extra={"attempt": i, "query": sql.strip()[:50].replace("\n", " ")},
                 )
                 if i == retry_num - 1:
-                    logger.error("SQL query failed", extra={"attempts": retry_num, "exception": exc})
+                    logger.error(
+                        "SQL query failed", extra={"attempts": retry_num, "exception": exc}
+                    )
                     raise
 
             random_interval = randint(1, sleep_interval)
@@ -814,7 +822,9 @@ class BaseSession(BaseModel):
                 .from_(quoted_identifier(table_name.upper()))
                 .limit(1)
             )
-            await self.execute_query_long_running(sql_to_string(expr, self.source_type), to_log_error=False)
+            await self.execute_query_long_running(
+                sql_to_string(expr, self.source_type), to_log_error=False
+            )
             return True
         except self._no_schema_error:
             pass
@@ -1070,7 +1080,9 @@ class BaseSchemaInitializer(ABC):
         await self.register_missing_functions(sql_objects_by_type[SqlObjectType.FUNCTION])
         await self.register_missing_procedures(sql_objects_by_type[SqlObjectType.PROCEDURE])
         await self.create_missing_tables(sql_objects_by_type[SqlObjectType.TABLE])
-        await self.metadata_schema_initializer.update_metadata_schema_version(self.current_working_schema_version)
+        await self.metadata_schema_initializer.update_metadata_schema_version(
+            self.current_working_schema_version
+        )
 
     @staticmethod
     def _sort_sql_objects(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1171,7 +1183,9 @@ class BaseSchemaInitializer(ABC):
         list[str]
         """
         out = []
-        materialized_table_prefixes = {cls._normalize_casing(name) for name in MaterializedTableNamePrefix.all()}
+        materialized_table_prefixes = {
+            cls._normalize_casing(name) for name in MaterializedTableNamePrefix.all()
+        }
         for table_name in table_names:
             for prefix in materialized_table_prefixes:
                 if cls._normalize_casing(table_name).startswith(prefix):
@@ -1189,14 +1203,20 @@ class BaseSchemaInitializer(ABC):
         -------
         list[str]
         """
-        tables = await self.session.list_tables(self.session.database_name, self.session.schema_name)
+        tables = await self.session.list_tables(
+            self.session.database_name, self.session.schema_name
+        )
         table_names = [table.name for table in tables]
         return self.remove_materialized_tables(table_names)
 
     @property
     def _schema_qualifier(self) -> str:
-        db_quoted = sql_to_string(quoted_identifier(self.session.database_name), self.session.source_type)
-        schema_quoted = sql_to_string(quoted_identifier(self.session.schema_name), self.session.source_type)
+        db_quoted = sql_to_string(
+            quoted_identifier(self.session.database_name), self.session.source_type
+        )
+        schema_quoted = sql_to_string(
+            quoted_identifier(self.session.schema_name), self.session.source_type
+        )
         return f"{db_quoted}.{schema_quoted}"
 
 
@@ -1245,7 +1265,9 @@ class MetadataSchemaInitializer:
         new_version : int
             New version to update the working schema to
         """
-        update_version_query = f"""UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = {new_version}"""
+        update_version_query = (
+            f"""UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = {new_version}"""
+        )
         await self.session.execute_query(update_version_query)
 
     async def create_metadata_table(self) -> None:
@@ -1256,7 +1278,9 @@ class MetadataSchemaInitializer:
             retrieve_all_migration_methods,
         )
 
-        current_migration_version = max(retrieve_all_migration_methods(data_warehouse_migrations_only=True))
+        current_migration_version = max(
+            retrieve_all_migration_methods(data_warehouse_migrations_only=True)
+        )
         logger.debug("Creating METADATA_SCHEMA table")
         await self.create_metadata_table_if_not_exists(current_migration_version)
 
@@ -1268,6 +1292,8 @@ class MetadataSchemaInitializer:
         new_feature_store_id : str
             New feature_store_id to update the working schema to
         """
-        update_feature_store_id_query = f"""UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = '{new_feature_store_id}'"""
+        update_feature_store_id_query = (
+            f"""UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = '{new_feature_store_id}'"""
+        )
         await self.session.execute_query(update_feature_store_id_query)
         logger.debug(f"Updated feature store ID to {new_feature_store_id}")

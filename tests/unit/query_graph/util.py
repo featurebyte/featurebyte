@@ -33,7 +33,9 @@ def to_dict(obj, exclude=None, include=None):
             for key, value in obj.items()
             if (exclude is None or key not in exclude) and (include is None or key in include)
         }
-    if isinstance(obj, (SourceDataColumn, DerivedDataColumn, AggregationColumn, PostAggregationColumn)):
+    if isinstance(
+        obj, (SourceDataColumn, DerivedDataColumn, AggregationColumn, PostAggregationColumn)
+    ):
         return to_dict(asdict(obj), exclude=exclude, include=include)
     if hasattr(obj, "dict"):
         return to_dict(obj.dict(), exclude=exclude, include=include)
@@ -95,7 +97,9 @@ def evaluate_and_compare_odfv_and_udf_results(
         null_input_map[key] = pd.Series([np.nan, None])
 
     # check the odfv expression can be evaluated
-    out_odfv_null = _get_odfv_output(input_map=null_input_map, odfv_expr=odfv_expr, odfv_stats=odfv_stats)
+    out_odfv_null = _get_odfv_output(
+        input_map=null_input_map, odfv_expr=odfv_expr, odfv_stats=odfv_stats
+    )
 
     # check the udf expression can be evaluated
     out_udf_null = _get_udf_output(input_map=null_input_map, udf_expr=udf_expr, udf_stats=udf_stats)

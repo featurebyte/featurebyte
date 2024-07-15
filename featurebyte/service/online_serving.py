@@ -135,7 +135,9 @@ class OnlineServingService:
             raise FeatureListNotOnlineEnabledError("Feature List is not online enabled")
 
         feature_cluster = feature_list.feature_clusters[0]
-        feature_store = await self.feature_store_service.get_document(document_id=feature_cluster.feature_store_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=feature_cluster.feature_store_id
+        )
 
         if isinstance(request_data, list):
             request_input = pd.DataFrame(request_data)
@@ -222,7 +224,9 @@ class OnlineServingService:
                 provided_entities=provided_entities,
             )
             raise RequiredEntityNotProvidedError(
-                entity_info.format_missing_entities_error([entity.id for entity in entity_info.missing_entities])
+                entity_info.format_missing_entities_error([
+                    entity.id for entity in entity_info.missing_entities
+                ])
             )
 
         # Map feature names to the original names
@@ -301,14 +305,18 @@ class OnlineServingService:
                 row[SpecialColumnName.POINT_IN_TIME] = point_in_time_value
 
         # Get required serving names and composite serving names that need further processing
-        offline_store_table_docs = await self.offline_store_feature_table_service.list_documents_as_dict(
-            query_filter={},
-            projection={"serving_names": 1},
+        offline_store_table_docs = (
+            await self.offline_store_feature_table_service.list_documents_as_dict(
+                query_filter={},
+                projection={"serving_names": 1},
+            )
         )
         composite_serving_names = set()
         for offline_store_table_doc in offline_store_table_docs["data"]:
             serving_names = tuple(offline_store_table_doc["serving_names"])
-            if len(serving_names) > 1 and all(serving_name in request_data[0] for serving_name in serving_names):
+            if len(serving_names) > 1 and all(
+                serving_name in request_data[0] for serving_name in serving_names
+            ):
                 composite_serving_names.add(serving_names)
 
         # Add concatenated composite serving names
@@ -333,7 +341,8 @@ class OnlineServingService:
         for row in request_data:
             updated_request_data.append({k: v for (k, v) in row.items() if k in needed_columns})
         versioned_feature_names = [
-            feature_id_to_versioned_name[feature_id] for feature_id in feature_id_to_versioned_name.keys()
+            feature_id_to_versioned_name[feature_id]
+            for feature_id in feature_id_to_versioned_name.keys()
         ]
 
         # FIXME: This is a temporary fix to avoid the bug in feast 0.35.0
@@ -402,7 +411,9 @@ class OnlineServingService:
             When the provided language is not supported
         """
 
-        template_file_path = os.path.join(os.path.dirname(__file__), f"templates/online_serving/{language}.tpl")
+        template_file_path = os.path.join(
+            os.path.dirname(__file__), f"templates/online_serving/{language}.tpl"
+        )
         if not os.path.exists(template_file_path):
             raise UnsupportedRequestCodeTemplateLanguage("Supported languages: ['python', 'sh']")
 
@@ -430,7 +441,9 @@ class OnlineServingService:
         return DeploymentRequestCodeTemplate(
             code_template=template.render(
                 headers=json.dumps(headers),
-                header_params=" \\\n    ".join([f"-H '{key}: {value}'" for key, value in headers.items()]),
+                header_params=" \\\n    ".join([
+                    f"-H '{key}: {value}'" for key, value in headers.items()
+                ]),
                 serving_url=f"<FEATUREBYTE_SERVICE_URL>/deployment/{deployment.id}/online_features",
                 entity_serving_names=json.dumps(entity_serving_names),
             ),

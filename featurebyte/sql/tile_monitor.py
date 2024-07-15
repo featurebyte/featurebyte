@@ -75,11 +75,15 @@ class TileMonitor(TileCommon):
             """
 
             entity_filter_cols_str = " AND ".join([
-                f"a.{self.quote_column(c)} = b.{self.quote_column(c)}" for c in self.entity_column_names
+                f"a.{self.quote_column(c)} = b.{self.quote_column(c)}"
+                for c in self.entity_column_names
             ])
-            value_select_cols_str = " , ".join([f"b.{c} as OLD_{c}" for c in self.value_column_names])
+            value_select_cols_str = " , ".join([
+                f"b.{c} as OLD_{c}" for c in self.value_column_names
+            ])
             value_filter_cols_str = " OR ".join([
-                f"{c} != OLD_{c} or ({c} is not null and OLD_{c} is null)" for c in self.value_column_names
+                f"{c} != OLD_{c} or ({c} is not null and OLD_{c} is null)"
+                for c in self.value_column_names
             ])
 
             offset_expr = expressions.Add(
@@ -141,10 +145,16 @@ class TileMonitor(TileCommon):
 
                 # spark does not support insert with partial columns
                 # need to use merge for insertion
-                entity_column_names_str_src = " , ".join([f"b.{c}" for c in self.entity_column_names_str.split(",")])
-                old_value_insert_cols_str_target = " , ".join([f"OLD_{c}" for c in self.value_column_names])
+                entity_column_names_str_src = " , ".join([
+                    f"b.{c}" for c in self.entity_column_names_str.split(",")
+                ])
+                old_value_insert_cols_str_target = " , ".join([
+                    f"OLD_{c}" for c in self.value_column_names
+                ])
                 value_insert_cols_str = " , ".join([f"b.{c}" for c in self.value_column_names])
-                old_value_insert_cols_str = " , ".join([f"b.OLD_{c}" for c in self.value_column_names])
+                old_value_insert_cols_str = " , ".join([
+                    f"b.OLD_{c}" for c in self.value_column_names
+                ])
 
                 insert_sql = f"""
                     MERGE into {monitor_table_name} a using ({compare_sql}) b

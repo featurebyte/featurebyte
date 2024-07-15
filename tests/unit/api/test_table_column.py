@@ -41,11 +41,15 @@ def test_table_column__as_entity(snowflake_event_table, mock_api_object_cache):
 
     with pytest.raises(TypeError) as exc:
         snowflake_event_table.col_int.as_entity(1234)
-    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(exc.value)
+    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(
+        exc.value
+    )
 
     with pytest.raises(RecordRetrievalException) as exc:
         snowflake_event_table.col_int.as_entity("some_random_entity")
-    expected_msg = 'Entity (name: "some_random_entity") not found. Please save the Entity object first.'
+    expected_msg = (
+        'Entity (name: "some_random_entity") not found. Please save the Entity object first.'
+    )
     assert expected_msg in str(exc.value)
 
     # remove entity association
@@ -123,7 +127,9 @@ def _check_event_table_with_critical_data_info(event_table):
             ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0),
         ]
     )
-    event_table.col_float.update_critical_data_info(cleaning_operations=[StringValueImputation(imputed_value=0.0)])
+    event_table.col_float.update_critical_data_info(
+        cleaning_operations=[StringValueImputation(imputed_value=0.0)]
+    )
 
     assert event_table.frame.node.type == NodeType.INPUT
     expected_clean_data_query = textwrap.dedent(
@@ -211,7 +217,9 @@ def test_data_column__update_critical_data_info(snowflake_event_table, mock_api_
     _check_remove_critical_data_info(snowflake_event_table)
 
 
-def test_data_column__update_critical_data_info__saved_data(saved_event_table, mock_api_object_cache):
+def test_data_column__update_critical_data_info__saved_data(
+    saved_event_table, mock_api_object_cache
+):
     """Test update critical data info of a saved table column"""
     _ = mock_api_object_cache
     _check_event_table_with_critical_data_info(saved_event_table)

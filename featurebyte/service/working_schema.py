@@ -57,7 +57,9 @@ class WorkingSchemaService:
         self.feature_manager_service = feature_manager_service
         self.tile_registry_service = tile_registry_service
 
-    async def recreate_working_schema(self, feature_store_id: ObjectId, session: BaseSession) -> None:
+    async def recreate_working_schema(
+        self, feature_store_id: ObjectId, session: BaseSession
+    ) -> None:
         """
         Resets the data warehouse working schema by dropping everything and recreating
 
@@ -95,7 +97,9 @@ class WorkingSchemaService:
         # demand.
         await self._reschedule_online_enabled_features(feature_store_id, session)
 
-    async def _reschedule_online_enabled_features(self, feature_store_id: ObjectId, session: BaseSession) -> None:
+    async def _reschedule_online_enabled_features(
+        self, feature_store_id: ObjectId, session: BaseSession
+    ) -> None:
         # activate use of raw query filter to retrieve all documents regardless of catalog membership
         with self.feature_service.allow_use_raw_query_filter():
             query_filter = {

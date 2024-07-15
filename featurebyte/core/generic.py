@@ -155,7 +155,9 @@ class QueryObject(FeatureByteBaseModel):
         # prune the flattened graph as view graph node is not pruned before flattened
         graph = QueryGraph(**flattened_graph.dict(by_alias=True))
         pruned_flattened_graph, pruned_node_name_map = graph.prune(flattened_node)
-        pruned_flattened_node = pruned_flattened_graph.get_node_by_name(pruned_node_name_map[flattened_node.name])
+        pruned_flattened_node = pruned_flattened_graph.get_node_by_name(
+            pruned_node_name_map[flattened_node.name]
+        )
 
         # construct the node type lineage
         for node in dfs_traversal(pruned_flattened_graph, pruned_flattened_node):
@@ -333,9 +335,9 @@ class QueryObject(FeatureByteBaseModel):
         str
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
-        return GraphInterpreter(pruned_graph, source_type=self.feature_store.type).construct_preview_sql(
-            node_name=mapped_node.name, num_rows=limit
-        )[0]
+        return GraphInterpreter(
+            pruned_graph, source_type=self.feature_store.type
+        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
 
 
 class ProtectedColumnsQueryObject(QueryObject):

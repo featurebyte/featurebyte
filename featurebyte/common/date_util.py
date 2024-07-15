@@ -75,7 +75,9 @@ def tile_index_to_timestamp_utc(
     return adjusted_ts
 
 
-def get_next_job_datetime(input_dt: datetime, frequency_minutes: int, time_modulo_frequency_seconds: int) -> datetime:
+def get_next_job_datetime(
+    input_dt: datetime, frequency_minutes: int, time_modulo_frequency_seconds: int
+) -> datetime:
     """
     Calculate the next job datetime give input datetime, frequency_minutes and time_modulo_frequency_seconds
 
@@ -99,7 +101,9 @@ def get_next_job_datetime(input_dt: datetime, frequency_minutes: int, time_modul
     epoch_time = datetime(1970, 1, 1)
     total_seconds = (input_dt - epoch_time).total_seconds()
 
-    next_expected_job_seconds = (total_seconds // frequency) * frequency + time_modulo_frequency_seconds
+    next_expected_job_seconds = (
+        total_seconds // frequency
+    ) * frequency + time_modulo_frequency_seconds
 
     if total_seconds % frequency > time_modulo_frequency_seconds:
         next_expected_job_seconds += frequency

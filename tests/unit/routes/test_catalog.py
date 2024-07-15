@@ -29,7 +29,8 @@ class TestCatalogApi(BaseApiTestSuite):
         ),
         (
             {**payload, "_id": str(ObjectId())},
-            'Catalog (name: "grocery") already exists. ' 'Get the existing object by `Catalog.get(name="grocery")`.',
+            'Catalog (name: "grocery") already exists. '
+            'Get the existing object by `Catalog.get(name="grocery")`.',
         ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
@@ -134,13 +135,17 @@ class TestCatalogApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         catalog_id = response_dict["_id"]
-        response = test_api_client.patch(f"{self.base_route}/{catalog_id}", json={"name": "french grocery"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}", json={"name": "french grocery"}
+        )
         assert response.status_code == HTTPStatus.OK
         result = response.json()
         assert result["name"] == "french grocery"
 
         # it is ok if the updated name is the same as the existing one
-        response = test_api_client.patch(f"{self.base_route}/{catalog_id}", json={"name": "french grocery"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}", json={"name": "french grocery"}
+        )
         assert response.status_code == HTTPStatus.OK
 
         # test get audit records
@@ -160,7 +165,9 @@ class TestCatalogApi(BaseApiTestSuite):
         results = response.json()
         assert [doc["name"] for doc in results] == ["french grocery", "grocery"]
 
-    def test_update_online_store_200(self, create_success_response, test_api_client_persistent, mysql_online_store):
+    def test_update_online_store_200(
+        self, create_success_response, test_api_client_persistent, mysql_online_store
+    ):
         """
         Test catalog online store update (success) (to be deprecated)
         """
@@ -175,12 +182,16 @@ class TestCatalogApi(BaseApiTestSuite):
         result = response.json()
         assert result["online_store_id"] == str(mysql_online_store.id)
 
-        response = test_api_client.patch(f"{self.base_route}/{catalog_id}/online_store", json={"online_store_id": None})
+        response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store", json={"online_store_id": None}
+        )
         assert response.status_code == HTTPStatus.OK
         result = response.json()
         assert result["online_store_id"] is None
 
-    def test_update_online_store_202(self, create_success_response, test_api_client_persistent, mysql_online_store):
+    def test_update_online_store_202(
+        self, create_success_response, test_api_client_persistent, mysql_online_store
+    ):
         """
         Test catalog online store update (success)
         """
@@ -208,7 +219,9 @@ class TestCatalogApi(BaseApiTestSuite):
         result = response.json()
         assert result["online_store_id"] is None
 
-    def test_update_online_store_no_op(self, create_success_response, test_api_client_persistent, mysql_online_store):
+    def test_update_online_store_no_op(
+        self, create_success_response, test_api_client_persistent, mysql_online_store
+    ):
         """
         Test catalog online store update (success)
         """
@@ -242,10 +255,14 @@ class TestCatalogApi(BaseApiTestSuite):
         """
         test_api_client, _ = test_api_client_persistent
         unknown_catalog_id = ObjectId()
-        response = test_api_client.patch(f"{self.base_route}/{unknown_catalog_id}", json={"name": "random_name"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{unknown_catalog_id}", json={"name": "random_name"}
+        )
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == {
-            "detail": (f'Catalog (id: "{unknown_catalog_id}") not found. Please save the Catalog object first.')
+            "detail": (
+                f'Catalog (id: "{unknown_catalog_id}") not found. Please save the Catalog object first.'
+            )
         }
 
     def test_update_409(self, create_multiple_entries, test_api_client_persistent):
@@ -253,7 +270,9 @@ class TestCatalogApi(BaseApiTestSuite):
         Test catalog update (conflict)
         """
         test_api_client, _ = test_api_client_persistent
-        response = test_api_client.patch(f"{self.base_route}/{create_multiple_entries[0]}", json={"name": "creditcard"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{create_multiple_entries[0]}", json={"name": "creditcard"}
+        )
         assert response.status_code == HTTPStatus.CONFLICT
         assert response.json() == {
             "detail": (
@@ -298,7 +317,9 @@ class TestCatalogApi(BaseApiTestSuite):
         catalog_id = response_dict["_id"]
 
         # test soft delete
-        response = test_api_client.delete(f"{self.base_route}/{catalog_id}", params={"soft_delete": True})
+        response = test_api_client.delete(
+            f"{self.base_route}/{catalog_id}", params={"soft_delete": True}
+        )
         assert response.status_code == HTTPStatus.OK, response.json()
 
         # attempt to retrieve the catalog
@@ -353,13 +374,17 @@ class TestCatalogApi(BaseApiTestSuite):
         assert deployment.catalog_id == ObjectId(catalog_id)
 
         # test soft delete
-        response = test_api_client.delete(f"{self.base_route}/{catalog_id}", params={"soft_delete": True})
+        response = test_api_client.delete(
+            f"{self.base_route}/{catalog_id}", params={"soft_delete": True}
+        )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == (
             "Catalog cannot be deleted because it still has active deployment: test_deployment"
         )
 
-    def test_hard_delete__not_implemented(self, create_success_response, test_api_client_persistent):
+    def test_hard_delete__not_implemented(
+        self, create_success_response, test_api_client_persistent
+    ):
         """
         Test catalog delete (hard delete)
         """
@@ -368,7 +393,9 @@ class TestCatalogApi(BaseApiTestSuite):
         catalog_id = response_dict["_id"]
 
         # test soft delete
-        response = test_api_client.delete(f"{self.base_route}/{catalog_id}", params={"soft_delete": False})
+        response = test_api_client.delete(
+            f"{self.base_route}/{catalog_id}", params={"soft_delete": False}
+        )
         assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR, response.json()
         assert response.json()["detail"] == "Hard delete is not supported"
 
@@ -410,7 +437,9 @@ class TestCatalogApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
         expected_info_response = {
             "name": "grocery",
             "updated_at": None,
@@ -420,7 +449,9 @@ class TestCatalogApi(BaseApiTestSuite):
         assert response_dict.items() > expected_info_response.items(), response_dict
         assert "created_at" in response_dict
 
-        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
         assert response.status_code == HTTPStatus.OK, response.text
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text

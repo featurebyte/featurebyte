@@ -81,7 +81,9 @@ class EntityLookupFeatureTableService:
             if feature_list.features_entity_lookup_info is not None:
                 for entity_lookup_info in feature_list.features_entity_lookup_info:
                     all_relationships_info.update(entity_lookup_info.join_steps)
-        entity_lookup_steps_mapping = await self.get_entity_lookup_steps(list(all_relationships_info))
+        entity_lookup_steps_mapping = await self.get_entity_lookup_steps(
+            list(all_relationships_info)
+        )
         return entity_lookup_steps_mapping
 
     async def get_precomputed_lookup_feature_table(

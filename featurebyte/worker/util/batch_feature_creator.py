@@ -53,7 +53,9 @@ def patch_api_object_cache(ttl: int = 7200) -> Any:
     A decorator function that can be used to wrap async test functions.
     """
 
-    def decorator(func: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Coroutine[Any, Any, Any]]:
+    def decorator(
+        func: Callable[..., Coroutine[Any, Any, Any]],
+    ) -> Callable[..., Coroutine[Any, Any, Any]]:
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Save the original cache settings
@@ -131,7 +133,9 @@ def set_environment_variables(variables: Dict[str, Any]) -> Iterator[None]:
         yield
 
 
-async def execute_sdk_code(catalog_id: ObjectId, code: str, feature_controller: FeatureController) -> None:
+async def execute_sdk_code(
+    catalog_id: ObjectId, code: str, feature_controller: FeatureController
+) -> None:
     """
     Activate the catalog and execute the code in server mode
 
@@ -244,7 +248,9 @@ class BatchFeatureCreator:
                 query_filter={"name": {"$in": feature_names}}
             ):
                 assert feat_namespace.name is not None
-                conflict_to_resolution_feature_id_map[feat_namespace.name] = feat_namespace.default_feature_id
+                conflict_to_resolution_feature_id_map[feat_namespace.name] = (
+                    feat_namespace.default_feature_id
+                )
         return conflict_to_resolution_feature_id_map
 
     async def is_generated_feature_consistent(self, document: FeatureModel) -> bool:
@@ -309,7 +315,9 @@ class BatchFeatureCreator:
         """
         with timer("prune graph & prepare feature definition", logger):
             # prepare the feature create payload
-            pruned_graph, node_name_map = graph.quick_prune(target_node_names=[feature_item.node_name])
+            pruned_graph, node_name_map = graph.quick_prune(
+                target_node_names=[feature_item.node_name]
+            )
             feature_create = FeatureServiceCreate(
                 _id=feature_item.id,
                 name=feature_item.name,
@@ -353,7 +361,9 @@ class BatchFeatureCreator:
 
     async def batch_feature_create(
         self,
-        payload: Union[BatchFeatureCreateTaskPayload, FeatureListCreateWithBatchFeatureCreationTaskPayload],
+        payload: Union[
+            BatchFeatureCreateTaskPayload, FeatureListCreateWithBatchFeatureCreationTaskPayload
+        ],
         start_percentage: int,
         end_percentage: int,
     ) -> Sequence[ObjectId]:
@@ -384,8 +394,10 @@ class BatchFeatureCreator:
         feature_ids = [feature.id for feature in payload.features]
         feature_names = [feature.name for feature in payload.features]
         saved_feature_ids = await self.identify_saved_feature_ids(feature_ids=feature_ids)
-        conflict_to_resolution_feature_id_map = await self.get_conflict_to_resolution_feature_id_mapping(
-            conflict_resolution=payload.conflict_resolution, feature_names=feature_names
+        conflict_to_resolution_feature_id_map = (
+            await self.get_conflict_to_resolution_feature_id_mapping(
+                conflict_resolution=payload.conflict_resolution, feature_names=feature_names
+            )
         )
 
         # create the features
@@ -417,7 +429,10 @@ class BatchFeatureCreator:
                 output_feature_ids.append(feature_item.id)
                 continue
 
-            if payload.conflict_resolution == "retrieve" and feature_item.name in conflict_to_resolution_feature_id_map:
+            if (
+                payload.conflict_resolution == "retrieve"
+                and feature_item.name in conflict_to_resolution_feature_id_map
+            ):
                 # if the feature name is in conflict, use the resolution feature id
                 resolved_feature_id = conflict_to_resolution_feature_id_map[feature_item.name]
                 output_feature_ids.append(resolved_feature_id)

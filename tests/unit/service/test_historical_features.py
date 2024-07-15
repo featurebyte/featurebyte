@@ -76,7 +76,9 @@ async def test_get_historical_features__feature_list_not_saved(
     """
     Test compute_historical_features when feature list is not saved
     """
-    feature_list = FeatureList([Feature(**production_ready_feature.dict(by_alias=True))], name="mylist")
+    feature_list = FeatureList(
+        [Feature(**production_ready_feature.dict(by_alias=True))], name="mylist"
+    )
     featurelist_get_historical_features = FeatureListGetHistoricalFeatures(
         feature_list_id=feature_list.id,
         feature_clusters=feature_list._get_feature_clusters(),
@@ -193,7 +195,8 @@ async def test_get_historical_features__too_recent_point_in_time(
             output_table_details=output_table_details,
         )
     assert str(exc_info.value) == (
-        "The latest point in time (2022-04-30 00:00:00) should not be more recent than 48 hours " "from now"
+        "The latest point in time (2022-04-30 00:00:00) should not be more recent than 48 hours "
+        "from now"
     )
 
 
@@ -278,8 +281,12 @@ async def test_get_historical_features__intermediate_tables_dropped(
 def mocked_tile_cache():
     """Fixture for a mocked SnowflakeTileCache object"""
     patched = {}
-    with mock.patch("featurebyte.tile.tile_cache.TileCache._get_compute_requests") as mock_get_compute_requests:
-        with mock.patch("featurebyte.tile.tile_cache.TileCache._filter_keys_with_tracker", return_value=[]):
+    with mock.patch(
+        "featurebyte.tile.tile_cache.TileCache._get_compute_requests"
+    ) as mock_get_compute_requests:
+        with mock.patch(
+            "featurebyte.tile.tile_cache.TileCache._filter_keys_with_tracker", return_value=[]
+        ):
             with mock.patch("featurebyte.tile.tile_cache.run_coroutines"):
                 patched["_get_compute_requests"] = mock_get_compute_requests
                 yield patched

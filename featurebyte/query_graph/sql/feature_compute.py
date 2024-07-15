@@ -211,10 +211,12 @@ class FeatureExecutionPlan:
         # Add to overall feature entity lookup steps
         for entity_column in parent_entity_columns.values():
             if entity_column.relationship_info_id is not None:
-                entity_lookup_step = entity_relationships_context.entity_lookup_step_creator.get_entity_lookup_step(
-                    relationship_info_id=entity_column.relationship_info_id,
-                    child_serving_name_override=entity_column.child_serving_name,
-                    parent_serving_name_override=entity_column.serving_name,
+                entity_lookup_step = (
+                    entity_relationships_context.entity_lookup_step_creator.get_entity_lookup_step(
+                        relationship_info_id=entity_column.relationship_info_id,
+                        child_serving_name_override=entity_column.child_serving_name,
+                        parent_serving_name_override=entity_column.serving_name,
+                    )
                 )
                 self.add_feature_entity_lookup_step(entity_lookup_step)
 
@@ -263,7 +265,9 @@ class FeatureExecutionPlan:
                 child_serving_name=None,
                 relationship_info_id=None,
             )
-            for parent_entity_column in fl_primary_entity_column.get_parent_entity_columns(lookup_steps):
+            for parent_entity_column in fl_primary_entity_column.get_parent_entity_columns(
+                lookup_steps
+            ):
                 if parent_entity_column.entity_id not in parent_entity_columns:
                     parent_entity_columns[parent_entity_column.entity_id] = parent_entity_column
         return parent_entity_columns
@@ -358,7 +362,9 @@ class FeatureExecutionPlan:
         # Select original columns first
         if request_table_columns:
             current_columns = request_table_columns[:]
-            formatted_request_table_columns = [f"REQ.{quoted_identifier(col).sql()}" for col in request_table_columns]
+            formatted_request_table_columns = [
+                f"REQ.{quoted_identifier(col).sql()}" for col in request_table_columns
+            ]
         else:
             current_columns = []
             formatted_request_table_columns = []
@@ -427,12 +433,16 @@ class FeatureExecutionPlan:
                 feature_dtype = self.feature_name_dtype_mapping.get(feature_spec.feature_name)
                 if feature_dtype is not None:
                     feature_expr = self._cast_output_column_by_dtype(feature_expr, feature_dtype)
-                feature_alias = expressions.alias_(feature_expr, alias=feature_spec.feature_name, quoted=True)
+                feature_alias = expressions.alias_(
+                    feature_expr, alias=feature_spec.feature_name, quoted=True
+                )
                 columns.append(feature_alias)
 
         if request_table_columns:
             request_table_column_names = [
-                f"AGG.{quoted_identifier(col).sql()}" for col in request_table_columns if col not in exclude_columns
+                f"AGG.{quoted_identifier(col).sql()}"
+                for col in request_table_columns
+                if col not in exclude_columns
             ]
         else:
             request_table_column_names = []
@@ -443,7 +453,9 @@ class FeatureExecutionPlan:
         return table_expr
 
     @staticmethod
-    def _cast_output_column_by_dtype(feature_expr: expressions.Expression, dtype: DBVarType) -> expressions.Expression:
+    def _cast_output_column_by_dtype(
+        feature_expr: expressions.Expression, dtype: DBVarType
+    ) -> expressions.Expression:
         if dtype == DBVarType.FLOAT:
             return expressions.Cast(
                 this=feature_expr,
@@ -642,12 +654,16 @@ class FeatureExecutionPlanner:
             item_groupby_nodes = []
         else:
             item_groupby_nodes = list(
-                self.graph.iterate_nodes(node, NodeType.ITEM_GROUPBY, skip_node_type=NodeType.GROUPBY)
+                self.graph.iterate_nodes(
+                    node, NodeType.ITEM_GROUPBY, skip_node_type=NodeType.GROUPBY
+                )
             )
         lookup_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP))
         lookup_target_nodes = list(self.graph.iterate_nodes(node, NodeType.LOOKUP_TARGET))
         asat_nodes = list(self.graph.iterate_nodes(node, NodeType.AGGREGATE_AS_AT))
-        non_tile_window_aggregate_nodes = list(self.graph.iterate_nodes(node, NodeType.NON_TILE_WINDOW_AGGREGATE))
+        non_tile_window_aggregate_nodes = list(
+            self.graph.iterate_nodes(node, NodeType.NON_TILE_WINDOW_AGGREGATE)
+        )
         forward_aggregate_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE))
         forward_asat_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE_AS_AT))
 
@@ -675,7 +691,11 @@ class FeatureExecutionPlanner:
 
         if non_tile_window_aggregate_nodes:
             for non_tile_window_aggregate_node in non_tile_window_aggregate_nodes:
-                out.extend(self.get_non_tiling_specs(NonTileWindowAggregateSpec, non_tile_window_aggregate_node))
+                out.extend(
+                    self.get_non_tiling_specs(
+                        NonTileWindowAggregateSpec, non_tile_window_aggregate_node
+                    )
+                )
 
         if forward_aggregate_nodes:
             for forward_aggregate_node in forward_aggregate_nodes:
@@ -733,7 +753,9 @@ class FeatureExecutionPlanner:
             agg_result_name_include_serving_names=self.agg_result_name_include_serving_names,
         )
 
-    def update_feature_specs(self, node: Node, aggregation_specs: dict[str, list[AggregationSpec]]) -> None:
+    def update_feature_specs(
+        self, node: Node, aggregation_specs: dict[str, list[AggregationSpec]]
+    ) -> None:
         """Update FeatureExecutionPlan with a query graph node
 
         Parameters
@@ -751,7 +773,9 @@ class FeatureExecutionPlanner:
         )
         sql_node = sql_graph.build(node)
         op_struct = self.op_struct_extractor.extract(node=node).operation_structure_map[node.name]
-        name_to_dtype = {aggregation.name: aggregation.dtype for aggregation in op_struct.aggregations}
+        name_to_dtype = {
+            aggregation.name: aggregation.dtype for aggregation in op_struct.aggregations
+        }
 
         if isinstance(sql_node, TableNode):
             # sql_node corresponds to a FeatureGroup that results from point-in-time groupby or item

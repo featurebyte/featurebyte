@@ -14,7 +14,9 @@ def test_lookup_node_aggregation(global_graph, lookup_node):
     """
     Test lookup feature node sql during aggregation
     """
-    sql_graph = SQLOperationGraph(global_graph, sql_type=SQLType.AGGREGATION, source_type=SourceType.SNOWFLAKE)
+    sql_graph = SQLOperationGraph(
+        global_graph, sql_type=SQLType.AGGREGATION, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(lookup_node).sql
     assert (
         sql_tree.sql(pretty=True)

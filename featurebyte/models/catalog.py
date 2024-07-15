@@ -58,7 +58,9 @@ class CatalogModel(FeatureByteBaseDocumentModel):
     )
 
     # pydantic validators
-    _sort_ids_validator = validator("default_feature_store_ids", allow_reuse=True)(construct_sort_validator())
+    _sort_ids_validator = validator("default_feature_store_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """

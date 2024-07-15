@@ -13,7 +13,9 @@ from featurebyte.schema.feature_namespace import FeatureNamespaceServiceUpdate
 async def test_update_feature__no_update(feature_readiness_service, feature):
     """Test update_feature when the readiness is the same"""
     assert feature.readiness == FeatureReadiness.DRAFT
-    updated_feature = await feature_readiness_service.update_feature(feature_id=feature.id, readiness=feature.readiness)
+    updated_feature = await feature_readiness_service.update_feature(
+        feature_id=feature.id, readiness=feature.readiness
+    )
     assert updated_feature == feature
 
 
@@ -25,7 +27,9 @@ async def test_update_feature_namespace__no_update_except_updated_at(
     updated_namespace = await feature_readiness_service.update_feature_namespace(
         feature_namespace_id=feature.feature_namespace_id
     )
-    assert updated_namespace.dict(exclude={"updated_at"}) == feature_namespace.dict(exclude={"updated_at"})
+    assert updated_namespace.dict(exclude={"updated_at"}) == feature_namespace.dict(
+        exclude={"updated_at"}
+    )
 
 
 @pytest.mark.asyncio
@@ -75,13 +79,18 @@ async def check_states_after_readiness_change(
     assert new_feat.feature_list_ids == [new_feature_list.id]
 
     # check feature namespace get updated (new feature become the default one)
-    updated_feat_namespace = await feature_namespace_service.get_document(document_id=new_feat.feature_namespace_id)
+    updated_feat_namespace = await feature_namespace_service.get_document(
+        document_id=new_feat.feature_namespace_id
+    )
     assert updated_feat_namespace.default_feature_id == expected_default_feature_id
     assert updated_feat_namespace.readiness == expected_default_readiness
 
     # check feature list version get updated (new feature list readiness distribution get updated)
     updated_flist = await feature_list_service.get_document(document_id=new_feature_list.id)
-    assert updated_flist.readiness_distribution.__root__ == expected_feature_list_readiness_distribution
+    assert (
+        updated_flist.readiness_distribution.__root__
+        == expected_feature_list_readiness_distribution
+    )
 
     # check feature list namespace (new feature list becomes the default one)
     updated_flist_namespace = await feature_list_namespace_service.get_document(
@@ -115,7 +124,9 @@ async def test_update_document__auto_default_version_mode(
         new_feature_next_readiness=FeatureReadiness.PRODUCTION_READY,
         expected_default_feature_id=new_feature_id,
         expected_default_readiness=FeatureReadiness.PRODUCTION_READY,
-        expected_feature_list_readiness_distribution=[{"readiness": "PRODUCTION_READY", "count": 1}],
+        expected_feature_list_readiness_distribution=[
+            {"readiness": "PRODUCTION_READY", "count": 1}
+        ],
         expected_default_feature_list_id=new_feature_list_id,
     )
 
@@ -172,7 +183,9 @@ async def test_update_document__non_default_feature_readiness_change(
         new_feature_next_readiness=FeatureReadiness.PRODUCTION_READY,
         expected_default_feature_id=feature.id,
         expected_default_readiness=FeatureReadiness.DRAFT,
-        expected_feature_list_readiness_distribution=[{"readiness": "PRODUCTION_READY", "count": 1}],
+        expected_feature_list_readiness_distribution=[
+            {"readiness": "PRODUCTION_READY", "count": 1}
+        ],
         expected_default_feature_list_id=new_feature_list_id,
     )
 
@@ -205,7 +218,9 @@ async def test_update_document__default_feature_readiness_change(
     """Test update document (manual default version mode, upgrade non-default feature's readiness)"""
     new_feature_id, new_feature_list_id = setup_for_feature_readiness
     new_feature_list = await feature_list_service.get_document(document_id=new_feature_list_id)
-    await feature_readiness_service.update_feature(feature_id=new_feature_id, readiness="PRODUCTION_READY")
+    await feature_readiness_service.update_feature(
+        feature_id=new_feature_id, readiness="PRODUCTION_READY"
+    )
 
     # change default version mode to manual first
     feat_namespace = await feature_namespace_service.update_document(
@@ -245,7 +260,9 @@ async def test_update_document__default_feature_readiness_change(
         new_feature_next_readiness=FeatureReadiness.PRODUCTION_READY,
         expected_default_feature_id=new_feature_id,
         expected_default_readiness=FeatureReadiness.PRODUCTION_READY,
-        expected_feature_list_readiness_distribution=[{"readiness": "PRODUCTION_READY", "count": 1}],
+        expected_feature_list_readiness_distribution=[
+            {"readiness": "PRODUCTION_READY", "count": 1}
+        ],
         expected_default_feature_list_id=new_feature_list_id,
     )
 
@@ -253,7 +270,9 @@ async def test_update_document__default_feature_readiness_change(
 @pytest.mark.asyncio
 async def test_feature_readiness__prohibit_transition_to_draft(feature, feature_readiness_service):
     """Test that it is not possible to transition a feature to DRAFT readiness level"""
-    updated_feature = await feature_readiness_service.update_feature(feature_id=feature.id, readiness="PUBLIC_DRAFT")
+    updated_feature = await feature_readiness_service.update_feature(
+        feature_id=feature.id, readiness="PUBLIC_DRAFT"
+    )
     assert updated_feature.readiness == "PUBLIC_DRAFT"
 
     with pytest.raises(DocumentUpdateError) as exc:
@@ -264,12 +283,16 @@ async def test_feature_readiness__prohibit_transition_to_draft(feature, feature_
 
 
 @pytest.mark.asyncio
-async def test_feature_readiness__prohibit_deprecate_draft_feature(feature, feature_readiness_service):
+async def test_feature_readiness__prohibit_deprecate_draft_feature(
+    feature, feature_readiness_service
+):
     """Test that it is not possible to deprecate a feature with DRAFT readiness level"""
     assert feature.readiness == "DRAFT"
 
     with pytest.raises(DocumentUpdateError) as exc:
-        await feature_readiness_service.update_feature(feature_id=feature.id, readiness="DEPRECATED")
+        await feature_readiness_service.update_feature(
+            feature_id=feature.id, readiness="DEPRECATED"
+        )
 
     expected_msg = (
         "Not allowed to update feature readiness from DRAFT to DEPRECATED. "
@@ -285,7 +308,9 @@ async def test_feature_readiness__update_feature_namespace_with_deletion__auto_m
 ):
     """Test that feature namespace is updated when a feature is deleted (auto mode)"""
     new_feature_id, _ = setup_for_feature_readiness
-    feature_namespace = await feature_namespace_service.get_document(document_id=feature.feature_namespace_id)
+    feature_namespace = await feature_namespace_service.get_document(
+        document_id=feature.feature_namespace_id
+    )
     assert feature_namespace.default_version_mode == "AUTO"
     assert feature_namespace.feature_ids == [feature.id, new_feature_id]
     assert feature_namespace.default_feature_id == feature.id

@@ -14,7 +14,9 @@ from featurebyte.schema.worker.task.batch_feature_table import BatchFeatureTable
 from featurebyte.service.materialized_table import BaseMaterializedTableService
 
 
-class BatchFeatureTableService(BaseMaterializedTableService[BatchFeatureTableModel, BatchFeatureTableModel]):
+class BatchFeatureTableService(
+    BaseMaterializedTableService[BatchFeatureTableModel, BatchFeatureTableModel]
+):
     """
     BatchFeatureTableService class
     """
@@ -26,7 +28,9 @@ class BatchFeatureTableService(BaseMaterializedTableService[BatchFeatureTableMod
     def class_name(self) -> str:
         return "BatchFeatureTable"
 
-    async def get_batch_feature_table_task_payload(self, data: BatchFeatureTableCreate) -> BatchFeatureTableTaskPayload:
+    async def get_batch_feature_table_task_payload(
+        self, data: BatchFeatureTableCreate
+    ) -> BatchFeatureTableTaskPayload:
         """
         Validate and convert a BatchFeatureTableCreate schema to a BatchFeatureTableTaskPayload schema
         which will be used to initiate the BatchFeatureTable creation task.

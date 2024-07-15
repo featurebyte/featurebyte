@@ -26,7 +26,9 @@ from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.target import TargetService
 
 
-class ItemTableController(BaseTableDocumentController[ItemTableModel, ItemTableService, ItemTableList]):
+class ItemTableController(
+    BaseTableDocumentController[ItemTableModel, ItemTableService, ItemTableList]
+):
     """
     ItemTable controller
     """
@@ -90,8 +92,12 @@ class ItemTableController(BaseTableDocumentController[ItemTableModel, ItemTableS
         ItemTableInfo
         """
         item_table = await self.service.get_document(document_id=document_id)
-        table_dict = await self.table_info_service.get_table_info(data_document=item_table, verbose=verbose)
-        event_table = await self.event_table_service.get_document(document_id=item_table.event_table_id)
+        table_dict = await self.table_info_service.get_table_info(
+            data_document=item_table, verbose=verbose
+        )
+        event_table = await self.event_table_service.get_document(
+            document_id=item_table.event_table_id
+        )
         return ItemTableInfo(
             **table_dict,
             event_id_column=item_table.event_id_column,

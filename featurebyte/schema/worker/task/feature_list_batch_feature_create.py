@@ -14,7 +14,9 @@ from featurebyte.schema.feature_list import FeatureListCreateWithBatchFeatureCre
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 
 
-class FeatureListCreateWithBatchFeatureCreationTaskPayload(BaseTaskPayload, FeatureListCreateWithBatchFeatureCreation):
+class FeatureListCreateWithBatchFeatureCreationTaskPayload(
+    BaseTaskPayload, FeatureListCreateWithBatchFeatureCreation
+):
     """
     Feature list creation with batch feature creation task payload
     """

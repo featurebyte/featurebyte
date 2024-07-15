@@ -58,12 +58,16 @@ async def create_batch_request_table(
 
 
 @router.get("/{batch_request_table_id}", response_model=BatchRequestTableModel)
-async def get_batch_request_table(request: Request, batch_request_table_id: PyObjectId) -> BatchRequestTableModel:
+async def get_batch_request_table(
+    request: Request, batch_request_table_id: PyObjectId
+) -> BatchRequestTableModel:
     """
     Get BatchRequestTable
     """
     controller = request.state.app_container.batch_request_table_controller
-    batch_request_table: BatchRequestTableModel = await controller.get(document_id=batch_request_table_id)
+    batch_request_table: BatchRequestTableModel = await controller.get(
+        document_id=batch_request_table_id
+    )
     return batch_request_table
 
 
@@ -73,7 +77,9 @@ async def delete_batch_request_table(request: Request, batch_request_table_id: P
     Delete BatchRequestTable
     """
     controller = request.state.app_container.batch_request_table_controller
-    task_delete: Task = await controller.delete_materialized_table(document_id=batch_request_table_id)
+    task_delete: Task = await controller.delete_materialized_table(
+        document_id=batch_request_table_id
+    )
     return task_delete
 
 
@@ -138,7 +144,9 @@ async def get_batch_request_table_info(
 
 
 @router.get("/pyarrow_table/{batch_request_table_id}")
-async def download_table_as_pyarrow_table(request: Request, batch_request_table_id: PyObjectId) -> StreamingResponse:
+async def download_table_as_pyarrow_table(
+    request: Request, batch_request_table_id: PyObjectId
+) -> StreamingResponse:
     """
     Download BatchRequestTable as pyarrow table
     """
@@ -150,7 +158,9 @@ async def download_table_as_pyarrow_table(request: Request, batch_request_table_
 
 
 @router.get("/parquet/{batch_request_table_id}")
-async def download_table_as_parquet(request: Request, batch_request_table_id: PyObjectId) -> StreamingResponse:
+async def download_table_as_parquet(
+    request: Request, batch_request_table_id: PyObjectId
+) -> StreamingResponse:
     """
     Download BatchRequestTable as parquet file
     """

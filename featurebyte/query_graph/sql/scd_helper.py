@@ -158,16 +158,24 @@ def get_scd_join_expr(
     if select_expr is None:
         select_expr = select(
             *[
-                alias_(get_qualified_column_identifier(input_col, "L"), alias=output_col, quoted=True)
-                for input_col, output_col in zip(left_table.input_columns, left_table.output_columns)
+                alias_(
+                    get_qualified_column_identifier(input_col, "L"), alias=output_col, quoted=True
+                )
+                for input_col, output_col in zip(
+                    left_table.input_columns, left_table.output_columns
+                )
             ],
             *[
                 alias_(
-                    get_qualified_column_identifier(input_col, "R", quote_column=quote_right_input_columns),
+                    get_qualified_column_identifier(
+                        input_col, "R", quote_column=quote_right_input_columns
+                    ),
                     alias=output_col,
                     quoted=True,
                 )
-                for input_col, output_col in zip(right_table.input_columns, right_table.output_columns)
+                for input_col, output_col in zip(
+                    right_table.input_columns, right_table.output_columns
+                )
             ],
         )
 
@@ -219,7 +227,9 @@ def get_scd_join_expr(
     return select_expr
 
 
-def _convert_to_utc_ntz(col_expr: expressions.Expression, adapter: BaseAdapter) -> expressions.Expression:
+def _convert_to_utc_ntz(
+    col_expr: expressions.Expression, adapter: BaseAdapter
+) -> expressions.Expression:
     """
     Convert timestamp expression to UTC values and NTZ timestamps
 
@@ -364,7 +374,9 @@ def augment_table_with_effective_timestamp(
 
     # Include all columns specified for the right table, but simply set them as NULL.
     for column in left_table.output_columns:
-        right_ts_and_key = right_ts_and_key.select(alias_(expressions.NULL, alias=column, quoted=True), copy=False)
+        right_ts_and_key = right_ts_and_key.select(
+            alias_(expressions.NULL, alias=column, quoted=True), copy=False
+        )
 
     # Merge the above two temporary tables into one
     all_ts_and_key = expressions.Union(
@@ -381,14 +393,18 @@ def augment_table_with_effective_timestamp(
     # date, instead of a previous effective date. Vice versa for allow_exact_match=False.
     order = expressions.Order(
         expressions=[
-            expressions.Ordered(this=expressions.Column(this=quoted_identifier(TS_COL)), nulls_first=True),
+            expressions.Ordered(
+                this=expressions.Column(this=quoted_identifier(TS_COL)), nulls_first=True
+            ),
             expressions.Ordered(this=quoted_identifier(TS_TIE_BREAKER_COL)),
         ]
     )
     num_join_keys = len(left_table.join_keys)
     matched_effective_timestamp_expr = expressions.Window(
         this=expressions.IgnoreNulls(
-            this=expressions.Anonymous(this="LAG", expressions=[quoted_identifier(EFFECTIVE_TS_COL)]),
+            this=expressions.Anonymous(
+                this="LAG", expressions=[quoted_identifier(EFFECTIVE_TS_COL)]
+            ),
         ),
         partition_by=_key_cols_as_quoted_identifiers(num_join_keys),
         order=order,
@@ -510,7 +526,9 @@ def augment_scd_table_with_end_timestamp(
         ]
     )
     end_timestamp_expr = expressions.Window(
-        this=expressions.Anonymous(this="LEAD", expressions=[quoted_identifier(effective_timestamp_column)]),
+        this=expressions.Anonymous(
+            this="LEAD", expressions=[quoted_identifier(effective_timestamp_column)]
+        ),
         partition_by=[quoted_identifier(natural_key_column)],
         order=order,
     )

@@ -27,7 +27,9 @@ class TestTaskApi:
     @pytest_asyncio.fixture
     async def task_id(self, user_id, task_manager):
         """Task id"""
-        return await task_manager.submit(payload=LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID))
+        return await task_manager.submit(
+            payload=LongRunningPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
+        )
 
     def test_get_200(self, api_client_persistent, task_id, user_id):
         """Test get (success)"""
@@ -84,7 +86,9 @@ class TestTaskApi:
     async def test_patch_422(self, api_client_persistent, task_manager, user_id):
         """Test patch (not revocable)"""
         test_api_client, _ = api_client_persistent
-        task_id = await task_manager.submit(payload=TestIOTaskPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID))
+        task_id = await task_manager.submit(
+            payload=TestIOTaskPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
+        )
         response = test_api_client.patch(f"{self.base_route}/{task_id}", json={"revoke": True})
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == f'Task (id: "{task_id}") does not support revoke.'

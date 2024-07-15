@@ -34,7 +34,9 @@ def get_expected_scd_join_result(
     df_left = df_left.copy()
     df_right = df_right.copy()
     df_left[left_timestamp] = pd.to_datetime(df_left[left_timestamp], utc=True).dt.tz_localize(None)
-    df_right[right_timestamp] = pd.to_datetime(df_right[right_timestamp], utc=True).dt.tz_localize(None)
+    df_right[right_timestamp] = pd.to_datetime(df_right[right_timestamp], utc=True).dt.tz_localize(
+        None
+    )
     df_left = df_left.set_index(left_timestamp).sort_index()
     df_right = df_right.set_index(right_timestamp).sort_index()
     df_result = pd.merge_asof(
@@ -112,7 +114,9 @@ async def test_scd_join_small(session, data_source, source_type):
     # Register event table
     table_name = f"{table_prefix}_EVENT"
     await session.register_table(table_name, df_events)
-    await session.execute_query(f'UPDATE {table_name} SET {_quote("ts")} = NULL WHERE {_quote("event_id")} = 4')
+    await session.execute_query(
+        f'UPDATE {table_name} SET {_quote("ts")} = NULL WHERE {_quote("event_id")} = 4'
+    )
 
     # Register scd table
     table_name = f"{table_prefix}_SCD"
@@ -228,7 +232,10 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
         feature_names=["state_code_counts_30d"],
         feature_job_setting=FeatureJobSetting(period="24h", offset="1h", blind_spot="2h"),
     )
-    df_observations = pd.DataFrame({"POINT_IN_TIME": ["2022-04-25 10:00:00"], "customer_id": ["c1"]})
+    df_observations = pd.DataFrame({
+        "POINT_IN_TIME": ["2022-04-25 10:00:00"],
+        "customer_id": ["c1"],
+    })
     df = features.preview(df_observations)
     expected = df_observations.copy()
     expected["POINT_IN_TIME"] = pd.to_datetime(expected["POINT_IN_TIME"])
@@ -236,7 +243,9 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
     fb_assert_frame_equal(df, expected, dict_like_columns=["state_code_counts_30d"])
 
 
-def test_event_view_join_scd_view__preview_view(event_table, scd_table, expected_dataframe_scd_join):
+def test_event_view_join_scd_view__preview_view(
+    event_table, scd_table, expected_dataframe_scd_join
+):
     """
     Test joining an EventView with and SCDView
     """
@@ -284,7 +293,9 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
     assert_preview_result_equal(df, expected, dict_like_columns=["count_7d"])
 
 
-def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, item_table, scd_dataframe):
+def test_scd_lookup_feature(
+    config, event_table, dimension_table, scd_table, item_table, scd_dataframe
+):
     """
     Test creating lookup feature from a SCDView
     """
@@ -332,11 +343,15 @@ def test_scd_lookup_feature(config, event_table, dimension_table, scd_table, ite
     }
 
     # Compare with expected result
-    mask = (scd_dataframe["Effective Timestamp"] <= point_in_time) & (scd_dataframe["User ID"] == user_id)
+    mask = (scd_dataframe["Effective Timestamp"] <= point_in_time) & (
+        scd_dataframe["User ID"] == user_id
+    )
     expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
     assert preview_output["Current User Status"] == expected_row["User Status"]
     assert preview_output["Item Name Feature"] == "name_42"
-    assert preview_output["count_7d"] == json.loads('{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}')
+    assert preview_output["count_7d"] == json.loads(
+        '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
+    )
 
     # Check online serving.
     feature_list.save()
@@ -372,8 +387,12 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
     offset_1 = "90d"
     offset_2 = "7d"
     scd_view = scd_table.get_view()
-    scd_lookup_feature_1 = scd_view["User Status"].as_feature("Current User Status Offset 90d", offset=offset_1)
-    scd_lookup_feature_2 = scd_view["User Status"].as_feature("Current User Status Offset 7d", offset=offset_2)
+    scd_lookup_feature_1 = scd_view["User Status"].as_feature(
+        "Current User Status Offset 90d", offset=offset_1
+    )
+    scd_lookup_feature_2 = scd_view["User Status"].as_feature(
+        "Current User Status Offset 7d", offset=offset_2
+    )
     feature_list = FeatureList(
         [scd_lookup_feature_1, scd_lookup_feature_2],
         "feature_list__test_scd_lookup_feature_with_offset",
@@ -397,8 +416,14 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
         expected_row = scd_dataframe[mask].sort_values("Effective Timestamp").iloc[-1]
         return expected_row
 
-    assert preview_output["Current User Status Offset 90d"] == _get_expected_row(offset_1)["User Status"]
-    assert preview_output["Current User Status Offset 7d"] == _get_expected_row(offset_2)["User Status"]
+    assert (
+        preview_output["Current User Status Offset 90d"]
+        == _get_expected_row(offset_1)["User Status"]
+    )
+    assert (
+        preview_output["Current User Status Offset 7d"]
+        == _get_expected_row(offset_2)["User Status"]
+    )
 
     # Check online serving
     feature_list.save()
@@ -512,7 +537,9 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     Test aggregate_asat aggregation on SCDView without entity
     """
     scd_view = scd_table.get_view()
-    feature = scd_view.groupby([]).aggregate_asat(method="count", feature_name="Current Number of Users")
+    feature = scd_view.groupby([]).aggregate_asat(
+        method="count", feature_name="Current Number of Users"
+    )
     feature_other = scd_view.groupby("User Status").aggregate_asat(
         method="count", feature_name="Current Number of Users With This Status V2"
     )
@@ -553,7 +580,9 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     deployment.enable()
 
     try:
-        data = OnlineFeaturesRequestPayload(entity_serving_names=[{"user_status": "STÀTUS_CODE_47"}])
+        data = OnlineFeaturesRequestPayload(
+            entity_serving_names=[{"user_status": "STÀTUS_CODE_47"}]
+        )
         res = config.get_client().post(
             f"/deployment/{deployment.id}/online_features",
             json=data.json_dict(),

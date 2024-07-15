@@ -23,7 +23,9 @@ from featurebyte.models.credential import (
 from featurebyte.models.feature_store import FeatureStoreModel
 
 
-@pytest.fixture(name="storage_credential", params=[None] + list(StorageCredentialType.__members__.values()))
+@pytest.fixture(
+    name="storage_credential", params=[None] + list(StorageCredentialType.__members__.values())
+)
 def storage_credential_fixture(request):
     """
     Fixture for a StorageCredential object

@@ -33,7 +33,9 @@ from featurebyte.service.table import TableService
 
 
 class FeatureListNamespaceController(
-    BaseDocumentController[FeatureListNamespaceModelResponse, FeatureListNamespaceService, FeatureListNamespaceList]
+    BaseDocumentController[
+        FeatureListNamespaceModelResponse, FeatureListNamespaceService, FeatureListNamespaceList
+    ]
 ):
     """
     FeatureList controller
@@ -64,7 +66,9 @@ class FeatureListNamespaceController(
         document_id: ObjectId,
         exception_detail: str | None = None,
     ) -> Document:
-        document = await self.service.get_document(document_id=document_id, exception_detail=exception_detail)
+        document = await self.service.get_document(
+            document_id=document_id, exception_detail=exception_detail
+        )
         default_feature_list_doc = await self.feature_list_service.get_document_as_dict(
             document_id=document.default_feature_list_id,
             projection={
@@ -102,7 +106,9 @@ class FeatureListNamespaceController(
         )
 
         # compute primary entity ids of each feature list namespace
-        default_feature_list_ids = [document["default_feature_list_id"] for document in document_data["data"]]
+        default_feature_list_ids = [
+            document["default_feature_list_id"] for document in document_data["data"]
+        ]
         feature_list_id_to_doc = {
             doc["_id"]: doc
             async for doc in self.feature_list_service.list_documents_as_dict_iterator(
@@ -119,7 +125,9 @@ class FeatureListNamespaceController(
         }
         output = []
         for feature_list_namespace in document_data["data"]:
-            feature_list_doc = feature_list_id_to_doc[feature_list_namespace["default_feature_list_id"]]
+            feature_list_doc = feature_list_id_to_doc[
+                feature_list_namespace["default_feature_list_id"]
+            ]
             output.append(
                 FeatureListNamespaceModelResponse(**{
                     **feature_list_namespace,
@@ -193,11 +201,17 @@ class FeatureListNamespaceController(
             page=1, page_size=0, query_filter={"_id": {"$in": feature_list["table_ids"]}}
         )
         # get catalog info
-        catalog_name, updated_docs = await self.catalog_name_injector.add_name(namespace.catalog_id, [entities, tables])
+        catalog_name, updated_docs = await self.catalog_name_injector.add_name(
+            namespace.catalog_id, [entities, tables]
+        )
         entities, tables = updated_docs
         primary_entity_data = copy.deepcopy(entities)
         primary_entity_data["data"] = sorted(
-            [entity for entity in entities["data"] if entity["_id"] in feature_list["primary_entity_ids"]],
+            [
+                entity
+                for entity in entities["data"]
+                if entity["_id"] in feature_list["primary_entity_ids"]
+            ],
             key=lambda doc: doc["_id"],  # type: ignore
         )
 
@@ -207,7 +221,9 @@ class FeatureListNamespaceController(
             query_filter={"_id": {"$in": namespace.feature_namespace_ids}},
             projection={"_id": 1, "default_feature_id": 1},
         ):
-            feat_namespace_to_default_id[feat_namespace["_id"]] = feat_namespace["default_feature_id"]
+            feat_namespace_to_default_id[feat_namespace["_id"]] = feat_namespace[
+                "default_feature_id"
+            ]
 
         return FeatureListNamespaceInfo(
             name=namespace.name,
@@ -216,7 +232,9 @@ class FeatureListNamespaceController(
             created_at=namespace.created_at,
             updated_at=namespace.updated_at,
             entities=EntityBriefInfoList.from_paginated_data(entities),
-            primary_entity=EntityBriefInfoList.from_paginated_data(paginated_data=primary_entity_data),
+            primary_entity=EntityBriefInfoList.from_paginated_data(
+                paginated_data=primary_entity_data
+            ),
             tables=TableBriefInfoList.from_paginated_data(tables),
             default_feature_list_id=namespace.default_feature_list_id,
             version_count=len(namespace.feature_list_ids),
@@ -225,7 +243,8 @@ class FeatureListNamespaceController(
             catalog_name=catalog_name,
             feature_namespace_ids=namespace.feature_namespace_ids,
             default_feature_ids=[
-                feat_namespace_to_default_id[feat_namespace_id] for feat_namespace_id in namespace.feature_namespace_ids
+                feat_namespace_to_default_id[feat_namespace_id]
+                for feat_namespace_id in namespace.feature_namespace_ids
             ],
             description=namespace.description,
         )

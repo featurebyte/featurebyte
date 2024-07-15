@@ -57,7 +57,9 @@ class BaseAsAtAggregator(BaseAggregator):
         view = cast(SCDView, self.view)
         for key in self.keys:
             if key == view.natural_key_column:
-                raise ValueError("Natural key column cannot be used as a groupby key in aggregate_asat")
+                raise ValueError(
+                    "Natural key column cannot be used as a groupby key in aggregate_asat"
+                )
 
         if offset is not None:
             validate_offset_string(offset)

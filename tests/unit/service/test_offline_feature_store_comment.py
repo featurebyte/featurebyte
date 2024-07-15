@@ -87,7 +87,10 @@ async def offline_feature_table(app_container, deployed_features, cust_id_entity
     _ = deployed_features
     service = app_container.offline_store_feature_table_service
     async for feature_table in service.list_documents_iterator(query_filter={}):
-        if feature_table.primary_entity_ids == [cust_id_entity.id] and feature_table.entity_lookup_info is None:
+        if (
+            feature_table.primary_entity_ids == [cust_id_entity.id]
+            and feature_table.entity_lookup_info is None
+        ):
             return feature_table
     raise AssertionError("Feature table not found")
 
@@ -128,8 +131,12 @@ async def test_apply_comments(service, mock_snowflake_session):
                 ),
             ],
         )
-    assert mock_snowflake_session.comment_table.call_args_list == [call("tab_1", "comment for tab_1")]
-    assert mock_snowflake_session.comment_column.call_args_list == [call("tab_2", "col_2", "comment for tab_2's col_2")]
+    assert mock_snowflake_session.comment_table.call_args_list == [
+        call("tab_1", "comment for tab_1")
+    ]
+    assert mock_snowflake_session.comment_column.call_args_list == [
+        call("tab_2", "col_2", "comment for tab_2's col_2")
+    ]
 
 
 @pytest.mark.asyncio
@@ -142,7 +149,9 @@ async def test_apply_comments__unexpected_exception(service, mock_snowflake_sess
     ) as patched:
         patched.return_value = mock_snowflake_session
         mock_snowflake_session.comment_table.side_effect = Exception("Unexpected exception")
-        mock_snowflake_session.comment_column.side_effect = Exception("Another unexpected exception")
+        mock_snowflake_session.comment_column.side_effect = Exception(
+            "Another unexpected exception"
+        )
         await service.apply_comments(
             Mock(name="mock_feature_store_model"),
             [
@@ -255,6 +264,8 @@ async def test_offline_feature_table_no_primary_entity_retrieval(
 ):
     """Test offline feature table without primary entity retrieval"""
     offline_table_service = app_container.offline_store_feature_table_service
-    table = await offline_table_service.get_or_create_document(offline_feature_table_no_primary_entity)
+    table = await offline_table_service.get_or_create_document(
+        offline_feature_table_no_primary_entity
+    )
     assert table.id == offline_feature_table_no_primary_entity.id
     assert table.name == offline_feature_table_no_primary_entity.name

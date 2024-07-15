@@ -48,7 +48,9 @@ async def _get_list_object(
     -------
     ObjectT
     """
-    res = await service.list_documents_as_dict(page=1, page_size=0, query_filter={"_id": {"$in": document_ids}})
+    res = await service.list_documents_as_dict(
+        page=1, page_size=0, query_filter={"_id": {"$in": document_ids}}
+    )
     return list_object_class(**{**res, "page_size": 1})
 
 
@@ -65,7 +67,9 @@ class FeatureOrTargetMetadataExtractor:
         self.table_service = table_service
         self.semantic_service = semantic_service
 
-    async def extract_from_object(self, obj: BaseFeatureModel) -> tuple[GroupOperationStructure, dict[str, Any]]:
+    async def extract_from_object(
+        self, obj: BaseFeatureModel
+    ) -> tuple[GroupOperationStructure, dict[str, Any]]:
         """
         Extract feature metadata from feature or target
 
@@ -93,7 +97,9 @@ class FeatureOrTargetMetadataExtractor:
     @classmethod
     def _reference_key_func(
         cls,
-        col: Optional[Union[SourceDataColumn, DerivedDataColumn, AggregationColumn, PostAggregationColumn]],
+        col: Optional[
+            Union[SourceDataColumn, DerivedDataColumn, AggregationColumn, PostAggregationColumn]
+        ],
     ) -> str:
         # helper function to generate reference key used in the reference map (_extract function)
         # As the col contains other attribute like filter to track whether the column has been applied
@@ -131,7 +137,9 @@ class FeatureOrTargetMetadataExtractor:
         """
         # retrieve related tables & semantics
         table_list = await _get_list_object(self.table_service, op_struct.table_ids, TableList)
-        semantic_list = await _get_list_object(self.semantic_service, table_list.semantic_ids, SemanticList)
+        semantic_list = await _get_list_object(
+            self.semantic_service, table_list.semantic_ids, SemanticList
+        )
 
         # prepare column mapping
         column_map: dict[tuple[Optional[ObjectId], str], Any] = {}
@@ -187,7 +195,10 @@ class FeatureOrTargetMetadataExtractor:
         if op_struct.post_aggregation:
             post_aggregation = {
                 "name": op_struct.post_aggregation.name,
-                "inputs": [reference_map[self._reference_key_func(col)] for col in op_struct.post_aggregation.columns],
+                "inputs": [
+                    reference_map[self._reference_key_func(col)]
+                    for col in op_struct.post_aggregation.columns
+                ],
                 "transforms": op_struct.post_aggregation.transforms,
             }
         return {

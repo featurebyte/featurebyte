@@ -64,7 +64,9 @@ NODE_PARAMS = {"name": "node_name"}
         ),
     ],
 )
-def test_derive_on_demand_view_code(node, odfv_config, udf_config, expected_odfv_expr, expected_udf_expr):
+def test_derive_on_demand_view_code(
+    node, odfv_config, udf_config, expected_odfv_expr, expected_udf_expr
+):
     """Test derive_on_demand_view_code"""
     node_inputs = [VariableNameStr("feat")]
 

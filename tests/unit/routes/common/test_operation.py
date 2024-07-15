@@ -98,7 +98,9 @@ def test_dict_transform(input_dict, rule, expected):
         (
             {
                 "__root__": DictProject(rule=["name"]),
-                "event_timestamp_column": DictProject(rule=("event_timestamp_column",), verbose_only=True),
+                "event_timestamp_column": DictProject(
+                    rule=("event_timestamp_column",), verbose_only=True
+                ),
             },
             {"name": "event_table"},
         ),

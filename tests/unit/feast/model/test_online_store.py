@@ -18,7 +18,9 @@ def test_redis_details():
         connection_string="localhost:6379",
         credential={"username": "user", "password": "my_pw"},
     )
-    feast_config = get_feast_online_store_details(online_store_details).to_feast_online_store_config()
+    feast_config = get_feast_online_store_details(
+        online_store_details
+    ).to_feast_online_store_config()
     assert feast_config == RedisOnlineStoreConfig(
         type="redis",
         redis_type="redis",
@@ -37,7 +39,9 @@ def test_mysql_details():
         port=3306,
         credential={"username": "user", "password": "my_pw"},
     )
-    feast_config = get_feast_online_store_details(online_store_details).to_feast_online_store_config()
+    feast_config = get_feast_online_store_details(
+        online_store_details
+    ).to_feast_online_store_config()
     assert feast_config == FBMySQLOnlineStoreConfig(
         host="1.2.3.4",
         user="user",

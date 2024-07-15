@@ -113,7 +113,9 @@ def create_batch_feature_create(features):
     return BatchFeatureCreate(graph=query_graph, features=feature_items)
 
 
-def create_feature_list_batch_feature_create(features, feature_list_name, feature_list_id, conflict_resolution):
+def create_feature_list_batch_feature_create(
+    features, feature_list_name, feature_list_id, conflict_resolution
+):
     """Create feature list batch feature create object"""
     feature_items, query_graph = create_batch_feature_items_and_graph(features)
     return FeatureListCreateWithBatchFeatureCreation(

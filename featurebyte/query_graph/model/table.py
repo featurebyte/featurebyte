@@ -257,7 +257,9 @@ class ItemTableData(BaseTableData):
         renamed_event_view_columns = join_parameters.right_output_columns
         joined_columns_info = combine_column_info_of_views(
             item_view_columns_info,
-            apply_column_name_modifiers_columns_info(event_view_columns_info, rsuffix=event_suffix, rprefix=None),
+            apply_column_name_modifiers_columns_info(
+                event_view_columns_info, rsuffix=event_suffix, rprefix=None
+            ),
             filter_set=set(renamed_event_view_columns),
         )
         return node, joined_columns_info, join_parameters
@@ -545,7 +547,9 @@ class SCDTableData(BaseTableData):
         return [
             natural_key_col_info,
             ColumnInfo(**{**time_col_info.dict(), "name": column_names.new_valid_from_column_name}),
-            ColumnInfo(name=column_names.previous_valid_from_column_name, dtype=time_col_info.dtype),
+            ColumnInfo(
+                name=column_names.previous_valid_from_column_name, dtype=time_col_info.dtype
+            ),
             ColumnInfo(**{**track_col_info.dict(), "name": column_names.new_tracked_column_name}),
             ColumnInfo(name=column_names.previous_tracked_column_name, dtype=track_col_info.dtype),
         ]

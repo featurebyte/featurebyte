@@ -17,7 +17,9 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
     class_name = "TargetNamespace"
     base_route = "/target_namespace"
     unknown_id = ObjectId()
-    payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/target_namespace.json")
+    payload = BaseCatalogApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/target_namespace.json"
+    )
     create_conflict_payload_expected_detail_pairs = []
     create_unprocessable_payload_expected_detail_pairs = []
     create_parent_unprocessable_payload_expected_detail_pairs = [
@@ -62,7 +64,9 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
         response = test_api_client.delete(f"/target_namespace/{target_namespace_id}")
         assert response.status_code == HTTPStatus.OK, response.json()
 
-    def test_delete_target_namespace_referenced_in_use_case(self, test_api_client_persistent, create_success_response):
+    def test_delete_target_namespace_referenced_in_use_case(
+        self, test_api_client_persistent, create_success_response
+    ):
         """Test delete target namespace referenced in use case"""
         test_api_client, _ = test_api_client_persistent
         target_namespace_id = create_success_response.json()["_id"]
@@ -80,4 +84,6 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
 
         response = test_api_client.delete(f"/target_namespace/{target_namespace_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-        assert response.json()["detail"] == "TargetNamespace is referenced by UseCase: test_use_case "
+        assert (
+            response.json()["detail"] == "TargetNamespace is referenced by UseCase: test_use_case "
+        )

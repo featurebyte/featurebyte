@@ -76,7 +76,9 @@ class TestEventTableApi(BaseTableApiTestSuite):
         record_creation_timestamp = await app_container.semantic_service.get_or_create_document(
             "record_creation_timestamp"
         )
-        event_timestamp = await app_container.semantic_service.get_or_create_document("event_timestamp")
+        event_timestamp = await app_container.semantic_service.get_or_create_document(
+            "event_timestamp"
+        )
         event_id = await app_container.semantic_service.get_or_create_document("event_id")
         return event_timestamp.id, event_id.id, record_creation_timestamp.id
 
@@ -120,7 +122,9 @@ class TestEventTableApi(BaseTableApiTestSuite):
             "_id": ObjectId(),
         }
         event_table_data = EventTableData(**event_table_dict)
-        input_node = event_table_data.construct_input_node(feature_store_details=feature_store_details)
+        input_node = event_table_data.construct_input_node(
+            feature_store_details=feature_store_details
+        )
         graph = QueryGraph()
         inserted_node = graph.add_node(node=input_node, input_nodes=[])
         event_table_dict["graph"] = graph
@@ -169,7 +173,8 @@ class TestEventTableApi(BaseTableApiTestSuite):
 
         # default_feature_job_setting should be updated
         assert (
-            update_response_dict.pop("default_feature_job_setting") == data_update_dict["default_feature_job_setting"]
+            update_response_dict.pop("default_feature_job_setting")
+            == data_update_dict["default_feature_job_setting"]
         )
 
         # the other fields should be unchanged
@@ -187,14 +192,19 @@ class TestEventTableApi(BaseTableApiTestSuite):
             "UPDATE",
             "INSERT",
         ]
-        assert [record["previous_values"].get("default_feature_job_setting") for record in results["data"]] == [
+        assert [
+            record["previous_values"].get("default_feature_job_setting")
+            for record in results["data"]
+        ] == [
             {"blind_spot": "600s", "period": "1800s", "offset": "300s", "execution_buffer": "0s"},
             None,
             None,
         ]
 
         # test get default_feature_job_setting_history
-        response = test_api_client.get(f"/event_table/history/default_feature_job_setting/{insert_id}")
+        response = test_api_client.get(
+            f"/event_table/history/default_feature_job_setting/{insert_id}"
+        )
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert [doc["setting"] for doc in results] == [
@@ -241,7 +251,10 @@ class TestEventTableApi(BaseTableApiTestSuite):
         data.pop("updated_at")
 
         # default_feature_job_setting should be updated
-        assert data.pop("default_feature_job_setting") == data_update_dict["default_feature_job_setting"]
+        assert (
+            data.pop("default_feature_job_setting")
+            == data_update_dict["default_feature_job_setting"]
+        )
 
         # the other fields should be unchanged
         data_model_dict.pop("default_feature_job_setting")
@@ -250,7 +263,9 @@ class TestEventTableApi(BaseTableApiTestSuite):
         # expect status to be updated to published
         assert data["status"] == TableStatus.PUBLISHED
 
-    def test_get_default_feature_job_setting_history(self, test_api_client_persistent, data_response):
+    def test_get_default_feature_job_setting_history(
+        self, test_api_client_persistent, data_response
+    ):
         """
         Test retrieve default feature job settings history
         """
@@ -284,7 +299,9 @@ class TestEventTableApi(BaseTableApiTestSuite):
             })
 
         # test get default_feature_job_setting_history
-        response = test_api_client.get(f"/event_table/history/default_feature_job_setting/{document_id}")
+        response = test_api_client.get(
+            f"/event_table/history/default_feature_job_setting/{document_id}"
+        )
         assert response.status_code == HTTPStatus.OK
         results = response.json()
         assert list(reversed(results)) == expected_history
@@ -295,7 +312,9 @@ class TestEventTableApi(BaseTableApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
         expected_info_response = {
             "name": self.document_name,
             "event_timestamp_column": "event_timestamp",
@@ -335,7 +354,9 @@ class TestEventTableApi(BaseTableApiTestSuite):
             "event_id",
         }
 
-        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
         assert response.status_code == HTTPStatus.OK, response.text
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text

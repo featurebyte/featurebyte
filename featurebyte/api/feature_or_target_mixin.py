@@ -36,7 +36,9 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
     """
 
     # pydantic instance variable (internal use)
-    internal_catalog_id: PydanticObjectId = Field(default_factory=get_active_catalog_id, alias="catalog_id")
+    internal_catalog_id: PydanticObjectId = Field(
+        default_factory=get_active_catalog_id, alias="catalog_id"
+    )
 
     @property
     def _cast_cached_model(self) -> BaseFeatureModel:
@@ -76,7 +78,9 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
             definition = self._generate_code(to_format=True, to_use_saved_data=True)
         return CodeStr(definition)
 
-    def _preview(self, observation_set: Union[ObservationTable, pd.DataFrame], url: str) -> pd.DataFrame:
+    def _preview(
+        self, observation_set: Union[ObservationTable, pd.DataFrame], url: str
+    ) -> pd.DataFrame:
         # helper function to preview
         tic = time.time()
 
@@ -89,7 +93,9 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
         if isinstance(observation_set, ObservationTable):
             preview_params["observation_table_id"] = observation_set.id
         else:
-            preview_params["point_in_time_and_serving_name_list"] = observation_set.to_dict(orient="records")
+            preview_params["point_in_time_and_serving_name_list"] = observation_set.to_dict(
+                orient="records"
+            )
 
         payload = FeatureOrTargetPreview(**preview_params)
         client = Configurations().get_client()

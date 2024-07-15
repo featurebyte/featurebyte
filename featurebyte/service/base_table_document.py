@@ -117,11 +117,16 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         resolution_signature: Optional[UniqueConstraintResolutionSignature],
     ) -> str:
         table_type = conflict_doc["type"]
-        formatted_conflict_signature = ", ".join(f'{key}: "{value}"' for key, value in conflict_signature.items())
+        formatted_conflict_signature = ", ".join(
+            f'{key}: "{value}"' for key, value in conflict_signature.items()
+        )
         class_name = self.class_name if table_type == self.table_type else "Table"
         message = f"{class_name} ({formatted_conflict_signature}) already exists."
         if resolution_signature:
-            if resolution_signature in UniqueConstraintResolutionSignature.get_existing_object_type():
+            if (
+                resolution_signature
+                in UniqueConstraintResolutionSignature.get_existing_object_type()
+            ):
                 resolution_statement = UniqueConstraintResolutionSignature.get_resolution_statement(
                     resolution_signature=resolution_signature,
                     class_name=self.table_type_to_class_name_map[table_type],
@@ -129,12 +134,16 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
                 )
                 message += f" Get the existing object by `{resolution_statement}`."
             if resolution_signature == UniqueConstraintResolutionSignature.RENAME:
-                message += f' Please rename object (name: "{conflict_doc["name"]}") to something else.'
+                message += (
+                    f' Please rename object (name: "{conflict_doc["name"]}") to something else.'
+                )
         return message
 
     async def create_document(self, data: DocumentCreate) -> Document:
         # retrieve feature store to check the feature_store_id is valid
-        _ = await self.feature_store_service.get_document(document_id=data.tabular_source.feature_store_id)
+        _ = await self.feature_store_service.get_document(
+            document_id=data.tabular_source.feature_store_id
+        )
 
         # create document ID if it is None
         data_doc_id = data.id or ObjectId()
@@ -144,7 +153,9 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
             payload_dict["catalog_id"] = self.catalog_id
 
         # create document for insertion
-        document = self.document_class(user_id=self.user.id, status=TableStatus.PUBLIC_DRAFT, **payload_dict)
+        document = self.document_class(
+            user_id=self.user.id, status=TableStatus.PUBLIC_DRAFT, **payload_dict
+        )
 
         # check any conflict with existing documents
         await self._check_document_unique_constraints(document=document)

@@ -97,8 +97,12 @@ async def create_materialized_tables(session, data_source, feature_list, deploym
     df = pd.DataFrame({"üser id": [1]})
     batch_request_table = await create_batch_request_table_from_dataframe(session, df, data_source)
 
-    historical_feature_table = feature_list.compute_historical_feature_table(observation_table, str(ObjectId()))
-    batch_feature_table = deployment.compute_batch_feature_table(batch_request_table, str(ObjectId()))
+    historical_feature_table = feature_list.compute_historical_feature_table(
+        observation_table, str(ObjectId())
+    )
+    batch_feature_table = deployment.compute_batch_feature_table(
+        batch_request_table, str(ObjectId())
+    )
 
     return [observation_table, batch_request_table, historical_feature_table, batch_feature_table]
 
@@ -180,7 +184,10 @@ async def test_drop_all_and_recreate(
             assert expected_error_message in error_message
         else:
             # error message is different for different spark versions
-            assert "Table or view not found" in error_message or "TABLE_OR_VIEW_NOT_FOUND" in error_message
+            assert (
+                "Table or view not found" in error_message
+                or "TABLE_OR_VIEW_NOT_FOUND" in error_message
+            )
 
     # Recreate schema
     await migration_service.reset_working_schema(query_filter={"_id": ObjectId(feature_store.id)})

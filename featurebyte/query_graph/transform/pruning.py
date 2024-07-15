@@ -19,7 +19,9 @@ from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
-def map_and_resolve_node_name(graph: QueryGraphModel, node_name_map: NodeNameMap, node_name: str) -> str:
+def map_and_resolve_node_name(
+    graph: QueryGraphModel, node_name_map: NodeNameMap, node_name: str
+) -> str:
     """
     Map the `node_name` value using `node_name_map`. If the `node_name` is not found in the mapping,
     use its corresponding node to resolve the replacement node.
@@ -94,7 +96,9 @@ def prune_query_graph(
     # first get the output node name in the pruned graph, use `map_and_resolve_node_name` as the target node
     # could be pruned if `target_columns` is used (means that not all output columns of the target node are
     # required).
-    output_node_name = map_and_resolve_node_name(graph=graph, node_name_map=node_name_map, node_name=node.name)
+    output_node_name = map_and_resolve_node_name(
+        graph=graph, node_name_map=node_name_map, node_name=node.name
+    )
     mapped_node = pruned_graph.get_node_by_name(node_name_map[output_node_name])
     output_graph, pruned_node_name_map = NodeParametersPruningExtractor(graph=pruned_graph).extract(
         node=mapped_node,
@@ -105,7 +109,9 @@ def prune_query_graph(
     # node_name_map => map (original graph node name) to (structure-pruned graph node name)
     # pruned_node_name_map => map (structure-pruned graph node name) to (parameters-pruned graph node name)
     # output_node_name_map => map (original graph node name) to (parameters-pruned graph node name)
-    output_node_name_map = {key: pruned_node_name_map[value] for key, value in node_name_map.items()}
+    output_node_name_map = {
+        key: pruned_node_name_map[value] for key, value in node_name_map.items()
+    }
     return output_graph, output_node_name_map, output_node_name_map[output_node_name]
 
 
@@ -189,7 +195,9 @@ class NodeParametersPruningExtractor(
             )
 
         # add the pruned node back to a graph to reconstruct a parameters-pruned graph
-        node_pruned = global_state.graph.add_operation_node(node=node, input_nodes=mapped_input_nodes)
+        node_pruned = global_state.graph.add_operation_node(
+            node=node, input_nodes=mapped_input_nodes
+        )
         global_state.node_name_map[node.name] = node_pruned.name
         return super()._post_compute(
             branch_state=branch_state,
@@ -293,7 +301,9 @@ class GraphStructurePruningExtractor(
     ) -> FeatureByteBaseModel:
         return branch_state
 
-    def _prepare_target_columns(self, node: Node, global_state: GraphPruningGlobalState) -> Optional[List[str]]:
+    def _prepare_target_columns(
+        self, node: Node, global_state: GraphPruningGlobalState
+    ) -> Optional[List[str]]:
         if node.name == global_state.target_node_name:
             # since the target node doesn't have the output node,
             # we use the target columns in the global state
@@ -385,7 +395,9 @@ class GraphStructurePruningExtractor(
                 proxy_input_operation_structures=proxy_input_operation_structures,
             )
 
-        node_pruned = global_state.graph.add_operation_node(node=node, input_nodes=mapped_input_nodes)
+        node_pruned = global_state.graph.add_operation_node(
+            node=node, input_nodes=mapped_input_nodes
+        )
 
         # update the containers to store the mapped node name & processed nodes information
         global_state.node_name_map[node.name] = node_pruned.name

@@ -267,7 +267,9 @@ class VersionService:
             )
         return new_feature
 
-    async def create_new_feature_version_using_source_settings(self, document_id: ObjectId) -> FeatureModel:
+    async def create_new_feature_version_using_source_settings(
+        self, document_id: ObjectId
+    ) -> FeatureModel:
         """
         Create new feature version based on feature job settings & cleaning operation from the source table
         (newly created feature won't be saved to the persistent)
@@ -297,7 +299,8 @@ class VersionService:
         data: FeatureListNewVersionCreate,
     ) -> FeatureListModel:
         feat_name_to_default_id_map = {
-            feat_namespace["name"]: feat_namespace["default_feature_id"] for feat_namespace in feature_namespaces
+            feat_namespace["name"]: feat_namespace["default_feature_id"]
+            for feat_namespace in feature_namespaces
         }
         feature_id_to_name_map = {
             feat_id: feature_namespace["name"]
@@ -310,7 +313,9 @@ class VersionService:
             feat_name = feature_id_to_name_map[feat_id]
             if feat_name in specified_feature_map:
                 version = specified_feature_map.pop(feat_name)
-                feature = await self.feature_service.get_document_by_name_and_version(name=feat_name, version=version)
+                feature = await self.feature_service.get_document_by_name_and_version(
+                    name=feat_name, version=version
+                )
                 features.append(feature)
             else:
                 # use default feature id for non-specified features
@@ -319,7 +324,9 @@ class VersionService:
 
         if specified_feature_map:
             names = [f'"{name}"' for name in specified_feature_map.keys()]
-            raise DocumentError(f"Features ({', '.join(names)}) are not in the original FeatureList")
+            raise DocumentError(
+                f"Features ({', '.join(names)}) are not in the original FeatureList"
+            )
 
         feature_ids = [feat.id for feat in features]
         if set(feature_list.feature_ids) == set(feature_ids):
@@ -351,7 +358,9 @@ class VersionService:
         -------
         FeatureListModel
         """
-        feature_list = await self.feature_list_service.get_document(document_id=data.source_feature_list_id)
+        feature_list = await self.feature_list_service.get_document(
+            document_id=data.source_feature_list_id
+        )
         feature_list_namespace = await self.feature_list_namespace_service.get_document(
             document_id=feature_list.feature_list_namespace_id,
         )
@@ -359,7 +368,9 @@ class VersionService:
             query_filter={"_id": {"$in": feature_list_namespace.feature_namespace_ids}},
             page_size=0,
         )
-        new_feature_list = await self._create_new_feature_list_version(feature_list, feature_namespaces["data"], data)
+        new_feature_list = await self._create_new_feature_list_version(
+            feature_list, feature_namespaces["data"], data
+        )
         if new_feature_list.id == feature_list.id:
             return feature_list
 

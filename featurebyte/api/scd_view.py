@@ -141,7 +141,9 @@ class SCDView(View, GroupByMixin, RawMixin):
         # When calling_view doesn't have the timestamp_column attribute, it means that it is a
         # DimensionView. It is invalid to join DimensionView with SCDView on the right
         # side. A validation error would have been raised before reaching here.
-        assert hasattr(calling_view, "timestamp_column") and isinstance(calling_view.timestamp_column, str)
+        assert hasattr(calling_view, "timestamp_column") and isinstance(
+            calling_view.timestamp_column, str
+        )
 
         left_timestamp_column = calling_view.timestamp_column
         return {

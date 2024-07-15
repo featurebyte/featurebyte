@@ -46,7 +46,9 @@ class BaseFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     It contains all the attributes that are shared between FeatureNamespaceModel & TargetNamespaceModel.
     """
 
-    default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO, allow_mutation=False)
+    default_version_mode: DefaultVersionMode = Field(
+        default=DefaultVersionMode.AUTO, allow_mutation=False
+    )
     entity_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
@@ -106,13 +108,17 @@ class FeatureNamespaceModel(BaseFeatureNamespaceModel):
         Table IDs used by the feature
     """
 
-    dtype: DBVarType = Field(allow_mutation=False, description="database variable type for the feature")
+    dtype: DBVarType = Field(
+        allow_mutation=False, description="database variable type for the feature"
+    )
     readiness: FeatureReadiness = Field(allow_mutation=False)
 
     # list of IDs attached to this feature namespace or target namespace
     feature_ids: List[PydanticObjectId] = Field(allow_mutation=False)
     default_feature_id: PydanticObjectId = Field(allow_mutation=False)
-    online_enabled_feature_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    online_enabled_feature_ids: List[PydanticObjectId] = Field(
+        allow_mutation=False, default_factory=list
+    )
     table_ids: List[PydanticObjectId] = Field(allow_mutation=False)
 
     # pydantic validators

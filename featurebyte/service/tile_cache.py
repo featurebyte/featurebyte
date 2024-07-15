@@ -94,7 +94,9 @@ class TileCacheService:
                     extra={"n": len(required_tile_computations)},
                 )
                 with timer("Compute tiles on demand", logger):
-                    await tile_cache.invoke_tile_manager(required_tile_computations, tile_compute_progress_callback)
+                    await tile_cache.invoke_tile_manager(
+                        required_tile_computations, tile_compute_progress_callback
+                    )
             else:
                 logger.debug("All required tiles can be reused")
         finally:

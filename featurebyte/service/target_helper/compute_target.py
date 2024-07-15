@@ -96,8 +96,12 @@ class TargetComputer(Computer[ComputeTargetRequest, ExecutorParams]):
             task_progress_updater,
         )
 
-    async def get_validation_parameters(self, request: ComputeTargetRequest) -> ValidationParameters:
-        feature_store = await self.feature_store_service.get_document(document_id=request.feature_store_id)
+    async def get_validation_parameters(
+        self, request: ComputeTargetRequest
+    ) -> ValidationParameters:
+        feature_store = await self.feature_store_service.get_document(
+            document_id=request.feature_store_id
+        )
         return ValidationParameters(
             graph=request.graph,
             nodes=request.nodes,

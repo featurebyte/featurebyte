@@ -53,15 +53,18 @@ def features_fixture(event_table, source_type):
         windows=["24h", "7d"],
         feature_names=["TOTAL_EVENT_COUNT_BY_ACTION_24h", "TOTAL_EVENT_COUNT_BY_ACTION_7d"],
     )
-    feature_complex_1 = feature_group["AMOUNT_SUM_24h"] * feature_group_dict["EVENT_COUNT_BY_ACTION_24h"].cd.entropy()
+    feature_complex_1 = (
+        feature_group["AMOUNT_SUM_24h"]
+        * feature_group_dict["EVENT_COUNT_BY_ACTION_24h"].cd.entropy()
+    )
     feature_complex_1.name = "COMPLEX_FEATURE_1"
-    feature_complex_2 = feature_without_entity["TOTAL_EVENT_COUNT_BY_ACTION_24h"].cd.cosine_similarity(
-        feature_group_dict["EVENT_COUNT_BY_ACTION_24h"]
-    )
+    feature_complex_2 = feature_without_entity[
+        "TOTAL_EVENT_COUNT_BY_ACTION_24h"
+    ].cd.cosine_similarity(feature_group_dict["EVENT_COUNT_BY_ACTION_24h"])
     feature_complex_2.name = "COMPLEX_FEATURE_2"
-    feature_complex_3 = feature_without_entity["TOTAL_EVENT_COUNT_BY_ACTION_7d"].cd.cosine_similarity(
-        feature_group_dict["EVENT_COUNT_BY_ACTION_24h"]
-    )
+    feature_complex_3 = feature_without_entity[
+        "TOTAL_EVENT_COUNT_BY_ACTION_7d"
+    ].cd.cosine_similarity(feature_group_dict["EVENT_COUNT_BY_ACTION_24h"])
     feature_complex_3.name = "COMPLEX_FEATURE_3"
 
     feature_offset = event_view.groupby("ÜSER ID").aggregate_over(
@@ -236,7 +239,9 @@ def check_online_features_route(deployment, config, df_historical, columns):
 
     assert df["üser id"].tolist() == user_ids
     assert set(df.columns.tolist()) == set(columns)
-    df_expected = df_historical[df_historical["üser id"].isin(user_ids)][columns].reset_index(drop=True)
+    df_expected = df_historical[df_historical["üser id"].isin(user_ids)][columns].reset_index(
+        drop=True
+    )
     fb_assert_frame_equal(
         df_expected,
         df[df_expected.columns],
@@ -282,7 +287,9 @@ async def check_concurrent_online_store_table_updates(
     # Find concurrent online store table updates given a FeatureList. Concurrent online store table
     # updates occur when tile jobs associated with different aggregation ids write to the same
     # online store table. The logic below finds such a table and the associated aggregation ids.
-    online_store_table_name_to_aggregation_id = get_online_store_table_name_to_aggregation_id(feature_list)
+    online_store_table_name_to_aggregation_id = get_online_store_table_name_to_aggregation_id(
+        feature_list
+    )
 
     table_with_concurrent_updates = None
     for table_name, agg_ids in online_store_table_name_to_aggregation_id.items():

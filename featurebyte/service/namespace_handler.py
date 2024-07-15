@@ -69,7 +69,9 @@ class NamespaceHandler:
     Namespace handler class
     """
 
-    def __init__(self, table_service: TableService, view_construction_service: ViewConstructionService):
+    def __init__(
+        self, table_service: TableService, view_construction_service: ViewConstructionService
+    ):
         self.table_service = table_service
         self.view_construction_service = view_construction_service
 
@@ -104,7 +106,9 @@ class NamespaceHandler:
         node = constructed_graph.get_node_by_name(node_name_map[node.name])
 
         # Prune the graph to remove unused nodes and parameters
-        pruned_graph, pruned_node_name_map = QueryGraph(**constructed_graph.dict(by_alias=True)).prune(target_node=node)
+        pruned_graph, pruned_node_name_map = QueryGraph(
+            **constructed_graph.dict(by_alias=True)
+        ).prune(target_node=node)
         if sanitize_for_definition:
             pruned_graph = sanitize_query_graph_for_feature_definition(graph=pruned_graph)
         return pruned_graph, pruned_node_name_map[node.name]

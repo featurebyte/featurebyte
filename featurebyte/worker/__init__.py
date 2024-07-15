@@ -85,7 +85,9 @@ class ExtendedMongoBackend(MongoBackend):
         request: Any = None,
         **kwargs: Any,
     ) -> Any:
-        meta = self._get_result_meta(result=self.encode(result), state=state, traceback=traceback, request=request)
+        meta = self._get_result_meta(
+            result=self.encode(result), state=state, traceback=traceback, request=request
+        )
         # Add the _id for mongodb
         meta["_id"] = task_id
 
@@ -144,7 +146,9 @@ def get_async_loop() -> asyncio.AbstractEventLoop:
     variadic="task_id",
     signature="[id1 [id2 [... [idN]]]]",
 )
-def revoke(state: Any, task_id: Any, terminate: bool = False, signal: Any = None, **kwargs: Any) -> Any:
+def revoke(
+    state: Any, task_id: Any, terminate: bool = False, signal: Any = None, **kwargs: Any
+) -> Any:
     """
     Override revoke to cancel asyncio tasks if terminate is True.
 
@@ -180,7 +184,9 @@ def revoke(state: Any, task_id: Any, terminate: bool = False, signal: Any = None
     return ok(f"tasks {task_ids} flagged as revoked")
 
 
-def get_celery(redis_uri: str = REDIS_URI, mongo_uri: str = MONGO_URI, database_name: str = DATABASE_NAME) -> Celery:
+def get_celery(
+    redis_uri: str = REDIS_URI, mongo_uri: str = MONGO_URI, database_name: str = DATABASE_NAME
+) -> Celery:
     """
     Get Celery instance
 

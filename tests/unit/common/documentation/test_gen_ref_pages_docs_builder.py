@@ -69,7 +69,10 @@ class NavItem:
 
     def is_missing(self, all_markdown_files: Set[str]):
         reference_file = f"reference/{self.markdown_filename}"
-        return MISSING_DEBUG_MARKDOWN in self.markdown_filename or reference_file not in all_markdown_files
+        return (
+            MISSING_DEBUG_MARKDOWN in self.markdown_filename
+            or reference_file not in all_markdown_files
+        )
 
 
 def _extract_nav_item(nav_item):

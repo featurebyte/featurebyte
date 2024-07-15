@@ -40,7 +40,9 @@ logger = get_logger(__name__)
 
 
 class ObservationTableController(
-    BaseMaterializedTableController[ObservationTableModel, ObservationTableService, ObservationTableList],
+    BaseMaterializedTableController[
+        ObservationTableModel, ObservationTableService, ObservationTableList
+    ],
 ):
     """
     ObservationTable Controller
@@ -95,7 +97,9 @@ class ObservationTableController(
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def upload_observation_table(self, data: ObservationTableUpload, observation_set_file: UploadFile) -> Task:
+    async def upload_observation_table(
+        self, data: ObservationTableUpload, observation_set_file: UploadFile
+    ) -> Task:
         """
         Create ObservationTable by submitting a materialization task
 
@@ -117,11 +121,15 @@ class ObservationTableController(
         """
         assert observation_set_file.filename is not None
 
-        def try_read_as_dataframe(read_func: Callable[[str], pd.DataFrame], *args: Any) -> pd.DataFrame:
+        def try_read_as_dataframe(
+            read_func: Callable[[str], pd.DataFrame], *args: Any
+        ) -> pd.DataFrame:
             try:
                 return read_func(*args)
             except Exception as exc:
-                raise UnsupportedObservationTableUploadFileFormat("Content of uploaded file is not valid") from exc
+                raise UnsupportedObservationTableUploadFileFormat(
+                    "Content of uploaded file is not valid"
+                ) from exc
 
         filename = observation_set_file.filename.lower()
         if not filename.endswith(".csv") and not filename.endswith(".parquet"):
@@ -131,7 +139,9 @@ class ObservationTableController(
 
         if filename.endswith(".csv"):
             file_format = UploadFileFormat.CSV
-            observation_set_dataframe = try_read_as_dataframe(pd.read_csv, observation_set_file.file)
+            observation_set_dataframe = try_read_as_dataframe(
+                pd.read_csv, observation_set_file.file
+            )
             # Convert point_in_time column to datetime
             if SpecialColumnName.POINT_IN_TIME in observation_set_dataframe.columns:
                 observation_set_dataframe[SpecialColumnName.POINT_IN_TIME] = pd.to_datetime(
@@ -139,7 +149,9 @@ class ObservationTableController(
                 )
         else:
             file_format = UploadFileFormat.PARQUET
-            observation_set_dataframe = try_read_as_dataframe(pd.read_parquet, observation_set_file.file)
+            observation_set_dataframe = try_read_as_dataframe(
+                pd.read_parquet, observation_set_file.file
+            )
 
         payload = await self.service.get_observation_table_upload_task_payload(
             data=data,

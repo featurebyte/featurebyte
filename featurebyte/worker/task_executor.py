@@ -39,7 +39,9 @@ EXECUTION_LATENCY_THRESHOLD = 10  # max delay allowed for task execution in seco
 WORKER_TERMINATED = False
 
 
-def run_async(coro: Coroutine[Any, Any, Any], request_id: UUID, timeout: Optional[int] = None) -> Any:
+def run_async(
+    coro: Coroutine[Any, Any, Any], request_id: UUID, timeout: Optional[int] = None
+) -> Any:
     """
     Run async function in both async and non-async context
     Parameters
@@ -186,7 +188,9 @@ class TaskExecutor:
             await self._update_task_start_time_and_description(payload_obj)
             task_result = await self.task.execute(payload_obj)
             if task_result is not None:
-                await self.task_manager.update_task_result(task_id=str(self.task_id), result=task_result)
+                await self.task_manager.update_task_result(
+                    task_id=str(self.task_id), result=task_result
+                )
 
             # Send final progress to indicate task is completed
             await self.task_progress_updater.update_progress(percent=100)
@@ -205,7 +209,9 @@ class BaseCeleryTask(Task):
     executor_class = TaskExecutor
 
     @staticmethod
-    async def get_app_container(task_id: UUID, payload: dict[str, Any], progress: Any) -> LazyAppContainer:
+    async def get_app_container(
+        task_id: UUID, payload: dict[str, Any], progress: Any
+    ) -> LazyAppContainer:
         """
         Get app container
 
@@ -254,14 +260,18 @@ class BaseCeleryTask(Task):
         Any
         """
         command = str(payload.get("command"))
-        print(f"Running: {command}")  # Add temporary print statement to confirm logging not causing freezing issue
+        print(
+            f"Running: {command}"
+        )  # Add temporary print statement to confirm logging not causing freezing issue
         logger.debug(f"Executing: {command}")
         if request_id in PENDING_TASKS:
             PENDING_TASKS.remove(request_id)
 
         progress = self.progress_class(user_id=payload.get("user_id"), task_id=request_id)
         app_container = await self.get_app_container(request_id, payload, progress)
-        executor = self.executor_class(payload=payload, task_id=request_id, app_container=app_container)
+        executor = self.executor_class(
+            payload=payload, task_id=request_id, app_container=app_container
+        )
         try:
             return_val = await executor.execute()
             return return_val

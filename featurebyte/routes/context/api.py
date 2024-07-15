@@ -79,7 +79,9 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
     ) -> AuditDocumentList:
-        return await super().list_audit_logs(request, context_id, page, page_size, sort_by, sort_dir, search)
+        return await super().list_audit_logs(
+            request, context_id, page, page_size, sort_by, sort_dir, search
+        )
 
     async def update_description(
         self, request: Request, context_id: PyObjectId, data: DescriptionUpdate
@@ -106,7 +108,9 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
         await controller.delete(document_id=context_id)
         return DeleteResponse()
 
-    async def update_context(self, request: Request, context_id: PyObjectId, data: ContextUpdate) -> ContextModel:
+    async def update_context(
+        self, request: Request, context_id: PyObjectId, data: ContextUpdate
+    ) -> ContextModel:
         """
         Update Context
         """

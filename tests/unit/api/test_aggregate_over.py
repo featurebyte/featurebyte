@@ -23,7 +23,9 @@ from tests.util.helper import get_node
         ("col_binary", DBVarType.BINARY),
     ],
 )
-def test_aggregate_over__latest_method_output_vartype(snowflake_event_view_with_entity, value_column, expected_dtype):
+def test_aggregate_over__latest_method_output_vartype(
+    snowflake_event_view_with_entity, value_column, expected_dtype
+):
     """
     Test latest aggregation output variable type
     """
@@ -129,7 +131,9 @@ def test_offset(snowflake_event_view_with_entity):
         windows=["24h"],
         offset="12h",
         feature_names=["feature"],
-        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+        feature_job_setting=FeatureJobSetting(
+            blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+        ),
     )
     feature_dict = feature_group["feature"].dict()
     node = get_node(feature_dict["graph"], "groupby_1")
@@ -147,9 +151,14 @@ def test_offset__invalid_duration(snowflake_event_view_with_entity):
             windows=["24h"],
             offset="13m",
             feature_names=["feature"],
-            feature_job_setting=FeatureJobSetting(blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"),
+            feature_job_setting=FeatureJobSetting(
+                blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
+            ),
         )
-    assert str(exc_info.value) == "window provided 13m is not a multiple of the feature job frequency 360s"
+    assert (
+        str(exc_info.value)
+        == "window provided 13m is not a multiple of the feature job frequency 360s"
+    )
 
 
 def test_count_distinct_agg_func(snowflake_event_view_with_entity, cust_id_entity):

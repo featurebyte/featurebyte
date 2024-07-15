@@ -201,10 +201,16 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
             If the document cannot be deleted
         """
         asset_class_name = self.service.class_name
-        service_query_filter_pairs = await self.service_and_query_pairs_for_checking_reference(document_id=document_id)
+        service_query_filter_pairs = await self.service_and_query_pairs_for_checking_reference(
+            document_id=document_id
+        )
         for service, query_filter in service_query_filter_pairs:
-            async for doc in service.list_documents_as_dict_iterator(query_filter=query_filter, projection={"name": 1}):
-                raise exception_class(f"{asset_class_name} is referenced by {service.class_name}: {doc['name']}")
+            async for doc in service.list_documents_as_dict_iterator(
+                query_filter=query_filter, projection={"name": 1}
+            ):
+                raise exception_class(
+                    f"{asset_class_name} is referenced by {service.class_name}: {doc['name']}"
+                )
 
     async def delete(self, document_id: ObjectId) -> None:
         """
@@ -283,7 +289,9 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         List[FieldValueHistory]
             List of historical values for a field in the document
         """
-        document_data = await self.service.list_document_field_history(document_id=document_id, field=field)
+        document_data = await self.service.list_document_field_history(
+            document_id=document_id, field=field
+        )
         return document_data
 
     async def update_description(

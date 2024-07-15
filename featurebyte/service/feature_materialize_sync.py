@@ -85,9 +85,11 @@ class FeatureMaterializeSyncService:
         )
         if current_job_datetime is None:
             return None
-        document = await self.feature_materialize_prerequisite_service.get_or_create_for_feature_table(
-            offline_store_feature_table_id=offline_store_feature_table_id,
-            scheduled_job_ts=current_job_datetime,
+        document = (
+            await self.feature_materialize_prerequisite_service.get_or_create_for_feature_table(
+                offline_store_feature_table_id=offline_store_feature_table_id,
+                scheduled_job_ts=current_job_datetime,
+            )
         )
         return document
 
@@ -122,7 +124,9 @@ class FeatureMaterializeSyncService:
         )
         async for (
             feature_table_model
-        ) in self.offline_store_feature_table_service.list_feature_tables_for_aggregation_id(aggregation_id):
+        ) in self.offline_store_feature_table_service.list_feature_tables_for_aggregation_id(
+            aggregation_id
+        ):
             if feature_table_model.feature_job_setting is None:
                 continue
             schedule_job_datetime = self._get_scheduled_job_ts_from_datetime(
@@ -151,7 +155,9 @@ class FeatureMaterializeSyncService:
         offline_store_feature_table_id: ObjectId
             Offline store feature table id
         """
-        feature_table = await self.offline_store_feature_table_service.get_document(offline_store_feature_table_id)
+        feature_table = await self.offline_store_feature_table_service.get_document(
+            offline_store_feature_table_id
+        )
 
         # No need to wait for feature tables without prerequisites
         if not feature_table.aggregation_ids:
@@ -175,8 +181,12 @@ class FeatureMaterializeSyncService:
         )
         allowed_waiting_time_seconds = get_allowed_waiting_time_seconds(feature_job_setting)
         while datetime.utcnow().timestamp() - tic < allowed_waiting_time_seconds:
-            prerequisite_model = await self.feature_materialize_prerequisite_service.get_document(prerequisite.id)
-            completed_aggregation_ids = [item.aggregation_id for item in prerequisite_model.completed]
+            prerequisite_model = await self.feature_materialize_prerequisite_service.get_document(
+                prerequisite.id
+            )
+            completed_aggregation_ids = [
+                item.aggregation_id for item in prerequisite_model.completed
+            ]
             if set(feature_table.aggregation_ids).issubset(set(completed_aggregation_ids)):
                 logger.info(
                     "Prerequisites for feature materialize task met",

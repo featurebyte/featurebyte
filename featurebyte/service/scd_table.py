@@ -9,7 +9,9 @@ from featurebyte.schema.scd_table import SCDTableCreate, SCDTableServiceUpdate
 from featurebyte.service.base_table_document import BaseTableDocumentService
 
 
-class SCDTableService(BaseTableDocumentService[SCDTableModel, SCDTableCreate, SCDTableServiceUpdate]):
+class SCDTableService(
+    BaseTableDocumentService[SCDTableModel, SCDTableCreate, SCDTableServiceUpdate]
+):
     """
     SCDTableService class
     """

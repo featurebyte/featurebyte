@@ -84,7 +84,9 @@ class FeatureMaterializePrerequisiteService(
         FeatureMaterializePrerequisite
         """
         try:
-            document = await self.get_document_for_feature_table(offline_store_feature_table_id, scheduled_job_ts)
+            document = await self.get_document_for_feature_table(
+                offline_store_feature_table_id, scheduled_job_ts
+            )
         except DocumentNotFoundError:
             feature_materialize_prerequisite = FeatureMaterializePrerequisite(
                 offline_store_feature_table_id=offline_store_feature_table_id,
@@ -111,7 +113,9 @@ class FeatureMaterializePrerequisiteService(
         prerequisite_tile_task: PrerequisiteTileTask
             Representation of a completed tile task
         """
-        document = await self.get_or_create_for_feature_table(offline_store_feature_table_id, scheduled_job_ts)
+        document = await self.get_or_create_for_feature_table(
+            offline_store_feature_table_id, scheduled_job_ts
+        )
         query_filter = self._construct_get_query_filter(document.id)
         await self.update_documents(
             query_filter=query_filter,

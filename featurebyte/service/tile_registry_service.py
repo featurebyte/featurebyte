@@ -90,7 +90,9 @@ class TileRegistryService(BaseDocumentService[TileModel, TileModel, TileUpdate])
             update_model = TileUpdate(last_run_metadata_offline=metadata_model)
         await self.update_document(document.id, update_model, document=document)
 
-    async def update_backfill_metadata(self, tile_id: str, aggregation_id: str, backfill_start_date: datetime) -> None:
+    async def update_backfill_metadata(
+        self, tile_id: str, aggregation_id: str, backfill_start_date: datetime
+    ) -> None:
         """
         Update information about the tile backfill process
 

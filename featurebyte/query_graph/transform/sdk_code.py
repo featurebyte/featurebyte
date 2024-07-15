@@ -73,7 +73,11 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
             Operation structure mapping for each node in the graph
         """
         forward_nodes = [query_graph.nodes_map[name] for name in query_graph.edges_map[node.name]]
-        if node.type == NodeType.CONDITIONAL and len(forward_nodes) == 1 and forward_nodes[0].type == NodeType.ASSIGN:
+        if (
+            node.type == NodeType.CONDITIONAL
+            and len(forward_nodes) == 1
+            and forward_nodes[0].type == NodeType.ASSIGN
+        ):
             # There are 2 cases we need to consider:
             # * `view[<col_name>][<mask>] = <value>`
             # * `col[<mask>] = <value>; view[<col_name>] = col`
@@ -88,7 +92,9 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
             # will throw an error. In this case, we should use the second case to generate SDK code.
             assign_node = forward_nodes[0]
             assign_node_input_node_names = query_graph.backward_edges_map[assign_node.name]
-            assign_input_view_op_struct = node_name_to_operation_structure[assign_node_input_node_names[0]]
+            assign_input_view_op_struct = node_name_to_operation_structure[
+                assign_node_input_node_names[0]
+            ]
             assign_input_view_columns = assign_input_view_op_struct.output_column_names
             assign_column_name = assign_node.parameters.name  # type: ignore
             if assign_column_name in assign_input_view_columns:
@@ -138,7 +144,10 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
         edges_map: Dict[str, str]
             Edges map of the query graph
         """
-        if node.is_inplace_operation_in_sdk_code and len(set(edges_map[backward_nodes[0].name])) > 1:
+        if (
+            node.is_inplace_operation_in_sdk_code
+            and len(set(edges_map[backward_nodes[0].name])) > 1
+        ):
             # If there are more than one distinct output nodes from the first input, it means that the input
             # api object is used by other operations. In this case, we need to copy the input api object to avoid
             # inplace operation affecting other operation. Currently, only api object from the first input node
@@ -169,13 +178,17 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
             Operation structure mapping for each node in the graph
         """
         for node in query_graph.iterate_sorted_nodes():
-            backward_nodes = [query_graph.nodes_map[name] for name in query_graph.backward_edges_map[node.name]]
+            backward_nodes = [
+                query_graph.nodes_map[name] for name in query_graph.backward_edges_map[node.name]
+            ]
             self._identify_output_as_info_dict(node, query_graph, node_name_to_operation_structure)
             self._identify_no_op_node(node, backward_nodes)
             self._identify_required_copy_node(node, backward_nodes, query_graph.edges_map)
 
 
-class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, FeatureByteBaseModel, SDKCodeGlobalState]):
+class SDKCodeExtractor(
+    BaseGraphExtractor[SDKCodeGlobalState, FeatureByteBaseModel, SDKCodeGlobalState]
+):
     """
     SDKCodeExtractor class is responsible to generate SDK codes from a given query graph.
     """
@@ -287,9 +300,13 @@ class SDKCodeExtractor(BaseGraphExtractor[SDKCodeGlobalState, FeatureByteBaseMod
             topological_order_map=self.graph.node_topological_order_map,
         )
         final_output_name = global_state.code_generation_config.final_output_name
-        output_var = global_state.var_name_generator.convert_to_variable_name(final_output_name, node_name=None)
+        output_var = global_state.var_name_generator.convert_to_variable_name(
+            final_output_name, node_name=None
+        )
         if last_statement_callback:
-            global_state.code_generator.add_statements(statements=last_statement_callback(output_var, var_name_or_expr))
+            global_state.code_generator.add_statements(
+                statements=last_statement_callback(output_var, var_name_or_expr)
+            )
         else:
             global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])
 

@@ -111,12 +111,16 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
             GroupbyColumn(
                 agg_func=s.parameters.agg_func,
                 parent_expr=(
-                    get_qualified_column_identifier(s.parameters.parent, "ITEM") if s.parameters.parent else None
+                    get_qualified_column_identifier(s.parameters.parent, "ITEM")
+                    if s.parameters.parent
+                    else None
                 ),
                 result_name=s.agg_result_name,
                 parent_dtype=s.parent_dtype,
                 parent_cols=(
-                    [get_qualified_column_identifier(s.parameters.parent, "ITEM")] if s.parameters.parent else []
+                    [get_qualified_column_identifier(s.parameters.parent, "ITEM")]
+                    if s.parameters.parent
+                    else []
                 ),
             )
             for s in agg_specs
@@ -161,4 +165,6 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
         )
 
     def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
-        return self.non_time_aware_request_table_plan.construct_request_table_ctes(request_table_name)
+        return self.non_time_aware_request_table_plan.construct_request_table_ctes(
+            request_table_name
+        )

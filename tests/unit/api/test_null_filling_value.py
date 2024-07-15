@@ -29,7 +29,9 @@ def test_feature_without_null_filling_value(
         check_null_filling_value(feature.graph, feature.node_name, None)
 
 
-def test_feature_with_null_filling_value(float_feature, latest_event_timestamp_feature, non_time_based_feature):
+def test_feature_with_null_filling_value(
+    float_feature, latest_event_timestamp_feature, non_time_based_feature
+):
     """Test feature null filling value."""
     original_float_feature = float_feature.copy()
 

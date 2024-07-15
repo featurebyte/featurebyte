@@ -100,7 +100,9 @@ def item_agg_spec_fixture():
         parameters=parameters,
         serving_names=["OID"],
         serving_names_mapping=None,
-        aggregation_source=AggregationSource(expr=select("*").from_("tab"), query_node_name="input_1"),
+        aggregation_source=AggregationSource(
+            expr=select("*").from_("tab"), query_node_name="input_1"
+        ),
         entity_ids=[ObjectId()],
         parent_dtype=DBVarType.FLOAT,
         agg_result_name_include_serving_names=True,
@@ -121,8 +123,14 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     plan.add_aggregation_spec(agg_spec_sum_1d)
     plan.add_aggregation_spec(agg_spec_max_1d)
 
-    assert plan.get_expanded_request_table_name(agg_spec_sum_1d) == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
-    assert plan.get_expanded_request_table_name(agg_spec_max_1d) == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
+    assert (
+        plan.get_expanded_request_table_name(agg_spec_sum_1d)
+        == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
+    )
+    assert (
+        plan.get_expanded_request_table_name(agg_spec_max_1d)
+        == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
+    )
 
     ctes = plan.construct_request_tile_indices_ctes(request_table_name=REQUEST_TABLE_NAME)
     assert len(ctes) == 1
@@ -155,8 +163,14 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
     plan.add_aggregation_spec(agg_spec_max_2h)
     plan.add_aggregation_spec(agg_spec_max_1d)
 
-    assert plan.get_expanded_request_table_name(agg_spec_max_2h) == "REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"
-    assert plan.get_expanded_request_table_name(agg_spec_max_1d) == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
+    assert (
+        plan.get_expanded_request_table_name(agg_spec_max_2h)
+        == "REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"
+    )
+    assert (
+        plan.get_expanded_request_table_name(agg_spec_max_1d)
+        == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
+    )
 
     ctes = plan.construct_request_tile_indices_ctes(request_table_name=REQUEST_TABLE_NAME)
     assert len(ctes) == 2
@@ -236,7 +250,9 @@ def test_feature_execution_planner(
         query_graph_with_groupby, source_type=SourceType.SNOWFLAKE, is_online_serving=False
     )
     plan = planner.generate_plan([groupby_node])
-    actual = list(plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs())
+    actual = list(
+        plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs()
+    )
     expected = [
         [
             TileBasedAggregationSpec(
@@ -305,7 +321,9 @@ def test_feature_execution_planner(
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr=quoted_identifier(f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}"),
+            feature_expr=quoted_identifier(
+                f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}"
+            ),
             feature_dtype=DBVarType.FLOAT,
         ),
         "a_48h_average": FeatureSpec(
@@ -335,7 +353,9 @@ def test_feature_execution_planner__serving_names_mapping(
         is_online_serving=False,
     )
     plan = planner.generate_plan([groupby_node])
-    assert list(plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs()) == [
+    assert list(
+        plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs()
+    ) == [
         [
             TileBasedAggregationSpec(
                 node_name=groupby_node.name,
@@ -402,7 +422,9 @@ def test_feature_execution_planner__serving_names_mapping(
     assert plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr=quoted_identifier(f"_fb_internal_NEW_CUST_ID_window_w7200_avg_{groupby_node_aggregation_id}"),
+            feature_expr=quoted_identifier(
+                f"_fb_internal_NEW_CUST_ID_window_w7200_avg_{groupby_node_aggregation_id}"
+            ),
             feature_dtype=DBVarType.FLOAT,
         ),
         "a_48h_average": FeatureSpec(
@@ -454,13 +476,17 @@ def test_feature_execution_planner__query_graph_with_graph_node(
 ):
     """Test FeatureExecutionPlanner generates the plan without any error"""
     query_graph, groupby_node = query_graph_with_cleaning_ops_and_groupby
-    planner = FeatureExecutionPlanner(query_graph, source_type=SourceType.SNOWFLAKE, is_online_serving=False)
+    planner = FeatureExecutionPlanner(
+        query_graph, source_type=SourceType.SNOWFLAKE, is_online_serving=False
+    )
     execution_plan = planner.generate_plan([groupby_node])
     groupby_node_aggregation_id = "afacb99e2c3aa0d15070807b8a43294696753bc5"
     assert execution_plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",
-            feature_expr=quoted_identifier(f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}"),
+            feature_expr=quoted_identifier(
+                f"_fb_internal_CUSTOMER_ID_window_w7200_avg_{groupby_node_aggregation_id}"
+            ),
             feature_dtype=DBVarType.FLOAT,
         ),
         "a_48h_average": FeatureSpec(
@@ -508,7 +534,9 @@ def test_feature_execution_planner__entity_relationships_context(
         feature_list_primary_entity_ids=[customer_entity_id],
         feature_list_serving_names=["cust_id"],
         feature_list_relationships_info=[],
-        feature_node_relationships_infos=[feature_node_relationships_info_business_is_parent_of_user],
+        feature_node_relationships_infos=[
+            feature_node_relationships_info_business_is_parent_of_user
+        ],
         entity_lookup_step_creator=entity_lookup_step_creator,
     )
     parent_serving_preparation.entity_relationships_context = entity_relationships_context
@@ -521,7 +549,9 @@ def test_feature_execution_planner__entity_relationships_context(
     plan = planner.generate_plan([node])
 
     # Check aggregation specs serving names updated correctly
-    for agg_specs in plan.aggregators["window"].window_aggregation_spec_set.get_grouped_aggregation_specs():
+    for agg_specs in plan.aggregators[
+        "window"
+    ].window_aggregation_spec_set.get_grouped_aggregation_specs():
         for agg_spec in agg_specs:
             assert agg_spec.keys[0] in {"cust_id", "biz_id"}
             if agg_spec.keys[0] == "cust_id":

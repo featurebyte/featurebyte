@@ -179,7 +179,9 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         >>> event_table["Amount"].update_critical_data_info(
         ...     cleaning_operations=[
         ...         fb.MissingValueImputation(imputed_value=0),
-        ...         fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0),
+        ...         fb.ValueBeyondEndpointImputation(
+        ...             type="less_than", end_point=0, imputed_value=0
+        ...         ),
         ...     ]
         ... )
 
@@ -261,10 +263,12 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         -------
         str
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(after_cleaning=after_cleaning)
-        return GraphInterpreter(pruned_graph, source_type=self.feature_store.type).construct_preview_sql(
-            node_name=mapped_node.name, num_rows=limit
-        )[0]
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(
+            after_cleaning=after_cleaning
+        )
+        return GraphInterpreter(
+            pruned_graph, source_type=self.feature_store.type
+        ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
 
     @typechecked
     def preview(self, limit: int = 10, after_cleaning: bool = False) -> pd.DataFrame:
@@ -438,7 +442,9 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         ...     ]
         ... )
         >>> description = event_table["Amount"].describe(
-        ...     from_timestamp=datetime(2020, 1, 1), to_timestamp=datetime(2020, 1, 31), after_cleaning=True
+        ...     from_timestamp=datetime(2020, 1, 1),
+        ...     to_timestamp=datetime(2020, 1, 31),
+        ...     after_cleaning=True,
         ... )
         """
         return self.parent.describe(
@@ -486,7 +492,9 @@ class TableListMixin(ApiObject):
         return data_list
 
 
-class TableApiObject(GetAttrMixin, AbstractTableData, TableListMixin, DeletableApiObject, SavableApiObject):
+class TableApiObject(
+    GetAttrMixin, AbstractTableData, TableListMixin, DeletableApiObject, SavableApiObject
+):
     """
     Base class for all Table objects
     """
@@ -502,10 +510,14 @@ class TableApiObject(GetAttrMixin, AbstractTableData, TableListMixin, DeletableA
         TableDataType.ITEM_TABLE,
         TableDataType.DIMENSION_TABLE,
         TableDataType.SCD_TABLE,
-    ] = Field(description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table.")
+    ] = Field(
+        description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table."
+    )
 
     # pydantic instance variable (internal use)
-    internal_record_creation_timestamp_column: Optional[str] = Field(alias="record_creation_timestamp_column")
+    internal_record_creation_timestamp_column: Optional[str] = Field(
+        alias="record_creation_timestamp_column"
+    )
 
     @property
     def entity_ids(self) -> List[PydanticObjectId]:
@@ -643,7 +655,9 @@ class TableApiObject(GetAttrMixin, AbstractTableData, TableListMixin, DeletableA
         >>> event_table["Amount"].update_critical_data_info(
         ...     cleaning_operations=[
         ...         fb.MissingValueImputation(imputed_value=0),
-        ...         fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0),
+        ...         fb.ValueBeyondEndpointImputation(
+        ...             type="less_than", end_point=0, imputed_value=0
+        ...         ),
         ...     ]
         ... )
         >>> event_table.column_cleaning_operations
@@ -839,7 +853,9 @@ class TableApiObject(GetAttrMixin, AbstractTableData, TableListMixin, DeletableA
         ...     ]
         ... )
         >>> description = event_table.describe(
-        ...     from_timestamp=datetime(2020, 1, 1), to_timestamp=datetime(2020, 1, 31), after_cleaning=True
+        ...     from_timestamp=datetime(2020, 1, 1),
+        ...     to_timestamp=datetime(2020, 1, 31),
+        ...     after_cleaning=True,
         ... )
         """
         return super().describe(size, seed, from_timestamp, to_timestamp, after_cleaning)
@@ -912,7 +928,9 @@ class TableApiObject(GetAttrMixin, AbstractTableData, TableListMixin, DeletableA
         return output
 
     @typechecked
-    def update_record_creation_timestamp_column(self, record_creation_timestamp_column: str) -> None:
+    def update_record_creation_timestamp_column(
+        self, record_creation_timestamp_column: str
+    ) -> None:
         """
         Determines the column in the table that represents the timestamp for record creation. This information is
         utilized to analyze feature job settings, and the identified column is treated as a special column that is
@@ -1050,7 +1068,9 @@ class TableApiObject(GetAttrMixin, AbstractTableData, TableListMixin, DeletableA
         )
 
     @typechecked
-    def update_column_critical_data_info(self, column_name: str, critical_data_info: CriticalDataInfo) -> None:
+    def update_column_critical_data_info(
+        self, column_name: str, critical_data_info: CriticalDataInfo
+    ) -> None:
         """
         Update column critical data info
 

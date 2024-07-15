@@ -70,7 +70,9 @@ class ViewConstructionService:
 
             event_view_graph_node_name = input_node_names[1]
             if event_view_graph_node_name not in view_node_name_to_table_info:
-                raise GraphInconsistencyError("Event view graph node must be processed before item view graph node.")
+                raise GraphInconsistencyError(
+                    "Event view graph node must be processed before item view graph node."
+                )
 
             # retrieve the processed graph node and its columns info
             (
@@ -87,7 +89,9 @@ class ViewConstructionService:
             # prepare additional parameters for metadata update
             event_metadata = cast(ViewMetadata, event_view_node.parameters.metadata)  # type: ignore
             metadata_parameters["event_drop_column_names"] = event_metadata.drop_column_names
-            metadata_parameters["event_column_cleaning_operations"] = event_metadata.column_cleaning_operations
+            metadata_parameters["event_column_cleaning_operations"] = (
+                event_metadata.column_cleaning_operations
+            )
 
         return view_parameters, metadata_parameters
 
@@ -204,7 +208,9 @@ class ViewConstructionService:
         view_node_name_to_table_info: dict[str, tuple[Node, list[ColumnInfo], InputNode]] = {}
 
         # prepare table ID to required source column names mapping
-        table_id_to_source_column_names = query_graph.extract_table_id_to_table_column_names(node=target_node)
+        table_id_to_source_column_names = query_graph.extract_table_id_to_table_column_names(
+            node=target_node
+        )
 
         # since the graph node is topologically sorted, input to the view graph node will always be
         # processed before the view graph node itself
@@ -216,7 +222,9 @@ class ViewConstructionService:
             view_graph_input_node = query_graph.get_node_by_name(node_name=input_node_names[0])
 
             if not isinstance(view_graph_input_node, InputNode):
-                raise GraphInconsistencyError("First input node of view graph node is not an input node.")
+                raise GraphInconsistencyError(
+                    "First input node of view graph node is not an input node."
+                )
 
             # additional parameters used to construct view graph node
             (create_view_kwargs, metadata_kwargs) = self._get_additional_keyword_parameters_pairs(

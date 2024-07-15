@@ -25,7 +25,9 @@ class TableStatusService:
         self.feature_service = feature_service
         self.feature_readiness_service = feature_readiness_service
 
-    async def update_status(self, service: TableDocumentService, document_id: ObjectId, status: TableStatus) -> None:
+    async def update_status(
+        self, service: TableDocumentService, document_id: ObjectId, status: TableStatus
+    ) -> None:
         """
         Update table status
 
@@ -49,7 +51,9 @@ class TableStatusService:
         if current_status != status:
             # check eligibility of status transition
             if current_status == TableStatus.DEPRECATED:
-                raise DocumentUpdateError(f"Invalid status transition from {current_status} to {status}.")
+                raise DocumentUpdateError(
+                    f"Invalid status transition from {current_status} to {status}."
+                )
 
             async with self.persistent.start_transaction():
                 # update table status

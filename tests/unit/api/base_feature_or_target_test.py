@@ -37,7 +37,9 @@ class FeatureOrTargetBaseTestSuite:
             TestItemType.TARGET: float_target,
         }
         if self.item_type not in item_map:
-            pytest.fail(f"Invalid item type: {self.item_type}. Please update the test suite to support this item type")
+            pytest.fail(
+                f"Invalid item type: {self.item_type}. Please update the test suite to support this item type"
+            )
         return item_map[self.item_type]
 
     @pytest.fixture(name="saved_item_under_test")
@@ -49,7 +51,9 @@ class FeatureOrTargetBaseTestSuite:
     @staticmethod
     def get_expected_definition(definition_template, table, item):
         """Get expected definition"""
-        expected_definition = textwrap.dedent(definition_template.format(table_id=table.id, item_id=item.id))
+        expected_definition = textwrap.dedent(
+            definition_template.format(table_id=table.id, item_id=item.id)
+        )
         return expected_definition.strip()
 
     def test_item_properties(self, item_under_test, snowflake_event_table, cust_id_entity, catalog):
@@ -68,7 +72,9 @@ class FeatureOrTargetBaseTestSuite:
             self.expected_item_definition, snowflake_event_table, item_under_test
         )
 
-    def test_saved_item_properties(self, saved_item_under_test, snowflake_event_table, cust_id_entity, catalog):
+    def test_saved_item_properties(
+        self, saved_item_under_test, snowflake_event_table, cust_id_entity, catalog
+    ):
         """Test saved item properties"""
         assert saved_item_under_test.version.startswith(get_version())
         assert saved_item_under_test.catalog_id == catalog.id
@@ -82,7 +88,9 @@ class FeatureOrTargetBaseTestSuite:
         """Test info"""
         # TODO: Add more assertions to check the info
         info = saved_item_under_test.info()
-        assert info["entities"] == [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}]
+        assert info["entities"] == [
+            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}
+        ]
 
     def test_update_version_description(self, saved_item_under_test):
         """Test update version description"""

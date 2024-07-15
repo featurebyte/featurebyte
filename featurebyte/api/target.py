@@ -134,7 +134,9 @@ class Target(
         return self._get_entity_ids()
 
     @property
-    @substitute_docstring(doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
+    @substitute_docstring(
+        doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS
+    )
     def primary_entity_ids(
         self,
     ) -> Sequence[ObjectId]:

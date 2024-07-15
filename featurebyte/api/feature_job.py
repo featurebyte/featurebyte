@@ -121,7 +121,11 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
 
             # plot job duration distributions
             completed_jobs = self.job_session_logs["COMPLETED"].count()
-            late_pct = (self.job_session_logs["IS_LATE"].sum() / completed_jobs) if completed_jobs else np.nan
+            late_pct = (
+                (self.job_session_logs["IS_LATE"].sum() / completed_jobs)
+                if completed_jobs
+                else np.nan
+            )
             fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 5))
             ax1.set_title(f"Job duration ({late_pct:.2f}% exceeds threshold)")
             ax1.set_xlabel("Duration in seconds")
@@ -228,7 +232,9 @@ class FeatureJobMixin(ApiObject):
 
         # feature tile table
         feature_tile_table = (
-            feature_tile_specs[["feature_name", "aggregation_hash"]].sort_values("feature_name").reset_index(drop=True)
+            feature_tile_specs[["feature_name", "aggregation_hash"]]
+            .sort_values("feature_name")
+            .reset_index(drop=True)
         )
 
         # summarize by tiles
@@ -262,7 +268,9 @@ class FeatureJobMixin(ApiObject):
         feature_stats["expected_jobs"] = 0
         if feature_stats.shape[0] > 0:
             last_job_times = feature_stats.apply(
-                lambda row: get_next_job_datetime(utc_now, row.frequency_minute, row.time_modulo_frequency_second),
+                lambda row: get_next_job_datetime(
+                    utc_now, row.frequency_minute, row.time_modulo_frequency_second
+                ),
                 axis=1,
             ) - pd.to_timedelta(feature_stats.frequency_minute, unit="minute")
             window_start = utc_now - timedelta(hours=job_history_window)
@@ -272,7 +280,9 @@ class FeatureJobMixin(ApiObject):
             feature_stats.loc[last_job_expected_to_complete_in_window, "expected_jobs"] = 1
 
             window_size = np.maximum((last_job_times - window_start).dt.total_seconds(), 0)
-            feature_stats["expected_jobs"] += np.floor(window_size / feature_stats["frequency_minute"] / 60).astype(int)
+            feature_stats["expected_jobs"] += np.floor(
+                window_size / feature_stats["frequency_minute"] / 60
+            ).astype(int)
 
         # default values for tiles without job records
         mask = feature_stats["last_completed"].isnull()
@@ -289,10 +299,14 @@ class FeatureJobMixin(ApiObject):
         feature_stats.loc[feature_stats["completed_jobs"] == 0, "frac_late"] = np.nan
         feature_stats["incomplete_jobs"] = (
             # missing / incomplete
-            feature_stats["expected_jobs"] - feature_stats["completed_jobs"] - feature_stats["failed_jobs"]
+            feature_stats["expected_jobs"]
+            - feature_stats["completed_jobs"]
+            - feature_stats["failed_jobs"]
         )
         feature_stats.loc[feature_stats["last_completed"].isnull(), "last_completed"] = pd.NaT
-        feature_stats["time_since_last"] = (utc_now - feature_stats["last_completed"]).apply(humanize.naturaldelta)
+        feature_stats["time_since_last"] = (utc_now - feature_stats["last_completed"]).apply(
+            humanize.naturaldelta
+        )
         feature_stats = feature_stats.drop(
             ["aggregation_id", "time_modulo_frequency_second", "expected_jobs", "last_completed"],
             axis=1,
@@ -311,7 +325,9 @@ class FeatureJobMixin(ApiObject):
             job_duration_tolerance=job_duration_tolerance,
             feature_tile_table=feature_tile_table,
             feature_job_summary=feature_stats,
-            job_session_logs=logs.drop(["SESSION_ID", "AGGREGATION_ID", "aggregation_id", "frequency_minute"], axis=1)
+            job_session_logs=logs.drop(
+                ["SESSION_ID", "AGGREGATION_ID", "aggregation_id", "frequency_minute"], axis=1
+            )
             .sort_values("STARTED", ascending=False)
             .reset_index(drop=True),
         )
@@ -355,7 +371,9 @@ class FeatureJobMixin(ApiObject):
         >>> feature.get_feature_jobs_status()  # doctest: +SKIP
         """
         client = Configurations().get_client()
-        response = client.get(url=f"{self._route}/{self.id}/feature_job_logs?hour_limit={job_history_window}")
+        response = client.get(
+            url=f"{self._route}/{self.id}/feature_job_logs?hour_limit={job_history_window}"
+        )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         result = response.json()

@@ -92,7 +92,9 @@ def construct_sort_validator(field: Optional[str] = None) -> Any:
     return _sort_validator
 
 
-def columns_info_validator(cls: Any, values: Optional[List[ColumnInfo]]) -> Optional[List[ColumnInfo]]:
+def columns_info_validator(
+    cls: Any, values: Optional[List[ColumnInfo]]
+) -> Optional[List[ColumnInfo]]:
     """
     Validate columns info list (check column name uniqueness)
 

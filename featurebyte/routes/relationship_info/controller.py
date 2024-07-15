@@ -85,7 +85,9 @@ class RelationshipInfoController(
         entities = await self.entity_service.get_entities(entity_ids_to_check)  # type: ignore[arg-type]
         if len(entities) != 2:
             entity_ids_found = {entity.id for entity in entities}
-            missing_entity_ids = {entity_id for entity_id in entity_ids_to_check if entity_id not in entity_ids_found}
+            missing_entity_ids = {
+                entity_id for entity_id in entity_ids_to_check if entity_id not in entity_ids_found
+            }
             raise ValueError(f"entity IDs not found: {missing_entity_ids}")
 
         # Validate whether relation_table_id is ID by trying to retrieve it. If it's not, it will raise an error
@@ -145,10 +147,14 @@ class RelationshipInfoController(
         RelationshipInfoInfo
         """
         relationship_info = await self.service.get_document(document_id=document_id)
-        table_info = await self.data_service.get_document(document_id=relationship_info.relation_table_id)
+        table_info = await self.data_service.get_document(
+            document_id=relationship_info.relation_table_id
+        )
         updated_user_name = self.user_service.get_user_name_for_id(relationship_info.updated_by)
         entity = await self.entity_service.get_document(document_id=relationship_info.entity_id)
-        related_entity = await self.entity_service.get_document(document_id=relationship_info.related_entity_id)
+        related_entity = await self.entity_service.get_document(
+            document_id=relationship_info.related_entity_id
+        )
         return RelationshipInfoInfo(
             id=relationship_info.id,
             name=relationship_info.name,

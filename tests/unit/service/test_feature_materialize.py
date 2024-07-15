@@ -121,7 +121,9 @@ async def deployed_feature_list_no_entity(
     _ = mock_deployment_flow
 
     feature_without_entity.save()
-    feature_list_model = await deploy_feature_ids(app_container, "my_list", [feature_without_entity.id])
+    feature_list_model = await deploy_feature_ids(
+        app_container, "my_list", [feature_without_entity.id]
+    )
     return feature_list_model
 
 
@@ -163,7 +165,9 @@ async def offline_store_feature_table_fixture(app_container, deployed_feature):
 
 
 @pytest_asyncio.fixture(name="offline_store_feature_table_composite_entity")
-async def offline_store_feature_table_composite_entity_fixture(app_container, deployed_feature_list_composite_entity):
+async def offline_store_feature_table_composite_entity_fixture(
+    app_container, deployed_feature_list_composite_entity
+):
     """
     Fixture for offline store feature table with composite entity
     """
@@ -174,7 +178,9 @@ async def offline_store_feature_table_composite_entity_fixture(app_container, de
 
 
 @pytest_asyncio.fixture(name="offline_store_feature_table_no_entity")
-async def offline_store_feature_table_no_entity_fixture(app_container, deployed_feature_list_no_entity):
+async def offline_store_feature_table_no_entity_fixture(
+    app_container, deployed_feature_list_no_entity
+):
     """
     Fixture for offline store feature table with no entity
     """
@@ -385,7 +391,9 @@ async def test_scheduled_materialize_features(
     # Check online last materialization timestamp updated
     if is_online_store_registered_for_catalog:
         assert len(updated_feature_table.online_stores_last_materialized_at) == 1
-        assert updated_feature_table.online_stores_last_materialized_at[0].value == datetime(2022, 1, 1, 0, 0)
+        assert updated_feature_table.online_stores_last_materialized_at[0].value == datetime(
+            2022, 1, 1, 0, 0
+        )
     else:
         assert len(updated_feature_table.online_stores_last_materialized_at) == 0
 
@@ -412,7 +420,9 @@ async def test_scheduled_materialize_features_if_materialized_before(
     ]
 
     with freeze_time("2022-01-02 00:00:00"):
-        await feature_materialize_service.scheduled_materialize_features(offline_store_feature_table)
+        await feature_materialize_service.scheduled_materialize_features(
+            offline_store_feature_table
+        )
 
     # Check online materialization
     _, kwargs = mock_materialize_partial.call_args
@@ -482,7 +492,9 @@ async def test_scheduled_materialize_features_batch_columns(
 
     # Check online materialization for a feature view
     call_args_list = [
-        arg for arg in mock_materialize_partial.call_args_list if arg[1]["feature_view"].name == "cat1_gender_1d"
+        arg
+        for arg in mock_materialize_partial.call_args_list
+        if arg[1]["feature_view"].name == "cat1_gender_1d"
     ]
     assert len(call_args_list) == 2
 
@@ -744,9 +756,13 @@ async def test_materialize_features_composite_entity(
         fixture_filename = "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity_batch.sql"
     else:
         num_features_per_query = 20
-        fixture_filename = "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity.sql"
+        fixture_filename = (
+            "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity.sql"
+        )
 
-    with patch("featurebyte.query_graph.sql.online_serving.NUM_FEATURES_PER_QUERY", num_features_per_query):
+    with patch(
+        "featurebyte.query_graph.sql.online_serving.NUM_FEATURES_PER_QUERY", num_features_per_query
+    ):
         async with feature_materialize_service.materialize_features(
             feature_table_model=offline_store_feature_table_composite_entity,
         ) as materialized_features_set:
@@ -1149,7 +1165,9 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
         _ = kwargs
         schema = {f"__feature_requiring_parent_serving_{get_version()}__part1": "some_info"}
         if not has_missing_column:
-            schema[f"__feature_requiring_parent_serving_plus_123_{get_version()}__part1"] = "some_info"
+            schema[f"__feature_requiring_parent_serving_plus_123_{get_version()}__part1"] = (
+                "some_info"
+            )
         return schema
 
     def mock_execute_query(query):
@@ -1170,7 +1188,10 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
     service = app_container.offline_store_feature_table_service
     source_feature_table = offline_store_feature_table_with_precomputed_lookup
     lookup_feature_tables = [
-        doc async for doc in service.list_precomputed_lookup_feature_tables_from_source(source_feature_table.id)
+        doc
+        async for doc in service.list_precomputed_lookup_feature_tables_from_source(
+            source_feature_table.id
+        )
     ]
 
     # stop the patcher on initialize_new_columns(), needed because
@@ -1216,7 +1237,9 @@ async def test_cleanup_error__drop_columns(feature_materialize_service, caplog):
         "featurebyte.service.feature_materialize.FeatureMaterializeService._get_session",
         side_effect=RuntimeError("Cannot obtain a valid session"),
     ):
-        await feature_materialize_service.drop_columns(Mock(name="mock_feature_table"), ["a", "b", "c"])
+        await feature_materialize_service.drop_columns(
+            Mock(name="mock_feature_table"), ["a", "b", "c"]
+        )
     lines = [record.msg for record in caplog.records if record.msg.startswith("Unexpected")]
     assert len(lines) == 1
     assert lines[0] == "Unexpected error when attempting to modify offline store feature table"

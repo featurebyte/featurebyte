@@ -16,7 +16,9 @@ from featurebyte.schema.worker.task.test import TestIOTaskPayload, TestTaskPaylo
 from featurebyte.service.task_manager import TaskManager
 
 
-async def wait_for_async_task(task_manager: TaskManager, task_id: TaskId, timeout_seconds=30) -> None:
+async def wait_for_async_task(
+    task_manager: TaskManager, task_id: TaskId, timeout_seconds=30
+) -> None:
     """
     Wait for async task to finish
     """
@@ -106,7 +108,11 @@ async def test_revoke_task(task_manager, persistent):
     start_time = time.time()
     while (time.time() - start_time) < 20:
         task = await task_manager.get_task(task_id)
-        if task.status == TaskStatus.STARTED and task.progress and task.progress.get("percent", 0) > 0:
+        if (
+            task.status == TaskStatus.STARTED
+            and task.progress
+            and task.progress.get("percent", 0) > 0
+        ):
             break
         await asyncio.sleep(0.1)
     await task_manager.revoke_task(task_id)

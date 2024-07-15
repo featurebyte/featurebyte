@@ -31,7 +31,9 @@ from featurebyte.query_graph.sql.specs import (
 )
 
 AggregationSpecT = TypeVar("AggregationSpecT", bound=AggregationSpec)
-NonTileBasedAggregationSpecT = TypeVar("NonTileBasedAggregationSpecT", bound=NonTileBasedAggregationSpec)
+NonTileBasedAggregationSpecT = TypeVar(
+    "NonTileBasedAggregationSpecT", bound=NonTileBasedAggregationSpec
+)
 
 LATEST_VERSION = "LATEST_VERSION"
 
@@ -57,7 +59,9 @@ class LeftJoinableSubquery:
     column_names: list[str]
     join_keys: list[str]
 
-    def get_expression_for_column(self, main_alias: str, join_alias: str, column_name: str) -> expressions.Expression:
+    def get_expression_for_column(
+        self, main_alias: str, join_alias: str, column_name: str
+    ) -> expressions.Expression:
         """
         Get the expression for a column name after join. The default implementation is simply to
         return the qualified expression "{join_alias}"."{column_name}".
@@ -235,7 +239,9 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         agg_table_alias = f"T{index}"
         agg_result_name_aliases = [
             alias_(
-                left_joinable_subquery.get_expression_for_column("REQ", agg_table_alias, agg_result_name),
+                left_joinable_subquery.get_expression_for_column(
+                    "REQ", agg_table_alias, agg_result_name
+                ),
                 agg_result_name,
                 quoted=True,
             )
@@ -365,9 +371,9 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
                     request_serving_names=request_serving_names,
                     dtype=aggregation_spec.dtype,
                 )
-            self.online_join_info[key].agg_result_name_aliases[aggregation_spec.original_agg_result_name] = (
-                aggregation_spec.agg_result_name
-            )
+            self.online_join_info[key].agg_result_name_aliases[
+                aggregation_spec.original_agg_result_name
+            ] = aggregation_spec.agg_result_name
 
     def update_aggregation_table_expr(
         self,
@@ -547,11 +553,17 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
                 join_type="inner",
                 on=expressions.and_(
                     expressions.EQ(
-                        this=get_qualified_column_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN, "R"),
-                        expression=get_qualified_column_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN, "L"),
+                        this=get_qualified_column_identifier(
+                            InternalName.ONLINE_STORE_RESULT_NAME_COLUMN, "R"
+                        ),
+                        expression=get_qualified_column_identifier(
+                            InternalName.ONLINE_STORE_RESULT_NAME_COLUMN, "L"
+                        ),
                     ),
                     expressions.EQ(
-                        this=get_qualified_column_identifier(InternalName.ONLINE_STORE_VERSION_COLUMN, "R"),
+                        this=get_qualified_column_identifier(
+                            InternalName.ONLINE_STORE_VERSION_COLUMN, "R"
+                        ),
                         expression=get_qualified_column_identifier(LATEST_VERSION, "L"),
                     ),
                 ),
@@ -589,10 +601,15 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         ]
         pivot_subquery = expressions.Subquery(this=filtered_online_store, pivots=pivots)
         pivot_result = select(
-            *[self.adapter.online_store_pivot_finalise_serving_name(serving_name) for serving_name in serving_names],
+            *[
+                self.adapter.online_store_pivot_finalise_serving_name(serving_name)
+                for serving_name in serving_names
+            ],
             *[
                 expressions.Alias(
-                    this=self.adapter.online_store_pivot_finalise_value_column(agg_result_name, dtype),
+                    this=self.adapter.online_store_pivot_finalise_value_column(
+                        agg_result_name, dtype
+                    ),
                     alias=quoted_identifier(agg_result_name),
                 )
                 for agg_result_name in agg_result_names
@@ -604,7 +621,9 @@ class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):
         self, info: TileBasedAggregatorOnlineJoinInfo
     ) -> list[expressions.Expression]:
         out = []
-        for original_serving_name, request_serving_name in zip(info.original_serving_names, info.request_serving_names):
+        for original_serving_name, request_serving_name in zip(
+            info.original_serving_names, info.request_serving_names
+        ):
             out.append(
                 alias_(
                     quoted_identifier(original_serving_name),

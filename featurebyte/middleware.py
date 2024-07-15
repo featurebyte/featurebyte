@@ -62,7 +62,9 @@ class ExecutionContext:
         super_classes = inspect.getmro(except_class)[1:-3]
         for super_clazz in super_classes:
             if super_clazz in cls.exception_handlers:
-                raise ValueError(f"{except_class} must be registered before its super class {super_clazz}")
+                raise ValueError(
+                    f"{except_class} must be registered before its super class {super_clazz}"
+                )
 
         cls.exception_handlers[except_class] = (handle_status_code, handle_message)
 
@@ -165,7 +167,9 @@ ExecutionContext.register(
 
 ExecutionContext.register(ValidationError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
-ExecutionContext.register(BaseUnprocessableEntityError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
+ExecutionContext.register(
+    BaseUnprocessableEntityError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+)
 
 
 # CONFLICT errors
@@ -202,7 +206,9 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: FastAPI):
         super().__init__(app)
 
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """
         Exception middleware "main" call
 
@@ -222,5 +228,7 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
                 response: Response = await executor.execute()
         except Exception as exc:
             logger.exception(str(exc))
-            return JSONResponse(content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+            return JSONResponse(
+                content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            )
         return response

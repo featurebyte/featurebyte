@@ -9,7 +9,9 @@ from featurebyte.schema.event_table import EventTableCreate, EventTableServiceUp
 from featurebyte.service.base_table_document import BaseTableDocumentService
 
 
-class EventTableService(BaseTableDocumentService[EventTableModel, EventTableCreate, EventTableServiceUpdate]):
+class EventTableService(
+    BaseTableDocumentService[EventTableModel, EventTableCreate, EventTableServiceUpdate]
+):
     """
     EventTableService class
     """

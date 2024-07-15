@@ -65,7 +65,9 @@ def _synchronize_user_defined_function(func_accessor: FunctionAccessor, route: s
             # Cannot synchronize user-defined functions without specifying a feature store
             return
 
-        for udf_dict in iterate_api_object_using_paginated_routes(route, params={"feature_store_id": feature_store_id}):
+        for udf_dict in iterate_api_object_using_paginated_routes(
+            route, params={"feature_store_id": feature_store_id}
+        ):
             udf = UserDefinedFunctionModel(**udf_dict)
             assert udf.name is not None, "User-defined function name cannot be None."
             if udf.name in name_to_udf_dict and udf.catalog_id is None:
@@ -360,7 +362,9 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         >>> cos_udf.sql_function_name
         'sin'
         """
-        self.update(update_payload={"sql_function_name": sql_function_name}, allow_update_local=False)
+        self.update(
+            update_payload={"sql_function_name": sql_function_name}, allow_update_local=False
+        )
 
     @typechecked
     def update_function_parameters(self, function_parameters: List[FunctionParameter]) -> None:
@@ -375,11 +379,15 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         Examples
         --------
         >>> cos_udf = catalog.get_user_defined_function("cos")
-        >>> cos_udf.update_function_parameters([FunctionParameter(name="value", dtype=DBVarType.FLOAT)])
+        >>> cos_udf.update_function_parameters([
+        ...     FunctionParameter(name="value", dtype=DBVarType.FLOAT)
+        ... ])
         >>> cos_udf.function_parameters
         [FunctionParameter(name='value', dtype='FLOAT', default_value=None, test_value=None)]
         """
-        self.update(update_payload={"function_parameters": function_parameters}, allow_update_local=False)
+        self.update(
+            update_payload={"function_parameters": function_parameters}, allow_update_local=False
+        )
 
     @typechecked
     def update_output_dtype(self, output_dtype: Union[DBVarType, str]) -> None:

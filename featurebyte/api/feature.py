@@ -178,7 +178,9 @@ class Feature(
         return self._get_entity_ids()
 
     @property
-    @substitute_docstring(doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
+    @substitute_docstring(
+        doc_template=PRIMARY_ENTITY_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS
+    )
     def primary_entity_ids(
         self,
     ) -> Sequence[ObjectId]:
@@ -357,7 +359,9 @@ class Feature(
         pd.DataFrame
             Table of features
         """
-        return FeatureNamespace.list(include_id=include_id, primary_entity=primary_entity, primary_table=primary_table)
+        return FeatureNamespace.list(
+            include_id=include_id, primary_entity=primary_entity, primary_table=primary_table
+        )
 
     @classmethod
     def _list_handler(cls) -> ListHandler:
@@ -571,7 +575,9 @@ class Feature(
         bool
             True if the feature is time based, False otherwise.
         """
-        operation_structure = self.graph.extract_operation_structure(self.node, keep_all_source_columns=True)
+        operation_structure = self.graph.extract_operation_structure(
+            self.node, keep_all_source_columns=True
+        )
         return operation_structure.is_time_based
 
     @property
@@ -619,7 +625,9 @@ class Feature(
         try:
             return self.cached_model.used_request_column
         except RecordRetrievalException:
-            return self.graph.has_node_type(target_node=self.node, node_type=NodeType.REQUEST_COLUMN)
+            return self.graph.has_node_type(
+                target_node=self.node, node_type=NodeType.REQUEST_COLUMN
+            )
 
     @property
     def table_id_feature_job_settings(self) -> List[TableIdFeatureJobSetting]:
@@ -633,7 +641,9 @@ class Feature(
         return self.graph.extract_table_id_feature_job_settings(target_node=self.node)
 
     @typechecked
-    def save(self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None) -> None:
+    def save(
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+    ) -> None:
         """
         Adds a Feature object to the catalog.
 
@@ -657,7 +667,9 @@ class Feature(
         Examples
         --------
         >>> grocery_invoice_view = catalog.get_view("GROCERYINVOICE")
-        >>> invoice_amount_avg_60days = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
+        >>> invoice_amount_avg_60days = grocery_invoice_view.groupby(
+        ...     "GroceryCustomerGuid"
+        ... ).aggregate_over(
         ...     value_column="Amount",
         ...     method="avg",
         ...     feature_names=["InvoiceAmountAvg_60days"],
@@ -673,7 +685,9 @@ class Feature(
             # feature definition and save the feature. The task is executed asynchronously. The feature definition is
             # validated before saving the feature.
             self._check_object_not_been_saved(conflict_resolution=conflict_resolution)
-            pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(target_node_names=[self.node_name])
+            pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
+                target_node_names=[self.node_name]
+            )
             feature_item = BatchFeatureItem(
                 id=self.id,
                 name=self.name,
@@ -930,12 +944,17 @@ class Feature(
             json={
                 "source_feature_id": str(self.id),
                 "table_feature_job_settings": (
-                    [table_feature_job_setting.dict() for table_feature_job_setting in table_feature_job_settings]
+                    [
+                        table_feature_job_setting.dict()
+                        for table_feature_job_setting in table_feature_job_settings
+                    ]
                     if table_feature_job_settings
                     else None
                 ),
                 "table_cleaning_operations": (
-                    [clean_ops.dict() for clean_ops in table_cleaning_operations] if table_cleaning_operations else None
+                    [clean_ops.dict() for clean_ops in table_cleaning_operations]
+                    if table_cleaning_operations
+                    else None
                 ),
             },
         )
@@ -993,7 +1012,9 @@ class Feature(
         )
 
     @typechecked
-    def update_default_version_mode(self, default_version_mode: Union[DefaultVersionMode, str]) -> None:
+    def update_default_version_mode(
+        self, default_version_mode: Union[DefaultVersionMode, str]
+    ) -> None:
         """
         Sets the default version mode of a feature.
 

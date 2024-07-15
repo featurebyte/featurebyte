@@ -129,7 +129,8 @@ def test_create_observation_table_without_primary_entity(snowflake_event_table):
     """Test create observation table without primary entity"""
     view = snowflake_event_table.get_view()
     expected_error = (
-        "No primary entities found. Please specify the primary entities when " "creating the observation table."
+        "No primary entities found. Please specify the primary entities when "
+        "creating the observation table."
     )
     with pytest.raises(ValueError, match=expected_error):
         view.create_observation_table(
@@ -177,7 +178,9 @@ def test_create_observation_table_with_target_column_from_source_table(
     _ = catalog
     _ = patched_observation_table_service
 
-    target_namespace = TargetNamespace.create("target", primary_entity=[cust_id_entity.name], dtype=DBVarType.FLOAT)
+    target_namespace = TargetNamespace.create(
+        "target", primary_entity=[cust_id_entity.name], dtype=DBVarType.FLOAT
+    )
     observation_table = snowflake_database_table.create_observation_table(
         "observation_table_from_source_table",
         columns_rename_mapping={"event_timestamp": "POINT_IN_TIME", "col_float": "target"},
@@ -189,7 +192,9 @@ def test_create_observation_table_with_target_column_from_source_table(
 
 
 @patch("featurebyte.service.target_helper.compute_target.TargetComputer.compute")
-def test_create_observation_table_with_target_definition(mock_compute, observation_table_from_view, float_target):
+def test_create_observation_table_with_target_definition(
+    mock_compute, observation_table_from_view, float_target
+):
     """Test create observation table with target"""
     mock_compute.return_value.is_output_view = False
     float_target.save()

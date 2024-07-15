@@ -28,7 +28,9 @@ def test_graph_interpreter_describe(simple_graph, source_type, update_fixtures):
     graph, node = simple_graph
     interpreter = GraphInterpreter(graph, source_type)
 
-    sql_code = interpreter.construct_describe_queries(node.name, num_rows=10, seed=1234).queries[0].sql
+    sql_code = (
+        interpreter.construct_describe_queries(node.name, num_rows=10, seed=1234).queries[0].sql
+    )
     expected_filename = f"tests/fixtures/query_graph/expected_describe_{source_type.lower()}.sql"
     assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
 
@@ -82,9 +84,9 @@ def test_describe_specify_empty_stats(simple_graph, update_fixtures):
     graph, node = simple_graph
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
 
-    describe_query = interpreter.construct_describe_queries(node.name, num_rows=10, seed=1234, stats_names=[]).queries[
-        0
-    ]
+    describe_query = interpreter.construct_describe_queries(
+        node.name, num_rows=10, seed=1234, stats_names=[]
+    ).queries[0]
     assert describe_query.row_names == ["dtype"]
     assert [column.name for column in describe_query.columns] == [
         "ts",

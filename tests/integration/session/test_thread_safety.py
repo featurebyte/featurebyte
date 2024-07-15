@@ -16,7 +16,9 @@ def get_threadsafe_sessions():
     """
     testable = {"snowflake", "spark"}
     threadsafe_sessions = {
-        str(source_type) for source_type, cls in SOURCE_TYPE_SESSION_MAP.items() if cls.is_threadsafe()
+        str(source_type)
+        for source_type, cls in SOURCE_TYPE_SESSION_MAP.items()
+        if cls.is_threadsafe()
     }
     return list(testable & threadsafe_sessions)
 

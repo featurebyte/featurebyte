@@ -96,7 +96,9 @@ class BaseTaskTestSuite:
         await task.execute(task_payload)
 
     @pytest_asyncio.fixture()
-    async def task_completed(self, mongo_persistent, progress, storage, temp_storage, catalog, app_container):
+    async def task_completed(
+        self, mongo_persistent, progress, storage, temp_storage, catalog, app_container
+    ):
         """
         Test execution of the task
         """

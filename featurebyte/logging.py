@@ -85,7 +85,9 @@ class CustomFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         record.msg = self.colorize(record.msg, self.level_colors.get(record.levelname, "grey"))
-        record.levelname = self.colorize(record.levelname.ljust(8), self.level_colors.get(record.levelname, "grey"))
+        record.levelname = self.colorize(
+            record.levelname.ljust(8), self.level_colors.get(record.levelname, "grey")
+        )
         return super().format(record)
 
 

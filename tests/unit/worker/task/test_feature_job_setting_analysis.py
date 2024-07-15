@@ -27,7 +27,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
     """
 
     task_class = FeatureJobSettingAnalysisTask
-    payload = BaseTaskTestSuite.load_payload("tests/fixtures/task_payloads/feature_job_setting_analysis.json")
+    payload = BaseTaskTestSuite.load_payload(
+        "tests/fixtures/task_payloads/feature_job_setting_analysis.json"
+    )
 
     async def setup_persistent_storage(self, persistent, storage, temp_storage, catalog):
         """
@@ -92,7 +94,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             query_filter={"_id": ObjectId(output_document_id)},
         )
         assert document
-        result = FeatureJobSettingAnalysisModel(**json.loads(FeatureJobSettingAnalysisModel(**document).json()))
+        result = FeatureJobSettingAnalysisModel(
+            **json.loads(FeatureJobSettingAnalysisModel(**document).json())
+        )
 
         # check document output
         if result.event_table_id:
@@ -120,7 +124,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             assert result.event_table_candidate == payload.event_table_candidate
 
         # check storage of large objects
-        analysis_data = await storage.get_object(f"feature_job_setting_analysis/{output_document_id}/data.json")
+        analysis_data = await storage.get_object(
+            f"feature_job_setting_analysis/{output_document_id}/data.json"
+        )
         assert sorted(analysis_data.keys()) == [
             "analysis_data",
             "analysis_plots",
@@ -136,7 +142,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         ]
 
     @pytest.mark.asyncio
-    async def test_execute_success(self, task_completed, mongo_persistent, progress, update_fixtures, storage):
+    async def test_execute_success(
+        self, task_completed, mongo_persistent, progress, update_fixtures, storage
+    ):
         """
         Test successful task execution
         """
@@ -153,7 +161,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_execute_fail(self, mongo_persistent, progress, storage, temp_storage, app_container):
+    async def test_execute_fail(
+        self, mongo_persistent, progress, storage, temp_storage, app_container
+    ):
         """
         Test failed task execution
         """
@@ -208,7 +218,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             "name": event_table_payload["name"],
             "tabular_source": event_table_payload["tabular_source"],
             "event_timestamp_column": event_table_payload["event_timestamp_column"],
-            "record_creation_timestamp_column": event_table_payload["record_creation_timestamp_column"],
+            "record_creation_timestamp_column": event_table_payload[
+                "record_creation_timestamp_column"
+            ],
         }
         await self.execute_task(
             task_class=self.task_class,
@@ -239,7 +251,10 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         app_container.override_instance_for_test("persistent", persistent)
         task = app_container.get(FeatureJobSettingAnalysisTask)
         payload = task.get_payload_obj(self.payload)
-        assert await task.get_task_description(payload) == 'Analyze feature job settings for table "sf_event_table"'
+        assert (
+            await task.get_task_description(payload)
+            == 'Analyze feature job settings for table "sf_event_table"'
+        )
 
     @pytest.mark.asyncio
     async def test_execute_with_databricks_store_success(
@@ -267,7 +282,9 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             "name": event_table_payload["name"],
             "tabular_source": event_table_payload["tabular_source"],
             "event_timestamp_column": event_table_payload["event_timestamp_column"],
-            "record_creation_timestamp_column": event_table_payload["record_creation_timestamp_column"],
+            "record_creation_timestamp_column": event_table_payload[
+                "record_creation_timestamp_column"
+            ],
         }
 
         with (

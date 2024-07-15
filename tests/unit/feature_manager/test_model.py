@@ -70,7 +70,9 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
     assert model.tile_specs == expected_tile_specs
 
 
-def test_extended_feature_model__agg_per_category_feature(agg_per_category_feature, snowflake_feature_store):
+def test_extended_feature_model__agg_per_category_feature(
+    agg_per_category_feature, snowflake_feature_store
+):
     """Test ExtendedFeatureModel has correct tile_specs for category groupby feature"""
     model = ExtendedFeatureModel(
         **agg_per_category_feature.dict(exclude={"version": True}),

@@ -72,10 +72,14 @@ class WebdavStorage(Storage):
         mkdir_path = ""
         for path in paths[:-1]:
             mkdir_path = f"{mkdir_path}/{path}"
-            request = self.client.build_request(WebdavHTTPMethods.PROPFIND, url=f"{self.base_url}{mkdir_path}")
+            request = self.client.build_request(
+                WebdavHTTPMethods.PROPFIND, url=f"{self.base_url}{mkdir_path}"
+            )
             response = await self.client.send(request)
             if response.status_code == HTTPStatus.NOT_FOUND:
-                request = self.client.build_request(WebdavHTTPMethods.MKCOL, url=f"{self.base_url}{mkdir_path}")
+                request = self.client.build_request(
+                    WebdavHTTPMethods.MKCOL, url=f"{self.base_url}{mkdir_path}"
+                )
                 response = await self.client.send(request)
                 assert response.status_code == HTTPStatus.CREATED
             elif response.status_code == HTTPStatus.MULTI_STATUS:
@@ -88,7 +92,9 @@ class WebdavStorage(Storage):
                         continue
                     # if the last character is not a slash, it is a file
                     raise FileExistsError("Remote path cannot be created")
-                raise FileExistsError("rclone did not return a correct response whilst creating directory")
+                raise FileExistsError(
+                    "rclone did not return a correct response whilst creating directory"
+                )
             else:
                 raise FileExistsError("Unknown error occurred while creating directory")
 
@@ -114,7 +120,9 @@ class WebdavStorage(Storage):
         # Create all subdirectories
         await self.mkdir(remote_path)
 
-        request = self.client.build_request(WebdavHTTPMethods.PROPFIND, url=f"{self.base_url}/{remote_path}")
+        request = self.client.build_request(
+            WebdavHTTPMethods.PROPFIND, url=f"{self.base_url}/{remote_path}"
+        )
         response = await self.client.send(request)
         if response.status_code != HTTPStatus.NOT_FOUND:
             raise FileExistsError("File already exists on remote path")
@@ -127,7 +135,9 @@ class WebdavStorage(Storage):
                     "file_path": str(local_path),
                 },
             )
-            response = await self.client.put(url=f"{self.base_url}/{remote_path}", content=file_obj.read())
+            response = await self.client.put(
+                url=f"{self.base_url}/{remote_path}", content=file_obj.read()
+            )
 
     async def delete(self, remote_path: Path) -> None:
         """
@@ -177,7 +187,9 @@ class WebdavStorage(Storage):
         with open(local_path, "wb") as file_obj:
             file_obj.write(response.content)
 
-    async def get_file_stream(self, remote_path: Path, chunk_size: int = 255 * 1024) -> AsyncGenerator[bytes, None]:
+    async def get_file_stream(
+        self, remote_path: Path, chunk_size: int = 255 * 1024
+    ) -> AsyncGenerator[bytes, None]:
         """
         Stream file from storage to local path
 

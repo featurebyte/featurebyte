@@ -20,7 +20,9 @@ class LaggableViewColumn(ViewColumn):
     """
 
     @typechecked
-    def lag(self: LagColumnTypeT, entity_columns: Union[str, List[str]], offset: int = 1) -> LagColumnTypeT:
+    def lag(
+        self: LagColumnTypeT, entity_columns: Union[str, List[str]], offset: int = 1
+    ) -> LagColumnTypeT:
         """
         Lag is a transform that enables the retrieval of the preceding value associated with a particular entity in
         a view.

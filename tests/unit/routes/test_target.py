@@ -148,7 +148,10 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             )
             response = test_api_client.post(f"{self.base_route}", json=payload)
             assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-            assert "Target entity ids must not include any parent entity ids" in response.json()["detail"]
+            assert (
+                "Target entity ids must not include any parent entity ids"
+                in response.json()["detail"]
+            )
 
     def test_request_sample_entity_serving_names(
         self,

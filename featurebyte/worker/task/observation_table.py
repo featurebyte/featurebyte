@@ -40,7 +40,9 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         return f'Save observation table "{payload.name}" from source table.'
 
     async def execute(self, payload: ObservationTableTaskPayload) -> Any:
-        feature_store = await self.feature_store_service.get_document(document_id=payload.feature_store_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=payload.feature_store_id
+        )
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
         location = await self.observation_table_service.generate_materialized_table_location(
             payload.feature_store_id,
@@ -57,13 +59,15 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         async with self.drop_table_on_error(db_session, location.table_details, payload):
             payload_input = payload.request_input
             assert not isinstance(payload_input, TargetInput)
-            additional_metadata = await self.observation_table_service.validate_materialized_table_and_get_metadata(
-                db_session,
-                location.table_details,
-                feature_store=feature_store,
-                skip_entity_validation_checks=payload.skip_entity_validation_checks,
-                primary_entity_ids=payload.primary_entity_ids,
-                target_namespace_id=payload.target_namespace_id,
+            additional_metadata = (
+                await self.observation_table_service.validate_materialized_table_and_get_metadata(
+                    db_session,
+                    location.table_details,
+                    feature_store=feature_store,
+                    skip_entity_validation_checks=payload.skip_entity_validation_checks,
+                    primary_entity_ids=payload.primary_entity_ids,
+                    target_namespace_id=payload.target_namespace_id,
+                )
             )
 
             logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())

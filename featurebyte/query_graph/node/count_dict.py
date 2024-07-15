@@ -45,7 +45,9 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
     def max_input_count(self) -> int:
         return 2
 
-    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _get_count_dict_and_mask_variables(
@@ -57,9 +59,13 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = var_name_expressions[0].as_input()
         mask_expr = ExpressionStr(f"~{var_name_expression}.isnull()")
-        mask_var = var_name_generator.convert_to_variable_name(variable_name_prefix="feat_mask", node_name=None)
+        mask_var = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="feat_mask", node_name=None
+        )
         statements.append((mask_var, mask_expr))
-        var_name = var_name_generator.convert_to_variable_name(variable_name_prefix="feat_count_dict", node_name=None)
+        var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="feat_count_dict", node_name=None
+        )
         statements.append((var_name, ExpressionStr(f"{var_name_expression}[{mask_var}]")))
         return statements, var_name, mask_var
 
@@ -71,7 +77,9 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = var_name_expressions[0].as_input()
         other_operands = [val.as_input() for val in var_name_expressions[1:]]
-        expression = ExpressionStr(generate_expression_func(operand=var_name_expression, other_operands=other_operands))
+        expression = ExpressionStr(
+            generate_expression_func(operand=var_name_expression, other_operands=other_operands)
+        )
         return [], expression
 
     def _derive_sdk_code(
@@ -141,7 +149,9 @@ class CountDictTransformNode(BaseCountDictOpNode):
     class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
-        transform_type: Literal["entropy", "most_frequent", "key_with_highest_value", "key_with_lowest_value"]
+        transform_type: Literal[
+            "entropy", "most_frequent", "key_with_highest_value", "key_with_lowest_value"
+        ]
 
     class UniqueCountParameters(FeatureByteBaseModel):
         """UniqueCountParameters"""
@@ -150,7 +160,9 @@ class CountDictTransformNode(BaseCountDictOpNode):
         include_missing: bool
 
     type: Literal[NodeType.COUNT_DICT_TRANSFORM] = Field(NodeType.COUNT_DICT_TRANSFORM, const=True)
-    parameters: Annotated[Union[Parameters, UniqueCountParameters], Field(discriminator="transform_type")]
+    parameters: Annotated[
+        Union[Parameters, UniqueCountParameters], Field(discriminator="transform_type")
+    ]
 
     transform_types_with_varchar_output: ClassVar[Set[str]] = {
         "most_frequent",
@@ -177,7 +189,9 @@ class CountDictTransformNode(BaseCountDictOpNode):
             f"{count_dict_var_name}.apply",
             ExpressionStr("lambda x: np.array(list(x.values()))"),
         )
-        count_var = var_name_generator.convert_to_variable_name(variable_name_prefix="feat_count", node_name=None)
+        count_var = var_name_generator.convert_to_variable_name(
+            variable_name_prefix="feat_count", node_name=None
+        )
         statements: List[StatementT] = [(count_var, count_expr)]
         entropy_expr = get_object_class_from_function_call(
             f"{count_var}.apply",
@@ -232,7 +246,9 @@ class CountDictTransformNode(BaseCountDictOpNode):
         else:
             unique_count_expr = get_object_class_from_function_call(
                 f"{count_dict_var_name}.apply",
-                ExpressionStr(f"lambda x: len([key for key in x if key != '{MISSING_VALUE_REPLACEMENT}'])"),
+                ExpressionStr(
+                    f"lambda x: len([key for key in x if key != '{MISSING_VALUE_REPLACEMENT}'])"
+                ),
             )
         return [], ExpressionStr(unique_count_expr)
 
@@ -242,7 +258,9 @@ class CountDictTransformNode(BaseCountDictOpNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        statements, cd_var_name, mask_var = self._get_count_dict_and_mask_variables(node_inputs, var_name_generator)
+        statements, cd_var_name, mask_var = self._get_count_dict_and_mask_variables(
+            node_inputs, var_name_generator
+        )
         include_missing = False
         if isinstance(self.parameters, self.UniqueCountParameters):
             include_missing = self.parameters.include_missing
@@ -254,7 +272,9 @@ class CountDictTransformNode(BaseCountDictOpNode):
             "unique_count": lambda var, gen: self._get_unique_count(var, gen, include_missing),
         }
         transform_type = self.parameters.transform_type
-        op_statements, op_expr = transform_type_to_func[transform_type](cd_var_name, var_name_generator)
+        op_statements, op_expr = transform_type_to_func[transform_type](
+            cd_var_name, var_name_generator
+        )
         statements.extend(op_statements)
         var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix=f"feat_{transform_type}", node_name=None
@@ -278,7 +298,9 @@ class CountDictTransformNode(BaseCountDictOpNode):
         transform_type = self.parameters.transform_type
         statements: List[StatementT] = []
         if transform_type == "entropy":
-            expr = ExpressionStr(f"sp.stats.entropy(list(({operand}).values())) if not pd.isna({operand}) else np.nan")
+            expr = ExpressionStr(
+                f"sp.stats.entropy(list(({operand}).values())) if not pd.isna({operand}) else np.nan"
+            )
         elif transform_type in {"most_frequent", "key_with_highest_value"}:
             statements, func_name = self._get_extreme_value_func_name(var_name_generator, "max")
             expr = ExpressionStr(f"{func_name}({operand})")
@@ -309,7 +331,9 @@ class CosineSimilarityNode(BaseCountDictOpNode):
         return f"{operand}.cd.cosine_similarity(other={other_operands[0]})"
 
     def generate_odfv_expression(self, operand: str, other_operands: List[str]) -> str:
-        lambda_func = "lambda d1, d2: np.nan if pd.isna(d1) or pd.isna(d2) else cosine_similarity(d1, d2)"
+        lambda_func = (
+            "lambda d1, d2: np.nan if pd.isna(d1) or pd.isna(d2) else cosine_similarity(d1, d2)"
+        )
         return f"{operand}.combine({other_operands[0]}, {lambda_func})"
 
     @staticmethod
@@ -339,10 +363,14 @@ class CosineSimilarityNode(BaseCountDictOpNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        statements, _ = self._get_cosine_similarity_function_name(var_name_generator=var_name_generator)
+        statements, _ = self._get_cosine_similarity_function_name(
+            var_name_generator=var_name_generator
+        )
 
         # compute cosine similarity
-        odfv_stats, output_var_name = super()._derive_on_demand_view_code(node_inputs, var_name_generator, config)
+        odfv_stats, output_var_name = super()._derive_on_demand_view_code(
+            node_inputs, var_name_generator, config
+        )
         statements.extend(odfv_stats)
         return statements, output_var_name
 
@@ -352,7 +380,9 @@ class CosineSimilarityNode(BaseCountDictOpNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        statements, func_name = self._get_cosine_similarity_function_name(var_name_generator=var_name_generator)
+        statements, func_name = self._get_cosine_similarity_function_name(
+            var_name_generator=var_name_generator
+        )
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand = input_var_name_expressions[0].as_input()
         right_operand = input_var_name_expressions[1].as_input()
@@ -369,7 +399,9 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return 1
 
-    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -531,12 +563,16 @@ class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
         var_name: str = input_var_name_expressions[0].as_input()
         statements: List[StatementT] = []
         if len(node_inputs) == 1:
-            value_expr = ExpressionStr(f"np.nan if pd.isna({var_name}) else {var_name}.get({self.get_key_value()})")
+            value_expr = ExpressionStr(
+                f"np.nan if pd.isna({var_name}) else {var_name}.get({self.get_key_value()})"
+            )
         else:
             func_statements, key_func_name = self.get_key_value_func_name(var_name_generator)
             statements.extend(func_statements)
             operand: str = input_var_name_expressions[1].as_input()
-            value_expr = ExpressionStr(f"np.nan if pd.isna({var_name}) else {var_name}.get({key_func_name}({operand}))")
+            value_expr = ExpressionStr(
+                f"np.nan if pd.isna({var_name}) else {var_name}.get({key_func_name}({operand}))"
+            )
 
         return statements, value_expr
 
@@ -639,7 +675,9 @@ class GetRankFromDictionaryNode(BaseCountDictWithKeyOpNode):
 class GetRelativeFrequencyFromDictionaryNode(BaseCountDictWithKeyOpNode):
     """Get relative frequency from dictionary node class"""
 
-    type: Literal[NodeType.GET_RELATIVE_FREQUENCY] = Field(NodeType.GET_RELATIVE_FREQUENCY, const=True)
+    type: Literal[NodeType.GET_RELATIVE_FREQUENCY] = Field(
+        NodeType.GET_RELATIVE_FREQUENCY, const=True
+    )
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
@@ -690,7 +728,9 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictWithKeyOpNode):
             )
         else:
             operand: str = input_var_name_expressions[1].as_input()
-            freq_expr = ExpressionStr(f"{var_name}.combine({operand}, lambda dct, key: {func_name}(dct, key=key))")
+            freq_expr = ExpressionStr(
+                f"{var_name}.combine({operand}, lambda dct, key: {func_name}(dct, key=key))"
+            )
 
         return statements, freq_expr
 

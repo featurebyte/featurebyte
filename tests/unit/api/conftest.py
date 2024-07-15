@@ -326,12 +326,16 @@ def snowflake_change_view(snowflake_scd_table):
 
 
 @pytest.fixture(name="snowflake_event_view")
-def snowflake_event_view_fixture(snowflake_event_table, config, arbitrary_default_feature_job_setting):
+def snowflake_event_view_fixture(
+    snowflake_event_table, config, arbitrary_default_feature_job_setting
+):
     """
     EventTable object fixture
     """
     _ = config
-    snowflake_event_table.update_default_feature_job_setting(feature_job_setting=arbitrary_default_feature_job_setting)
+    snowflake_event_table.update_default_feature_job_setting(
+        feature_job_setting=arbitrary_default_feature_job_setting
+    )
     event_view = snowflake_event_table.get_view()
     yield event_view
 
@@ -372,7 +376,9 @@ def batch_request_table_from_source_fixture(
 ):
     """Batch request table from source table fixture"""
     _ = catalog, snowflake_execute_query_for_materialized_table
-    return snowflake_database_table.create_batch_request_table("batch_request_table_from_source_table")
+    return snowflake_database_table.create_batch_request_table(
+        "batch_request_table_from_source_table"
+    )
 
 
 @pytest.fixture(name="batch_request_table_from_view")
@@ -457,7 +463,9 @@ def mock_source_table_fixture():
             )
         ),
     )
-    with patch("featurebyte.api.materialized_table.FeatureStore.get_by_id", return_value=mock_feature_store):
+    with patch(
+        "featurebyte.api.materialized_table.FeatureStore.get_by_id", return_value=mock_feature_store
+    ):
         yield mock_source_table
 
 

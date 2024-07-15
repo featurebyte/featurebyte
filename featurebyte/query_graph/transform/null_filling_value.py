@@ -35,7 +35,9 @@ class NullFillingValueGlobalState(FeatureByteBaseModel):
 
 
 class NullFillingValueExtractor(
-    BaseGraphExtractor[NullFillingValueGlobalState, FeatureByteBaseModel, NullFillingValueGlobalState]
+    BaseGraphExtractor[
+        NullFillingValueGlobalState, FeatureByteBaseModel, NullFillingValueGlobalState
+    ]
 ):
     """
     NullFillingValueExtractor is responsible for extracting null filling values from the graph.
@@ -84,7 +86,9 @@ class NullFillingValueExtractor(
         if node.name not in global_state.aggregation_node_names:
             for input_node_name in self.graph.get_input_node_names(node):
                 mapped_input_node_name = global_state.node_name_map[input_node_name]
-                mapped_input_nodes.append(global_state.graph.get_node_by_name(mapped_input_node_name))
+                mapped_input_nodes.append(
+                    global_state.graph.get_node_by_name(mapped_input_node_name)
+                )
 
         node_to_insert = node
         if node.name in global_state.aggregation_node_names:
@@ -98,7 +102,9 @@ class NullFillingValueExtractor(
                 output_type=NodeOutputType.SERIES,
             )
 
-        inserted_node = global_state.graph.add_operation_node(node=node_to_insert, input_nodes=mapped_input_nodes)
+        inserted_node = global_state.graph.add_operation_node(
+            node=node_to_insert, input_nodes=mapped_input_nodes
+        )
 
         # update the node name map
         global_state.node_name_map[node.name] = inserted_node.name
@@ -112,7 +118,9 @@ class NullFillingValueExtractor(
         state: NullFillingValueGlobalState = self._extract(
             node=node,
             branch_state=FeatureByteBaseModel(),
-            global_state=NullFillingValueGlobalState(operation_structure_map=op_struct_info.operation_structure_map),
+            global_state=NullFillingValueGlobalState(
+                operation_structure_map=op_struct_info.operation_structure_map
+            ),
             topological_order_map=self.graph.node_topological_order_map,
         )
 

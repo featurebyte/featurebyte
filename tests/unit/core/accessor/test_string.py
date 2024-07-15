@@ -84,7 +84,9 @@ def test_replace_expression(
     assert str_replace.dtype == DBVarType.VARCHAR
     assert str_replace.node.type == NodeType.REPLACE
     assert str_replace.node.output_type == NodeOutputType.SERIES
-    expected_sql = expression_sql_template.format(expression="REPLACE(\"PRODUCT_ACTION\", 'hello', 'kitty')")
+    expected_sql = expression_sql_template.format(
+        expression="REPLACE(\"PRODUCT_ACTION\", 'hello', 'kitty')"
+    )
     assert get_preview_sql_for_series(str_replace) == expected_sql
 
 
@@ -208,7 +210,9 @@ def test_slice_expression__step_size_not_supported_or_exception(varchar_series):
 
     with pytest.raises(TypeError) as exc:
         varchar_series.str.pad(10, side="hello")
-    expected_msg = "the value of argument \"side\" must be one of ('left', 'right', 'both'); got hello instead"
+    expected_msg = (
+        "the value of argument \"side\" must be one of ('left', 'right', 'both'); got hello instead"
+    )
     assert expected_msg in str(exc.value)
 
 

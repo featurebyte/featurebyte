@@ -75,7 +75,9 @@ async def test_feast_registry_construction__with_post_processing_features(
     deployment.enable()
 
     helper_service = app_container.entity_lookup_feature_table_service
-    entity_lookup_steps_mapping = await helper_service.get_entity_lookup_steps_mapping([feature_list.cached_model])
+    entity_lookup_steps_mapping = await helper_service.get_entity_lookup_steps_mapping([
+        feature_list.cached_model
+    ])
     feast_registry_proto = FeastRegistryBuilder.create(
         feature_store=snowflake_feature_store.cached_model,
         online_store=mysql_online_store.cached_model,
@@ -99,18 +101,24 @@ async def test_feast_registry_construction__with_post_processing_features(
     }
 
     data_sources = feast_registry_dict["dataSources"]
-    pit_data_source = next(data_source for data_source in data_sources if data_source["name"] == "POINT_IN_TIME")
+    pit_data_source = next(
+        data_source for data_source in data_sources if data_source["name"] == "POINT_IN_TIME"
+    )
     assert pit_data_source == {
         "dataSourceClassType": "feast.data_source.RequestSource",
         "name": "POINT_IN_TIME",
         "project": "featurebyte_project",
-        "requestDataOptions": {"schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]},
+        "requestDataOptions": {
+            "schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]
+        },
         "type": "REQUEST_SOURCE",
     }
 
     # dill's getsource() does not include the import statements
     udf = feast_registry_proto.on_demand_feature_views[0].spec.user_defined_function
-    assert udf.body_text.startswith("import datetime\nimport json\nimport numpy as np\nimport pandas as pd\n")
+    assert udf.body_text.startswith(
+        "import datetime\nimport json\nimport numpy as np\nimport pandas as pd\n"
+    )
 
     # check that mock_pymysql_connect was called
     assert mock_pymysql_connect.call_count == 1
@@ -163,7 +171,9 @@ def expected_data_sources_fixture(expected_data_source_names):
         "dataSourceClassType": "feast.data_source.RequestSource",
         "name": "POINT_IN_TIME",
         "project": "featurebyte_project",
-        "requestDataOptions": {"schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]},
+        "requestDataOptions": {
+            "schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]
+        },
         "type": "REQUEST_SOURCE",
     })
     return expected_data_sources
@@ -282,7 +292,9 @@ def expected_feature_view_specs_fixture(expected_cust_id_via_transaction_id_tabl
 
 
 @pytest.fixture(name="expected_feature_service_spec")
-def expected_feature_service_spec_fixture(float_feature, feature_without_entity, composite_feature_ttl_req_col):
+def expected_feature_service_spec_fixture(
+    float_feature, feature_without_entity, composite_feature_ttl_req_col
+):
     """Expected feature service spec"""
     comp_feat_id = composite_feature_ttl_req_col.id
     version = get_version()

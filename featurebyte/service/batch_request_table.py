@@ -24,7 +24,9 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.storage import Storage
 
 
-class BatchRequestTableService(BaseMaterializedTableService[BatchRequestTableModel, BatchRequestTableModel]):
+class BatchRequestTableService(
+    BaseMaterializedTableService[BatchRequestTableModel, BatchRequestTableModel]
+):
     """
     BatchRequestTableService class
     """
@@ -62,7 +64,9 @@ class BatchRequestTableService(BaseMaterializedTableService[BatchRequestTableMod
     def class_name(self) -> str:
         return "BatchRequestTable"
 
-    async def get_batch_request_table_task_payload(self, data: BatchRequestTableCreate) -> BatchRequestTableTaskPayload:
+    async def get_batch_request_table_task_payload(
+        self, data: BatchRequestTableCreate
+    ) -> BatchRequestTableTaskPayload:
         """
         Validate and convert a BatchRequestTableCreate schema to a BatchRequestTableTaskPayload schema
         which will be used to initiate the BatchRequestTable creation task.

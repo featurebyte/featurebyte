@@ -20,7 +20,9 @@ class TaskProgressUpdater:
         self.user = user
         self.progress = progress
 
-    async def update_progress(self, percent: int, message: Optional[str] = None, **kwargs: Any) -> None:
+    async def update_progress(
+        self, percent: int, message: Optional[str] = None, **kwargs: Any
+    ) -> None:
         """
         Update progress
 

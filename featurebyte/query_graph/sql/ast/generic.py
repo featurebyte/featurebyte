@@ -174,7 +174,9 @@ def make_assign_node(context: SQLNodeContext) -> TableNode:
     if len(input_sql_nodes) == 2:
         expr_node = input_sql_nodes[1]
     else:
-        expr_node = ParsedExpressionNode(context, input_table_node, make_literal_value(parameters["value"]))
+        expr_node = ParsedExpressionNode(
+            context, input_table_node, make_literal_value(parameters["value"])
+        )
     assert isinstance(expr_node, ExpressionNode)
     sql_node = input_table_node.copy()
     sql_node.context.current_query_node = context.query_node

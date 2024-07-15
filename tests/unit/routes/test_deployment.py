@@ -22,7 +22,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
     class_name = "Deployment"
     base_route = "/deployment"
-    payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/deployment.json")
+    payload = BaseCatalogApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/deployment.json"
+    )
     async_create = True
     online_store_payload = BaseCatalogApiTestSuite.load_payload(
         "tests/fixtures/request_payloads/mysql_online_store.json"
@@ -69,7 +71,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         feature_payload = self.load_payload("tests/fixtures/request_payloads/feature_sum_2h.json")
-        feature_list_payload = self.load_payload("tests/fixtures/request_payloads/feature_list_single.json")
+        feature_list_payload = self.load_payload(
+            "tests/fixtures/request_payloads/feature_list_single.json"
+        )
         default_catalog_id = api_client.get("/catalog").json()["data"][0]["_id"]
         for i in range(3):
             # make a new feature from feature_sum_30m & create a new feature_ids
@@ -123,7 +127,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "_id": response_dict["data"][0]["_id"],
                     "name": "my_deployment_2",
                     "feature_list_id": response_dict["data"][0]["feature_list_id"],
-                    "feature_list_namespace_id": response_dict["data"][0]["feature_list_namespace_id"],
+                    "feature_list_namespace_id": response_dict["data"][0][
+                        "feature_list_namespace_id"
+                    ],
                     "enabled": False,
                     "catalog_id": default_catalog_id,
                     "user_id": response_dict["data"][0]["user_id"],
@@ -141,7 +147,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "_id": response_dict["data"][1]["_id"],
                     "name": "my_deployment_1",
                     "feature_list_id": response_dict["data"][1]["feature_list_id"],
-                    "feature_list_namespace_id": response_dict["data"][1]["feature_list_namespace_id"],
+                    "feature_list_namespace_id": response_dict["data"][1][
+                        "feature_list_namespace_id"
+                    ],
                     "enabled": False,
                     "catalog_id": default_catalog_id,
                     "user_id": response_dict["data"][1]["user_id"],
@@ -159,7 +167,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "_id": response_dict["data"][2]["_id"],
                     "name": "my_deployment_0",
                     "feature_list_id": response_dict["data"][2]["feature_list_id"],
-                    "feature_list_namespace_id": response_dict["data"][2]["feature_list_namespace_id"],
+                    "feature_list_namespace_id": response_dict["data"][2][
+                        "feature_list_namespace_id"
+                    ],
                     "enabled": False,
                     "catalog_id": default_catalog_id,
                     "user_id": response_dict["data"][2]["user_id"],
@@ -179,7 +189,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             "total": 3,
         }
 
-    def test_list_200__filter_by_feature_list_id(self, test_api_client_persistent, create_multiple_success_responses):
+    def test_list_200__filter_by_feature_list_id(
+        self, test_api_client_persistent, create_multiple_success_responses
+    ):
         """Test list by feature list id"""
         _ = create_multiple_success_responses
 
@@ -189,7 +201,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         response = test_api_client.get("/feature_list")
         assert response.status_code == HTTPStatus.OK, response.text
         fl_ids = [obj["_id"] for obj in response.json()["data"]]
-        feature_list_namespace_ids = [obj["feature_list_namespace_id"] for obj in response.json()["data"]]
+        feature_list_namespace_ids = [
+            obj["feature_list_namespace_id"] for obj in response.json()["data"]
+        ]
 
         response = test_api_client.get(self.base_route, params={"feature_list_id": fl_ids[0]})
         response_dict = response.json()
@@ -219,7 +233,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             "total": 1,
         }
 
-    def test_deployment_summary_200(self, test_api_client_persistent, create_success_response, default_catalog_id):
+    def test_deployment_summary_200(
+        self, test_api_client_persistent, create_success_response, default_catalog_id
+    ):
         """Test deployment summary"""
         deployment_id = create_success_response.json()["_id"]
         test_api_client, _ = test_api_client_persistent
@@ -278,7 +294,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         assert response.json() == expected_response
 
         # check list deployments & all deployments again with different active catalog
-        response = test_api_client.get("/deployment/", headers={"active-catalog-id": str(catalog_id)})
+        response = test_api_client.get(
+            "/deployment/", headers={"active-catalog-id": str(catalog_id)}
+        )
         assert response.status_code == HTTPStatus.OK
         assert response.json() == {"page": 1, "page_size": 10, "total": 0, "data": []}
 
@@ -342,20 +360,28 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         # enable deployments & check feature list deployed status
         self.update_deployment_enabled(test_api_client, deployment_id, default_catalog_id, True)
         self.check_feature_list_deployed(test_api_client, feature_list_id, True)
-        self.update_deployment_enabled(test_api_client, another_deployment_id, default_catalog_id, True)
+        self.update_deployment_enabled(
+            test_api_client, another_deployment_id, default_catalog_id, True
+        )
         self.check_feature_list_deployed(test_api_client, feature_list_id, True)
 
         # disable deployments & check feature list deployed status
         # note that the expected deployed status is True because at least one deployment is enabled
         self.update_deployment_enabled(test_api_client, deployment_id, default_catalog_id, False)
         self.check_feature_list_deployed(test_api_client, feature_list_id, True)
-        self.update_deployment_enabled(test_api_client, another_deployment_id, default_catalog_id, False)
+        self.update_deployment_enabled(
+            test_api_client, another_deployment_id, default_catalog_id, False
+        )
         self.check_feature_list_deployed(test_api_client, feature_list_id, False)
 
         # create enable & disable deployment again & check feature list deployed status
-        self.update_deployment_enabled(test_api_client, another_deployment_id, default_catalog_id, True)
+        self.update_deployment_enabled(
+            test_api_client, another_deployment_id, default_catalog_id, True
+        )
         self.check_feature_list_deployed(test_api_client, feature_list_id, True)
-        self.update_deployment_enabled(test_api_client, another_deployment_id, default_catalog_id, False)
+        self.update_deployment_enabled(
+            test_api_client, another_deployment_id, default_catalog_id, False
+        )
         self.check_feature_list_deployed(test_api_client, feature_list_id, False)
 
     def test_delete_200(self, test_api_client_persistent, create_success_response):
@@ -369,7 +395,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/{deployment_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
 
-    def test_delete_422(self, test_api_client_persistent, create_success_response, default_catalog_id):
+    def test_delete_422(
+        self, test_api_client_persistent, create_success_response, default_catalog_id
+    ):
         """Test delete deployment (422)"""
         test_api_client, _ = test_api_client_persistent
         deployment_id = create_success_response.json()["_id"]
@@ -501,7 +529,9 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
 
         async def mock_execute_query(query):
             _ = query
-            return pd.DataFrame([{"cust_id": 1, "feature_value": missing_value, "__FB_TABLE_ROW_INDEX": 0}])
+            return pd.DataFrame([
+                {"cust_id": 1, "feature_value": missing_value, "__FB_TABLE_ROW_INDEX": 0}
+            ])
 
         mock_session = mock_get_session.return_value
         mock_session.execute_query_long_running = mock_execute_query

@@ -56,7 +56,9 @@ async def test_validate_row_index__invalid(mock_snowflake_session):
     Test validate_output_row_index on error case
     """
     with pytest.raises(ValueError) as exc_info:
-        await validate_output_row_index(session=mock_snowflake_session, output_table_name="my_table")
+        await validate_output_row_index(
+            session=mock_snowflake_session, output_table_name="my_table"
+        )
     assert str(exc_info.value) == "Row index column is invalid in the output table"
 
 

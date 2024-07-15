@@ -53,7 +53,9 @@ class TableInfoService:
         if verbose:
             columns_info = []
             entity_map = {ObjectId(entity["_id"]): entity["name"] for entity in entities["data"]}
-            semantic_map = {ObjectId(semantic["_id"]): semantic["name"] for semantic in semantics["data"]}
+            semantic_map = {
+                ObjectId(semantic["_id"]): semantic["name"] for semantic in semantics["data"]
+            }
             for column_info in data_document.columns_info:
                 columns_info.append({
                     **column_info.dict(),
@@ -63,7 +65,9 @@ class TableInfoService:
                 })
 
         # get catalog info
-        catalog_name, updated_docs = await self.catalog_name_injector.add_name(data_document.catalog_id, [entities])
+        catalog_name, updated_docs = await self.catalog_name_injector.add_name(
+            data_document.catalog_id, [entities]
+        )
         entities = updated_docs[0]
 
         return {

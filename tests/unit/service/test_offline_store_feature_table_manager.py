@@ -169,7 +169,9 @@ async def deployed_float_feature(app_container, deployed_float_feature_list):
     """
     Fixture for a deployed float feature
     """
-    feature = await app_container.feature_service.get_document(deployed_float_feature_list.feature_ids[0])
+    feature = await app_container.feature_service.get_document(
+        deployed_float_feature_list.feature_ids[0]
+    )
     return feature
 
 
@@ -240,7 +242,9 @@ async def deployed_feature_without_entity(
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
-    return await deploy_feature(app_container, feature_without_entity, deployment_id=feat_without_entity_deployment_id)
+    return await deploy_feature(
+        app_container, feature_without_entity, deployment_id=feat_without_entity_deployment_id
+    )
 
 
 @pytest_asyncio.fixture
@@ -294,7 +298,9 @@ async def deployed_aggregate_asat_feature(app_container, deployed_aggregate_asat
     """
     Fixture for deployed aggregate asat feature
     """
-    return await app_container.feature_service.get_document(deployed_aggregate_asat_feature_list.feature_ids[0])
+    return await app_container.feature_service.get_document(
+        deployed_aggregate_asat_feature_list.feature_ids[0]
+    )
 
 
 @pytest_asyncio.fixture
@@ -310,7 +316,9 @@ async def deployed_item_aggregate_feature(
     """
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
-    return await deploy_feature(app_container, non_time_based_feature, deployment_id=float_feat_deployment_id)
+    return await deploy_feature(
+        app_container, non_time_based_feature, deployment_id=float_feat_deployment_id
+    )
 
 
 @pytest_asyncio.fixture
@@ -353,7 +361,9 @@ async def deployed_complex_feature(
     f2 = feature_without_entity
     new_feature = f1 + f2 + f1
     new_feature.name = "Complex Feature"
-    return await deploy_feature(app_container, new_feature, deployment_id=complex_feat_deployment_id)
+    return await deploy_feature(
+        app_container, new_feature, deployment_id=complex_feat_deployment_id
+    )
 
 
 @pytest_asyncio.fixture
@@ -579,14 +589,18 @@ async def check_feast_registry(
         document_id=deployment.registry_info.registry_id
     )
     assert feast_registry is not None
-    feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(feast_registry)
+    feature_store = await app_container.feast_feature_store_service.get_feast_feature_store(
+        feast_registry
+    )
 
     # check feast feature store properties
     expected_project_name = str(deployment.catalog_id)[-7:]
     assert feature_store.project == expected_project_name
     if enabled_deployment:
         expected_feature_views = expected_feast_registry_mapping[deployment_id]["feature_views"]
-        expected_feature_services = expected_feast_registry_mapping[deployment_id]["feature_services"]
+        expected_feature_services = expected_feast_registry_mapping[deployment_id][
+            "feature_services"
+        ]
     else:
         expected_feature_views = set()
         expected_feature_services = set()
@@ -600,7 +614,9 @@ async def check_feast_registry(
 
 
 @pytest_asyncio.fixture
-async def transaction_to_customer_relationship_info(app_container, transaction_entity, cust_id_entity):
+async def transaction_to_customer_relationship_info(
+    app_container, transaction_entity, cust_id_entity
+):
     """
     Fixture for the relationship info id between transaction and customer entities
     """
@@ -688,7 +704,9 @@ async def test_feature_table_one_feature_deployed(
     """
     catalog_id = app_container.catalog_id
     feature_tables = await get_all_feature_tables(document_service)
-    expected_suffix = get_lookup_steps_unique_identifier([transaction_to_customer_relationship_info])
+    expected_suffix = get_lookup_steps_unique_identifier([
+        transaction_to_customer_relationship_info
+    ])
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
@@ -761,12 +779,16 @@ async def test_feature_table_one_feature_deployed(
     )
 
     # check that feature cluster file exists
-    full_feature_cluster_path = os.path.join(storage.base_path, feature_table_dict["feature_cluster_path"])
+    full_feature_cluster_path = os.path.join(
+        storage.base_path, feature_table_dict["feature_cluster_path"]
+    )
     assert os.path.exists(full_feature_cluster_path)
 
     # check precomputed lookup feature table
     feature_table = feature_tables[f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"]
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at", "id"})
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
     entity_universe = feature_table_dict.pop("entity_universe")
     assert feature_table_dict == {
         "aggregation_ids": [],
@@ -828,14 +850,18 @@ async def test_feature_table_two_features_deployed(
     Test feature table creation and update when two features are deployed
     """
     feature_tables = await get_all_feature_tables(document_service)
-    expected_suffix = get_lookup_steps_unique_identifier([transaction_to_customer_relationship_info])
+    expected_suffix = get_lookup_steps_unique_identifier([
+        transaction_to_customer_relationship_info
+    ])
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at", "id"})
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
     feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "aggregation_ids": ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
@@ -879,7 +905,10 @@ async def test_feature_table_two_features_deployed(
         "user_id": ObjectId("63f9506dd478b94127123456"),
         "feature_store_id": feature_table_dict["feature_store_id"],
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
-        "deployment_ids": sorted([float_feat_deployment_id, float_feat_post_processed_deployment_id]),
+        "deployment_ids": sorted([
+            float_feat_deployment_id,
+            float_feat_post_processed_deployment_id,
+        ]),
         "is_deleted": False,
     }
     assert_equal_json_fixture(
@@ -924,14 +953,18 @@ async def test_feature_table_undeploy(
     await undeploy_feature_async(deployed_float_feature, app_container)
 
     feature_tables = await get_all_feature_tables(document_service)
-    expected_suffix = get_lookup_steps_unique_identifier([transaction_to_customer_relationship_info])
+    expected_suffix = get_lookup_steps_unique_identifier([
+        transaction_to_customer_relationship_info
+    ])
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at", "id"})
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
     feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "aggregation_ids": ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
@@ -985,7 +1018,9 @@ async def test_feature_table_undeploy(
     )
 
     # Check the feature cluster file exists
-    full_feature_cluster_path = os.path.join(storage.base_path, feature_table_dict["feature_cluster_path"])
+    full_feature_cluster_path = os.path.join(
+        storage.base_path, feature_table_dict["feature_cluster_path"]
+    )
     assert os.path.exists(full_feature_cluster_path)
 
     # Check drop_columns called
@@ -1054,7 +1089,9 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
     Test feature table creation and update when two features are deployed
     """
     feature_tables = await get_all_feature_tables(document_service)
-    expected_suffix = get_lookup_steps_unique_identifier([transaction_to_customer_relationship_info])
+    expected_suffix = get_lookup_steps_unique_identifier([
+        transaction_to_customer_relationship_info
+    ])
     # The table cat1_cust_id_3h doesn't have a precomputed lookup feature table because the
     # deployment is expected to be served using cust_id entity
     assert set(feature_tables.keys()) == {
@@ -1065,7 +1102,9 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
 
     # Check customer entity feature table
     feature_table = feature_tables["cat1_cust_id_30m"]
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at", "id"})
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
     _ = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "aggregation_ids": ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
@@ -1116,7 +1155,9 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
 
     # Check item entity feature table
     feature_table = feature_tables["cat1_cust_id_3h"]
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at", "id"})
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
     _ = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "aggregation_ids": ["sum_420f46a4414d6fc926c85a1349835967a96bf4c2"],
@@ -1193,14 +1234,18 @@ async def test_feature_table_without_entity(
     assert len(feature_tables) == 1
     feature_table = feature_tables["cat1__no_entity_1d"]
 
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at", "id"})
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
     _ = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
         "aggregation_ids": ["count_3178e5d8142ed182c5db45462cb780d18205bd64"],
         "block_modification_by": [],
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
-        "entity_universe": {"query_template": {"formatted_expression": "SELECT\n" "  1 AS " '"dummy_entity"'}},
+        "entity_universe": {
+            "query_template": {"formatted_expression": "SELECT\n" "  1 AS " '"dummy_entity"'}
+        },
         "feature_ids": [deployed_feature_without_entity.id],
         "feature_job_setting": {
             "blind_spot": "7200s",
@@ -1253,7 +1298,9 @@ async def test_lookup_feature(
     assert len(feature_tables) == 1
     feature_table = feature_tables["cat1_cust_id_1d"]
 
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at", "id"})
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
     _ = feature_table_dict.pop("feature_cluster")
     entity_universe = feature_table_dict.pop("entity_universe")
     assert_equal_with_expected_fixture(
@@ -1376,7 +1423,9 @@ async def test_aggregate_asat_feature(
 
     # check precomputed lookup feature table
     feature_table = feature_tables[f"cat1_gender_1d_via_cust_id_{expected_suffix}"]
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at", "id"})
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
     entity_universe = feature_table_dict.pop("entity_universe")
     assert feature_table_dict == {
         "aggregation_ids": [],
@@ -1478,7 +1527,9 @@ async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
     offline_store_info = await service.initialize_offline_store_info(
         feature=feature_model,
         table_name_prefix="cat1",
-        entity_id_to_serving_name={entity_id: str(entity_id) for entity_id in feature_model.entity_ids},
+        entity_id_to_serving_name={
+            entity_id: str(entity_id) for entity_id in feature_model.entity_ids
+        },
     )
     feature_model.internal_offline_store_info = offline_store_info.dict(by_alias=True)
 
@@ -1527,14 +1578,18 @@ async def test_new_deployment_on_already_enabled_feature_list(
 
     # Check offline feature tables
     feature_tables = await get_all_feature_tables(document_service)
-    expected_suffix = get_lookup_steps_unique_identifier([transaction_to_customer_relationship_info])
+    expected_suffix = get_lookup_steps_unique_identifier([
+        transaction_to_customer_relationship_info
+    ])
     assert set(feature_tables.keys()) == {
         "cat1_cust_id_30m",
         f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}",
     }
     deployment_ids_after = feature_tables["cat1_cust_id_30m"].deployment_ids
     assert set(deployment_ids_after) == set(deployment_ids_before + [deployment_id])
-    assert feature_tables[f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"].deployment_ids == [deployment_id]
+    assert feature_tables[
+        f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"
+    ].deployment_ids == [deployment_id]
 
 
 @pytest.mark.asyncio
@@ -1576,7 +1631,9 @@ async def test_feature_with_internal_parent_child_relationships(
     }
     feature_table = feature_tables["cat1_cust_id_1d"]
 
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at", "id"})
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
     feature_cluster = feature_table_dict.pop("feature_cluster")
 
     # Remove dynamic fields before comparison
@@ -1651,7 +1708,9 @@ async def test_deployment_failure_cleanup(
 
     # Simulate a failure during deployment in handle_online_enabled_features() after feature tables
     # are created and feature materialize tasks are scheduled
-    mock_offline_store_feature_manager_dependencies["apply_comments"].side_effect = ValueError("Failing on purpose")
+    mock_offline_store_feature_manager_dependencies["apply_comments"].side_effect = ValueError(
+        "Failing on purpose"
+    )
     with pytest.raises(DocumentCreationError) as exc_info:
         await deploy_feature(
             app_container,
@@ -1838,7 +1897,9 @@ async def test_item_view_window_aggregate(
 
     # check precomputed lookup feature table
     feature_table = feature_tables[f"cat1_item_type_30m_via_item_id_{expected_suffix}"]
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at", "id"})
+    feature_table_dict = feature_table.dict(
+        by_alias=True, exclude={"created_at", "updated_at", "id"}
+    )
     entity_universe = feature_table_dict.pop("entity_universe")
     assert feature_table_dict == {
         "aggregation_ids": [],

@@ -32,7 +32,11 @@ def test_key_with_highest_and_lowest_value(cross_aggregate_feature):
     action_with_lowest_amount.name = "action_with_lowest_amount"
     action_with_highest_amount = cross_aggregate_feature.cd.key_with_highest_value()
     action_with_highest_amount.name = "action_with_highest_amount"
-    feature_group = FeatureGroup([cross_aggregate_feature, action_with_lowest_amount, action_with_highest_amount])
+    feature_group = FeatureGroup([
+        cross_aggregate_feature,
+        action_with_lowest_amount,
+        action_with_highest_amount,
+    ])
     preview_param = pd.DataFrame([
         {
             "POINT_IN_TIME": "2001-01-02 10:00:00",

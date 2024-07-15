@@ -348,7 +348,9 @@ def get_historical_features_query_set(
         sql_expr, _ = get_historical_features_expr(
             graph=graph,
             nodes=nodes,
-            request_table_columns=maybe_add_row_index_column(request_table_columns, output_include_row_index),
+            request_table_columns=maybe_add_row_index_column(
+                request_table_columns, output_include_row_index
+            ),
             serving_names_mapping=serving_names_mapping,
             source_type=source_type,
             request_table_name=request_table_name,

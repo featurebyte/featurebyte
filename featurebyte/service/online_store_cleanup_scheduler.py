@@ -104,7 +104,9 @@ class OnlineStoreCleanupSchedulerService:
         -------
         Optional[PeriodicTask]
         """
-        return await self.task_manager.get_periodic_task_by_name(name=self._get_job_id(online_store_table_name))
+        return await self.task_manager.get_periodic_task_by_name(
+            name=self._get_job_id(online_store_table_name)
+        )
 
     def _get_job_id(self, online_store_table_name: str) -> str:
         return f"online_store_cleanup_{online_store_table_name}"

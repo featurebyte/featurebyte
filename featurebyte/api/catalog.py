@@ -73,8 +73,12 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     _list_fields: ClassVar[List[str]] = ["name", "created_at", "active"]
 
     # pydantic instance variable (internal use)
-    internal_default_feature_store_ids: List[PydanticObjectId] = Field(alias="default_feature_store_ids")
-    internal_online_store_id: Optional[PydanticObjectId] = Field(default=None, alias="online_store_id")
+    internal_default_feature_store_ids: List[PydanticObjectId] = Field(
+        alias="default_feature_store_ids"
+    )
+    internal_online_store_id: Optional[PydanticObjectId] = Field(
+        default=None, alias="online_store_id"
+    )
 
     @property
     def default_feature_store_ids(self) -> List[PydanticObjectId]:
@@ -224,14 +228,18 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Create a new catalog.
 
-        >>> catalog = fb.Catalog.create("new_catalog", "feature_store_name", "mysql_online_store")  # doctest: +SKIP
+        >>> catalog = fb.Catalog.create(
+        ...     "new_catalog", "feature_store_name", "mysql_online_store"
+        ... )  # doctest: +SKIP
         """
         feature_store = FeatureStore.get(feature_store_name)
         if online_store_name:
             online_store_id = OnlineStore.get(online_store_name).id
         else:
             online_store_id = None
-        catalog = cls(name=name, default_feature_store_ids=[feature_store.id], online_store_id=online_store_id)
+        catalog = cls(
+            name=name, default_feature_store_ids=[feature_store.id], online_store_id=online_store_id
+        )
         catalog.save()
         activate_catalog(catalog.id)
         return catalog
@@ -523,9 +531,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         List all features having grocerycustomer or frenchstate as primary entity.
 
-        >>> customer_or_state_features = catalog.list_features(primary_entity=["grocerycustomer", "frenchstate"])
+        >>> customer_or_state_features = catalog.list_features(
+        ...     primary_entity=["grocerycustomer", "frenchstate"]
+        ... )
         """
-        return Feature.list(include_id=include_id, primary_entity=primary_entity, primary_table=primary_table)
+        return Feature.list(
+            include_id=include_id, primary_entity=primary_entity, primary_table=primary_table
+        )
 
     @update_and_reset_catalog
     def list_feature_lists(
@@ -568,10 +580,14 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         >>> feature_lists = catalog.list_feature_lists()
         """
-        return FeatureList.list(include_id=include_id, primary_entity=primary_entity, entity=entity, table=table)
+        return FeatureList.list(
+            include_id=include_id, primary_entity=primary_entity, entity=entity, table=table
+        )
 
     @update_and_reset_catalog
-    def list_tables(self, include_id: Optional[bool] = True, entity: Optional[str] = None) -> pd.DataFrame:
+    def list_tables(
+        self, include_id: Optional[bool] = True, entity: Optional[str] = None
+    ) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered tables in the catalog, such as their
         names, types, statuses, creation dates, and associated entities.
@@ -1260,7 +1276,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis("analysis_name")  # doctest: +SKIP
+        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis(
+        ...     "analysis_name"
+        ... )  # doctest: +SKIP
         """
         return FeatureJobSettingAnalysis.get(name=name)
 
@@ -1376,7 +1394,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved observation table.
 
-        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table(
+        ...     "observation_table_name"
+        ... )  # doctest: +SKIP
         """
         return ObservationTable.get(name=name)
 
@@ -1424,7 +1444,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved batch request table.
 
-        >>> batch_request_table = catalog.get_batch_request_table("batch_request_table_name")  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table(
+        ...     "batch_request_table_name"
+        ... )  # doctest: +SKIP
         """
         return BatchRequestTable.get(name=name)
 
@@ -1447,7 +1469,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved batch feature table.
 
-        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name")  # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table(
+        ...     "batch_feature_table_name"
+        ... )  # doctest: +SKIP
         """
         return BatchFeatureTable.get(name=name)
 
@@ -1470,7 +1494,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved static source table.
 
-        >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table(
+        ...     "static_source_table_name"
+        ... )  # doctest: +SKIP
         """
         return StaticSourceTable.get(name=name)
 
@@ -1493,6 +1519,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved user defined function.
 
-        >>> user_defined_function = catalog.get_user_defined_function("user_defined_function_name")  # doctest: +SKIP
+        >>> user_defined_function = catalog.get_user_defined_function(
+        ...     "user_defined_function_name"
+        ... )  # doctest: +SKIP
         """
         return UserDefinedFunction.get(name=name)

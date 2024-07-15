@@ -32,7 +32,9 @@ class BaseFrame(QueryObject):
     columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
 
     # pydantic validator
-    _validate_column_names = validator("columns_info", allow_reuse=True)(construct_unique_name_validator(field="name"))
+    _validate_column_names = validator("columns_info", allow_reuse=True)(
+        construct_unique_name_validator(field="name")
+    )
 
     @property
     def column_var_type_map(self) -> dict[str, DBVarType]:
@@ -126,7 +128,9 @@ class FrozenFrame(GetAttrMixin, BaseFrame, OpsMixin):
                 raise KeyError(f"Columns {not_found_columns} not found!")
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str], FrozenSeries]) -> Union[FrozenSeries, FrozenFrame]:
+    def __getitem__(
+        self, item: Union[str, List[str], FrozenSeries]
+    ) -> Union[FrozenSeries, FrozenFrame]:
         """
         Extract column or perform row filtering on the table. When the item has a `str` or `list[str]` type,
         column(s) projection is expected. When the item has a boolean `Series` type, row filtering operation
@@ -176,7 +180,9 @@ class FrozenFrame(GetAttrMixin, BaseFrame, OpsMixin):
             )
 
         # item must be Series type
-        node = self._add_filter_operation(item=self, mask=item, node_output_type=NodeOutputType.FRAME)
+        node = self._add_filter_operation(
+            item=self, mask=item, node_output_type=NodeOutputType.FRAME
+        )
         return type(self)(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,

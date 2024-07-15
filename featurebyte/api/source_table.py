@@ -77,7 +77,9 @@ class TableDataFrame(BaseFrame, SampleMixin):
         node = self.node
         if kwargs.get("after_cleaning"):
             assert isinstance(node, InputNode)
-            graph_node = self.table_data.construct_cleaning_recipe_node(input_node=node, skip_column_names=[])
+            graph_node = self.table_data.construct_cleaning_recipe_node(
+                input_node=node, skip_column_names=[]
+            )
             if graph_node:
                 node = self.graph.add_node(node=graph_node, input_nodes=[self.node])
 
@@ -1275,7 +1277,9 @@ class SourceTable(AbstractTableData):
         (38107, 5)
         """
         client = Configurations().get_client()
-        response = client.post(url="/feature_store/table_shape", json=self.table_data.tabular_source.json_dict())
+        response = client.post(
+            url="/feature_store/table_shape", json=self.table_data.tabular_source.json_dict()
+        )
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
         shape = FeatureStoreShape(**response.json())

@@ -63,14 +63,18 @@ class TargetModel(BaseFeatureModel):
         window_to_durations = {}
         target_node = self.graph.get_node_by_name(self.node_name)
         # Iterate through forward aggregate targets
-        for node in self.graph.iterate_nodes(target_node=target_node, node_type=NodeType.FORWARD_AGGREGATE):
+        for node in self.graph.iterate_nodes(
+            target_node=target_node, node_type=NodeType.FORWARD_AGGREGATE
+        ):
             assert isinstance(node, ForwardAggregateNode)
             if node.parameters.window:
                 duration = parse_duration_string(node.parameters.window)
                 window_to_durations[node.parameters.window] = duration
 
         # Iterate through lookup targets
-        for node in self.graph.iterate_nodes(target_node=target_node, node_type=NodeType.LOOKUP_TARGET):
+        for node in self.graph.iterate_nodes(
+            target_node=target_node, node_type=NodeType.LOOKUP_TARGET
+        ):
             assert isinstance(node, LookupTargetNode)
             if node.parameters.offset:
                 duration = parse_duration_string(node.parameters.offset)

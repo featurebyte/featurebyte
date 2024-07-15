@@ -130,7 +130,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
                     },
                 )
             except Exception as exc:
-                logger.warning(f"Failed to log featurebyte training data information to mlflow: {exc}")
+                logger.warning(
+                    f"Failed to log featurebyte training data information to mlflow: {exc}"
+                )
 
         return hist_feature_table
 
@@ -254,7 +256,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         >>> historical_feature_table = catalog.get_historical_feature_table(
         ...     "historical_feature_table_name"
         ... )  # doctest: +SKIP
-        >>> downloaded_path = historical_feature_table.download(output_path="path/to/download")  # doctest: +SKIP
+        >>> downloaded_path = historical_feature_table.download(
+        ...     output_path="path/to/download"
+        ... )  # doctest: +SKIP
 
         # noqa: DAR402
         """

@@ -95,7 +95,11 @@ class EntityInfo(FeatureByteBaseModel):
         -------
         EntityModel
         """
-        return next(entity for entity in self.provided_entities + self.missing_entities if entity.id == entity_id)
+        return next(
+            entity
+            for entity in self.provided_entities + self.missing_entities
+            if entity.id == entity_id
+        )
 
     def get_effective_serving_name(self, entity: EntityModel) -> str:
         """
@@ -111,7 +115,10 @@ class EntityInfo(FeatureByteBaseModel):
         str
         """
         original_serving_name = entity.serving_names[0]
-        if self.serving_names_mapping is None or original_serving_name not in self.serving_names_mapping:
+        if (
+            self.serving_names_mapping is None
+            or original_serving_name not in self.serving_names_mapping
+        ):
             return original_serving_name
         return self.serving_names_mapping[original_serving_name]
 

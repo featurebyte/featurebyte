@@ -60,7 +60,9 @@ async def test_save_and_retrieve(
     """
     await service.create_document(feature_materialize_prerequisite_model)
 
-    retrieved_model = await service.get_document_for_feature_table(offline_store_feature_table_id, scheduled_job_ts)
+    retrieved_model = await service.get_document_for_feature_table(
+        offline_store_feature_table_id, scheduled_job_ts
+    )
     assert retrieved_model.id == feature_materialize_prerequisite_model.id
 
 
@@ -75,7 +77,9 @@ async def test_add_completed_task(
     Test updating a FeatureMaterializePrerequisite document by adding completed tasks
     """
     await service.create_document(feature_materialize_prerequisite_model)
-    retrieved_model = await service.get_document_for_feature_table(offline_store_feature_table_id, scheduled_job_ts)
+    retrieved_model = await service.get_document_for_feature_table(
+        offline_store_feature_table_id, scheduled_job_ts
+    )
     assert retrieved_model.completed == []
 
     # Add task item 1
@@ -83,17 +87,23 @@ async def test_add_completed_task(
         aggregation_id="agg_id_1",
         status="success",
     )
-    await service.add_completed_prerequisite(offline_store_feature_table_id, scheduled_job_ts, tile_task_1)
+    await service.add_completed_prerequisite(
+        offline_store_feature_table_id, scheduled_job_ts, tile_task_1
+    )
 
     # Add task item 2
     tile_task_2 = PrerequisiteTileTask(
         aggregation_id="agg_id_2",
         status="failure",
     )
-    await service.add_completed_prerequisite(offline_store_feature_table_id, scheduled_job_ts, tile_task_2)
+    await service.add_completed_prerequisite(
+        offline_store_feature_table_id, scheduled_job_ts, tile_task_2
+    )
 
     # Check document is correctly updated
-    retrieved_model = await service.get_document_for_feature_table(offline_store_feature_table_id, scheduled_job_ts)
+    retrieved_model = await service.get_document_for_feature_table(
+        offline_store_feature_table_id, scheduled_job_ts
+    )
     assert retrieved_model.completed == [tile_task_1, tile_task_2]
 
 
@@ -111,7 +121,9 @@ async def test_add_completed_task_not_found(
         aggregation_id="agg_id_1",
         status="success",
     )
-    await service.add_completed_prerequisite(offline_store_feature_table_id, scheduled_job_ts, tile_task_1)
+    await service.add_completed_prerequisite(
+        offline_store_feature_table_id, scheduled_job_ts, tile_task_1
+    )
     docs = await service.list_documents_as_dict()
     assert len(docs["data"]) == 1
     assert docs["data"][0]["completed"] == [{"aggregation_id": "agg_id_1", "status": "success"}]

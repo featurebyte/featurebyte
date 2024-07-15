@@ -51,7 +51,9 @@ class RequestColumnNode(BaseNode):
     def max_input_count(self) -> int:
         return 0
 
-    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(

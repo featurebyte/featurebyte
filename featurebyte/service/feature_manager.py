@@ -122,7 +122,9 @@ class FeatureManagerService:
         )
 
         # get aggregation result names that need to be populated
-        unscheduled_result_names = await self._get_unscheduled_aggregation_result_names(feature_spec)
+        unscheduled_result_names = await self._get_unscheduled_aggregation_result_names(
+            feature_spec
+        )
         logger.debug(
             "Done retrieving unscheduled aggregation result names",
             extra={"unscheduled_result_names": list(unscheduled_result_names)},
@@ -139,7 +141,9 @@ class FeatureManagerService:
             tile_job_exists = await self.tile_manager_service.tile_job_exists(tile_spec=tile_spec)
             if not tile_job_exists:
                 tile_specs_to_be_scheduled.append(tile_spec)
-            await self._backfill_tiles(session=session, tile_spec=tile_spec, schedule_time=schedule_time)
+            await self._backfill_tiles(
+                session=session, tile_spec=tile_spec, schedule_time=schedule_time
+            )
 
         # populate feature store. if this is called when recreating the schema, we need to run all
         # the online store compute queries since the tables need to be regenerated.
@@ -173,7 +177,9 @@ class FeatureManagerService:
             await self.tile_manager_service.schedule_offline_tiles(tile_spec=tile_spec)
             logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
-    async def _get_unscheduled_aggregation_result_names(self, feature_spec: OnlineFeatureSpec) -> Set[str]:
+    async def _get_unscheduled_aggregation_result_names(
+        self, feature_spec: OnlineFeatureSpec
+    ) -> Set[str]:
         """
         Get the aggregation result names that are not yet scheduled
 
@@ -191,7 +197,9 @@ class FeatureManagerService:
         Set[str]
         """
         result_names = {query.result_name for query in feature_spec.precompute_queries}
-        async for query in self.online_store_compute_query_service.list_by_result_names(list(result_names)):
+        async for query in self.online_store_compute_query_service.list_by_result_names(
+            list(result_names)
+        ):
             result_names.remove(query.result_name)
         return result_names
 
@@ -222,7 +230,9 @@ class FeatureManagerService:
             session, tile_spec, job_schedule_ts_str, aggregation_result_name
         )
 
-    async def _backfill_tiles(self, session: BaseSession, tile_spec: TileSpec, schedule_time: datetime) -> None:
+    async def _backfill_tiles(
+        self, session: BaseSession, tile_spec: TileSpec, schedule_time: datetime
+    ) -> None:
         """
         Backfill tiles required to populate internal online store
 
@@ -299,7 +309,9 @@ class FeatureManagerService:
         start_ts_2: Optional[datetime] = None
         end_ts_2: Optional[datetime] = None
 
-        tile_model = await self.tile_registry_service.get_tile_model(tile_spec.tile_id, tile_spec.aggregation_id)
+        tile_model = await self.tile_registry_service.get_tile_model(
+            tile_spec.tile_id, tile_spec.aggregation_id
+        )
         if tile_model is not None and tile_model.backfill_metadata is not None:
             if start_ts.replace(tzinfo=None) < tile_model.backfill_metadata.start_date:
                 # Need to compute tiles up to previous backfill start date
@@ -411,7 +423,9 @@ class FeatureManagerService:
             query.feature_store_id = feature_spec.feature.tabular_source.feature_store_id
             await self.online_store_compute_query_service.create_document(query)
 
-    async def online_disable(self, session: Optional[BaseSession], feature_spec: OnlineFeatureSpec) -> None:
+    async def online_disable(
+        self, session: Optional[BaseSession], feature_spec: OnlineFeatureSpec
+    ) -> None:
         """
         Schedule both online and offline tile jobs
 
@@ -432,15 +446,21 @@ class FeatureManagerService:
             await self.remove_databricks_udf_for_on_demand_feature_if_exists(session, feature_spec)
 
         # cleaning online store compute queries
-        await self.remove_online_store_compute_queries(feature_spec.feature.aggregation_result_names)
+        await self.remove_online_store_compute_queries(
+            feature_spec.feature.aggregation_result_names
+        )
 
         # disable tile scheduled jobs
         for aggregation_id in feature_spec.feature.aggregation_ids:
             await self.tile_manager_service.remove_tile_jobs(aggregation_id)
 
-        await self.remove_online_store_cleanup_jobs(session, feature_spec.feature.online_store_table_names)
+        await self.remove_online_store_cleanup_jobs(
+            session, feature_spec.feature.online_store_table_names
+        )
 
-    async def remove_online_store_compute_queries(self, aggregation_result_names: List[str]) -> None:
+    async def remove_online_store_compute_queries(
+        self, aggregation_result_names: List[str]
+    ) -> None:
         """
         Update the list of currently active online store compute queries
 
@@ -527,7 +547,9 @@ class FeatureManagerService:
         -------
             raw table of feature-tile inconsistency as dataframe
         """
-        sql = tm_feature_tile_monitor.render(query_start_ts=query_start_ts, query_end_ts=query_end_ts)
+        sql = tm_feature_tile_monitor.render(
+            query_start_ts=query_start_ts, query_end_ts=query_end_ts
+        )
         result = await session.execute_query(sql)
         return result
 
@@ -574,7 +596,11 @@ class FeatureManagerService:
             Instance of OnlineFeatureSpec
         """
         offline_store_info = feature_spec.feature.offline_store_info
-        if offline_store_info and offline_store_info.udf_info and offline_store_info.udf_info.sql_function_name:
+        if (
+            offline_store_info
+            and offline_store_info.udf_info
+            and offline_store_info.udf_info.sql_function_name
+        ):
             udf_info = offline_store_info.udf_info
             logger.debug(
                 "Removing Databricks UDF for on-demand feature",

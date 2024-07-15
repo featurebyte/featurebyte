@@ -100,7 +100,9 @@ def test_groupby__category_column_not_found(snowflake_event_view_with_entity):
     Test case when category column not found in the EventView
     """
     with pytest.raises(KeyError) as exc:
-        GroupBy(obj=snowflake_event_view_with_entity, keys="cust_id", category="non_existing_category")
+        GroupBy(
+            obj=snowflake_event_view_with_entity, keys="cust_id", category="non_existing_category"
+        )
     expected_msg = 'Column "non_existing_category" not found'
     assert expected_msg in str(exc.value)
 
@@ -165,11 +167,15 @@ def test_groupby__window_sizes_issue(snowflake_event_view_with_entity):
     assert expected_msg in str(exc.value)
 
 
-def test_groupby__default_feature_job_setting(snowflake_event_view_with_entity_and_feature_job, cust_id_entity):
+def test_groupby__default_feature_job_setting(
+    snowflake_event_view_with_entity_and_feature_job, cust_id_entity
+):
     """
     Test default job setting from event table is used
     """
-    feature_group = snowflake_event_view_with_entity_and_feature_job.groupby("cust_id").aggregate_over(
+    feature_group = snowflake_event_view_with_entity_and_feature_job.groupby(
+        "cust_id"
+    ).aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m", "1h", "2h"],
@@ -208,7 +214,9 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
     """
     Test category parameter is captured properly
     """
-    feature_group = snowflake_event_view_with_entity.groupby("cust_id", category="col_int").aggregate_over(
+    feature_group = snowflake_event_view_with_entity.groupby(
+        "cust_id", category="col_int"
+    ).aggregate_over(
         value_column="col_float",
         method="sum",
         windows=["30m", "1h", "2h"],
@@ -258,9 +266,9 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
     if method != "count":
         aggregate_kwargs["value_column"] = "col_float"
 
-    feature_group = snowflake_event_view_with_entity.groupby("cust_id", category=category).aggregate_over(
-        **aggregate_kwargs
-    )
+    feature_group = snowflake_event_view_with_entity.groupby(
+        "cust_id", category=category
+    ).aggregate_over(**aggregate_kwargs)
     feature = feature_group["feat_30m"]
     feature_dict = feature.dict()
     assert feature_dict["node_name"] == "project_1"
@@ -298,7 +306,9 @@ def test_groupby__count_feature_specify_value_column(snowflake_event_view_with_e
         ("method", "method is required"),
     ],
 )
-def test_groupby__required_params_missing(snowflake_event_view_with_entity, missing_param, expected_error):
+def test_groupby__required_params_missing(
+    snowflake_event_view_with_entity, missing_param, expected_error
+):
     """
     Test errors are expected when required parameters are missing
     """
@@ -319,9 +329,15 @@ def test_groupby__prune(snowflake_event_view_with_entity):
     """
     Test graph pruning works properly on groupby node using derived columns
     """
-    snowflake_event_view_with_entity["derived_value_column"] = 10 * snowflake_event_view_with_entity["col_float"]
-    snowflake_event_view_with_entity["derived_category"] = 5 * snowflake_event_view_with_entity["col_int"]
-    feature_group = snowflake_event_view_with_entity.groupby("cust_id", category="derived_category").aggregate_over(
+    snowflake_event_view_with_entity["derived_value_column"] = (
+        10 * snowflake_event_view_with_entity["col_float"]
+    )
+    snowflake_event_view_with_entity["derived_category"] = (
+        5 * snowflake_event_view_with_entity["col_int"]
+    )
+    feature_group = snowflake_event_view_with_entity.groupby(
+        "cust_id", category="derived_category"
+    ).aggregate_over(
         value_column="derived_value_column",
         method="sum",
         windows=["30m", "1h", "2h"],

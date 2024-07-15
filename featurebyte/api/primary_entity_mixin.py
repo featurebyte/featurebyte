@@ -59,7 +59,9 @@ class PrimaryEntityMixin(ApiObject):
 
     def _get_primary_entity(self) -> List[Entity]:
         try:
-            return [Entity.get_by_id(entity_id) for entity_id in self.cached_model.primary_entity_ids]
+            return [
+                Entity.get_by_id(entity_id) for entity_id in self.cached_model.primary_entity_ids
+            ]
         except RecordRetrievalException:
             entities = []
             for entity_id in self.entity_ids:

@@ -86,7 +86,9 @@ def online_enabled_feature_list_and_deployment_fixture(event_table, config):
     for feature in features:
         feature.save()
 
-    feature_list = FeatureList(features, name="My Feature List (tests/integration/api/test_feature.py)")
+    feature_list = FeatureList(
+        features, name="My Feature List (tests/integration/api/test_feature.py)"
+    )
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
     deployment.enable()
@@ -127,7 +129,9 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
             deployment.disable()
 
     assert res.status_code == 200
-    assert res.json() == {"features": [{"order_id": "T1", "my_item_feature_for_online_enable_test": 3}]}
+    assert res.json() == {
+        "features": [{"order_id": "T1", "my_item_feature_for_online_enable_test": 3}]
+    }
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)

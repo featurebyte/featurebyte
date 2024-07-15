@@ -80,7 +80,9 @@ def test_non_supported_feature_type(bool_feature):
     assert str(exc.value) == "Can only use .cd accessor with count per category features"
 
 
-def test_cosine_similarity(snowflake_event_table, count_per_category_feature, count_per_category_feature_2h):
+def test_cosine_similarity(
+    snowflake_event_table, count_per_category_feature, count_per_category_feature_2h
+):
     """
     Test cosine_similarity operation
     """
@@ -125,7 +127,10 @@ def test_cosine_similarity__other_not_dict_series(float_feature, count_per_categ
     """
     with pytest.raises(TypeError) as exc:
         count_per_category_feature.cd.cosine_similarity(float_feature)
-    assert str(exc.value) == "cosine_similarity is only available for Feature of dictionary type; got FLOAT"
+    assert (
+        str(exc.value)
+        == "cosine_similarity is only available for Feature of dictionary type; got FLOAT"
+    )
 
 
 def test_cosine_similarity__other_not_dict_scalar(count_per_category_feature):
@@ -206,7 +211,9 @@ def test_get_rank_from_dictionary__validation_fails(float_feature, count_per_cat
     assert "Can only use .cd accessor with count per category features" in str(exc)
 
 
-def test_get_relative_frequency_from_dictionary__validation_fails(float_feature, count_per_category_feature):
+def test_get_relative_frequency_from_dictionary__validation_fails(
+    float_feature, count_per_category_feature
+):
     """
     Test validation will cause errors when features are not of the correct type.
     """

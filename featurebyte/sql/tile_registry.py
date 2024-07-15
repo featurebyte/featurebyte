@@ -30,7 +30,9 @@ class TileRegistry(TileCommon):
 
         input_value_columns_types = [value for value in self.value_column_types if value.strip()]
 
-        tile_model = await self.tile_registry_service.get_tile_model(self.tile_id, self.aggregation_id)
+        tile_model = await self.tile_registry_service.get_tile_model(
+            self.tile_id, self.aggregation_id
+        )
 
         if tile_model is None:
             logger.info(

@@ -73,19 +73,25 @@ async def upload_observation_table(
     """
     Create observation table by uploading a CSV or parquet file.
     """
-    controller: ObservationTableController = request.state.app_container.observation_table_controller
+    controller: ObservationTableController = (
+        request.state.app_container.observation_table_controller
+    )
     data = ObservationTableUpload(**json.loads(payload))
     assert observation_set is not None
     return await controller.upload_observation_table(data, observation_set)
 
 
 @router.get("/{observation_table_id}", response_model=ObservationTableModel)
-async def get_observation_table(request: Request, observation_table_id: PyObjectId) -> ObservationTableModel:
+async def get_observation_table(
+    request: Request, observation_table_id: PyObjectId
+) -> ObservationTableModel:
     """
     Get ObservationTable
     """
     controller = request.state.app_container.observation_table_controller
-    observation_table: ObservationTableModel = await controller.get(document_id=observation_table_id)
+    observation_table: ObservationTableModel = await controller.get(
+        document_id=observation_table_id
+    )
     return observation_table
 
 
@@ -160,7 +166,9 @@ async def get_observation_table_info(
 
 
 @router.get("/pyarrow_table/{observation_table_id}")
-async def download_table_as_pyarrow_table(request: Request, observation_table_id: PyObjectId) -> StreamingResponse:
+async def download_table_as_pyarrow_table(
+    request: Request, observation_table_id: PyObjectId
+) -> StreamingResponse:
     """
     Download ObservationTable as pyarrow table
     """
@@ -172,7 +180,9 @@ async def download_table_as_pyarrow_table(request: Request, observation_table_id
 
 
 @router.get("/parquet/{observation_table_id}")
-async def download_table_as_parquet(request: Request, observation_table_id: PyObjectId) -> StreamingResponse:
+async def download_table_as_parquet(
+    request: Request, observation_table_id: PyObjectId
+) -> StreamingResponse:
     """
     Download ObservationTable as parquet file
     """
@@ -210,5 +220,7 @@ async def update_observation_table(
     Update observation_table
     """
     controller = request.state.app_container.observation_table_controller
-    observation_table: ObservationTableModel = await controller.update_observation_table(observation_table_id, data)
+    observation_table: ObservationTableModel = await controller.update_observation_table(
+        observation_table_id, data
+    )
     return observation_table

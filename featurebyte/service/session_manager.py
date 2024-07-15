@@ -69,7 +69,9 @@ class SessionManagerService:
             user_to_use = user_override
         try:
             if get_credential is not None:
-                credential = await get_credential(user_id=user_to_use.id, feature_store_name=feature_store.name)
+                credential = await get_credential(
+                    user_id=user_to_use.id, feature_store_name=feature_store.name
+                )
             else:
                 credential = await self.credential_provider.get_credential(
                     user_id=user_to_use.id, feature_store_name=feature_store.name
@@ -78,7 +80,9 @@ class SessionManagerService:
             session_manager = SessionManager(credentials=credentials)
             session = await session_manager.get_session(feature_store, timeout=timeout)
             if not skip_validation:
-                await self.session_validator_service.validate_feature_store_exists(feature_store.details)
+                await self.session_validator_service.validate_feature_store_exists(
+                    feature_store.details
+                )
             return session
         except ValidationError as exc:
             raise CredentialsError(

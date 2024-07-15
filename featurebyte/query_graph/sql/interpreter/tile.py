@@ -122,8 +122,12 @@ class TileSQLGenerator:
 
         return sqls
 
-    def _get_event_table_timestamp_filter(self, groupby_node: GroupByNode) -> Optional[EventTableTimestampFilter]:
-        pruned_graph, node_name_map, _ = prune_query_graph(graph=self.query_graph, node=groupby_node)
+    def _get_event_table_timestamp_filter(
+        self, groupby_node: GroupByNode
+    ) -> Optional[EventTableTimestampFilter]:
+        pruned_graph, node_name_map, _ = prune_query_graph(
+            graph=self.query_graph, node=groupby_node
+        )
 
         # Check there is no lag operation, otherwise cannot apply timestamp filter directly
         pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
@@ -133,7 +137,9 @@ class TileSQLGenerator:
 
         # Identify which EventTable can be filtered. This is based on the timestamp column used in
         # the groupby node.
-        groupby_input_node = pruned_graph.get_node_by_name(pruned_graph.get_input_node_names(pruned_node)[0])
+        groupby_input_node = pruned_graph.get_node_by_name(
+            pruned_graph.get_input_node_names(pruned_node)[0]
+        )
         op_struct_info = OperationStructureExtractor(graph=pruned_graph).extract(groupby_input_node)
         op_struct = op_struct_info.operation_structure_map[groupby_input_node.name]
         for column in op_struct.columns:
@@ -236,5 +242,7 @@ class TileGenMixin(BaseGraphInterpreter):
         List[TileGenSql]
         """
         flat_starting_node = self.get_flattened_node(starting_node.name)
-        generator = TileSQLGenerator(self.query_graph, is_on_demand=is_on_demand, source_type=self.source_type)
+        generator = TileSQLGenerator(
+            self.query_graph, is_on_demand=is_on_demand, source_type=self.source_type
+        )
         return generator.construct_tile_gen_sql(flat_starting_node)

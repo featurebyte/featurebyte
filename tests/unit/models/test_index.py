@@ -82,7 +82,9 @@ def test_indexes():
                     and resource != base.FeatureByteCatalogBaseDocumentModel
                     and hasattr(resource.Settings, "collection_name")
                 ):
-                    table_indexes[resource.Settings.collection_name].extend(get_verified_indexes(resource))
+                    table_indexes[resource.Settings.collection_name].extend(
+                        get_verified_indexes(resource)
+                    )
 
     for collection_name, indexes in table_indexes.items():
         combined_indexes = {}

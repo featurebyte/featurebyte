@@ -95,7 +95,9 @@ def test_feature_list_creation__success(
 
     with pytest.raises(RecordRetrievalException) as exc:
         _ = flist.status
-    error_message = f'FeatureList (id: "{flist.id}") not found. Please save the FeatureList object first.'
+    error_message = (
+        f'FeatureList (id: "{flist.id}") not found. Please save the FeatureList object first.'
+    )
     assert error_message in str(exc.value)
 
 
@@ -108,7 +110,9 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
     })
     mock_feature_table = Mock(name="TempFeatureTable")
     mock_object_id = ObjectId()
-    with patch.object(FeatureList, "compute_historical_feature_table") as mock_compute_historical_feature_table:
+    with patch.object(
+        FeatureList, "compute_historical_feature_table"
+    ) as mock_compute_historical_feature_table:
         mock_compute_historical_feature_table.return_value = mock_feature_table
         with patch("featurebyte.api.feature_list.ObjectId", return_value=mock_object_id):
             flist.compute_historical_features(dataframe)
@@ -118,7 +122,10 @@ def test_feature_list__get_historical_features(single_feat_flist, mocked_compute
     expected_dataframe[InternalName.DATAFRAME_ROW_INDEX] = [0, 1]
     _, kwargs = mock_compute_historical_feature_table.call_args
     assert expected_dataframe.equals(kwargs["observation_set"])
-    assert kwargs["historical_feature_table_name"] == f"__TEMPORARY_HISTORICAL_FEATURE_TABLE_{mock_object_id}"
+    assert (
+        kwargs["historical_feature_table_name"]
+        == f"__TEMPORARY_HISTORICAL_FEATURE_TABLE_{mock_object_id}"
+    )
     assert kwargs["serving_names_mapping"] is None
 
     # Check temporary feature table is deleted
@@ -304,7 +311,8 @@ def test_feature_group__setitem__empty_name(production_ready_feature):
     with pytest.raises(TypeError) as exc_info:
         feature_group[None] = new_feature
     assert (
-        str(exc_info.value) == 'type of argument "key" must be one of (str, Tuple[featurebyte.api.feature.Feature, '
+        str(exc_info.value)
+        == 'type of argument "key" must be one of (str, Tuple[featurebyte.api.feature.Feature, '
         "str]); got NoneType instead"
     )
 
@@ -404,7 +412,9 @@ def test_deserialization(production_ready_feature, draft_feature):
     feature_list_dict["status"] = expected_status
     feature_list_dict["version"] = expected_version
 
-    with patch("featurebyte.api.feature_group.iterate_api_object_using_paginated_routes") as mock_iterate:
+    with patch(
+        "featurebyte.api.feature_group.iterate_api_object_using_paginated_routes"
+    ) as mock_iterate:
         with patch("featurebyte.api.feature_store.FeatureStore._get_by_id") as mock_get_by_id:
             mock_get_by_id.return_value = production_ready_feature.feature_store
             mock_iterate.return_value = [
@@ -429,7 +439,9 @@ def test_info(saved_feature_list):
         "name": "my_feature_list",
         "dtype_distribution": [{"dtype": "FLOAT", "count": 1}],
         "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}],
-        "primary_entity": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}],
+        "primary_entity": [
+            {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}
+        ],
         "tables": [{"name": "sf_event_table", "status": "PUBLIC_DRAFT", "catalog_name": "catalog"}],
         "status": "DRAFT",
         "feature_count": 1,
@@ -462,7 +474,9 @@ def test_info(saved_feature_list):
     }, verbose_info_dict
 
 
-def test_get_feature_list(saved_feature_list, catalog, cust_id_entity, transaction_entity, snowflake_event_table):
+def test_get_feature_list(
+    saved_feature_list, catalog, cust_id_entity, transaction_entity, snowflake_event_table
+):
     """
     Test get feature list using feature list name
     """
@@ -485,7 +499,8 @@ def test_get_feature_list(saved_feature_list, catalog, cust_id_entity, transacti
         FeatureList.get(name="random_name")
 
     expected_msg = (
-        'FeatureListNamespace (name: "random_name") not found. ' "Please save the FeatureListNamespace object first."
+        'FeatureListNamespace (name: "random_name") not found. '
+        "Please save the FeatureListNamespace object first."
     )
     assert expected_msg in str(exc.value)
 
@@ -535,7 +550,9 @@ def test_get_feature_list(saved_feature_list, catalog, cust_id_entity, transacti
     expected_audit_history["action_type"] = "INSERT"
     expected_audit_history["name"] = 'insert: "my_feature_list"'
     expected_audit_history["old_value"] = np.nan
-    pd.testing.assert_frame_equal(audit_history[expected_audit_history.columns], expected_audit_history)
+    pd.testing.assert_frame_equal(
+        audit_history[expected_audit_history.columns], expected_audit_history
+    )
 
     # check unexpected exception in audit
     with patch("featurebyte.api.api_object_util.Configurations"):
@@ -617,13 +634,19 @@ def test_list_versions(saved_feature_list):
 
     # check documentation of the list_versions
     assert FeatureList.list_versions.__doc__ == FeatureList._list_versions.__doc__
-    assert saved_feature_list.list_versions.__doc__ == saved_feature_list._list_versions_with_same_name.__doc__
+    assert (
+        saved_feature_list.list_versions.__doc__
+        == saved_feature_list._list_versions_with_same_name.__doc__
+    )
 
 
 def test_get_historical_feature_sql(saved_feature_list):
     """Test get_historical_features_sql method (check it can be triggered without any error)"""
     point_in_time = pd.date_range("2001-01-01", "2001-01-02", freq="d")
-    observation_set = pd.DataFrame({"POINT_IN_TIME": point_in_time, "cust_id": [1234] * len(point_in_time)})
+    observation_set = pd.DataFrame({
+        "POINT_IN_TIME": point_in_time,
+        "cust_id": [1234] * len(point_in_time),
+    })
     sql = saved_feature_list.get_historical_features_sql(observation_set=observation_set)
     assert 'WITH "REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id" AS' in sql
 
@@ -774,7 +797,9 @@ def test_deploy__feature_list_with_already_production_ready_features_doesnt_erro
     deployments = list_deployments(include_id=True)
     expected_deployment_name = f"Deployment with {feature_list.name}_{feature_list.version}"
     assert_frame_equal(
-        deployments[["name", "catalog_name", "feature_list_name", "feature_list_version", "num_feature"]],
+        deployments[
+            ["name", "catalog_name", "feature_list_name", "feature_list_version", "num_feature"]
+        ],
         pd.DataFrame([
             {
                 "name": expected_deployment_name,
@@ -868,7 +893,10 @@ def test_deploy(feature_list, production_ready_feature, draft_feature, mock_api_
         assert feature.online_enabled
         if feature_id in another_feature_list.feature_ids:
             # when the feature appears in both feature lists
-            assert sorted(feature.deployed_feature_list_ids) == sorted([feature_list.id, another_feature_list.id])
+            assert sorted(feature.deployed_feature_list_ids) == sorted([
+                feature_list.id,
+                another_feature_list.id,
+            ])
         else:
             # when the feature is in one feature list only
             assert feature.deployed_feature_list_ids == [feature_list.id]
@@ -977,7 +1005,8 @@ def test_save_feature_group(saved_feature_list):
         feature_group.save()
 
     expected_msg = (
-        'FeatureNamespace (name: "feat_0") already exists. ' 'Please rename object (name: "feat_0") to something else.'
+        'FeatureNamespace (name: "feat_0") already exists. '
+        'Please rename object (name: "feat_0") to something else.'
     )
     assert expected_msg in str(exc.value)
 
@@ -1024,7 +1053,9 @@ def test_list_features(saved_feature_list, float_feature):
 @freeze_time("2023-01-20 06:30:00")
 def test_get_feature_jobs_status(saved_feature_list, feature_job_logs, update_fixtures):
     """Test get_feature_jobs_status"""
-    with patch("featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe") as mock_get_jobs_dataframe:
+    with patch(
+        "featurebyte.service.tile_job_log.TileJobLogService.get_logs_dataframe"
+    ) as mock_get_jobs_dataframe:
         mock_get_jobs_dataframe.return_value = feature_job_logs
         job_status_result = saved_feature_list.get_feature_jobs_status(
             job_history_window=24, job_duration_tolerance=1700
@@ -1099,7 +1130,9 @@ def test_get_feature_jobs_status_feature_without_tile(
     feature_list = FeatureList([feature, float_feature], name="FeatureList")
     feature_list.save()
 
-    with patch("featurebyte.session.snowflake.SnowflakeSession.execute_query") as mock_execute_query:
+    with patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
         mock_execute_query.return_value = feature_job_logs[:0]
         job_status_result = feature_list.get_feature_jobs_status()
 
@@ -1117,19 +1150,27 @@ def test_feature_list__check_feature_readiness_update(saved_feature_list, mock_a
 
     feature_list = FeatureList([new_feat], name="my_fl")
     assert feature_list.production_ready_fraction == 0.0
-    assert feature_list.readiness_distribution.dict() == {"__root__": [{"readiness": "DRAFT", "count": 1}]}
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 1}]
+    }
 
     new_feat.update_readiness(readiness="PRODUCTION_READY")
     assert feature_list.production_ready_fraction == 1.0
-    assert feature_list.readiness_distribution.dict() == {"__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]}
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
+    }
 
     feature_list.save()
     assert feature_list.production_ready_fraction == 1.0
-    assert feature_list.readiness_distribution.dict() == {"__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]}
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "PRODUCTION_READY", "count": 1}]
+    }
 
     new_feat.update_readiness(readiness="PUBLIC_DRAFT")
     assert feature_list.production_ready_fraction == 0.0
-    assert feature_list.readiness_distribution.dict() == {"__root__": [{"readiness": "PUBLIC_DRAFT", "count": 1}]}
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "PUBLIC_DRAFT", "count": 1}]
+    }
 
 
 def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache):
@@ -1166,7 +1207,9 @@ def test_feature_list_properties_from_cached_model__before_save(feature_list):
     # check properties derived from feature list model directly
     assert feature_list.saved is False
     assert feature_list.online_enabled_feature_ids == []
-    assert feature_list.readiness_distribution.dict() == {"__root__": [{"readiness": "DRAFT", "count": 3}]}
+    assert feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 3}]
+    }
     assert feature_list.production_ready_fraction == 0.0
     assert feature_list.deployed is False
 
@@ -1182,7 +1225,9 @@ def test_feature_list_properties_from_cached_model__after_save(saved_feature_lis
     # check properties derived from feature list model directly
     assert saved_feature_list.saved
     assert saved_feature_list.online_enabled_feature_ids == []
-    assert saved_feature_list.readiness_distribution.dict() == {"__root__": [{"readiness": "DRAFT", "count": 1}]}
+    assert saved_feature_list.readiness_distribution.dict() == {
+        "__root__": [{"readiness": "DRAFT", "count": 1}]
+    }
     assert saved_feature_list.production_ready_fraction == 0.0
     assert saved_feature_list.deployed is False
 
@@ -1208,7 +1253,8 @@ def test_delete_feature_list_namespace__success(saved_feature_list):
         FeatureListNamespace.get_by_id(saved_feature_list.feature_list_namespace.id)
 
     expected_msg = (
-        f'FeatureList (id: "{saved_feature_list.id}") not found. ' "Please save the FeatureList object first."
+        f'FeatureList (id: "{saved_feature_list.id}") not found. '
+        "Please save the FeatureList object first."
     )
     assert expected_msg in str(exc_info.value)
 
@@ -1216,7 +1262,8 @@ def test_delete_feature_list_namespace__success(saved_feature_list):
         FeatureList.get_by_id(saved_feature_list.id)
 
     expected_msg = (
-        f'FeatureList (id: "{saved_feature_list.id}") not found. ' "Please save the FeatureList object first."
+        f'FeatureList (id: "{saved_feature_list.id}") not found. '
+        "Please save the FeatureList object first."
     )
     assert expected_msg in str(exc_info.value)
 

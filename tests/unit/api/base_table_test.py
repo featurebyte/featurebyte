@@ -66,7 +66,9 @@ class BaseTableTestSuite:
             DataType.SCD_DATA: snowflake_scd_table,
         }
         if self.data_type not in data_map:
-            pytest.fail(f"Invalid view type `{self.data_type}` found. Please use (or map) a valid DataType.")
+            pytest.fail(
+                f"Invalid view type `{self.data_type}` found. Please use (or map) a valid DataType."
+            )
         return data_map[self.data_type]
 
     @pytest.fixture(name="imputed_table_under_test")
@@ -97,7 +99,10 @@ class BaseTableTestSuite:
 
         with pytest.raises(AttributeError) as exc:
             _ = table_under_test.non_exist_column
-        assert f"'{table_under_test.__class__.__name__}' object has no attribute 'non_exist_column'" in str(exc.value)
+        assert (
+            f"'{table_under_test.__class__.__name__}' object has no attribute 'non_exist_column'"
+            in str(exc.value)
+        )
 
         # check __getattr__ is working properly
         assert isinstance(table_under_test[self.col], TableColumn)
@@ -135,7 +140,9 @@ class BaseTableTestSuite:
         Test preview table column
         """
         clean_table_column_sql = imputed_table_under_test[self.col].preview_sql(after_cleaning=True)
-        assert clean_table_column_sql == textwrap.dedent(self.expected_clean_table_column_sql).strip()
+        assert (
+            clean_table_column_sql == textwrap.dedent(self.expected_clean_table_column_sql).strip()
+        )
 
     def test_update_status(self, table_under_test):
         """
@@ -195,7 +202,9 @@ class BaseTableTestSuite:
         table_under_test.update_column_description(self.col, "new description")
         assert table_col.description == "new description"
 
-        expected_error = 'type of argument "description" must be one of (str, NoneType); got float instead'
+        expected_error = (
+            'type of argument "description" must be one of (str, NoneType); got float instead'
+        )
         with pytest.raises(TypeError) as exc:
             table_under_test.update_column_description(self.col, 1.0)
         assert expected_error in str(exc.value)

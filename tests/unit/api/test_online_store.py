@@ -121,7 +121,9 @@ async def test_get(saved_mysql_online_store, persistent):
     assert OnlineStore.get_by_id(saved_mysql_online_store.id) == saved_mysql_online_store
 
     # get from database to access encrypted credential
-    doc = await persistent.find_one(collection_name="online_store", query_filter={"_id": saved_mysql_online_store.id})
+    doc = await persistent.find_one(
+        collection_name="online_store", query_filter={"_id": saved_mysql_online_store.id}
+    )
 
     # check audit history
     audit_history = loaded_online_store.audit()
@@ -147,7 +149,9 @@ async def test_get(saved_mysql_online_store, persistent):
     expected_audit_history["action_type"] = "INSERT"
     expected_audit_history["name"] = 'insert: "mysql_online_store"'
     expected_audit_history["old_value"] = np.nan
-    pd.testing.assert_frame_equal(audit_history[expected_audit_history.columns], expected_audit_history)
+    pd.testing.assert_frame_equal(
+        audit_history[expected_audit_history.columns], expected_audit_history
+    )
 
 
 def test_get__unexpected_retrieval_exception():
@@ -163,7 +167,9 @@ def test_get__unexpected_retrieval_exception():
 
 
 @pytest.mark.asyncio
-async def test_online_store_create(mock_get_persistent, snowflake_connector, snowflake_execute_query):
+async def test_online_store_create(
+    mock_get_persistent, snowflake_connector, snowflake_execute_query
+):
     """
     Test the create online store static method.
     """

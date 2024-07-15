@@ -9,7 +9,9 @@ from featurebyte.schema.deployment import DeploymentServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 
 
-class DeploymentService(BaseDocumentService[DeploymentModel, DeploymentModel, DeploymentServiceUpdate]):
+class DeploymentService(
+    BaseDocumentService[DeploymentModel, DeploymentModel, DeploymentServiceUpdate]
+):
     """
     DeploymentService class
     """

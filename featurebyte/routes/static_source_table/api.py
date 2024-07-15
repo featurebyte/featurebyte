@@ -45,7 +45,9 @@ class StaticSourceTableRouter(BaseMaterializedTableRouter[StaticSourceTableModel
         super().__init__(prefix=prefix)
         self.add_router(router)
 
-    async def get_table(self, request: Request, static_source_table_id: PyObjectId) -> StaticSourceTableModel:
+    async def get_table(
+        self, request: Request, static_source_table_id: PyObjectId
+    ) -> StaticSourceTableModel:
         return await super().get_table(request, static_source_table_id)
 
 
@@ -135,7 +137,9 @@ async def get_static_source_table_info(
 
 
 @router.get("/pyarrow_table/{static_source_table_id}")
-async def download_table_as_pyarrow_table(request: Request, static_source_table_id: PyObjectId) -> StreamingResponse:
+async def download_table_as_pyarrow_table(
+    request: Request, static_source_table_id: PyObjectId
+) -> StreamingResponse:
     """
     Download StaticSourceTable as pyarrow table
     """
@@ -147,7 +151,9 @@ async def download_table_as_pyarrow_table(request: Request, static_source_table_
 
 
 @router.get("/parquet/{static_source_table_id}")
-async def download_table_as_parquet(request: Request, static_source_table_id: PyObjectId) -> StreamingResponse:
+async def download_table_as_parquet(
+    request: Request, static_source_table_id: PyObjectId
+) -> StreamingResponse:
     """
     Download StaticSourceTable as parquet file
     """

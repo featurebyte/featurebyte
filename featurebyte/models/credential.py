@@ -22,7 +22,9 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 
-PASSWORD_SECRET = os.environ.get("CONFIG_PASSWORD_SECRET", "VDNnVUdUKFEpZVNTc1grQHhaUWYmcjV2d0olelFzZnI=")
+PASSWORD_SECRET = os.environ.get(
+    "CONFIG_PASSWORD_SECRET", "VDNnVUdUKFEpZVNTc1grQHhaUWYmcjV2d0olelFzZnI="
+)
 HIDDEN_VALUE = "********"
 
 
@@ -140,7 +142,9 @@ class UsernamePasswordCredential(BaseDatabaseCredential):
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.UsernamePasswordCredential")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.UsernamePasswordCredential"
+    )
 
     # instance variables
     type: Literal[DatabaseCredentialType.USERNAME_PASSWORD] = Field(
@@ -163,7 +167,9 @@ class AccessTokenCredential(BaseDatabaseCredential):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.AccessTokenCredential")
 
     # instance variables
-    type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(DatabaseCredentialType.ACCESS_TOKEN, const=True)
+    type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = Field(
+        DatabaseCredentialType.ACCESS_TOKEN, const=True
+    )
     access_token: StrictStr = Field(description="The access token used to connect.")
 
 
@@ -179,10 +185,14 @@ class KerberosKeytabCredential(BaseDatabaseCredential):
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.KerberosKeytabCredential")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.KerberosKeytabCredential"
+    )
 
     # instance variables
-    type: Literal[DatabaseCredentialType.KERBEROS_KEYTAB] = Field(DatabaseCredentialType.KERBEROS_KEYTAB, const=True)
+    type: Literal[DatabaseCredentialType.KERBEROS_KEYTAB] = Field(
+        DatabaseCredentialType.KERBEROS_KEYTAB, const=True
+    )
     principal: StrictStr = Field(description="The principal used to connect.")
     encoded_key_tab: StrictStr = Field(description="The key tab used to connect.")
 
@@ -261,7 +271,9 @@ class S3StorageCredential(BaseStorageCredential):
 
     # instance variables
     type: StorageCredentialType = Field(StorageCredentialType.S3, const=True)
-    s3_access_key_id: StrictStr = Field(description="S3 access key ID used for connecting to your S3 store.")
+    s3_access_key_id: StrictStr = Field(
+        description="S3 access key ID used for connecting to your S3 store."
+    )
     s3_secret_access_key: StrictStr = Field(
         description="S3 secret access key used for connecting to your S3 store."
         "Avoid storing this in plain text, or in a public repository."
@@ -310,7 +322,9 @@ class AzureBlobStorageCredential(BaseStorageCredential):
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.AzureBlobStorageCredential")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.AzureBlobStorageCredential"
+    )
 
     # instance variables
     type: StorageCredentialType = Field(StorageCredentialType.AZURE, const=True)

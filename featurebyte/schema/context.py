@@ -66,10 +66,17 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
         observation_table_id_to_remove = values.get("observation_table_id_to_remove", None)
 
         if observation_table_id_to_remove:
-            if default_preview_table_id and default_preview_table_id == observation_table_id_to_remove:
-                raise ValueError("observation_table_id_to_remove cannot be the same as default_preview_table_id")
+            if (
+                default_preview_table_id
+                and default_preview_table_id == observation_table_id_to_remove
+            ):
+                raise ValueError(
+                    "observation_table_id_to_remove cannot be the same as default_preview_table_id"
+                )
 
             if default_eda_table_id and default_eda_table_id == observation_table_id_to_remove:
-                raise ValueError("observation_table_id_to_remove cannot be the same as default_eda_table_id")
+                raise ValueError(
+                    "observation_table_id_to_remove cannot be the same as default_eda_table_id"
+                )
 
         return values

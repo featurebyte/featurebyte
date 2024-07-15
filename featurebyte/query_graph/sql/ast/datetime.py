@@ -60,7 +60,9 @@ class DatetimeExtractNode(ExpressionNode):
                 this="F_TIMEZONE_OFFSET_TO_SECOND",
                 expressions=[timezone_offset_expr],
             )
-            timestamp_expr = context.adapter.dateadd_second(timezone_offset_seconds, input_expr_node.sql)
+            timestamp_expr = context.adapter.dateadd_second(
+                timezone_offset_seconds, input_expr_node.sql
+            )
 
         sql_node = DatetimeExtractNode(
             context=context,
@@ -128,7 +130,9 @@ class TimedeltaExtractNode(ExpressionNode):
             expr = self.timedelta_node.total_microseconds()
             output_expr = self.convert_timedelta_unit(expr, "microsecond", self.unit)
         else:
-            output_expr = self.convert_timedelta_unit(self.timedelta_node.sql, self.timedelta_node.unit, self.unit)
+            output_expr = self.convert_timedelta_unit(
+                self.timedelta_node.sql, self.timedelta_node.unit, self.unit
+            )
         return output_expr
 
     @classmethod
@@ -158,12 +162,16 @@ class TimedeltaExtractNode(ExpressionNode):
             quantity = int(pd.Timedelta(1, unit=unit).total_seconds() * 1e6)
             quantity_expr = make_literal_value(quantity)
             # cast to LONG type to avoid overflow in some engines (e.g. databricks)
-            quantity_expr = expressions.Cast(this=quantity_expr, to=expressions.DataType.build("BIGINT"))
+            quantity_expr = expressions.Cast(
+                this=quantity_expr, to=expressions.DataType.build("BIGINT")
+            )
             return quantity_expr
 
         input_unit_microsecond = _make_quantity_in_microsecond(input_unit)
         output_unit_microsecond = _make_quantity_in_microsecond(output_unit)
-        conversion_factor_expr = expressions.Div(this=input_unit_microsecond, expression=output_unit_microsecond)
+        conversion_factor_expr = expressions.Div(
+            this=input_unit_microsecond, expression=output_unit_microsecond
+        )
         converted_expr = expressions.Mul(this=input_expr, expression=conversion_factor_expr)  # type: Expression
         converted_expr = expressions.Paren(this=converted_expr)
         return converted_expr
@@ -263,7 +271,9 @@ class DateAddNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> DateAddNode:
         table_node, left_node, right_node = prepare_binary_op_input_nodes(context)
         resolved_timedelta_node = resolve_project_node(right_node)
-        assert isinstance(resolved_timedelta_node, (TimedeltaNode, DateDiffNode, ParsedExpressionNode))
+        assert isinstance(
+            resolved_timedelta_node, (TimedeltaNode, DateDiffNode, ParsedExpressionNode)
+        )
         output_node = DateAddNode(
             context=context,
             table_node=table_node,

@@ -108,7 +108,9 @@ class TileManagerService:
         )
 
         tic = time.time()
-        await self.update_tile_entity_tracker(session=session, tile_spec=tile_spec, temp_entity_table=entity_table)
+        await self.update_tile_entity_tracker(
+            session=session, tile_spec=tile_spec, temp_entity_table=entity_table
+        )
         logger.debug(
             "Done update_tile_entity_tracker",
             extra={"tile_id": tile_spec.tile_id, "duration": time.time() - tic},
@@ -239,7 +241,9 @@ class TileManagerService:
         if tile_spec.category_column_name is None:
             entity_column_names = tile_spec.entity_column_names
         else:
-            entity_column_names = [c for c in tile_spec.entity_column_names if c != tile_spec.category_column_name]
+            entity_column_names = [
+                c for c in tile_spec.entity_column_names if c != tile_spec.category_column_name
+            ]
 
         tile_entity_tracking_ins = TileGenerateEntityTracking(
             session=session,
@@ -355,7 +359,11 @@ class TileManagerService:
                 monitor_periods=monitor_periods,
                 aggregation_id=tile_spec.aggregation_id,
             )
-            interval_seconds = tile_spec.frequency_minute * 60 if tile_type == TileType.ONLINE else offline_minutes * 60
+            interval_seconds = (
+                tile_spec.frequency_minute * 60
+                if tile_type == TileType.ONLINE
+                else offline_minutes * 60
+            )
             await self.tile_scheduler_service.start_job_with_interval(
                 job_id=job_id,
                 interval_seconds=interval_seconds,

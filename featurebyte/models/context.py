@@ -37,7 +37,9 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
     default_eda_table_id: Optional[PydanticObjectId] = Field(default=None)
 
     # pydantic validators
-    _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(construct_sort_validator())
+    _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
 
     @root_validator(pre=True)
     @classmethod

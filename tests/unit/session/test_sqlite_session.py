@@ -85,21 +85,29 @@ async def test_sqlite_session(sqlite_db_filename):
         "int8": ColumnSpecWithDescription(name="int8", dtype=DBVarType.INT),
         "char": ColumnSpecWithDescription(name="char", dtype=DBVarType.VARCHAR),
         "varchar": ColumnSpecWithDescription(name="varchar", dtype=DBVarType.VARCHAR),
-        "varying_character": ColumnSpecWithDescription(name="varying_character", dtype=DBVarType.VARCHAR),
+        "varying_character": ColumnSpecWithDescription(
+            name="varying_character", dtype=DBVarType.VARCHAR
+        ),
         "nchar": ColumnSpecWithDescription(name="nchar", dtype=DBVarType.VARCHAR),
-        "native_character": ColumnSpecWithDescription(name="native_character", dtype=DBVarType.VARCHAR),
+        "native_character": ColumnSpecWithDescription(
+            name="native_character", dtype=DBVarType.VARCHAR
+        ),
         "nvarchar": ColumnSpecWithDescription(name="nvarchar", dtype=DBVarType.VARCHAR),
         "text": ColumnSpecWithDescription(name="text", dtype=DBVarType.VARCHAR),
         "real": ColumnSpecWithDescription(name="real", dtype=DBVarType.FLOAT),
         "double": ColumnSpecWithDescription(name="double", dtype=DBVarType.FLOAT),
-        "double_precision": ColumnSpecWithDescription(name="double_precision", dtype=DBVarType.FLOAT),
+        "double_precision": ColumnSpecWithDescription(
+            name="double_precision", dtype=DBVarType.FLOAT
+        ),
         "float": ColumnSpecWithDescription(name="float", dtype=DBVarType.FLOAT),
         "decimal": ColumnSpecWithDescription(name="decimal", dtype=DBVarType.FLOAT),
         "boolean": ColumnSpecWithDescription(name="boolean", dtype=DBVarType.BOOL),
         "date": ColumnSpecWithDescription(name="date", dtype=DBVarType.DATE),
         "datetime": ColumnSpecWithDescription(name="datetime", dtype=DBVarType.TIMESTAMP),
     }
-    assert await session.get_table_details(table_name="type_table") == TableDetails(fully_qualified_name="type_table")
+    assert await session.get_table_details(table_name="type_table") == TableDetails(
+        fully_qualified_name="type_table"
+    )
 
 
 @pytest.mark.asyncio

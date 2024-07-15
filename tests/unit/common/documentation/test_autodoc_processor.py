@@ -35,15 +35,23 @@ def test_render_list_item_with_multiple_paragraphs(input_title, input_paragraphs
         ([ParameterDetails(name=None, type=None, default=None, description=None)], False, ""),
         (
             [
-                ParameterDetails(name="name", type="int", default="Float", description="test description"),
-                ParameterDetails(name="name2", type="int2", default="Float2", description="test description2"),
+                ParameterDetails(
+                    name="name", type="int", default="Float", description="test description"
+                ),
+                ParameterDetails(
+                    name="name2", type="int2", default="Float2", description="test description2"
+                ),
             ],
             False,
             "- **name: *int***<br>\t**default**: *Float*\n<br>\ttest description<br><br>\n"
             "- **name2: *int2***<br>\t**default**: *Float2*\n<br>\ttest description2<br><br>\n",
         ),
         (
-            [ParameterDetails(name="name", type=None, default="Float", description="test description")],
+            [
+                ParameterDetails(
+                    name="name", type=None, default="Float", description="test description"
+                )
+            ],
             False,
             "- **name**<br>\t**default**: *Float*\n<br>\ttest description<br><br>\n",
         ),

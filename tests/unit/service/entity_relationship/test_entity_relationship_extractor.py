@@ -292,7 +292,9 @@ async def test_enumerate_all_serving_entity_ids(
     relationships_info = await extractor.extract_primary_entity_descendant_relationship(
         primary_entity_ids=primary_entity_ids,
     )
-    serving_entity_enumeration = ServingEntityEnumeration.create(relationships_info=relationships_info)
+    serving_entity_enumeration = ServingEntityEnumeration.create(
+        relationships_info=relationships_info
+    )
     all_serving_entity_ids = serving_entity_enumeration.generate(entity_ids=primary_entity_ids)
     output = set(tuple(entity_ids) for entity_ids in all_serving_entity_ids)
     expected_serving_entities = set(

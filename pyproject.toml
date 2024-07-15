@@ -223,7 +223,7 @@ norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".g
 [tool.ruff]
 preview = true
 extend-exclude = ["scripts", "hive-udf", "docs", "docker", "assets", ".task", ".mypy_cache", "site", "tests/fixtures/"]
-line-length = 120
+line-length = 100
 indent-width = 4
 target-version = "py39"
 
@@ -241,3 +241,6 @@ ignore = []
 fixable = ["ALL"]
 unfixable = []
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 150

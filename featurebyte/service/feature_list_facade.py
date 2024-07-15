@@ -57,7 +57,9 @@ class FeatureListFacadeService:
         -------
         FeatureListModel
         """
-        document = await self.feature_list_service.create_document(data=data, progress_callback=progress_callback)
+        document = await self.feature_list_service.create_document(
+            data=data, progress_callback=progress_callback
+        )
         await self.feature_readiness_service.update_feature_list_namespace(
             feature_list_namespace_id=document.feature_list_namespace_id,
         )
@@ -120,7 +122,9 @@ class FeatureListFacadeService:
                 )
 
         if progress_callback:
-            await progress_callback(percent=100, message="Completed making all features production ready")
+            await progress_callback(
+                percent=100, message="Completed making all features production ready"
+            )
 
     async def update_status(
         self, feature_list_namespace_id: ObjectId, status: FeatureListStatus
@@ -143,7 +147,9 @@ class FeatureListFacadeService:
             feature_list_namespace_id=feature_list_namespace_id,
             target_feature_list_status=status,
         )
-        return await self.feature_list_namespace_service.get_document(document_id=feature_list_namespace_id)
+        return await self.feature_list_namespace_service.get_document(
+            document_id=feature_list_namespace_id
+        )
 
     async def delete_feature_list(self, feature_list_id: ObjectId) -> None:
         """
@@ -159,7 +165,9 @@ class FeatureListFacadeService:
         DocumentDeletionError
             If feature list is not in DRAFT status
         """
-        feature_list_doc = await self.feature_list_service.get_document_as_dict(document_id=feature_list_id)
+        feature_list_doc = await self.feature_list_service.get_document_as_dict(
+            document_id=feature_list_id
+        )
         try:
             feature_list_namespace_id = feature_list_doc["feature_list_namespace_id"]
             feature_list_namespace = await self.feature_list_namespace_service.get_document(

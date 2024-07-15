@@ -35,7 +35,9 @@ class FeatureOrTargetDerivedData:
     relationships_info: List[EntityRelationshipInfo]
 
 
-class BaseFeatureService(BaseDocumentService[Document, DocumentCreateSchema, BaseDocumentServiceUpdateSchema]):
+class BaseFeatureService(
+    BaseDocumentService[Document, DocumentCreateSchema, BaseDocumentServiceUpdateSchema]
+):
     """
     Base namespace service
     """
@@ -76,11 +78,15 @@ class BaseFeatureService(BaseDocumentService[Document, DocumentCreateSchema, Bas
         VersionIdentifier
         """
         version_name = get_version()
-        query_result = await self.list_documents_as_dict(query_filter={"name": name, "version.name": version_name})
+        query_result = await self.list_documents_as_dict(
+            query_filter={"name": name, "version.name": version_name}
+        )
         count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
-    async def extract_derived_data(self, graph: QueryGraphModel, node_name: str) -> FeatureOrTargetDerivedData:
+    async def extract_derived_data(
+        self, graph: QueryGraphModel, node_name: str
+    ) -> FeatureOrTargetDerivedData:
         """
         Extract derived data from a graph and node name
 

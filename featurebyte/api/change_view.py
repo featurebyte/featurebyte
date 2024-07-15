@@ -28,7 +28,9 @@ class ChangeViewColumn(LaggableViewColumn):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
     @typechecked
-    def lag(self: ChangeViewColumn, entity_columns: Union[str, List[str]], offset: int = 1) -> ChangeViewColumn:
+    def lag(
+        self: ChangeViewColumn, entity_columns: Union[str, List[str]], offset: int = 1
+    ) -> ChangeViewColumn:
         """
         Lag is a transform that enables the retrieval of the preceding value associated with a particular entity in
         a view.
@@ -155,14 +157,18 @@ class ChangeView(View, GroupByMixin):
 
         before, after = prefixes
         if before is None and after is None:
-            raise ValueError("Prefixes provided are both None. Please indicate at least one prefix to update.")
+            raise ValueError(
+                "Prefixes provided are both None. Please indicate at least one prefix to update."
+            )
         if before == "" or after == "":
             raise ValueError(
                 "Please provide a non-empty string as a prefix value. If you want to use the default "
                 "value, please provide a `None` type instead."
             )
         if before == after:
-            raise ValueError(f"Prefixes provided need to be different values. Current prefix value: {before}")
+            raise ValueError(
+                f"Prefixes provided need to be different values. Current prefix value: {before}"
+            )
 
     @staticmethod
     def validate_inputs(

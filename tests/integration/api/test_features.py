@@ -28,8 +28,16 @@ def test_features_without_entity(event_table):
     feature_list_2 = FeatureList([feature_group["ALL_COUNT_24h"]], name="all_count_24h_list")
 
     # Test historical features with on demand tile generation
-    df_features_1 = feature_list_1.compute_historical_features(df).sort_values("POINT_IN_TIME").reset_index(drop=True)
-    df_features_2 = feature_list_2.compute_historical_features(df).sort_values("POINT_IN_TIME").reset_index(drop=True)
+    df_features_1 = (
+        feature_list_1.compute_historical_features(df)
+        .sort_values("POINT_IN_TIME")
+        .reset_index(drop=True)
+    )
+    df_features_2 = (
+        feature_list_2.compute_historical_features(df)
+        .sort_values("POINT_IN_TIME")
+        .reset_index(drop=True)
+    )
 
     # Test saving and deploying
     deployment_1, deployment_2 = None, None
@@ -44,10 +52,14 @@ def test_features_without_entity(event_table):
 
         # Test getting historical requests
         df_features_deployed_1 = (
-            feature_list_1.compute_historical_features(df).sort_values("POINT_IN_TIME").reset_index(drop=True)
+            feature_list_1.compute_historical_features(df)
+            .sort_values("POINT_IN_TIME")
+            .reset_index(drop=True)
         )
         df_features_deployed_2 = (
-            feature_list_2.compute_historical_features(df).sort_values("POINT_IN_TIME").reset_index(drop=True)
+            feature_list_2.compute_historical_features(df)
+            .sort_values("POINT_IN_TIME")
+            .reset_index(drop=True)
         )
     finally:
         for deployment in [deployment_1, deployment_2]:
@@ -64,7 +76,9 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table,
     """
     event_view = event_table.get_view()
     item_view = item_table.get_view()
-    item_feature = item_view.groupby("order_id").aggregate(method="count", feature_name="my_item_feature")
+    item_feature = item_view.groupby("order_id").aggregate(
+        method="count", feature_name="my_item_feature"
+    )
     event_view = event_view.add_feature("added_feature", item_feature, "TRANSACTION_ID")
 
     window_feature = event_view.groupby("ÜSER ID").aggregate_over(
@@ -111,7 +125,9 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table,
 
 def test_preview_with_numpy_array(item_table, source_type):
     item_view = item_table.get_view()
-    item_feature = item_view.groupby("order_id").aggregate(method="count", feature_name="my_item_feature")
+    item_feature = item_view.groupby("order_id").aggregate(
+        method="count", feature_name="my_item_feature"
+    )
     df_observation = pd.DataFrame({
         "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"]),
         "order_id": ["T1"],

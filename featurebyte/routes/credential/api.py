@@ -34,7 +34,9 @@ from featurebyte.schema.credential import (
 from featurebyte.schema.info import CredentialInfo
 
 
-class CredentialRouter(BaseApiRouter[CredentialRead, CredentialList, CredentialCreate, CredentialController]):
+class CredentialRouter(
+    BaseApiRouter[CredentialRead, CredentialList, CredentialCreate, CredentialController]
+):
     """
     Credential API router
     """

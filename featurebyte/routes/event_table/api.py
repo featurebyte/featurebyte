@@ -35,7 +35,9 @@ from featurebyte.schema.table import (
 router = APIRouter(prefix="/event_table")
 
 
-class EventTableRouter(BaseApiRouter[EventTableModel, EventTableList, EventTableCreate, EventTableController]):
+class EventTableRouter(
+    BaseApiRouter[EventTableModel, EventTableList, EventTableCreate, EventTableController]
+):
     """
     Event table router
     """

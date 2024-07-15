@@ -30,7 +30,10 @@ class InputNode(TableNode):
 
         # Optionally, filter SCD table to only include current records. This is done only for
         # certain aggregations during online serving.
-        if self.context.parameters["type"] == TableDataType.SCD_TABLE and self.context.to_filter_scd_by_current_flag:
+        if (
+            self.context.parameters["type"] == TableDataType.SCD_TABLE
+            and self.context.to_filter_scd_by_current_flag
+        ):
             current_flag_column = self.context.parameters["current_flag_column"]
             if current_flag_column is not None:
                 select_expr = select_expr.where(
@@ -43,7 +46,10 @@ class InputNode(TableNode):
         # When possible, push down timestamp filter to the input table. This is done only for event
         # table in scheduled tile tasks.
         push_down_filter = self.context.event_table_timestamp_filter
-        if push_down_filter is not None and self.context.parameters["id"] == push_down_filter.event_table_id:
+        if (
+            push_down_filter is not None
+            and self.context.parameters["id"] == push_down_filter.event_table_id
+        ):
             if push_down_filter.start_timestamp_placeholder_name is None:
                 start_date_placeholder = InternalName.TILE_START_DATE_SQL_PLACEHOLDER.value
             else:

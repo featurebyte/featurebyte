@@ -147,10 +147,14 @@ class WindowAggregator(BaseAggregator):
             raise ValueError(f"windows is required and should be a non-empty list; got {windows}")
 
         if not isinstance(feature_names, list):
-            raise ValueError(f"feature_names is required and should be a non-empty list; got {feature_names}")
+            raise ValueError(
+                f"feature_names is required and should be a non-empty list; got {feature_names}"
+            )
 
         if len(windows) != len(feature_names):
-            raise ValueError("Window length must be the same as the number of output feature names.")
+            raise ValueError(
+                "Window length must be the same as the number of output feature names."
+            )
 
         if len(windows) != len(set(feature_names)) or len(set(windows)) != len(feature_names):
             raise ValueError("Window sizes or feature names contains duplicated value(s).")
@@ -173,7 +177,9 @@ class WindowAggregator(BaseAggregator):
         if offset is not None:
             validate_window(offset, parsed_feature_job_setting.period)
 
-    def _get_job_setting_params(self, feature_job_setting: Optional[FeatureJobSetting]) -> FeatureJobSetting:
+    def _get_job_setting_params(
+        self, feature_job_setting: Optional[FeatureJobSetting]
+    ) -> FeatureJobSetting:
         if feature_job_setting is not None:
             return feature_job_setting
 

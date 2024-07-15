@@ -95,7 +95,9 @@ class FeatureMaterializeSchedulerService:
         job_id = self._get_job_id(offline_store_feature_table_id)
         await self.task_manager.delete_periodic_task_by_name(job_id)
 
-    async def get_periodic_task(self, offline_store_feature_table_id: ObjectId) -> Optional[PeriodicTask]:
+    async def get_periodic_task(
+        self, offline_store_feature_table_id: ObjectId
+    ) -> Optional[PeriodicTask]:
         """
         Get the periodic task corresponding to offline store feature table id
 
@@ -108,7 +110,9 @@ class FeatureMaterializeSchedulerService:
         -------
         Optional[PeriodicTask]
         """
-        return await self.task_manager.get_periodic_task_by_name(self._get_job_id(offline_store_feature_table_id))
+        return await self.task_manager.get_periodic_task_by_name(
+            self._get_job_id(offline_store_feature_table_id)
+        )
 
     @classmethod
     def _get_job_id(cls, offline_store_feature_table_id: ObjectId) -> str:

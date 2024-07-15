@@ -198,14 +198,18 @@ async def get_historical_features(
             feature_store_id=feature_store.id,
             serving_names_mapping=serving_names_mapping,
             parent_serving_preparation=parent_serving_preparation,
-            progress_callback=(tile_cache_progress_callback if tile_cache_progress_callback else None),
+            progress_callback=(
+                tile_cache_progress_callback if tile_cache_progress_callback else None
+            ),
         )
 
         elapsed = time.time() - tic
         logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
 
         if progress_callback:
-            await progress_callback(TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES)
+            await progress_callback(
+                TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES
+            )
 
         # Generate SQL code that computes the features
         historical_feature_query_set = get_historical_features_query_set(

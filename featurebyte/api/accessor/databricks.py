@@ -58,7 +58,9 @@ def _get_feature_engineering_client() -> Any:
 
         return FeatureEngineeringClient()
     except ImportError as exc:
-        raise ImportError("Please install the databricks feature engineering package to use this accessor.") from exc
+        raise ImportError(
+            "Please install the databricks feature engineering package to use this accessor."
+        ) from exc
 
 
 class DataBricksAccessor:
@@ -155,7 +157,9 @@ class DataBricksAccessor:
         Any
             Feature specs
         """
-        exec_locals = self._exec_feature_spec_definition(print_feature_specs, skip_exclude_columns=skip_exclude_columns)
+        exec_locals = self._exec_feature_spec_definition(
+            print_feature_specs, skip_exclude_columns=skip_exclude_columns
+        )
         return exec_locals["features"]
 
     def log_model(
@@ -190,7 +194,9 @@ class DataBricksAccessor:
         """
         # create feature engineering client
         databricks_fe_client = _get_feature_engineering_client()
-        exec_locals = self._exec_feature_spec_definition(print_feature_specs, skip_exclude_columns=skip_exclude_columns)
+        exec_locals = self._exec_feature_spec_definition(
+            print_feature_specs, skip_exclude_columns=skip_exclude_columns
+        )
 
         # log model
         kwargs = kwargs or {}
@@ -250,5 +256,7 @@ class DataBricksAccessor:
         if DUMMY_ENTITY_COLUMN_NAME not in columns:
             df = df.withColumn(DUMMY_ENTITY_COLUMN_NAME, lit(DUMMY_ENTITY_VALUE))
 
-        result = databricks_fe_client.score_batch(model_uri=model_uri, df=df, result_type=result_type)
+        result = databricks_fe_client.score_batch(
+            model_uri=model_uri, df=df, result_type=result_type
+        )
         return result

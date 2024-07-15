@@ -185,7 +185,11 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         -------
         List[PydanticObjectId]
         """
-        return [col.entity_id for col in self.columns_info if col.entity_id and col.name in self.primary_key_columns]
+        return [
+            col.entity_id
+            for col in self.columns_info
+            if col.entity_id and col.name in self.primary_key_columns
+        ]
 
     @property
     @abstractmethod

@@ -39,7 +39,9 @@ async def test_get_task_description_create(app_container):
         (False, 'Disable deployment "Test deployment"'),
     ],
 )
-async def test_get_task_description_update(persistent, enabled, expected, app_container: LazyAppContainer):
+async def test_get_task_description_update(
+    persistent, enabled, expected, app_container: LazyAppContainer
+):
     """
     Test get task description for deployment update
     """

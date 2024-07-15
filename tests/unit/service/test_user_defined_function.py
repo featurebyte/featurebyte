@@ -46,21 +46,29 @@ def user_defined_function_dict_fixture(feature_store):
 
 
 @pytest_asyncio.fixture(name="global_user_defined_function_doc")
-async def global_user_defined_function_doc_fixture(user_defined_function_service, user_defined_function_dict):
+async def global_user_defined_function_doc_fixture(
+    user_defined_function_service, user_defined_function_dict
+):
     """Global user defined function doc fixture"""
     payload = user_defined_function_dict.copy()
     payload["catalog_id"] = None
-    doc = await user_defined_function_service.create_document(data=UserDefinedFunctionServiceCreate(**payload))
+    doc = await user_defined_function_service.create_document(
+        data=UserDefinedFunctionServiceCreate(**payload)
+    )
     assert doc.catalog_id is None
     return doc
 
 
 @pytest_asyncio.fixture(name="user_defined_function_doc")
-async def user_defined_function_doc_fixture(user_defined_function_service, user_defined_function_dict, catalog):
+async def user_defined_function_doc_fixture(
+    user_defined_function_service, user_defined_function_dict, catalog
+):
     """User defined function doc fixture"""
     payload = user_defined_function_dict.copy()
     payload["catalog_id"] = catalog.id
-    doc = await user_defined_function_service.create_document(data=UserDefinedFunctionServiceCreate(**payload))
+    doc = await user_defined_function_service.create_document(
+        data=UserDefinedFunctionServiceCreate(**payload)
+    )
     assert doc.catalog_id == catalog.id
     return doc
 
@@ -82,14 +90,17 @@ async def test_user_defined_function_service__creation(
             data=UserDefinedFunctionServiceCreate(**user_defined_function_dict)
         )
     expected_error_message = (
-        'User defined function with name "method_name" already exists in catalog ' f"(catalog_id: {catalog.id})."
+        'User defined function with name "method_name" already exists in catalog '
+        f"(catalog_id: {catalog.id})."
     )
     assert expected_error_message in str(exc.value)
 
     # create a user defined function conflicting with the global user defined function
     with pytest.raises(DocumentConflictError) as exc:
         await user_defined_function_service.create_document(
-            data=UserDefinedFunctionServiceCreate(**global_user_defined_function_doc.dict(exclude={"_id": True}))
+            data=UserDefinedFunctionServiceCreate(
+                **global_user_defined_function_doc.dict(exclude={"_id": True})
+            )
         )
     expected_error_message = 'Global user defined function with name "method_name" already exists.'
     assert expected_error_message in str(exc.value)
@@ -113,7 +124,9 @@ async def test_user_defined_function_service__retrieval(
 ):
     """Test UserDefinedFunctionService (retrieve)"""
     # check retrieving a global user defined function by ID
-    retrieved_doc = await user_defined_function_service.get_document(document_id=global_user_defined_function_doc.id)
+    retrieved_doc = await user_defined_function_service.get_document(
+        document_id=global_user_defined_function_doc.id
+    )
     assert retrieved_doc == global_user_defined_function_doc
 
     # create a user defined function with the same name in a different catalog
@@ -144,8 +157,10 @@ async def test_user_defined_function_service__retrieval(
     assert retrieved_docs["total"] == 2
     assert set(doc["catalog_id"] for doc in retrieved_docs["data"]) == expected_catalog_ids
 
-    retrieved_docs = await user_defined_function_service_with_different_catalog.list_documents_as_dict(
-        query_filter={"name": global_user_defined_function_doc.name}
+    retrieved_docs = (
+        await user_defined_function_service_with_different_catalog.list_documents_as_dict(
+            query_filter={"name": global_user_defined_function_doc.name}
+        )
     )
     expected_catalog_ids = {
         doc_with_same_name.catalog_id,

@@ -84,7 +84,9 @@ def test_is_in_view_column__target_is_array(event_table):
     assert df["PRODUCT_ACTION"].isin(fixed_sequence).all()
 
 
-def test_is_in_dictionary__target_is_dictionary_feature(item_type_dimension_lookup_feature, event_table, source_type):
+def test_is_in_dictionary__target_is_dictionary_feature(
+    item_type_dimension_lookup_feature, event_table, source_type
+):
     """
     Test is in dictionary
     """
@@ -139,7 +141,9 @@ def test_get_value_from_dictionary__target_is_lookup_feature(
     Test get value from dictionary.
     """
     # perform get_value
-    get_value_feature = count_item_type_dictionary_feature.cd.get_value(item_type_dimension_lookup_feature)
+    get_value_feature = count_item_type_dictionary_feature.cd.get_value(
+        item_type_dimension_lookup_feature
+    )
     assert isinstance(get_value_feature, Feature)
     feature_name = "get_count_value_from_dictionary"
     get_value_feature.name = feature_name
@@ -296,7 +300,9 @@ def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
     Test get relative frequency from dictionary.
     """
     # perform get_value
-    get_value_feature = count_item_type_dictionary_feature.cd.get_relative_frequency(item_type_dimension_lookup_feature)
+    get_value_feature = count_item_type_dictionary_feature.cd.get_relative_frequency(
+        item_type_dimension_lookup_feature
+    )
     assert isinstance(get_value_feature, Feature)
     get_value_feature.name = "get_relative_frequency_from_dictionary"
 
@@ -317,7 +323,9 @@ def test_get_relative_frequency_from_dictionary__target_is_lookup_feature(
     fb_assert_frame_equal(get_value_feature_preview, expected)
 
 
-def test_get_relative_frequency_in_dictionary__target_is_scalar(count_item_type_dictionary_feature, source_type):
+def test_get_relative_frequency_in_dictionary__target_is_scalar(
+    count_item_type_dictionary_feature, source_type
+):
     """
     Test get relative frequency
     """
@@ -346,7 +354,9 @@ def test_get_rank_from_dictionary__target_is_lookup_feature(
     Test get rank from dictionary.
     """
     # perform get_rank
-    get_value_feature = count_item_type_dictionary_feature.cd.get_rank(item_type_dimension_lookup_feature)
+    get_value_feature = count_item_type_dictionary_feature.cd.get_rank(
+        item_type_dimension_lookup_feature
+    )
     assert isinstance(get_value_feature, Feature)
     get_value_feature.name = "get_rank_value_from_dictionary"
 
@@ -390,7 +400,9 @@ def test_get_rank_in_dictionary__target_is_not_found(count_item_type_dictionary_
     Test get rank in dictionary, key is not found
     """
     # perform get_rank
-    get_value_feature = count_item_type_dictionary_feature.cd.get_rank("unknown_key", descending=True)
+    get_value_feature = count_item_type_dictionary_feature.cd.get_rank(
+        "unknown_key", descending=True
+    )
     assert isinstance(get_value_feature, Feature)
     get_value_feature.name = "get_rank_in_dictionary"
 

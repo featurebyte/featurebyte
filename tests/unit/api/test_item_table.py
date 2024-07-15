@@ -130,7 +130,9 @@ def test_create_item_table(snowflake_database_table_item_table, item_table_dict,
     item_table_dict["updated_at"] = item_table.updated_at
     item_table_dict["block_modification_by"] = []
     for column_idx in [0, 1, 4]:
-        item_table_dict["columns_info"][column_idx]["semantic_id"] = item_table.columns_info[column_idx].semantic_id
+        item_table_dict["columns_info"][column_idx]["semantic_id"] = item_table.columns_info[
+            column_idx
+        ].semantic_id
     assert output == item_table_dict
 
     # user input validation
@@ -144,7 +146,9 @@ def test_create_item_table(snowflake_database_table_item_table, item_table_dict,
     assert 'type of argument "name" must be str; got int instead' in str(exc.value)
 
 
-def test_create_item_table__duplicated_record(saved_item_table, snowflake_database_table_item_table):
+def test_create_item_table__duplicated_record(
+    saved_item_table, snowflake_database_table_item_table
+):
     """
     Test ItemTable creation failure due to duplicated event table name
     """
@@ -299,11 +303,15 @@ def test_item_table_column__as_entity(snowflake_item_table, mock_api_object_cach
 
     with pytest.raises(TypeError) as exc:
         snowflake_item_table.item_id_col.as_entity(1234)
-    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(exc.value)
+    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(
+        exc.value
+    )
 
     with pytest.raises(RecordRetrievalException) as exc:
         snowflake_item_table.item_id_col.as_entity("some_random_entity")
-    expected_msg = 'Entity (name: "some_random_entity") not found. Please save the Entity object first.'
+    expected_msg = (
+        'Entity (name: "some_random_entity") not found. Please save the Entity object first.'
+    )
     assert expected_msg in str(exc.value)
 
     # remove entity association
@@ -342,7 +350,9 @@ def test_item_table__record_creation_exception(
                 )
 
 
-def test_update_record_creation_timestamp_column__unsaved_object(snowflake_item_table, mock_api_object_cache):
+def test_update_record_creation_timestamp_column__unsaved_object(
+    snowflake_item_table, mock_api_object_cache
+):
     """Test update record creation timestamp column (unsaved ItemTable)"""
     _ = mock_api_object_cache
     assert snowflake_item_table.record_creation_timestamp_column is None
@@ -364,7 +374,8 @@ def test_update_record_creation_timestamp_column__saved_object(saved_item_table)
     with pytest.raises(RecordUpdateException) as exc:
         saved_item_table.update_record_creation_timestamp_column("item_id_col")
     expected_msg = (
-        'Column "item_id_col" is expected to have type(s): ' "['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
+        'Column "item_id_col" is expected to have type(s): '
+        "['TIMESTAMP', 'TIMESTAMP_TZ'] (type=value_error)"
     )
     assert expected_msg in str(exc.value)
 
@@ -383,11 +394,16 @@ def test_get_item_table(saved_item_table, snowflake_item_table):
     with pytest.raises(RecordRetrievalException) as exc:
         ItemTable.get("unknown_item_table")
 
-    expected_msg = 'ItemTable (name: "unknown_item_table") not found. ' "Please save the ItemTable object first."
+    expected_msg = (
+        'ItemTable (name: "unknown_item_table") not found. '
+        "Please save the ItemTable object first."
+    )
     assert expected_msg in str(exc.value)
 
 
-def test_inherit_default_feature_job_setting(snowflake_database_table_item_table, item_table_dict, saved_event_table):
+def test_inherit_default_feature_job_setting(
+    snowflake_database_table_item_table, item_table_dict, saved_event_table
+):
     """
     Test ItemTable inherits the same default feature job setting from EventTable
     """
@@ -467,7 +483,9 @@ def test_accessing_saved_item_table_attributes(saved_item_table):
     assert cloned.table_data.columns_info == saved_item_table.columns_info
 
 
-def test_sdk_code_generation(snowflake_database_table_item_table, saved_event_table, update_fixtures):
+def test_sdk_code_generation(
+    snowflake_database_table_item_table, saved_event_table, update_fixtures
+):
     """Check SDK code generation for unsaved table"""
     item_table = snowflake_database_table_item_table.create_item_table(
         name="sf_item_table",

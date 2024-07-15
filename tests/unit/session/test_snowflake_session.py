@@ -92,9 +92,15 @@ async def test_snowflake_session__credential_from_config(
         database_name="sf_database", schema_name="sf_schema", table_name="sf_table"
     ) == {
         "col_int": ColumnSpecWithDescription(name="col_int", dtype=DBVarType.INT),
-        "col_float": ColumnSpecWithDescription(name="col_float", dtype=DBVarType.FLOAT, description="Float column"),
-        "col_char": ColumnSpecWithDescription(name="col_char", dtype=DBVarType.CHAR, description="Char column"),
-        "col_text": ColumnSpecWithDescription(name="col_text", dtype=DBVarType.VARCHAR, description="Text column"),
+        "col_float": ColumnSpecWithDescription(
+            name="col_float", dtype=DBVarType.FLOAT, description="Float column"
+        ),
+        "col_char": ColumnSpecWithDescription(
+            name="col_char", dtype=DBVarType.CHAR, description="Char column"
+        ),
+        "col_text": ColumnSpecWithDescription(
+            name="col_text", dtype=DBVarType.VARCHAR, description="Text column"
+        ),
         "col_binary": ColumnSpecWithDescription(name="col_binary", dtype=DBVarType.BINARY),
         "col_boolean": ColumnSpecWithDescription(name="col_boolean", dtype=DBVarType.BOOL),
         "created_at": ColumnSpecWithDescription(name="created_at", dtype=DBVarType.TIMESTAMP_TZ),
@@ -111,7 +117,9 @@ async def test_snowflake_session__credential_from_config(
         "col_timestamp_ltz": ColumnSpecWithDescription(
             name="col_timestamp_ltz", dtype=DBVarType.TIMESTAMP, description="Timestamp ltz column"
         ),
-        "col_timestamp_ntz": ColumnSpecWithDescription(name="col_timestamp_ntz", dtype=DBVarType.TIMESTAMP),
+        "col_timestamp_ntz": ColumnSpecWithDescription(
+            name="col_timestamp_ntz", dtype=DBVarType.TIMESTAMP
+        ),
         "col_timestamp_tz": ColumnSpecWithDescription(
             name="col_timestamp_tz", dtype=DBVarType.TIMESTAMP_TZ, description="Timestamp tz column"
         ),

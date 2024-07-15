@@ -61,7 +61,11 @@ class SpecializedDtypeDetectionService:
             feature_store_details=feature_store.get_feature_store_details(),
             table_data_dict=table.dict(by_alias=True),
         )
-        columns = [col.name for col in table.columns_info if col.dtype in DBVarType.supported_detection_types()]
+        columns = [
+            col.name
+            for col in table.columns_info
+            if col.dtype in DBVarType.supported_detection_types()
+        ]
         if not columns:
             return
 
@@ -130,7 +134,9 @@ class ArrayEmbeddingDtypeDetector(BaseSpecializedDtypeDetector):
                     continue
 
                 # skip if arrays
-                all_num = series.apply(lambda x: np.all(np.isfinite(pd.to_numeric(x, errors="coerce"))))
+                all_num = series.apply(
+                    lambda x: np.all(np.isfinite(pd.to_numeric(x, errors="coerce")))
+                )
                 if all_num.all():
                     column.dtype = DBVarType.EMBEDDING
 

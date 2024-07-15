@@ -31,7 +31,9 @@ class BaseGraphInterpreter:
     """
 
     def __init__(self, query_graph: QueryGraphModel, source_type: SourceType):
-        self.query_graph, self.node_name_map = GraphFlatteningTransformer(graph=query_graph).transform()
+        self.query_graph, self.node_name_map = GraphFlatteningTransformer(
+            graph=query_graph
+        ).transform()
         self.source_type = source_type
         self.adapter = get_sql_adapter(source_type)
 
@@ -99,7 +101,9 @@ class BaseGraphInterpreter:
         Select
         """
         flat_node = self.get_flattened_node(node_name)
-        sql_graph = SQLOperationGraph(self.query_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type)
+        sql_graph = SQLOperationGraph(
+            self.query_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
+        )
         sql_node = sql_graph.build(flat_node)
         assert isinstance(sql_node, TableNode)
         return cast(expressions.Select, sql_node.sql)

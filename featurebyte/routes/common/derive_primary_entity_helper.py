@@ -19,7 +19,9 @@ class DerivePrimaryEntityHelper:
     def __init__(self, entity_service: EntityService):
         self.entity_service = entity_service
 
-    async def get_entity_id_to_entity(self, doc_list: list[dict[str, Any]]) -> dict[ObjectId, EntityModel]:
+    async def get_entity_id_to_entity(
+        self, doc_list: list[dict[str, Any]]
+    ) -> dict[ObjectId, EntityModel]:
         """
         Construct entity ID to entity dictionary mapping
 

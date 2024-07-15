@@ -125,7 +125,9 @@ class BaseAdapterTest:
                 False,
             ),
         ]
-        group_by_expr = adapter.group_by(select_expr, select_keys, agg_exprs, keys, vector_aggregate_exprs)
+        group_by_expr = adapter.group_by(
+            select_expr, select_keys, agg_exprs, keys, vector_aggregate_exprs
+        )
         expected = self.get_group_by_expected_result()
         assert group_by_expr.sql(pretty=True) == expected
 

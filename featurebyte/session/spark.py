@@ -81,7 +81,9 @@ class SparkSession(BaseSparkSession):
                 auth = AuthType.TOKEN
                 access_token = self.database_credential.access_token
             else:
-                raise NotImplementedError(f"Unsupported credential type: {self.database_credential.type}")
+                raise NotImplementedError(
+                    f"Unsupported credential type: {self.database_credential.type}"
+                )
 
         # determine transport scheme
         if self.use_http_transport:
@@ -166,7 +168,9 @@ class SparkSession(BaseSparkSession):
         elif self.storage_type == StorageType.GCS:
             if self.storage_credential is None:
                 raise NotImplementedError("Storage credential is required for GCS")
-            if self.storage_credential is None or not isinstance(self.storage_credential, GCSStorageCredential):
+            if self.storage_credential is None or not isinstance(
+                self.storage_credential, GCSStorageCredential
+            ):
                 raise NotImplementedError(
                     f"Unsupported storage credential for GCS: {self.storage_credential.__class__.__name__}"
                 )
@@ -177,7 +181,9 @@ class SparkSession(BaseSparkSession):
         elif self.storage_type == StorageType.AZURE:
             if self.storage_credential is None:
                 raise NotImplementedError("Storage credential is required for Azure Blob Storage")
-            if self.storage_credential is None or not isinstance(self.storage_credential, AzureBlobStorageCredential):
+            if self.storage_credential is None or not isinstance(
+                self.storage_credential, AzureBlobStorageCredential
+            ):
                 raise NotImplementedError(
                     f"Unsupported storage credential for Azure Blob Storage: {self.storage_credential.__class__.__name__}"
                 )
@@ -200,7 +206,9 @@ class SparkSession(BaseSparkSession):
         # test connectivity
         self._storage.test_connection()
 
-    def upload_file_to_storage(self, local_path: str, remote_path: str, is_binary: bool = True) -> None:
+    def upload_file_to_storage(
+        self, local_path: str, remote_path: str, is_binary: bool = True
+    ) -> None:
         read_mode = cast(FileMode, "rb" if is_binary else "r")
         write_mode = cast(FileMode, "wb" if is_binary else "w")
         logger.debug(

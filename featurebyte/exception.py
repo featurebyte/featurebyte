@@ -308,7 +308,9 @@ class NoFeatureStorePresentError(BaseFailedDependencyError):
     """
 
     def __str__(self) -> str:
-        return "No feature store found. Please create one before trying to access this functionality."
+        return (
+            "No feature store found. Please create one before trying to access this functionality."
+        )
 
 
 class FeatureListNotOnlineEnabledError(FeatureByteException):

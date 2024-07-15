@@ -68,9 +68,9 @@ def construct_request_table_with_parent_entities(
     -------
     ParentEntityLookupResult
     """
-    table_expr = select(*[get_qualified_column_identifier(col, "REQ") for col in request_table_columns]).from_(
-        expressions.alias_(request_table_name, "REQ")
-    )
+    table_expr = select(*[
+        get_qualified_column_identifier(col, "REQ") for col in request_table_columns
+    ]).from_(expressions.alias_(request_table_name, "REQ"))
 
     current_columns = request_table_columns[:]
     new_columns = []

@@ -21,7 +21,9 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
 
     class_name = "UserDefinedFunction"
     base_route = "/user_defined_function"
-    payload = BaseCatalogApiTestSuite.load_payload("tests/fixtures/request_payloads/user_defined_function.json")
+    payload = BaseCatalogApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/user_defined_function.json"
+    )
 
     def setup_creation_route(self, api_client):
         """Setup for creation route"""
@@ -47,7 +49,9 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
             yield payload
 
     @pytest.fixture(name="mock_get_session_to_throw_exception")
-    def mock_snowflake_execute_to_throw_exception_fixture(self, session_manager, snowflake_execute_query):
+    def mock_snowflake_execute_to_throw_exception_fixture(
+        self, session_manager, snowflake_execute_query
+    ):
         """Mock get session to throw exception"""
         _, _ = session_manager, snowflake_execute_query
         with mock.patch(
@@ -72,7 +76,9 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
             user_id=user_id,
         )
 
-    def test_create__function_not_found(self, test_api_client_persistent, mock_get_session_to_throw_exception):
+    def test_create__function_not_found(
+        self, test_api_client_persistent, mock_get_session_to_throw_exception
+    ):
         """Test create route (function not found)"""
         _ = mock_get_session_to_throw_exception
         test_api_client, _ = test_api_client_persistent
@@ -105,7 +111,9 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
             ({"output_dtype": "INT"}, "udf_test(x: float) -> int"),
         ],
     )
-    def test_update_200(self, test_api_client_persistent, create_success_response, payload, expected_signature):
+    def test_update_200(
+        self, test_api_client_persistent, create_success_response, payload, expected_signature
+    ):
         """Test update user defined function (success)"""
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
@@ -126,7 +134,9 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
 
         random_id = ObjectId()
-        update_response = test_api_client.patch(url=f"{self.base_route}/{random_id}", json={"function_parameters": []})
+        update_response = test_api_client.patch(
+            url=f"{self.base_route}/{random_id}", json={"function_parameters": []}
+        )
         assert update_response.status_code == HTTPStatus.NOT_FOUND
 
     @pytest.mark.asyncio
@@ -159,7 +169,10 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
             url=f"{self.base_route}/{doc_id}", json={"function_parameters": [function_parameter]}
         )
         assert update_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert update_response.json()["detail"] == "UserDefinedFunction is referenced by Feature: sum_30m"
+        assert (
+            update_response.json()["detail"]
+            == "UserDefinedFunction is referenced by Feature: sum_30m"
+        )
 
     def test_update__function_not_found(
         self,
@@ -191,7 +204,9 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
 
         # test delete user defined function
-        response = test_api_client.delete(url=f"{self.base_route}/{create_success_response.json()['_id']}")
+        response = test_api_client.delete(
+            url=f"{self.base_route}/{create_success_response.json()['_id']}"
+        )
         assert response.status_code == HTTPStatus.OK
 
         # check the user defined function is deleted
@@ -233,7 +248,9 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
         feature_store_id = response.json()["default_feature_store_ids"][0]
 
         # test filter by feature_store_id
-        response = test_api_client.get(self.base_route, params={"feature_store_id": feature_store_id})
+        response = test_api_client.get(
+            self.base_route, params={"feature_store_id": feature_store_id}
+        )
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
         assert response_dict["total"] == len(create_multiple_success_responses)
@@ -264,7 +281,9 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
 
         # test get info
-        response = test_api_client.get(url=f"{self.base_route}/{create_success_response.json()['_id']}/info")
+        response = test_api_client.get(
+            url=f"{self.base_route}/{create_success_response.json()['_id']}/info"
+        )
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
         assert response_dict == {

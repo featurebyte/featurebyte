@@ -53,12 +53,16 @@ class RedisOnlineStoreDetails(BaseOnlineStoreDetails):
     ... )
     """
 
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.RedisOnlineStoreDetails")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.RedisOnlineStoreDetails"
+    )
 
     # Online store type selector
     type: Literal[OnlineStoreType.REDIS] = OnlineStoreType.REDIS
 
-    redis_type: RedisType = Field(default=RedisType.REDIS, description="Redis type: redis or redis_cluster.")
+    redis_type: RedisType = Field(
+        default=RedisType.REDIS, description="Redis type: redis or redis_cluster."
+    )
     #  format: host:port,parameter1,parameter2 eg. redis:6379,db=0
     connection_string: StrictStr = Field(
         default="localhost:6379",
@@ -69,7 +73,9 @@ class RedisOnlineStoreDetails(BaseOnlineStoreDetails):
         default=None, description="Redis key bin ttl (in seconds) for expiring entities."
     )
 
-    credential: Optional[UsernamePasswordCredential] = Field(default=None, description="Redis user and password.")
+    credential: Optional[UsernamePasswordCredential] = Field(
+        default=None, description="Redis user and password."
+    )
 
 
 class MySQLOnlineStoreDetails(BaseOnlineStoreDetails):
@@ -86,7 +92,9 @@ class MySQLOnlineStoreDetails(BaseOnlineStoreDetails):
     ... )
     """
 
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.MySQLOnlineStoreDetails")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.MySQLOnlineStoreDetails"
+    )
 
     # Online store type selector
     type: Literal[OnlineStoreType.MYSQL] = OnlineStoreType.MYSQL
@@ -97,7 +105,9 @@ class MySQLOnlineStoreDetails(BaseOnlineStoreDetails):
 
     port: int = Field(default=3306, description="MySQL connection port.")
 
-    credential: Optional[UsernamePasswordCredential] = Field(default=None, description="MySQL user and password.")
+    credential: Optional[UsernamePasswordCredential] = Field(
+        default=None, description="MySQL user and password."
+    )
 
 
 OnlineStoreDetails = Annotated[

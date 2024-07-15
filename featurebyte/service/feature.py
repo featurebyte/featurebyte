@@ -79,7 +79,9 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         self.entity_serving_names_service = entity_serving_names_service
         self.offline_store_info_initialization_service = offline_store_info_initialization_service
 
-    async def prepare_feature_model(self, data: FeatureServiceCreate, sanitize_for_definition: bool) -> FeatureModel:
+    async def prepare_feature_model(
+        self, data: FeatureServiceCreate, sanitize_for_definition: bool
+    ) -> FeatureModel:
         """
         Prepare the feature model by pruning the query graph
 
@@ -106,7 +108,9 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         )
 
         # derived attributes
-        derived_data = await self.extract_derived_data(graph=prepared_graph, node_name=prepared_node_name)
+        derived_data = await self.extract_derived_data(
+            graph=prepared_graph, node_name=prepared_node_name
+        )
 
         feature_dict = {
             **{
@@ -136,9 +140,12 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         # derive entity join steps
         store_info_service = self.offline_store_info_initialization_service
         entity_id_to_serving_name = {
-            entity_id: entity.serving_names[0] for entity_id, entity in derived_data.entity_id_to_entity.items()
+            entity_id: entity.serving_names[0]
+            for entity_id, entity in derived_data.entity_id_to_entity.items()
         }
-        feature_dict["entity_join_steps"] = await store_info_service.get_entity_join_steps_for_feature_table(
+        feature_dict[
+            "entity_join_steps"
+        ] = await store_info_service.get_entity_join_steps_for_feature_table(
             feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
         )
         return FeatureModel(**feature_dict)
@@ -167,7 +174,10 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             if table_id not in table_id_to_feature_job_setting:
                 table_id_to_feature_job_setting[table_id] = feature_job_setting
             else:
-                if table_id_to_feature_job_setting[table_id].to_seconds() != feature_job_setting.to_seconds():
+                if (
+                    table_id_to_feature_job_setting[table_id].to_seconds()
+                    != feature_job_setting.to_seconds()
+                ):
                     raise DocumentCreationError(
                         f"Feature job settings for table {table_id} are not consistent. "
                         f"Two different feature job settings are found: "
@@ -189,7 +199,9 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 # feature is online-enabled. Check whether the UDF is used in the on-demand function.
                 decom_graph = result.graph
                 decom_node = result.graph.get_node_by_name(result.node_name_map[feature.node.name])
-                if decom_graph.has_node_type(target_node=decom_node, node_type=NodeType.GENERIC_FUNCTION):
+                if decom_graph.has_node_type(
+                    target_node=decom_node, node_type=NodeType.GENERIC_FUNCTION
+                ):
                     raise DocumentCreationError(
                         "This feature requires a Python on-demand function during deployment. "
                         "We cannot proceed with creating the feature because the on-demand function involves a UDF, "
@@ -233,7 +245,9 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 await self.feature_namespace_service.update_document(
                     document_id=document.feature_namespace_id,
                     data=FeatureNamespaceServiceUpdate(
-                        feature_ids=self.include_object_id(feature_namespace.feature_ids, document.id)
+                        feature_ids=self.include_object_id(
+                            feature_namespace.feature_ids, document.id
+                        )
                     ),
                     return_document=True,
                 )
@@ -253,7 +267,9 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
                 )
         return await self.get_document(document_id=insert_id)
 
-    async def get_document_by_name_and_version(self, name: str, version: VersionIdentifier) -> FeatureModel:
+    async def get_document_by_name_and_version(
+        self, name: str, version: VersionIdentifier
+    ) -> FeatureModel:
         """
         Retrieve feature given name & version
 
@@ -311,7 +327,9 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             disable_audit=self.should_disable_audit,
         )
 
-    async def update_offline_store_info(self, document_id: ObjectId, store_info: Dict[str, Any]) -> None:
+    async def update_offline_store_info(
+        self, document_id: ObjectId, store_info: Dict[str, Any]
+    ) -> None:
         """
         Update offline store info for a feature
 
@@ -351,10 +369,14 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         """
         await self.update_documents(
             query_filter={"aggregation_ids": aggregation_id},
-            update={"$set": {"last_updated_by_scheduled_task_at": last_updated_by_scheduled_task_at}},
+            update={
+                "$set": {"last_updated_by_scheduled_task_at": last_updated_by_scheduled_task_at}
+            },
         )
 
-    async def get_sample_entity_serving_names(self, feature_id: ObjectId, count: int) -> List[Dict[str, str]]:
+    async def get_sample_entity_serving_names(
+        self, feature_id: ObjectId, count: int
+    ) -> List[Dict[str, str]]:
         """
         Get sample entity serving names for a feature
 

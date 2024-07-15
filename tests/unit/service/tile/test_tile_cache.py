@@ -83,7 +83,9 @@ def tile_cache_status_fixture(tile_info_1, tile_info_2, tile_info_3, tile_info_4
     )
 
 
-def test_tile_cache_status_split_batches(tile_cache_status, tile_info_1, tile_info_2, tile_info_3, tile_info_4):
+def test_tile_cache_status_split_batches(
+    tile_cache_status, tile_info_1, tile_info_2, tile_info_3, tile_info_4
+):
     """
     Test TileCacheStatus split_batches method
     """

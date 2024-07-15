@@ -169,7 +169,9 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
     assert result["PRODUCT_ACTION"].tolist() == ["view", "view", "view", "view"]
 
     # Check new aggregation which is updated once
-    result = await retrieve_online_store_content(session, feature_store_table_name, new_feature_name)
+    result = await retrieve_online_store_content(
+        session, feature_store_table_name, new_feature_name
+    )
     assert len(result) == 2
     assert result[InternalName.ONLINE_STORE_VALUE_COLUMN].tolist() == [3, 6]
     assert result[InternalName.ONLINE_STORE_VERSION_COLUMN].tolist() == [0, 0]
@@ -259,7 +261,9 @@ async def test_online_store_table_cleanup(
     Test cleaning up of online store tables
     """
 
-    _tile_id, agg_id, feature_store_table_name, feature_name, _entity_col_names = tile_task_prep_spark
+    _tile_id, agg_id, feature_store_table_name, feature_name, _entity_col_names = (
+        tile_task_prep_spark
+    )
     date_ts_str = datetime.now().isoformat()[:-3] + "Z"
 
     # Populate the online store table multiple times to get different versions

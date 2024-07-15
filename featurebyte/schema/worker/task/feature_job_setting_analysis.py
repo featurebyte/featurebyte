@@ -22,13 +22,17 @@ class FeatureJobSettingAnalysisTaskPayload(BaseTaskPayload, FeatureJobSettingAna
 
     # class variables
     command: ClassVar[WorkerCommand] = WorkerCommand.FEATURE_JOB_SETTING_ANALYSIS_CREATE
-    output_collection_name: ClassVar[Optional[str]] = FeatureJobSettingAnalysisModel.collection_name()
+    output_collection_name: ClassVar[Optional[str]] = (
+        FeatureJobSettingAnalysisModel.collection_name()
+    )
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
 
 
-class FeatureJobSettingAnalysisBackTestTaskPayload(BaseTaskPayload, FeatureJobSettingAnalysisBacktest):
+class FeatureJobSettingAnalysisBackTestTaskPayload(
+    BaseTaskPayload, FeatureJobSettingAnalysisBacktest
+):
     """
     Feature Job Setting Analysis Backtest Task Payload
     """

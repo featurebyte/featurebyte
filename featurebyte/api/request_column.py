@@ -54,9 +54,12 @@ class RequestColumn(Series):
         NotImplementedError
             If the request column is not the POINT_IN_TIME column
         """
-        if not (column_name == SpecialColumnName.POINT_IN_TIME and column_dtype == DBVarType.TIMESTAMP):
+        if not (
+            column_name == SpecialColumnName.POINT_IN_TIME and column_dtype == DBVarType.TIMESTAMP
+        ):
             raise NotImplementedError(
-                "Currently only POINT_IN_TIME column is supported. Please use" " RequestColumn.point_in_time() instead."
+                "Currently only POINT_IN_TIME column is supported. Please use"
+                " RequestColumn.point_in_time() instead."
             )
 
         node = GlobalQueryGraph().add_operation(
@@ -94,10 +97,14 @@ class RequestColumn(Series):
         ...     feature_names=["Customer Latest Visit"],
         ... )
         >>> # Create feature that computes the time since the latest invoice
-        >>> feature = (fb.RequestColumn.point_in_time() - latest_invoice["Customer Latest Visit"]).dt.hour
+        >>> feature = (
+        ...     fb.RequestColumn.point_in_time() - latest_invoice["Customer Latest Visit"]
+        ... ).dt.hour
         >>> feature.name = "Customer number of hours since last visit"
         """
-        return RequestColumn.create_request_column(SpecialColumnName.POINT_IN_TIME.value, DBVarType.TIMESTAMP)
+        return RequestColumn.create_request_column(
+            SpecialColumnName.POINT_IN_TIME.value, DBVarType.TIMESTAMP
+        )
 
     @property
     def binary_op_output_class_priority(self) -> int:

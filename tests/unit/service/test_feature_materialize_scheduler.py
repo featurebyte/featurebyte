@@ -39,7 +39,9 @@ async def fixture_offline_store_feature_table(app_container, feature_job_setting
         serving_names=["cust_id"],
         feature_job_setting=feature_job_setting,
         has_ttl=True,
-        feature_cluster=FeatureCluster(graph=QueryGraph(), node_names=[], feature_store_id=ObjectId()),
+        feature_cluster=FeatureCluster(
+            graph=QueryGraph(), node_names=[], feature_store_id=ObjectId()
+        ),
         output_column_names=["col1", "col2"],
         output_dtypes=["VARCHAR", "FLOAT"],
         entity_universe=EntityUniverseModel(
@@ -106,8 +108,12 @@ async def test_start_and_stop_job(service, feature_job_setting, offline_store_fe
     )
     assert periodic_task.time_modulo_frequency_second == feature_job_setting.offset_seconds
     assert periodic_task.kwargs["command"] == WorkerCommand.FEATURE_MATERIALIZE_SYNC
-    assert periodic_task.kwargs["offline_store_feature_table_id"] == str(offline_store_feature_table.id)
-    assert periodic_task.kwargs["offline_store_feature_table_name"] == offline_store_feature_table.name
+    assert periodic_task.kwargs["offline_store_feature_table_id"] == str(
+        offline_store_feature_table.id
+    )
+    assert (
+        periodic_task.kwargs["offline_store_feature_table_name"] == offline_store_feature_table.name
+    )
 
     # Test stopping job
     await service.stop_job(offline_store_feature_table.id)

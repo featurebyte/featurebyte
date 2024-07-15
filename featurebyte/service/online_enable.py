@@ -127,7 +127,9 @@ class OnlineEnableService:
         else:
             await feature_manager_service.online_disable(session, online_feature_spec)
 
-    async def update_data_warehouse(self, feature: FeatureModel, target_online_enabled: bool) -> None:
+    async def update_data_warehouse(
+        self, feature: FeatureModel, target_online_enabled: bool
+    ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
         disabling scheduled tile and feature jobs
@@ -148,7 +150,9 @@ class OnlineEnableService:
             document_id=feature.tabular_source.feature_store_id
         )
         try:
-            session = await self.session_manager_service.get_feature_store_session(feature_store_model)
+            session = await self.session_manager_service.get_feature_store_session(
+                feature_store_model
+            )
         except DataWarehouseConnectionError as exc:
             if target_online_enabled:
                 raise exc

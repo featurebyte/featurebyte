@@ -22,9 +22,9 @@ class NotNode(BaseSeriesOutputWithSingleOperandNode):
     type: Literal[NodeType.NOT] = Field(NodeType.NOT, const=True)
 
     # class variable
-    _derive_sdk_code_return_var_name_expression_type: ClassVar[Union[Type[VariableNameStr], Type[ExpressionStr]]] = (
-        ExpressionStr
-    )
+    _derive_sdk_code_return_var_name_expression_type: ClassVar[
+        Union[Type[VariableNameStr], Type[ExpressionStr]]
+    ] = ExpressionStr
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL

@@ -143,7 +143,9 @@ class BufferedInput(BufferedInputBase):
 
         payload = {"op": "OPEN", "offset": "0"}
         kwargs = _get_request_params(kerberos=kerberos)
-        self._response = requests.get(self._uri, params=payload, stream=True, timeout=TIMEOUT, **kwargs)
+        self._response = requests.get(
+            self._uri, params=payload, stream=True, timeout=TIMEOUT, **kwargs
+        )
         if self._response.status_code != HTTPStatus.OK:
             raise WebHdfsException(msg=self._response.text, status_code=self._response.status_code)
         self._buf = b""
@@ -154,7 +156,9 @@ class BufferedOutput(BufferedOutputBase):
     BufferedOutput class for webhdfs with Kerberos authentication
     """
 
-    def __init__(self, uri: str, min_part_size: int = MIN_PART_SIZE, kerberos: bool = False) -> None:
+    def __init__(
+        self, uri: str, min_part_size: int = MIN_PART_SIZE, kerberos: bool = False
+    ) -> None:
         """
         Initialize BufferedOutput
 
@@ -186,7 +190,9 @@ class BufferedOutput(BufferedOutputBase):
         # creating empty file first
         payload = {"op": "CREATE", "overwrite": "True"}
         kwargs = _get_request_params(kerberos=kerberos)
-        init_response = requests.put(self._uri, params=payload, allow_redirects=False, timeout=TIMEOUT, **kwargs)
+        init_response = requests.put(
+            self._uri, params=payload, allow_redirects=False, timeout=TIMEOUT, **kwargs
+        )
         if not init_response.status_code == HTTPStatus.TEMPORARY_REDIRECT:
             raise WebHdfsException(msg=init_response.text, status_code=init_response.status_code)
         uri = init_response.headers["location"]
@@ -204,7 +210,9 @@ class BufferedOutput(BufferedOutputBase):
     def _upload(self, data: bytes) -> None:
         payload = {"op": "APPEND"}
         kwargs = _get_request_params(kerberos=self._kerberos)
-        init_response = requests.post(self._uri, params=payload, allow_redirects=False, timeout=TIMEOUT, **kwargs)
+        init_response = requests.post(
+            self._uri, params=payload, allow_redirects=False, timeout=TIMEOUT, **kwargs
+        )
         if not init_response.status_code == HTTPStatus.TEMPORARY_REDIRECT:
             raise WebHdfsException(msg=init_response.text, status_code=init_response.status_code)
         uri = init_response.headers["location"]

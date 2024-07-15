@@ -194,7 +194,9 @@ class ItemTable(TableApiObject):
         ...             column_name="Discount",
         ...             cleaning_operations=[
         ...                 fb.MissingValueImputation(imputed_value=0),
-        ...                 fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=None),
+        ...                 fb.ValueBeyondEndpointImputation(
+        ...                     type="less_than", end_point=0, imputed_value=None
+        ...                 ),
         ...             ],
         ...         )
         ...     ],
@@ -294,7 +296,9 @@ class ItemTable(TableApiObject):
             timestamp_timezone_offset_column = apply_column_name_modifiers(
                 [event_view.timestamp_timezone_offset_column], rsuffix=event_suffix, rprefix=None
             )[0]
-        inserted_graph_node = GlobalQueryGraph().add_node(view_graph_node, input_nodes=[data_node, event_view.node])
+        inserted_graph_node = GlobalQueryGraph().add_node(
+            view_graph_node, input_nodes=[data_node, event_view.node]
+        )
         return ItemView(
             feature_store=self.feature_store,
             tabular_source=self.tabular_source,

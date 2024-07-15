@@ -108,7 +108,9 @@ class LocalStorage(Storage):
 
         await async_os.remove(source_path)
 
-    async def get_file_stream(self, remote_path: Path, chunk_size: int = 255 * 1024) -> AsyncGenerator[bytes, None]:
+    async def get_file_stream(
+        self, remote_path: Path, chunk_size: int = 255 * 1024
+    ) -> AsyncGenerator[bytes, None]:
         """
         Stream file from storage to local path
 

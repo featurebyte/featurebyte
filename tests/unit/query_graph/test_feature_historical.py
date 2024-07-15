@@ -91,7 +91,9 @@ def test_validate_historical_requests_point_in_time():
 
     # this should not fail and convert point-in-time values to UTC
     converted_observation_set = convert_point_in_time_dtype_if_needed(observation_set)
-    validate_historical_requests_point_in_time(get_internal_observation_set(converted_observation_set))
+    validate_historical_requests_point_in_time(
+        get_internal_observation_set(converted_observation_set)
+    )
     expected_df = pd.DataFrame({
         "POINT_IN_TIME": pd.date_range("2020-01-01T02:00:00", freq="D", periods=10),
     })

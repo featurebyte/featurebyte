@@ -32,7 +32,9 @@ async def test_schema_initializer(config, feature_store, credentials_mapping):
     working_schema_version_column = "WORKING_SCHEMA_VERSION"
     assert len(results[working_schema_version_column]) == 1
     # check that this is set to the default value
-    assert int(results[working_schema_version_column][0]) == initializer.current_working_schema_version
+    assert (
+        int(results[working_schema_version_column][0]) == initializer.current_working_schema_version
+    )
 
     # Try to retrieve the session again - this should trigger a re-initialization
     # Verify that there's still only one row in table
@@ -40,7 +42,9 @@ async def test_schema_initializer(config, feature_store, credentials_mapping):
     results = await session.execute_query(get_version_query)
     assert results is not None
     assert len(results[working_schema_version_column]) == 1
-    assert int(results[working_schema_version_column][0]) == initializer.current_working_schema_version
+    assert (
+        int(results[working_schema_version_column][0]) == initializer.current_working_schema_version
+    )
 
 
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
@@ -68,7 +72,8 @@ async def test_list_tables(config, feature_store, credentials_mapping):
         {"name": "__groceryinvoice", "description": None},
         {
             "name": "groceryinvoice",
-            "description": "Grocery invoice details, containing the timestamp and the " "total amount of the invoice.",
+            "description": "Grocery invoice details, containing the timestamp and the "
+            "total amount of the invoice.",
         },
         {"description": None, "name": "__grocerycustomer"},
         {

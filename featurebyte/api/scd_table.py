@@ -78,9 +78,15 @@ class SCDTable(TableApiObject):
     )
     internal_natural_key_column: StrictStr = Field(alias="natural_key_column")
     internal_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
-    internal_surrogate_key_column: Optional[StrictStr] = Field(alias="surrogate_key_column", default=None)
-    internal_end_timestamp_column: Optional[StrictStr] = Field(alias="end_timestamp_column", default=None)
-    internal_current_flag_column: Optional[StrictStr] = Field(alias="current_flag_column", default=None)
+    internal_surrogate_key_column: Optional[StrictStr] = Field(
+        alias="surrogate_key_column", default=None
+    )
+    internal_end_timestamp_column: Optional[StrictStr] = Field(
+        alias="end_timestamp_column", default=None
+    )
+    internal_current_flag_column: Optional[StrictStr] = Field(
+        alias="current_flag_column", default=None
+    )
 
     # pydantic validators
     _root_validator = root_validator(allow_reuse=True)(
@@ -308,7 +314,9 @@ class SCDTable(TableApiObject):
         feature_job_setting = ChangeView.get_default_feature_job_setting(
             default_feature_job_setting or self.default_feature_job_setting
         )
-        col_names = SCDTableData.get_new_column_names(track_changes_column, self.effective_timestamp_column, prefixes)
+        col_names = SCDTableData.get_new_column_names(
+            track_changes_column, self.effective_timestamp_column, prefixes
+        )
         drop_column_names = drop_column_names or []
         if (
             view_mode == ViewMode.AUTO

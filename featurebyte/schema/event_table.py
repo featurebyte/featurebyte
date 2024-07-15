@@ -47,7 +47,9 @@ class EventTableCreate(TableCreate):
 
     @root_validator()
     @classmethod
-    def _validate_event_timestamp_timezone_offset_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _validate_event_timestamp_timezone_offset_parameters(
+        cls, values: dict[str, Any]
+    ) -> dict[str, Any]:
         if (
             values.get("event_timestamp_timezone_offset") is not None
             and values.get("event_timestamp_timezone_offset_column") is not None

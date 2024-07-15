@@ -277,10 +277,16 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     id: PydanticObjectId = Field(
         default_factory=ObjectId, alias="_id", allow_mutation=False, description="Record identifier"
     )
-    user_id: Optional[PydanticObjectId] = Field(default=None, allow_mutation=False, description="User identifier")
+    user_id: Optional[PydanticObjectId] = Field(
+        default=None, allow_mutation=False, description="User identifier"
+    )
     name: Optional[NameStr] = Field(default=None, description="Record name")
-    created_at: Optional[datetime] = Field(default=None, allow_mutation=False, description="Record creation time")
-    updated_at: Optional[datetime] = Field(default=None, allow_mutation=False, description="Record last updated time")
+    created_at: Optional[datetime] = Field(
+        default=None, allow_mutation=False, description="Record creation time"
+    )
+    updated_at: Optional[datetime] = Field(
+        default=None, allow_mutation=False, description="Record last updated time"
+    )
     block_modification_by: List[ReferenceInfo] = Field(
         default_factory=list,
         allow_mutation=False,

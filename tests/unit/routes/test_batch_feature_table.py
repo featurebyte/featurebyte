@@ -21,7 +21,9 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
 
     class_name = "BatchFeatureTable"
     base_route = "/batch_feature_table"
-    payload = BaseMaterializedTableTestSuite.load_payload("tests/fixtures/request_payloads/batch_feature_table.json")
+    payload = BaseMaterializedTableTestSuite.load_payload(
+        "tests/fixtures/request_payloads/batch_feature_table.json"
+    )
     random_id = str(ObjectId())
 
     create_conflict_payload_expected_detail_pairs = [
@@ -175,7 +177,9 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         response = test_api_client.delete(f"/batch_request_table/{batch_request_table_id}")
         response_dict = response.json()
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response_dict
-        assert response_dict["detail"] == ("BatchRequestTable is referenced by BatchFeatureTable: batch_feature_table")
+        assert response_dict["detail"] == (
+            "BatchRequestTable is referenced by BatchFeatureTable: batch_feature_table"
+        )
 
     def test_info_200(self, test_api_client_persistent, create_success_response):
         """Test info route"""
@@ -198,7 +202,9 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             "description": None,
         }
 
-    def test_delete_deployment(self, test_api_client_persistent, create_success_response, default_catalog_id):
+    def test_delete_deployment(
+        self, test_api_client_persistent, create_success_response, default_catalog_id
+    ):
         """Test delete deployment used by batch feature table"""
         test_api_client, _ = test_api_client_persistent
         doc_id = create_success_response.json()["_id"]
@@ -212,7 +218,12 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         assert response.json()["detail"] == "Only disabled deployment can be deleted."
 
         # disable the deployment first
-        self.update_deployment_enabled(test_api_client, deployment_id, default_catalog_id, enabled=False)
+        self.update_deployment_enabled(
+            test_api_client, deployment_id, default_catalog_id, enabled=False
+        )
         response = test_api_client.delete(f"/deployment/{deployment_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-        assert response.json()["detail"] == "Deployment is referenced by BatchFeatureTable: batch_feature_table"
+        assert (
+            response.json()["detail"]
+            == "Deployment is referenced by BatchFeatureTable: batch_feature_table"
+        )

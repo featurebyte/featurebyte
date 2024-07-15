@@ -17,7 +17,9 @@ def idfn(param):
         return str(param).split("/")[1]
 
 
-@pytest.mark.parametrize("quick_start_notebooks", list(NOTEBOOKS_PATH.glob("quick*.ipynb")), ids=idfn)
+@pytest.mark.parametrize(
+    "quick_start_notebooks", list(NOTEBOOKS_PATH.glob("quick*.ipynb")), ids=idfn
+)
 def test_quick_start_notebooks(quick_start_notebooks):
     result = notebook_runner(quick_start_notebooks)
     assert result.returncode == 0
@@ -29,7 +31,9 @@ def test_deep_dive_notebooks(deep_dive_notebooks):
     assert result.returncode == 0
 
 
-@pytest.mark.parametrize("playground_notebooks", list(NOTEBOOKS_PATH.glob("playground*.ipynb")), ids=idfn)
+@pytest.mark.parametrize(
+    "playground_notebooks", list(NOTEBOOKS_PATH.glob("playground*.ipynb")), ids=idfn
+)
 def test_playground_notebooks(playground_notebooks):
     result = notebook_runner(playground_notebooks)
     assert result.returncode == 0

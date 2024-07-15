@@ -304,7 +304,9 @@ class FeastDataBricksUnityDetails(AbstractDatabaseDetailsForFeast, DatabricksUni
         database_credential: Optional[BaseDatabaseCredential],
         storage_credential: Optional[BaseStorageCredential],
     ) -> Any:
-        return DataBricksUnityOfflineStoreConfig(**self.dict(), database_credential=database_credential)
+        return DataBricksUnityOfflineStoreConfig(
+            **self.dict(), database_credential=database_credential
+        )
 
 
 FeastDatabaseDetails = Union[

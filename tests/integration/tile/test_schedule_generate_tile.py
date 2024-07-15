@@ -91,7 +91,9 @@ async def test_schedule_generate_tile_online(
 
     # verify tile job logs
     result = []
-    async for doc in tile_job_log_service.list_documents_as_dict_iterator(query_filter={"tile_id": tile_id}):
+    async for doc in tile_job_log_service.list_documents_as_dict_iterator(
+        query_filter={"tile_id": tile_id}
+    ):
         result.append(doc)
     result = sorted(result, key=lambda x: x["created_at"])
     assert [res["status"] for res in result] == ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
@@ -122,7 +124,9 @@ async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_e
     table_name = f"SOURCE_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
     await session.create_table_as(
         table_details=table_name,
-        select_expr=expressions.Select(expressions=[expressions.Star()]).from_(expressions.Table(this="TEMP_TABLE")),
+        select_expr=expressions.Select(expressions=[expressions.Star()]).from_(
+            expressions.Table(this="TEMP_TABLE")
+        ),
     )
 
     entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
@@ -237,7 +241,10 @@ async def test_schedule_generate_tile__with_registry(
     assert result["TILE_COUNT"].iloc[0] == (tile_monitor + 1)
 
     tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)
-    assert tile_model.last_run_metadata_online.tile_end_date.strftime("%Y-%m-%d %H:%M:%S") == "2022-06-05 23:58:00"
+    assert (
+        tile_model.last_run_metadata_online.tile_end_date.strftime("%Y-%m-%d %H:%M:%S")
+        == "2022-06-05 23:58:00"
+    )
 
     # test for LAST_TILE_START_DATE_ONLINE earlier than tile_start_date
     await tile_registry_service.update_last_run_metadata(
@@ -249,7 +256,10 @@ async def test_schedule_generate_tile__with_registry(
     assert result["TILE_COUNT"].iloc[0] == 5
 
     result = await tile_registry_service.get_tile_model(tile_id, agg_id)
-    assert result.last_run_metadata_online.tile_end_date.strftime("%Y-%m-%d %H:%M:%S") == "2022-06-05 23:58:00"
+    assert (
+        result.last_run_metadata_online.tile_end_date.strftime("%Y-%m-%d %H:%M:%S")
+        == "2022-06-05 23:58:00"
+    )
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
@@ -302,7 +312,10 @@ async def test_schedule_generate_tile__no_default_job_ts(
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
     tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)
-    assert tile_model.last_run_metadata_online.tile_end_date.strftime(date_format) == "2023-05-04 14:33:00"
+    assert (
+        tile_model.last_run_metadata_online.tile_end_date.strftime(date_format)
+        == "2023-05-04 14:33:00"
+    )
 
     # job scheduled time falls on in-between job times
     used_job_schedule_ts = "2023-05-04 14:33:30"
@@ -324,4 +337,7 @@ async def test_schedule_generate_tile__no_default_job_ts(
     )
     await tile_task_executor.execute(session, tile_schedule_ins)
     tile_model = await tile_registry_service.get_tile_model(tile_id, agg_id)
-    assert tile_model.last_run_metadata_online.tile_end_date.strftime(date_format) == "2023-05-04 14:33:00"
+    assert (
+        tile_model.last_run_metadata_online.tile_end_date.strftime(date_format)
+        == "2023-05-04 14:33:00"
+    )

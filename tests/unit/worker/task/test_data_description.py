@@ -26,7 +26,9 @@ class TestDataDescriptionTask(BaseTaskTestSuite):
 
     task_class = DataDescriptionTask
     payload = DataDescriptionTaskPayload(
-        sample=BaseTaskTestSuite.load_payload("tests/fixtures/request_payloads/feature_store_sample.json"),
+        sample=BaseTaskTestSuite.load_payload(
+            "tests/fixtures/request_payloads/feature_store_sample.json"
+        ),
         size=0,
         seed=1234,
         catalog_id=ObjectId(),
@@ -59,7 +61,9 @@ class TestDataDescriptionTask(BaseTaskTestSuite):
         """
         Patch execute_query
         """
-        with patch("featurebyte.session.base.BaseSession.execute_query_long_running") as mock_execute_query:
+        with patch(
+            "featurebyte.session.base.BaseSession.execute_query_long_running"
+        ) as mock_execute_query:
             mock_execute_query.return_value = pd.DataFrame({
                 "a_dtype": ["FLOAT"],
                 "a_unique": [5],
@@ -112,7 +116,10 @@ class TestDataDescriptionTask(BaseTaskTestSuite):
         _ = task_completed
         output_document_id = self.payload["output_document_id"]
         payload = DataDescriptionTaskPayload(**self.payload)
-        assert payload.task_output_path == f"/temp_data?path=data_description/{output_document_id}.json"
+        assert (
+            payload.task_output_path
+            == f"/temp_data?path=data_description/{output_document_id}.json"
+        )
 
         result = await temp_storage.get_text(f"data_description/{output_document_id}.json")
         expected_df = pd.DataFrame(

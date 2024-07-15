@@ -117,7 +117,10 @@ async def create_document(document_service, to_use_create_many, data):
             {"_id": "id_val"},
             {"id": "id_val"},
             UniqueConstraintResolutionSignature.GET_BY_ID,
-            ('Col (id: "id_val") already exists. ' 'Get the existing object by `Col.get_by_id(id="conflict_id_val")`.'),
+            (
+                'Col (id: "id_val") already exists. '
+                'Get the existing object by `Col.get_by_id(id="conflict_id_val")`.'
+            ),
         ),
         (
             {"_id": "id_val"},
@@ -132,7 +135,10 @@ async def create_document(document_service, to_use_create_many, data):
             {"_id": "id_val"},
             {"id": "id_val"},
             UniqueConstraintResolutionSignature.GET_NAME,
-            ('Col (id: "id_val") already exists. ' 'Get the existing object by `Col.get(name="conflict_name_val")`.'),
+            (
+                'Col (id: "id_val") already exists. '
+                'Get the existing object by `Col.get(name="conflict_name_val")`.'
+            ),
         ),
     ],
 )
@@ -411,12 +417,17 @@ async def test_list_documents_iterator(document_service, to_use_create_many):
         for data in docs:
             await document_service.create_document(data=data)
 
-    list_results = await document_service.list_documents_as_dict(page_size=0, page=1, query_filter={})
+    list_results = await document_service.list_documents_as_dict(
+        page_size=0, page=1, query_filter={}
+    )
     expected_doc_ids = set(doc["_id"] for doc in list_results["data"])
     assert list_results["total"] == total
 
     # retrieve list iterator & check results
-    doc_ids = [doc["_id"] async for doc in document_service.list_documents_as_dict_iterator(query_filter={})]
+    doc_ids = [
+        doc["_id"]
+        async for doc in document_service.list_documents_as_dict_iterator(query_filter={})
+    ]
     assert set(doc_ids) == expected_doc_ids
 
     # check list_documents_iterator output type
@@ -491,7 +502,9 @@ async def test_delete_many(document_service):
     ]
 
     # delete documents except the last one
-    await document_service.delete_many(query_filter={"_id": {"$in": [doc.id for doc in documents[:2]]}})
+    await document_service.delete_many(
+        query_filter={"_id": {"$in": [doc.id for doc in documents[:2]]}}
+    )
 
     # try to get document - expect an error
     for document in documents[:2]:
@@ -563,7 +576,9 @@ async def test_add_block_modification_by(
         assert "block_modification_by" not in record
 
     # add the same reference info again
-    await document_service.add_block_modification_by(query_filter={"_id": document.id}, reference_info=ref_info)
+    await document_service.add_block_modification_by(
+        query_filter={"_id": document.id}, reference_info=ref_info
+    )
 
     # make sure it's not duplicated
     document = await document_service.get_document(document_id=document.id)
@@ -577,7 +592,9 @@ async def test_remove_block_modification_by(document_service, document_with_bloc
     ref_info = document.block_modification_by[0]
 
     # remove block by modification
-    await document_service.remove_block_modification_by(query_filter={"_id": document.id}, reference_info=ref_info)
+    await document_service.remove_block_modification_by(
+        query_filter={"_id": document.id}, reference_info=ref_info
+    )
 
     # make sure it's removed
     document = await document_service.get_document(document_id=document.id)
@@ -595,11 +612,15 @@ async def test_document_not_modifiable_if_block_modification_by_not_empty(
     # try to update document - expect an error
     expected_error = f"Document {document.id} is blocked from modification by ['Asset(id: {ref_info.document_id})']"
     with pytest.raises(DocumentModificationBlockedError) as exc:
-        await document_service.update_document(document_id=document.id, data=Document(name="new_name"))
+        await document_service.update_document(
+            document_id=document.id, data=Document(name="new_name")
+        )
     assert expected_error in str(exc.value)
 
     # try to update document description - should be no error
-    await document_service.update_document_description(document_id=document.id, description="new_description")
+    await document_service.update_document_description(
+        document_id=document.id, description="new_description"
+    )
     document = await document_service.get_document(document_id=document.id)
     assert document.description == "new_description"
 
@@ -610,19 +631,23 @@ async def test_document_not_modifiable_if_block_modification_by_not_empty(
 
     # add another block by modification
     another_ref_info = ReferenceInfo(asset_name="Asset", document_id=ObjectId())
-    await document_service.add_block_modification_by(query_filter={"_id": document.id}, reference_info=another_ref_info)
+    await document_service.add_block_modification_by(
+        query_filter={"_id": document.id}, reference_info=another_ref_info
+    )
     document = await document_service.get_document(document_id=document.id)
     assert document.block_modification_by == [ref_info, another_ref_info]
 
     # remove block by modification
-    await document_service.remove_block_modification_by(query_filter={"_id": document.id}, reference_info=ref_info)
+    await document_service.remove_block_modification_by(
+        query_filter={"_id": document.id}, reference_info=ref_info
+    )
 
     # try to update document - expect an error
-    expected_error = (
-        f"Document {document.id} is blocked from modification by ['Asset(id: {another_ref_info.document_id})']"
-    )
+    expected_error = f"Document {document.id} is blocked from modification by ['Asset(id: {another_ref_info.document_id})']"
     with pytest.raises(DocumentModificationBlockedError) as exc:
-        await document_service.update_document(document_id=document.id, data=Document(name="new_name"))
+        await document_service.update_document(
+            document_id=document.id, data=Document(name="new_name")
+        )
     assert expected_error in str(exc.value)
 
     # try to delete document - expect an error
@@ -638,7 +663,9 @@ async def test_document_not_modifiable_if_block_modification_by_not_empty(
     assert document.block_modification_by == []
 
     # try to update document - expect no error
-    document = await document_service.update_document(document_id=document.id, data=Document(name="new_name"))
+    document = await document_service.update_document(
+        document_id=document.id, data=Document(name="new_name")
+    )
     assert document.name == "new_name"
 
     # try to delete document - expect no error
@@ -648,17 +675,23 @@ async def test_document_not_modifiable_if_block_modification_by_not_empty(
 
 
 @pytest.mark.asyncio
-async def test_document_disable_block_modification_check(document_service, document_with_block_modification):
+async def test_document_disable_block_modification_check(
+    document_service, document_with_block_modification
+):
     """Test document not modifiable if block_modification_by not empty"""
     document = document_with_block_modification
     with pytest.raises(DocumentModificationBlockedError) as exc:
-        await document_service.update_document(document_id=document.id, data=Document(name="new_name"))
+        await document_service.update_document(
+            document_id=document.id, data=Document(name="new_name")
+        )
     expected_error = f"Document {document.id} is blocked from modification by "
     assert expected_error in str(exc.value)
 
     # try to update document - expect no error
     with document_service.block_modification_handler.disable_block_modification_check():
-        document = await document_service.update_document(document_id=document.id, data=Document(name="new_name"))
+        document = await document_service.update_document(
+            document_id=document.id, data=Document(name="new_name")
+        )
         assert document.name == "new_name"
 
 
@@ -666,7 +699,9 @@ def test_catalog_specific_service_requires_catalog_id(user, persistent, storage)
     """
     Test catalog specific service initialization without catalog_id
     """
-    with patch("featurebyte.service.base_document.BaseDocumentService.is_catalog_specific") as mock_is_catalog_specific:
+    with patch(
+        "featurebyte.service.base_document.BaseDocumentService.is_catalog_specific"
+    ) as mock_is_catalog_specific:
         with pytest.raises(CatalogNotSpecifiedError) as exc:
             mock_is_catalog_specific.return_value = True
             DocumentService(
@@ -687,7 +722,9 @@ async def test_non_auditable_document_service(non_auditable_document_service, to
     service = non_auditable_document_service
 
     await create_document(service, to_use_create_many, document)
-    await service.update_document(document_id=document.id, data=NonAuditableDocument(name="new_name"))
+    await service.update_document(
+        document_id=document.id, data=NonAuditableDocument(name="new_name")
+    )
     await service.delete_document(document_id=document.id)
 
     audits = await service.list_document_audits(document_id=document.id)
@@ -754,14 +791,20 @@ async def test_soft_delete_document(document_service):
     with pytest.raises(DocumentNotFoundError):
         await document_service.get_document(document_id=document_id)
 
-    list_doc_ids = {doc.id async for doc in document_service.list_documents_iterator(query_filter={})}
+    list_doc_ids = {
+        doc.id async for doc in document_service.list_documents_iterator(query_filter={})
+    }
     assert list_doc_ids == {documents[1].id, documents[2].id}
 
     # test soft_delete_documents
-    await document_service.soft_delete_documents(query_filter={"_id": {"$in": [doc.id for doc in documents[1:]]}})
+    await document_service.soft_delete_documents(
+        query_filter={"_id": {"$in": [doc.id for doc in documents[1:]]}}
+    )
     for document in documents[1:]:
         with pytest.raises(DocumentNotFoundError):
             await document_service.get_document(document_id=document.id)
 
-    list_doc_ids = {doc.id async for doc in document_service.list_documents_iterator(query_filter={})}
+    list_doc_ids = {
+        doc.id async for doc in document_service.list_documents_iterator(query_filter={})
+    }
     assert list_doc_ids == set()

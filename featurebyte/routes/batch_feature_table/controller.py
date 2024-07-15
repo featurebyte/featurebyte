@@ -22,7 +22,9 @@ from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseSer
 
 
 class BatchFeatureTableController(
-    BaseMaterializedTableController[BatchFeatureTableModel, BatchFeatureTableService, BatchFeatureTableList],
+    BaseMaterializedTableController[
+        BatchFeatureTableModel, BatchFeatureTableService, BatchFeatureTableList
+    ],
 ):
     """
     BatchFeatureTable Controller
@@ -73,8 +75,12 @@ class BatchFeatureTableController(
             document_id=data.batch_request_table_id
         )
         deployment = await self.deployment_service.get_document(document_id=data.deployment_id)
-        feature_list = await self.feature_list_service.get_document(document_id=deployment.feature_list_id)
-        feature_store = await self.feature_store_service.get_document(document_id=data.feature_store_id)
+        feature_list = await self.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
+        )
+        feature_store = await self.feature_store_service.get_document(
+            document_id=data.feature_store_id
+        )
         await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
             feature_list_model=feature_list,
             request_column_names={col.name for col in batch_request_table.columns_info},
@@ -106,7 +112,9 @@ class BatchFeatureTableController(
         batch_request_table = await self.batch_request_table_service.get_document(
             document_id=batch_feature_table.batch_request_table_id
         )
-        deployment = await self.deployment_service.get_document(document_id=batch_feature_table.deployment_id)
+        deployment = await self.deployment_service.get_document(
+            document_id=batch_feature_table.deployment_id
+        )
         return BatchFeatureTableInfo(
             name=batch_feature_table.name,
             deployment_name=deployment.name,

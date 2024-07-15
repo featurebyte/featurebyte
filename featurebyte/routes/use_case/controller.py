@@ -98,7 +98,9 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
 
         if data.target_id:
             if data.target_id != target_namespace.default_target_id:
-                raise DocumentCreationError("Input target_id and target namespace default_target_id must be the same")
+                raise DocumentCreationError(
+                    "Input target_id and target namespace default_target_id must be the same"
+                )
         else:
             data.target_id = target_namespace.default_target_id
 
@@ -132,7 +134,9 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         """
         for obs_id in [data.default_eda_table_id, data.default_preview_table_id]:
             if obs_id:
-                observation_table = await self.observation_table_service.get_document(document_id=obs_id)
+                observation_table = await self.observation_table_service.get_document(
+                    document_id=obs_id
+                )
                 if use_case_id not in observation_table.use_case_ids:
                     await self.observation_table_service.update_observation_table(
                         observation_table_id=obs_id,
@@ -141,7 +145,9 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
 
         obs_table_id_remove = data.observation_table_id_to_remove
         if obs_table_id_remove:
-            observation_table = await self.observation_table_service.get_document(document_id=obs_table_id_remove)
+            observation_table = await self.observation_table_service.get_document(
+                document_id=obs_table_id_remove
+            )
             if use_case_id not in observation_table.use_case_ids:
                 raise DocumentDeletionError(
                     f"UseCase {use_case_id} is not associated with observation table {obs_table_id_remove}"
@@ -167,7 +173,9 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             use_case = await self.get(document_id=use_case_id)
 
             if not use_case.default_preview_table_id:
-                raise ObservationTableInvalidUseCaseError("Use case does not have a default preview table")
+                raise ObservationTableInvalidUseCaseError(
+                    "Use case does not have a default preview table"
+                )
 
             await self.service.update_documents(
                 query_filter={"_id": use_case_id},
@@ -178,7 +186,9 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             use_case = await self.get(document_id=use_case_id)
 
             if not use_case.default_eda_table_id:
-                raise ObservationTableInvalidUseCaseError("Use case does not have a default eda table")
+                raise ObservationTableInvalidUseCaseError(
+                    "Use case does not have a default eda table"
+                )
 
             await self.service.update_documents(
                 query_filter={"_id": use_case_id},
@@ -211,7 +221,11 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         use_case = await self.service.get_document(document_id=use_case_id)
         context = await self.context_service.get_document(document_id=use_case.context_id)
 
-        target_name = (await self.target_namespace_service.get_document(document_id=use_case.target_namespace_id)).name
+        target_name = (
+            await self.target_namespace_service.get_document(
+                document_id=use_case.target_namespace_id
+            )
+        ).name
 
         author = None
         if use_case.user_id:
@@ -220,12 +234,16 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
 
         default_preview_table_name = None
         if use_case.default_preview_table_id:
-            default_preview_table = await self.observation_table_service.get_document(use_case.default_preview_table_id)
+            default_preview_table = await self.observation_table_service.get_document(
+                use_case.default_preview_table_id
+            )
             default_preview_table_name = default_preview_table.name
 
         default_eda_table_name = None
         if use_case.default_eda_table_id:
-            default_eda_table = await self.observation_table_service.get_document(use_case.default_eda_table_id)
+            default_eda_table = await self.observation_table_service.get_document(
+                use_case.default_eda_table_id
+            )
             default_eda_table_name = default_eda_table.name
 
         entity_briefs = [
@@ -305,7 +323,9 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             query_filter=query_filter,
         )
 
-    async def list_feature_tables(self, use_case_id: ObjectId, page: int, page_size: int) -> Dict[str, Any]:
+    async def list_feature_tables(
+        self, use_case_id: ObjectId, page: int, page_size: int
+    ) -> Dict[str, Any]:
         """
         Delete UseCase from persistent
 
@@ -333,10 +353,12 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         ):
             observation_table_ids.append(obs_table.id)
 
-        historical_feature_table_list = await self.historical_feature_table_service.list_documents_as_dict(
-            query_filter={"observation_table_id": {"$in": observation_table_ids}},
-            page=page,
-            page_size=page_size,
+        historical_feature_table_list = (
+            await self.historical_feature_table_service.list_documents_as_dict(
+                query_filter={"observation_table_id": {"$in": observation_table_ids}},
+                page=page,
+                page_size=page_size,
+            )
         )
 
         return historical_feature_table_list

@@ -74,11 +74,16 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         Examples
         --------
         >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
-        ...     name="amount_7d_target", window="7d", dtype=DBVarType.FLOAT, primary_entity=["customer"]
+        ...     name="amount_7d_target",
+        ...     window="7d",
+        ...     dtype=DBVarType.FLOAT,
+        ...     primary_entity=["customer"],
         ... )
         """
         entity_ids = [Entity.get(entity_name).id for entity_name in primary_entity]
-        target_namespace = TargetNamespace(name=name, entity_ids=entity_ids, dtype=dtype, window=window)
+        target_namespace = TargetNamespace(
+            name=name, entity_ids=entity_ids, dtype=dtype, window=window
+        )
         target_namespace.save()
         return target_namespace
 
@@ -152,7 +157,10 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         Examples
         --------
         >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
-        ...     name="amount_7d_target", window="7d", dtype=DBVarType.FLOAT, primary_entity=["customer"]
+        ...     name="amount_7d_target",
+        ...     window="7d",
+        ...     dtype=DBVarType.FLOAT,
+        ...     primary_entity=["customer"],
         ... )
         >>> target_namespace.delete()  # doctest: +SKIP
         """

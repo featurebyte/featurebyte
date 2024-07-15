@@ -104,7 +104,9 @@ def test_event_view_describe_with_date_range(event_table):
     col_describe_df = event_view["TRANSACTION_ID"].describe(**sample_params)
     assert_series_equal(
         col_describe_df["TRANSACTION_ID"],
-        describe_df["TRANSACTION_ID"][["dtype", "unique", "%missing", "%empty", "entropy", "top", "freq"]],
+        describe_df["TRANSACTION_ID"][
+            ["dtype", "unique", "%missing", "%empty", "entropy", "top", "freq"]
+        ],
     )
 
     # describe single numeric column

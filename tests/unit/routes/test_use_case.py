@@ -184,7 +184,10 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert response.json()["total"] == 2
         data = response.json()["data"]
-        assert sorted([str(new_ob_table_id_2), str(new_ob_table_id_3)]) == sorted([data[0]["_id"], data[1]["_id"]])
+        assert sorted([str(new_ob_table_id_2), str(new_ob_table_id_3)]) == sorted([
+            data[0]["_id"],
+            data[1]["_id"],
+        ])
 
         # test use case info endpoint
         response = test_api_client.get(
@@ -408,16 +411,24 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
             json={"default_preview_table_id": str(different_context_ob_table_id)},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == f"Cannot add UseCase {use_case_id} due to mismatched contexts."
+        assert (
+            response.json()["detail"]
+            == f"Cannot add UseCase {use_case_id} due to mismatched contexts."
+        )
 
         different_target_ob_table_id = ObjectId()
-        await create_observation_table(different_target_ob_table_id, context_id=self.payload["context_id"])
+        await create_observation_table(
+            different_target_ob_table_id, context_id=self.payload["context_id"]
+        )
         response = test_api_client.patch(
             f"{self.base_route}/{use_case_id}",
             json={"default_preview_table_id": str(different_target_ob_table_id)},
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == f"Cannot add UseCase {use_case_id} due to mismatched targets."
+        assert (
+            response.json()["detail"]
+            == f"Cannot add UseCase {use_case_id} due to mismatched targets."
+        )
 
     @pytest.mark.asyncio
     async def test_list_feature_tables(
@@ -494,7 +505,9 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         # delete the observation table that is associated with the use case
         response = test_api_client.delete(f"/observation_table/{str(new_ob_table_id)}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-        assert response.json()["detail"] == "ObservationTable is referenced by UseCase: test_use_case "
+        assert (
+            response.json()["detail"] == "ObservationTable is referenced by UseCase: test_use_case "
+        )
 
     @pytest.mark.asyncio
     async def test_delete_use_case_422__use_case_used_in_observation_table(
@@ -697,14 +710,18 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         response = test_api_client.delete(f"/target/{target_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-        assert response.json()["detail"] == f"Target is referenced by UseCase: {use_case_dict['name']}"
+        assert (
+            response.json()["detail"] == f"Target is referenced by UseCase: {use_case_dict['name']}"
+        )
 
     @pytest.mark.asyncio
     async def test_update_name(self, test_api_client_persistent, create_success_response):
         """Test update name"""
         test_api_client, _ = test_api_client_persistent
         doc_id = create_success_response.json()["_id"]
-        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json={"name": "some other name"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{doc_id}", json={"name": "some other name"}
+        )
         assert response.status_code == HTTPStatus.OK, response.json()
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK

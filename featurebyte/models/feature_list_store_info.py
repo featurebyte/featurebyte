@@ -192,7 +192,9 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
             raise ValueError(f"Unsupported dtype: {dtype}")
         return type_map[dtype]
 
-    def _get_base_dataframe_schema_and_import_statement(self, target_spec: ColumnSpec) -> Tuple[str, str]:
+    def _get_base_dataframe_schema_and_import_statement(
+        self, target_spec: ColumnSpec
+    ) -> Tuple[str, str]:
         schemas = []
         required_imports = {"StructType", "StructField"}
         base_dataframe_specs = [target_spec]
@@ -296,7 +298,9 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
 
             if offline_store_info.is_decomposed:
                 for node in offline_store_info.graph.iterate_nodes(
-                    target_node=offline_store_info.graph.get_node_by_name(offline_store_info.node_name),
+                    target_node=offline_store_info.graph.get_node_by_name(
+                        offline_store_info.node_name
+                    ),
                     node_type=NodeType.REQUEST_COLUMN,
                 ):
                     assert isinstance(node, RequestColumnNode)
@@ -375,7 +379,9 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         feature_store: FeatureStoreModel,
         feature_table_map: Dict[str, Any],
         entity_serving_specs: Optional[List[ColumnSpec]],
-    ) -> Tuple[List[ColumnSpec], List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]], Set[str]]:
+    ) -> Tuple[
+        List[ColumnSpec], List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]], Set[str]
+    ]:
         exclude_columns: Set[str] = set()
         output_column_names: Set[str] = set()
         fully_qualified_schema_name = cls._get_fully_qualified_schema_name(feature_store)
@@ -395,7 +401,9 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
             if isinstance(feature_spec, DataBricksFeatureLookup) and feature_spec.lookup_key == [
                 DUMMY_ENTITY_COLUMN_NAME
             ]:
-                base_dataframe_specs.append(ColumnSpec(name=DUMMY_ENTITY_COLUMN_NAME, dtype=DBVarType.VARCHAR))
+                base_dataframe_specs.append(
+                    ColumnSpec(name=DUMMY_ENTITY_COLUMN_NAME, dtype=DBVarType.VARCHAR)
+                )
                 exclude_columns.add(DUMMY_ENTITY_COLUMN_NAME)
                 break
 
@@ -410,7 +418,9 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
 
         has_point_in_time = False
         for column_name in sorted(request_column_name_to_dtype.keys()):
-            base_dataframe_specs.append(ColumnSpec(name=column_name, dtype=request_column_name_to_dtype[column_name]))
+            base_dataframe_specs.append(
+                ColumnSpec(name=column_name, dtype=request_column_name_to_dtype[column_name])
+            )
             if column_name == SpecialColumnName.POINT_IN_TIME:
                 has_point_in_time = True
 
@@ -432,13 +442,15 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         entity_id_to_column_spec, request_column_name_to_dtype, exclude_cols = (
             cls._derive_entity_request_column_info_from_features(features)
         )
-        base_dataframe_specs, feature_specs, more_exclude_cols = cls._derive_base_dataframe_and_feature_specs(
-            entity_id_to_column_spec=entity_id_to_column_spec,
-            request_column_name_to_dtype=request_column_name_to_dtype,
-            features=features,
-            feature_store=feature_store,
-            feature_table_map=feature_table_map,
-            entity_serving_specs=serving_entity_specs,
+        base_dataframe_specs, feature_specs, more_exclude_cols = (
+            cls._derive_base_dataframe_and_feature_specs(
+                entity_id_to_column_spec=entity_id_to_column_spec,
+                request_column_name_to_dtype=request_column_name_to_dtype,
+                features=features,
+                feature_store=feature_store,
+                feature_table_map=feature_table_map,
+                entity_serving_specs=serving_entity_specs,
+            )
         )
         return cls(
             feast_enabled=True,

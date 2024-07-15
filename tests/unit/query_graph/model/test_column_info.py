@@ -89,7 +89,9 @@ def test_column_info__valid_construction_with_disguised_value_and_unexpected_val
         dtype=data_type,
         critical_data_info=CriticalDataInfo(
             cleaning_operations=[
-                DisguisedValueImputation(imputed_value=imputed_value, disguised_values=list_param_values),
+                DisguisedValueImputation(
+                    imputed_value=imputed_value, disguised_values=list_param_values
+                ),
             ]
         ),
     )
@@ -102,7 +104,9 @@ def test_column_info__valid_construction_with_disguised_value_and_unexpected_val
         dtype=data_type,
         critical_data_info=CriticalDataInfo(
             cleaning_operations=[
-                UnexpectedValueImputation(imputed_value=imputed_value, expected_values=list_param_values),
+                UnexpectedValueImputation(
+                    imputed_value=imputed_value, expected_values=list_param_values
+                ),
             ]
         ),
     )
@@ -130,7 +134,9 @@ def test_column_info__valid_construction_with_value_beyond_endpoint_imputation(
         dtype=data_type,
         critical_data_info=CriticalDataInfo(
             cleaning_operations=[
-                ValueBeyondEndpointImputation(type="less_than", imputed_value=imputed_value, end_point=endpoint)
+                ValueBeyondEndpointImputation(
+                    type="less_than", imputed_value=imputed_value, end_point=endpoint
+                )
             ]
         ),
     )
@@ -139,7 +145,9 @@ def test_column_info__valid_construction_with_value_beyond_endpoint_imputation(
     assert cleaning_op.end_point == expected_endpoint
 
 
-NON_PRIMITIVE_TYPES = [var_type for var_type in DBVarType if var_type not in DBVarType.primitive_types()]
+NON_PRIMITIVE_TYPES = [
+    var_type for var_type in DBVarType if var_type not in DBVarType.primitive_types()
+]
 
 
 @pytest.mark.parametrize(
@@ -162,7 +170,9 @@ NON_PRIMITIVE_TYPES = [var_type for var_type in DBVarType if var_type not in DBV
 def test_column_info__not_supported_casting(data_types, clean_op):
     """Test ColumnInfo construction"""
     for data_type in data_types:
-        with pytest.raises(ValueError, match=f"Cleaning operation .* does not support dtype {data_type}"):
+        with pytest.raises(
+            ValueError, match=f"Cleaning operation .* does not support dtype {data_type}"
+        ):
             ColumnInfo(
                 name="test_column",
                 dtype=data_type,

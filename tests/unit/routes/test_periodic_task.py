@@ -72,7 +72,9 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
         """Test list audit (unprocessable) - invalid id value"""
 
     @pytest_asyncio.fixture()
-    async def create_success_response(self, test_api_client_persistent, user_id, default_catalog_id, storage):
+    async def create_success_response(
+        self, test_api_client_persistent, user_id, default_catalog_id, storage
+    ):
         """Post route success response object"""
         _, persistent = test_api_client_persistent
         periodic_task_service = PeriodicTaskService(
@@ -84,10 +86,14 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
             redis=Mock(),
         )
         document = await periodic_task_service.create_document(data=PeriodicTask(**self.payload))
-        return MockResponse(content=json.dumps(document.json_dict()), status_code=HTTPStatus.CREATED)
+        return MockResponse(
+            content=json.dumps(document.json_dict()), status_code=HTTPStatus.CREATED
+        )
 
     @pytest_asyncio.fixture()
-    async def create_multiple_success_responses(self, test_api_client_persistent, user_id, default_catalog_id, storage):
+    async def create_multiple_success_responses(
+        self, test_api_client_persistent, user_id, default_catalog_id, storage
+    ):
         """Post multiple success responses"""
         _, persistent = test_api_client_persistent
         output = []
@@ -101,7 +107,11 @@ class TestPeriodicTaskApi(BaseCatalogApiTestSuite):
         )
         for payload in self.multiple_success_payload_generator(None):
             document = await periodic_task_service.create_document(data=PeriodicTask(**payload))
-            output.append(MockResponse(content=json.dumps(document.json_dict()), status_code=HTTPStatus.CREATED))
+            output.append(
+                MockResponse(
+                    content=json.dumps(document.json_dict()), status_code=HTTPStatus.CREATED
+                )
+            )
         return output
 
     def multiple_success_payload_generator(self, api_client):

@@ -24,7 +24,8 @@ def sample_dataframe():
         "int": [1] * 10 + [2, 3],
         "float": [1.1] * 10 + [2.2, 3.3],
         "string": [None] * 10 + ["Bob", "Charlie"],
-        "date": [pd.Timestamp("2020-01-01")] * 10 + [pd.Timestamp("2020-01-02"), pd.Timestamp("2020-01-03")],
+        "date": [pd.Timestamp("2020-01-01")] * 10
+        + [pd.Timestamp("2020-01-02"), pd.Timestamp("2020-01-03")],
         "timestamp": [pd.Timestamp("2020-01-01 12:00:00")] * 10
         + [pd.Timestamp("2020-01-02 12:00:00"), pd.Timestamp("2020-01-03 12:00:00")],
         "int_list": [None] * 10 + [[4, 5, 6], [7, 8, 9]],
@@ -98,7 +99,9 @@ async def test_arrow_schema(session):
     assert arrow_table.schema == expected_schema
 
     # check db variable type metadata
-    db_var_types = [field.metadata.get(ARROW_METADATA_DB_VAR_TYPE).decode() for field in arrow_table.schema]
+    db_var_types = [
+        field.metadata.get(ARROW_METADATA_DB_VAR_TYPE).decode() for field in arrow_table.schema
+    ]
     assert db_var_types == [
         "BOOL",
         "INT",
@@ -190,5 +193,7 @@ async def test_execute_query__error_logging(session, caplog):
     with pytest.raises(Exception):
         await session.execute_query(query)
 
-    record = next(record for record in caplog.records if record.msg.startswith("Error executing query"))
+    record = next(
+        record for record in caplog.records if record.msg.startswith("Error executing query")
+    )
     assert record.extra["query"] == query, record.extra

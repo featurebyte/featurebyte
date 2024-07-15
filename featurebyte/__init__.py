@@ -155,7 +155,9 @@ def get_active_profile() -> Profile:
     conf = Configurations()
 
     if not conf.profile:
-        logger.error("No profile found. Please update your configuration file at {conf.config_file_path}")
+        logger.error(
+            "No profile found. Please update your configuration file at {conf.config_file_path}"
+        )
         raise InvalidSettingsError("No profile found")
 
     logger.info(f"Active profile: {conf.profile.name} ({conf.profile.api_url})")
@@ -217,7 +219,9 @@ def register_profile(
     Examples
     --------
     >>> fb.register_profile(  # doctest: +SKIP
-    ...     profile_name="tutorial", api_url="https://tutorials.featurebyte.com/api/v1", api_token="your_api_token"
+    ...     profile_name="tutorial",
+    ...     api_url="https://tutorials.featurebyte.com/api/v1",
+    ...     api_token="your_api_token",
     ... )
     """
     # Read configuration file
@@ -254,7 +258,9 @@ def register_profile(
     if updated_profile:
         yaml_str = yaml.dump(loaded_config, sort_keys=False)
         # Backup existing config file before overwriting
-        backup_file_path = os.path.join(os.path.dirname(config_file_path), config_file_path.name + ".bak")
+        backup_file_path = os.path.join(
+            os.path.dirname(config_file_path), config_file_path.name + ".bak"
+        )
         shutil.copyfile(config_file_path, backup_file_path)
         with open(config_file_path, "w", encoding="utf-8") as file_obj:
             file_obj.write(yaml_str)

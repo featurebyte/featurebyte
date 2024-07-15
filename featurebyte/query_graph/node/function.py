@@ -83,7 +83,9 @@ class ValueFunctionParameterInput(BaseFunctionParameterInput):
     """ValueFunctionParameterInput class"""
 
     value: Optional[ValueParameterType] = Field(default=None)
-    input_form: Literal[FunctionParameterInputForm.VALUE] = Field(FunctionParameterInputForm.VALUE, const=True)
+    input_form: Literal[FunctionParameterInputForm.VALUE] = Field(
+        FunctionParameterInputForm.VALUE, const=True
+    )
 
     def get_column_args(self) -> List[Optional[str]]:
         return []
@@ -103,7 +105,9 @@ class ColumnFunctionParameterInput(BaseFunctionParameterInput):
     """ColumnFunctionParameterInput class"""
 
     column_name: Optional[str] = Field(default=None)
-    input_form: Literal[FunctionParameterInputForm.COLUMN] = Field(FunctionParameterInputForm.COLUMN, const=True)
+    input_form: Literal[FunctionParameterInputForm.COLUMN] = Field(
+        FunctionParameterInputForm.COLUMN, const=True
+    )
 
     def get_column_args(self) -> List[Optional[str]]:
         return [self.column_name]
@@ -150,7 +154,9 @@ class GenericFunctionNode(BaseSeriesOutputNode):
     def max_input_count(self) -> int:
         return len(self._get_column_function_args())
 
-    def _get_required_input_columns(self, input_index: int, available_column_names: List[str]) -> Sequence[str]:
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
         column_input_args = self._get_column_function_args()
         if column_input_args[input_index] is None:
             return []
@@ -226,7 +232,9 @@ class GenericFunctionNode(BaseSeriesOutputNode):
         function_parameters: List[Any] = []
         node_input_index = 0
         for func_param in self.parameters.function_parameters:
-            func_param_val, node_input_index = func_param.get_sdk_function_argument(node_inputs, node_input_index)
+            func_param_val, node_input_index = func_param.get_sdk_function_argument(
+                node_inputs, node_input_index
+            )
             function_parameters.append(func_param_val)
 
         # if function_id in var_name_generator.func_id_to_var_name,

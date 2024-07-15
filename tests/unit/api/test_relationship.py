@@ -50,7 +50,9 @@ def persistable_relationship_info_fixture(relationship_info_service):
     """
 
     async def save(relationship_info_create: RelationshipInfoCreate) -> RelationshipInfoModel:
-        created_relationship = await relationship_info_service.create_document(relationship_info_create)
+        created_relationship = await relationship_info_service.create_document(
+            relationship_info_create
+        )
         assert created_relationship.entity_id == relationship_info_create.entity_id
         return created_relationship
 
@@ -58,7 +60,9 @@ def persistable_relationship_info_fixture(relationship_info_service):
 
 
 @pytest_asyncio.fixture(name="persisted_relationship_info")
-async def persisted_relationship_info_fixture(persistable_relationship_info, relationship_info_create):
+async def persisted_relationship_info_fixture(
+    persistable_relationship_info, relationship_info_create
+):
     """
     Persisted relationship info fixture
     """
@@ -67,7 +71,9 @@ async def persisted_relationship_info_fixture(persistable_relationship_info, rel
 
 
 @pytest.mark.asyncio
-async def test_relationship_get_by_id_without_updated_by(persistable_relationship_info, relationship_info_create):
+async def test_relationship_get_by_id_without_updated_by(
+    persistable_relationship_info, relationship_info_create
+):
     """
     Test relationship get by id without updated by field.
     """
@@ -77,7 +83,9 @@ async def test_relationship_get_by_id_without_updated_by(persistable_relationshi
     updated_relationship_info_create = RelationshipInfoCreate(**default_values)
 
     # Persist the value
-    persisted_relationship_info = await persistable_relationship_info(updated_relationship_info_create)
+    persisted_relationship_info = await persistable_relationship_info(
+        updated_relationship_info_create
+    )
     assert persisted_relationship_info.updated_by is None
 
     # Test that the results are equal

@@ -32,7 +32,9 @@ def test_get_event_table(saved_event_table, snowflake_event_table):
 
     with pytest.raises(RecordRetrievalException) as exc:
         Table.get("unknown_event_table")
-    expected_msg = 'Table (name: "unknown_event_table") not found. ' "Please save the Table object first."
+    expected_msg = (
+        'Table (name: "unknown_event_table") not found. ' "Please save the Table object first."
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -48,7 +50,9 @@ def test_get_item_table(snowflake_item_table, saved_item_table):
 
     with pytest.raises(RecordRetrievalException) as exc:
         Table.get("unknown_item_table")
-    expected_msg = 'Table (name: "unknown_item_table") not found. ' "Please save the Table object first."
+    expected_msg = (
+        'Table (name: "unknown_item_table") not found. ' "Please save the Table object first."
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -64,7 +68,9 @@ def test_get_scd_table(saved_scd_table, snowflake_scd_table):
 
     with pytest.raises(RecordRetrievalException) as exc:
         Table.get("unknown_scd_table")
-    expected_msg = 'Table (name: "unknown_scd_table") not found. ' "Please save the Table object first."
+    expected_msg = (
+        'Table (name: "unknown_scd_table") not found. ' "Please save the Table object first."
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -80,7 +86,9 @@ def test_get_dimension_table(saved_dimension_table, snowflake_dimension_table):
 
     with pytest.raises(RecordRetrievalException) as exc:
         Table.get("unknown_dimension_table")
-    expected_msg = 'Table (name: "unknown_dimension_table") not found. ' "Please save the Table object first."
+    expected_msg = (
+        'Table (name: "unknown_dimension_table") not found. ' "Please save the Table object first."
+    )
     assert expected_msg in str(exc.value)
 
 

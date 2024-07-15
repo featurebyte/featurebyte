@@ -163,22 +163,28 @@ class DataWarehouseMigrationServiceV1(DataWarehouseMigrationMixin):
         """
         await self._add_tile_value_types_column(migration_version=7)
 
-    async def migrate_record_with_session(self, feature_store: FeatureStoreModel, session: BaseSession) -> None:
+    async def migrate_record_with_session(
+        self, feature_store: FeatureStoreModel, session: BaseSession
+    ) -> None:
         _ = feature_store
 
         df_tile_registry = await session.execute_query("SELECT * FROM TILE_REGISTRY")
         if "VALUE_COLUMN_TYPES" in df_tile_registry:  # type: ignore[operator]
             return
 
-        df_tile_registry["VALUE_COLUMN_TYPES"] = self.tile_column_type_extractor.get_tile_column_types_from_names(  # type: ignore[index]
-            df_tile_registry["VALUE_COLUMN_NAMES"]  # type: ignore[index]
+        df_tile_registry["VALUE_COLUMN_TYPES"] = (  # type: ignore[index]
+            self.tile_column_type_extractor.get_tile_column_types_from_names(
+                df_tile_registry["VALUE_COLUMN_NAMES"]  # type: ignore[index]
+            )
         )
         await session.register_table(
             "UPDATED_TILE_REGISTRY",
             df_tile_registry[["TILE_ID", "VALUE_COLUMN_NAMES", "VALUE_COLUMN_TYPES"]],  # type: ignore[index]
         )
 
-        await session.execute_query("ALTER TABLE TILE_REGISTRY ADD COLUMN VALUE_COLUMN_TYPES VARCHAR")
+        await session.execute_query(
+            "ALTER TABLE TILE_REGISTRY ADD COLUMN VALUE_COLUMN_TYPES VARCHAR"
+        )
 
         update_query = textwrap.dedent(
             """
@@ -246,5 +252,9 @@ class DataWarehouseMigrationServiceV3(DataWarehouseMigrationMixin):
         """
         await self.migrate_all_records(version=8, query_filter=query_filter)
 
-    async def migrate_record_with_session(self, feature_store: FeatureStoreModel, session: BaseSession) -> None:
-        await self.working_schema_service.recreate_working_schema(feature_store_id=feature_store.id, session=session)
+    async def migrate_record_with_session(
+        self, feature_store: FeatureStoreModel, session: BaseSession
+    ) -> None:
+        await self.working_schema_service.recreate_working_schema(
+            feature_store_id=feature_store.id, session=session
+        )

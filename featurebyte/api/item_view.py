@@ -62,7 +62,9 @@ class ItemView(View, GroupByMixin, RawMixin):
     item_id_column: str = Field(allow_mutation=False)
     event_table_id: PydanticObjectId = Field(
         allow_mutation=False,
-        description="Returns the unique identifier (ID) " "of the Event Table related to the Item " "view.",
+        description="Returns the unique identifier (ID) "
+        "of the Event Table related to the Item "
+        "view.",
     )
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         allow_mutation=False,
@@ -107,7 +109,9 @@ class ItemView(View, GroupByMixin, RawMixin):
         Join columns into an ItemView.
 
         >>> item_view = catalog.get_view("INVOICEITEMS")
-        >>> item_view = item_view.join_event_table_attributes(columns=["Timestamp"], event_suffix="_event")
+        >>> item_view = item_view.join_event_table_attributes(
+        ...     columns=["Timestamp"], event_suffix="_event"
+        ... )
 
         """
         assert self.event_view.event_id_column, "event_id_column is not set"
@@ -201,7 +205,9 @@ class ItemView(View, GroupByMixin, RawMixin):
     def _get_create_joined_view_parameters(self) -> dict[str, Any]:
         return {"event_view": self.event_view}
 
-    def validate_aggregate_over_parameters(self, keys: list[str], value_column: Optional[str]) -> None:
+    def validate_aggregate_over_parameters(
+        self, keys: list[str], value_column: Optional[str]
+    ) -> None:
         """
         Check whether aggregate_over parameters are valid for ItemView.
 
@@ -225,7 +231,9 @@ class ItemView(View, GroupByMixin, RawMixin):
 
         self._assert_not_all_columns_are_from_event_table(keys, value_column)
 
-    def validate_simple_aggregate_parameters(self, keys: list[str], value_column: Optional[str]) -> None:
+    def validate_simple_aggregate_parameters(
+        self, keys: list[str], value_column: Optional[str]
+    ) -> None:
         """
         Check whether aggregation parameters are valid for ItemView
 
@@ -254,7 +262,9 @@ class ItemView(View, GroupByMixin, RawMixin):
 
         self._assert_not_all_columns_are_from_event_table(keys, value_column)
 
-    def _assert_not_all_columns_are_from_event_table(self, keys: list[str], value_column: Optional[str]) -> None:
+    def _assert_not_all_columns_are_from_event_table(
+        self, keys: list[str], value_column: Optional[str]
+    ) -> None:
         """
         Helper method to validate whether columns are from event table.
 
@@ -276,7 +286,8 @@ class ItemView(View, GroupByMixin, RawMixin):
         columns_to_check = [*keys, value_column]
         if self._are_columns_derived_only_from_event_table(columns_to_check):
             raise ValueError(
-                "Columns imported from EventTable and their derivatives should be aggregated in" " EventView"
+                "Columns imported from EventTable and their derivatives should be aggregated in"
+                " EventView"
             )
 
     def _are_columns_derived_only_from_event_table(self, column_names: List[str]) -> bool:
@@ -293,12 +304,17 @@ class ItemView(View, GroupByMixin, RawMixin):
         bool
         """
         # FIXME: This method is may not work correctly when the column is from SCD table joined with EventTable
-        operation_structure = self.graph.extract_operation_structure(self.node, keep_all_source_columns=False)
+        operation_structure = self.graph.extract_operation_structure(
+            self.node, keep_all_source_columns=False
+        )
         for column_name in column_names:
-            column_structure = next(column for column in operation_structure.columns if column.name == column_name)
+            column_structure = next(
+                column for column in operation_structure.columns if column.name == column_name
+            )
             if isinstance(column_structure, DerivedDataColumn):
                 if not all(
-                    input_column.table_type == TableDataType.EVENT_TABLE for input_column in column_structure.columns
+                    input_column.table_type == TableDataType.EVENT_TABLE
+                    for input_column in column_structure.columns
                 ):
                     return False
                 continue

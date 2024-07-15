@@ -29,4 +29,7 @@ async def test_get_task_description(catalog, app_container):
         ),
     )
     task = app_container.get(StaticSourceTableTask)
-    assert await task.get_task_description(payload) == 'Save static source table "Test Static Source Table"'
+    assert (
+        await task.get_task_description(payload)
+        == 'Save static source table "Test Static Source Table"'
+    )

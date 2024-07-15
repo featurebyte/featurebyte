@@ -77,7 +77,9 @@ def get_precomputed_lookup_feature_table_name(
     -------
     str
     """
-    serving_names_suffix = OfflineStoreFeatureTableModel.get_serving_names_for_table_name(serving_names)
+    serving_names_suffix = OfflineStoreFeatureTableModel.get_serving_names_for_table_name(
+        serving_names
+    )
     unique_identifier = get_lookup_steps_unique_identifier(lookup_steps)
     return f"{source_feature_table_name}_via_{serving_names_suffix}_{unique_identifier}"
 
@@ -128,7 +130,9 @@ def get_precomputed_lookup_feature_table(
     if not set(feature_list.feature_ids).intersection(feature_ids):
         return None
 
-    feature_lists_relationships_info = _get_feature_lists_to_relationships_info([feature_list])[feature_list.id]
+    feature_lists_relationships_info = _get_feature_lists_to_relationships_info([feature_list])[
+        feature_list.id
+    ]
     primary_entity_ids = sorted(primary_entity_ids)
 
     relationships_mapper = EntityAncestorDescendantMapper.create(
@@ -152,7 +156,9 @@ def get_precomputed_lookup_feature_table(
         return None
     serving_names = [entity_id_to_serving_name[entity_id] for entity_id in serving_entity_ids]
     table = OfflineStoreFeatureTableModel(
-        name=get_precomputed_lookup_feature_table_name(feature_table_name, serving_names, lookup_steps),
+        name=get_precomputed_lookup_feature_table_name(
+            feature_table_name, serving_names, lookup_steps
+        ),
         feature_ids=[],
         primary_entity_ids=serving_entity_ids,
         serving_names=serving_names,
@@ -219,8 +225,12 @@ def _get_lookup_steps_and_mapping(
                 if lookup_step.entity_id in serving_entity_ids:
                     lookup_mapping.append(
                         PrecomputedLookupMapping(
-                            lookup_feature_table_serving_name=entity_id_to_serving_name[lookup_step.entity_id],
-                            source_feature_table_serving_name=entity_id_to_serving_name[primary_entity_id],
+                            lookup_feature_table_serving_name=entity_id_to_serving_name[
+                                lookup_step.entity_id
+                            ],
+                            source_feature_table_serving_name=entity_id_to_serving_name[
+                                primary_entity_id
+                            ],
                         )
                     )
     return lookup_steps, lookup_mapping
@@ -247,7 +257,9 @@ def get_child_entity_universe_template(
     -------
     Expression
     """
-    entity_lookup_steps = [entity_lookup_steps_mapping[lookup_step.id] for lookup_step in lookup_steps]
+    entity_lookup_steps = [
+        entity_lookup_steps_mapping[lookup_step.id] for lookup_step in lookup_steps
+    ]
     if entity_lookup_steps[0].table.type != TableDataType.ITEM_TABLE:
         lookup_graph_result = get_entity_lookup_graph(
             lookup_step=entity_lookup_steps[0],
@@ -267,7 +279,9 @@ def get_child_entity_universe_template(
             ),
         )
     else:
-        initial_universe_expr = get_item_relation_table_lookup_universe(entity_lookup_steps[0].table)
+        initial_universe_expr = get_item_relation_table_lookup_universe(
+            entity_lookup_steps[0].table
+        )
     request_table_name = "ENTITY_UNIVERSE"
     request_table_columns = [
         SpecialColumnName.POINT_IN_TIME.value,

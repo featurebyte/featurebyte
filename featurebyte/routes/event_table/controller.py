@@ -30,7 +30,9 @@ from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.target import TargetService
 
 
-class EventTableController(BaseTableDocumentController[EventTableModel, EventTableService, EventTableList]):
+class EventTableController(
+    BaseTableDocumentController[EventTableModel, EventTableService, EventTableList]
+):
     """
     EventTable controller
     """
@@ -92,7 +94,9 @@ class EventTableController(BaseTableDocumentController[EventTableModel, EventTab
         EventTableInfo
         """
         event_table = await self.service.get_document(document_id=document_id)
-        table_dict = await self.table_info_service.get_table_info(data_document=event_table, verbose=verbose)
+        table_dict = await self.table_info_service.get_table_info(
+            data_document=event_table, verbose=verbose
+        )
         return EventTableInfo(
             **table_dict,
             event_id_column=event_table.event_id_column,
@@ -103,7 +107,9 @@ class EventTableController(BaseTableDocumentController[EventTableModel, EventTab
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
     ) -> List[Tuple[Any, QueryFilter]]:
-        return await super().service_and_query_pairs_for_checking_reference(document_id=document_id) + [
+        return await super().service_and_query_pairs_for_checking_reference(
+            document_id=document_id
+        ) + [
             (self.item_table_service, {"event_table_id": document_id}),
             (self.feature_job_setting_analysis_service, {"event_table_id": document_id}),
         ]

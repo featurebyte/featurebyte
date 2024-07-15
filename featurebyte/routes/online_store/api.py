@@ -31,7 +31,9 @@ from featurebyte.schema.online_store import (
 )
 
 
-class OnlineStoreRouter(BaseApiRouter[OnlineStoreRead, OnlineStoreList, OnlineStoreCreate, OnlineStoreController]):
+class OnlineStoreRouter(
+    BaseApiRouter[OnlineStoreRead, OnlineStoreList, OnlineStoreCreate, OnlineStoreController]
+):
     """
     Feature Store API router
     """

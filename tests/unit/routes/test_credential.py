@@ -123,7 +123,9 @@ class TestCredentialApi(BaseApiTestSuite):
         results = response.json()
         assert results["total"] == 2
         assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
-        previous_values = [record["previous_values"].get("database_credential") for record in results["data"]]
+        previous_values = [
+            record["previous_values"].get("database_credential") for record in results["data"]
+        ]
         assert previous_values[0]["type"] == "USERNAME_PASSWORD"
         assert decrypt_value(previous_values[0]["username"]) == "user"
         assert decrypt_value(previous_values[0]["password"]) == "pass"
@@ -184,7 +186,9 @@ class TestCredentialApi(BaseApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
         expected_info_response = {
             "name": "grocery",
             "updated_at": None,
@@ -206,7 +210,9 @@ class TestCredentialApi(BaseApiTestSuite):
         }
         assert response_dict["feature_store_info"].items() > expected_feature_store_info.items()
 
-        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
         assert response.status_code == HTTPStatus.OK, response.text
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text

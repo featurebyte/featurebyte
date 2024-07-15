@@ -58,7 +58,11 @@ async def tables_fixture(session, data_source, customer_entity, event_entity):
         "event_id": [1, 2, 3],
     })
     df_scd_1 = pd.DataFrame({
-        "effective_ts": pd.to_datetime(["2020-01-01 10:00:00", "2022-04-12 10:00:00", "2022-04-20 10:00:00"]),
+        "effective_ts": pd.to_datetime([
+            "2020-01-01 10:00:00",
+            "2022-04-12 10:00:00",
+            "2022-04-20 10:00:00",
+        ]),
         "scd_cust_id": [1000, 1000, 1000],
         "scd_city": ["tokyo", "paris", "tokyo"],
     })
@@ -204,21 +208,29 @@ def event_use_case_fixture(event_entity):
     Fixture for an event use case. To be specified when creating deployment, so that the deployment
     can be served by providing serving_event_id
     """
-    target = TargetNamespace.create(name="dummy_target", primary_entity=[event_entity.name], dtype=DBVarType.FLOAT)
+    target = TargetNamespace.create(
+        name="dummy_target", primary_entity=[event_entity.name], dtype=DBVarType.FLOAT
+    )
     context = Context.create(name="event_context", primary_entity=[event_entity.name])
-    use_case = UseCase.create(name="event_use_case", target_name=target.name, context_name=context.name)
+    use_case = UseCase.create(
+        name="event_use_case", target_name=target.name, context_name=context.name
+    )
     return use_case
 
 
 @pytest.fixture(name="feature_list_deployment_with_child_entities", scope="module")
-def feature_list_deployment_with_child_entities_fixture(country_feature, mock_task_manager, event_use_case):
+def feature_list_deployment_with_child_entities_fixture(
+    country_feature, mock_task_manager, event_use_case
+):
     _ = mock_task_manager
 
     feature_list = FeatureList([country_feature], name=f"{table_prefix}_country_list")
     feature_list.save(conflict_resolution="retrieve")
     deployment = None
     try:
-        deployment = feature_list.deploy(make_production_ready=True, use_case_name=event_use_case.name)
+        deployment = feature_list.deploy(
+            make_production_ready=True, use_case_name=event_use_case.name
+        )
         deployment.enable()
         time.sleep(1)  # sleep 1s to invalidate cache
         assert deployment.enabled is True
@@ -237,11 +249,15 @@ def feature_list_with_parent_child_features_fixture(
 ):
     _ = mock_task_manager
 
-    feature_list = FeatureList([city_feature, country_feature], name=f"{table_prefix}_city_country_list")
+    feature_list = FeatureList(
+        [city_feature, country_feature], name=f"{table_prefix}_city_country_list"
+    )
     feature_list.save(conflict_resolution="retrieve")
     deployment = None
     try:
-        deployment = feature_list.deploy(make_production_ready=True, use_case_name=event_use_case.name)
+        deployment = feature_list.deploy(
+            make_production_ready=True, use_case_name=event_use_case.name
+        )
         deployment.enable()
         time.sleep(1)  # sleep 1s to invalidate cache
         assert deployment.enabled is True
@@ -274,9 +290,13 @@ def test_use_case_list_filtering_by_feature_list(feature_list_with_parent_child_
 
     # create another use case with different primary entity
     entity = Entity.create(name="another_entity", serving_names=["another_serving_id"])
-    target = TargetNamespace.create(name="another_target", primary_entity=[entity.name], dtype=DBVarType.FLOAT)
+    target = TargetNamespace.create(
+        name="another_target", primary_entity=[entity.name], dtype=DBVarType.FLOAT
+    )
     context = Context.create(name="another_context", primary_entity=[entity.name])
-    another_use_case = UseCase.create(name="another_use_case", target_name=target.name, context_name=context.name)
+    another_use_case = UseCase.create(
+        name="another_use_case", target_name=target.name, context_name=context.name
+    )
 
     # retrieve all use cases and check that other use case is in the non-filtered list
     response = client.get("/use_case")
@@ -404,12 +424,16 @@ def test_historical_features(
     """
     Test get historical features
     """
-    observations_set = observations_set_with_expected_features[["POINT_IN_TIME", "serving_event_id"]]
+    observations_set = observations_set_with_expected_features[
+        ["POINT_IN_TIME", "serving_event_id"]
+    ]
     feature_list, _deployment = feature_list_deployment_with_child_entities
     df = feature_list.compute_historical_features(observations_set)
     df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
     assert df.columns.to_list() == observations_set.columns.to_list() + feature_list.feature_names
-    pd.testing.assert_frame_equal(df, observations_set_with_expected_features[df.columns], check_dtype=False)
+    pd.testing.assert_frame_equal(
+        df, observations_set_with_expected_features[df.columns], check_dtype=False
+    )
 
 
 def test_historical_features_with_serving_names_mapping(
@@ -419,8 +443,12 @@ def test_historical_features_with_serving_names_mapping(
     """
     Test get historical features with serving_names_mapping
     """
-    observations_set_with_expected_features.rename({"serving_event_id": "new_serving_event_id"}, axis=1, inplace=True)
-    observations_set = observations_set_with_expected_features[["POINT_IN_TIME", "new_serving_event_id"]]
+    observations_set_with_expected_features.rename(
+        {"serving_event_id": "new_serving_event_id"}, axis=1, inplace=True
+    )
+    observations_set = observations_set_with_expected_features[
+        ["POINT_IN_TIME", "new_serving_event_id"]
+    ]
     feature_list, _deployment = feature_list_deployment_with_child_entities
     df = feature_list.compute_historical_features(
         observations_set,
@@ -428,7 +456,9 @@ def test_historical_features_with_serving_names_mapping(
     )
     df = df.sort_values(["POINT_IN_TIME", "new_serving_event_id"])
     assert df.columns.to_list() == observations_set.columns.to_list() + feature_list.feature_names
-    pd.testing.assert_frame_equal(df, observations_set_with_expected_features[df.columns], check_dtype=False)
+    pd.testing.assert_frame_equal(
+        df, observations_set_with_expected_features[df.columns], check_dtype=False
+    )
 
 
 def test_historical_features_with_complex_features(
@@ -438,12 +468,16 @@ def test_historical_features_with_complex_features(
     """
     Test get historical features (feature list with both parent and child features)
     """
-    observations_set = observations_set_with_expected_features[["POINT_IN_TIME", "serving_event_id"]]
+    observations_set = observations_set_with_expected_features[
+        ["POINT_IN_TIME", "serving_event_id"]
+    ]
     feature_list = feature_list_with_complex_features
     df = feature_list.compute_historical_features(observations_set)
     df = df.sort_values(["POINT_IN_TIME", "serving_event_id"])
     assert df.columns.to_list() == observations_set.columns.to_list() + feature_list.feature_names
-    pd.testing.assert_frame_equal(df, observations_set_with_expected_features[df.columns], check_dtype=False)
+    pd.testing.assert_frame_equal(
+        df, observations_set_with_expected_features[df.columns], check_dtype=False
+    )
 
 
 @pytest.fixture(name="removed_user_city_relationship")
@@ -523,7 +557,9 @@ def test_feature_info_primary_entity(feature_list_with_parent_child_features):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_online_serving_code_uses_primary_entity(feature_list_with_parent_child_features, update_fixtures):
+def test_online_serving_code_uses_primary_entity(
+    feature_list_with_parent_child_features, update_fixtures
+):
     """
     Check that online serving code is based on primary entity
     """
@@ -547,7 +583,9 @@ def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_f
     """
     Check historical features work when parent entities lookup is required for tile computation
     """
-    feature_list = FeatureList([customer_num_city_change_feature], name="customer_num_city_change_list")
+    feature_list = FeatureList(
+        [customer_num_city_change_feature], name="customer_num_city_change_list"
+    )
 
     # The feature's entity is Customer. It is not provided in the observations set, so it has to
     # be looked up from the parent entity Event.
@@ -556,7 +594,11 @@ def test_tile_compute_requires_parent_entities_lookup(customer_num_city_change_f
     assert primary_entity[0].name == f"{table_prefix}_customer"
 
     observations_set = pd.DataFrame({
-        "POINT_IN_TIME": pd.to_datetime(["2022-03-15 10:00:00", "2022-04-16 10:00:00", "2022-04-25 10:00:00"]),
+        "POINT_IN_TIME": pd.to_datetime([
+            "2022-03-15 10:00:00",
+            "2022-04-16 10:00:00",
+            "2022-04-25 10:00:00",
+        ]),
         "serving_event_id": [1, 1, 1],
     })
     expected = observations_set.copy()

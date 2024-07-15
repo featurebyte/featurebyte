@@ -43,7 +43,9 @@ CacheKeyNotFound = object()
 logger = get_logger(__name__)
 
 
-def _get_cache_collection_name(obj: Union[ApiObjectT, FeatureByteBaseDocumentModel, Type[ApiObjectT]]) -> str:
+def _get_cache_collection_name(
+    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel, Type[ApiObjectT]],
+) -> str:
     if hasattr(obj, "_get_schema"):
         collection_name = (
             obj._get_schema.Settings.collection_name  # type: ignore
@@ -53,7 +55,9 @@ def _get_cache_collection_name(obj: Union[ApiObjectT, FeatureByteBaseDocumentMod
     return str(collection_name)
 
 
-def get_api_object_cache_key(obj: Union[ApiObjectT, FeatureByteBaseDocumentModel], *args: Any, **kwargs: Any) -> Any:
+def get_api_object_cache_key(
+    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel], *args: Any, **kwargs: Any
+) -> Any:
     """
     Construct cache key for a given document model object
 
@@ -208,7 +212,9 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         return object_dict
 
     @classmethod
-    def _get(cls: Type[ApiObjectT], name: str, other_params: Optional[dict[str, Any]] = None) -> ApiObjectT:
+    def _get(
+        cls: Type[ApiObjectT], name: str, other_params: Optional[dict[str, Any]] = None
+    ) -> ApiObjectT:
         return cls(
             **cls._get_object_dict_by_name(name=name, other_params=other_params),
             **cls._get_init_params(),
@@ -259,7 +265,9 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         return cls._get(name)
 
     @classmethod
-    def from_persistent_object_dict(cls: Type[ApiObjectT], object_dict: dict[str, Any]) -> ApiObjectT:
+    def from_persistent_object_dict(
+        cls: Type[ApiObjectT], object_dict: dict[str, Any]
+    ) -> ApiObjectT:
         """
         Construct the object from dictionary stored at the persistent
 
@@ -380,7 +388,9 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         )
 
     @classmethod
-    def _list(cls, include_id: Optional[bool] = False, params: Optional[Dict[str, Any]] = None) -> DataFrame:
+    def _list(
+        cls, include_id: Optional[bool] = False, params: Optional[Dict[str, Any]] = None
+    ) -> DataFrame:
         """
         List the object name store at the persistent
 
@@ -439,7 +449,10 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         else:
             if self._update_schema_class is None:
                 raise NotImplementedError
-            data = self._update_schema_class(**{**self.dict(by_alias=True), **update_payload}).json_dict()
+            data = self._update_schema_class(**{
+                **self.dict(by_alias=True),
+                **update_payload,
+            }).json_dict()
 
         url = url or f"{self._route}/{self.id}"
         client = Configurations().get_client()

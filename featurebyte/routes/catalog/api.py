@@ -111,7 +111,9 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         sort_dir: Optional[SortDir] = SortDirQuery,
         search: Optional[str] = SearchQuery,
     ) -> AuditDocumentList:
-        return await super().list_audit_logs(request, catalog_id, page, page_size, sort_by, sort_dir, search)
+        return await super().list_audit_logs(
+            request, catalog_id, page, page_size, sort_by, sort_dir, search
+        )
 
     async def update_description(
         self, request: Request, catalog_id: PyObjectId, data: DescriptionUpdate

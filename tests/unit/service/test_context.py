@@ -252,7 +252,9 @@ async def test_context_update__validation_error(context_service, context, view_g
 
 
 @pytest.mark.asyncio
-async def test_context_update__validation_error_unsaved_table(context_service, context, generic_view_graph):
+async def test_context_update__validation_error_unsaved_table(
+    context_service, context, generic_view_graph
+):
     """Check that context update validation error due to unsaved table"""
     with pytest.raises(DocumentUpdateError) as exc:
         await context_service.update_document(
@@ -271,7 +273,9 @@ async def test_context_update__validation_error_column_not_found(
     with pytest.raises(DocumentUpdateError) as exc:
         await context_service.update_document(
             document_id=context.id,
-            data=ContextUpdate(graph={"nodes": [invalid_input_event_table_node]}, node_name="input_1"),
+            data=ContextUpdate(
+                graph={"nodes": [invalid_input_event_table_node]}, node_name="input_1"
+            ),
         )
     expected_error = 'Column "col_int" not found in table "sf_item_table".'
     assert expected_error in str(exc.value)

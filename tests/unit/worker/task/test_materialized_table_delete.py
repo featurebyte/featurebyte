@@ -27,7 +27,9 @@ from featurebyte.worker.task.materialized_table_delete import MaterializedTableD
         (MaterializedTableCollectionName.STATIC_SOURCE, "static source table"),
     ],
 )
-async def test_get_task_description(persistent, collection_name, expected_description, app_container: LazyAppContainer):
+async def test_get_task_description(
+    persistent, collection_name, expected_description, app_container: LazyAppContainer
+):
     """
     Test get task description for materialized table delete
     """
@@ -39,9 +41,9 @@ async def test_get_task_description(persistent, collection_name, expected_descri
             "_id": document_id,
             "catalog_id": catalog_id,
             "name": f"Test {expected_description}",
-            "location": TabularSource(feature_store_id=ObjectId(), table_details=TableDetails(table_name="test")).dict(
-                by_alias=True
-            ),
+            "location": TabularSource(
+                feature_store_id=ObjectId(), table_details=TableDetails(table_name="test")
+            ).dict(by_alias=True),
             "columns_info": [],
             "num_rows": 100,
             "feature_list_id": ObjectId(),
@@ -66,4 +68,7 @@ async def test_get_task_description(persistent, collection_name, expected_descri
     app_container.override_instance_for_test("persistent", persistent)
     app_container.override_instance_for_test("catalog_id", catalog_id)
     task = app_container.get(MaterializedTableDeleteTask)
-    assert await task.get_task_description(payload) == f'Delete {expected_description} "Test {expected_description}"'
+    assert (
+        await task.get_task_description(payload)
+        == f'Delete {expected_description} "Test {expected_description}"'
+    )

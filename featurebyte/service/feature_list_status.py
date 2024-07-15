@@ -49,7 +49,8 @@ class FeatureListStatusService:
             document_id=feature_list_namespace_id
         )
         deployed_feature_list_ids = [
-            str(feature_list_id) for feature_list_id in feature_list_namespace.deployed_feature_list_ids
+            str(feature_list_id)
+            for feature_list_id in feature_list_namespace.deployed_feature_list_ids
         ]
         if feature_list_namespace.status == target_feature_list_status:
             # if no change in status, do nothing

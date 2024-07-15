@@ -52,7 +52,9 @@ class FeatureRouter(BaseRouter):
 
 
 @router.post("", response_model=FeatureModelResponse, status_code=HTTPStatus.CREATED)
-async def create_feature(request: Request, data: Union[FeatureCreate, FeatureNewVersionCreate]) -> FeatureModelResponse:
+async def create_feature(
+    request: Request, data: Union[FeatureCreate, FeatureNewVersionCreate]
+) -> FeatureModelResponse:
     """
     Create Feature
     """
@@ -82,7 +84,9 @@ async def get_feature(request: Request, feature_id: PyObjectId) -> FeatureModelR
 
 
 @router.patch("/{feature_id}", response_model=FeatureModelResponse)
-async def update_feature(request: Request, feature_id: PyObjectId, data: FeatureUpdate) -> FeatureModelResponse:
+async def update_feature(
+    request: Request, feature_id: PyObjectId, data: FeatureUpdate
+) -> FeatureModelResponse:
     """
     Update Feature
     """
@@ -252,7 +256,7 @@ async def get_feature_sample_entity_serving_names(
     Get Feature Sample Entity Serving Names
     """
     controller = request.state.app_container.feature_controller
-    sample_entity_serving_names: SampleEntityServingNames = await controller.get_sample_entity_serving_names(
-        feature_id=feature_id, count=count
+    sample_entity_serving_names: SampleEntityServingNames = (
+        await controller.get_sample_entity_serving_names(feature_id=feature_id, count=count)
     )
     return sample_entity_serving_names

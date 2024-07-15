@@ -59,7 +59,9 @@ def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
     for r in range(column_num - 1):
         for idx in reversed(range(r, column_num - 1)):
             col_idx = idx + 1
-            event_view[f"column_{col_idx + 1}"] = event_view[f"column_{col_idx}"] + event_view[f"column_{col_idx + 1}"]
+            event_view[f"column_{col_idx + 1}"] = (
+                event_view[f"column_{col_idx}"] + event_view[f"column_{col_idx + 1}"]
+            )
 
     output = None
     for idx in range(column_num):
@@ -141,12 +143,18 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
 
     # check agreement
     output = event_view.preview(limit=expected.shape[0])
-    output["CUST_ID_X_SESSION_ID"] = output["CUST_ID_X_SESSION_ID"].astype(float)  # type is not correct here
-    columns = [col for col in output.columns if not col.startswith("str_") and not col.startswith("dt_")]
+    output["CUST_ID_X_SESSION_ID"] = output["CUST_ID_X_SESSION_ID"].astype(
+        float
+    )  # type is not correct here
+    columns = [
+        col for col in output.columns if not col.startswith("str_") and not col.startswith("dt_")
+    ]
 
     # only snowflake supports timezone in datetime columns
     if source_type not in ["snowflake"]:
-        expected["ËVENT_TIMESTAMP"] = pd.to_datetime(expected["ËVENT_TIMESTAMP"], utc=True).dt.tz_localize(None)
+        expected["ËVENT_TIMESTAMP"] = pd.to_datetime(
+            expected["ËVENT_TIMESTAMP"], utc=True
+        ).dt.tz_localize(None)
     pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
 
 
@@ -229,7 +237,9 @@ def test_feature_operations__conditional_assign(feature_group):
     run_test_conditional_assign_feature(feature_group)
 
 
-def test_feature_operations__complex_feature_preview(event_view, feature_group, feature_group_per_category):
+def test_feature_operations__complex_feature_preview(
+    event_view, feature_group, feature_group_per_category
+):
     """
     Test feature operations - complex feature preview
     """
@@ -240,7 +250,9 @@ def test_feature_operations__complex_feature_preview(event_view, feature_group, 
         "üser id": 1,
     }
     # add iet entropy
-    feature_group["iet_entropy_24h"] = iet_entropy(event_view, "ÜSER ID", window="24h", name="iet_entropy_24h")
+    feature_group["iet_entropy_24h"] = iet_entropy(
+        event_view, "ÜSER ID", window="24h", name="iet_entropy_24h"
+    )
     feature_group["pyramid_sum_24h"] = pyramid_sum(
         event_view, "ÜSER ID", window="24h", numeric_column="ÀMOUNT", name="pyramid_sum_24h"
     )
@@ -278,7 +290,9 @@ def test_feature_operations__complex_feature_preview(event_view, feature_group, 
         "amount_sum_24h": expected_amount_sum_24h,
     }
 
-    assert_preview_result_equal(df_feature_preview, expected, dict_like_columns=["COUNT_BY_ACTION_24h"])
+    assert_preview_result_equal(
+        df_feature_preview, expected, dict_like_columns=["COUNT_BY_ACTION_24h"]
+    )
 
 
 def test_feature_operations(event_view, feature_group, feature_group_per_category):
@@ -330,7 +344,9 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
 
     # check casting on feature
     df_feature_preview = (
-        (feature_group["COUNT_2h"].astype(int) + 1).astype(float).preview(pd.DataFrame([preview_param]))
+        (feature_group["COUNT_2h"].astype(int) + 1)
+        .astype(float)
+        .preview(pd.DataFrame([preview_param]))
     )
     assert_feature_preview_output_equal(
         df_feature_preview,
@@ -676,11 +692,21 @@ def check_string_operations(event_view, column_name, limit=100):
     str_df = event_view[str_columns].preview(limit=limit)
 
     pd.testing.assert_series_equal(str_df["str_len"], pandas_series.str.len(), check_names=False)
-    pd.testing.assert_series_equal(str_df["str_lower"], pandas_series.str.lower(), check_names=False)
-    pd.testing.assert_series_equal(str_df["str_upper"], pandas_series.str.upper(), check_names=False)
-    pd.testing.assert_series_equal(str_df["str_strip"], pandas_series.str.strip("e"), check_names=False)
-    pd.testing.assert_series_equal(str_df["str_lstrip"], pandas_series.str.lstrip("p"), check_names=False)
-    pd.testing.assert_series_equal(str_df["str_rstrip"], pandas_series.str.rstrip("l"), check_names=False)
+    pd.testing.assert_series_equal(
+        str_df["str_lower"], pandas_series.str.lower(), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        str_df["str_upper"], pandas_series.str.upper(), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        str_df["str_strip"], pandas_series.str.strip("e"), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        str_df["str_lstrip"], pandas_series.str.lstrip("p"), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        str_df["str_rstrip"], pandas_series.str.rstrip("l"), check_names=False
+    )
     pd.testing.assert_series_equal(
         str_df["str_replace"],
         pandas_series.str.replace("a", "i"),
@@ -775,10 +801,16 @@ async def test_get_historical_features__feature_table_cache(
         "MOST_FREQUENT_ACTION_24h",
     }
 
-    df_historical_features_1 = await get_dataframe_from_materialized_table(session, historical_feature_table)
+    df_historical_features_1 = await get_dataframe_from_materialized_table(
+        session, historical_feature_table
+    )
     df = historical_feature_table.to_pandas()
     assert df.shape[1] == df_historical_features_1.shape[1] - 1  # no row index
-    cols = [col for col in df_historical_features_1.columns.tolist() if col != InternalName.TABLE_ROW_INDEX]
+    cols = [
+        col
+        for col in df_historical_features_1.columns.tolist()
+        if col != InternalName.TABLE_ROW_INDEX
+    ]
     assert df.columns.tolist() == cols
 
     expected_cols = [
@@ -801,10 +833,16 @@ async def test_get_historical_features__feature_table_cache(
         observation_table,
         historical_feature_table_name,
     )
-    df_historical_features_2 = await get_dataframe_from_materialized_table(session, historical_feature_table)
+    df_historical_features_2 = await get_dataframe_from_materialized_table(
+        session, historical_feature_table
+    )
     df = historical_feature_table.to_pandas()
     assert df.shape[1] == df_historical_features_2.shape[1] - 1  # no row index
-    cols = [col for col in df_historical_features_2.columns.tolist() if col != InternalName.TABLE_ROW_INDEX]
+    cols = [
+        col
+        for col in df_historical_features_2.columns.tolist()
+        if col != InternalName.TABLE_ROW_INDEX
+    ]
     assert df.columns.tolist() == cols
 
     expected_cols = [
@@ -825,7 +863,9 @@ async def test_get_historical_features__feature_table_cache(
     cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table.id,
     )
-    assert len(cache.feature_definitions) == len(set(feature_list_1.feature_names + feature_list_2.feature_names))
+    assert len(cache.feature_definitions) == len(
+        set(feature_list_1.feature_names + feature_list_2.feature_names)
+    )
     df = await session.execute_query(
         sql_to_string(
             parse_one(
@@ -862,7 +902,9 @@ async def test_get_historical_features__features_info(
 
     # check that features_info are saved properly
     assert len(hist_feat_table.features_info) == 1
-    assert set(feat_info.feature_name for feat_info in hist_feat_table.features_info) == {"unsaved_feature"}
+    assert set(feat_info.feature_name for feat_info in hist_feat_table.features_info) == {
+        "unsaved_feature"
+    }
 
     # delete the historical feature table
     hist_feat_table.delete()
@@ -878,7 +920,9 @@ async def test_get_historical_features__features_info(
 
     # check that features_info are saved properly
     assert len(hist_feat_table.features_info) == 1
-    assert set(feat_info.feature_name for feat_info in hist_feat_table.features_info) == {"unsaved_feature"}
+    assert set(feat_info.feature_name for feat_info in hist_feat_table.features_info) == {
+        "unsaved_feature"
+    }
     assert hist_feat_table.feature_names == ["unsaved_feature"]
     assert hist_feat_table.feature_ids == [unsaved_feature.id]
 
@@ -997,10 +1041,12 @@ def test_datetime_operations(event_view, source_type):
     event_timestamp_utc = pd.to_datetime(pandas_series, utc=True).dt.tz_localize(None)
     offset_info = dt_df["TZ_OFFSET"].str.extract("(?P<sign>[+-])(?P<hour>\d\d):(?P<minute>\d\d)")
     offset_info["sign"] = offset_info["sign"].replace({"-": -1, "+": 1}).astype(int)
-    offset_info["total_minutes"] = offset_info["sign"] * offset_info["hour"].astype(int) * 60 + offset_info[
-        "minute"
-    ].astype(int)
-    event_timestamp_localized = event_timestamp_utc + pd.to_timedelta(offset_info["total_minutes"], unit="m")
+    offset_info["total_minutes"] = offset_info["sign"] * offset_info["hour"].astype(
+        int
+    ) * 60 + offset_info["minute"].astype(int)
+    event_timestamp_localized = event_timestamp_utc + pd.to_timedelta(
+        offset_info["total_minutes"], unit="m"
+    )
 
     for prop in properties:
         series_prop = getattr(event_timestamp_localized.dt, prop)
@@ -1012,10 +1058,16 @@ def test_datetime_operations(event_view, source_type):
         )
 
     # check timedelta extracted properties
-    pandas_previous_timestamp = get_lagged_series_pandas(dt_df, "ËVENT_TIMESTAMP", "ËVENT_TIMESTAMP", "CUST_ID")
+    pandas_previous_timestamp = get_lagged_series_pandas(
+        dt_df, "ËVENT_TIMESTAMP", "ËVENT_TIMESTAMP", "CUST_ID"
+    )
     pandas_event_interval_second = (pandas_series - pandas_previous_timestamp).dt.total_seconds()
-    pandas_event_interval_minute = (pandas_series - pandas_previous_timestamp).dt.total_seconds() / 60
-    pandas_event_interval_hour = (pandas_series - pandas_previous_timestamp).dt.total_seconds() / 3600
+    pandas_event_interval_minute = (
+        pandas_series - pandas_previous_timestamp
+    ).dt.total_seconds() / 60
+    pandas_event_interval_hour = (
+        pandas_series - pandas_previous_timestamp
+    ).dt.total_seconds() / 3600
     pd.testing.assert_series_equal(
         dt_df["event_interval"].astype(float), pandas_event_interval_second, check_names=False
     )
@@ -1041,9 +1093,14 @@ def test_datetime_operations(event_view, source_type):
     assert_datetime_almost_equal(dt_df["timestamp_added_from_timediff"], pandas_timestamp_added)
     assert_datetime_almost_equal(dt_df["timestamp_added_constant"], pandas_timestamp_added_constant)
     pandas_timedelta_hour = (
-        pd.to_timedelta(dt_df["event_interval_microsecond"].astype(float), unit="microsecond").dt.total_seconds() / 3600
+        pd.to_timedelta(
+            dt_df["event_interval_microsecond"].astype(float), unit="microsecond"
+        ).dt.total_seconds()
+        / 3600
     )
-    pd.testing.assert_series_equal(dt_df["timedelta_hour"].astype(float), pandas_timedelta_hour, check_names=False)
+    pd.testing.assert_series_equal(
+        dt_df["timedelta_hour"].astype(float), pandas_timedelta_hour, check_names=False
+    )
 
 
 def test_datetime_comparison__fixed_timestamp_non_tz(event_view, source_type):
@@ -1059,7 +1116,9 @@ def test_datetime_comparison__fixed_timestamp_non_tz(event_view, source_type):
 
     if source_type == SourceType.SNOWFLAKE:
         # Convert to UTC and remove timezone to allow comparison with the fixed timestamp
-        timestamp_series = df[timestamp_column].apply(lambda x: x.tz_convert("UTC").tz_localize(None))
+        timestamp_series = df[timestamp_column].apply(
+            lambda x: x.tz_convert("UTC").tz_localize(None)
+        )
     else:
         # Spark returns timestamp converted to UTC and without timezone
         timestamp_series = df[timestamp_column]
@@ -1113,9 +1172,13 @@ def check_cast_operations(event_view, source_type, limit=100):
             check_names=False,
         )
     else:
-        pd.testing.assert_series_equal(df["AMOUNT_STR"], df["ÀMOUNT"].astype(str), check_names=False)
+        pd.testing.assert_series_equal(
+            df["AMOUNT_STR"], df["ÀMOUNT"].astype(str), check_names=False
+        )
 
-    pd.testing.assert_series_equal(df["AMOUNT_FLOAT"], df["ÀMOUNT"].astype(float), check_names=False)
+    pd.testing.assert_series_equal(
+        df["AMOUNT_FLOAT"], df["ÀMOUNT"].astype(float), check_names=False
+    )
 
     assert df["INT_FROM_BOOL"].tolist() == (df["ÀMOUNT"] > 50).astype(int).tolist()
     assert df["FLOAT_FROM_BOOL"].tolist() == (df["ÀMOUNT"] > 50).astype(float).tolist()
@@ -1147,18 +1210,32 @@ def check_numeric_operations(event_view, limit=100):
     pd.testing.assert_series_equal(df["AMOUNT_ABS"], (df["ÀMOUNT"] * (-1)).abs(), check_names=False)
     pd.testing.assert_series_equal(df["AMOUNT_SQRT"], np.sqrt(df["ÀMOUNT"]), check_names=False)
     pd.testing.assert_series_equal(df["AMOUNT_POW_2"], df["ÀMOUNT"].pow(2), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_FLOOR"], np.floor(df["ÀMOUNT"]), check_names=False, check_dtype=False)
-    pd.testing.assert_series_equal(df["AMOUNT_CEIL"], np.ceil(df["ÀMOUNT"]), check_names=False, check_dtype=False)
-    pd.testing.assert_series_equal(df["AMOUNT_INT_MOD_5"].astype(int), df["ÀMOUNT"].astype(int) % 5, check_names=False)
+    pd.testing.assert_series_equal(
+        df["AMOUNT_FLOOR"], np.floor(df["ÀMOUNT"]), check_names=False, check_dtype=False
+    )
+    pd.testing.assert_series_equal(
+        df["AMOUNT_CEIL"], np.ceil(df["ÀMOUNT"]), check_names=False, check_dtype=False
+    )
+    pd.testing.assert_series_equal(
+        df["AMOUNT_INT_MOD_5"].astype(int), df["ÀMOUNT"].astype(int) % 5, check_names=False
+    )
     pd.testing.assert_series_equal(df["AMOUNT_LOG"], np.log(df["ÀMOUNT"] + 1), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_LOG_EXP"], np.exp(np.log(df["ÀMOUNT"] + 1)), check_names=False)
+    pd.testing.assert_series_equal(
+        df["AMOUNT_LOG_EXP"], np.exp(np.log(df["ÀMOUNT"] + 1)), check_names=False
+    )
     pd.testing.assert_series_equal(df["ONE_MINUS_AMOUNT"], 1 - df["ÀMOUNT"], check_names=False)
     pd.testing.assert_series_equal(df["AMOUNT_COS"], np.cos(df["ÀMOUNT"]), check_names=False)
     pd.testing.assert_series_equal(df["AMOUNT_SIN"], np.sin(df["ÀMOUNT"]), check_names=False)
     pd.testing.assert_series_equal(df["AMOUNT_TAN"], np.tan(df["ÀMOUNT"]), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_ACOS"], np.arccos(df["AMOUNT_COS"]), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_ASIN"], np.arcsin(df["AMOUNT_COS"]), check_names=False)
-    pd.testing.assert_series_equal(df["AMOUNT_ATAN"], np.arctan(df["AMOUNT_COS"]), check_names=False)
+    pd.testing.assert_series_equal(
+        df["AMOUNT_ACOS"], np.arccos(df["AMOUNT_COS"]), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        df["AMOUNT_ASIN"], np.arcsin(df["AMOUNT_COS"]), check_names=False
+    )
+    pd.testing.assert_series_equal(
+        df["AMOUNT_ATAN"], np.arctan(df["AMOUNT_COS"]), check_names=False
+    )
 
 
 def check_day_of_week_counts(event_view, preview_param):
@@ -1169,7 +1246,9 @@ def check_day_of_week_counts(event_view, preview_param):
         windows=["24h"],
         feature_names=["DAY_OF_WEEK_COUNTS_24h"],
     )
-    day_of_week_counts["DAY_OF_WEEK_ENTROPY_24h"] = day_of_week_counts["DAY_OF_WEEK_COUNTS_24h"].cd.entropy()
+    day_of_week_counts["DAY_OF_WEEK_ENTROPY_24h"] = day_of_week_counts[
+        "DAY_OF_WEEK_COUNTS_24h"
+    ].cd.entropy()
     df_feature_preview = day_of_week_counts.preview(
         pd.DataFrame([preview_param]),
     )
@@ -1179,7 +1258,9 @@ def check_day_of_week_counts(event_view, preview_param):
         "DAY_OF_WEEK_COUNTS_24h": '{"0":9,"1":3,"6":2}',
         "DAY_OF_WEEK_ENTROPY_24h": 0.8921178708188161,
     }
-    assert_preview_result_equal(df_feature_preview, expected, dict_like_columns=["DAY_OF_WEEK_COUNTS_24h"])
+    assert_preview_result_equal(
+        df_feature_preview, expected, dict_like_columns=["DAY_OF_WEEK_COUNTS_24h"]
+    )
 
 
 @pytest.fixture(name="non_time_based_feature")
@@ -1209,8 +1290,12 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
     original_column_names = [col.name for col in event_view.columns_info]
 
     # add feature
-    event_view = event_view.add_feature("transaction_count", non_time_based_feature, "TRANSACTION_ID")
-    event_view = event_view.add_feature("transaction_count_2", non_time_based_feature, "TRANSACTION_ID")
+    event_view = event_view.add_feature(
+        "transaction_count", non_time_based_feature, "TRANSACTION_ID"
+    )
+    event_view = event_view.add_feature(
+        "transaction_count_2", non_time_based_feature, "TRANSACTION_ID"
+    )
 
     # test columns are updated as expected
     event_view_preview = event_view.preview(5000)
@@ -1231,7 +1316,9 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
     feature_preview = non_time_based_feature.preview(
         pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": order_id_to_match}])
     )
-    event_view_feature_value = event_view_preview[event_view_preview["TRANSACTION_ID"] == order_id_to_match].iloc[0]
+    event_view_feature_value = event_view_preview[
+        event_view_preview["TRANSACTION_ID"] == order_id_to_match
+    ].iloc[0]
     feature_preview_value = feature_preview["non_time_count_feature"][0]
     assert event_view_feature_value["transaction_count"] == feature_preview_value
 
@@ -1287,7 +1374,9 @@ def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_fea
     original_column_names = [col.name for col in event_view.columns_info]
 
     # add feature
-    event_view = event_view.add_feature("transaction_count", non_time_based_feature, "TRANSACTION_ID")
+    event_view = event_view.add_feature(
+        "transaction_count", non_time_based_feature, "TRANSACTION_ID"
+    )
 
     # ensure the updated view continues to work as expected
     event_view["User Status New"] = event_view["User Status"] + "_suffix"
@@ -1332,7 +1421,9 @@ def test_latest_per_category_aggregation(event_view):
         feature_names=["LATEST_ACTION_DICT_30d"],
     )
     df = feature_group.preview(pd.DataFrame([{"POINT_IN_TIME": "2001-01-26", "cust_id": 545}]))
-    expected = json.loads('{\n  "1": "àdd",\n  "3": "purchase",\n  "5": "rëmove",\n  "8": "àdd",\n  "9": "purchase"\n}')
+    expected = json.loads(
+        '{\n  "1": "àdd",\n  "3": "purchase",\n  "5": "rëmove",\n  "8": "àdd",\n  "9": "purchase"\n}'
+    )
     assert df.iloc[0]["LATEST_ACTION_DICT_30d"] == expected
 
 

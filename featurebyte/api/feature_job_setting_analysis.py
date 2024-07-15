@@ -46,7 +46,9 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.FeatureJobSettingAnalysis")
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
+        proxy_class="featurebyte.FeatureJobSettingAnalysis"
+    )
     _route: ClassVar[str] = "/feature_job_setting_analysis"
     _list_schema: ClassVar[Any] = FeatureJobSettingAnalysisRecord
     _get_schema: ClassVar[Any] = FeatureJobSettingAnalysisModel
@@ -188,7 +190,9 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         ...     period="60m",
         ...     offset="90s",
         ... )
-        >>> backtest_result = analysis.backtest(feature_job_setting=manual_setting)  # doctest: +SKIP
+        >>> backtest_result = analysis.backtest(
+        ...     feature_job_setting=manual_setting
+        ... )  # doctest: +SKIP
         """
         payload = FeatureJobSettingAnalysisBacktest(
             feature_job_setting_analysis_id=self.id,

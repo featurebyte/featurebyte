@@ -195,15 +195,19 @@ async def update_feature_job_setting_analysis_description(
     Update feature_job_setting_analysis description
     """
     controller = request.state.app_container.feature_job_setting_analysis_controller
-    feature_job_setting_analysis: FeatureJobSettingAnalysisModel = await controller.update_description(
-        document_id=feature_job_setting_analysis_id,
-        description=data.description,
+    feature_job_setting_analysis: FeatureJobSettingAnalysisModel = (
+        await controller.update_description(
+            document_id=feature_job_setting_analysis_id,
+            description=data.description,
+        )
     )
     return feature_job_setting_analysis
 
 
 @router.delete("/{feature_job_setting_analysis_id}")
-async def delete_feature_job_setting_analysis(request: Request, feature_job_setting_analysis_id: PyObjectId) -> None:
+async def delete_feature_job_setting_analysis(
+    request: Request, feature_job_setting_analysis_id: PyObjectId
+) -> None:
     """
     Delete Feature Job Setting Analysis
     """

@@ -43,7 +43,9 @@ class EntityLookupPlan:
     descendant_ids: Set[ObjectId]
     lookup_steps_mapping: Dict[Tuple[ObjectId, ...], List[EntityRelationshipInfo]]
 
-    def get_entity_lookup_steps(self, serving_entity_ids: Sequence[ObjectId]) -> Optional[List[EntityRelationshipInfo]]:
+    def get_entity_lookup_steps(
+        self, serving_entity_ids: Sequence[ObjectId]
+    ) -> Optional[List[EntityRelationshipInfo]]:
         """
         Get the parent entity lookup steps required to convert serving entity ids to feature table's
         primary entity ids
@@ -57,7 +59,9 @@ class EntityLookupPlan:
         -------
         Optional[List[EntityRelationshipInfo]]
         """
-        key = sorted_entity_ids([entity_id for entity_id in serving_entity_ids if entity_id in self.descendant_ids])
+        key = sorted_entity_ids([
+            entity_id for entity_id in serving_entity_ids if entity_id in self.descendant_ids
+        ])
         return self.lookup_steps_mapping.get(key)
 
 
@@ -309,7 +313,9 @@ class EntityColumn:
     child_serving_name: Optional[str]
     relationship_info_id: Optional[ObjectId]
 
-    def get_parent_entity_columns(self, lookup_steps: list[EntityRelationshipInfo]) -> list[EntityColumn]:
+    def get_parent_entity_columns(
+        self, lookup_steps: list[EntityRelationshipInfo]
+    ) -> list[EntityColumn]:
         """
         Apply entity lookup steps and generate new entity columns that are the parents. The
         generated column name for parent EntityColumn tracks the lineage of the lookup steps.

@@ -7,7 +7,9 @@ from typing import Any, Awaitable, Callable, TypeVar, cast
 
 from pydantic import BaseModel
 
-AwaitableMigrateFunction = TypeVar("AwaitableMigrateFunction", bound=Callable[..., Awaitable[object]])
+AwaitableMigrateFunction = TypeVar(
+    "AwaitableMigrateFunction", bound=Callable[..., Awaitable[object]]
+)
 
 
 class MigrationInfo(BaseModel):
@@ -28,7 +30,9 @@ class MigrationInfo(BaseModel):
         return self._decorate_migrate(function)
 
 
-def migrate(version: int, description: str) -> Callable[[AwaitableMigrateFunction], AwaitableMigrateFunction]:
+def migrate(
+    version: int, description: str
+) -> Callable[[AwaitableMigrateFunction], AwaitableMigrateFunction]:
     """
     Migrate decorator to add migration info into decorated function
 

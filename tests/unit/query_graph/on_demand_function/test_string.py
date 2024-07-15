@@ -118,7 +118,9 @@ def test_derive_on_demand_view_code(
     )
 
     if not isinstance(node, ConcatNode):
-        expected_odfv_expr = f"pd.Series(np.where(pd.isna(feat), np.nan, {expected_odfv_expr}), index=feat.index)"
+        expected_odfv_expr = (
+            f"pd.Series(np.where(pd.isna(feat), np.nan, {expected_odfv_expr}), index=feat.index)"
+        )
     expected_udf_expr = f"np.nan if pd.isna(feat) else {expected_udf_expr}"
 
     assert odfv_stats == []

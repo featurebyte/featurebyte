@@ -198,10 +198,16 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
     )
     assert len(requests) == 1
     df_entity_expected = pd.DataFrame({
-        "LAST_TILE_START_DATE": pd.to_datetime(["2001-01-03 07:45:00"] + ["2001-01-02 07:45:00"] * 2),
+        "LAST_TILE_START_DATE": pd.to_datetime(
+            ["2001-01-03 07:45:00"] + ["2001-01-02 07:45:00"] * 2
+        ),
         "ÜSER ID": [1, 6, 7],
-        "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(["2001-01-03 08:45:00"] + ["2001-01-02 08:45:00"] * 2),
-        "__FB_ENTITY_TABLE_START_DATE": pd.to_datetime(["2001-01-02 08:45:00"] + ["1969-12-31 23:45:00"] * 2),
+        "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(
+            ["2001-01-03 08:45:00"] + ["2001-01-02 08:45:00"] * 2
+        ),
+        "__FB_ENTITY_TABLE_START_DATE": pd.to_datetime(
+            ["2001-01-02 08:45:00"] + ["1969-12-31 23:45:00"] * 2
+        ),
     })
     await check_entity_table_sql_and_tile_compute_sql(
         session,

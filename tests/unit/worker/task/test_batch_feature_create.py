@@ -63,7 +63,9 @@ async def test_execute_sdk_code(test_catalog, catalog):
     controller = AsyncMock()
     controller.service.collection_name = "entity"  # above code contains a call to Entity.create
     with patch("featurebyte.worker.util.batch_feature_creator.FeatureCreate"):
-        await execute_sdk_code(catalog_id=test_catalog.id, code=sdk_code, feature_controller=controller)
+        await execute_sdk_code(
+            catalog_id=test_catalog.id, code=sdk_code, feature_controller=controller
+        )
 
     controller.create_feature.assert_called_once()
 

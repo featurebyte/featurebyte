@@ -52,7 +52,9 @@ class FeatureJobSetting(FeatureByteBaseModel):
         description="Establishes the time difference between when the feature is calculated and the most recent "
         "event timestamp to be processed."
     )
-    period: str = Field(description="Indicates the interval at which the batch process should be executed.")
+    period: str = Field(
+        description="Indicates the interval at which the batch process should be executed."
+    )
     offset: str = Field(
         description="Specifies the offset from the end of the period interval to the start of the feature job. "
         "For instance, with settings period: 60m and offset: 130s, the feature job will begin 2 "
@@ -269,4 +271,7 @@ class TableIdFeatureJobSetting(FeatureByteBaseModel):
         if isinstance(other, dict):
             other = TableIdFeatureJobSetting(**other)
 
-        return self.table_id == other.table_id and self.feature_job_setting == other.feature_job_setting
+        return (
+            self.table_id == other.table_id
+            and self.feature_job_setting == other.feature_job_setting
+        )

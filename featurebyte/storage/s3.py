@@ -21,7 +21,9 @@ class S3Storage(Storage):
     S3 storage class
     """
 
-    def __init__(self, get_client: Any, bucket_name: str, prefix: str = "featurebyte", temp: bool = False) -> None:
+    def __init__(
+        self, get_client: Any, bucket_name: str, prefix: str = "featurebyte", temp: bool = False
+    ) -> None:
         """
         Initialize class
 
@@ -81,7 +83,9 @@ class S3Storage(Storage):
                 },
             )
             with open(local_path, "rb") as file_obj:
-                await client.put_object(Bucket=self.bucket_name, Key=str(remote_path), Body=file_obj)
+                await client.put_object(
+                    Bucket=self.bucket_name, Key=str(remote_path), Body=file_obj
+                )
 
     async def delete(self, remote_path: Path) -> None:
         """
@@ -143,7 +147,9 @@ class S3Storage(Storage):
             except client.exceptions.NoSuchKey as exc:
                 raise FileNotFoundError("Remote file does not exist") from exc
 
-    async def get_file_stream(self, remote_path: Path, chunk_size: int = 255 * 1024) -> AsyncGenerator[bytes, None]:
+    async def get_file_stream(
+        self, remote_path: Path, chunk_size: int = 255 * 1024
+    ) -> AsyncGenerator[bytes, None]:
         """
         Stream file from storage to local path
 

@@ -71,7 +71,9 @@ def item_data_with_array_fixture():
     """
     Simulated data with an array column
     """
-    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "vector_data_item_data.csv"))
+    df = pd.read_csv(
+        os.path.join(os.path.dirname(__file__), "fixtures", "vector_data_item_data.csv")
+    )
     yield _update_df(df, "EVENT_TIMESTAMP_ITEM")
 
 
@@ -202,7 +204,9 @@ async def register_item_table_with_array_column(
 
 
 @pytest_asyncio.fixture(name="scd_table_with_array_column", scope="module")
-async def register_scd_table_with_array_column(scd_data_with_array, session, data_source, catalog, vector_user_entity):
+async def register_scd_table_with_array_column(
+    scd_data_with_array, session, data_source, catalog, vector_user_entity
+):
     """
     Register a table with an array column
     """
@@ -351,7 +355,9 @@ def test_vector_aggregation_operations__aggregate_asat(
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.parametrize("user_id", [2, 4])
-def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(event_table_with_array_column, user_id):
+def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
+    event_table_with_array_column, user_id
+):
     """
     Test vector aggregation operations fails for vectors of different lengths
     """
@@ -388,12 +394,17 @@ def test_vector_cosine_similarity(item_table_with_array_column):
     feature_group[cosine_similarity_feature_name] = feature.vec.cosine_similarity(feature)
 
     preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "vector_order_id": "1000"}
-    feature_preview = feature_group[cosine_similarity_feature_name].preview(pd.DataFrame([preview_params]))
+    feature_preview = feature_group[cosine_similarity_feature_name].preview(
+        pd.DataFrame([preview_params])
+    )
     assert feature_preview.shape[0] == 1
-    assert feature_preview.iloc[0].to_dict() == {
-        cosine_similarity_feature_name: 1.0,  # we expect cosine_similarity of 1 since the array is compared w/ itself
-        **convert_preview_param_dict_to_feature_preview_resp(preview_params),
-    }
+    assert (
+        feature_preview.iloc[0].to_dict()
+        == {
+            cosine_similarity_feature_name: 1.0,  # we expect cosine_similarity of 1 since the array is compared w/ itself
+            **convert_preview_param_dict_to_feature_preview_resp(preview_params),
+        }
+    )
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
@@ -411,7 +422,10 @@ def test_vector_value_column_latest_aggregation(event_table_with_array_column):
         skip_fill_na=True,
     )[feature_name]
 
-    preview_params = pd.DataFrame({"POINT_IN_TIME": ["2022-06-06 00:58:00"] * 2, "vector_user_id": ["2", "4"]})
+    preview_params = pd.DataFrame({
+        "POINT_IN_TIME": ["2022-06-06 00:58:00"] * 2,
+        "vector_user_id": ["2", "4"],
+    })
     feature_preview = feature.preview(preview_params)
     expected_results = [[1.0, 3.0, 1.0], [7.0, 2.0, 3.0]]
     assert feature_preview[feature_name].tolist() == expected_results

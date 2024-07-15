@@ -98,7 +98,9 @@ class FeatureListCreateWithBatchFeatureCreationPayload(
     features: List[BatchFeatureItem]
 
 
-class FeatureListCreateWithBatchFeatureCreation(BatchFeatureCreate, FeatureListCreateWithBatchFeatureCreationMixin):
+class FeatureListCreateWithBatchFeatureCreation(
+    BatchFeatureCreate, FeatureListCreateWithBatchFeatureCreationMixin
+):
     """
     Feature List Creation with Batch Feature Creation schema (used by the featurebyte server side)
     """
@@ -113,7 +115,9 @@ class FeatureVersionInfo(FeatureByteBaseModel):
     Examples
     --------
     >>> new_feature_list = feature_list.create_new_version(  # doctest: +SKIP
-    ...     features=[fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)]
+    ...     features=[
+    ...         fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)
+    ...     ]
     ... )
     """
 
@@ -138,7 +142,9 @@ class FeatureListNewVersionCreate(FeatureByteBaseModel):
     allow_unchanged_feature_list_version: bool = Field(default=False)
 
     # pydantic validators
-    _validate_unique_feat_name = validator("features", allow_reuse=True)(construct_unique_name_validator(field="name"))
+    _validate_unique_feat_name = validator("features", allow_reuse=True)(
+        construct_unique_name_validator(field="name")
+    )
 
 
 class FeatureListModelResponse(FeatureListModel):
@@ -155,7 +161,9 @@ class FeatureListPaginatedItem(FeatureListModelResponse):
     """
 
     # exclude this field from the response
-    internal_feature_clusters: Optional[List[Any]] = Field(allow_mutation=False, alias="feature_clusters", exclude=True)
+    internal_feature_clusters: Optional[List[Any]] = Field(
+        allow_mutation=False, alias="feature_clusters", exclude=True
+    )
 
 
 class FeatureListPaginatedList(PaginationMixin):
@@ -234,12 +242,18 @@ class PreviewObservationSet(FeatureByteBaseModel):
     @root_validator
     @classmethod
     def _validate_observation_set(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        point_in_time_and_serving_name_list = values.get("point_in_time_and_serving_name_list", None)
+        point_in_time_and_serving_name_list = values.get(
+            "point_in_time_and_serving_name_list", None
+        )
         observation_table_id = values.get("observation_table_id", None)
         if not point_in_time_and_serving_name_list and not observation_table_id:
-            raise ValueError("Either point_in_time_and_serving_name_list or observation_table_id must be set")
+            raise ValueError(
+                "Either point_in_time_and_serving_name_list or observation_table_id must be set"
+            )
         if observation_table_id is not None and point_in_time_and_serving_name_list is not None:
-            raise ValueError("Only one of point_in_time_and_serving_name_list and observation_table_id can be set")
+            raise ValueError(
+                "Only one of point_in_time_and_serving_name_list and observation_table_id can be set"
+            )
 
         return values
 
@@ -255,7 +269,9 @@ class OnlineFeaturesRequestPayload(FeatureByteBaseModel):
     FeatureList get online features schema
     """
 
-    entity_serving_names: List[Dict[str, Any]] = Field(min_items=1, max_items=ONLINE_FEATURE_REQUEST_ROW_LIMIT)
+    entity_serving_names: List[Dict[str, Any]] = Field(
+        min_items=1, max_items=ONLINE_FEATURE_REQUEST_ROW_LIMIT
+    )
 
 
 class SampleEntityServingNames(FeatureByteBaseModel):

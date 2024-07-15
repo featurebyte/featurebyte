@@ -355,7 +355,9 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         return cls._get_by_id(id=id)
 
     @typechecked
-    def save(self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None) -> None:
+    def save(
+        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+    ) -> None:
         """
         Adds a Context object to the catalog.
 

@@ -104,13 +104,19 @@ def test_flatten_columns(source_col1, source_col2, derived_col1, derived_col2, t
     assert node_names == {"input_1", "add_1", "alias_1"}
 
     # general case
-    columns, transforms, node_names = DerivedDataColumn._flatten_columns([source_col1, source_col2, derived_col1])
+    columns, transforms, node_names = DerivedDataColumn._flatten_columns([
+        source_col1,
+        source_col2,
+        derived_col1,
+    ])
     assert columns == [source_col1, source_col2]
     assert transforms == [transform_add]
     assert node_names == {"input_1", "add_1"}
 
 
-def test_derived_data_column_create(source_col1, source_col2, derived_col1, transform_add, transform_mul):
+def test_derived_data_column_create(
+    source_col1, source_col2, derived_col1, transform_add, transform_mul
+):
     """Test create method"""
     derived_col = DerivedDataColumn.create(
         name="new_derived_col",
@@ -142,7 +148,9 @@ def test_insert_column():
         filter=False,
     )
     another_col1 = col1.clone(node_names={"input_1", "filter_1"}, node_name="filter_1", filter=True)
-    col_map = DerivedDataColumn.insert_column(DerivedDataColumn.insert_column({}, col1), another_col1)
+    col_map = DerivedDataColumn.insert_column(
+        DerivedDataColumn.insert_column({}, col1), another_col1
+    )
     assert to_dict(col_map) == {
         ("col1", "filter_1"): {
             "name": "col1",
@@ -233,7 +241,9 @@ def test_derived_data_column_clone_without_internal_nodes(source_col1, source_co
         "type": "source",
         "dtype": "FLOAT",
         "filter": False,
-        "node_names": {"input_2"},  # note that graph_1 is not included here and input_1 is replaced by input_2
+        "node_names": {
+            "input_2"
+        },  # note that graph_1 is not included here and input_1 is replaced by input_2
         "node_name": "input_2",
     }
 

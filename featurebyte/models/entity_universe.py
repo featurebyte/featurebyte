@@ -85,7 +85,9 @@ def get_dummy_entity_universe() -> Select:
     -------
     Select
     """
-    return expressions.select(expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True))
+    return expressions.select(
+        expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
+    )
 
 
 DUMMY_ENTITY_UNIVERSE = get_dummy_entity_universe()
@@ -279,7 +281,9 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
                     this=quoted_identifier(ts_col),
                     expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
                 ),
-                expressions.LT(this=quoted_identifier(ts_col), expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
+                expressions.LT(
+                    this=quoted_identifier(ts_col), expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER
+                ),
             )
         )
         universe_expr = (
@@ -401,11 +405,17 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
                     serving_name,
                     entity_column_to_get_dtype=entity_column,
                 )
-                for entity_column, serving_name in zip(node.parameters.keys, node.parameters.serving_names)
+                for entity_column, serving_name in zip(
+                    node.parameters.keys, node.parameters.serving_names
+                )
             ])
             .distinct()
             .from_(expressions.Table(this=online_store_table_name))
-            .where(expressions.and_(online_store_table_condition, columns_not_null(node.parameters.serving_names)))
+            .where(
+                expressions.and_(
+                    online_store_table_condition, columns_not_null(node.parameters.serving_names)
+                )
+            )
         )
         return universe_expr
 
@@ -416,7 +426,9 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
             point_in_time_expr=quoted_identifier(CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
             frequency=node.parameters.feature_job_setting.period_seconds,
             time_modulo_frequency=node.parameters.feature_job_setting.offset_seconds,
-            offset=(parse_duration_string(node.parameters.offset) if node.parameters.offset else None),
+            offset=(
+                parse_duration_string(node.parameters.offset) if node.parameters.offset else None
+            ),
         )
         last_tile_index_timestamp = expressions.Anonymous(
             this="F_INDEX_TO_TIMESTAMP",
@@ -433,7 +445,9 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
                     this=quoted_identifier(ts_col),
                     expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
                 ),
-                expressions.LT(this=quoted_identifier(ts_col), expression=last_tile_index_timestamp),
+                expressions.LT(
+                    this=quoted_identifier(ts_col), expression=last_tile_index_timestamp
+                ),
             )
         )
         universe_expr = (
@@ -479,7 +493,11 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
         range_start_expr = expressions.Sub(
             this=range_end_expr,
             expression=make_literal_value(
-                max(parse_duration_string(window) for window in node.parameters.windows if window is not None)
+                max(
+                    parse_duration_string(window)
+                    for window in node.parameters.windows
+                    if window is not None
+                )
             ),
         )
         window_end_timestamp_expr = self.adapter.from_epoch_seconds(range_end_expr)
@@ -617,14 +635,18 @@ def get_combined_universe(
     has_dummy_entity_universe = False
 
     for params in entity_universe_params:
-        entity_universe_constructor = get_entity_universe_constructor(params.graph, params.node, source_type)
+        entity_universe_constructor = get_entity_universe_constructor(
+            params.graph, params.node, source_type
+        )
         for current_universe_expr in entity_universe_constructor.get_entity_universe_template():
             if current_universe_expr == DUMMY_ENTITY_UNIVERSE:
                 # Add dummy entity universe later after going through all other universes
                 has_dummy_entity_universe = True
                 continue
             if params.join_steps:
-                current_universe_expr = apply_join_steps(current_universe_expr, params.join_steps[::-1])
+                current_universe_expr = apply_join_steps(
+                    current_universe_expr, params.join_steps[::-1]
+                )
             if combined_universe_expr is None:
                 combined_universe_expr = current_universe_expr
             elif current_universe_expr not in processed_universe_exprs:
@@ -664,7 +686,9 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
     assert event_table_model is not None
     filtered_event_table_expr = (
         expressions.select(quoted_identifier(event_table_model.event_id_column))
-        .from_(get_fully_qualified_table_name((event_table_model.tabular_source.table_details.dict())))
+        .from_(
+            get_fully_qualified_table_name((event_table_model.tabular_source.table_details.dict()))
+        )
         .where(
             expressions.and_(
                 expressions.GTE(
@@ -683,7 +707,9 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
         .distinct()
         .from_(
             expressions.Table(
-                this=get_fully_qualified_table_name(item_table_model.tabular_source.table_details.dict()),
+                this=get_fully_qualified_table_name(
+                    item_table_model.tabular_source.table_details.dict()
+                ),
                 alias="ITEM",
             ),
         )
@@ -691,7 +717,9 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
             filtered_event_table_expr.subquery(alias="EVENT"),
             on=expressions.EQ(
                 this=get_qualified_column_identifier(item_table_model.event_id_column, "ITEM"),
-                expression=get_qualified_column_identifier(event_table_model.event_id_column, "EVENT"),
+                expression=get_qualified_column_identifier(
+                    event_table_model.event_id_column, "EVENT"
+                ),
             ),
             join_type="INNER",
         )

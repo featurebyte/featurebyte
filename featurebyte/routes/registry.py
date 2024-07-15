@@ -227,11 +227,15 @@ app_container_config.register_class(BatchFeatureTableController)
 app_container_config.register_class(BatchFeatureTableService)
 app_container_config.register_class(BatchRequestTableController)
 app_container_config.register_class(BatchRequestTableService)
-app_container_config.register_class(CatalogController, dependency_override={"service": "catalog_service"})
+app_container_config.register_class(
+    CatalogController, dependency_override={"service": "catalog_service"}
+)
 app_container_config.register_class(CatalogNameInjector)
 app_container_config.register_class(CatalogOnlineStoreUpdateTask)
 app_container_config.register_class(CatalogService)
-app_container_config.register_class(ContextController, dependency_override={"service": "context_service"})
+app_container_config.register_class(
+    ContextController, dependency_override={"service": "context_service"}
+)
 app_container_config.register_class(CredentialController)
 app_container_config.register_class(CredentialService)
 app_container_config.register_class(SpecializedDtypeDetectionService)
@@ -315,7 +319,9 @@ app_container_config.register_class(OnlineStoreCleanupSchedulerService)
 app_container_config.register_class(OnlineStoreComputeQueryService)
 app_container_config.register_class(OnlineStoreTableVersionService)
 app_container_config.register_class(ParentEntityLookupService)
-app_container_config.register_class(PeriodicTaskController, dependency_override={"service": "periodic_task_service"})
+app_container_config.register_class(
+    PeriodicTaskController, dependency_override={"service": "periodic_task_service"}
+)
 app_container_config.register_class(PeriodicTaskService)
 app_container_config.register_class(PreviewService)
 app_container_config.register_class(ProductionReadyValidator)
@@ -336,13 +342,19 @@ app_container_config.register_class(SessionValidatorService)
 app_container_config.register_class(StaticSourceTableController)
 app_container_config.register_class(StaticSourceTableService)
 app_container_config.register_class(TableColumnsInfoService)
-app_container_config.register_class(TableController, dependency_override={"service": "table_service"})
+app_container_config.register_class(
+    TableController, dependency_override={"service": "table_service"}
+)
 app_container_config.register_class(TableFacadeService)
 app_container_config.register_class(TableInfoService)
 app_container_config.register_class(TableService)
 app_container_config.register_class(TableStatusService)
-app_container_config.register_class(TargetComputer, dependency_override={"query_executor": "target_executor"})
-app_container_config.register_class(TargetController, dependency_override={"service": "target_service"})
+app_container_config.register_class(
+    TargetComputer, dependency_override={"query_executor": "target_executor"}
+)
+app_container_config.register_class(
+    TargetController, dependency_override={"service": "target_service"}
+)
 app_container_config.register_class(TargetExecutor)
 app_container_config.register_class(TargetService)
 app_container_config.register_class(

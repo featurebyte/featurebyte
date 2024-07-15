@@ -54,7 +54,9 @@ async def mongo_persistent_fixture() -> Tuple[MongoDB, AsyncMongoMockClient]:
         Patched MongoDB object and MongoClient
     """
     mongo_client = AsyncMongoMockClient()
-    persistent = MongoDB(uri="mongodb://server.example.com:27017", database="test", client=mongo_client)
+    persistent = MongoDB(
+        uri="mongodb://server.example.com:27017", database="test", client=mongo_client
+    )
 
     # skip session in unit tests
     @asynccontextmanager

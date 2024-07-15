@@ -21,7 +21,9 @@ from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 def test_graph_interpreter_super_simple(simple_graph):
     """Test using a simple query graph"""
     graph, node = simple_graph
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(node).sql
     expected = textwrap.dedent(
         """
@@ -45,7 +47,9 @@ def test_graph_interpreter_assign_scalar(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(assign).sql
     expected = textwrap.dedent(
         """
@@ -99,7 +103,9 @@ def test_graph_interpreter_multi_assign(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, proj_c],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(assign_node_2).sql
     expected = textwrap.dedent(
         """
@@ -183,7 +189,9 @@ def test_graph_interpreter_project_multiple_columns(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
     )
-    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE)
+    sql_graph = SQLOperationGraph(
+        graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
+    )
     sql_tree = sql_graph.build(proj).sql
     expected = textwrap.dedent(
         """
@@ -234,7 +242,9 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggre
     }
 
 
-def test_graph_interpreter_on_demand_tile_gen(query_graph_with_groupby, groupby_node_aggregation_id):
+def test_graph_interpreter_on_demand_tile_gen(
+    query_graph_with_groupby, groupby_node_aggregation_id
+):
     """Test tile building SQL with on-demand tile generation
 
     Note that the input table query contains a inner-join with an entity table to filter only table
@@ -396,7 +406,9 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
     }
 
 
-def test_graph_interpreter_on_demand_tile_gen_two_groupby(complex_feature_query_graph, groupby_node_aggregation_id):
+def test_graph_interpreter_on_demand_tile_gen_two_groupby(
+    complex_feature_query_graph, groupby_node_aggregation_id
+):
     """Test case for a complex feature that depends on two groupby nodes"""
     complex_feature_node, graph = complex_feature_query_graph
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
@@ -990,7 +1002,9 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
     Test generating tile sql for an order dependent aggregation
     """
     interpreter = GraphInterpreter(global_graph, source_type=SourceType.SNOWFLAKE)
-    tile_gen_sqls = interpreter.construct_tile_gen_sql(latest_value_aggregation_feature_node, is_on_demand=False)
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(
+        latest_value_aggregation_feature_node, is_on_demand=False
+    )
     assert len(tile_gen_sqls) == 1
     tile_sql = tile_gen_sqls[0].sql
     expected = textwrap.dedent(

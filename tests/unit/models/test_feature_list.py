@@ -89,7 +89,9 @@ def test_feature_list_model(feature_list_model_dict):
     assert loaded_feature_list == feature_list
 
     # test derive production readiness fraction
-    feature_list_model_dict["readiness_distribution"] = [{"readiness": "PRODUCTION_READY", "count": 2}]
+    feature_list_model_dict["readiness_distribution"] = [
+        {"readiness": "PRODUCTION_READY", "count": 2}
+    ]
     updated_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
     assert updated_feature_list.readiness_distribution.derive_production_ready_fraction() == 1.0
 
@@ -97,7 +99,9 @@ def test_feature_list_model(feature_list_model_dict):
     feature_list_model_dict["_id"] = updated_feature_list.id
     feature_list_model_dict["version"] = "V220710"
     loaded_old_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    compare_pydantic_obj(loaded_old_feature_list.version, expected={"name": "V220710", "suffix": None})
+    compare_pydantic_obj(
+        loaded_old_feature_list.version, expected={"name": "V220710", "suffix": None}
+    )
     assert loaded_old_feature_list == updated_feature_list
 
     # check that feature list store info for older record
@@ -107,7 +111,9 @@ def test_feature_list_model(feature_list_model_dict):
 def test_feature_list_namespace_model(feature_list_namespace_model_dict):
     """Test feature list namespace model"""
     feature_list_namespace = FeatureListNamespaceModel.parse_obj(feature_list_namespace_model_dict)
-    serialized_feature_list_namespace = feature_list_namespace.dict(exclude={"id": True}, by_alias=True)
+    serialized_feature_list_namespace = feature_list_namespace.dict(
+        exclude={"id": True}, by_alias=True
+    )
     feature_list_namespace_model_dict_sorted_ids = {
         key: sorted(value) if key.endswith("_ids") else value
         for key, value in feature_list_namespace_model_dict.items()
@@ -161,13 +167,17 @@ def test_feature_readiness_distribution_equality_check(left_dist, right_dist, ex
     elif issubclass(expected, Exception):
         with pytest.raises(expected) as exc:
             _ = feat_readiness_dist1 == feat_readiness_dist2
-        err_msg = "Invalid comparison between two feature readiness distributions with different sums."
+        err_msg = (
+            "Invalid comparison between two feature readiness distributions with different sums."
+        )
         assert err_msg in str(exc.value)
 
 
 def test_feature_readiness_distribution__equality_invalid_type():
     """Test feature readiness distribution - equality comparison (invalid other type)"""
-    feat_readiness_dist = FeatureReadinessDistribution(__root__=[{"readiness": "DRAFT", "count": 10}])
+    feat_readiness_dist = FeatureReadinessDistribution(
+        __root__=[{"readiness": "DRAFT", "count": 10}]
+    )
     with pytest.raises(TypeError) as exc:
         _ = feat_readiness_dist == [{"readiness": "DRAFT", "count": 10}]
     err_msg = (
@@ -293,8 +303,12 @@ def test_feature_readiness_distribution__transition(from_readiness, to_readiness
     )
 
     output = feat_readiness_dist.update_readiness(
-        transition=FeatureReadinessTransition(from_readiness=from_readiness, to_readiness=to_readiness)
+        transition=FeatureReadinessTransition(
+            from_readiness=from_readiness, to_readiness=to_readiness
+        )
     )
     assert output == FeatureReadinessDistribution(
-        __root__=[{"readiness": readiness, "count": count} for readiness, count in expected.items()],
+        __root__=[
+            {"readiness": readiness, "count": count} for readiness, count in expected.items()
+        ],
     )

@@ -243,11 +243,15 @@ class FeatureMaterializeService:
             select_expr=feature_table_model.entity_universe.get_entity_universe_expr(
                 current_feature_timestamp=feature_timestamp,
                 last_materialized_timestamp=(
-                    feature_table_model.last_materialized_at if use_last_materialized_timestamp else None
+                    feature_table_model.last_materialized_at
+                    if use_last_materialized_timestamp
+                    else None
                 ),
             ),
         )
-        await BaseMaterializedTableService.add_row_index_column(session, batch_request_table.table_details)
+        await BaseMaterializedTableService.add_row_index_column(
+            session, batch_request_table.table_details
+        )
 
         # Materialize features
         output_table_details = TableDetails(
@@ -263,18 +267,18 @@ class FeatureMaterializeService:
             if selected_columns is None:
                 nodes = feature_table_model.feature_cluster.nodes
             else:
-                nodes = feature_table_model.feature_cluster.get_nodes_for_feature_names(selected_columns)
+                nodes = feature_table_model.feature_cluster.get_nodes_for_feature_names(
+                    selected_columns
+                )
             feature_store = await self.feature_store_service.get_document(
                 document_id=feature_table_model.feature_cluster.feature_store_id
             )
-            parent_serving_preparation = (
-                await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-                    graph_nodes=(feature_table_model.feature_cluster.graph, nodes),
-                    feature_list_model=None,
-                    offline_store_feature_table_model=feature_table_model,
-                    request_column_names=set(feature_table_model.serving_names),
-                    feature_store=feature_store,
-                )
+            parent_serving_preparation = await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                graph_nodes=(feature_table_model.feature_cluster.graph, nodes),
+                feature_list_model=None,
+                offline_store_feature_table_model=feature_table_model,
+                request_column_names=set(feature_table_model.serving_names),
+                feature_store=feature_store,
             )
             await get_online_features(
                 session=session,
@@ -307,7 +311,9 @@ class FeatureMaterializeService:
                 feature_timestamp=feature_timestamp,
                 source_type=session.source_type,
             )
-            materialized_features_set = MaterializedFeaturesSet.create(feature_table_model, materialized_features)
+            materialized_features_set = MaterializedFeaturesSet.create(
+                feature_table_model, materialized_features
+            )
 
             for (
                 lookup_feature_table,
@@ -325,7 +331,9 @@ class FeatureMaterializeService:
                 materialized_features_set.add_lookup_materialized_features(
                     lookup_feature_table, lookup_materialized_features
                 )
-                tables_names_pending_cleanup.append(lookup_materialized_features.materialized_table_name)
+                tables_names_pending_cleanup.append(
+                    lookup_materialized_features.materialized_table_name
+                )
 
             yield materialized_features_set
 
@@ -360,7 +368,9 @@ class FeatureMaterializeService:
         column_dtypes: List[DBVarType],
         use_last_materialized_timestamp: bool,
     ) -> List[Tuple[OfflineStoreFeatureTableModel, MaterializedFeatures]]:
-        precomputed_lookup_feature_tables = await self._get_precomputed_lookup_feature_tables(feature_table_model)
+        precomputed_lookup_feature_tables = await self._get_precomputed_lookup_feature_tables(
+            feature_table_model
+        )
         result = []
         for lookup_feature_table in precomputed_lookup_feature_tables:
             lookup_materialized_features = await self._materialize_precomputed_lookup_feature_table(
@@ -371,7 +381,9 @@ class FeatureMaterializeService:
                 column_names=column_names,
                 column_dtypes=column_dtypes,
                 source_feature_table_serving_names=feature_table_model.serving_names,
-                use_last_materialized_timestamp=(use_last_materialized_timestamp and not feature_table_model.has_ttl),
+                use_last_materialized_timestamp=(
+                    use_last_materialized_timestamp and not feature_table_model.has_ttl
+                ),
                 lookup_feature_table=lookup_feature_table,
             )
             result.append((lookup_feature_table, lookup_materialized_features))
@@ -403,7 +415,9 @@ class FeatureMaterializeService:
                 select_expr=lookup_feature_table.entity_universe.get_entity_universe_expr(
                     current_feature_timestamp=feature_timestamp,
                     last_materialized_timestamp=(
-                        lookup_feature_table.last_materialized_at if use_last_materialized_timestamp else None
+                        lookup_feature_table.last_materialized_at
+                        if use_last_materialized_timestamp
+                        else None
                     ),
                 ),
             ),
@@ -427,14 +441,20 @@ class FeatureMaterializeService:
             if lookup_info.lookup_mapping is None:
                 lookup_serving_name = source_serving_name  # backward compatibility
             else:
-                lookup_serving_name = lookup_info.get_lookup_feature_table_serving_name(source_serving_name)
+                lookup_serving_name = lookup_info.get_lookup_feature_table_serving_name(
+                    source_serving_name
+                )
             if lookup_serving_name is None:
                 # source_serving_name is not part of the entity lookup, so it won't appear in the
                 # entity universe. This can happen in composite entity where only one of the
                 # entities are looked up in the precomputed lookup feature table.
-                serving_name_exprs[source_serving_name] = get_qualified_column_identifier(source_serving_name, "R")
+                serving_name_exprs[source_serving_name] = get_qualified_column_identifier(
+                    source_serving_name, "R"
+                )
             else:
-                serving_name_exprs[lookup_serving_name] = get_qualified_column_identifier(lookup_serving_name, "L")
+                serving_name_exprs[lookup_serving_name] = get_qualified_column_identifier(
+                    lookup_serving_name, "L"
+                )
                 join_conditions.append(
                     expressions.EQ(
                         this=get_qualified_column_identifier(source_serving_name, "L"),
@@ -446,7 +466,8 @@ class FeatureMaterializeService:
             combined_serving_names = get_combined_serving_names(lookup_feature_table.serving_names)
             serving_name_exprs[combined_serving_names] = expressions.alias_(
                 get_combined_serving_names_expr([
-                    serving_name_exprs[serving_name] for serving_name in lookup_feature_table.serving_names
+                    serving_name_exprs[serving_name]
+                    for serving_name in lookup_feature_table.serving_names
                 ]),
                 alias=combined_serving_names,
             )
@@ -458,7 +479,10 @@ class FeatureMaterializeService:
                 select_expr=expressions.select(
                     *(
                         list(serving_name_exprs.values())
-                        + [get_qualified_column_identifier(column_name, "R") for column_name in column_names]
+                        + [
+                            get_qualified_column_identifier(column_name, "R")
+                            for column_name in column_names
+                        ]
                     )
                 )
                 .from_(
@@ -540,7 +564,9 @@ class FeatureMaterializeService:
                 current_feature_table,
                 materialized_features,
             ) in materialized_features_set.iterate_materialized_features():
-                with self.get_table_update_lock(offline_store_table_name=current_feature_table.name):
+                with self.get_table_update_lock(
+                    offline_store_table_name=current_feature_table.name
+                ):
                     await self._insert_into_feature_table(
                         session,
                         current_feature_table.name,
@@ -561,8 +587,10 @@ class FeatureMaterializeService:
                     feature_table_model=current_feature_table, online_store_id=None
                 )
                 if feature_store and feature_store.config.online_store is not None:
-                    online_store_last_materialized_at = current_feature_table.get_online_store_last_materialized_at(
-                        feature_store.online_store_id  # type: ignore
+                    online_store_last_materialized_at = (
+                        current_feature_table.get_online_store_last_materialized_at(
+                            feature_store.online_store_id  # type: ignore
+                        )
                     )
                     await self._materialize_online(
                         feature_store=feature_store,
@@ -586,7 +614,9 @@ class FeatureMaterializeService:
             OfflineStoreFeatureTableModel object
         """
         session = await self._get_session(feature_table_model)
-        num_rows_in_feature_table = await self._num_rows_in_feature_table(session, feature_table_model.name)
+        num_rows_in_feature_table = await self._num_rows_in_feature_table(
+            session, feature_table_model.name
+        )
         if num_rows_in_feature_table is not None:
             selected_columns = await self._ensure_compatible_schema(
                 session,
@@ -633,9 +663,13 @@ class FeatureMaterializeService:
         if not lookup_feature_tables:
             return
 
-        source_feature_table = await self.offline_store_feature_table_service.get_document(source_feature_table_id)
+        source_feature_table = await self.offline_store_feature_table_service.get_document(
+            source_feature_table_id
+        )
         session = await self._get_session(source_feature_table)
-        num_rows_in_feature_table = await self._num_rows_in_feature_table(session, source_feature_table.name)
+        num_rows_in_feature_table = await self._num_rows_in_feature_table(
+            session, source_feature_table.name
+        )
         if num_rows_in_feature_table is None or num_rows_in_feature_table == 0:
             # The source feature table is empty as well, so all the tables can be initialized
             # together by initialize_new_columns() later.
@@ -644,18 +678,24 @@ class FeatureMaterializeService:
         # The source feature table already exists, but precomputed lookup tables don't. In this
         # case, need to initialize lookup feature tables to have the same columns as the source
         # feature table.
-        async with self._get_latest_from_feature_table(session, source_feature_table) as source_features:
+        async with self._get_latest_from_feature_table(
+            session, source_feature_table
+        ) as source_features:
             for lookup_feature_table in lookup_feature_tables:
-                materialized_lookup_features = await self._materialize_precomputed_lookup_feature_table(
-                    session=session,
-                    adapter=get_sql_adapter(session.source_type),
-                    feature_timestamp=source_features.feature_timestamp,
-                    materialized_feature_table_name=source_feature_table.name,
-                    column_names=source_features.column_names,
-                    column_dtypes=source_feature_table.get_output_dtypes_for_columns(source_features.column_names),
-                    use_last_materialized_timestamp=False,
-                    source_feature_table_serving_names=source_feature_table.serving_names,
-                    lookup_feature_table=lookup_feature_table,
+                materialized_lookup_features = (
+                    await self._materialize_precomputed_lookup_feature_table(
+                        session=session,
+                        adapter=get_sql_adapter(session.source_type),
+                        feature_timestamp=source_features.feature_timestamp,
+                        materialized_feature_table_name=source_feature_table.name,
+                        column_names=source_features.column_names,
+                        column_dtypes=source_feature_table.get_output_dtypes_for_columns(
+                            source_features.column_names
+                        ),
+                        use_last_materialized_timestamp=False,
+                        source_feature_table_serving_names=source_feature_table.serving_names,
+                        lookup_feature_table=lookup_feature_table,
+                    )
                 )
                 try:
                     await self._initialize_new_columns_offline_and_online(
@@ -691,11 +731,15 @@ class FeatureMaterializeService:
             )
         )
         available_column_names = [
-            col for col in feature_table_model.output_column_names if col not in column_names_not_in_warehouse
+            col
+            for col in feature_table_model.output_column_names
+            if col not in column_names_not_in_warehouse
         ]
         column_name_to_data_type = {
             column_name: get_sql_adapter(session.source_type).get_physical_type_from_dtype(dtype)
-            for (column_name, dtype) in zip(feature_table_model.output_column_names, feature_table_model.output_dtypes)
+            for (column_name, dtype) in zip(
+                feature_table_model.output_column_names, feature_table_model.output_dtypes
+            )
         }
         feature_name_cols = [quoted_identifier(col) for col in available_column_names]
 
@@ -703,14 +747,18 @@ class FeatureMaterializeService:
             this=expressions.RowNumber(),
             partition_by=join_key_cols,
             order=expressions.Order(
-                expressions=[expressions.Ordered(this=timestamp_col, desc=True) for timestamp_col in timestamp_cols]
+                expressions=[
+                    expressions.Ordered(this=timestamp_col, desc=True)
+                    for timestamp_col in timestamp_cols
+                ]
             ),
             over=expressions.WindowSpec(),
         )
         select_fields = timestamp_cols + join_key_cols + feature_name_cols
 
         inner_expr = expressions.Select(
-            expressions=select_fields + [expressions.alias_(row_number_expr, "_row_number", quoted=True)],
+            expressions=select_fields
+            + [expressions.alias_(row_number_expr, "_row_number", quoted=True)],
         ).from_(expressions.Table(this=quoted_identifier(feature_table_model.name)))
         expr = (
             expressions.Select(expressions=select_fields)
@@ -788,7 +836,9 @@ class FeatureMaterializeService:
         feature_table_serving_names: List[str],
         materialized_features: MaterializedFeatures,
     ) -> Optional[Tuple[List[str], datetime, bool]]:
-        num_rows_in_feature_table = await self._num_rows_in_feature_table(session, feature_table_name)
+        num_rows_in_feature_table = await self._num_rows_in_feature_table(
+            session, feature_table_name
+        )
 
         if num_rows_in_feature_table is not None:
             await self._ensure_compatible_schema(
@@ -812,7 +862,9 @@ class FeatureMaterializeService:
             if num_rows_in_feature_table == 0:
                 feature_timestamp_value = materialized_features.feature_timestamp.isoformat()
             else:
-                feature_timestamp_value = await self._get_last_feature_timestamp(session, feature_table_name)
+                feature_timestamp_value = await self._get_last_feature_timestamp(
+                    session, feature_table_name
+                )
             # Merge into existing feature table. If the table exists but is empty, do not
             # specify merge conditions so that the merge operation simply inserts rows with
             # new columns.
@@ -882,7 +934,9 @@ class FeatureMaterializeService:
         tables = [feature_table_model]
         tables.extend(await self._get_precomputed_lookup_feature_tables(feature_table_model))
         for current_feature_table in tables:
-            start_date = current_feature_table.get_online_store_last_materialized_at(feature_store.online_store_id)
+            start_date = current_feature_table.get_online_store_last_materialized_at(
+                feature_store.online_store_id
+            )
             await self._materialize_online(
                 feature_store=feature_store,
                 feature_table=current_feature_table,
@@ -891,7 +945,9 @@ class FeatureMaterializeService:
                 end_date=end_date,
             )
 
-    async def drop_columns(self, feature_table_model: OfflineStoreFeatureTableModel, column_names: List[str]) -> None:
+    async def drop_columns(
+        self, feature_table_model: OfflineStoreFeatureTableModel, column_names: List[str]
+    ) -> None:
         """
         Remove columns from the feature table. This is expected to be called when some features in
         the feature table model were just online disabled.
@@ -909,7 +965,11 @@ class FeatureMaterializeService:
                 query = sql_to_string(
                     expressions.AlterTable(
                         this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
-                        actions=[expressions.Drop(this=quoted_identifier(column_name), kind="COLUMN", exists=True)],
+                        actions=[
+                            expressions.Drop(
+                                this=quoted_identifier(column_name), kind="COLUMN", exists=True
+                            )
+                        ],
                     ),
                     source_type=session.source_type,
                 )
@@ -958,7 +1018,9 @@ class FeatureMaterializeService:
                 end_date=end_date,
                 start_date=start_date,
                 with_feature_timestamp=(
-                    feature_table.has_ttl if isinstance(feature_table, OfflineStoreFeatureTableModel) else False
+                    feature_table.has_ttl
+                    if isinstance(feature_table, OfflineStoreFeatureTableModel)
+                    else False
                 ),
             )
         await self.offline_store_feature_table_service.update_online_last_materialized_at(
@@ -1026,10 +1088,15 @@ class FeatureMaterializeService:
                     quoted=True,
                 )
             )
-            .select(*[quoted_identifier(column) for column in materialized_features.serving_names_and_column_names])
+            .select(*[
+                quoted_identifier(column)
+                for column in materialized_features.serving_names_and_column_names
+            ])
             .from_(quoted_identifier(materialized_features.materialized_table_name)),
         )
-        await cls._add_primary_key_constraint_if_necessary(session, feature_table_name, feature_table_serving_names)
+        await cls._add_primary_key_constraint_if_necessary(
+            session, feature_table_name, feature_table_serving_names
+        )
 
     @classmethod
     async def _add_primary_key_constraint_if_necessary(
@@ -1051,7 +1118,9 @@ class FeatureMaterializeService:
             await session.execute_query_long_running(
                 f"ALTER TABLE `{feature_table_name}` ALTER COLUMN {quoted_col} SET NOT NULL"
             )
-        primary_key_args = ", ".join([f"{quoted_timestamp_column} TIMESERIES"] + quoted_primary_key_columns)
+        primary_key_args = ", ".join(
+            [f"{quoted_timestamp_column} TIMESERIES"] + quoted_primary_key_columns
+        )
         await session.execute_query_long_running(
             textwrap.dedent(
                 f"""
@@ -1072,7 +1141,10 @@ class FeatureMaterializeService:
                 this=expressions.Schema(
                     this=expressions.Table(this=quoted_identifier(feature_table_name)),
                     expressions=[quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN)]
-                    + [quoted_identifier(column) for column in materialized_features.serving_names_and_column_names],
+                    + [
+                        quoted_identifier(column)
+                        for column in materialized_features.serving_names_and_column_names
+                    ],
                 ),
                 expression=expressions.select(
                     expressions.alias_(
@@ -1084,7 +1156,10 @@ class FeatureMaterializeService:
                         quoted=True,
                     )
                 )
-                .select(*[quoted_identifier(column) for column in materialized_features.serving_names_and_column_names])
+                .select(*[
+                    quoted_identifier(column)
+                    for column in materialized_features.serving_names_and_column_names
+                ])
                 .from_(quoted_identifier(materialized_features.materialized_table_name)),
             ),
             source_type=session.source_type,
@@ -1097,7 +1172,9 @@ class FeatureMaterializeService:
             expressions.select(
                 expressions.alias_(
                     expressions.Max(
-                        this=expressions.Column(this=quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN))
+                        this=expressions.Column(
+                            this=quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN)
+                        )
                     ),
                     alias="RESULT",
                 )
@@ -1123,7 +1200,9 @@ class FeatureMaterializeService:
             merge_conditions = [
                 expressions.EQ(
                     this=get_qualified_column_identifier(serving_name, "offline_store_table"),
-                    expression=get_qualified_column_identifier(serving_name, "materialized_features"),
+                    expression=get_qualified_column_identifier(
+                        serving_name, "materialized_features"
+                    ),
                 )
                 for serving_name in feature_table_serving_names
             ] + [
@@ -1166,7 +1245,8 @@ class FeatureMaterializeService:
                 alias=expressions.TableAlias(this="offline_store_table"),
             ),
             using=expressions.select(*[
-                quoted_identifier(column) for column in materialized_features.serving_names_and_column_names
+                quoted_identifier(column)
+                for column in materialized_features.serving_names_and_column_names
             ])
             .from_(quoted_identifier(materialized_features.materialized_table_name))
             .subquery(alias="materialized_features"),
@@ -1177,7 +1257,9 @@ class FeatureMaterializeService:
                     then=update_expr,
                 ),
                 expressions.When(
-                    this=expressions.Not(this=expressions.Column(this=expressions.Identifier(this="MATCHED"))),
+                    this=expressions.Not(
+                        this=expressions.Column(this=expressions.Identifier(this="MATCHED"))
+                    ),
                     then=insert_expr,
                 ),
             ],
@@ -1214,7 +1296,9 @@ class FeatureMaterializeService:
         existing_columns = [
             c.upper()
             for c in (
-                await session.list_table_schema(feature_table_name, session.database_name, session.schema_name)
+                await session.list_table_schema(
+                    feature_table_name, session.database_name, session.schema_name
+                )
             ).keys()
         ]
         return [col for col in feature_table_column_names if col.upper() not in existing_columns]

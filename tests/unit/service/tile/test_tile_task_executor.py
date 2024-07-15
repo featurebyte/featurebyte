@@ -97,7 +97,9 @@ def patched_tile_classes_fixture():
 
 
 @pytest.mark.asyncio
-async def test_online_store_job_schedule_ts(tile_task_executor, tile_task_parameters, session, patched_tile_classes):
+async def test_online_store_job_schedule_ts(
+    tile_task_executor, tile_task_parameters, session, patched_tile_classes
+):
     """
     Test that the job_schedule_ts_str parameter passed to TileScheduleOnlineStore is correct
     """
@@ -153,7 +155,9 @@ async def test_update_tile_prerequisite__failure(
     case)
     """
     # Simulate an error during tile task
-    patched_tile_classes["TileGenerate"].return_value.execute.side_effect = RuntimeError("Fail on purpose")
+    patched_tile_classes["TileGenerate"].return_value.execute.side_effect = RuntimeError(
+        "Fail on purpose"
+    )
     tile_task_parameters.job_schedule_ts = "2023-01-15 10:00:11"
     with pytest.raises(RuntimeError, match="Fail on purpose"):
         await tile_task_executor.execute(session, tile_task_parameters)

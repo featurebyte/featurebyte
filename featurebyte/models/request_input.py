@@ -162,10 +162,14 @@ class BaseRequestInput(FeatureByteBaseModel):
 
     def _validate_columns_and_rename_mapping(self, available_columns: list[str]) -> None:
         referenced_columns = list(self.columns or [])
-        referenced_columns += list(self.columns_rename_mapping.keys()) if self.columns_rename_mapping else []
+        referenced_columns += (
+            list(self.columns_rename_mapping.keys()) if self.columns_rename_mapping else []
+        )
         missing_columns = set(referenced_columns) - set(available_columns)
         if missing_columns:
-            raise ColumnNotFoundError(f"Columns {sorted(missing_columns)} not found (available: {available_columns})")
+            raise ColumnNotFoundError(
+                f"Columns {sorted(missing_columns)} not found (available: {available_columns})"
+            )
 
 
 class ViewRequestInput(BaseRequestInput):

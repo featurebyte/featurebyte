@@ -104,7 +104,9 @@ class BaseFeatureGroup(AsyncMixin):
             else:
                 for name, feature in item.feature_objects.items():
                     if feature.name in feature_objects:
-                        raise ValueError(f'Duplicated feature name (feature.name: "{feature.name}")!')
+                        raise ValueError(
+                            f'Duplicated feature name (feature.name: "{feature.name}")!'
+                        )
                     if feature.id in feature_ids:
                         raise ValueError(f'Duplicated feature id (feature.id: "{feature.id}")!')
                     feature_objects[name] = feature
@@ -263,7 +265,9 @@ class BaseFeatureGroup(AsyncMixin):
         ... ])
         >>> amount_feature_group = features.drop(["InvoiceCount_60days"])
         """
-        selected_feat_names = [feat_name for feat_name in self.feature_objects if feat_name not in items]
+        selected_feat_names = [
+            feat_name for feat_name in self.feature_objects if feat_name not in items
+        ]
         return self._subset_list_of_columns(selected_feat_names)
 
     def _get_feature_clusters(self) -> List[FeatureCluster]:
@@ -353,7 +357,9 @@ class BaseFeatureGroup(AsyncMixin):
         if isinstance(observation_set, ObservationTable):
             preview_parameters["observation_table_id"] = observation_set.id
         else:
-            preview_parameters["point_in_time_and_serving_name_list"] = observation_set.to_dict(orient="records")
+            preview_parameters["point_in_time_and_serving_name_list"] = observation_set.to_dict(
+                orient="records"
+            )
 
         payload = FeatureListPreview(**preview_parameters)
         client = Configurations().get_client()
@@ -401,7 +407,9 @@ class BaseFeatureGroup(AsyncMixin):
         conflict_resolution: ConflictResolution,
     ) -> Tuple[BatchFeatureCreatePayload, List[BatchFeatureItem]]:
         pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
-            target_node_names=[self.feature_objects[feat_name].node_name for feat_name in feature_names]
+            target_node_names=[
+                self.feature_objects[feat_name].node_name for feat_name in feature_names
+            ]
         )
         batch_feature_items = []
         for feat_name in feature_names:
@@ -500,7 +508,9 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         return output
 
     @typechecked
-    def __setitem__(self, key: Union[str, Tuple[Feature, str]], value: Union[Feature, Union[Scalar, Series]]) -> None:
+    def __setitem__(
+        self, key: Union[str, Tuple[Feature, str]], value: Union[Feature, Union[Scalar, Series]]
+    ) -> None:
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError(f"{len(key)} elements found, when we only expect 2.")
@@ -553,7 +563,9 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         )
 
         try:
-            feature_list_dict = get_api_object_by_id(route="/feature_list", id_value=temp_feature_list_id)
+            feature_list_dict = get_api_object_by_id(
+                route="/feature_list", id_value=temp_feature_list_id
+            )
             items, feature_objects = self._initialize_items_and_feature_objects_from_persistent(
                 feature_list_id=temp_feature_list_id,
                 feature_ids=feature_list_dict["feature_ids"],

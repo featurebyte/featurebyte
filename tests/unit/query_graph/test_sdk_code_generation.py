@@ -76,7 +76,9 @@ from featurebyte.query_graph.node.vector import VectorCosineSimilarityNode
 )
 def test_alias_node(node_inputs, required_copy, expected_statements, expected_info):
     """Test AliasNode"""
-    node = AliasNode(name="alias_1", parameters={"name": "new_col"}, output_type=NodeOutputType.SERIES)
+    node = AliasNode(
+        name="alias_1", parameters={"name": "new_col"}, output_type=NodeOutputType.SERIES
+    )
     var_name_generator = VariableNameGenerator()
     # simulate a case where col has been defined
     var_name_generator.convert_to_variable_name("col", node_name=None)
@@ -237,7 +239,8 @@ def test_haversine_node():
     assert len(statements) == 1
     assert statements[0][0] == "col"
     assert (
-        str(statements[0][1]) == "haversine(lat_series_1=col1, lon_series_1=col2, lat_series_2=col3, lon_series_2=col4)"
+        str(statements[0][1])
+        == "haversine(lat_series_1=col1, lon_series_1=col2, lat_series_2=col3, lon_series_2=col4)"
     )
     assert info == "col"
 
@@ -328,7 +331,9 @@ def test_haversine_node():
 def test_conditional(node_inputs, required_copy, as_info_dict, expected_statements, expected_info):
     """Test ConditionalNode"""
     node = ConditionalNode(name="conditional_1", parameters={"value": 1234})
-    output_type = NodeOutputType.SERIES if node_inputs[0].startswith("col") else NodeOutputType.FRAME
+    output_type = (
+        NodeOutputType.SERIES if node_inputs[0].startswith("col") else NodeOutputType.FRAME
+    )
     var_name_generator = VariableNameGenerator()
     # simulate a case where col has been defined
     var_name_generator.convert_to_variable_name("col", node_name=None)

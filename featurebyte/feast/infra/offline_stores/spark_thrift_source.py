@@ -159,7 +159,9 @@ class SparkThriftOptions:
         self.table = table
 
     @classmethod
-    def from_proto(cls, spark_thrift_options_proto: DataSourceProto.CustomSourceOptions) -> "SparkThriftOptions":
+    def from_proto(
+        cls, spark_thrift_options_proto: DataSourceProto.CustomSourceOptions
+    ) -> "SparkThriftOptions":
         """
         Creates a SparkThriftOptions from a protobuf representation of a SparkThriftOptions
 
@@ -173,7 +175,9 @@ class SparkThriftOptions:
         SparkThriftOptions
         """
         config = json.loads(spark_thrift_options_proto.configuration.decode("utf8"))
-        spark_thrift_options = cls(catalog=config["catalog"], schema=config["schema"], table=config["table"])
+        spark_thrift_options = cls(
+            catalog=config["catalog"], schema=config["schema"], table=config["table"]
+        )
         return spark_thrift_options
 
     def to_proto(self) -> DataSourceProto.CustomSourceOptions:
@@ -185,6 +189,10 @@ class SparkThriftOptions:
         DataSourceProto.CustomSourceOptions
         """
         spark_thrift_options_proto = DataSourceProto.CustomSourceOptions(
-            configuration=json.dumps({"catalog": self.catalog, "schema": self.schema, "table": self.table}).encode()
+            configuration=json.dumps({
+                "catalog": self.catalog,
+                "schema": self.schema,
+                "table": self.table,
+            }).encode()
         )
         return spark_thrift_options_proto

@@ -138,7 +138,9 @@ class BaseStorageTestSuite:
             assert filecmp.cmp(local_path, file_obj.name)
 
     @pytest.mark.asyncio
-    async def test_stream_file_success(self, local_path: Path, test_storage: Storage, text_file_content: str):
+    async def test_stream_file_success(
+        self, local_path: Path, test_storage: Storage, text_file_content: str
+    ):
         """
         Test file upload
         """

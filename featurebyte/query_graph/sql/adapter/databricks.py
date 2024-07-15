@@ -50,7 +50,9 @@ class DatabricksAdapter(BaseAdapter):
                 map_expr,
                 expressions.Lambda(
                     this=expressions.Not(
-                        this=expressions.Is(this=expressions.Identifier(this="v"), expression=expressions.Null())
+                        this=expressions.Is(
+                            this=expressions.Identifier(this="v"), expression=expressions.Null()
+                        )
                     ),
                     expressions=[
                         expressions.Identifier(this="k"),
@@ -66,10 +68,14 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def from_epoch_seconds(cls, timestamp_epoch_expr: Expression) -> Expression:
-        return expressions.Cast(this=timestamp_epoch_expr, to=expressions.DataType.build("TIMESTAMP"))
+        return expressions.Cast(
+            this=timestamp_epoch_expr, to=expressions.DataType.build("TIMESTAMP")
+        )
 
     @classmethod
-    def str_trim(cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]) -> Expression:
+    def str_trim(
+        cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
+    ) -> Expression:
         if character is None:
             character = " "
         character_literal = make_literal_value(character)
@@ -93,7 +99,9 @@ class DatabricksAdapter(BaseAdapter):
         # pandas: Monday=0, Sunday=6; databricks: Sunday=1, Saturday=7
         # Conversion formula: (databricks_dayofweek - 1 + 6) % 7
         return expressions.Mod(
-            this=expressions.Paren(this=expressions.Add(this=extracted_expr, expression=make_literal_value(5))),
+            this=expressions.Paren(
+                this=expressions.Add(this=extracted_expr, expression=make_literal_value(5))
+            ),
             expression=make_literal_value(7),
         )
 
@@ -115,7 +123,9 @@ class DatabricksAdapter(BaseAdapter):
         # Date type must be converted to TIMESTAMP type first before casting to double, else it
         # returns NA.
         timestamp_expr = expressions.Cast(this=expr, to=expressions.DataType.build("TIMESTAMP"))
-        timestamp_seconds = expressions.Cast(this=timestamp_expr, to=expressions.DataType.build("DOUBLE"))
+        timestamp_seconds = expressions.Cast(
+            this=timestamp_expr, to=expressions.DataType.build("DOUBLE")
+        )
         return timestamp_seconds
 
     @classmethod
@@ -132,18 +142,26 @@ class DatabricksAdapter(BaseAdapter):
         if quantity_scale is None:
             seconds_quantity = quantity_expr
         else:
-            seconds_quantity = expressions.Div(this=quantity_expr, expression=make_literal_value(quantity_scale))
-        timestamp_seconds_added = expressions.Add(this=timestamp_seconds, expression=seconds_quantity)
+            seconds_quantity = expressions.Div(
+                this=quantity_expr, expression=make_literal_value(quantity_scale)
+            )
+        timestamp_seconds_added = expressions.Add(
+            this=timestamp_seconds, expression=seconds_quantity
+        )
         # Note: FROM_UNIXTIME doesn't work as it discards sub-seconds components even if sub-seconds
         # are included in the specified date format.
-        return expressions.Cast(this=timestamp_seconds_added, to=expressions.DataType.build("TIMESTAMP"))
+        return expressions.Cast(
+            this=timestamp_seconds_added, to=expressions.DataType.build("TIMESTAMP")
+        )
 
     @classmethod
     def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
         return cls._dateadd_by_casting_to_seconds(quantity_expr, timestamp_expr)
 
     @classmethod
-    def dateadd_microsecond(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
+    def dateadd_microsecond(
+        cls, quantity_expr: Expression, timestamp_expr: Expression
+    ) -> Expression:
         return cls._dateadd_by_casting_to_seconds(quantity_expr, timestamp_expr, quantity_scale=1e6)
 
     @classmethod
@@ -167,14 +185,18 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
-        return expressions.Anonymous(this="array_contains", expressions=[array_expression, input_expression])
+        return expressions.Anonymous(
+            this="array_contains", expressions=[array_expression, input_expression]
+        )
 
     @classmethod
     def is_string_type(cls, column_expr: Expression) -> Expression:
         raise NotImplementedError()
 
     @classmethod
-    def get_value_from_dictionary(cls, dictionary_expression: Expression, key_expression: Expression) -> Expression:
+    def get_value_from_dictionary(
+        cls, dictionary_expression: Expression, key_expression: Expression
+    ) -> Expression:
         return expressions.Bracket(this=dictionary_expression, expressions=[key_expression])
 
     @classmethod
@@ -225,14 +247,22 @@ class DatabricksAdapter(BaseAdapter):
         if kind == "TABLE":
             table_properties = [
                 expressions.TableFormatProperty(this=expressions.Var(this="DELTA")),
-                expressions.Property(this=expressions.Literal(this="delta.columnMapping.mode"), value="'name'"),
-                expressions.Property(this=expressions.Literal(this="delta.minReaderVersion"), value="'2'"),
-                expressions.Property(this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"),
+                expressions.Property(
+                    this=expressions.Literal(this="delta.columnMapping.mode"), value="'name'"
+                ),
+                expressions.Property(
+                    this=expressions.Literal(this="delta.minReaderVersion"), value="'2'"
+                ),
+                expressions.Property(
+                    this=expressions.Literal(this="delta.minWriterVersion"), value="'5'"
+                ),
             ]
             if partition_keys:
                 table_properties.append(
                     expressions.PartitionedByProperty(
-                        this=expressions.Schema(expressions=[quoted_identifier(key) for key in partition_keys])
+                        this=expressions.Schema(
+                            expressions=[quoted_identifier(key) for key in partition_keys]
+                        )
                     )
                 )
             properties = expressions.Properties(expressions=table_properties)
@@ -253,7 +283,9 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def get_percentile_expr(cls, input_expr: Expression, quantile: float) -> Expression:
-        return expressions.Anonymous(this="percentile", expressions=[input_expr, make_literal_value(quantile)])
+        return expressions.Anonymous(
+            this="percentile", expressions=[input_expr, make_literal_value(quantile)]
+        )
 
     @classmethod
     def get_uniform_distribution_expr(cls, seed: int) -> Expression:

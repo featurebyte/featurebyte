@@ -92,7 +92,9 @@ class FunctionParameterProcessor:
         self.function_parameters = function_parameters
 
     @staticmethod
-    def _extract_parameter_value(pos: int, func_param: FunctionParameter, *args: Any, **kwargs: Any) -> Tuple[Any, Any]:
+    def _extract_parameter_value(
+        pos: int, func_param: FunctionParameter, *args: Any, **kwargs: Any
+    ) -> Tuple[Any, Any]:
         if pos < len(args):
             value = args[pos]
         else:
@@ -127,7 +129,10 @@ class FunctionParameterProcessor:
                     f"but expected {expected_series_type.__name__}."
                 )
 
-            if check_row_index_lineage and series_input.row_index_lineage != expected_row_index_lineage:
+            if (
+                check_row_index_lineage
+                and series_input.row_index_lineage != expected_row_index_lineage
+            ):
                 # check if all view columns have matching row index lineage
                 raise ValueError(
                     f'The row of the input ViewColumns "{series_inputs[0].name}" does not match '
@@ -141,7 +146,9 @@ class FunctionParameterProcessor:
         self, *args: Any, **kwargs: Any
     ) -> Tuple[List[FunctionParameterInput], FuncInputSeriesList]:
         if len(args) > len(self.function_parameters):
-            raise ValueError(f"Too many arguments. Expected {len(self.function_parameters)} but got {len(args)}.")
+            raise ValueError(
+                f"Too many arguments. Expected {len(self.function_parameters)} but got {len(args)}."
+            )
 
         # extract input parameters based on the function parameter specification
         func_params = []
@@ -150,7 +157,9 @@ class FunctionParameterProcessor:
         for i, param in enumerate(self.function_parameters):
             # extract the parameter value from the arguments
             value, kwargs = self._extract_parameter_value(i, param, *args, **kwargs)
-            check_type(param.name, value=value, expected_type=get_param_type_annotations(param.dtype))
+            check_type(
+                param.name, value=value, expected_type=get_param_type_annotations(param.dtype)
+            )
 
             # prepare generic function parameter
             func_param: FunctionParameterInput
@@ -239,7 +248,9 @@ class UserDefinedFunctionInjector:
             function_id=udf.id,
         )
         graph = GlobalQueryGraph()
-        input_nodes = [graph.get_node_by_name(input_node_name) for input_node_name in input_node_names]
+        input_nodes = [
+            graph.get_node_by_name(input_node_name) for input_node_name in input_node_names
+        ]
         node = graph.add_operation(
             node_type=NodeType.GENERIC_FUNCTION,
             node_params=node_params.dict(by_alias=True),
@@ -251,7 +262,8 @@ class UserDefinedFunctionInjector:
     @staticmethod
     def _generate_docstring(udf: UserDefinedFunctionModel) -> str:
         parameters = "\n        ".join([
-            f"{param.name} : {get_param_type_annotations(param.dtype)}" for param in udf.function_parameters
+            f"{param.name} : {get_param_type_annotations(param.dtype)}"
+            for param in udf.function_parameters
         ])
         docstring_template = f"""
         This function uses the feature store SQL function `{udf.sql_function_name}` to generate a new column
@@ -307,7 +319,9 @@ class UserDefinedFunctionInjector:
         return _user_defined_function
 
     @classmethod
-    def create_and_add_function(cls, func_accessor: FunctionAccessor, udf: UserDefinedFunctionModel) -> None:
+    def create_and_add_function(
+        cls, func_accessor: FunctionAccessor, udf: UserDefinedFunctionModel
+    ) -> None:
         """
         Create a dynamic method based on the user defined function and add it to the function accessor.
 

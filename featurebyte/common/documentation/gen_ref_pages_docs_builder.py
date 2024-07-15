@@ -281,7 +281,9 @@ def add_class_attributes_to_doc_groups(
         if attribute_name in autodoc_config.skipped_members:
             continue
 
-        attribute = getattr(class_obj, attribute_name, fields.get(attribute_name) if fields else None)
+        attribute = getattr(
+            class_obj, attribute_name, fields.get(attribute_name) if fields else None
+        )
         attribute_type = "method" if callable(attribute) else "property"
         # add documentation page for properties
         member_proxy_path = None
@@ -291,10 +293,12 @@ def add_class_attributes_to_doc_groups(
             member_doc_group = class_doc_group + [attribute_name]
         else:
             member_doc_group = class_doc_group + [attribute_name]
-        doc_groups[DocGroupKey(class_obj.__module__, class_obj.__name__, attribute_name)] = DocGroupValue(
-            member_doc_group,
-            attribute_type,
-            member_proxy_path,
+        doc_groups[DocGroupKey(class_obj.__module__, class_obj.__name__, attribute_name)] = (
+            DocGroupValue(
+                member_doc_group,
+                attribute_type,
+                member_proxy_path,
+            )
         )
     return doc_groups
 
@@ -529,7 +533,9 @@ def _get_accessor_metadata(doc_path: str) -> Optional[AccessorMetadata]:
     return None
 
 
-def _add_pure_methods_to_doc_groups(doc_groups: Dict[DocGroupKey, DocGroupValue]) -> Dict[DocGroupKey, DocGroupValue]:
+def _add_pure_methods_to_doc_groups(
+    doc_groups: Dict[DocGroupKey, DocGroupValue],
+) -> Dict[DocGroupKey, DocGroupValue]:
     """
     Add pure methods to the doc groups.
 
@@ -582,7 +588,9 @@ def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
                 if not autodoc_config:
                     continue
 
-                doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(doc_groups, autodoc_config, class_obj)
+                doc_groups, proxy_path, class_doc_group = add_class_to_doc_group(
+                    doc_groups, autodoc_config, class_obj
+                )
                 doc_groups = add_class_attributes_to_doc_groups(
                     doc_groups,
                     class_obj,
@@ -596,7 +604,9 @@ def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
     return doc_groups
 
 
-def generate_documentation_for_docs(doc_groups: Dict[DocGroupKey, DocGroupValue]) -> Tuple[Dict[str, str], DocItems]:
+def generate_documentation_for_docs(
+    doc_groups: Dict[DocGroupKey, DocGroupValue],
+) -> Tuple[Dict[str, str], DocItems]:
     """
     This function generates the documentation for the docs.
 
@@ -630,7 +640,11 @@ def generate_documentation_for_docs(doc_groups: Dict[DocGroupKey, DocGroupValue]
         obj_path = doc_group_key.get_obj_path(doc_group_value)
         lookup_path = infer_api_path_from_obj_path(obj_path).lower()
         accessor_metadata = _get_accessor_metadata(doc_path)
-        if lookup_path not in paths_to_document and doc_path.lower() not in paths_to_document and not accessor_metadata:
+        if (
+            lookup_path not in paths_to_document
+            and doc_path.lower() not in paths_to_document
+            and not accessor_metadata
+        ):
             # Skip if this is not a path we want to document.
             continue
 
@@ -648,7 +662,9 @@ def generate_documentation_for_docs(doc_groups: Dict[DocGroupKey, DocGroupValue]
         if accessor_metadata:
             # If this is an accessor, then we need to generate documentation for all the classes that use it.
             for class_to_use in accessor_metadata.classes_using_accessor:
-                api_path = get_api_path_to_use(doc_path, class_to_use, accessor_metadata.property_name)
+                api_path = get_api_path_to_use(
+                    doc_path, class_to_use, accessor_metadata.property_name
+                )
                 doc_path = api_path + ".md"
                 reverse_lookup_map[api_path.lower()] = doc_path
                 resource_details = get_resource_details(obj_path)
@@ -894,7 +910,9 @@ class DocsBuilder:
                 core_objects_from_layout.append(item)
                 continue
 
-            markdown_path = _get_markdown_file_path_for_doc_layout_item(item, proxied_path_to_markdown_path)
+            markdown_path = _get_markdown_file_path_for_doc_layout_item(
+                item, proxied_path_to_markdown_path
+            )
             header = tuple(item.menu_header)
             nav[header] = markdown_path
 
@@ -931,7 +949,9 @@ class DocsBuilder:
         # Build docs
         nav_to_use = BetaWave3Nav()
         doc_groups_to_use = get_doc_groups()
-        proxied_path_to_markdown_path, doc_items = generate_documentation_for_docs(doc_groups_to_use)
+        proxied_path_to_markdown_path, doc_items = generate_documentation_for_docs(
+            doc_groups_to_use
+        )
         self._write_doc_items_to_markdown_files(doc_items)
         updated_nav = self.populate_nav(nav_to_use, proxied_path_to_markdown_path)
         self.write_summary_page(updated_nav)

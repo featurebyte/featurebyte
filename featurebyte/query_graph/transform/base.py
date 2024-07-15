@@ -119,7 +119,9 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
             input_node_names=self.graph.get_input_node_names(node),
         )
         input_node_map: Dict[str, Any] = {}
-        for input_node_name in sorted(input_node_names, key=lambda x: topological_order_map[x], reverse=True):
+        for input_node_name in sorted(
+            input_node_names, key=lambda x: topological_order_map[x], reverse=True
+        ):
             if input_node_name not in self._input_node_map_cache:
                 input_node = self.graph.nodes_map[input_node_name]
                 branch_state = self._in_compute(

@@ -57,9 +57,15 @@ class SnowflakeDetails(BaseDatabaseDetails):
         "- For all other regions on Amazon Web Services, use `<account>.<region>.snowflakecomputing.com`\n"
         "- For all regions on Microsoft Azure, use `<account>.<region>.azure.snowflakecomputing.com`"
     )
-    warehouse: StrictStr = Field(description="The name of default warehouse to use for computation.")
-    database_name: StrictStr = Field(description="The name of the database to use for creation of output tables.")
-    schema_name: StrictStr = Field(description="The name of the schema to use for creation of output tables.")
+    warehouse: StrictStr = Field(
+        description="The name of default warehouse to use for computation."
+    )
+    database_name: StrictStr = Field(
+        description="The name of the database to use for creation of output tables."
+    )
+    schema_name: StrictStr = Field(
+        description="The name of the schema to use for creation of output tables."
+    )
     role_name: StrictStr = Field(
         description="The name of the role to use for creation of output tables.",
         default="PUBLIC",
@@ -102,8 +108,12 @@ class BaseDatabricksDetails(BaseDatabaseDetails):
         description="Databricks host. This is typically the URL you use to go to to access your databricks environment."
     )
     http_path: StrictStr = Field(description="Databricks compute resource URL.")
-    catalog_name: StrictStr = Field(description="The name of the catalog to use for creation of output tables.")
-    schema_name: StrictStr = Field(description="The name of the schema to use for creation of output tables.")
+    catalog_name: StrictStr = Field(
+        description="The name of the catalog to use for creation of output tables."
+    )
+    schema_name: StrictStr = Field(
+        description="The name of the schema to use for creation of output tables."
+    )
 
     @property
     def updatable_fields(self) -> set[str]:
@@ -133,8 +143,12 @@ class DatabricksDetails(BaseDatabricksDetails):
         description="Databricks host. This is typically the URL you use to go to to access your databricks environment."
     )
     http_path: StrictStr = Field(description="Databricks compute resource URL.")
-    catalog_name: StrictStr = Field(description="The name of the catalog to use for creation of output tables.")
-    schema_name: StrictStr = Field(description="The name of the schema to use for creation of output tables.")
+    catalog_name: StrictStr = Field(
+        description="The name of the catalog to use for creation of output tables."
+    )
+    schema_name: StrictStr = Field(
+        description="The name of the schema to use for creation of output tables."
+    )
     storage_path: StrictStr = Field(description="DBFS path to use for file storage.")
 
     @root_validator(pre=True)
@@ -176,9 +190,15 @@ class DatabricksUnityDetails(BaseDatabricksDetails):
         description="Databricks host. This is typically the URL you use to go to to access your databricks environment."
     )
     http_path: StrictStr = Field(description="Databricks compute resource URL.")
-    catalog_name: StrictStr = Field(description="The name of the catalog to use for creation of output tables.")
-    schema_name: StrictStr = Field(description="The name of the schema to use for creation of output tables.")
-    group_name: StrictStr = Field(description="The name of the group to use for creation of output tables.")
+    catalog_name: StrictStr = Field(
+        description="The name of the catalog to use for creation of output tables."
+    )
+    schema_name: StrictStr = Field(
+        description="The name of the schema to use for creation of output tables."
+    )
+    group_name: StrictStr = Field(
+        description="The name of the group to use for creation of output tables."
+    )
 
 
 class SparkDetails(BaseDatabaseDetails):
@@ -202,7 +222,9 @@ class SparkDetails(BaseDatabaseDetails):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.SparkDetails")
 
     # instance variables
-    host: StrictStr = Field(default="127.0.0.1", description="The server where your spark cluster is hosted.")
+    host: StrictStr = Field(
+        default="127.0.0.1", description="The server where your spark cluster is hosted."
+    )
     port: int = Field(default=10000, description="The port your spark cluster is hosted on.")
     http_path: StrictStr = Field(default="cliservice", description="Spark compute resource URL.")
     use_http_transport: bool = Field(
@@ -213,15 +235,21 @@ class SparkDetails(BaseDatabaseDetails):
         default=False,
         description="Configuration on whether to use SSL. Only applicable if use_http_transport is set to True.",
     )
-    storage_type: StorageType = Field(description="Storage type of where we will be persisting the feature store to.")
+    storage_type: StorageType = Field(
+        description="Storage type of where we will be persisting the feature store to."
+    )
     storage_url: str = Field(description="URL of where we will be uploading our custom UDFs to.")
     storage_path: StrictStr = Field(
         description="Path where we will be reading our data from. Note that this technically points to the same "
         "location as the storage_url. However, the format that the warehouse accepts differs between the read and "
         "write path, and as such, we require two fields."
     )
-    catalog_name: StrictStr = Field(description="The name of the catalog to use for creation of output tables.")
-    schema_name: StrictStr = Field(description="The name of the schema to use for creation of output tables.")
+    catalog_name: StrictStr = Field(
+        description="The name of the catalog to use for creation of output tables."
+    )
+    schema_name: StrictStr = Field(
+        description="The name of the schema to use for creation of output tables."
+    )
 
     @root_validator(pre=True)
     @classmethod

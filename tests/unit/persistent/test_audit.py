@@ -38,7 +38,9 @@ def test_get_previous_and_current_values__original_empty(updated_doc):
     """
     Test get_previous_and_current_values function (original is empty)
     """
-    previous_values, current_values = get_previous_and_current_values(original_doc={}, updated_doc=updated_doc)
+    previous_values, current_values = get_previous_and_current_values(
+        original_doc={}, updated_doc=updated_doc
+    )
     assert previous_values == {}
     assert current_values == updated_doc
 
@@ -47,7 +49,9 @@ def test_get_previous_and_current_values__updated_empty(original_doc):
     """
     Test get_previous_and_current_values function (original is empty)
     """
-    previous_values, current_values = get_previous_and_current_values(original_doc=original_doc, updated_doc={})
+    previous_values, current_values = get_previous_and_current_values(
+        original_doc=original_doc, updated_doc={}
+    )
     assert previous_values == original_doc
     assert current_values == {}
 

@@ -83,12 +83,16 @@ class MongoDB(Persistent):
             Document already exist
         """
         try:
-            result: InsertOneResult = await self._db[collection_name].insert_one(document, session=self._session)
+            result: InsertOneResult = await self._db[collection_name].insert_one(
+                document, session=self._session
+            )
             return ObjectId(result.inserted_id)
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 
-    async def _insert_many(self, collection_name: str, documents: Iterable[Document]) -> list[ObjectId]:
+    async def _insert_many(
+        self, collection_name: str, documents: Iterable[Document]
+    ) -> list[ObjectId]:
         """
         Insert records into collection
 
@@ -110,7 +114,9 @@ class MongoDB(Persistent):
             Document already exist
         """
         try:
-            result: InsertManyResult = await self._db[collection_name].insert_many(documents, session=self._session)
+            result: InsertManyResult = await self._db[collection_name].insert_many(
+                documents, session=self._session
+            )
             return result.inserted_ids
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
@@ -235,7 +241,9 @@ class MongoDB(Persistent):
                 pipeline.append({"$sort": sort})
             cursor = self._db[collection_name].aggregate(pipeline, session=self._session)
         else:
-            cursor = self._db[collection_name].find(filter=query_filter, projection=projection, session=self._session)
+            cursor = self._db[collection_name].find(
+                filter=query_filter, projection=projection, session=self._session
+            )
             if sort:
                 cursor = cursor.sort(sort.items())
 
@@ -264,7 +272,9 @@ class MongoDB(Persistent):
         int
             Number of records modified
         """
-        result: UpdateResult = await self._db[collection_name].update_one(query_filter, update, session=self._session)
+        result: UpdateResult = await self._db[collection_name].update_one(
+            query_filter, update, session=self._session
+        )
         return result.modified_count
 
     async def _update_many(
@@ -290,7 +300,9 @@ class MongoDB(Persistent):
         int
             Number of records modified
         """
-        result: UpdateResult = await self._db[collection_name].update_many(query_filter, update, session=self._session)
+        result: UpdateResult = await self._db[collection_name].update_many(
+            query_filter, update, session=self._session
+        )
         return result.modified_count
 
     async def _replace_one(
@@ -337,7 +349,9 @@ class MongoDB(Persistent):
         int
             Number of records deleted
         """
-        result: DeleteResult = await self._db[collection_name].delete_one(query_filter, session=self._session)
+        result: DeleteResult = await self._db[collection_name].delete_one(
+            query_filter, session=self._session
+        )
         return result.deleted_count
 
     async def _delete_many(self, collection_name: str, query_filter: QueryFilter) -> int:
@@ -356,7 +370,9 @@ class MongoDB(Persistent):
         int
             Number of records deleted
         """
-        result: DeleteResult = await self._db[collection_name].delete_many(query_filter, session=self._session)
+        result: DeleteResult = await self._db[collection_name].delete_many(
+            query_filter, session=self._session
+        )
         return result.deleted_count
 
     async def list_collection_names(self) -> list[str]:
@@ -416,7 +432,9 @@ class MongoDB(Persistent):
         if page_size > 0:
             output_pipeline.extend([{"$skip": page_size * (page - 1)}, {"$limit": page_size}])
 
-        pipeline = pipeline + [{"$facet": {"result": output_pipeline, "total": [{"$count": "count"}]}}]
+        pipeline = pipeline + [
+            {"$facet": {"result": output_pipeline, "total": [{"$count": "count"}]}}
+        ]
         result = self._db[collection_name].aggregate(pipeline, session=self._session).next()
         if iscoroutine(result):
             output = await result

@@ -87,7 +87,9 @@ class EntityFeatureChecker:
             raise ValueError(f"Missing entities: {primary_entity_ids - provided_entity_ids}")
 
     @staticmethod
-    def check_missing_features(features: List[FeatureModel], feature_lists: List[FeatureListModel]) -> None:
+    def check_missing_features(
+        features: List[FeatureModel], feature_lists: List[FeatureListModel]
+    ) -> None:
         """
         Checks if all features have been provided
 
@@ -170,8 +172,12 @@ class OfflineStoreTable(FeatureByteBaseModel):
             table_name=table_name,
             feature_job_setting=first_ingest_query_graph.feature_job_setting,
             has_ttl=first_ingest_query_graph.has_ttl,
-            output_column_names=[ingest_query_graph.output_column_name for ingest_query_graph in ingest_query_graphs],
-            output_dtypes=[ingest_query_graph.output_dtype for ingest_query_graph in ingest_query_graphs],
+            output_column_names=[
+                ingest_query_graph.output_column_name for ingest_query_graph in ingest_query_graphs
+            ],
+            output_dtypes=[
+                ingest_query_graph.output_dtype for ingest_query_graph in ingest_query_graphs
+            ],
             primary_entity_info=first_ingest_query_graph.get_primary_entity_info(
                 entity_id_to_serving_name=entity_id_to_serving_name
             ),
@@ -250,7 +256,9 @@ class OfflineStoreTable(FeatureByteBaseModel):
         schema = []
         if self.has_ttl:
             assert self.feature_job_setting is not None
-            time_to_live = timedelta(seconds=get_time_aggregate_ttl_in_secs(self.feature_job_setting))
+            time_to_live = timedelta(
+                seconds=get_time_aggregate_ttl_in_secs(self.feature_job_setting)
+            )
             schema.append(
                 FeastField(
                     name=InternalName.FEATURE_TIMESTAMP_COLUMN,
@@ -317,7 +325,9 @@ class OfflineStoreTableBuilder:
         offline_table_key_to_ingest_query_graphs = defaultdict(list)
         offline_table_key_to_feature_ids = defaultdict(set)
         for feature in features:
-            offline_ingest_query_graphs = feature.offline_store_info.extract_offline_store_ingest_query_graphs()
+            offline_ingest_query_graphs = (
+                feature.offline_store_info.extract_offline_store_ingest_query_graphs()
+            )
             for ingest_query_graph in offline_ingest_query_graphs:
                 table_name = ingest_query_graph.offline_store_table_name
                 offline_table_key_to_ingest_query_graphs[table_name].append(ingest_query_graph)
@@ -333,21 +343,25 @@ class OfflineStoreTableBuilder:
             offline_store_tables.append(offline_store_table)
             if serving_entity_ids is not None:
                 assert len(feature_lists) == 1
-                relationships_info = _get_feature_lists_to_relationships_info(feature_lists)[feature_lists[0].id]
+                relationships_info = _get_feature_lists_to_relationships_info(feature_lists)[
+                    feature_lists[0].id
+                ]
                 relationships_mapper = EntityAncestorDescendantMapper.create(relationships_info)
                 related_serving_entity_ids = relationships_mapper.keep_related_entity_ids(
                     entity_ids_to_filter=serving_entity_ids,
                     filter_by=offline_store_table.primary_entity_ids,
                 )
                 if sorted(offline_store_table.primary_entity_ids) != related_serving_entity_ids:
-                    precomputed_lookup_feature_table = OfflineStoreTableBuilder._get_precomputed_lookup_feature_table(
-                        offline_store_table=offline_store_table,
-                        full_serving_entity_ids=serving_entity_ids,
-                        feature_list=feature_lists[0],
-                        entity_id_to_serving_name=entity_id_to_serving_name,
-                        entity_lookup_steps_mapping=entity_lookup_steps_mapping,
-                        feature_store=feature_store,
-                        offline_table_key_to_feature_ids=offline_table_key_to_feature_ids,
+                    precomputed_lookup_feature_table = (
+                        OfflineStoreTableBuilder._get_precomputed_lookup_feature_table(
+                            offline_store_table=offline_store_table,
+                            full_serving_entity_ids=serving_entity_ids,
+                            feature_list=feature_lists[0],
+                            entity_id_to_serving_name=entity_id_to_serving_name,
+                            entity_lookup_steps_mapping=entity_lookup_steps_mapping,
+                            feature_store=feature_store,
+                            offline_table_key_to_feature_ids=offline_table_key_to_feature_ids,
+                        )
                     )
                     assert precomputed_lookup_feature_table is not None
                     offline_store_tables.append(precomputed_lookup_feature_table)
@@ -440,20 +454,24 @@ class FeastAssetCreator:
                         schema=[
                             FeastField(
                                 name=req_col_name,
-                                dtype=to_feast_primitive_type(DBVarType(req_col_node.parameters.dtype)),
+                                dtype=to_feast_primitive_type(
+                                    DBVarType(req_col_node.parameters.dtype)
+                                ),
                             )
                         ],
                     )
 
             if SpecialColumnName.POINT_IN_TIME.value not in name_to_feast_request_source:
-                name_to_feast_request_source[SpecialColumnName.POINT_IN_TIME.value] = FeastRequestSource(
-                    name=SpecialColumnName.POINT_IN_TIME.value,
-                    schema=[
-                        FeastField(
-                            name=SpecialColumnName.POINT_IN_TIME.value,
-                            dtype=to_feast_primitive_type(DBVarType.TIMESTAMP),
-                        )
-                    ],
+                name_to_feast_request_source[SpecialColumnName.POINT_IN_TIME.value] = (
+                    FeastRequestSource(
+                        name=SpecialColumnName.POINT_IN_TIME.value,
+                        schema=[
+                            FeastField(
+                                name=SpecialColumnName.POINT_IN_TIME.value,
+                                dtype=to_feast_primitive_type(DBVarType.TIMESTAMP),
+                            )
+                        ],
+                    )
                 )
 
         return name_to_feast_request_source
@@ -536,7 +554,8 @@ class FeastAssetCreator:
                 feast_feat_names = [
                     feat.name
                     for feat in feature_view.features
-                    if feat.name in feature_name_versions and feat.name not in found_feature_name_versions
+                    if feat.name in feature_name_versions
+                    and feat.name not in found_feature_name_versions
                 ]
                 if feast_feat_names:
                     input_feature_views.append(feature_view[feast_feat_names])
@@ -557,7 +576,9 @@ class FeastRegistryBuilder:
     """
 
     @staticmethod
-    def get_offline_store_config(feature_store_model: FeatureStoreModel, offline_store_credentials: Any) -> Any:
+    def get_offline_store_config(
+        feature_store_model: FeatureStoreModel, offline_store_credentials: Any
+    ) -> Any:
         """
         Get the offline store configuration
 
@@ -607,7 +628,9 @@ class FeastRegistryBuilder:
         if online_store is None:
             return None
 
-        return get_feast_online_store_details(online_store_details=online_store.details).to_feast_online_store_config()
+        return get_feast_online_store_details(
+            online_store_details=online_store.details
+        ).to_feast_online_store_config()
 
     @staticmethod
     def create_repo_config(
@@ -838,7 +861,9 @@ class FeastRegistryBuilder:
             name_to_feast_feature_view[table_name] = feast_feature_view
             all_feast_feature_views.append(feast_feature_view)
 
-        name_to_feast_request_source = FeastAssetCreator.create_feast_name_to_request_source(features)
+        name_to_feast_request_source = FeastAssetCreator.create_feast_name_to_request_source(
+            features
+        )
         on_demand_feature_views = FeastAssetCreator.create_feast_on_demand_feature_views(
             features=features,
             name_to_feast_feature_view=name_to_feast_feature_view,

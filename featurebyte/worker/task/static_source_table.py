@@ -40,7 +40,9 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask[StaticSourceTableTaskPa
         return f'Save static source table "{payload.name}"'
 
     async def execute(self, payload: StaticSourceTableTaskPayload) -> Any:
-        feature_store = await self.feature_store_service.get_document(document_id=payload.feature_store_id)
+        feature_store = await self.feature_store_service.get_document(
+            document_id=payload.feature_store_id
+        )
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
         location = await self.static_source_table_service.generate_materialized_table_location(
             payload.feature_store_id,
@@ -52,8 +54,10 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask[StaticSourceTableTaskPa
         )
 
         async with self.drop_table_on_error(db_session, location.table_details, payload):
-            additional_metadata = await self.static_source_table_service.validate_materialized_table_and_get_metadata(
-                db_session, location.table_details
+            additional_metadata = (
+                await self.static_source_table_service.validate_materialized_table_and_get_metadata(
+                    db_session, location.table_details
+                )
             )
             logger.debug("Creating a new StaticSourceTable", extra=location.table_details.dict())
             static_source_table = StaticSourceTableModel(

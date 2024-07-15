@@ -53,7 +53,9 @@ async def validate_output_row_index(session: BaseSession, output_table_name: str
             expressions.alias_(
                 expressions.EQ(
                     this=expressions.Count(
-                        this=expressions.Distinct(expressions=[quoted_identifier(InternalName.TABLE_ROW_INDEX.value)]),
+                        this=expressions.Distinct(
+                            expressions=[quoted_identifier(InternalName.TABLE_ROW_INDEX.value)]
+                        ),
                     ),
                     expression=expressions.Count(this=expressions.Star()),
                 ),

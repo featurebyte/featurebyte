@@ -17,7 +17,9 @@ class TestOnlineStoreApi(BaseApiTestSuite):
 
     class_name = "OnlineStore"
     base_route = "/online_store"
-    payload = BaseApiTestSuite.load_payload("tests/fixtures/request_payloads/mysql_online_store.json")
+    payload = BaseApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/mysql_online_store.json"
+    )
     create_conflict_payload_expected_detail_pairs = [
         (
             payload,
@@ -105,13 +107,17 @@ class TestOnlineStoreApi(BaseApiTestSuite):
             },
         }
 
-        response = test_api_client.patch(f"{self.base_route}/{catalog_id}", json={"details": new_details})
+        response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}", json={"details": new_details}
+        )
         assert response.status_code == HTTPStatus.OK
         result = response.json()
         assert result["name"] == "mysql_online_store"
         assert result["details"] == new_details
 
-        response = test_api_client.patch(f"{self.base_route}/{catalog_id}", json={"name": "new name"})
+        response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}", json={"name": "new name"}
+        )
         assert response.status_code == HTTPStatus.OK
         response = test_api_client.get(f"{self.base_route}/{catalog_id}")
         assert response.status_code == HTTPStatus.OK

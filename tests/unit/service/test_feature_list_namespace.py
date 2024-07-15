@@ -16,7 +16,9 @@ async def test_update_document(
     feature_service, feature_list_namespace_service, feature_list_service, feature, feature_list
 ):
     """Test update document"""
-    namespace = await feature_list_namespace_service.get_document(document_id=feature_list.feature_list_namespace_id)
+    namespace = await feature_list_namespace_service.get_document(
+        document_id=feature_list.feature_list_namespace_id
+    )
     assert namespace.feature_list_ids == [feature_list.id]
 
     # add new feature with the same feature namespace ID
@@ -30,10 +32,14 @@ async def test_update_document(
     flist_dict["_id"] = ObjectId()
     flist_dict["version"] = {"name": "V220917"}
     flist_dict["feature_ids"] = [new_feat.id]
-    new_flist = await feature_list_service.create_document(data=FeatureListServiceCreate(**flist_dict))
+    new_flist = await feature_list_service.create_document(
+        data=FeatureListServiceCreate(**flist_dict)
+    )
 
     # check updated namespace
-    namespace = await feature_list_namespace_service.get_document(document_id=feature_list.feature_list_namespace_id)
+    namespace = await feature_list_namespace_service.get_document(
+        document_id=feature_list.feature_list_namespace_id
+    )
     assert namespace.feature_list_ids == sorted([feature_list.id, new_flist.id])
 
     # delete feature list to clear remote file
@@ -54,10 +60,14 @@ async def test_update_document(
     flist_dict["version"] = {"name": "V220917"}
     flist_dict["feature_ids"] = [new_feat.id]
     flist_dict["feature_list_namespace_id"] = ObjectId()
-    new_flist = await feature_list_service.create_document(data=FeatureListServiceCreate(**flist_dict))
+    new_flist = await feature_list_service.create_document(
+        data=FeatureListServiceCreate(**flist_dict)
+    )
 
     # check updated namespace
-    namespace = await feature_list_namespace_service.get_document(document_id=new_flist.feature_list_namespace_id)
+    namespace = await feature_list_namespace_service.get_document(
+        document_id=new_flist.feature_list_namespace_id
+    )
     assert namespace.feature_list_ids == [new_flist.id]
 
     # delete feature list to clear remote file
@@ -67,7 +77,9 @@ async def test_update_document(
 @pytest.mark.asyncio
 async def test_update_document__status(feature_list_namespace_service, feature_list):
     """Test update status"""
-    original_doc = await feature_list_namespace_service.get_document(document_id=feature_list.feature_list_namespace_id)
+    original_doc = await feature_list_namespace_service.get_document(
+        document_id=feature_list.feature_list_namespace_id
+    )
     assert original_doc.status == FeatureListStatus.DRAFT
     updated_doc = await feature_list_namespace_service.update_document(
         document_id=feature_list.feature_list_namespace_id,

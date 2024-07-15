@@ -106,7 +106,9 @@ def test_feature_and_feature_list_version(feature_group, mock_api_object_cache):
     }
 
 
-def test_create_new_version_on_item_view_aggregate_over_feature(snowflake_item_table, transaction_entity):
+def test_create_new_version_on_item_view_aggregate_over_feature(
+    snowflake_item_table, transaction_entity
+):
     """This is a test for creating a new feature version on an item view feature"""
     snowflake_item_table.event_id_col.as_entity(transaction_entity.name)
     item_view = snowflake_item_table.get_view(event_suffix="_event_table")
@@ -141,7 +143,9 @@ def test_create_new_version_on_item_view_aggregate_over_feature(snowflake_item_t
     ]
 
 
-def test_feature__default_feature_version_selection(feature_group, snowflake_event_table_with_entity):
+def test_feature__default_feature_version_selection(
+    feature_group, snowflake_event_table_with_entity
+):
     """Test default feature version selection based on feature readiness level"""
     # set default feature job setting so that we can create new feature versions
     snowflake_event_table_with_entity.update_default_feature_job_setting(
@@ -156,7 +160,9 @@ def test_feature__default_feature_version_selection(feature_group, snowflake_eve
         payloads.append(
             TableFeatureJobSetting(
                 table_name=snowflake_event_table_with_entity.name,
-                feature_job_setting=FeatureJobSetting(blind_spot=blind_spot, period="30m", offset="5m"),
+                feature_job_setting=FeatureJobSetting(
+                    blind_spot=blind_spot, period="30m", offset="5m"
+                ),
             )
         )
 

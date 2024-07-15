@@ -166,7 +166,9 @@ def test_create_event_table(snowflake_database_table, event_table_dict, catalog)
     event_table_dict["updated_at"] = event_table.updated_at
     event_table_dict["block_modification_by"] = []
     for column_idx in [0, 6, 7]:
-        event_table_dict["columns_info"][column_idx]["semantic_id"] = event_table.columns_info[column_idx].semantic_id
+        event_table_dict["columns_info"][column_idx]["semantic_id"] = event_table.columns_info[
+            column_idx
+        ].semantic_id
     assert output == event_table_dict
 
     # user input validation
@@ -192,7 +194,9 @@ def test_create_event_table__duplicated_record(saved_event_table, snowflake_data
             event_timestamp_column="event_timestamp",
             record_creation_timestamp_column="created_at",
         )
-    assert 'EventTable (event_table.name: "sf_event_table") exists in saved record.' in str(exc.value)
+    assert 'EventTable (event_table.name: "sf_event_table") exists in saved record.' in str(
+        exc.value
+    )
 
 
 def test_create_event_table__retrieval_exception(snowflake_database_table):
@@ -225,7 +229,9 @@ def test_deserialization(
     assert event_table.preview_sql() == expected_snowflake_table_preview_query
 
 
-def test_deserialization__column_name_not_found(event_table_dict, snowflake_feature_store, snowflake_execute_query):
+def test_deserialization__column_name_not_found(
+    event_table_dict, snowflake_feature_store, snowflake_execute_query
+):
     """
     Test column not found during deserialize event table
     """
@@ -313,7 +319,9 @@ class TestEventTableTestSuite(BaseTableTestSuite):
         assert "EventTable is referenced by ItemTable: sf_item_table" in str(exc.value)
 
 
-def test_info__event_table_without_record_creation_date(snowflake_database_table_dimension_table, catalog):
+def test_info__event_table_without_record_creation_date(
+    snowflake_database_table_dimension_table, catalog
+):
     """Test info on event table with record creation timestamp is None"""
     _ = catalog
 
@@ -354,7 +362,9 @@ def test_info(saved_event_table, cust_id_entity):
     assert "created_at" in info_dict, info_dict
 
     # update critical data info
-    saved_event_table.col_int.update_critical_data_info(cleaning_operations=[MissingValueImputation(imputed_value=0)])
+    saved_event_table.col_int.update_critical_data_info(
+        cleaning_operations=[MissingValueImputation(imputed_value=0)]
+    )
 
     # update column description
     saved_event_table.col_int.update_description("new description")
@@ -370,7 +380,9 @@ def test_info(saved_event_table, cust_id_entity):
             "dtype": "INT",
             "entity": None,
             "semantic": "event_id",
-            "critical_data_info": {"cleaning_operations": [{"type": "missing", "imputed_value": 0}]},
+            "critical_data_info": {
+                "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+            },
             "description": "new description",
         },
         {
@@ -451,7 +463,9 @@ def test_event_table__save__exceptions(saved_event_table):
     assert expected_msg in str(exc.value)
 
 
-def test_event_table__record_creation_exception(snowflake_database_table, snowflake_event_table_id, catalog):
+def test_event_table__record_creation_exception(
+    snowflake_database_table, snowflake_event_table_id, catalog
+):
     """
     Test save event table failure due to conflict
     """
@@ -468,7 +482,9 @@ def test_event_table__record_creation_exception(snowflake_database_table, snowfl
             )
 
 
-def test_update_default_job_setting__saved_event_table(saved_event_table, config, mock_api_object_cache):
+def test_update_default_job_setting__saved_event_table(
+    saved_event_table, config, mock_api_object_cache
+):
     """
     Test update default job setting on saved event table
     """
@@ -508,7 +524,9 @@ def test_update_default_feature_job_setting__using_feature_job_analysis(
     # test update default feature job setting by using feature job analysis
     mock_post_async_task.return_value = {"_id": ObjectId()}
     analysis = Mock()
-    analysis.get_recommendation.return_value = FeatureJobSetting(blind_spot="0", period="24h", offset="0")
+    analysis.get_recommendation.return_value = FeatureJobSetting(
+        blind_spot="0", period="24h", offset="0"
+    )
     mock_get_by_id.return_value = analysis
     saved_event_table.initialize_default_feature_job_setting()
 
@@ -683,7 +701,10 @@ def test_get_event_table(snowflake_event_table, mock_config_path_env):
     with pytest.raises(RecordRetrievalException) as exc:
         EventTable.get("unknown_event_table")
 
-    expected_msg = 'EventTable (name: "unknown_event_table") not found. ' "Please save the EventTable object first."
+    expected_msg = (
+        'EventTable (name: "unknown_event_table") not found. '
+        "Please save the EventTable object first."
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -746,8 +767,12 @@ def test_default_feature_job_setting_history(saved_event_table):
         ],
         columns=["action_type", "name"],
     )
-    audit_uniq_records = audit_history[["action_at", "action_type", "name"]].drop_duplicates().reset_index(drop=True)
-    pd.testing.assert_frame_equal(audit_uniq_records[expected_unique_records.columns], expected_unique_records)
+    audit_uniq_records = (
+        audit_history[["action_at", "action_type", "name"]].drop_duplicates().reset_index(drop=True)
+    )
+    pd.testing.assert_frame_equal(
+        audit_uniq_records[expected_unique_records.columns], expected_unique_records
+    )
 
     # check the latest action audit records
     audit_records = audit_history[audit_history.action_at == audit_uniq_records.action_at.iloc[0]]
@@ -794,7 +819,9 @@ def test_default_feature_job_setting_history(saved_event_table):
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
-    pd.testing.assert_frame_equal(audit_records[expected_audit_records.columns], expected_audit_records)
+    pd.testing.assert_frame_equal(
+        audit_records[expected_audit_records.columns], expected_audit_records
+    )
 
     # check the 2nd latest action audit records
     audit_records = audit_history[audit_history.action_at == audit_uniq_records.action_at.iloc[1]]
@@ -842,7 +869,9 @@ def test_default_feature_job_setting_history(saved_event_table):
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
-    pd.testing.assert_frame_equal(audit_records[expected_audit_records.columns], expected_audit_records)
+    pd.testing.assert_frame_equal(
+        audit_records[expected_audit_records.columns], expected_audit_records
+    )
 
     # check the earliest action audit records
     audit_records = audit_history[audit_history.action_at == audit_uniq_records.action_at.iloc[-1]]
@@ -945,7 +974,9 @@ def test_event_table__entity_relation_auto_tagging(saved_event_table, mock_api_o
     updated_transaction_entity = Entity.get_by_id(id=transaction_entity.id)
     compare_pydantic_obj(
         updated_transaction_entity.parents,
-        expected=[{"id": customer.id, "table_type": "event_table", "table_id": saved_event_table.id}],
+        expected=[
+            {"id": customer.id, "table_type": "event_table", "table_id": saved_event_table.id}
+        ],
     )
     updated_customer_entity = Entity.get_by_id(id=customer.id)
     assert updated_customer_entity.parents == []
@@ -1043,7 +1074,9 @@ def test_timezone_offset__invalid_column(snowflake_database_table_dimension_tabl
     assert expected in str(exc.value)
 
 
-def test_create_event_table__duplicated_column_name_in_different_fields(snowflake_database_table, catalog):
+def test_create_event_table__duplicated_column_name_in_different_fields(
+    snowflake_database_table, catalog
+):
     """Test EventTable creation failure due to duplicated column name in different fields"""
     _ = catalog
     with pytest.raises(ValueError) as exc:
@@ -1095,7 +1128,9 @@ def test_shape(snowflake_event_table, snowflake_query_map):
             return pd.DataFrame(res)
         return pd.DataFrame({"count": [1000]})
 
-    with mock.patch("featurebyte.session.snowflake.SnowflakeSession.execute_query") as mock_execute_query:
+    with mock.patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
         mock_execute_query.side_effect = side_effect
         assert snowflake_event_table.shape() == (1000, 9)
         # Check that the correct query was executed

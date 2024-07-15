@@ -76,7 +76,9 @@ def test_construct_snowflaketile_zero_time_modulo_frequency():
 
 
 @pytest.mark.asyncio
-async def test_schedule_online_tiles(mock_snowflake_tile, tile_manager_service, mock_snowflake_session):
+async def test_schedule_online_tiles(
+    mock_snowflake_tile, tile_manager_service, mock_snowflake_session
+):
     """
     Test schedule_online_tiles method in TileSnowflake
     """
@@ -111,7 +113,9 @@ def mock_snowflake_session_fixture():
 
 
 @pytest.mark.asyncio
-async def test_schedule_offline_tiles(mock_snowflake_session, mock_snowflake_tile, tile_manager_service):
+async def test_schedule_offline_tiles(
+    mock_snowflake_session, mock_snowflake_tile, tile_manager_service
+):
     """
     Test schedule_offline_tiles method in TileSnowflake
     """

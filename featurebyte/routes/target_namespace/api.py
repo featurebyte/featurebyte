@@ -45,7 +45,9 @@ class TargetNamespaceRouter(BaseRouter):
 
 
 @router.post("", response_model=TargetNamespaceModel, status_code=HTTPStatus.CREATED)
-async def create_target_namespace(request: Request, data: TargetNamespaceCreate) -> TargetNamespaceModel:
+async def create_target_namespace(
+    request: Request, data: TargetNamespaceCreate
+) -> TargetNamespaceModel:
     """
     Create target namespace
     """
@@ -55,7 +57,9 @@ async def create_target_namespace(request: Request, data: TargetNamespaceCreate)
 
 
 @router.get("/{target_namespace_id}", response_model=TargetNamespaceModel)
-async def get_target_namespace(request: Request, target_namespace_id: PyObjectId) -> TargetNamespaceModel:
+async def get_target_namespace(
+    request: Request, target_namespace_id: PyObjectId
+) -> TargetNamespaceModel:
     """
     Retrieve Target Namespace
     """
@@ -77,8 +81,8 @@ async def update_target_namespace(
     Update TargetNamespace
     """
     controller = request.state.app_container.target_namespace_controller
-    target_namespace: TargetNamespaceModel = await controller.target_namespace_service.update_document(
-        target_namespace_id, data
+    target_namespace: TargetNamespaceModel = (
+        await controller.target_namespace_service.update_document(target_namespace_id, data)
     )
     return target_namespace
 

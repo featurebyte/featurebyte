@@ -148,7 +148,9 @@ class ObservationTableModel(MaterializedTableModel):
     has_row_index: Optional[bool] = Field(default=False)
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
 
-    _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(construct_sort_validator())
+    _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
 
     @property
     def target_id(self) -> Optional[ObjectId]:

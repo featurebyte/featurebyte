@@ -120,8 +120,16 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, CLASS_METHODS, "DimensionTable.get_by_id"]),
         DocLayoutItem([TABLE, CLASS_METHODS, "SCDTable.get_by_id"]),
         DocLayoutItem([TABLE, CLASS_METHODS, "ItemTable.get_by_id"]),
-        DocLayoutItem([TABLE, SET_FEATURE_JOB, "EventTable.create_new_feature_job_setting_analysis"]),
-        DocLayoutItem([TABLE, SET_FEATURE_JOB, "EventTable.initialize_default_feature_job_setting"]),
+        DocLayoutItem([
+            TABLE,
+            SET_FEATURE_JOB,
+            "EventTable.create_new_feature_job_setting_analysis",
+        ]),
+        DocLayoutItem([
+            TABLE,
+            SET_FEATURE_JOB,
+            "EventTable.initialize_default_feature_job_setting",
+        ]),
         DocLayoutItem([TABLE, SET_FEATURE_JOB, "EventTable.list_feature_job_setting_analysis"]),
         DocLayoutItem([TABLE, SET_FEATURE_JOB, "EventTable.update_default_feature_job_setting"]),
         DocLayoutItem(
@@ -226,7 +234,8 @@ def _get_sample_mixin_layout(object_type: str) -> List[DocLayoutItem]:
         The layout for the sample mixin documentation
     """
     return [
-        DocLayoutItem([object_type, EXPLORE, f"{object_type}.{field}"]) for field in ["describe", "preview", "sample"]
+        DocLayoutItem([object_type, EXPLORE, f"{object_type}.{field}"])
+        for field in ["describe", "preview", "sample"]
     ]
 
 
@@ -819,7 +828,9 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "TableStatus"]),
-        DocLayoutItem([UTILITY_CLASSES, GROUPBY, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"),
+        DocLayoutItem(
+            [UTILITY_CLASSES, GROUPBY, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
+        ),
         DocLayoutItem(
             [UTILITY_CLASSES, GROUPBY, "view.GroupBy.aggregate"],
             doc_path_override="api.groupby.GroupBy.aggregate.md",
@@ -891,12 +902,28 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
     return [
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis"]),
-        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.get_by_id"]),
+        DocLayoutItem([
+            UTILITY_CLASSES,
+            FEATURE_JOB_SETTING,
+            "FeatureJobSettingAnalysis.get_by_id",
+        ]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "TableFeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.info"]),
-        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.display_report"]),
-        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.download_report"]),
-        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.get_recommendation"]),
+        DocLayoutItem([
+            UTILITY_CLASSES,
+            FEATURE_JOB_SETTING,
+            "FeatureJobSettingAnalysis.display_report",
+        ]),
+        DocLayoutItem([
+            UTILITY_CLASSES,
+            FEATURE_JOB_SETTING,
+            "FeatureJobSettingAnalysis.download_report",
+        ]),
+        DocLayoutItem([
+            UTILITY_CLASSES,
+            FEATURE_JOB_SETTING,
+            "FeatureJobSettingAnalysis.get_recommendation",
+        ]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis.backtest"]),
     ]
 
@@ -1019,9 +1046,21 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     return [
         *_get_materialized_table_layout(HISTORICAL_FEATURE_TABLE),
         DocLayoutItem([HISTORICAL_FEATURE_TABLE, LIST, "HistoricalFeatureTable.list_deployments"]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.feature_list_id"]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, LINEAGE, "HistoricalFeatureTable.observation_table_id"]),
-        DocLayoutItem([HISTORICAL_FEATURE_TABLE, MANAGE, "HistoricalFeatureTable.update_description"]),
+        DocLayoutItem([
+            HISTORICAL_FEATURE_TABLE,
+            LINEAGE,
+            "HistoricalFeatureTable.feature_list_id",
+        ]),
+        DocLayoutItem([
+            HISTORICAL_FEATURE_TABLE,
+            LINEAGE,
+            "HistoricalFeatureTable.observation_table_id",
+        ]),
+        DocLayoutItem([
+            HISTORICAL_FEATURE_TABLE,
+            MANAGE,
+            "HistoricalFeatureTable.update_description",
+        ]),
     ]
 
 
@@ -1046,8 +1085,16 @@ def _get_user_defined_function_layout() -> List[DocLayoutItem]:
         DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.output_dtype"]),
         DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.signature"]),
         DocLayoutItem([USER_DEFINED_FUNCTION, INFO, "UserDefinedFunction.is_global"]),
-        DocLayoutItem([USER_DEFINED_FUNCTION, MANAGE, "UserDefinedFunction.update_sql_function_name"]),
-        DocLayoutItem([USER_DEFINED_FUNCTION, MANAGE, "UserDefinedFunction.update_function_parameters"]),
+        DocLayoutItem([
+            USER_DEFINED_FUNCTION,
+            MANAGE,
+            "UserDefinedFunction.update_sql_function_name",
+        ]),
+        DocLayoutItem([
+            USER_DEFINED_FUNCTION,
+            MANAGE,
+            "UserDefinedFunction.update_function_parameters",
+        ]),
         DocLayoutItem([USER_DEFINED_FUNCTION, MANAGE, "UserDefinedFunction.update_output_dtype"]),
         DocLayoutItem([USER_DEFINED_FUNCTION, MANAGE, "UserDefinedFunction.delete"]),
     ]

@@ -107,7 +107,9 @@ class SessionValidatorService:
             session for the parameters passed in
         """
         if get_credential is not None:
-            credential = await get_credential(user_id=self.user.id, feature_store_name=feature_store_name)
+            credential = await get_credential(
+                user_id=self.user.id, feature_store_name=feature_store_name
+            )
         else:
             credential = await self.credential_provider.get_credential(
                 user_id=self.user.id, feature_store_name=feature_store_name
@@ -171,7 +173,9 @@ class SessionValidatorService:
         session = await self._get_session(feature_store_name, session_type, details, get_credential)
         return await self.validate_existing_session(session, users_feature_store_id)
 
-    async def get_feature_store_id_from_details(self, details: DatabaseDetails) -> Optional[PydanticObjectId]:
+    async def get_feature_store_id_from_details(
+        self, details: DatabaseDetails
+    ) -> Optional[PydanticObjectId]:
         """
         Retrieves feature store ID based on the details passed in.
 
@@ -185,7 +189,9 @@ class SessionValidatorService:
         Optional[PydanticObjectId]
             Feature store ID if present. If not, returns None.
         """
-        response = await self.feature_store_service.list_documents_as_dict(query_filter={"details": details.dict()})
+        response = await self.feature_store_service.list_documents_as_dict(
+            query_filter={"details": details.dict()}
+        )
 
         count = response["total"]
         does_exist = count != 0

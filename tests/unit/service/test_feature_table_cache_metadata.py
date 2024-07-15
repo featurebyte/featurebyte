@@ -56,7 +56,10 @@ async def test_get_or_create_feature_table_cache_creates_from_scratch(
     )
     assert document.id
     assert document.observation_table_id == observation_table_doc.id
-    assert document.table_name == f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{observation_table_doc.id}"
+    assert (
+        document.table_name
+        == f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{observation_table_doc.id}"
+    )
     assert document.feature_definitions == []
 
 

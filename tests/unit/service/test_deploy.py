@@ -59,7 +59,9 @@ async def disabled_deployment_fixture(deploy_service, deployment_service, featur
 @pytest.mark.asyncio
 async def test_create_disabled_deployment(feature_list_service, disabled_deployment):
     """Test create deployment (disabled)"""
-    updated_feature_list = await feature_list_service.get_document(document_id=disabled_deployment.feature_list_id)
+    updated_feature_list = await feature_list_service.get_document(
+        document_id=disabled_deployment.feature_list_id
+    )
     assert updated_feature_list.deployed is False
 
 
@@ -94,7 +96,9 @@ async def test_update_deployment__not_all_features_are_online_enabled(
 ):
     """Test update deployment (not all features are online enabled validation error)"""
     try:
-        await deploy_service.update_deployment(deployment_id=disabled_deployment.id, to_enable_deployment=True)
+        await deploy_service.update_deployment(
+            deployment_id=disabled_deployment.id, to_enable_deployment=True
+        )
     except DocumentError:
         # Capture the traceback information
         exc_traceback = traceback.format_exc()
@@ -119,7 +123,9 @@ async def check_states_after_deployed_change(
     updated_feature_list = await feature_list_service.get_document(document_id=feature_list.id)
     assert updated_feature_list.deployed == expected_deployed
 
-    namespace = await feature_list_namespace_service.get_document(document_id=feature_list.feature_list_namespace_id)
+    namespace = await feature_list_namespace_service.get_document(
+        document_id=feature_list.feature_list_namespace_id
+    )
     assert namespace.deployed_feature_list_ids == expected_deployed_feature_list_ids
 
     for feature_id in feature_list.feature_ids:
@@ -131,7 +137,9 @@ async def check_states_after_deployed_change(
 async def production_ready_feature_list_fixture(feature_list, feature_readiness_service):
     """Feature list consists of production ready features"""
     for feature_id in feature_list.feature_ids:
-        await feature_readiness_service.update_feature(feature_id=feature_id, readiness="PRODUCTION_READY")
+        await feature_readiness_service.update_feature(
+            feature_id=feature_id, readiness="PRODUCTION_READY"
+        )
     yield feature_list
 
 
@@ -174,7 +182,9 @@ async def test_update_deployment(
         to_enable_deployment=True,
     )
     deployment = await deployment_service.get_document(document_id=deployment_id)
-    deployed_feature_list = await feature_list_service.get_document(document_id=deployment.feature_list_id)
+    deployed_feature_list = await feature_list_service.get_document(
+        document_id=deployment.feature_list_id
+    )
     mock_update_data_warehouse.assert_called_once()
     assert mock_update_data_warehouse.call_args[1]["feature"].online_enabled is False
     assert mock_update_data_warehouse.call_args[1]["target_online_enabled"] is True
@@ -194,7 +204,9 @@ async def test_update_deployment(
         deployment_id=deployment_id,
         to_enable_deployment=False,
     )
-    deployed_disabled_feature_list = await feature_list_service.get_document(document_id=deployment.feature_list_id)
+    deployed_disabled_feature_list = await feature_list_service.get_document(
+        document_id=deployment.feature_list_id
+    )
     assert mock_update_data_warehouse.call_count == 2
     assert mock_update_data_warehouse.call_args[1]["feature"].online_enabled is True
     assert mock_update_data_warehouse.call_args[1]["target_online_enabled"] is False
@@ -216,7 +228,9 @@ async def test_update_deployment(
         feature_list_namespace_id=feature_list.feature_list_namespace_id,
         target_feature_list_status="DEPRECATED",
     )
-    namespace = await feature_list_namespace_service.get_document(document_id=feature_list.feature_list_namespace_id)
+    namespace = await feature_list_namespace_service.get_document(
+        document_id=feature_list.feature_list_namespace_id
+    )
     assert namespace.status == "DEPRECATED"
     try:
         await deploy_service.update_deployment(
@@ -332,7 +346,9 @@ async def test_deploy_service__check_asset_status_update(
         deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
         assert deployment.enabled == expected_deployment_enabled
 
-        flist = await app_container.feature_list_service.get_document(document_id=deployment.feature_list_id)
+        flist = await app_container.feature_list_service.get_document(
+            document_id=deployment.feature_list_id
+        )
         assert flist.deployed == expected_feature_list_deployed
 
         enabled_flags = []
@@ -462,7 +478,9 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     # check deployment is enabled & feature list store info
     deployment1 = await app_container.deployment_service.get_document(document_id=deployment_id1)
     assert deployment1.enabled
-    feature_list1 = await app_container.feature_list_service.get_document(document_id=feature_list1.id)
+    feature_list1 = await app_container.feature_list_service.get_document(
+        document_id=feature_list1.id
+    )
     assert not feature_list1.store_info.feast_enabled
 
     # create another deployment using the same feature list when feast integration is enabled
@@ -477,7 +495,9 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     # check deployment is enabled & feature list store info again
     deployment2 = await app_container.deployment_service.get_document(document_id=deployment_id2)
     assert deployment2.enabled
-    feature_list1 = await app_container.feature_list_service.get_document(document_id=feature_list1.id)
+    feature_list1 = await app_container.feature_list_service.get_document(
+        document_id=feature_list1.id
+    )
     assert not feature_list1.store_info.feast_enabled
 
     # create another deployment using a new feature list when feast integration is enabled
@@ -492,7 +512,9 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     # check deployment is enabled & feature list store info
     deployment3 = await app_container.deployment_service.get_document(document_id=deployment_id3)
     assert deployment3.enabled
-    feature_list2 = await app_container.feature_list_service.get_document(document_id=feature_list2.id)
+    feature_list2 = await app_container.feature_list_service.get_document(
+        document_id=feature_list2.id
+    )
     assert feature_list2.store_info.feast_enabled
 
     # disable deployment1 & deployment2, check feature list store info
@@ -502,10 +524,14 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
                 deployment_id=deployment_id,
                 to_enable_deployment=False,
             )
-            deployment = await app_container.deployment_service.get_document(document_id=deployment_id)
+            deployment = await app_container.deployment_service.get_document(
+                document_id=deployment_id
+            )
             assert not deployment.enabled
 
-    feature_list = await app_container.feature_list_service.get_document(document_id=deployment.feature_list_id)
+    feature_list = await app_container.feature_list_service.get_document(
+        document_id=deployment.feature_list_id
+    )
     assert not feature_list.store_info.feast_enabled
 
     # enable deployment1 again & check feature list store info
@@ -518,7 +544,9 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     deployment = await app_container.deployment_service.get_document(document_id=deployment_id1)
     assert deployment.enabled
 
-    feature_list = await app_container.feature_list_service.get_document(document_id=deployment.feature_list_id)
+    feature_list = await app_container.feature_list_service.get_document(
+        document_id=deployment.feature_list_id
+    )
     assert feature_list.store_info.feast_enabled
 
 
@@ -532,8 +560,10 @@ async def test_get_serving_entity_specs(
     """Test get serving entity specs"""
     feature_list = deployed_feature_list_requiring_parent_serving_composite_entity
     serving_entity_ids = feature_list.primary_entity_ids
-    serving_entity_specs = await app_container.deployment_serving_entity_service.get_serving_entity_specs(
-        serving_entity_ids=serving_entity_ids
+    serving_entity_specs = (
+        await app_container.deployment_serving_entity_service.get_serving_entity_specs(
+            serving_entity_ids=serving_entity_ids
+        )
     )
     expected = {
         group_entity.id: ColumnSpec(name=group_entity.serving_names[0], dtype=DBVarType.INT),

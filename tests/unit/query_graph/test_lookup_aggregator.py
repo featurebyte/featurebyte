@@ -53,7 +53,9 @@ def scd_lookup_specs_with_current_flag(global_graph, scd_lookup_node, is_online_
 
 
 @pytest.fixture
-def scd_lookup_specs_without_current_flag(global_graph, scd_lookup_without_current_flag_node, is_online_serving):
+def scd_lookup_specs_without_current_flag(
+    global_graph, scd_lookup_without_current_flag_node, is_online_serving
+):
     """
     Fixture for a list of LookupSpec derived from SCD lookup without current flag column
     """
@@ -233,7 +235,9 @@ def test_lookup_aggregator__online_with_current_flag(
 
     direct_lookups = aggregator.get_direct_lookups()
     assert len(direct_lookups) == 1
-    assert direct_lookups[0].column_names == ["_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"]
+    assert direct_lookups[0].column_names == [
+        "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_1"
+    ]
     assert direct_lookups[0].join_keys == ["CUSTOMER_ID"]
     expected_sql = textwrap.dedent(
         """
@@ -354,7 +358,9 @@ def test_lookup_aggregator__online_with_offset(
     ]
 
 
-def test_lookup_aggregator__event_table(offline_lookup_aggregator, event_lookup_specs, entity_id, event_lookup_node):
+def test_lookup_aggregator__event_table(
+    offline_lookup_aggregator, event_lookup_specs, entity_id, event_lookup_node
+):
     """
     Test lookup features from EventTable
     """

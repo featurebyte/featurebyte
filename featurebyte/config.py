@@ -220,7 +220,9 @@ class APIClient(BaseAPIClient):
                 **kwargs,
             )
         except requests.exceptions.ConnectionError:
-            raise InvalidSettingsError(f"Service endpoint is inaccessible: {self.base_url}") from None
+            raise InvalidSettingsError(
+                f"Service endpoint is inaccessible: {self.base_url}"
+            ) from None
 
 
 class WebsocketClient:
@@ -252,7 +254,9 @@ class WebsocketClient:
         """
         Reconnect websocket connection
         """
-        self._ws = websocket.create_connection(self._url, enable_multithread=True, sslopt=self._get_sslopt())
+        self._ws = websocket.create_connection(
+            self._url, enable_multithread=True, sslopt=self._get_sslopt()
+        )
 
     def close(self) -> None:
         """
@@ -348,7 +352,9 @@ class Configurations:
         if not hasattr(self, "_config_file_path") or force or config_file_path is not None:
             # Default values set
             self._config_file_path: Path = (
-                Path(config_file_path) if config_file_path else get_home_path().joinpath("config.yaml")
+                Path(config_file_path)
+                if config_file_path
+                else get_home_path().joinpath("config.yaml")
             )
             self.storage: LocalStorageSettings = LocalStorageSettings()
             self.default_profile_name: Optional[str] = None

@@ -87,7 +87,9 @@ async def get_new_session(item: str, params: str, timeout: float) -> BaseSession
         await session.initialize()
         logger.debug(f"Session creation time: {time.time() - tic:.3f}s")
     except AsyncioTimeoutError as exc:
-        raise SessionInitializationTimeOut(f"Session creation timed out after {time.time() - tic:.3f}s") from exc
+        raise SessionInitializationTimeOut(
+            f"Session creation timed out after {time.time() - tic:.3f}s"
+        ) from exc
     return session
 
 
@@ -183,7 +185,9 @@ class SessionManager(BaseModel):
         elif session_type not in SourceType.credential_required_types():
             credential = None
         else:
-            raise ValueError(f'Credentials do not contain info for the feature store "{feature_store_name}"!')
+            raise ValueError(
+                f'Credentials do not contain info for the feature store "{feature_store_name}"!'
+            )
 
         params = {**self.parameters}
 
@@ -236,4 +240,6 @@ class SessionManager(BaseModel):
         BaseSession
             Session that can be used to connect to the specified database
         """
-        return await self.get_session_with_params(item.name, item.type, item.details, timeout=timeout)
+        return await self.get_session_with_params(
+            item.name, item.type, item.details, timeout=timeout
+        )

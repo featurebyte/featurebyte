@@ -69,7 +69,9 @@ def get_feature_or_target_preview_sql(
         # prepare request table
         tic = time.time()
         df_request = pd.DataFrame(point_in_time_and_serving_name_list)
-        request_table_sql = construct_dataframe_sql_expr(df_request, [SpecialColumnName.POINT_IN_TIME])
+        request_table_sql = construct_dataframe_sql_expr(
+            df_request, [SpecialColumnName.POINT_IN_TIME]
+        )
         cte_statements = [(request_table_name, request_table_sql)]
         request_table_columns = cast(List[str], df_request.columns.tolist())
 

@@ -86,7 +86,9 @@ def get_scd_table_model_fixture(snowflake_feature_store, scd_columns_info):
         name="my_scd_table",
         tabular_source={
             "feature_store_id": snowflake_feature_store.id,
-            "table_details": TableDetails(database_name="database", schema_name="schema", table_name="table"),
+            "table_details": TableDetails(
+                database_name="database", schema_name="schema", table_name="table"
+            ),
         },
         columns_info=scd_columns_info,
         record_creation_timestamp_column="created_at",

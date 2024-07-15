@@ -26,7 +26,9 @@ class SourceTableStaticSourceInput(SourceTableRequestInput):
     """
 
 
-StaticSourceInput = Annotated[Union[ViewStaticSourceInput, SourceTableStaticSourceInput], Field(discriminator="type")]
+StaticSourceInput = Annotated[
+    Union[ViewStaticSourceInput, SourceTableStaticSourceInput], Field(discriminator="type")
+]
 
 
 class StaticSourceTableModel(MaterializedTableModel):

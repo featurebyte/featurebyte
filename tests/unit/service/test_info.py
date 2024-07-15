@@ -46,7 +46,9 @@ from featurebyte.schema.target import TargetInfo
 @pytest.mark.asyncio
 async def test_get_feature_store_info(feature_store_service, feature_store):
     """Test get_feature_store_info"""
-    info = await feature_store_service.get_feature_store_info(document_id=feature_store.id, verbose=False)
+    info = await feature_store_service.get_feature_store_info(
+        document_id=feature_store.id, verbose=False
+    )
     expected_info = FeatureStoreInfo(
         name="sf_featurestore",
         source="snowflake",
@@ -63,7 +65,9 @@ async def test_get_feature_store_info(feature_store_service, feature_store):
     )
     assert info == expected_info
 
-    info = await feature_store_service.get_feature_store_info(document_id=feature_store.id, verbose=True)
+    info = await feature_store_service.get_feature_store_info(
+        document_id=feature_store.id, verbose=True
+    )
     assert info == expected_info
 
 
@@ -87,7 +91,9 @@ async def test_get_entity_info(app_container, entity):
 @pytest.mark.asyncio
 async def test_get_event_table_info(app_container, event_table):
     """Test get_event_table_info"""
-    info = await app_container.event_table_controller.get_info(document_id=event_table.id, verbose=False)
+    info = await app_container.event_table_controller.get_info(
+        document_id=event_table.id, verbose=False
+    )
     expected_info = EventTableInfo(
         name="sf_event_table",
         description="test event table",
@@ -111,7 +117,9 @@ async def test_get_event_table_info(app_container, event_table):
     )
     assert info == expected_info
 
-    info = await app_container.event_table_controller.get_info(document_id=event_table.id, verbose=True)
+    info = await app_container.event_table_controller.get_info(
+        document_id=event_table.id, verbose=True
+    )
     assert info == EventTableInfo(**{
         **expected_info.dict(),
         "columns_info": [
@@ -137,7 +145,9 @@ async def test_get_event_table_info(app_container, event_table):
 async def test_get_item_table_info(app_container, item_table, event_table):
     """Test get_item_table_info"""
     _ = event_table
-    info = await app_container.item_table_controller.get_info(document_id=item_table.id, verbose=False)
+    info = await app_container.item_table_controller.get_info(
+        document_id=item_table.id, verbose=False
+    )
     expected_info = ItemTableInfo(
         name="sf_item_table",
         description="test item table",
@@ -161,7 +171,9 @@ async def test_get_item_table_info(app_container, item_table, event_table):
     )
     assert info == expected_info
 
-    info = await app_container.item_table_controller.get_info(document_id=item_table.id, verbose=True)
+    info = await app_container.item_table_controller.get_info(
+        document_id=item_table.id, verbose=True
+    )
     assert info == ItemTableInfo(**{
         **expected_info.dict(),
         "columns_info": [
@@ -178,7 +190,9 @@ async def test_get_item_table_info(app_container, item_table, event_table):
 @pytest.mark.asyncio
 async def test_get_dimension_table_info(app_container, dimension_table):
     """Test get_dimension_table_info"""
-    info = await app_container.dimension_table_controller.get_info(document_id=dimension_table.id, verbose=False)
+    info = await app_container.dimension_table_controller.get_info(
+        document_id=dimension_table.id, verbose=False
+    )
     expected_info = DimensionTableInfo(
         name="sf_dimension_table",
         description="test dimension table",
@@ -200,7 +214,9 @@ async def test_get_dimension_table_info(app_container, dimension_table):
     )
     assert info == expected_info
 
-    info = await app_container.dimension_table_controller.get_info(document_id=dimension_table.id, verbose=True)
+    info = await app_container.dimension_table_controller.get_info(
+        document_id=dimension_table.id, verbose=True
+    )
     assert info == DimensionTableInfo(**{
         **expected_info.dict(),
         "columns_info": [
@@ -210,7 +226,9 @@ async def test_get_dimension_table_info(app_container, dimension_table):
             TableColumnInfo(name="col_text", dtype="VARCHAR", description="Text column"),
             TableColumnInfo(name="col_binary", dtype="BINARY"),
             TableColumnInfo(name="col_boolean", dtype="BOOL"),
-            TableColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ", description="Timestamp column"),
+            TableColumnInfo(
+                name="event_timestamp", dtype="TIMESTAMP_TZ", description="Timestamp column"
+            ),
             TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
             TableColumnInfo(name="cust_id", dtype="INT"),
         ],
@@ -220,7 +238,9 @@ async def test_get_dimension_table_info(app_container, dimension_table):
 @pytest.mark.asyncio
 async def test_get_scd_table_info(app_container, scd_table):
     """Test get_scd_table_info"""
-    info = await app_container.scd_table_controller.get_info(document_id=scd_table.id, verbose=False)
+    info = await app_container.scd_table_controller.get_info(
+        document_id=scd_table.id, verbose=False
+    )
     expected_info = SCDTableInfo(
         name="sf_scd_table",
         description="test scd table",
@@ -268,9 +288,13 @@ async def test_get_scd_table_info(app_container, scd_table):
 @pytest.mark.asyncio
 async def test_get_feature_info(app_container, production_ready_feature, feature_namespace):
     """Test get_feature_info"""
-    info = await app_container.feature_controller.get_info(document_id=production_ready_feature.id, verbose=False)
+    info = await app_container.feature_controller.get_info(
+        document_id=production_ready_feature.id, verbose=False
+    )
     expected_metadata = {
-        "input_columns": {"Input0": {"data": "sf_event_table", "column_name": "col_float", "semantic": None}},
+        "input_columns": {
+            "Input0": {"data": "sf_event_table", "column_name": "col_float", "semantic": None}
+        },
         "derived_columns": {},
         "aggregations": {
             "F0": {
@@ -299,10 +323,18 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
     ]
     expected_info = FeatureInfo(
         name="sum_30m",
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
-        primary_entity=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
-        tables=[TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")],
-        primary_table=[TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
+        primary_entity=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
+        tables=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
+        ],
+        primary_table=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -323,7 +355,9 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
     )
     assert info == expected_info
 
-    info = await app_container.feature_controller.get_info(document_id=production_ready_feature.id, verbose=True)
+    info = await app_container.feature_controller.get_info(
+        document_id=production_ready_feature.id, verbose=True
+    )
     assert info == FeatureInfo(**{
         **expected_info.dict(),
         "versions_info": [
@@ -403,10 +437,18 @@ def expected_feature_iet_info_fixture(feature_iet):
     }
     return FeatureInfo(
         name="iet_entropy_24h",
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
-        primary_entity=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
-        tables=[TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")],
-        primary_table=[TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
+        primary_entity=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
+        tables=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
+        ],
+        primary_table=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -430,9 +472,13 @@ def expected_feature_iet_info_fixture(feature_iet):
 
 @pytest.mark.flaky(reruns=3)
 @pytest.mark.asyncio
-async def test_get_feature_info__complex_feature(app_container, feature_iet, expected_feature_iet_info):
+async def test_get_feature_info__complex_feature(
+    app_container, feature_iet, expected_feature_iet_info
+):
     """Test get_feature_info"""
-    info = await app_container.feature_controller.get_info(document_id=feature_iet.id, verbose=False)
+    info = await app_container.feature_controller.get_info(
+        document_id=feature_iet.id, verbose=False
+    )
     expected = {
         **expected_feature_iet_info.dict(),
         "created_at": info.created_at,
@@ -463,7 +509,9 @@ async def test_get_feature_info__complex_feature_with_cdi(
         )
     )
 
-    info = await app_container.feature_controller.get_info(document_id=new_version.id, verbose=False)
+    info = await app_container.feature_controller.get_info(
+        document_id=new_version.id, verbose=False
+    )
     expected_version = expected_feature_iet_info.version
     expected = {
         **expected_feature_iet_info.dict(),
@@ -492,13 +540,23 @@ async def test_get_feature_info__complex_feature_with_cdi(
 @pytest.mark.asyncio
 async def test_get_feature_namespace_info(app_container, feature_namespace):
     """Test get_feature_namespace_info"""
-    info = await app_container.feature_namespace_controller.get_info(document_id=feature_namespace.id, verbose=False)
+    info = await app_container.feature_namespace_controller.get_info(
+        document_id=feature_namespace.id, verbose=False
+    )
     expected_info = FeatureNamespaceInfo(
         name="sum_30m",
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
-        primary_entity=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
-        tables=[TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")],
-        primary_table=[TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
+        primary_entity=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
+        tables=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
+        ],
+        primary_table=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype="FLOAT",
@@ -509,7 +567,9 @@ async def test_get_feature_namespace_info(app_container, feature_namespace):
     )
     assert info == expected_info
 
-    info = await app_container.feature_namespace_controller.get_info(document_id=feature_namespace.id, verbose=True)
+    info = await app_container.feature_namespace_controller.get_info(
+        document_id=feature_namespace.id, verbose=True
+    )
     assert info == expected_info
 
 
@@ -520,15 +580,23 @@ async def test_get_feature_list_info(app_container, feature_list, feature_list_n
     info = await controller.get_info(document_id=feature_list.id, verbose=False)
     expected_info = FeatureListInfo(
         name="sf_feature_list",
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
-        primary_entity=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
-        tables=[TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
+        primary_entity=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
+        tables=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
         status="DRAFT",
         feature_count=1,
-        version=VersionComparison(this=feature_list.version.to_str(), default=feature_list.version.to_str()),
+        version=VersionComparison(
+            this=feature_list.version.to_str(), default=feature_list.version.to_str()
+        ),
         production_ready_fraction={"this": 0.0, "default": 0.0},
         default_feature_fraction={"this": 1.0, "default": 1.0},
         created_at=feature_list.created_at,
@@ -561,9 +629,15 @@ async def test_get_feature_list_namespace_info(feature_list_namespace, feature, 
     info = await controller.get_info(document_id=feature_list_namespace.id, verbose=False)
     expected_info = FeatureListNamespaceInfo(
         name="sf_feature_list",
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
-        primary_entity=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
-        tables=[TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
+        primary_entity=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
+        tables=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
+        ],
         default_version_mode="AUTO",
         version_count=1,
         dtype_distribution=[{"dtype": "FLOAT", "count": 1}],
@@ -619,12 +693,16 @@ async def test_get_target_info(app_container, entity, target):
     expected_info = TargetInfo(
         id=target.id,
         target_name=target.name,
-        entities=[EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")],
+        entities=[
+            EntityBriefInfo(name="customer", serving_names=["cust_id"], catalog_name="grocery")
+        ],
         window="1d",  # TODO: fix this
         has_recipe=bool(target.graph),
         created_at=target.created_at,
         updated_at=target.updated_at,
-        primary_table=[TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")],
+        primary_table=[
+            TableBriefInfo(name="sf_event_table", status="PUBLIC_DRAFT", catalog_name="grocery")
+        ],
         metadata=expected_metadata,
     )
     assert target_info == expected_info
@@ -659,7 +737,9 @@ async def test_get_relationship_info_info(app_container, event_table, entity, tr
             updated_by=PydanticObjectId(ObjectId()),
         )
     )
-    relationship_info = await app_container.relationship_info_controller.get_info(created_relationship.id)
+    relationship_info = await app_container.relationship_info_controller.get_info(
+        created_relationship.id
+    )
     assert relationship_info.relationship_type == relationship_type
     assert relationship_info.entity_name == "customer"
     assert relationship_info.related_entity_name == "transaction"

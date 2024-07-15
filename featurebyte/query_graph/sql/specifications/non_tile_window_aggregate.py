@@ -65,7 +65,9 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
         # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)
         parameters_dict = self.parameters.dict(exclude={"parent", "agg_func", "name"})
         if parameters_dict.get("entity_ids") is not None:
-            parameters_dict["entity_ids"] = [str(entity_id) for entity_id in parameters_dict["entity_ids"]]
+            parameters_dict["entity_ids"] = [
+                str(entity_id) for entity_id in parameters_dict["entity_ids"]
+            ]
         params["parameters"] = parameters_dict
 
         return params
@@ -88,14 +90,20 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
                     node_name=node.name,
                     feature_name=feature_name,
                     parameters=node.parameters,
-                    parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
+                    parent_dtype=cls.get_parent_dtype_from_graph(
+                        graph, node.parameters.parent, node
+                    ),
                     aggregation_source=aggregation_source,
                     entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
                     serving_names=node.parameters.serving_names,
                     serving_names_mapping=serving_names_mapping,
                     agg_result_name_include_serving_names=agg_result_name_include_serving_names,
                     window=parse_duration_string(window),
-                    offset=(parse_duration_string(node.parameters.offset) if node.parameters.offset else None),
+                    offset=(
+                        parse_duration_string(node.parameters.offset)
+                        if node.parameters.offset
+                        else None
+                    ),
                 )
             )
         return specs

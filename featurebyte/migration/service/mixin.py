@@ -87,9 +87,13 @@ class BaseMigrationServiceMixin:
         # migrate all records and audit records
         if query_filter is None:
             with self.delegate_service.allow_use_raw_query_filter():
-                query_filter = dict(self.delegate_service.construct_list_query_filter(use_raw_query_filter=True))
+                query_filter = dict(
+                    self.delegate_service.construct_list_query_filter(use_raw_query_filter=True)
+                )
 
-        logger.info(f'Start migrating all records (collection: "{self.delegate_service.collection_name}")')
+        logger.info(
+            f'Start migrating all records (collection: "{self.delegate_service.collection_name}")'
+        )
         to_iterate, page = True, 1
         while to_iterate:
             docs, total = await self.persistent.find(
@@ -270,7 +274,9 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
             logger.warning(f"Got CredentialsError, skipping migration for {feature_store.name}")
             return
         except Exception:
-            logger.exception(f"Got unexpected error when creating session, skipping migration for {feature_store.name}")
+            logger.exception(
+                f"Got unexpected error when creating session, skipping migration for {feature_store.name}"
+            )
             return
         await self.migrate_record_with_session(feature_store, session)
         await self.update_migration_version(session, version)
@@ -289,10 +295,16 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
         """
         df_metadata = await session.execute_query("SELECT * FROM METADATA_SCHEMA")
         if InternalName.MIGRATION_VERSION not in df_metadata:  # type: ignore[operator]
-            await session.execute_query(f"ALTER TABLE METADATA_SCHEMA ADD COLUMN {InternalName.MIGRATION_VERSION} INT")
-        await session.execute_query(f"UPDATE METADATA_SCHEMA SET {InternalName.MIGRATION_VERSION} = {version}")
+            await session.execute_query(
+                f"ALTER TABLE METADATA_SCHEMA ADD COLUMN {InternalName.MIGRATION_VERSION} INT"
+            )
+        await session.execute_query(
+            f"UPDATE METADATA_SCHEMA SET {InternalName.MIGRATION_VERSION} = {version}"
+        )
 
-    async def migrate_record_with_session(self, feature_store: FeatureStoreModel, session: BaseSession) -> None:
+    async def migrate_record_with_session(
+        self, feature_store: FeatureStoreModel, session: BaseSession
+    ) -> None:
         """
         Migrate a FeatureStore document with an associated session object
 

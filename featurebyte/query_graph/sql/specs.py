@@ -36,7 +36,9 @@ from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
 
-NonTileBasedAggregationSpecT = TypeVar("NonTileBasedAggregationSpecT", bound="NonTileBasedAggregationSpec")
+NonTileBasedAggregationSpecT = TypeVar(
+    "NonTileBasedAggregationSpecT", bound="NonTileBasedAggregationSpec"
+)
 
 FB_INTERNAL_COLUMN_PREFIX = "_fb_internal"
 
@@ -75,7 +77,9 @@ class AggregationSpec(ABC):
         self.original_serving_names = self.serving_names[:]
         self.original_agg_result_name: str = self.agg_result_name
         if self.serving_names_mapping is not None:
-            self.serving_names = apply_serving_names_mapping(self.serving_names, self.serving_names_mapping)
+            self.serving_names = apply_serving_names_mapping(
+                self.serving_names, self.serving_names_mapping
+            )
 
     @property
     @abstractmethod
@@ -215,8 +219,12 @@ class TileBasedAggregationSpec(AggregationSpec):
         if parent_column_name:
             parent_dtype = get_parent_dtype(parent_column_name, graph, query_node=groupby_node)
             parent_column = InputColumn(name=parent_column_name, dtype=parent_dtype)
-        aggregator = get_aggregator(groupby_node_params.agg_func, adapter=adapter, parent_dtype=parent_dtype)
-        tile_value_columns = [spec.tile_column_name for spec in aggregator.tile(parent_column, aggregation_id)]
+        aggregator = get_aggregator(
+            groupby_node_params.agg_func, adapter=adapter, parent_dtype=parent_dtype
+        )
+        tile_value_columns = [
+            spec.tile_column_name for spec in aggregator.tile(parent_column, aggregation_id)
+        ]
         if groupby_node_params.offset is not None:
             offset_secs = int(pd.Timedelta(groupby_node_params.offset).total_seconds())
         else:
@@ -293,7 +301,9 @@ class TileBasedAggregationSpec(AggregationSpec):
             .operation_structure_map[pruned_node.name]
         )
         aggregations = op_struct.aggregations
-        assert len(aggregations) == 1, f"Expect exactly one aggregation but got: {[agg.name for agg in aggregations]}"
+        assert (
+            len(aggregations) == 1
+        ), f"Expect exactly one aggregation but got: {[agg.name for agg in aggregations]}"
         aggregation = aggregations[0]
         return pruned_graph, pruned_node, aggregation.dtype
 
@@ -546,8 +556,9 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         if aggregation_source is None:
             assert graph is not None
             assert source_type is not None
-            to_filter_scd_by_current_flag = is_online_serving is True and cls.should_filter_scd_by_current_flag(
-                graph=graph, node=node
+            to_filter_scd_by_current_flag = (
+                is_online_serving is True
+                and cls.should_filter_scd_by_current_flag(graph=graph, node=node)
             )
             aggregation_source = cls.get_aggregation_source(
                 graph=graph,
@@ -594,7 +605,9 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
         parameters_dict = self.parameters.dict(exclude={"parent", "agg_func", "name"})
         if parameters_dict.get("entity_ids") is not None:
-            parameters_dict["entity_ids"] = [str(entity_id) for entity_id in parameters_dict["entity_ids"]]
+            parameters_dict["entity_ids"] = [
+                str(entity_id) for entity_id in parameters_dict["entity_ids"]
+            ]
         params["parameters"] = parameters_dict
         return params
 
@@ -644,7 +657,9 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
         params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
         parameters_dict = self.parameters.dict(exclude={"parent", "agg_func", "name"})
         if parameters_dict.get("entity_ids") is not None:
-            parameters_dict["entity_ids"] = [str(entity_id) for entity_id in parameters_dict["entity_ids"]]
+            parameters_dict["entity_ids"] = [
+                str(entity_id) for entity_id in parameters_dict["entity_ids"]
+            ]
         params["parameters"] = parameters_dict
         return params
 

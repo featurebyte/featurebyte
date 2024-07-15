@@ -56,7 +56,9 @@ class BaseViewTestSuite:
             ViewType.SCD_VIEW: "snowflake_scd_view",
         }
         if self.view_type not in view_type_map:
-            pytest.fail(f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType.")
+            pytest.fail(
+                f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType."
+            )
         view_name = view_type_map[self.view_type]
         return request.getfixturevalue(view_name)
 
@@ -69,7 +71,9 @@ class BaseViewTestSuite:
             ViewType.SCD_VIEW: "snowflake_scd_table",
         }
         if self.view_type not in data_type_map:
-            pytest.fail(f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType.")
+            pytest.fail(
+                f"Invalid view type `{self.view_type}` found. Please use (or map) a valid ViewType."
+            )
         data_name = data_type_map[self.view_type]
         return request.getfixturevalue(data_name)
 
@@ -112,7 +116,9 @@ class BaseViewTestSuite:
         if self.additional_expected_drop_column_names is not None:
             expected_drop_column_names.extend(self.additional_expected_drop_column_names)
         if data_under_test_with_imputation.record_creation_timestamp_column:
-            expected_drop_column_names.append(data_under_test_with_imputation.record_creation_timestamp_column)
+            expected_drop_column_names.append(
+                data_under_test_with_imputation.record_creation_timestamp_column
+            )
         assert metadata.view_mode == "auto"
         assert metadata.drop_column_names == expected_drop_column_names
         compare_pydantic_obj(
@@ -125,7 +131,10 @@ class BaseViewTestSuite:
             ],
         )
         assert metadata.table_id == data_under_test_with_imputation.id
-        assert view.column_cleaning_operations == data_under_test_with_imputation.column_cleaning_operations
+        assert (
+            view.column_cleaning_operations
+            == data_under_test_with_imputation.column_cleaning_operations
+        )
 
         # check sub-setting view without including the column with column cleaning operations
         cols = [col for col in view.columns if col != self.col]
@@ -168,7 +177,9 @@ class BaseViewTestSuite:
             factory_kwargs["event_suffix"] = "_event"
 
         # create view
-        view = self.create_view(data_under_test_with_imputation, **factory_kwargs, view_mode="manual")
+        view = self.create_view(
+            data_under_test_with_imputation, **factory_kwargs, view_mode="manual"
+        )
 
         # check view graph metadata
         metadata = view.node.parameters.metadata
@@ -230,7 +241,10 @@ class BaseViewTestSuite:
 
         # check both view graph node inner graph are equal
         assert view_manual.node.parameters.graph == view_auto.node.parameters.graph
-        assert view_manual.node.parameters.output_node_name == view_auto.node.parameters.output_node_name
+        assert (
+            view_manual.node.parameters.output_node_name
+            == view_auto.node.parameters.output_node_name
+        )
 
     def test_setitem__str_key_series_value(self, view_under_test, data_under_test):
         """
@@ -361,7 +375,9 @@ class BaseViewTestSuite:
 
         row_subset = view_under_test[mask_cust_id]
         assert isinstance(row_subset, self.view_class)
-        assert row_subset.row_index_lineage == (view_under_test.row_index_lineage + (row_subset.node.name,))
+        assert row_subset.row_index_lineage == (
+            view_under_test.row_index_lineage + (row_subset.node.name,)
+        )
         self.getitem_frame_params_assertions(row_subset, view_under_test)
 
         # check SDK code generation
@@ -396,7 +412,9 @@ class BaseViewTestSuite:
         output_dict = output.dict()
         assert output_dict["node_name"] == "filter_1"
         output_graph = QueryGraph(**output_dict["graph"])
-        filter_node = next(node for node in output_dict["graph"]["nodes"] if node["name"] == "filter_1")
+        filter_node = next(
+            node for node in output_dict["graph"]["nodes"] if node["name"] == "filter_1"
+        )
         assert filter_node == {
             "name": "filter_1",
             "type": "filter",
@@ -485,7 +503,8 @@ class BaseViewTestSuite:
         # assignment
         view_under_test["new_col"] = view_under_test.raw[self.col] + 1
         assert (
-            view_under_test.preview_sql().strip() == textwrap.dedent(self.expected_view_with_raw_accessor_sql).strip()
+            view_under_test.preview_sql().strip()
+            == textwrap.dedent(self.expected_view_with_raw_accessor_sql).strip()
         )
 
         # conditional assignment

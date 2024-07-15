@@ -410,7 +410,8 @@ class BaseApiTestSuite:
         assert len(response_dict["data"]) == 3
         assert response_dict.items() >= expected_paginated_info.items()
         expected_names = [
-            payload["name"] for payload in self.multiple_success_payload_generator(api_client=test_api_client)
+            payload["name"]
+            for payload in self.multiple_success_payload_generator(api_client=test_api_client)
         ]
         response_data_names = [elem["name"] for elem in response_dict["data"]]
         expected_names = list(reversed(expected_names))
@@ -443,17 +444,23 @@ class BaseApiTestSuite:
 
         # test sort_by with some random unknown column name
         # should not throw error, just that the sort_by param has no real effect since column not found
-        response_with_params = test_api_client.get(f"{self.base_route}", params={"sort_by": "random_name"})
+        response_with_params = test_api_client.get(
+            f"{self.base_route}", params={"sort_by": "random_name"}
+        )
         assert response_with_params.status_code == HTTPStatus.OK
 
         # test name parameter
-        response_with_params = test_api_client.get(f"{self.base_route}", params={"name": expected_names[1]})
+        response_with_params = test_api_client.get(
+            f"{self.base_route}", params={"name": expected_names[1]}
+        )
         assert response_with_params.status_code == HTTPStatus.OK
         response_with_params_names = [elem["name"] for elem in response_with_params.json()["data"]]
         assert response_with_params_names == [expected_names[1]]
 
         # test bench_size_boundary
-        response_page_size_boundary = test_api_client.get(f"{self.base_route}", params={"page_size": 100})
+        response_page_size_boundary = test_api_client.get(
+            f"{self.base_route}", params={"page_size": 100}
+        )
         assert response_page_size_boundary.status_code == HTTPStatus.OK
 
     def test_list_422(
@@ -488,7 +495,9 @@ class BaseApiTestSuite:
         test_api_client, _ = test_api_client_persistent
         _ = create_multiple_success_responses
         unprocessable_params, expected_detail = list_unprocessable_params_expected_detail
-        response = test_api_client.get(f"{self.base_route}/audit/{ObjectId()}", params=unprocessable_params)
+        response = test_api_client.get(
+            f"{self.base_route}/audit/{ObjectId()}", params=unprocessable_params
+        )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_detail
 
@@ -606,7 +615,9 @@ class BaseCatalogApiTestSuite(BaseApiTestSuite):
         Create catalog
         """
         test_api_client, _ = test_api_client_persistent
-        response = test_api_client.post("/catalog", json={"name": "Test", "default_feature_store_ids": []})
+        response = test_api_client.post(
+            "/catalog", json={"name": "Test", "default_feature_store_ids": []}
+        )
         assert response.status_code == HTTPStatus.CREATED
         return ObjectId(response.json()["_id"])
 
@@ -671,7 +682,9 @@ class BaseRelationshipApiTestSuite(BaseApiTestSuite):
         """Prepare payload to create parent relationship"""
         return payload
 
-    def test_create_201_and_delete_parent_200(self, test_api_client_persistent, create_multiple_success_responses):
+    def test_create_201_and_delete_parent_200(
+        self, test_api_client_persistent, create_multiple_success_responses
+    ):
         """
         Test create parent & child relationship
         """
@@ -739,7 +752,9 @@ class BaseRelationshipApiTestSuite(BaseApiTestSuite):
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert response.json()["detail"] == expected_message
 
-    def test_create_parent_422__child_not_found(self, test_api_client_persistent, create_success_response):
+    def test_create_parent_422__child_not_found(
+        self, test_api_client_persistent, create_success_response
+    ):
         """
         Test create parent with non-existent child ID
         """
@@ -754,16 +769,22 @@ class BaseRelationshipApiTestSuite(BaseApiTestSuite):
         expected = f'{self.class_name} (id: "{unknown_id}") not found. Please save the {self.class_name} object first.'
         assert response.json()["detail"] == expected
 
-    def test_create_parent_422__both_parent_and_child(self, create_success_response, test_api_client_persistent):
+    def test_create_parent_422__both_parent_and_child(
+        self, create_success_response, test_api_client_persistent
+    ):
         """
         Test create parent (unprocessible entity) when parent & child are the same ID
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = create_success_response.json()
         parent = self.prepare_parent_payload({"id": str(response_dict["_id"])})
-        response = test_api_client.post(f"{self.base_route}/{response_dict['_id']}/parent", json=parent)
+        response = test_api_client.post(
+            f"{self.base_route}/{response_dict['_id']}/parent", json=parent
+        )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": f'Object "{response_dict["name"]}" cannot be both parent & child.'}
+        assert response.json() == {
+            "detail": f'Object "{response_dict["name"]}" cannot be both parent & child.'
+        }
 
     def test_delete_parent_422__when_id_is_not_a_valid_parent(
         self, create_success_response, test_api_client_persistent
@@ -778,7 +799,9 @@ class BaseRelationshipApiTestSuite(BaseApiTestSuite):
         )
         name = response_dict["name"]
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": f'Object "{name}" is not the parent of object "{name}".'}
+        assert response.json() == {
+            "detail": f'Object "{name}" is not the parent of object "{name}".'
+        }
 
 
 class BaseCatalogRelationshipApiTestSuite(BaseRelationshipApiTestSuite, BaseCatalogApiTestSuite):
@@ -850,7 +873,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             tabular_source = payload["tabular_source"]
             payload["tabular_source"] = {
                 "feature_store_id": tabular_source["feature_store_id"],
-                "table_details": {key: f"{value}_{i}" for key, value in tabular_source["table_details"].items()},
+                "table_details": {
+                    key: f"{value}_{i}" for key, value in tabular_source["table_details"].items()
+                },
             }
             yield payload
 
@@ -894,7 +919,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         ]
 
     @pytest.fixture(name="data_response")
-    def data_response_fixture(self, test_api_client_persistent, data_model_dict, columns_info, snowflake_feature_store):
+    def data_response_fixture(
+        self, test_api_client_persistent, data_model_dict, columns_info, snowflake_feature_store
+    ):
         """
         Event table response fixture
         """
@@ -923,7 +950,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
 
         # set special columns to invalid values
         special_columns = [
-            field_name for field_name in self.data_create_schema_class.__fields__ if field_name.endswith("column")
+            field_name
+            for field_name in self.data_create_schema_class.__fields__
+            if field_name.endswith("column")
         ]
         for special_column in special_columns:
             payload[special_column] = ""
@@ -952,25 +981,34 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == {
             "detail": (
-                f'{self.class_name} (id: "{random_id}") not found. ' f"Please save the {self.class_name} object first."
+                f'{self.class_name} (id: "{random_id}") not found. '
+                f"Please save the {self.class_name} object first."
             )
         }
 
-    def test_update_fails_invalid_transition(self, test_api_client_persistent, data_response, data_update_dict):
+    def test_update_fails_invalid_transition(
+        self, test_api_client_persistent, data_response, data_update_dict
+    ):
         """
         Update Data fails if status transition is no valid
         """
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
         data_update_dict["status"] = "DEPRECATED"
-        response = test_api_client.patch(f"{self.base_route}/{response_dict['_id']}", json=data_update_dict)
+        response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}", json=data_update_dict
+        )
         assert response.status_code == HTTPStatus.OK
 
         # try to update to PUBLIC_DRAFT from DEPRECATED
         data_update_dict["status"] = "PUBLIC_DRAFT"
-        response = test_api_client.patch(f"{self.base_route}/{response_dict['_id']}", json=data_update_dict)
+        response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}", json=data_update_dict
+        )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": "Invalid status transition from DEPRECATED to PUBLIC_DRAFT."}
+        assert response.json() == {
+            "detail": "Invalid status transition from DEPRECATED to PUBLIC_DRAFT."
+        }
 
     def test_update_status_only(self, test_api_client_persistent, data_response):
         """
@@ -1026,7 +1064,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             }
         ]
 
-    def test_update_column_entity_422__entity_id_not_found(self, test_api_client_persistent, data_response):
+    def test_update_column_entity_422__entity_id_not_found(
+        self, test_api_client_persistent, data_response
+    ):
         """Test update column entity (unprocessable) - entity ID not found"""
         test_api_client, _ = test_api_client_persistent
         data_response_dict = data_response.json()
@@ -1040,7 +1080,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             },
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json()["detail"] == (f"Entity IDs ['{unknown_entity_id}'] not found for columns ['item_id'].")
+        assert response.json()["detail"] == (
+            f"Entity IDs ['{unknown_entity_id}'] not found for columns ['item_id']."
+        )
 
     def test_update_record_creation_date(
         self,
@@ -1066,7 +1108,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         assert update_response_dict.items() > expected_response.items()
         assert update_response_dict["updated_at"] is not None
 
-    def test_update_column_critical_data_info_old(self, test_api_client_persistent, data_response, columns_info):
+    def test_update_column_critical_data_info_old(
+        self, test_api_client_persistent, data_response, columns_info
+    ):
         """
         Test update columns info using column update route (DEPRECATED).
 
@@ -1080,7 +1124,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         # modify current_value's critical data info
         current_value_info = columns_info[-2]
         assert current_value_info["name"] == "current_value"
-        current_value_info["critical_data_info"] = {"cleaning_operations": [{"type": "missing", "imputed_value": 0}]}
+        current_value_info["critical_data_info"] = {
+            "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+        }
         columns_info[-2] = current_value_info
 
         # update critical data info
@@ -1094,7 +1140,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
         }
 
-    def test_update_column_critical_data_info(self, test_api_client_persistent, data_response, columns_info):
+    def test_update_column_critical_data_info(
+        self, test_api_client_persistent, data_response, columns_info
+    ):
         """Test update column critical_data_info"""
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
@@ -1109,7 +1157,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             f"{self.base_route}/{response_dict['_id']}/column_critical_data_info",
             json={
                 "column_name": "current_value",
-                "critical_data_info": {"cleaning_operations": [{"type": "missing", "imputed_value": 0}]},
+                "critical_data_info": {
+                    "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+                },
             },
         )
         assert update_response.status_code == HTTPStatus.OK
@@ -1118,7 +1168,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
         }
 
-    def test_update_column_description_404__column_not_found(self, test_api_client_persistent, data_response):
+    def test_update_column_description_404__column_not_found(
+        self, test_api_client_persistent, data_response
+    ):
         """Test update column description"""
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
@@ -1137,7 +1189,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
             f'Column: non_existent_column not found in {self.class_name_to_save} (id: "{document_id}")'
         )
 
-    def test_update_column_description(self, test_api_client_persistent, data_response, columns_info):
+    def test_update_column_description(
+        self, test_api_client_persistent, data_response, columns_info
+    ):
         """Test update column description"""
         test_api_client, _ = test_api_client_persistent
         response_dict = data_response.json()
@@ -1221,7 +1275,8 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         assert len(response_dict["data"]) == 3
         assert response_dict.items() >= expected_paginated_info.items()
         expected_names = [
-            payload["name"] for payload in self.multiple_success_payload_generator(api_client=test_api_client)
+            payload["name"]
+            for payload in self.multiple_success_payload_generator(api_client=test_api_client)
         ]
         response_data_names = [elem["name"] for elem in response_dict["data"]]
         expected_names = list(reversed(expected_names))
@@ -1254,17 +1309,23 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
 
         # test sort_by with some random unknown column name
         # should not throw error, just that the sort_by param has no real effect since column not found
-        response_with_params = test_api_client.get(self.base_route, params={"sort_by": "random_name"})
+        response_with_params = test_api_client.get(
+            self.base_route, params={"sort_by": "random_name"}
+        )
         assert response_with_params.status_code == HTTPStatus.OK
 
         # test name parameter
-        response_with_params = test_api_client.get(self.base_route, params={"name": expected_names[1]})
+        response_with_params = test_api_client.get(
+            self.base_route, params={"name": expected_names[1]}
+        )
         assert response_with_params.status_code == HTTPStatus.OK
         response_with_params_names = [elem["name"] for elem in response_with_params.json()["data"]]
         assert response_with_params_names == [expected_names[1]]
 
         # test bench_size_boundary
-        response_page_size_boundary = test_api_client.get(self.base_route, params={"page_size": 100})
+        response_page_size_boundary = test_api_client.get(
+            self.base_route, params={"page_size": 100}
+        )
         assert response_page_size_boundary.status_code == HTTPStatus.OK
 
 
@@ -1296,7 +1357,9 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         response = test_api_client.delete(f"{self.base_route}/{str(ObjectId())}")
         assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
 
-    def test_download_422(self, test_api_client_persistent, create_success_response, mock_get_session):
+    def test_download_422(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
         """Test download (failed)"""
         test_api_client, _ = test_api_client_persistent
         assert create_success_response.status_code == HTTPStatus.OK
@@ -1371,7 +1434,9 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         """Prefix for download file name"""
         return self.base_route.lstrip("/")
 
-    def test_download_parquet(self, test_api_client_persistent, create_success_response, mock_get_session):
+    def test_download_parquet(
+        self, test_api_client_persistent, create_success_response, mock_get_session
+    ):
         """Test download parquet (success)"""
         test_api_client, _ = test_api_client_persistent
         assert create_success_response.status_code == HTTPStatus.OK

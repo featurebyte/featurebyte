@@ -20,4 +20,7 @@ async def test_get_task_description(app_container):
         online_store_table_name="Test Online Store Table",
     )
     task = app_container.get(OnlineStoreCleanupTask)
-    assert await task.get_task_description(payload) == 'Clean up online store table "Test Online Store Table"'
+    assert (
+        await task.get_task_description(payload)
+        == 'Clean up online store table "Test Online Store Table"'
+    )

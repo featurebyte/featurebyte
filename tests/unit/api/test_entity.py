@@ -67,7 +67,9 @@ def test_entity__update_name(entity):
     with pytest.raises(RecordRetrievalException) as exc:
         Entity.get("AnotherCustomer")
 
-    expected_msg = 'Entity (name: "AnotherCustomer") not found. ' "Please save the Entity object first."
+    expected_msg = (
+        'Entity (name: "AnotherCustomer") not found. ' "Please save the Entity object first."
+    )
     assert expected_msg in str(exc.value)
     assert another_entity.name == "AnotherCustomer"
     another_entity.update_name("another_customer")
@@ -102,14 +104,16 @@ def test_entity_creation(entity):
     with pytest.raises(DuplicatedRecordException) as exc:
         Entity(name="customer", serving_names=["customer_id"]).save()
     expected_msg = (
-        'Entity (name: "customer") already exists. ' 'Get the existing object by `Entity.get(name="customer")`.'
+        'Entity (name: "customer") already exists. '
+        'Get the existing object by `Entity.get(name="customer")`.'
     )
     assert expected_msg in str(exc.value)
 
     with pytest.raises(DuplicatedRecordException) as exc:
         Entity(name="Customer", serving_names=["cust_id"]).save()
     expected_msg = (
-        'Entity (serving_name: "cust_id") already exists. ' 'Get the existing object by `Entity.get(name="customer")`.'
+        'Entity (serving_name: "cust_id") already exists. '
+        'Get the existing object by `Entity.get(name="customer")`.'
     )
     assert expected_msg in str(exc.value)
 
@@ -160,7 +164,9 @@ def test_entity_update_name(entity, catalog):
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
-    pd.testing.assert_frame_equal(audit_history[expected_audit_history.columns], expected_audit_history)
+    pd.testing.assert_frame_equal(
+        audit_history[expected_audit_history.columns], expected_audit_history
+    )
 
     # create another entity
     Entity(name="product", serving_names=["product_id"]).save()
@@ -173,7 +179,8 @@ def test_entity_update_name(entity, catalog):
         entity.update_name("product")
     assert exc.value.response.json() == {
         "detail": (
-            'Entity (name: "product") already exists. ' 'Get the existing object by `Entity.get(name="product")`.'
+            'Entity (name: "product") already exists. '
+            'Get the existing object by `Entity.get(name="product")`.'
         )
     }
 
@@ -260,7 +267,9 @@ def get_insert_table_helper_fixture(mongo_persistent):
             "catalog_id": DEFAULT_CATALOG_ID,
         }
         user_id = ObjectId()
-        _ = await persistent.insert_one(collection_name="table", document=test_document, user_id=user_id)
+        _ = await persistent.insert_one(
+            collection_name="table", document=test_document, user_id=user_id
+        )
 
     return insert
 

@@ -37,7 +37,9 @@ class SparkAdapter(DatabricksAdapter):
         raise NotImplementedError()
 
     @classmethod
-    def datediff_microsecond(cls, timestamp_expr_1: Expression, timestamp_expr_2: Expression) -> Expression:
+    def datediff_microsecond(
+        cls, timestamp_expr_1: Expression, timestamp_expr_2: Expression
+    ) -> Expression:
         def _to_microseconds(expr: Expression) -> Expression:
             return expressions.Mul(
                 this=cls.to_seconds_double(expr),

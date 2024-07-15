@@ -19,7 +19,9 @@ from featurebyte.service.base_document import BaseDocumentService
 
 
 class UserDefinedFunctionService(
-    BaseDocumentService[UserDefinedFunctionModel, UserDefinedFunctionServiceCreate, UserDefinedFunctionServiceUpdate]
+    BaseDocumentService[
+        UserDefinedFunctionModel, UserDefinedFunctionServiceCreate, UserDefinedFunctionServiceUpdate
+    ]
 ):
     """
     UserDefinedFunctionService class
@@ -50,7 +52,9 @@ class UserDefinedFunctionService(
         output["catalog_id"] = {"$in": [None, self.catalog_id]}
         return output
 
-    async def create_document(self, data: UserDefinedFunctionServiceCreate) -> UserDefinedFunctionModel:
+    async def create_document(
+        self, data: UserDefinedFunctionServiceCreate
+    ) -> UserDefinedFunctionModel:
         # check if user defined function with same name already exists
         document_dict = await self.persistent.find_one(
             collection_name=self.collection_name,
@@ -63,5 +67,7 @@ class UserDefinedFunctionService(
                     f"catalog (catalog_id: {data.catalog_id})."
                 )
 
-            raise DocumentConflictError(f'Global user defined function with name "{data.name}" already exists.')
+            raise DocumentConflictError(
+                f'Global user defined function with name "{data.name}" already exists.'
+            )
         return await super().create_document(data=data)

@@ -50,9 +50,13 @@ class Join(TableNode):
             return None
         parameters = context.parameters
         columns_map = {}
-        for input_col, output_col in zip(parameters["left_input_columns"], parameters["left_output_columns"]):
+        for input_col, output_col in zip(
+            parameters["left_input_columns"], parameters["left_output_columns"]
+        ):
             columns_map[output_col] = get_qualified_column_identifier(input_col, "L")
-        for input_col, output_col in zip(parameters["right_input_columns"], parameters["right_output_columns"]):
+        for input_col, output_col in zip(
+            parameters["right_input_columns"], parameters["right_output_columns"]
+        ):
             columns_map[output_col] = get_qualified_column_identifier(input_col, "R")
         node = Join(
             context=context,
@@ -141,7 +145,9 @@ class SCDJoin(TableNode):
         for output_col in parameters["left_output_columns"]:
             columns_map[output_col] = get_qualified_column_identifier(output_col, "L")
 
-        for input_col, output_col in zip(parameters["right_input_columns"], parameters["right_output_columns"]):
+        for input_col, output_col in zip(
+            parameters["right_input_columns"], parameters["right_output_columns"]
+        ):
             columns_map[output_col] = get_qualified_column_identifier(input_col, "R")
 
         node = SCDJoin(

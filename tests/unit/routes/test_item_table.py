@@ -100,7 +100,9 @@ class TestItemTableApi(BaseTableApiTestSuite):
             "user_id": str(user_id),
         }
         item_table_data = ItemTableData(**item_table_dict)
-        input_node = item_table_data.construct_input_node(feature_store_details=feature_store_details)
+        input_node = item_table_data.construct_input_node(
+            feature_store_details=feature_store_details
+        )
         graph = QueryGraph()
         inserted_node = graph.add_node(node=input_node, input_nodes=[])
         item_table_dict["graph"] = graph
@@ -128,7 +130,9 @@ class TestItemTableApi(BaseTableApiTestSuite):
     @pytest.mark.asyncio
     async def test_item_id_semantic(self, data_response, app_container):
         """Test item id semantic is set correctly"""
-        item_id_semantic = await app_container.semantic_service.get_or_create_document(name=SemanticType.ITEM_ID.value)
+        item_id_semantic = await app_container.semantic_service.get_or_create_document(
+            name=SemanticType.ITEM_ID.value
+        )
 
         # check the that semantic ID is set correctly
         item_id_semantic_id = None
@@ -146,7 +150,9 @@ class TestItemTableApi(BaseTableApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
         expected_info_response = {
             "name": self.document_name,
             "record_creation_timestamp_column": None,
@@ -174,7 +180,9 @@ class TestItemTableApi(BaseTableApiTestSuite):
         assert "created_at" in response_dict
         assert response_dict["columns_info"] is None
 
-        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
         assert response.status_code == HTTPStatus.OK, response.text
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text

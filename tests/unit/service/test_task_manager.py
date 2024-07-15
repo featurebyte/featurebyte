@@ -103,7 +103,9 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
     task_num = 10
     task_ids = []
     for _ in range(task_num):
-        task_id = await task_manager.submit(payload=LongRunningPayload(user_id=user_id, catalog_id=catalog.id))
+        task_id = await task_manager.submit(
+            payload=LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
+        )
         task_ids.append(UUID(task_id))
         # insert task into db manually since we are mocking celery
         task = Task(
@@ -130,11 +132,15 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
         ascending_list = []
         descending_list = []
         for page in range(1, total_page + 1):
-            items, total = await task_manager.list_tasks(page=page, page_size=page_size, ascending=True)
+            items, total = await task_manager.list_tasks(
+                page=page, page_size=page_size, ascending=True
+            )
             assert total == task_num
             ascending_list.extend(items)
 
-            items, total = await task_manager.list_tasks(page=page, page_size=page_size, ascending=False)
+            items, total = await task_manager.list_tasks(
+                page=page, page_size=page_size, ascending=False
+            )
             assert total == task_num
             descending_list.extend(items)
 

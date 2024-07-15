@@ -38,7 +38,9 @@ class UpdateDeploymentPayload(FeatureByteBaseModel):
     enabled: bool
 
 
-DeploymentPayload = Annotated[Union[CreateDeploymentPayload, UpdateDeploymentPayload], Field(discriminator="type")]
+DeploymentPayload = Annotated[
+    Union[CreateDeploymentPayload, UpdateDeploymentPayload], Field(discriminator="type")
+]
 
 
 class DeploymentCreateUpdateTaskPayload(BaseTaskPayload):

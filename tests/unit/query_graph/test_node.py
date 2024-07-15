@@ -48,7 +48,9 @@ def node_fixture():
 
         def _derive_node_operation_info(self, inputs, branch_state, global_state):
             _ = inputs, branch_state, global_state
-            return OperationStructure(output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW)
+            return OperationStructure(
+                output_type=NodeOutputType.FRAME, output_category=NodeOutputCategory.VIEW
+            )
 
     return Node(
         name="node_name",

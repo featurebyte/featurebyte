@@ -110,7 +110,9 @@ class BaseSparkSession(BaseSession, ABC):
         """
 
     @abstractmethod
-    def upload_file_to_storage(self, local_path: str, remote_path: str, is_binary: bool = True) -> None:
+    def upload_file_to_storage(
+        self, local_path: str, remote_path: str, is_binary: bool = True
+    ) -> None:
         """
         Upload file to storage
 
@@ -205,7 +207,9 @@ class BaseSparkSession(BaseSession, ABC):
             logger.warning(f"Spark: Not supported data type '{spark_type}'")
         return db_vartype
 
-    async def register_table_with_query(self, table_name: str, query: str, temporary: bool = True) -> None:
+    async def register_table_with_query(
+        self, table_name: str, query: str, temporary: bool = True
+    ) -> None:
         if temporary:
             create_command = "CREATE OR REPLACE TEMPORARY VIEW"
         else:
@@ -217,9 +221,9 @@ class BaseSparkSession(BaseSession, ABC):
         # truncate timestamps to microseconds to avoid parquet and Spark issues
         if dataframe.shape[0] > 0:
             for colname in dataframe.columns:
-                if pd.api.types.is_datetime64_any_dtype(dataframe[colname]) or pd.api.types.is_datetime64tz_dtype(
+                if pd.api.types.is_datetime64_any_dtype(
                     dataframe[colname]
-                ):
+                ) or pd.api.types.is_datetime64tz_dtype(dataframe[colname]):
                     dataframe[colname] = dataframe[colname].dt.floor("us")
 
         # write to parquet file
@@ -295,7 +299,9 @@ class BaseSparkSession(BaseSession, ABC):
         )
         column_name_type_map = collections.OrderedDict()
         if schema is not None:
-            for _, (column_name, var_info, comment) in schema[["col_name", "data_type", "comment"]].iterrows():
+            for _, (column_name, var_info, comment) in schema[
+                ["col_name", "data_type", "comment"]
+            ].iterrows():
                 # Sometimes describe include metadata after column details with and empty row as a separator.
                 # Skip the remaining entries once we run into an empty column name
                 if column_name == "" or column_name.startswith("# "):
@@ -322,7 +328,9 @@ class BaseSparkSession(BaseSession, ABC):
         table_details_found = False
         details = {}
         if schema is not None:
-            for _, (column_name, var_info, _) in schema[["col_name", "data_type", "comment"]].iterrows():
+            for _, (column_name, var_info, _) in schema[
+                ["col_name", "data_type", "comment"]
+            ].iterrows():
                 # Only collect details after the table details section (# Detailed Table Information)
                 if column_name.startswith("# Detailed Table Information"):
                     table_details_found = True
@@ -338,7 +346,9 @@ class BaseSparkSession(BaseSession, ABC):
         })
         return TableDetails(
             details=details,
-            fully_qualified_name=sql_to_string(fully_qualified_table_name, source_type=self.source_type),
+            fully_qualified_name=sql_to_string(
+                fully_qualified_table_name, source_type=self.source_type
+            ),
         )
 
     def _format_comment(self, comment: str) -> str:
@@ -510,7 +520,9 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
 
         # upload jar file to storage
         udf_jar_file_name = os.path.basename(self.udf_jar_local_path)
-        session.upload_file_to_storage(local_path=self.udf_jar_local_path, remote_path=udf_jar_file_name)
+        session.upload_file_to_storage(
+            local_path=self.udf_jar_local_path, remote_path=udf_jar_file_name
+        )
 
     async def register_missing_objects(self) -> None:
         self.register_jar()

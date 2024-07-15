@@ -151,10 +151,13 @@ def test_feature_name_space(feature_namespace_dict):
     feature_name_space = FeatureNamespaceModel.parse_obj(feature_namespace_dict)
     serialized_feature_name_space = feature_name_space.dict(exclude={"id": True})
     feature_name_space_dict_sorted_ids = {
-        key: sorted(value) if key.endswith("_ids") else value for key, value in feature_namespace_dict.items()
+        key: sorted(value) if key.endswith("_ids") else value
+        for key, value in feature_namespace_dict.items()
     }
     assert serialized_feature_name_space == feature_name_space_dict_sorted_ids
-    loaded_feature_name_space = FeatureNamespaceModel.parse_raw(feature_name_space.json(by_alias=True))
+    loaded_feature_name_space = FeatureNamespaceModel.parse_raw(
+        feature_name_space.json(by_alias=True)
+    )
     assert loaded_feature_name_space == feature_name_space
 
 
@@ -181,7 +184,9 @@ def test_extract_operation_structure(feature_model_dict):
         "node_name": "graph_1",
         "filter": False,
     }
-    expected_columns = [SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params)]
+    expected_columns = [
+        SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params)
+    ]
     assert op_struct.source_columns == expected_columns
     assert op_struct.derived_columns == []
     assert op_struct.aggregations == [

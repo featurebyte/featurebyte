@@ -88,7 +88,9 @@ def common_params_fixture():
         (AggFunc.MIN, "n/a", True),
     ],
 )
-def test_get_vector_agg_column_snowflake(agg_func, expected_table_func, expect_error, common_params):
+def test_get_vector_agg_column_snowflake(
+    agg_func, expected_table_func, expect_error, common_params
+):
     """
     Test get_vector_agg_expr for snowflake
     """

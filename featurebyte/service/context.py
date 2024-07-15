@@ -51,7 +51,9 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         self.entity_service = entity_service
         self.table_service = table_service
 
-    async def _validate_view(self, operation_structure: OperationStructure, context: ContextModel) -> None:
+    async def _validate_view(
+        self, operation_structure: OperationStructure, context: ContextModel
+    ) -> None:
         """
         Validate context view operation structure, check that
         - whether all table used in the view can be retrieved from persistent
@@ -94,7 +96,9 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
                 None,
             )
             if column_info is None:
-                raise DocumentUpdateError(f'Column "{source_col.name}" not found in table "{table.name}".')
+                raise DocumentUpdateError(
+                    f'Column "{source_col.name}" not found in table "{table.name}".'
+                )
             if column_info.entity_id:
                 found_entity_ids.add(column_info.entity_id)
 
@@ -104,7 +108,9 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
                 query_filter={"_id": {"$in": missing_entity_ids}}
             )
             missing_entity_names = [entity["name"] for entity in missing_entities["data"]]
-            raise DocumentUpdateError(f"Entities {missing_entity_names} not found in the context view.")
+            raise DocumentUpdateError(
+                f"Entities {missing_entity_names} not found in the context view."
+            )
 
     async def update_document(
         self,
@@ -116,10 +122,14 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
     ) -> Optional[ContextModel]:
-        document = await self.get_document(document_id=document_id, populate_remote_attributes=False)
+        document = await self.get_document(
+            document_id=document_id, populate_remote_attributes=False
+        )
         if data.graph and data.node_name:
             node = data.graph.get_node_by_name(data.node_name)
-            operation_structure = data.graph.extract_operation_structure(node=node, keep_all_source_columns=True)
+            operation_structure = data.graph.extract_operation_structure(
+                node=node, keep_all_source_columns=True
+            )
             await self._validate_view(operation_structure=operation_structure, context=document)
 
         document = await super().update_document(

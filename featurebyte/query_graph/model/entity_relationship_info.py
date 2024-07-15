@@ -67,7 +67,10 @@ class FeatureEntityLookupInfo(FeatureByteBaseModel):
         -------
         List[EntityRelationshipInfo]
         """
-        return self.feature_list_to_feature_primary_entity_join_steps + self.feature_internal_entity_join_steps
+        return (
+            self.feature_list_to_feature_primary_entity_join_steps
+            + self.feature_internal_entity_join_steps
+        )
 
 
 @dataclass
@@ -188,7 +191,9 @@ class EntityAncestorDescendantMapper:
         Dict[ObjectId, List[ObjectId]]
             Entity id to descendant ids mapping
         """
-        child_to_parent_entity_ids = cls._get_relation_map(relationships_info, parent_to_child=False)
+        child_to_parent_entity_ids = cls._get_relation_map(
+            relationships_info, parent_to_child=False
+        )
         entity_id_to_descendant_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
         for entity_id in list(child_to_parent_entity_ids):
             cls._depth_first_search(
@@ -203,7 +208,9 @@ class EntityAncestorDescendantMapper:
         return entity_id_to_descendant_ids
 
     @classmethod
-    def create(cls, relationships_info: List[EntityRelationshipInfo]) -> "EntityAncestorDescendantMapper":
+    def create(
+        cls, relationships_info: List[EntityRelationshipInfo]
+    ) -> "EntityAncestorDescendantMapper":
         """
         Create a new EntityAncestorDescendantMapper object from the given relationships info
 

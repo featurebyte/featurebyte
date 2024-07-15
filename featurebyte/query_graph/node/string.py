@@ -197,7 +197,9 @@ class PadNode(BaseStringAccessorOpNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        statements, func_name = self._get_pad_string_function_name(var_name_generator=var_name_generator)
+        statements, func_name = self._get_pad_string_function_name(
+            var_name_generator=var_name_generator
+        )
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         input_string = input_var_name_expressions[0].as_input()
         side = ValueStr.create(self.parameters.side)

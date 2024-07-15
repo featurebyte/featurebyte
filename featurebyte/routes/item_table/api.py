@@ -35,7 +35,9 @@ from featurebyte.schema.table import (
 router = APIRouter(prefix="/item_table")
 
 
-class ItemTableRouter(BaseApiRouter[ItemTableModel, ItemTableList, ItemTableCreate, ItemTableController]):
+class ItemTableRouter(
+    BaseApiRouter[ItemTableModel, ItemTableList, ItemTableCreate, ItemTableController]
+):
     """
     Item table router
     """

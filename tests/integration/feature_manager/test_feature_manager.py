@@ -102,7 +102,9 @@ async def list_scheduled_tasks(periodic_task_service, feature_service, saved_fea
     return out
 
 
-async def list_online_store_compute_queries(online_store_compute_query_service, feature_service, saved_feature):
+async def list_online_store_compute_queries(
+    online_store_compute_query_service, feature_service, saved_feature
+):
     """
     List online store compute queries for the given feature
     """
@@ -115,7 +117,9 @@ async def list_online_store_compute_queries(online_store_compute_query_service, 
     return out
 
 
-async def list_online_store_cleanup_tasks(online_store_cleanup_scheduler_service, feature_service, saved_feature):
+async def list_online_store_cleanup_tasks(
+    online_store_cleanup_scheduler_service, feature_service, saved_feature
+):
     """
     List online store cleanup tasks for the given feature
     """
@@ -226,8 +230,12 @@ async def test_online_disable(
     with create_and_enable_deployment(feature_sum_30h) as deployment1:
         with create_and_enable_deployment(feature_sum_30h_transformed) as deployment2:
             # 1. Check that both features share the same tile tasks
-            tasks1 = await list_scheduled_tasks(periodic_task_service, feature_service, feature_sum_30h)
-            tasks2 = await list_scheduled_tasks(periodic_task_service, feature_service, feature_sum_30h_transformed)
+            tasks1 = await list_scheduled_tasks(
+                periodic_task_service, feature_service, feature_sum_30h
+            )
+            tasks2 = await list_scheduled_tasks(
+                periodic_task_service, feature_service, feature_sum_30h_transformed
+            )
             assert len(tasks1) > 0
             assert set(tasks1) == set(tasks2)
 
@@ -247,7 +255,9 @@ async def test_online_disable(
             # 2. Disable the first feature. Since the tile is still used by the second feature, the
             # tile tasks should not be removed.
             deployment1.disable()
-            tasks = await list_scheduled_tasks(periodic_task_service, feature_service, feature_sum_30h_transformed)
+            tasks = await list_scheduled_tasks(
+                periodic_task_service, feature_service, feature_sum_30h_transformed
+            )
             assert set(tasks) == set(tasks2)
 
             # The query should still exist because it is still used by the second feature
@@ -266,7 +276,9 @@ async def test_online_disable(
             # 3. Disable the second feature. Since the tile is no longer used by any feature, the
             # tile tasks should be removed.
             deployment2.disable()
-            tasks = await list_scheduled_tasks(periodic_task_service, feature_service, feature_sum_30h_transformed)
+            tasks = await list_scheduled_tasks(
+                periodic_task_service, feature_service, feature_sum_30h_transformed
+            )
             assert len(tasks) == 0
 
             # The query should be removed now
@@ -301,7 +313,9 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     )
     tile_spec = online_feature_spec.feature.tile_specs[0]
 
-    tile_model = await tile_registry_service.get_tile_model(tile_spec.tile_id, tile_spec.aggregation_id)
+    tile_model = await tile_registry_service.get_tile_model(
+        tile_spec.tile_id, tile_spec.aggregation_id
+    )
     assert tile_model is not None
     last_tile_start_ts = tile_model.last_run_metadata_offline.tile_end_date
 
@@ -309,7 +323,9 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     await feature_manager_service.online_disable(session, online_feature_spec)
 
     # re-deploy and verify that the tile start ts is the same as the last tile start ts
-    with patch("featurebyte.service.tile_manager.TileManagerService.generate_tiles") as mock_generate_tiles:
+    with patch(
+        "featurebyte.service.tile_manager.TileManagerService.generate_tiles"
+    ) as mock_generate_tiles:
         with patch("featurebyte.service.feature_manager.datetime") as mock_datetime:
             # simulate re-deploy at a later date; otherwise this will be a no-op since no new tiles
             # need to be generated and generate_tiles won't be called

@@ -32,7 +32,9 @@ def _validate_series(series_list: List[Series]) -> None:
     # Check numeric
     for series in series_list:
         if not series.is_numeric:
-            raise ValueError(f"Expected all series to be numeric, but got {series.dtype} for series {series.name}")
+            raise ValueError(
+                f"Expected all series to be numeric, but got {series.dtype} for series {series.name}"
+            )
 
     # Check all series are of the same type
     series_type_to_check: Optional[Any] = Series
@@ -51,7 +53,9 @@ def _validate_series(series_list: List[Series]) -> None:
 
 
 @typechecked
-def haversine(lat_series_1: Series, lon_series_1: Series, lat_series_2: Series, lon_series_2: Series) -> Series:
+def haversine(
+    lat_series_1: Series, lon_series_1: Series, lat_series_2: Series, lon_series_2: Series
+) -> Series:
     """
     Construct a Series that contains the haversince distances between two points.
 

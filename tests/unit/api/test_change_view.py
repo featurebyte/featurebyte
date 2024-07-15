@@ -98,7 +98,9 @@ def test_manual_view_mode(snowflake_scd_table_with_imputation):
     Test manual view mode
     """
     # create view
-    snowflake_change_view = snowflake_scd_table_with_imputation.get_change_view("col_int", view_mode="manual")
+    snowflake_change_view = snowflake_scd_table_with_imputation.get_change_view(
+        "col_int", view_mode="manual"
+    )
 
     # check view graph metadata
     metadata = snowflake_change_view.node.parameters.metadata
@@ -150,7 +152,9 @@ def test_view_mode__auto_manual_equality_check(snowflake_scd_table_with_imputati
 
     # check both view graph node inner graph are equal
     assert view_manual.node.parameters.graph == view_auto.node.parameters.graph
-    assert view_manual.node.parameters.output_node_name == view_auto.node.parameters.output_node_name
+    assert (
+        view_manual.node.parameters.output_node_name == view_auto.node.parameters.output_node_name
+    )
 
 
 @pytest.fixture(name="patched_datetime")
@@ -239,7 +243,9 @@ def test_get_new_column_names():
     assert column_names.previous_valid_from_column_name == f"past_{timestamp_col_name}"
     assert column_names.new_valid_from_column_name == f"new_{timestamp_col_name}"
 
-    column_names = SCDTableData.get_new_column_names(col_name, timestamp_col_name, (None, "updated_"))
+    column_names = SCDTableData.get_new_column_names(
+        col_name, timestamp_col_name, (None, "updated_")
+    )
     assert column_names.previous_tracked_column_name == f"past_{col_name}"
     assert column_names.new_tracked_column_name == f"updated_{col_name}"
     assert column_names.previous_valid_from_column_name == f"past_{timestamp_col_name}"
@@ -251,7 +257,9 @@ def test_get_new_column_names():
     assert column_names.previous_valid_from_column_name == f"prior_{timestamp_col_name}"
     assert column_names.new_valid_from_column_name == f"new_{timestamp_col_name}"
 
-    column_names = SCDTableData.get_new_column_names(col_name, timestamp_col_name, ("prior_", "updated_"))
+    column_names = SCDTableData.get_new_column_names(
+        col_name, timestamp_col_name, ("prior_", "updated_")
+    )
     assert column_names.previous_tracked_column_name == f"prior_{col_name}"
     assert column_names.new_tracked_column_name == f"updated_{col_name}"
     assert column_names.previous_valid_from_column_name == f"prior_{timestamp_col_name}"
@@ -447,7 +455,9 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view):
     assert tile_infos[0].sql == expected
 
 
-def test_get_change_view__keep_record_creation_timestamp_column(snowflake_scd_table, mock_api_object_cache):
+def test_get_change_view__keep_record_creation_timestamp_column(
+    snowflake_scd_table, mock_api_object_cache
+):
     """
     Test create ChangeView using record creation timestamp column as track changes column
     """

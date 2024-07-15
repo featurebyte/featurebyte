@@ -87,13 +87,17 @@ class Deployment(DeletableApiObject):
 
         store_info = self.feature_list.cached_model.store_info  # type: ignore
         if store_info.type != "databricks_unity":
-            raise DeploymentDataBricksAccessorError("Deployment is not using DataBricks Unity as the store")
+            raise DeploymentDataBricksAccessorError(
+                "Deployment is not using DataBricks Unity as the store"
+            )
 
         target_name, target_dtype = None, None
         if self.use_case and self.use_case.target:
             target = self.use_case.target
             target_name, target_dtype = target.name, target.dtype
-        return DataBricksAccessor(store_info=store_info, target_name=target_name, target_dtype=target_dtype)
+        return DataBricksAccessor(
+            store_info=store_info, target_name=target_name, target_dtype=target_dtype
+        )
 
     @property
     def enabled(self) -> bool:
@@ -225,7 +229,9 @@ class Deployment(DeletableApiObject):
             batch_request_table_id=batch_request_table.id,
             deployment_id=self.id,
         )
-        batch_feature_table_doc = self.post_async_task(route="/batch_feature_table", payload=payload.json_dict())
+        batch_feature_table_doc = self.post_async_task(
+            route="/batch_feature_table", payload=payload.json_dict()
+        )
         return BatchFeatureTable.get_by_id(batch_feature_table_doc["_id"])
 
     def get_online_serving_code(self, language: Literal["python", "sh"] = "python") -> str:
@@ -305,9 +311,13 @@ class Deployment(DeletableApiObject):
         current_profile = config.profile
         api_client = config.get_client()
 
-        response = api_client.get(f"/deployment/{self.id}/request_code_template?language={language}")
+        response = api_client.get(
+            f"/deployment/{self.id}/request_code_template?language={language}"
+        )
         response_dict = response.json()
-        if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY and response_dict["detail"][0].get("loc") == [
+        if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY and response_dict["detail"][
+            0
+        ].get("loc") == [
             "query",
             "language",
         ]:
@@ -323,9 +333,9 @@ class Deployment(DeletableApiObject):
 
         code_template = response_dict["code_template"]
         return CodeStr(
-            code_template.replace("<FEATUREBYTE_SERVICE_URL>", str(current_profile.api_url)).replace(
-                "<API_TOKEN>", str(current_profile.api_token)
-            ),
+            code_template.replace(
+                "<FEATUREBYTE_SERVICE_URL>", str(current_profile.api_url)
+            ).replace("<API_TOKEN>", str(current_profile.api_token)),
         )
 
     def get_feature_jobs_status(

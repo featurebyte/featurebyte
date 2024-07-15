@@ -89,7 +89,9 @@ class OnDemandFeatureViewConstructor:
         has_point_in_time = False
         ttl_seconds: Optional[float] = None
         if offline_store_info.is_decomposed:
-            for ingest_query_graph in offline_store_info.extract_offline_store_ingest_query_graphs():
+            for (
+                ingest_query_graph
+            ) in offline_store_info.extract_offline_store_ingest_query_graphs():
                 fv_source = name_to_feast_feature_view[ingest_query_graph.offline_store_table_name]
                 sources.append(fv_source)
                 if fv_source.ttl is not None:
@@ -104,9 +106,13 @@ class OnDemandFeatureViewConstructor:
                 if request_node.parameters.column_name == SpecialColumnName.POINT_IN_TIME.value:
                     has_point_in_time = True
         else:
-            assert offline_store_info.metadata is not None, "OfflineStoreInfo does not have metadata"
+            assert (
+                offline_store_info.metadata is not None
+            ), "OfflineStoreInfo does not have metadata"
             assert offline_store_info.metadata.has_ttl, "FeatureModel does not have TTL"
-            fv_source = name_to_feast_feature_view[offline_store_info.metadata.offline_store_table_name]
+            fv_source = name_to_feast_feature_view[
+                offline_store_info.metadata.offline_store_table_name
+            ]
             if fv_source.ttl is not None:
                 ttl_seconds = fv_source.ttl.total_seconds()
             sources.append(fv_source)

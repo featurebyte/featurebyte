@@ -36,7 +36,9 @@ def test_extend_base_task_payload():
 
     user_id = ObjectId()
     document_id = ObjectId()
-    payload_obj = RandomTaskPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID, output_document_id=document_id)
+    payload_obj = RandomTaskPayload(
+        user_id=user_id, catalog_id=DEFAULT_CATALOG_ID, output_document_id=document_id
+    )
     assert payload_obj.dict() == {
         "command": "random_command",
         "user_id": user_id,
@@ -100,7 +102,9 @@ async def test_task_executor(random_task_class, persistent, app_container):
     }
 
     # check task start time and description is updated
-    document = await persistent.find_one(collection_name="celery_taskmeta", query_filter={"_id": str(task_id)})
+    document = await persistent.find_one(
+        collection_name="celery_taskmeta", query_filter={"_id": str(task_id)}
+    )
     assert isinstance(document["start_time"], datetime.datetime)
     assert document["description"] == "Execute random task"
 

@@ -63,7 +63,9 @@ logger = get_logger(__name__)
 _ = custom_typechecked
 
 
-def _dep_injection_func(request: Request, active_catalog_id: Optional[PydanticObjectId] = None) -> None:
+def _dep_injection_func(
+    request: Request, active_catalog_id: Optional[PydanticObjectId] = None
+) -> None:
     """
     Inject dependencies into the requests
 

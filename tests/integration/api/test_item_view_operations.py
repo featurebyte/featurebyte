@@ -168,7 +168,9 @@ def assert_match(item_id: str, item_name: str, item_type: str):
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
-def test_item_view_joined_with_dimension_view(transaction_data_upper_case, item_table, dimension_table):
+def test_item_view_joined_with_dimension_view(
+    transaction_data_upper_case, item_table, dimension_table
+):
     """
     Test joining an item view with a dimension view.
     """
@@ -237,7 +239,9 @@ def test_item_view_joined_with_dimension_view(transaction_data_upper_case, item_
     })
     feature_list = FeatureList([feature], name="feature_list")
     df_historical_features = feature_list.compute_historical_features(df_training_events)
-    assert df_historical_features.sort_values("üser id")["most_frequent_item_type_30d"].tolist() == [
+    assert df_historical_features.sort_values("üser id")[
+        "most_frequent_item_type_30d"
+    ].tolist() == [
         "type_10140",
         "type_1008",
         "type_11333",

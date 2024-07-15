@@ -32,7 +32,9 @@ async def test_register_exception_handler(mock_exception_context):
     """
 
     mock_exception_context.register(DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT)
-    mock_exception_context.register(DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
+    mock_exception_context.register(
+        DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+    )
 
     assert len(mock_exception_context.exception_handlers) == 2
     assert list(mock_exception_context.exception_handlers.keys()) == [
@@ -50,7 +52,10 @@ async def test_register_exception_handler_register_non_exception(mock_exception_
     with pytest.raises(ValueError) as excinfo:
         mock_exception_context.register(HTTPStatus, handle_status_code=HTTPStatus.CONFLICT)
 
-    assert str(excinfo.value) == "registered key Type <enum 'HTTPStatus'> must be a subtype of Exception"
+    assert (
+        str(excinfo.value)
+        == "registered key Type <enum 'HTTPStatus'> must be a subtype of Exception"
+    )
 
 
 @pytest.mark.asyncio
@@ -59,9 +64,13 @@ async def test_register_exception_handler_register_before_super_class(mock_excep
     Test registering exception handler
     """
 
-    mock_exception_context.register(DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
+    mock_exception_context.register(
+        DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+    )
     with pytest.raises(ValueError) as excinfo:
-        mock_exception_context.register(DocumentCreationError, handle_status_code=HTTPStatus.CONFLICT)
+        mock_exception_context.register(
+            DocumentCreationError, handle_status_code=HTTPStatus.CONFLICT
+        )
 
     assert (
         str(excinfo.value)

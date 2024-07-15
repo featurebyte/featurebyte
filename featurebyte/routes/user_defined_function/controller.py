@@ -32,7 +32,9 @@ from featurebyte.service.user_defined_function import UserDefinedFunctionService
 
 
 class UserDefinedFunctionController(
-    BaseDocumentController[UserDefinedFunctionModel, UserDefinedFunctionService, UserDefinedFunctionList]
+    BaseDocumentController[
+        UserDefinedFunctionModel, UserDefinedFunctionService, UserDefinedFunctionList
+    ]
 ):
     """
     UserDefinedFunctionController class
@@ -105,7 +107,9 @@ class UserDefinedFunctionController(
             Newly created user_defined_function object
         """
         # validate feature store id exists
-        feature_store = await self.feature_store_service.get_document(document_id=(await self._get_feature_store_id()))
+        feature_store = await self.feature_store_service.get_document(
+            document_id=(await self._get_feature_store_id())
+        )
 
         # create user defined function & validate
         catalog_id = None if data.is_global else self.active_catalog_id
@@ -160,10 +164,14 @@ class UserDefinedFunctionController(
             raise DocumentUpdateError("No changes detected in user defined function")
 
         # check if function used in any saved feature
-        await self.verify_operation_by_checking_reference(document_id=document_id, exception_class=DocumentUpdateError)
+        await self.verify_operation_by_checking_reference(
+            document_id=document_id, exception_class=DocumentUpdateError
+        )
 
         # retrieve feature store
-        feature_store = await self.feature_store_service.get_document(document_id=(await self._get_feature_store_id()))
+        feature_store = await self.feature_store_service.get_document(
+            document_id=(await self._get_feature_store_id())
+        )
 
         # validate user defined function
         await self._validate_user_defined_function(
@@ -249,7 +257,9 @@ class UserDefinedFunctionController(
         _ = verbose
 
         document = await self.service.get_document(document_id=document_id)
-        feature_store = await self.feature_store_service.get_document(document_id=(await self._get_feature_store_id()))
+        feature_store = await self.feature_store_service.get_document(
+            document_id=(await self._get_feature_store_id())
+        )
         features_info: List[UserDefinedFunctionFeatureInfo] = []
         features = await self.feature_service.list_documents_as_dict(
             query_filter={"user_defined_function_ids": {"$in": [document_id]}},
@@ -257,7 +267,9 @@ class UserDefinedFunctionController(
         )
         if features["total"]:
             for doc in features["data"]:
-                features_info.append(UserDefinedFunctionFeatureInfo(id=doc["_id"], name=doc["name"]))
+                features_info.append(
+                    UserDefinedFunctionFeatureInfo(id=doc["_id"], name=doc["name"])
+                )
 
         return UserDefinedFunctionInfo(
             name=document.name,

@@ -27,7 +27,9 @@ class SourceTableBatchRequestInput(SourceTableRequestInput):
     """
 
 
-BatchRequestInput = Annotated[Union[ViewBatchRequestInput, SourceTableBatchRequestInput], Field(discriminator="type")]
+BatchRequestInput = Annotated[
+    Union[ViewBatchRequestInput, SourceTableBatchRequestInput], Field(discriminator="type")
+]
 
 
 class BatchRequestTableModel(MaterializedTableModel):

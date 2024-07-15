@@ -23,7 +23,9 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
     class_name = "DimensionTable"
     base_route = "/dimension_table"
     data_create_schema_class = DimensionTableCreate
-    payload = BaseTableApiTestSuite.load_payload("tests/fixtures/request_payloads/dimension_table.json")
+    payload = BaseTableApiTestSuite.load_payload(
+        "tests/fixtures/request_payloads/dimension_table.json"
+    )
     document_name = "sf_dimension_table"
     create_conflict_payload_expected_detail_pairs = [
         (
@@ -72,7 +74,9 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
     @pytest_asyncio.fixture(name="dimension_id_semantic_id")
     async def dimension_id_semantic_id_fixture(self, app_container):
         """Dimension ID semantic IDs fixture"""
-        dimension_id_semantic = await app_container.semantic_service.get_or_create_document("dimension_id")
+        dimension_id_semantic = await app_container.semantic_service.get_or_create_document(
+            "dimension_id"
+        )
         return dimension_id_semantic.id
 
     @pytest.fixture(name="data_model_dict")
@@ -102,7 +106,9 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
             "dimension_id_column": "dimension_id",  # this value needs to match the column name used in test table
         }
         dimension_table_data = DimensionTableData(**dimension_table_dict)
-        input_node = dimension_table_data.construct_input_node(feature_store_details=feature_store_details)
+        input_node = dimension_table_data.construct_input_node(
+            feature_store_details=feature_store_details
+        )
         graph = QueryGraph()
         inserted_node = graph.add_node(node=input_node, input_nodes=[])
         dimension_table_dict["graph"] = graph
@@ -127,7 +133,9 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         create_response_dict = create_success_response.json()
         doc_id = create_response_dict["_id"]
-        response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": False})
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": False}
+        )
         expected_info_response = {
             "name": self.document_name,
             "record_creation_timestamp_column": "created_at",
@@ -149,7 +157,9 @@ class TestDimensionTableApi(BaseTableApiTestSuite):
         assert "created_at" in response_dict
         assert response_dict["columns_info"] is None
 
-        verbose_response = test_api_client.get(f"{self.base_route}/{doc_id}/info", params={"verbose": True})
+        verbose_response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/info", params={"verbose": True}
+        )
         assert response.status_code == HTTPStatus.OK, response.text
         verbose_response_dict = verbose_response.json()
         assert verbose_response_dict.items() > expected_info_response.items(), verbose_response.text

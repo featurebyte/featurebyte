@@ -106,7 +106,9 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     has_ttl: bool
 
     # pydantic validators
-    _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(construct_sort_validator())
+    _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
+        construct_sort_validator()
+    )
 
     @classmethod
     def create_from_graph_node(
@@ -221,7 +223,9 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
         else:
             output_parent_node_name = self.graph.backward_edges_map[self.node_name][0]
             transformer = QuickGraphStructurePruningTransformer(graph=self.graph)
-            graph, node_name_map = transformer.transform(target_node_names=[output_parent_node_name])
+            graph, node_name_map = transformer.transform(
+                target_node_names=[output_parent_node_name]
+            )
             output_node = graph.get_node_by_name(node_name_map[output_parent_node_name])
 
         # add alias node to rename the output column name
@@ -340,7 +344,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         self.null_filling_value = null_filling_value
         if has_ttl and feature_job_settings:
             self.time_to_live_in_secs = min(
-                get_time_aggregate_ttl_in_secs(feature_job_setting) for feature_job_setting in feature_job_settings
+                get_time_aggregate_ttl_in_secs(feature_job_setting)
+                for feature_job_setting in feature_job_settings
             )
 
         unique_func_name = f"{sanitize_identifier(feature_versioned_name)}_{feature_id}"
@@ -516,7 +521,9 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         }
         if self.is_decomposed:
             node = self.graph.get_node_by_name(self.node_name)
-            codegen_state = OnDemandFeatureFunctionExtractor(graph=self.graph).extract(node=node, **codegen_kwargs)
+            codegen_state = OnDemandFeatureFunctionExtractor(graph=self.graph).extract(
+                node=node, **codegen_kwargs
+            )
         else:
             assert self.null_filling_value is not None
             assert self.metadata is not None, "non-decomposed query graph must have metadata"
@@ -535,7 +542,9 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             )
             fill_value_expr = ValueStr(self.null_filling_value).as_input()
             codegen_state.code_generator.add_statements(
-                statements=[StatementStr(f"return {fill_value_expr} if pd.isnull({col}) else {col}")]
+                statements=[
+                    StatementStr(f"return {fill_value_expr} if pd.isnull({col}) else {col}")
+                ]
             )
 
         return codegen_state

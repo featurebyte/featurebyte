@@ -107,7 +107,9 @@ class FeatureListEntityRelationshipData:
     features_entity_lookup_info: List[FeatureEntityLookupInfo]
 
 
-class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]):
+class FeatureListService(
+    BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]
+):
     """
     FeatureListService class
     """
@@ -174,8 +176,12 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
             document.internal_feature_clusters = json_util.loads(feature_clusters)
         return document
 
-    async def _move_feature_cluster_to_storage(self, document: FeatureListModel) -> FeatureListModel:
-        feature_cluster_path = self.get_full_remote_file_path(f"feature_list/{document.id}/feature_clusters.json")
+    async def _move_feature_cluster_to_storage(
+        self, document: FeatureListModel
+    ) -> FeatureListModel:
+        feature_cluster_path = self.get_full_remote_file_path(
+            f"feature_list/{document.id}/feature_clusters.json"
+        )
         feature_clusters = []
         assert document.internal_feature_clusters is not None
         for cluster in document.internal_feature_clusters:
@@ -210,12 +216,15 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
             # validate the feature list
             if feature_store_id and (feature_store_id != feature.tabular_source.feature_store_id):
                 raise DocumentInconsistencyError(
-                    "All the Feature objects within the same FeatureList object must be from the same " "feature store."
+                    "All the Feature objects within the same FeatureList object must be from the same "
+                    "feature store."
                 )
 
             # check whether there are duplicated feature names in a feature list
             if feature.feature_namespace_id in feature_namespace_ids:
-                raise DocumentError("Two Feature objects must not share the same name in a FeatureList object.")
+                raise DocumentError(
+                    "Two Feature objects must not share the same name in a FeatureList object."
+                )
 
             # update feature_namespace_ids
             feature_namespace_ids.add(feature.feature_namespace_id)
@@ -258,9 +267,15 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
         relationships_info = await extractor.extract_primary_entity_descendant_relationship(
             primary_entity_ids=primary_entity_ids
         )
-        serving_entity_enumeration = ServingEntityEnumeration.create(relationships_info=relationships_info)
-        fl_primary_entity_ids = serving_entity_enumeration.reduce_entity_ids(entity_ids=primary_entity_ids)
-        supported_serving_entity_ids = serving_entity_enumeration.generate(entity_ids=fl_primary_entity_ids)
+        serving_entity_enumeration = ServingEntityEnumeration.create(
+            relationships_info=relationships_info
+        )
+        fl_primary_entity_ids = serving_entity_enumeration.reduce_entity_ids(
+            entity_ids=primary_entity_ids
+        )
+        supported_serving_entity_ids = serving_entity_enumeration.generate(
+            entity_ids=fl_primary_entity_ids
+        )
         features_entity_lookup_info = []
         entity_id_to_serving_name = (
             await self.entity_serving_names_service.get_entity_id_to_serving_name_for_offline_store(
@@ -269,13 +284,17 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
         )
         store_info_service = self.offline_store_info_initialization_service
         for idx, feature in enumerate(features):
-            feature_list_to_feature_primary_entity_join_steps = EntityLookupPlanner.generate_lookup_steps(
-                available_entity_ids=fl_primary_entity_ids,
-                required_entity_ids=feature.primary_entity_ids,
-                relationships_info=relationships_info,
+            feature_list_to_feature_primary_entity_join_steps = (
+                EntityLookupPlanner.generate_lookup_steps(
+                    available_entity_ids=fl_primary_entity_ids,
+                    required_entity_ids=feature.primary_entity_ids,
+                    relationships_info=relationships_info,
+                )
             )
-            feature_internal_entity_join_steps = await store_info_service.get_entity_join_steps_for_feature_table(
-                feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
+            feature_internal_entity_join_steps = (
+                await store_info_service.get_entity_join_steps_for_feature_table(
+                    feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
+                )
             )
             feature_entity_lookup_info = FeatureEntityLookupInfo(
                 feature_id=feature.id,
@@ -318,7 +337,9 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
 
     async def _get_feature_list_version(self, name: str) -> VersionIdentifier:
         version_name = get_version()
-        query_result = await self.list_documents_as_dict(query_filter={"name": name, "version.name": version_name})
+        query_result = await self.list_documents_as_dict(
+            query_filter={"name": name, "version.name": version_name}
+        )
         count = query_result["total"]
         return VersionIdentifier(name=version_name, suffix=count or None)
 
@@ -334,7 +355,9 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
             disable_audit=self.should_disable_audit,
         )
         if feature_list_namespace:
-            feature_list_ids = self.exclude_object_id(feature_list_namespace.feature_list_ids, feature_list.id)
+            feature_list_ids = self.exclude_object_id(
+                feature_list_namespace.feature_list_ids, feature_list.id
+            )
             if feature_list_ids:
                 await self.feature_list_namespace_service.update_document(
                     document_id=feature_list.feature_list_namespace_id,
@@ -346,9 +369,13 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
                     document_id=feature_list.feature_list_namespace_id
                 )
 
-        await self._update_features(feature_list.feature_ids, deleted_feature_list_id=feature_list.id)
+        await self._update_features(
+            feature_list.feature_ids, deleted_feature_list_id=feature_list.id
+        )
 
-    async def _create_document(self, feature_list: FeatureListModel, features: List[FeatureModel]) -> ObjectId:
+    async def _create_document(
+        self, feature_list: FeatureListModel, features: List[FeatureModel]
+    ) -> ObjectId:
         assert feature_list.feature_clusters is None
         feature_list_doc = feature_list.dict(by_alias=True)
         feature_namespace_ids = [feature.feature_namespace_id for feature in features]
@@ -388,18 +415,22 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
                         return_document=True,
                     )
                 else:
-                    feature_list_namespace = await self.feature_list_namespace_service.create_document(
-                        data=FeatureListNamespaceModel(
-                            _id=feature_list.feature_list_namespace_id or ObjectId(),
-                            name=feature_list.name,
-                            feature_list_ids=[insert_id],
-                            default_feature_list_id=insert_id,
-                            features=features,
+                    feature_list_namespace = (
+                        await self.feature_list_namespace_service.create_document(
+                            data=FeatureListNamespaceModel(
+                                _id=feature_list.feature_list_namespace_id or ObjectId(),
+                                name=feature_list.name,
+                                feature_list_ids=[insert_id],
+                                default_feature_list_id=insert_id,
+                                features=features,
+                            )
                         )
                     )
 
                 # update feature's feature_list_ids attribute
-                await self._update_features(feature_list.feature_ids, inserted_feature_list_id=insert_id)
+                await self._update_features(
+                    feature_list.feature_ids, inserted_feature_list_id=insert_id
+                )
                 return cast(ObjectId, insert_id)
             except Exception as exc:
                 await self._clean_up_mongo_create_document(
@@ -431,7 +462,11 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
             await progress_callback(30, "Extracting entity relationship data")
         entity_relationship_data = await self.extract_entity_relationship_data(
             features=feature_data["features"],
-            progress_callback=(get_ranged_progress_callback(progress_callback, 30, 60) if progress_callback else None),
+            progress_callback=(
+                get_ranged_progress_callback(progress_callback, 30, 60)
+                if progress_callback
+                else None
+            ),
         )
 
         # update document with derived output
@@ -452,7 +487,9 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
             await progress_callback(80, "Creating feature list document")
         try:
             with timer("Creating feature list document", logger):
-                insert_id = await self._create_document(feature_list=document, features=feature_data["features"])
+                insert_id = await self._create_document(
+                    feature_list=document, features=feature_data["features"]
+                )
 
         except Exception as exc:
             # clean up the feature_clusters file if the document creation failed
@@ -526,7 +563,9 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
         serving_entity_specs: Optional[List[ColumnSpec]]
             List of serving entity specs
         """
-        feature_list = await self.get_document(document_id=document_id, populate_remote_attributes=False)
+        feature_list = await self.get_document(
+            document_id=document_id, populate_remote_attributes=False
+        )
         assert set(feature_list.feature_ids) == set(feature.id for feature in features)
         self._check_document_modifiable(document=feature_list.dict(by_alias=True))
 
@@ -565,11 +604,15 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
         )
 
         # update feature's feature_list_ids attribute
-        await self._update_features(feature_ids=feature_list.feature_ids, deleted_feature_list_id=feature_list.id)
+        await self._update_features(
+            feature_ids=feature_list.feature_ids, deleted_feature_list_id=feature_list.id
+        )
 
         try:
-            feature_list_namespace_dict = await self.feature_list_namespace_service.get_document_as_dict(
-                document_id=feature_list.feature_list_namespace_id
+            feature_list_namespace_dict = (
+                await self.feature_list_namespace_service.get_document_as_dict(
+                    document_id=feature_list.feature_list_namespace_id
+                )
             )
             if not feature_list_namespace_dict["feature_list_ids"]:
                 # delete feature list namespace if it has no more feature list
@@ -582,7 +625,9 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
 
         return await super().delete_document(document_id=feature_list.id)
 
-    async def get_sample_entity_serving_names(self, feature_list_id: ObjectId, count: int) -> List[Dict[str, str]]:
+    async def get_sample_entity_serving_names(
+        self, feature_list_id: ObjectId, count: int
+    ) -> List[Dict[str, str]]:
         """
         Get sample entity serving names for a feature list
 
@@ -619,11 +664,15 @@ class FeatureListService(BaseDocumentService[FeatureListModel, FeatureListServic
         async for feature_list_dict in self.list_documents_as_dict_iterator(
             query_filter={"online_enabled_feature_ids.0": {"$exists": True}}
         ):
-            if sorted(feature_list_dict["feature_ids"]) == sorted(feature_list_dict["online_enabled_feature_ids"]):
+            if sorted(feature_list_dict["feature_ids"]) == sorted(
+                feature_list_dict["online_enabled_feature_ids"]
+            ):
                 yield feature_list_dict
 
 
-class AllFeatureListService(BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]):
+class AllFeatureListService(
+    BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]
+):
     """
     AllFeatureListService class
     """

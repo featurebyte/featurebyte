@@ -62,7 +62,8 @@ class CountDictSeriesOperator(SeriesBinaryOperator):
             raise TypeError(f"cosine_similarity is only available for Feature; got {self.other}")
         if self.other.dtype != DBVarType.OBJECT:
             raise TypeError(
-                f"cosine_similarity is only available for Feature of dictionary type; got " f"{self.other.dtype}"
+                f"cosine_similarity is only available for Feature of dictionary type; got "
+                f"{self.other.dtype}"
             )
 
 
