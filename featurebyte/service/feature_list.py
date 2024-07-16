@@ -512,6 +512,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         query_filter: QueryFilter,
         use_raw_query_filter: bool = False,
         populate_remote_attributes: bool = True,
+        **kwargs: Any,
     ) -> AsyncIterator[FeatureListModel]:
         raise RuntimeError(
             "Do not use this method as it takes long time to deserialize the data, "

@@ -737,6 +737,7 @@ class BaseDocumentService(
         query_filter: QueryFilter,
         use_raw_query_filter: bool = False,
         populate_remote_attributes: bool = True,
+        **kwargs: Any,
     ) -> AsyncIterator[Document]:
         """
         List documents iterator to retrieve all the results based on given document service & query filter
@@ -758,6 +759,7 @@ class BaseDocumentService(
         async for doc in self.list_documents_as_dict_iterator(
             query_filter=query_filter,
             use_raw_query_filter=use_raw_query_filter,
+            **kwargs,
         ):
             document = self.document_class(**doc)
             if populate_remote_attributes:
