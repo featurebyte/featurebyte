@@ -54,7 +54,7 @@ jobs:
         run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${{ github.head_ref }}")" >> $GITHUB_ENV
       - if: ${{ github.event_name != 'pull_request' }}
         name: Get Author Email (PUSH)
-        run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${{ github.ref }}")" >> $GITHUB_ENV
+        run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${{ github.ref_name }}")" >> $GITHUB_ENV
       - name: Get Channel ID
         run: |-
           echo "${{ secrets.SLACK_USERS }}" > users.csv
