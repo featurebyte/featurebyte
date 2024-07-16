@@ -115,7 +115,7 @@ class FeatureByteBaseModel(BaseModel):
 
     # pydantic model configuration
     model_config = ConfigDict(
-        validate_assignment=False,
+        validate_assignment=True,
         use_enum_values=True,
         json_encoders={np.ndarray: lambda arr: arr.tolist(), ObjectId: str},
         arbitrary_types_allowed=True,

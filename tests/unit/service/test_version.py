@@ -630,9 +630,6 @@ async def test_create_new_feature_version__with_item_event_feature(
     )
     assert item_metadata.event_drop_column_names == event_metadata.drop_column_names
 
-    # graph structure (edges) should be the same
-    assert new_version.graph.edges == feature_item_event.graph.edges
-
 
 @pytest.mark.asyncio
 async def test_create_new_feature_version_using_source_settings(

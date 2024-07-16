@@ -42,6 +42,16 @@ def entity_fixture(catalog):
     yield entity
 
 
+def test_entity_creation__input_validation():
+    """
+    Test entity creation input validation
+    """
+    entity = Entity(name="hello", serving_names=["world"])
+    with pytest.raises(ValueError) as exc:
+        entity.name = 1234
+    assert "Input should be a valid string" in str(exc.value)
+
+
 def test_entity__update_name(entity):
     """
     Test update_name in Entity class
