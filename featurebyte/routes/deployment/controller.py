@@ -27,6 +27,7 @@ from featurebyte.schema.deployment import (
     AllDeploymentList,
     AllDeploymentListRecord,
     DeploymentCreate,
+    DeploymentJobHistory,
     DeploymentList,
     DeploymentSummary,
     DeploymentUpdate,
@@ -45,6 +46,7 @@ from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
+from featurebyte.service.feature_job_history_service import FeatureJobHistoryService
 from featurebyte.service.feature_list import AllFeatureListService, FeatureListService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.online_serving import OnlineServingService
@@ -72,6 +74,7 @@ class DeploymentController(  # pylint: disable=too-many-instance-attributes, too
         batch_feature_table_service: BatchFeatureTableService,
         feast_feature_store_service: FeastFeatureStoreService,
         entity_serving_names_service: EntityServingNamesService,
+        feature_job_history_service: FeatureJobHistoryService,
     ):
         super().__init__(deployment_service)
         self.catalog_service = catalog_service
@@ -83,6 +86,7 @@ class DeploymentController(  # pylint: disable=too-many-instance-attributes, too
         self.batch_feature_table_service = batch_feature_table_service
         self.feast_feature_store_service = feast_feature_store_service
         self.entity_serving_names_service = entity_serving_names_service
+        self.feature_job_history_service = feature_job_history_service
 
     async def create_deployment(self, data: DeploymentCreate) -> Task:
         """
@@ -345,6 +349,28 @@ class DeploymentController(  # pylint: disable=too-many-instance-attributes, too
                 )
             )
         return SampleEntityServingNames(entity_serving_names=entity_serving_names)
+
+    async def get_deployment_job_history(
+        self, deployment_id: ObjectId, num_runs: int
+    ) -> DeploymentJobHistory:
+        """
+        Get job history for a deployment
+
+        Parameters
+        ----------
+        deployment_id: ObjectId
+            Deployment ID
+        num_runs: int
+            Number of runs to retrieve
+
+        Returns
+        -------
+        DeploymentJobHistory
+        """
+        return await self.feature_job_history_service.get_deployment_job_history(
+            deployment_id=deployment_id,
+            num_runs=num_runs,
+        )
 
 
 class AllDeploymentController(

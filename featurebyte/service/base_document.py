@@ -750,6 +750,8 @@ class BaseDocumentService(
             Use only provided query filter (without any further processing)
         populate_remote_attributes: bool
             Populate attributes that are stored remotely (e.g. file paths)
+        kwargs: Any
+            Additional keyword arguments
 
         Yields
         -------

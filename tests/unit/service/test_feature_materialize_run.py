@@ -2,6 +2,8 @@
 Unit tests for FeatureMaterializeRunService
 """
 
+# pylint: disable=wildcard-import,unused-wildcard-import
+
 from featurebyte.models.feature_materialize_run import IncompleteTileTask
 from tests.unit.service.fixtures_feature_materialize_runs import *
 
