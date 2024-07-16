@@ -226,6 +226,7 @@ async def test_update_tile_prerequisite_multiple_tables(
 @freeze_time(datetime(2024, 1, 15, 9, 12, 0), tick=True)
 @pytest.mark.asyncio
 async def test_run_feature_materialize__no_prerequisites(
+    app_container,
     service,
     feature_materialize_prerequisite_service,
     mock_task_manager_submit,
@@ -252,10 +253,22 @@ async def test_run_feature_materialize__no_prerequisites(
     submit_kwargs = mock_task_manager_submit.call_args[1]
     assert submit_kwargs["mark_as_scheduled_task"] is True
 
+    # Check that the feature materialize run document is created and passed to task
+    feature_materialize_run_id = submitted_payload["feature_materialize_run_id"]
+    run_model = await app_container.feature_materialize_run_service.get_document(
+        feature_materialize_run_id
+    )
+    assert {
+        "offline_store_feature_table_id": offline_store_feature_table_no_aggregation_ids.id,
+        "scheduled_job_ts": datetime(2024, 1, 15, 0, 0, 0),
+        "incomplete_tile_tasks": None,
+    }.items() <= run_model.dict().items()
+
 
 @freeze_time(datetime(2024, 1, 15, 9, 12, 0), tick=True)
 @pytest.mark.asyncio
 async def test_run_feature_materialize__prerequisite_met(
+    app_container,
     service,
     feature_materialize_prerequisite_service,
     mock_task_manager_submit,
@@ -299,10 +312,22 @@ async def test_run_feature_materialize__prerequisite_met(
     submit_kwargs = mock_task_manager_submit.call_args[1]
     assert submit_kwargs["mark_as_scheduled_task"] is True
 
+    # Check that the feature materialize run document is created and passed to task
+    feature_materialize_run_id = submitted_payload["feature_materialize_run_id"]
+    run_model = await app_container.feature_materialize_run_service.get_document(
+        feature_materialize_run_id
+    )
+    assert {
+        "offline_store_feature_table_id": offline_store_feature_table_1.id,
+        "scheduled_job_ts": datetime(2024, 1, 15, 9, 10, 0),
+        "incomplete_tile_tasks": None,
+    }.items() <= run_model.dict().items()
+
 
 @freeze_time(datetime(2024, 1, 15, 9, 12, 0), tick=True)
 @pytest.mark.asyncio
 async def test_run_feature_materialize__timeout(
+    app_container,
     service,
     feature_materialize_prerequisite_service,
     mock_task_manager_submit,
@@ -337,3 +362,14 @@ async def test_run_feature_materialize__timeout(
 
     submit_kwargs = mock_task_manager_submit.call_args[1]
     assert submit_kwargs["mark_as_scheduled_task"] is True
+
+    # Check that the feature materialize run document is created and passed to task
+    feature_materialize_run_id = submitted_payload["feature_materialize_run_id"]
+    run_model = await app_container.feature_materialize_run_service.get_document(
+        feature_materialize_run_id
+    )
+    assert {
+        "offline_store_feature_table_id": offline_store_feature_table_1.id,
+        "scheduled_job_ts": datetime(2024, 1, 15, 9, 10, 0),
+        "incomplete_tile_tasks": [{"aggregation_id": "agg_id_x", "reason": "timeout"}],
+    }.items() <= run_model.dict().items()

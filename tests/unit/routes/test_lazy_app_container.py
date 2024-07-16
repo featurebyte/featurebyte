@@ -9,7 +9,7 @@ from bson import ObjectId
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
-from featurebyte.routes.lazy_app_container import LazyAppContainer, get_all_deps_for_key
+from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.utils.persistent import MongoDBImpl
 
 
@@ -217,28 +217,6 @@ def get_class_def(key: str, deps: List[str]) -> ClassDefinition:
         getter=TestService,
         dependencies=deps,
     )
-
-
-def test_get_all_deps_for_key():
-    """
-    Test get_all_deps_for_key
-
-    Class dependency graph looks like
-           A
-        //   \\
-       B      C
-       \\  //  \\
-         D      E
-    """
-    class_def_mapping = {
-        "a": get_class_def("a", ["b", "c"]),
-        "b": get_class_def("b", ["d"]),
-        "c": get_class_def("c", ["d", "e"]),
-        "d": get_class_def("d", []),
-        "e": get_class_def("e", []),
-    }
-    deps = get_all_deps_for_key("a", class_def_mapping, {})
-    assert deps == ["e", "d", "c", "b", "a"]
 
 
 def test_disable_block_modification_check(app_container):

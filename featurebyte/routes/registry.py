@@ -103,6 +103,7 @@ from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.feature_materialize_prerequisite import (
     FeatureMaterializePrerequisiteService,
 )
+from featurebyte.service.feature_materialize_run import FeatureMaterializeRunService
 from featurebyte.service.feature_materialize_scheduler import FeatureMaterializeSchedulerService
 from featurebyte.service.feature_materialize_sync import FeatureMaterializeSyncService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
@@ -275,6 +276,7 @@ app_container_config.register_class(FeatureListNamespaceService)
 app_container_config.register_class(FeatureListStatusService)
 app_container_config.register_class(FeatureManagerService)
 app_container_config.register_class(FeatureMaterializePrerequisiteService)
+app_container_config.register_class(FeatureMaterializeRunService)
 app_container_config.register_class(FeatureMaterializeSchedulerService)
 app_container_config.register_class(FeatureMaterializeService)
 app_container_config.register_class(FeatureMaterializeSyncService)

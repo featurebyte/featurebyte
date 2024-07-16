@@ -1,5 +1,6 @@
 name: publish
 'on':
+  workflow_dispatch: {}
   push:
     branches:
       - main
@@ -22,6 +23,8 @@ jobs:
       matrix:
         python-version:
           - 3.10.14
+    outputs:
+      DEV_VERSION: ${{ steps.get_version.outputs.DEV_VERSION }}
     steps:
       - uses: actions/checkout@v4
       - uses: arduino/setup-task@v2
@@ -51,6 +54,7 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCR_PYPI_CREDENTIALS_R }}
       - name: Get Version to Publish
+        id: get_version
         run: |
           export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
           export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
@@ -61,7 +65,9 @@ jobs:
             grep -oP "\d+$"
           )
           export DEV_VERSION=${DEV_VERSION:-0}  # Set .dev to 0 if not exist
-          echo "DEV_VERSION=$(poetry version -s).dev$((DEV_VERSION+=1))" >> $GITHUB_ENV
+          export DEV_VERSION="$(poetry version -s).dev$((DEV_VERSION+=1))"
+          echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_ENV
+          echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_OUTPUT
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
       - name: Update Version in pyproject.toml
         run: sed -i -E "s|^version = \"[^\"]+\"|version = \"${{ env.DEV_VERSION }}\"|g" pyproject.toml
@@ -85,6 +91,29 @@ jobs:
         run: |-
           poetry config repositories.featurebyte_np https://${GCR_PYPI_LOCATION}-python.pkg.dev/${GCR_PYPI_PROJECT_ID}/${GCR_PYPI_REPO}
           poetry publish --build -r featurebyte_np --username='_json_key_base64' --password='${{ secrets.GCR_PYPI_CREDENTIALS_RW_B64 }}'
+  test-install:
+    runs-on: ${{ matrix.runner }}
+    needs:
+      - publish
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        python-version:
+          - 3.12.4
+          - 3.11.9
+          - 3.10.11
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install featurebyte
+        run: |-
+          pip install --extra-index-url="https://_json_key_base64:${{ secrets.GCR_PYPI_CREDENTIALS_R_B64 }}@${{ env.GCR_PYPI_LOCATION}}-python.pkg.dev/${{ env.GCR_PYPI_PROJECT_ID}}/${{ env.GCR_PYPI_REPO }}/simple" featurebyte==${{ needs.publish.outputs.DEV_VERSION }}
+          python -c "import featurebyte; print(featurebyte.version)"
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}
@@ -96,23 +125,28 @@ jobs:
           fetch-depth: 0
       - if: ${{ github.event_name == 'pull_request' }}
         name: Get Author Email (PR)
-        run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_HEAD_REF}")" >> $GITHUB_ENV
+        run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${{ github.head_ref }}")" >> $GITHUB_ENV
       - if: ${{ github.event_name != 'pull_request' }}
         name: Get Author Email (PUSH)
-        run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${GITHUB_REF_NAME}")" >> $GITHUB_ENV
+        run: echo "AUTHOR_EMAIL=$(git show -s --format='%ae' "origin/${{ github.ref_name }}")" >> $GITHUB_ENV
       - name: Get Channel ID
         run: |-
-          export AUTHOR_ID=`curl -X POST -H "Authorization: Bearer ${{ secrets.SLACK_OAUTH }}" -H 'Content-type: application/json; charset=utf-8' https://slack.com/api/users.list | grep -oP $(echo '"id":"\K[^"]+?"(?:(?!"id").)*${AUTHOR_EMAIL}' | envsubst) | grep -oP '^[^"]+'`
+          echo "${{ secrets.SLACK_USERS }}" > users.csv
+          export AUTHOR_ID="$(grep -oP "${{ env.AUTHOR_EMAIL }},\s*\K[^,]*" users.csv)"
+          if [ "${AUTHOR_ID}" = "" ]; then
+            echo "No Slack user found for ${AUTHOR_EMAIL}"
+            export AUTHOR_ID="C03D81HC6Q5"  # Developer Channel
+            exit 1
+          fi
           echo "CHANNEL_ID=${AUTHOR_ID}" >> $GITHUB_ENV
       - name: Load PUBLISH_RESULT into env
         run: echo "PUBLISH_RESULT=${{ needs.publish.result }}" >> $GITHUB_ENV
       - name: Load REPOSITORY into env
         run: echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
-      - env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
-        if: ${{ env.CHANNEL_ID != '' }}
-        name: Send Slack notification with workflow result.
+      - name: Send Slack notification with workflow result.
         uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
         with:
           channel-id: ${{ env.CHANNEL_ID }}
           payload: |-

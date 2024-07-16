@@ -4,7 +4,7 @@ FeatureMaterializeSyncService class
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 import asyncio
 from datetime import datetime
@@ -18,6 +18,7 @@ from featurebyte.models.feature_materialize_prerequisite import (
     PrerequisiteTileTask,
     PrerequisiteTileTaskStatusType,
 )
+from featurebyte.models.feature_materialize_run import FeatureMaterializeRun, IncompleteTileTask
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
@@ -26,6 +27,7 @@ from featurebyte.schema.worker.task.scheduled_feature_materialize import (
 from featurebyte.service.feature_materialize_prerequisite import (
     FeatureMaterializePrerequisiteService,
 )
+from featurebyte.service.feature_materialize_run import FeatureMaterializeRunService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.task_manager import TaskManager
 
@@ -59,10 +61,12 @@ class FeatureMaterializeSyncService:
         self,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         feature_materialize_prerequisite_service: FeatureMaterializePrerequisiteService,
+        feature_materialize_run_service: FeatureMaterializeRunService,
         task_manager: TaskManager,
     ):
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_materialize_prerequisite_service = feature_materialize_prerequisite_service
+        self.feature_materialize_run_service = feature_materialize_run_service
         self.task_manager = task_manager
 
     async def initialize_prerequisite(
@@ -159,10 +163,18 @@ class FeatureMaterializeSyncService:
         feature_table = await self.offline_store_feature_table_service.get_document(
             offline_store_feature_table_id
         )
+        feature_materialize_run = await self.feature_materialize_run_service.create_document(
+            FeatureMaterializeRun(
+                offline_store_feature_table_id=offline_store_feature_table_id,
+                scheduled_job_ts=await self._get_scheduled_job_ts_for_feature_table(
+                    offline_store_feature_table_id,
+                ),
+            ),
+        )
 
         # No need to wait for feature tables without prerequisites
         if not feature_table.aggregation_ids:
-            await self._submit_feature_materialize_task(feature_table)
+            await self._submit_feature_materialize_task(feature_table, feature_materialize_run.id)
             return
 
         prerequisite = await self.initialize_prerequisite(offline_store_feature_table_id)
@@ -202,16 +214,65 @@ class FeatureMaterializeSyncService:
                 "Running feature materialize task but prerequisites are not met",
                 extra={"offline_store_feature_table_id": feature_table.id},
             )
+            prerequisite_model = await self.feature_materialize_prerequisite_service.get_document(
+                prerequisite.id
+            )
+            incomplete_tile_tasks = self.get_incomplete_tile_tasks(
+                feature_table_aggregation_ids=feature_table.aggregation_ids,
+                prerequisite_model=prerequisite_model,
+            )
+            await self.feature_materialize_run_service.update_incomplete_tile_tasks(
+                feature_materialize_run.id, incomplete_tile_tasks
+            )
 
-        await self._submit_feature_materialize_task(feature_table)
+        await self._submit_feature_materialize_task(
+            feature_table, feature_materialize_run_id=feature_materialize_run.id
+        )
+
+    @classmethod
+    def get_incomplete_tile_tasks(
+        cls,
+        feature_table_aggregation_ids: List[str],
+        prerequisite_model: FeatureMaterializePrerequisite,
+    ) -> List[IncompleteTileTask]:
+        """
+        Get incomplete tile tasks
+
+        Parameters
+        ----------
+        feature_table_aggregation_ids: List[str]
+            Aggregation ids for the feature table
+        prerequisite_model: FeatureMaterializePrerequisite
+            Prerequisite model
+
+        Returns
+        -------
+        List[IncompleteTileTask]
+        """
+        incomplete_tile_tasks = []
+        completed_aggregation_ids = []
+        for item in prerequisite_model.completed:
+            if item.status == "failure":
+                incomplete_tile_tasks.append(
+                    IncompleteTileTask(aggregation_id=item.aggregation_id, reason="failure")
+                )
+            else:
+                completed_aggregation_ids.append(item.aggregation_id)
+        for aggregation_id in set(feature_table_aggregation_ids) - set(completed_aggregation_ids):
+            incomplete_tile_tasks.append(
+                IncompleteTileTask(aggregation_id=aggregation_id, reason="timeout")
+            )
+        return incomplete_tile_tasks
 
     async def _submit_feature_materialize_task(
         self,
         offline_store_feature_table: OfflineStoreFeatureTableModel,
+        feature_materialize_run_id: ObjectId,
     ) -> None:
         payload = ScheduledFeatureMaterializeTaskPayload(
             offline_store_feature_table_name=offline_store_feature_table.name,
             offline_store_feature_table_id=offline_store_feature_table.id,
+            feature_materialize_run_id=feature_materialize_run_id,
             catalog_id=self.offline_store_feature_table_service.catalog_id,
             user_id=self.offline_store_feature_table_service.user.id,
         )
