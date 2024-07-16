@@ -278,7 +278,9 @@ class FeatureListBriefInfo(FeatureByteBaseModel):
 
     @model_validator(mode="after")
     def _derive_production_ready_fraction(self) -> "FeatureListBriefInfo":
-        self.production_ready_fraction = (
+        # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+        # validate_assign=True in model_config.
+        self.__dict__["production_ready_fraction"] = (
             self.readiness_distribution.derive_production_ready_fraction()
         )
         return self

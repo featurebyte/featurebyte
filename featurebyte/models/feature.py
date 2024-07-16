@@ -164,39 +164,43 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             )
             entity_ids = decompose_state.primary_entity_ids
 
-            self.entity_ids = entity_ids
-            self.entity_dtypes = [
+            # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+            # validate_assign=True in model_config.
+            self.__dict__["entity_ids"] = entity_ids
+            self.__dict__["entity_dtypes"] = [
                 decompose_state.primary_entity_ids_to_dtypes_map[entity_id]
                 for entity_id in entity_ids
             ]
-            self.primary_table_ids = graph.get_primary_table_ids(node_name=node_name)
-            self.table_ids = graph.get_table_ids(node_name=node_name)
-            self.user_defined_function_ids = graph.get_user_defined_function_ids(
+            self.__dict__["primary_table_ids"] = graph.get_primary_table_ids(node_name=node_name)
+            self.__dict__["table_ids"] = graph.get_table_ids(node_name=node_name)
+            self.__dict__["user_defined_function_ids"] = graph.get_user_defined_function_ids(
                 node_name=node_name
             )
 
             # extract table feature job settings, table cleaning operations, table column names
             node = graph.get_node_by_name(node_name)
             table_id_to_col_names = graph.extract_table_id_to_table_column_names(node=node)
-            self.table_id_column_names = [
+            self.__dict__["table_id_column_names"] = [
                 TableIdColumnNames(
                     table_id=table_id,
                     column_names=sorted(table_id_to_col_names[table_id]),
                 )
                 for table_id in sorted(table_id_to_col_names)
             ]
-            self.table_id_feature_job_settings = graph.extract_table_id_feature_job_settings(
-                target_node=node, keep_first_only=True
+            self.__dict__["table_id_feature_job_settings"] = (
+                graph.extract_table_id_feature_job_settings(target_node=node, keep_first_only=True)
             )
-            self.table_id_cleaning_operations = graph.extract_table_id_cleaning_operations(
-                target_node=node,
-                keep_all_columns=True,
-                table_id_to_col_names=table_id_to_col_names,
+            self.__dict__["table_id_cleaning_operations"] = (
+                graph.extract_table_id_cleaning_operations(
+                    target_node=node,
+                    keep_all_columns=True,
+                    table_id_to_col_names=table_id_to_col_names,
+                )
             )
 
             # extract dtype from the graph
             exception_message = "Feature or target graph must have exactly one aggregation output"
-            self.dtype = extract_dtype_from_graph(
+            self.__dict__["dtype"] = extract_dtype_from_graph(
                 graph=graph, output_node=node, exception_message=exception_message
             )
 
@@ -589,8 +593,10 @@ class FeatureModel(BaseFeatureModel):
         for info in tile_infos:
             aggregation_ids.append(info.aggregation_id)
 
-        self.aggregation_ids = aggregation_ids
-        self.aggregation_result_names = []
+        # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+        # validate_assign=True in model_config.
+        self.__dict__["aggregation_ids"] = aggregation_ids
+        self.__dict__["aggregation_result_names"] = []
         online_store_table_names = set()
         for query in get_online_store_precompute_queries(
             graph,
@@ -598,9 +604,9 @@ class FeatureModel(BaseFeatureModel):
             feature_store_type,
             self.agg_result_name_include_serving_names,
         ):
-            self.aggregation_result_names.append(query.result_name)
+            self.__dict__["aggregation_result_names"].append(query.result_name)
             online_store_table_names.add(query.table_name)
-        self.online_store_table_names = sorted(online_store_table_names)
+        self.__dict__["online_store_table_names"] = sorted(online_store_table_names)
 
         return self
 

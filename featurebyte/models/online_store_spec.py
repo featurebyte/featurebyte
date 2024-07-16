@@ -42,8 +42,10 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         if self.precompute_queries:
             return self
 
+        # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+        # validate_assign=True in model_config.
         feature = self.feature
-        self.precompute_queries = get_online_store_precompute_queries(
+        self.__dict__["precompute_queries"] = get_online_store_precompute_queries(
             graph=feature.graph,
             node=feature.node,
             source_type=feature.feature_store_type,

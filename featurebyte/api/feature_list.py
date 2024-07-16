@@ -322,7 +322,11 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     def _initialize_feature_list_parameters(self) -> "FeatureList":
         # set the following values if it is empty (used mainly by the SDK constructed feature list)
         # for the feature list constructed during serialization, following codes should be skipped
-        self.internal_feature_ids = [feature.id for feature in self.feature_objects.values()]
+        # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+        # validate_assign=True in model_config.
+        self.__dict__["internal_feature_ids"] = [
+            feature.id for feature in self.feature_objects.values()
+        ]
         return self
 
     @typechecked

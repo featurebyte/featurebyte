@@ -132,7 +132,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         OfflineStoreFeatureTableModel
         """
         if not self.feature_store_id and self.feature_cluster:
-            self.feature_store_id = self.feature_cluster.feature_store_id
+            self.__dict__["feature_store_id"] = self.feature_cluster.feature_store_id
         return self
 
     @classmethod

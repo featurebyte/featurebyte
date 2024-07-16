@@ -180,8 +180,10 @@ class QueryObject(FeatureByteBaseModel):
     def _convert_query_graph_to_global_query_graph(self) -> "QueryObject":
         if not isinstance(self.graph, GlobalQueryGraph):
             global_graph, node_name_map = GlobalQueryGraph().load(self.graph)
-            self.graph = global_graph
-            self.node_name = node_name_map[self.node_name]
+            # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+            # validate_assign=True in model_config.
+            self.__dict__["graph"] = global_graph
+            self.__dict__["node_name"] = node_name_map[self.node_name]
         return self
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:

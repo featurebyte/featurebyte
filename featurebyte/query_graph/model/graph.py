@@ -281,26 +281,28 @@ class QueryGraphModel(FeatureByteBaseModel):
         # NOTE: During graph instantiation, this method will get called (including global query graph).
         # Only create a new dictionary/object when the value is None. Otherwise, it will cause issue
         # for the global query graph.
+        # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+        # validate_assign=True in model_config.
         if self.nodes and not self.nodes_map:
-            self.nodes_map = self._derive_nodes_map(self.nodes, self.nodes_map)
+            self.__dict__["nodes_map"] = self._derive_nodes_map(self.nodes, self.nodes_map)
 
         if self.edges and not self.edges_map:
-            self.edges_map = self._derive_edges_map(self.edges, self.edges_map)
+            self.__dict__["edges_map"] = self._derive_edges_map(self.edges, self.edges_map)
 
         if self.edges and not self.backward_edges_map:
-            self.backward_edges_map = self._derive_backward_edges_map(
+            self.__dict__["backward_edges_map"] = self._derive_backward_edges_map(
                 self.edges, self.backward_edges_map
             )
 
         if self.nodes and not self.node_type_counter:
-            self.node_type_counter = self._derive_node_type_counter(
+            self.__dict__["node_type_counter"] = self._derive_node_type_counter(
                 self.nodes, self.node_type_counter
             )
 
         if self.nodes and not self.node_name_to_ref:
             # edges_map & backward_edges_map is a defaultdict, accessing a new key will have side effect
             # construct a new backward_edges_map dictionary to avoid introducing side effect
-            self.node_name_to_ref = self._derive_node_name_to_ref(
+            self.__dict__["node_name_to_ref"] = self._derive_node_name_to_ref(
                 nodes_map=self.nodes_map,
                 edges_map=self.edges_map,
                 backward_edges_map=self.backward_edges_map,
@@ -308,7 +310,7 @@ class QueryGraphModel(FeatureByteBaseModel):
             )
 
         if self.nodes and not self.ref_to_node_name:
-            self.ref_to_node_name = self._derive_ref_to_node_name(
+            self.__dict__["ref_to_node_name"] = self._derive_ref_to_node_name(
                 node_name_to_ref=self.node_name_to_ref, ref_to_node_name=self.ref_to_node_name
             )
 

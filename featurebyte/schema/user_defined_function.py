@@ -81,7 +81,9 @@ class UserDefinedFunctionResponse(UserDefinedFunctionModel):
 
     @model_validator(mode="after")
     def _derive_is_global(self) -> "UserDefinedFunctionResponse":
-        self.is_global = self.catalog_id is None
+        # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+        # validate_assign=True in model_config.
+        self.__dict__["is_global"] = self.catalog_id is None
         return self
 
 
