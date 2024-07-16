@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-import json
 import traceback
 from datetime import datetime
 
@@ -27,6 +26,7 @@ from featurebyte.models.base import (
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.mixin import QueryGraphMixin
 from featurebyte.models.offline_store_ingest_query import OfflineStoreInfo
+from featurebyte.models.utils import serialize_obj
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -123,11 +123,9 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     )(construct_sort_validator())
 
     @field_serializer("internal_offline_store_info", when_used="json")
-    def _serialize_offline_store_info(
-        self, value: Optional[Dict[str, Any]]
-    ) -> Optional[Dict[str, Any]]:
+    def _serialize_offline_store_info(self, value: Optional[Any]) -> Optional[Any]:
         if value:
-            return dict(json.loads(self.offline_store_info.model_dump_json(by_alias=True)))
+            return serialize_obj(self.offline_store_info.dict(by_alias=True))
         return value
 
     @staticmethod

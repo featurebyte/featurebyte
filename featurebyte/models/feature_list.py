@@ -47,6 +47,7 @@ from featurebyte.models.feature_list_store_info import (
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.parent_serving import FeatureNodeRelationshipsInfo
+from featurebyte.models.utils import serialize_obj
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import (
     EntityRelationshipInfo,
@@ -383,9 +384,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     def _serialize_clusters(self, clusters: Optional[List[Any]]) -> Optional[List[Any]]:
         feature_clusters = self.feature_clusters
         if clusters and feature_clusters:
-            return [
-                json.loads(cluster.model_dump_json(by_alias=True)) for cluster in feature_clusters
-            ]
+            return [serialize_obj(cluster.dict(by_alias=True)) for cluster in feature_clusters]
         return None
 
     @field_validator("supported_serving_entity_ids")
