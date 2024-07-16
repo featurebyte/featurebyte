@@ -6,11 +6,14 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
+from datetime import datetime
+
 from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.deployment import DeploymentModel, FeastRegistryInfo
+from featurebyte.models.feature_materialize_run import CompletionStatus
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -85,3 +88,25 @@ class OnlineFeaturesResponseModel(FeatureByteBaseModel):
     """
 
     features: List[Dict[str, Any]]
+
+
+class FeatureTableJobRun(FeatureByteBaseModel):
+    """
+    Schema for feature table job run
+    """
+
+    feature_table_id: PydanticObjectId
+    feature_table_name: Optional[str]
+    scheduled_ts: datetime
+    completion_ts: Optional[datetime]
+    completion_status: Optional[CompletionStatus]
+    duration_seconds: Optional[int]
+    incomplete_tile_tasks_count: Optional[int]
+
+
+class DeploymentJobHistory(FeatureByteBaseModel):
+    """
+    Schema for deployment job history
+    """
+
+    runs: List[FeatureTableJobRun]
