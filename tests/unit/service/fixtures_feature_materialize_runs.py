@@ -120,6 +120,7 @@ async def saved_feature_materialize_run_models(
             current_scheduled_job_ts = scheduled_job_ts + i * timedelta(hours=1)
             model = FeatureMaterializeRun(
                 offline_store_feature_table_id=offline_store_feature_table_id,
+                offline_store_feature_table_name="customer",
                 scheduled_job_ts=current_scheduled_job_ts,
                 completion_ts=current_scheduled_job_ts + timedelta(seconds=10),
                 completion_status="success" if i % 2 == 0 else "failure",

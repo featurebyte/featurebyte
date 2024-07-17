@@ -28,7 +28,7 @@ async def test_get_deployment_job_history(service, deployment_id, offline_store_
         runs=[
             FeatureTableJobRun(
                 feature_table_id=offline_store_feature_table_id,
-                feature_table_name=None,
+                feature_table_name="customer",
                 scheduled_ts=datetime(2024, 7, 15, 9, 0),
                 completion_ts=datetime(2024, 7, 15, 9, 0, 10),
                 completion_status="failure",
@@ -39,7 +39,7 @@ async def test_get_deployment_job_history(service, deployment_id, offline_store_
             # aggregation id that doesn't match with any features used in the deployment
             FeatureTableJobRun(
                 feature_table_id=offline_store_feature_table_id,
-                feature_table_name=None,
+                feature_table_name="customer",
                 scheduled_ts=datetime(2024, 7, 15, 8, 0),
                 completion_ts=datetime(2024, 7, 15, 8, 0, 10),
                 completion_status="success",
@@ -48,7 +48,7 @@ async def test_get_deployment_job_history(service, deployment_id, offline_store_
             ),
             FeatureTableJobRun(
                 feature_table_id=offline_store_feature_table_id,
-                feature_table_name=None,
+                feature_table_name="customer",
                 scheduled_ts=datetime(2024, 7, 15, 7, 0),
                 completion_ts=datetime(2024, 7, 15, 7, 0, 10),
                 completion_status="failure",
