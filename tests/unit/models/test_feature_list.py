@@ -41,6 +41,7 @@ def feature_list_model_dict_fixture():
         "block_modification_by": [],
         "description": None,
         "is_deleted": False,
+        "aggregation_ids": [],
     }
 
 

@@ -514,6 +514,7 @@ def test_get_feature_list(
 
     expected_audit_history = pd.DataFrame(
         [
+            ("aggregation_ids", ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"]),
             ("block_modification_by", []),
             ("catalog_id", str(catalog.id)),
             ("created_at", saved_feature_list.created_at.isoformat()),
