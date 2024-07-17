@@ -260,6 +260,7 @@ async def test_run_feature_materialize__no_prerequisites(
     )
     assert {
         "offline_store_feature_table_id": offline_store_feature_table_no_aggregation_ids.id,
+        "offline_store_feature_table_name": "cust_id_1d",
         "scheduled_job_ts": datetime(2024, 1, 15, 0, 0, 0),
         "incomplete_tile_tasks": None,
     }.items() <= run_model.dict().items()
@@ -319,6 +320,7 @@ async def test_run_feature_materialize__prerequisite_met(
     )
     assert {
         "offline_store_feature_table_id": offline_store_feature_table_1.id,
+        "offline_store_feature_table_name": "cust_id_1h",
         "scheduled_job_ts": datetime(2024, 1, 15, 9, 10, 0),
         "incomplete_tile_tasks": None,
     }.items() <= run_model.dict().items()
@@ -370,6 +372,7 @@ async def test_run_feature_materialize__timeout(
     )
     assert {
         "offline_store_feature_table_id": offline_store_feature_table_1.id,
+        "offline_store_feature_table_name": "cust_id_1h",
         "scheduled_job_ts": datetime(2024, 1, 15, 9, 10, 0),
         "incomplete_tile_tasks": [{"aggregation_id": "agg_id_x", "reason": "timeout"}],
     }.items() <= run_model.dict().items()
