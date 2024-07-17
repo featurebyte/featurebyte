@@ -84,7 +84,6 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
         self._validate_parameters(
             method=method,
             value_column=value_column,
-            output_name=target_name,
             offset=offset,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,

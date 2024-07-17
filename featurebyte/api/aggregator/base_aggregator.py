@@ -80,9 +80,6 @@ class BaseAggregator(ABC):
         return None
 
     def _validate_method_and_value_column(self, method: str, value_column: Optional[str]) -> None:
-        if method is None:
-            raise ValueError("method is required")
-
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 

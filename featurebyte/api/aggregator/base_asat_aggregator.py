@@ -43,7 +43,6 @@ class BaseAsAtAggregator(BaseAggregator):
     def _validate_parameters(
         self,
         method: str,
-        output_name: Optional[str],
         value_column: Optional[str],
         offset: Optional[str],
         fill_value: OptionalScalar,
@@ -51,9 +50,6 @@ class BaseAsAtAggregator(BaseAggregator):
     ) -> None:
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
-
-        if output_name is None:
-            raise ValueError(f"{self.output_name_parameter} is required")
 
         view = cast(SCDView, self.view)
         for key in self.keys:
