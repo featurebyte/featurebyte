@@ -119,6 +119,7 @@ def test_item_view_ops(item_table, expected_joined_event_item_dataframe):
 
     # Create a feature using aggregation with time windows and preview it
     feature = item_view_filtered.groupby("ÜSER ID", category="item_type_upper").aggregate_over(
+        value_column=None,
         method="count",
         windows=["30d"],
         feature_names=["count_30d"],
@@ -230,6 +231,7 @@ def test_item_view_joined_with_dimension_view(
     feature = (
         item_view.groupby("ÜSER ID", category="item_type_dimension")
         .aggregate_over(
+            value_column=None,
             method="count",
             windows=["30d"],
             feature_names=["count_30d"],
@@ -259,10 +261,12 @@ def test_item_view_features_from_different_filters(item_table):
     filtered_1 = view[item_type_number % 2 == 0]
     filtered_2 = view[item_type_number % 2 == 1]
     feature_1 = filtered_1.groupby("order_id").aggregate(
+        value_column=None,
         method="count",
         feature_name="feature_1",
     )
     feature_2 = filtered_2.groupby("order_id").aggregate(
+        value_column=None,
         method="count",
         feature_name="feature_2",
     )

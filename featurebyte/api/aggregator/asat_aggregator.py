@@ -39,8 +39,8 @@ class AsAtAggregator(BaseAsAtAggregator):
     @typechecked
     def aggregate_asat(
         self,
-        value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        value_column: Optional[str],
+        method: str,
         feature_name: Optional[str] = None,
         offset: Optional[str] = None,
         backward: bool = True,

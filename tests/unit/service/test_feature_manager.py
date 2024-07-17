@@ -49,6 +49,7 @@ def feature_2h(snowflake_event_view_with_entity):
     Fixture for a feature with 2h derivation window
     """
     feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column=None,
         method="count",
         windows=["2h"],
         feature_names=["COUNT_2h"],
@@ -68,6 +69,7 @@ def feature_4h(snowflake_event_view_with_entity):
     Fixture for a feature with 4h derivation window
     """
     feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column=None,
         method="count",
         windows=["4h"],
         feature_names=["COUNT_4h"],
@@ -87,6 +89,7 @@ def feature_2h_with_offset(snowflake_event_view_with_entity):
     Fixture for a feature with 2h derivation window and an offset
     """
     feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column=None,
         method="count",
         windows=["2h"],
         feature_names=["COUNT_2h_OFFSET_4h"],

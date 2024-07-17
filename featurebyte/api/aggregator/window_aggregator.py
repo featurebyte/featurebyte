@@ -42,8 +42,8 @@ class WindowAggregator(BaseAggregator):
 
     def aggregate_over(
         self,
-        value_column: Optional[str] = None,
-        method: Optional[str] = None,
+        value_column: Optional[str],
+        method: str,
         windows: Optional[List[Optional[str]]] = None,
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
@@ -133,7 +133,7 @@ class WindowAggregator(BaseAggregator):
     def _validate_parameters(
         self,
         value_column: Optional[str],
-        method: Optional[str],
+        method: str,
         windows: Optional[list[Optional[str]]],
         feature_names: Optional[list[str]],
         feature_job_setting: Optional[FeatureJobSetting],

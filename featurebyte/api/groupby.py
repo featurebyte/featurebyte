@@ -129,8 +129,8 @@ class GroupBy:
     @typechecked
     def aggregate_over(
         self,
-        value_column: Optional[str] = None,
-        method: Optional[Union[AggFunc, str]] = None,
+        value_column: Optional[str],
+        method: Union[AggFunc, str],
         windows: Optional[List[Optional[str]]] = None,
         feature_names: Optional[List[str]] = None,
         timestamp_column: Optional[str] = None,
@@ -164,7 +164,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[Union[AggFunc, str]]
+        method: Union[AggFunc, str]
             Aggregation method
         windows: List[str]
             List of aggregation window sizes. Use `None` to indicated unbounded window size (only
@@ -258,8 +258,8 @@ class GroupBy:
     @typechecked
     def aggregate_asat(
         self,
-        value_column: Optional[str] = None,
-        method: Optional[Union[AggFunc, str]] = None,
+        value_column: Optional[str],
+        method: Union[AggFunc, str],
         feature_name: Optional[str] = None,
         offset: Optional[str] = None,
         backward: bool = True,
@@ -296,7 +296,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[Union[AggFunc, str]]
+        method: Union[AggFunc, str]
             Aggregation method
         feature_name: str
             Output feature name
@@ -372,8 +372,8 @@ class GroupBy:
     @typechecked
     def aggregate(
         self,
-        value_column: Optional[str] = None,
-        method: Optional[Union[AggFunc, str]] = None,
+        value_column: Optional[str],
+        method: Union[AggFunc, str],
         feature_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
@@ -402,7 +402,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[Union[AggFunc, str]]
+        method: Union[AggFunc, str]
             Aggregation method
         feature_name: Optional[str]
             Output feature name
@@ -440,8 +440,8 @@ class GroupBy:
 
     def forward_aggregate(
         self,
-        value_column: str,
-        method: str,
+        value_column: Optional[str],
+        method: Union[AggFunc, str],
         window: Optional[str] = None,
         target_name: Optional[str] = None,
         fill_value: OptionalScalar = None,
@@ -458,7 +458,7 @@ class GroupBy:
         ----------
         value_column: str
             Column to be aggregated
-        method: str
+        method: Union[AggFunc, str]
             Aggregation method.
         window: Optional[str]
             Optional window to apply to the point in time column in the target request.
@@ -505,8 +505,8 @@ class GroupBy:
     @typechecked
     def forward_aggregate_asat(
         self,
-        value_column: Optional[str] = None,
-        method: Optional[Union[AggFunc, str]] = None,
+        value_column: Optional[str],
+        method: Union[AggFunc, str],
         target_name: Optional[str] = None,
         offset: Optional[str] = None,
         fill_value: OptionalScalar = None,
@@ -543,7 +543,7 @@ class GroupBy:
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[Union[AggFunc, str]]
+        method: Union[AggFunc, str]
             Aggregation method
         target_name: str
             Output feature name

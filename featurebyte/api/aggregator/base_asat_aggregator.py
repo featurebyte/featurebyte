@@ -42,7 +42,7 @@ class BaseAsAtAggregator(BaseAggregator):
 
     def _validate_parameters(
         self,
-        method: Optional[str],
+        method: str,
         output_name: Optional[str],
         value_column: Optional[str],
         offset: Optional[str],

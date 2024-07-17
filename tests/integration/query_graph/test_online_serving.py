@@ -43,6 +43,7 @@ def features_fixture(event_table, source_type):
         feature_names=["AMOUNT_MAX_48h"],
     )
     feature_group_dict = event_view.groupby("ÜSER ID", category="PRODUCT_ACTION").aggregate_over(
+        value_column=None,
         method="count",
         windows=["24h"],
         feature_names=["EVENT_COUNT_BY_ACTION_24h"],

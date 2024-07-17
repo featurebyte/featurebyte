@@ -482,12 +482,14 @@ def test_feature__composite_count_dict(
     snowflake_event_table_with_entity.col_text.as_entity(another_entity.name)
     event_view = snowflake_event_table_with_entity.get_view()
     count_dict_feat1 = event_view.groupby("cust_id", category="col_char").aggregate_over(
+        value_column=None,
         method="count",
         windows=["7d"],
         feature_job_setting=feature_group_feature_job_setting,
         feature_names=["counts_7d"],
     )["counts_7d"]
     count_dict_feat2 = event_view.groupby("col_text", category="col_char").aggregate_over(
+        value_column=None,
         method="count",
         windows=["14d"],
         feature_job_setting=feature_group_feature_job_setting,

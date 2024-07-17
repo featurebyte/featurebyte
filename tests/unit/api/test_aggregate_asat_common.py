@@ -32,14 +32,14 @@ def test_aggregate_asat__method_required(snowflake_scd_view_with_entity, is_forw
     """
     Test method parameter is required
     """
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(TypeError) as exc:
         aggregate_asat_helper(
             snowflake_scd_view_with_entity,
             is_forward,
             ["col_boolean"],
             dict(value_column="col_float", name="asat_output"),
         )
-    assert str(exc.value) == "method is required"
+    assert str(exc.value) == "missing a required argument: 'method'"
 
 
 @pytest.mark.parametrize("is_forward", [False, True])
@@ -52,9 +52,12 @@ def test_aggregate_asat__feature_name_required(snowflake_scd_view_with_entity, i
             snowflake_scd_view_with_entity,
             is_forward,
             ["col_boolean"],
-            dict(value_column="col_float", name="asat_output"),
+            dict(value_column="col_float", method="sum"),
         )
-    assert str(exc.value) == "method is required"
+    if is_forward:
+        assert str(exc.value) == "target_name is required"
+    else:
+        assert str(exc.value) == "feature_name is required"
 
 
 @pytest.mark.parametrize("is_forward", [False, True])

@@ -109,6 +109,7 @@ def test_event_table_update_critical_data_info(event_table):
 
     assert event_view.node.type == "graph"
     feature_group = event_view.groupby("CUST_ID").aggregate_over(
+        value_column=None,
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],
@@ -152,6 +153,7 @@ def test_item_table_update_critical_data_info(item_table):
     # check feature & preview
     item_view = item_table.get_view()
     window_feature = item_view.groupby("ÜSER ID", category="item_type").aggregate_over(
+        value_column=None,
         method="count",
         windows=["12h"],
         feature_names=["count_12h"],

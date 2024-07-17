@@ -16,7 +16,7 @@ def test_combined_simple_aggregate_and_window_aggregate(
     event_view = snowflake_event_view_with_entity_and_feature_job
     item_view = snowflake_item_view_with_entity
     item_feature = item_view.groupby("event_id_col").aggregate(
-        method="count", feature_name="my_item_feature"
+        value_column=None, method="count", feature_name="my_item_feature"
     )
     event_view = event_view.add_feature("added_feature", item_feature, "col_int")
 

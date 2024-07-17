@@ -1684,6 +1684,7 @@ def feature_group_fixture(event_view):
     """
     event_view["derived_value_column"] = 1.0 * event_view["ÜSER ID"]
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],
@@ -1700,6 +1701,7 @@ def feature_group_per_category_fixture(event_view):
     feature_group_per_category = event_view.groupby(
         "ÜSER ID", category="PRODUCT_ACTION"
     ).aggregate_over(
+        value_column=None,
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_BY_ACTION_2h", "COUNT_BY_ACTION_24h"],
