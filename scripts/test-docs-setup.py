@@ -184,6 +184,7 @@ def setup() -> None:
 
     # Feature: InvoiceCount - non time based
     invoice_count = grocery_item_view.groupby("GroceryInvoiceGuid").aggregate(
+        value_column=None,
         method="count",
         feature_name="InvoiceCount",
     )
