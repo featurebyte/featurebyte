@@ -33,8 +33,10 @@ async def test_get_deployment_job_history(service, deployment_id, offline_store_
                 completion_ts=datetime(2024, 7, 15, 9, 0, 10),
                 completion_status="failure",
                 duration_seconds=10,
-                incomplete_tile_tasks_count=0,
+                incomplete_tile_tasks_count=1,
             ),
+            # incomplete_tile_tasks_count is 0 because the failed tile task have a different
+            # aggregation id that doesn't match with any features used in the deployment
             FeatureTableJobRun(
                 feature_table_id=offline_store_feature_table_id,
                 feature_table_name=None,
@@ -51,7 +53,7 @@ async def test_get_deployment_job_history(service, deployment_id, offline_store_
                 completion_ts=datetime(2024, 7, 15, 7, 0, 10),
                 completion_status="failure",
                 duration_seconds=10,
-                incomplete_tile_tasks_count=0,
+                incomplete_tile_tasks_count=1,
             ),
         ]
     )

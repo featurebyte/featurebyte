@@ -361,6 +361,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     online_enabled_feature_ids: List[PydanticObjectId] = Field(
         allow_mutation=False, default_factory=list
     )
+    aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
 
     # store info contains the warehouse specific info for the feature list
     internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)
@@ -372,6 +373,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         "primary_entity_ids",
         "entity_ids",
         "table_ids",
+        "aggregation_ids",
         allow_reuse=True,
     )(construct_sort_validator())
     _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
@@ -392,7 +394,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         # "features" is not an attribute to the FeatureList model, when it appears in the input to
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:
-            features = values["features"]
+            features: List[FeatureModel] = values["features"]
             values["readiness_distribution"] = cls.derive_readiness_distribution(features)
             values["dtype_distribution"] = cls.derive_dtype_distribution(features)
             try:
@@ -414,6 +416,11 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             values["entity_ids"] = sorted(entity_ids)
             values["features_primary_entity_ids"] = sorted(features_primary_entity_ids)
             values["table_ids"] = sorted(table_ids)
+
+            aggregation_ids = set()
+            for feature in features:
+                aggregation_ids.update(feature.aggregation_ids)
+            values["aggregation_ids"] = sorted(aggregation_ids)
 
             # some sanity check
             total_count = sum(
