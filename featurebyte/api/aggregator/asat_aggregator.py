@@ -41,7 +41,7 @@ class AsAtAggregator(BaseAsAtAggregator):
         self,
         value_column: Optional[str],
         method: str,
-        feature_name: Optional[str] = None,
+        feature_name: str,
         offset: Optional[str] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,

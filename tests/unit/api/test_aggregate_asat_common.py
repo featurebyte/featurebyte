@@ -47,7 +47,7 @@ def test_aggregate_asat__feature_name_required(snowflake_scd_view_with_entity, i
     """
     Test feature_name parameter is required
     """
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(TypeError) as exc:
         aggregate_asat_helper(
             snowflake_scd_view_with_entity,
             is_forward,
@@ -55,9 +55,9 @@ def test_aggregate_asat__feature_name_required(snowflake_scd_view_with_entity, i
             dict(value_column="col_float", method="sum"),
         )
     if is_forward:
-        assert str(exc.value) == "target_name is required"
+        assert str(exc.value) == "missing a required argument: 'target_name'"
     else:
-        assert str(exc.value) == "feature_name is required"
+        assert str(exc.value) == "missing a required argument: 'feature_name'"
 
 
 @pytest.mark.parametrize("is_forward", [False, True])

@@ -41,7 +41,7 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
         self,
         value_column: Optional[str],
         method: str,
-        target_name: Optional[str] = None,
+        target_name: str,
         offset: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,

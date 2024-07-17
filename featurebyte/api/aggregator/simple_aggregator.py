@@ -41,7 +41,7 @@ class SimpleAggregator(BaseAggregator):
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
-        feature_name: Optional[str] = None,
+        feature_name: str,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
     ) -> Feature:

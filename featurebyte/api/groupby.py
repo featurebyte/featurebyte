@@ -131,8 +131,8 @@ class GroupBy:
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
-        windows: Optional[List[Optional[str]]] = None,
-        feature_names: Optional[List[str]] = None,
+        windows: List[Optional[str]],
+        feature_names: List[str],
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[FeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
@@ -260,7 +260,7 @@ class GroupBy:
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
-        feature_name: Optional[str] = None,
+        feature_name: str,
         offset: Optional[str] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
@@ -374,7 +374,7 @@ class GroupBy:
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
-        feature_name: Optional[str] = None,
+        feature_name: str,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
     ) -> Feature:
@@ -404,7 +404,7 @@ class GroupBy:
             Column to be aggregated
         method: Union[AggFunc, str]
             Aggregation method
-        feature_name: Optional[str]
+        feature_name: str
             Output feature name
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
@@ -442,8 +442,8 @@ class GroupBy:
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
-        window: Optional[str] = None,
-        target_name: Optional[str] = None,
+        window: str,
+        target_name: str,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
         offset: Optional[str] = None,
@@ -460,9 +460,20 @@ class GroupBy:
             Column to be aggregated
         method: Union[AggFunc, str]
             Aggregation method.
-        window: Optional[str]
-            Optional window to apply to the point in time column in the target request.
-        target_name: Optional[str]
+        window: str
+            Window size. Format of a window size is "{size}{unit}", where size is a positive integer
+            and unit is one of the following:
+
+            "ns": nanosecond
+            "us": microsecond
+            "ms": millisecond
+            "s": second
+            "m": minute
+            "h": hour
+            "d": day
+            "w": week
+
+        target_name: str
             Output target name
         fill_value: OptionalScalar
             Value to fill if the value in the column is empty
@@ -507,7 +518,7 @@ class GroupBy:
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
-        target_name: Optional[str] = None,
+        target_name: str,
         offset: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
