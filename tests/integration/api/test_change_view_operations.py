@@ -51,6 +51,7 @@ def test_change_view(scd_table, source_type):
 
     # assert that we can get features
     count_1w_feature = change_view.groupby("User ID").aggregate_over(
+        value_column=None,
         method=AggFunc.COUNT,
         windows=["1w"],
         feature_names=["count_1w"],
@@ -79,6 +80,7 @@ def test_change_view__feature_no_entity(scd_table, source_type):
         "count_1w": 16,
     }
     count_1w_feature = change_view.groupby([]).aggregate_over(
+        value_column=None,
         method=AggFunc.COUNT,
         windows=["1w"],
         feature_names=["count_1w"],

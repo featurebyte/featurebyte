@@ -46,7 +46,7 @@ def item_aggregate_with_category_features(item_table):
     """
     item_view = item_table.get_view()
     feature = item_view.groupby("order_id", category="item_type").aggregate(
-        method=AggFunc.COUNT, feature_name="my_item_feature"
+        value_column=None, method=AggFunc.COUNT, feature_name="my_item_feature"
     )
     most_frequent_feature = feature.cd.most_frequent()
     most_frequent_feature.name = "most_frequent_item_type"

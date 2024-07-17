@@ -1290,6 +1290,7 @@ def get_non_time_based_feature_fixture(item_table):
     item_view = item_view[item_view["order_number"] % 2 == 0]
 
     return item_view.groupby("order_id").aggregate(
+        value_column=None,
         method=AggFunc.COUNT,
         feature_name="non_time_count_feature",
     )
