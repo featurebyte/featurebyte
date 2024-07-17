@@ -6,8 +6,9 @@ Query graph node related classes
 from typing import TYPE_CHECKING, Any, Union, cast
 from typing_extensions import Annotated
 
-from pydantic import Field, parse_obj_as
+from pydantic import Field, TypeAdapter
 
+from featurebyte.common.model_util import get_type_to_class_map
 from featurebyte.common.path_util import import_submodules
 from featurebyte.query_graph.node.base import NODE_TYPES, BaseNode
 
@@ -20,6 +21,10 @@ else:
 
     # use the Annotated type for pydantic model deserialization
     Node = Annotated[Union[tuple(NODE_TYPES)], Field(discriminator="type")]
+
+
+# construct node class map for deserialization
+NODE_CLASS_MAP = get_type_to_class_map(NODE_TYPES)
 
 
 def construct_node(**kwargs: Any) -> Node:
@@ -35,5 +40,12 @@ def construct_node(**kwargs: Any) -> Node:
     -------
     Node
     """
-    node = parse_obj_as(Node, kwargs)
+    node_class = NODE_CLASS_MAP.get(kwargs.get("type"))  # type: ignore
+    if node_class is None:
+        # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
+        node = TypeAdapter(Node).validate_python(kwargs)  # type: ignore
+    else:
+        # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+        # https://github.com/pydantic/pydantic/issues/6768
+        node = node_class(**kwargs)
     return cast(Node, node)

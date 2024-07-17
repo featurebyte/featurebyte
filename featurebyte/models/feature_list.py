@@ -19,10 +19,10 @@ from pydantic import (
     PrivateAttr,
     RootModel,
     StrictStr,
+    TypeAdapter,
     field_serializer,
     field_validator,
     model_validator,
-    parse_obj_as,
 )
 from typeguard import typechecked
 
@@ -586,7 +586,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         -------
         StoreInfo
         """
-        return parse_obj_as(StoreInfo, self.internal_store_info or {"type": "uninitialized"})  # type: ignore
+        obj_dict = self.internal_store_info or {"type": "uninitialized"}
+        return TypeAdapter(StoreInfo).validate_python(obj_dict)
 
     def initialize_store_info(
         self,

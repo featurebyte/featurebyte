@@ -4,7 +4,7 @@ Feature Job Setting Model
 
 from typing import Any, ClassVar, Dict
 
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
@@ -87,7 +87,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
             If execution_buffer is set (not supported)
         """
         _ = cls
-        if isinstance(values, FeatureJobSetting):
+        if isinstance(values, BaseModel):
             values = values.dict(by_alias=True)
 
         # handle backward compatibility

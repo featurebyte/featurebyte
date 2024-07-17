@@ -4,12 +4,13 @@ This module contains the implementation of feature job setting validation
 
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any, Sequence, Tuple
 
 import re
 from datetime import datetime
 
 import pandas as pd
+from pydantic import BaseModel
 from typeguard import typechecked
 
 
@@ -212,3 +213,26 @@ def convert_seconds_to_time_format(seconds: int, components: int = 4) -> str:
 
     # Include only the most significant components as specified
     return "".join(time_format_parts[:components])
+
+
+def get_type_to_class_map(class_list: Sequence[type[BaseModel]]) -> dict[str, type[BaseModel]]:
+    """
+    Get type to class map
+
+    Parameters
+    ----------
+    class_list: Sequence[type[BaseModel]]
+        List of classes
+
+    Returns
+    -------
+    dict[str, type[BaseModel]]
+        Type to class map
+    """
+    class_map = {}
+    for class_ in class_list:
+        type_annotation = class_.model_fields["type"].annotation
+        assert type_annotation is not None, class_
+        type_name = type_annotation.__args__[0]
+        class_map[type_name] = class_
+    return class_map

@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 import json
 
-from pydantic import Field, PrivateAttr, field_serializer
+from pydantic import BaseModel, Field, PrivateAttr, field_serializer
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.graph import QueryGraph
@@ -27,7 +27,8 @@ class QueryGraphMixin(FeatureByteBaseModel):
 
     @field_serializer("internal_graph", when_used="json")
     def _serialize_graph(self, graph: Any) -> Any:
-        return json.loads(QueryGraph(**graph).model_dump_json(by_alias=True))
+        _ = graph
+        return json.loads(self.graph.model_dump_json(by_alias=True))
 
     @property
     def graph(self) -> QueryGraph:

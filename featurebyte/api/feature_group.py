@@ -26,7 +26,7 @@ from http import HTTPStatus
 import pandas as pd
 from alive_progress import alive_bar
 from bson import ObjectId
-from pydantic import Field, parse_obj_as
+from pydantic import Field, TypeAdapter
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import (
@@ -526,9 +526,9 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
             feature[mask] = value
             return
 
-        # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
+        # Note: since a copy is created, the changes below don't apply to the original
         # Feature object
-        feature = parse_obj_as(Feature, value).copy(deep=True)
+        feature = TypeAdapter(Feature).validate_python(value).copy(deep=True)
         assert isinstance(feature, Feature)
         # Name setting performs validation to ensure the specified name is valid
         feature.name = key

@@ -11,7 +11,7 @@ from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 from feast.repo_config import FeastConfigBaseModel
-from pydantic import Field, parse_obj_as
+from pydantic import Field, TypeAdapter
 
 from featurebyte.feast.online_store.mysql import FBMySQLOnlineStoreConfig
 from featurebyte.models.online_store import (
@@ -92,4 +92,4 @@ def get_feast_online_store_details(
     -------
     FeastOnlineStoreDetails
     """
-    return parse_obj_as(FeastOnlineStoreDetails, online_store_details.dict())  # type: ignore
+    return TypeAdapter(FeastOnlineStoreDetails).validate_python(online_store_details.dict())  # type: ignore

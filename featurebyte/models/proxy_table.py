@@ -4,11 +4,12 @@ This module contains ProxyTable pseudo models.
 
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import Any, Union, cast
 from typing_extensions import Annotated
 
-from pydantic import Field, parse_obj_as
+from pydantic import Field, TypeAdapter
 
+from featurebyte.enum import TableDataType
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableModel as BaseTableModel
@@ -19,6 +20,12 @@ TableModel = Annotated[
     Union[EventTableModel, ItemTableModel, DimensionTableModel, SCDTableModel],
     Field(discriminator="type"),
 ]
+TABLE_CLASS_MAP = {
+    TableDataType.EVENT_TABLE.value: EventTableModel,
+    TableDataType.ITEM_TABLE.value: ItemTableModel,
+    TableDataType.DIMENSION_TABLE.value: DimensionTableModel,
+    TableDataType.SCD_TABLE.value: SCDTableModel,
+}
 
 
 class ProxyTableModel(BaseTableModel):  # pylint: disable=abstract-method
@@ -28,4 +35,12 @@ class ProxyTableModel(BaseTableModel):  # pylint: disable=abstract-method
     """
 
     def __new__(cls, **kwargs: Any) -> Any:
-        return parse_obj_as(TableModel, kwargs)
+        table_class = TABLE_CLASS_MAP.get(kwargs.get("type"))
+        if table_class is None:
+            # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
+            table = TypeAdapter(TableModel).validate_python(kwargs)
+        else:
+            # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+            # https://github.com/pydantic/pydantic/issues/6768
+            table = table_class(**kwargs)
+        return cast(TableModel, table)

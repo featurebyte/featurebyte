@@ -7,8 +7,9 @@ from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
-from pydantic import Field, parse_obj_as
+from pydantic import Field, TypeAdapter
 
+from featurebyte.common.model_util import get_type_to_class_map
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 
@@ -189,6 +190,10 @@ else:
     AggFuncType = Annotated[Union[tuple(AGG_FUNCS)], Field(discriminator="type")]
 
 
+# construct agg class map for deserialization
+AGG_FUNC_CLASS_MAP = get_type_to_class_map(AGG_FUNCS)
+
+
 def construct_agg_func(agg_func: AggFunc) -> AggFuncType:
     """
     Construct agg method object based on agg_func enum value
@@ -202,5 +207,12 @@ def construct_agg_func(agg_func: AggFunc) -> AggFuncType:
     -------
     AggFuncType
     """
-    agg_func_obj = parse_obj_as(AggFuncType, {"type": agg_func})
+    agg_func_class = AGG_FUNC_CLASS_MAP.get(str(agg_func))
+    if agg_func_class is None:
+        # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
+        agg_func_obj = TypeAdapter(AggFuncType).validate_python({"type": agg_func})  # type: ignore
+    else:
+        # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+        # https://github.com/pydantic/pydantic/issues/6768
+        agg_func_obj = agg_func_class(type=agg_func)
     return cast(AggFuncType, agg_func_obj)

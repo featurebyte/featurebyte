@@ -5,6 +5,7 @@ Utility functions for models
 from typing import Any
 
 from datetime import datetime
+from enum import Enum
 
 from bson import ObjectId
 
@@ -30,4 +31,6 @@ def serialize_obj(obj: Any) -> Any:
         return obj.isoformat()
     if isinstance(obj, ObjectId):
         return str(obj)
+    if isinstance(obj, Enum):
+        return obj.value
     return obj
