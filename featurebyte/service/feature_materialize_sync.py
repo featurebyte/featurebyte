@@ -166,9 +166,11 @@ class FeatureMaterializeSyncService:
         feature_materialize_run = await self.feature_materialize_run_service.create_document(
             FeatureMaterializeRun(
                 offline_store_feature_table_id=offline_store_feature_table_id,
+                offline_store_feature_table_name=feature_table.name,
                 scheduled_job_ts=await self._get_scheduled_job_ts_for_feature_table(
                     offline_store_feature_table_id,
                 ),
+                deployment_ids=feature_table.deployment_ids,
             ),
         )
 

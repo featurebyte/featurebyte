@@ -38,12 +38,14 @@ class FeatureMaterializeRun(FeatureByteCatalogBaseDocumentModel):
     """
 
     offline_store_feature_table_id: PydanticObjectId
+    offline_store_feature_table_name: Optional[str] = Field(default=None)
     scheduled_job_ts: datetime
     feature_materialize_ts: Optional[datetime] = Field(default=None)
     completion_ts: Optional[datetime] = Field(default=None)
     completion_status: Optional[CompletionStatus] = Field(default=None)
     duration_from_scheduled_seconds: Optional[float] = Field(default=None)
     incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default_factory=None)
+    deployment_ids: Optional[List[PydanticObjectId]] = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -55,6 +57,7 @@ class FeatureMaterializeRun(FeatureByteCatalogBaseDocumentModel):
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             IndexModel("offline_store_feature_table_id"),
             IndexModel("scheduled_job_ts"),
+            IndexModel("deployment_ids"),
         ]
         auditable = False
 

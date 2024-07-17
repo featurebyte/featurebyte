@@ -101,3 +101,30 @@ class FeatureMaterializeRunService(
                 duration_from_scheduled_seconds=duration,
             ),
         )
+
+    async def get_recent_runs_by_deployment_id(
+        self, deployment_id: ObjectId, num_runs: int
+    ) -> List[FeatureMaterializeRun]:
+        """
+        Get recent feature materialize runs for the deployment_id
+
+        Parameters
+        ----------
+        deployment_id: ObjectId
+            Identifier of the deployment of interest
+        num_runs: int
+            Number of recent runs to retrieve
+
+        Returns
+        -------
+        List[FeatureMaterializeRun]
+        """
+        runs = []
+        async for run in self.list_documents_iterator(
+            query_filter={"deployment_ids": deployment_id},
+            sort_by=[("scheduled_job_ts", "desc"), ("_id", "desc")],
+        ):
+            runs.append(run)
+            if len(runs) >= num_runs:
+                break
+        return runs

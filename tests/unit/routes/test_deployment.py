@@ -4,6 +4,7 @@ Tests for Deployment route
 
 import json
 import textwrap
+from datetime import datetime
 from http import HTTPStatus
 from unittest.mock import patch
 
@@ -12,6 +13,7 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
+from featurebyte.models.feature_materialize_run import FeatureMaterializeRun
 from tests.unit.routes.base import BaseAsyncApiTestSuite, BaseCatalogApiTestSuite
 
 
@@ -664,3 +666,49 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
             """
             ).strip()
         )
+
+    @pytest.mark.asyncio
+    async def test_get_job_history(
+        self,
+        test_api_client_persistent,
+        create_success_response,
+        default_catalog_id,
+        app_container,
+    ):
+        """
+        Test getting feature job history
+        """
+        test_api_client, _ = test_api_client_persistent
+        deployment_doc = create_success_response.json()
+        deployment_id = deployment_doc["_id"]
+
+        feature_table_id = ObjectId()
+        app_container.feature_materialize_run_service.catalog_id = ObjectId(default_catalog_id)
+        await app_container.feature_materialize_run_service.create_document(
+            FeatureMaterializeRun(
+                offline_store_feature_table_id=feature_table_id,
+                scheduled_job_ts=datetime(2024, 7, 15, 10, 0, 0),
+                completion_ts=datetime(2024, 7, 15, 10, 10, 0),
+                completion_status="success",
+                duration_from_scheduled_seconds=10,
+                deployment_ids=[ObjectId(deployment_id)],
+            )
+        )
+
+        response = test_api_client.get(
+            f"{self.base_route}/{deployment_id}/job_history",
+        )
+        assert response.status_code == HTTPStatus.OK, response.content
+        assert response.json() == {
+            "runs": [
+                {
+                    "feature_table_id": str(feature_table_id),
+                    "feature_table_name": None,
+                    "scheduled_ts": "2024-07-15T10:00:00",
+                    "completion_ts": "2024-07-15T10:10:00",
+                    "completion_status": "success",
+                    "duration_seconds": 10,
+                    "incomplete_tile_tasks_count": 0,
+                }
+            ]
+        }

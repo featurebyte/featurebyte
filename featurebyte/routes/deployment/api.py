@@ -2,7 +2,7 @@
 Deployment API routes
 """
 
-from typing import Literal, Optional, cast
+from typing import Literal, Optional
 
 from http import HTTPStatus
 
@@ -23,10 +23,12 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
+from featurebyte.routes.deployment.controller import DeploymentController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.deployment import (
     AllDeploymentList,
     DeploymentCreate,
+    DeploymentJobHistory,
     DeploymentList,
     DeploymentSummary,
     DeploymentUpdate,
@@ -53,8 +55,8 @@ async def create_deployment(request: Request, data: DeploymentCreate) -> Task:
     """
     Create Deployment
     """
-    controller = request.state.app_container.deployment_controller
-    task: Task = await controller.create_deployment(data=data)
+    controller: DeploymentController = request.state.app_container.deployment_controller
+    task = await controller.create_deployment(data=data)
     return task
 
 
@@ -63,8 +65,8 @@ async def get_deployment(request: Request, deployment_id: PyObjectId) -> Deploym
     """
     Get Deployment
     """
-    controller = request.state.app_container.deployment_controller
-    deployment: DeploymentModel = await controller.get(document_id=deployment_id)
+    controller: DeploymentController = request.state.app_container.deployment_controller
+    deployment = await controller.get(document_id=deployment_id)
     return deployment
 
 
@@ -75,8 +77,8 @@ async def update_deployment(
     """
     Update Deployment
     """
-    controller = request.state.app_container.deployment_controller
-    task: Optional[Task] = await controller.update_deployment(document_id=deployment_id, data=data)
+    controller: DeploymentController = request.state.app_container.deployment_controller
+    task = await controller.update_deployment(document_id=deployment_id, data=data)
     if isinstance(task, Task):
         # if task is returned, it means the deployment is being updated asynchronously
         response.status_code = HTTPStatus.ACCEPTED
@@ -97,11 +99,11 @@ async def list_deployments(
     """
     List Deployments
     """
-    controller = request.state.app_container.deployment_controller
+    controller: DeploymentController = request.state.app_container.deployment_controller
     query_filter = None
     if feature_list_id:
         query_filter = {"feature_list_id": feature_list_id}
-    deployment_list: DeploymentList = await controller.list(
+    deployment_list = await controller.list(
         page=page,
         page_size=page_size,
         sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
@@ -117,7 +119,7 @@ async def delete_deployment(request: Request, deployment_id: PyObjectId) -> None
     """
     Delete Deployment
     """
-    controller = request.state.app_container.deployment_controller
+    controller: DeploymentController = request.state.app_container.deployment_controller
     await controller.delete(document_id=deployment_id)
 
 
@@ -134,8 +136,8 @@ async def list_deployment_audit_logs(
     """
     List Deployment audit logs
     """
-    controller = request.state.app_container.deployment_controller
-    audit_doc_list: AuditDocumentList = await controller.list_audit(
+    controller: DeploymentController = request.state.app_container.deployment_controller
+    audit_doc_list = await controller.list_audit(
         document_id=deployment_id,
         page=page,
         page_size=page_size,
@@ -154,10 +156,8 @@ async def get_deployment_info(
     """
     Get Deployment Info
     """
-    controller = request.state.app_container.deployment_controller
-    deployment_info: DeploymentInfo = await controller.get_info(
-        document_id=deployment_id, verbose=verbose
-    )
+    controller: DeploymentController = request.state.app_container.deployment_controller
+    deployment_info = await controller.get_info(document_id=deployment_id, verbose=verbose)
     return deployment_info
 
 
@@ -174,12 +174,28 @@ async def compute_online_features(
     """
     Compute online features
     """
-    controller = request.state.app_container.deployment_controller
+    controller: DeploymentController = request.state.app_container.deployment_controller
     result = await controller.compute_online_features(
         deployment_id=deployment_id,
         data=data,
     )
-    return cast(OnlineFeaturesResponseModel, result)
+    return result
+
+
+@router.get(
+    "/{deployment_id}/job_history",
+    response_model=DeploymentJobHistory,
+)
+async def get_deployment_job_history(
+    request: Request,
+    deployment_id: PyObjectId,
+    num_runs: int = Query(default=5),
+) -> DeploymentJobHistory:
+    """
+    Get deployment job history
+    """
+    controller: DeploymentController = request.state.app_container.deployment_controller
+    return await controller.get_deployment_job_history(deployment_id, num_runs)
 
 
 @router.get("/all/")
@@ -225,8 +241,8 @@ async def update_deployment_description(
     """
     Update deployment description
     """
-    controller = request.state.app_container.deployment_controller
-    deployment: DeploymentModel = await controller.update_description(
+    controller: DeploymentController = request.state.app_container.deployment_controller
+    deployment = await controller.update_description(
         document_id=deployment_id,
         description=data.description,
     )
@@ -242,12 +258,10 @@ async def get_deployment_request_code_template(
     """
     Get Deployment Request Code Template
     """
-    controller = request.state.app_container.deployment_controller
-    request_code_template: DeploymentRequestCodeTemplate = (
-        await controller.get_request_code_template(
-            deployment_id=deployment_id,
-            language=language,
-        )
+    controller: DeploymentController = request.state.app_container.deployment_controller
+    request_code_template = await controller.get_request_code_template(
+        deployment_id=deployment_id,
+        language=language,
     )
     return request_code_template
 
@@ -264,8 +278,8 @@ async def get_deployment_sample_entity_serving_names(
     """
     Get Deployment Sample Entity Serving Names
     """
-    controller = request.state.app_container.deployment_controller
-    sample_entity_serving_names: SampleEntityServingNames = (
-        await controller.get_sample_entity_serving_names(deployment_id=deployment_id, count=count)
+    controller: DeploymentController = request.state.app_container.deployment_controller
+    sample_entity_serving_names = await controller.get_sample_entity_serving_names(
+        deployment_id=deployment_id, count=count
     )
     return sample_entity_serving_names
