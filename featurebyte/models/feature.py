@@ -72,7 +72,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     It contains all the attributes that are shared between FeatureModel & TargetModel.
     """
 
-    dtype: DBVarType = Field(default=DBVarType.UNKNOWN)
+    dtype: DBVarType = Field(default=DBVarType.UNKNOWN.value)
     node_name: str
     tabular_source: TabularSource = Field(frozen=True)
     version: VersionIdentifier = Field(frozen=True, default_factory=VersionIdentifier.create)

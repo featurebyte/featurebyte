@@ -20,7 +20,11 @@ from featurebyte.models.base import (
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import PaginationMixin
 
-PandasTimestamp = Union[Timestamp, Annotated[str, AfterValidator(Timestamp)]]
+PandasTimestamp = Union[
+    Timestamp,
+    Annotated[str, AfterValidator(Timestamp)],
+    Annotated[datetime, AfterValidator(Timestamp)],
+]
 
 
 class EventTableCandidate(FeatureByteBaseModel):
