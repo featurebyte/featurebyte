@@ -21,6 +21,7 @@ def feature_for_tile_cache_tests_fixture(event_table, groupby_category):
     """
     event_view = event_table.get_view()
     feature_group = event_view.groupby("ÜSER ID", category=groupby_category).aggregate_over(
+        value_column=None,
         method="count",
         windows=["48h"],
         feature_names=["SESSION_COUNT_48h"],

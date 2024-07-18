@@ -19,6 +19,7 @@ def feature_list_fixture(event_view, feature_group, feature_group_per_category):
     """Feature List fixture"""
     feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     count_2h_duplicate = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
         method="count",
         windows=["2h"],
         feature_names=["COUNT_2h_DUPLICATE"],

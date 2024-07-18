@@ -150,6 +150,7 @@ def test_prepare_node_parameters(forward_aggregator):
         ("col_float", "random", "7d", "target", ValueError),
         ("col_float", AggFunc.SUM, "random", "target", ValueError),
         (None, AggFunc.COUNT, "7d", "target", None),
+        ("col_float", AggFunc.COUNT, "7d", "target", ValueError),
         (None, AggFunc.SUM, "7d", "target", ValueError),
     ],
 )

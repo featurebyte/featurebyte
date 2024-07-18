@@ -39,9 +39,9 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
     @typechecked
     def forward_aggregate_asat(
         self,
-        value_column: Optional[str] = None,
-        method: Optional[str] = None,
-        target_name: Optional[str] = None,
+        value_column: Optional[str],
+        method: str,
+        target_name: str,
         offset: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
@@ -84,7 +84,6 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
         self._validate_parameters(
             method=method,
             value_column=value_column,
-            output_name=target_name,
             offset=offset,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
@@ -112,7 +111,7 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
         assert method is not None
         assert target_name is not None
         agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
-        output_var_type = self.get_output_var_type(agg_method, method, value_column)  # type: ignore[arg-type]
+        output_var_type = self.get_output_var_type(agg_method, method, value_column)
         target = self.view.project_target_from_node(node, target_name, output_var_type)
         if not skip_fill_na:
             return self._fill_feature_or_target(target, method, target_name, fill_value)  # type: ignore[return-value]

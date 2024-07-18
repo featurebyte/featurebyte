@@ -679,6 +679,7 @@ def test_item_view_groupby__no_value_column(snowflake_item_view, snowflake_item_
     """
     feature_job_setting = FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
     feature = snowflake_item_view.groupby("cust_id_event_table").aggregate_over(
+        value_column=None,
         method="count",
         windows=["24h"],
         feature_names=["feature_name"],
@@ -707,6 +708,7 @@ def test_item_view_groupby__event_id_column(
     snowflake_item_table["event_id_col"].as_entity(transaction_entity.name)
     snowflake_item_view = snowflake_item_table.get_view(event_suffix="_event_table")
     feature = snowflake_item_view.groupby("event_id_col").aggregate(
+        value_column=None,
         method=AggFunc.COUNT,
         feature_name="order_size",
     )

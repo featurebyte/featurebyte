@@ -154,6 +154,7 @@ def test_sdk_code_generation__complex_feature(
         feature_names=["sum_a_24h"],
     )["sum_a_24h"]
     feat_event_count = event_view.groupby("cust_id", category="col_int").aggregate_over(
+        value_column=None,
         method="count",
         windows=["24h"],
         feature_names=["count_a_24h_per_col_int"],
@@ -571,6 +572,7 @@ def test_isin_feature_sdk_code_generation(
 
     event_view = saved_event_table.get_view()
     feat_event_count = event_view.groupby("cust_id", category="col_int").aggregate_over(
+        value_column=None,
         method="count",
         windows=["24h"],
         feature_names=["count_a_24h_per_col_int"],

@@ -68,6 +68,7 @@ def relative_freq_feature_fixture(
 def count_feature_fixture(grouped_event_view, feature_group_feature_job_setting):
     """Count feature fixture"""
     grouped = grouped_event_view.aggregate_over(
+        value_column=None,
         method="count",
         windows=["1d"],
         feature_job_setting=feature_group_feature_job_setting,

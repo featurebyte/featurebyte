@@ -39,9 +39,9 @@ class SimpleAggregator(BaseAggregator):
 
     def aggregate(
         self,
-        value_column: Optional[str] = None,
-        method: Optional[Union[AggFunc, str]] = None,
-        feature_name: Optional[str] = None,
+        value_column: Optional[str],
+        method: Union[AggFunc, str],
+        feature_name: str,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
     ) -> Feature:
@@ -52,7 +52,7 @@ class SimpleAggregator(BaseAggregator):
         ----------
         value_column: Optional[str]
             Column to be aggregated
-        method: Optional[Union[AggFunc, str]]
+        method: Union[AggFunc, str]
             Aggregation method
         feature_name: str
             Output feature name

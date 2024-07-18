@@ -265,6 +265,7 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
     Test count features have fillna transform applied
     """
     aggregate_kwargs = dict(
+        value_column=None,
         method=method,
         windows=["30m", "1h", "2h"],
         feature_names=["feat_30m", "feat_1h", "feat_2h"],
@@ -307,10 +308,8 @@ def test_groupby__count_feature_specify_value_column(snowflake_event_view_with_e
 @pytest.mark.parametrize(
     "missing_param, expected_error",
     [
-        ("windows", "windows is required and should be a non-empty list; got None"),
-        ("feature_names", "feature_names is required and should be a non-empty list; got None"),
-        ("value_column", "value_column is required"),
-        ("method", "method is required"),
+        ("windows", "missing a required argument: 'windows'"),
+        ("feature_names", "missing a required argument: 'feature_names'"),
     ],
 )
 def test_groupby__required_params_missing(
@@ -327,7 +326,7 @@ def test_groupby__required_params_missing(
         feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
     )
     aggregate_kwargs.pop(missing_param)
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(TypeError) as exc:
         _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(**aggregate_kwargs)
     assert str(exc.value) == expected_error
 
@@ -465,6 +464,7 @@ def get_test_aggregator_and_count_feature_fixture(snowflake_event_view_with_enti
     """
     group_by = snowflake_event_view_with_entity_and_feature_job.groupby("cust_id")
     feature_group = group_by.aggregate_over(
+        value_column=None,
         method="count",
         windows=["30m"],
         feature_names=["feat_30m"],

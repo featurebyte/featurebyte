@@ -46,7 +46,7 @@ def item_aggregate_with_category_features(item_table):
     """
     item_view = item_table.get_view()
     feature = item_view.groupby("order_id", category="item_type").aggregate(
-        method=AggFunc.COUNT, feature_name="my_item_feature"
+        value_column=None, method=AggFunc.COUNT, feature_name="my_item_feature"
     )
     most_frequent_feature = feature.cd.most_frequent()
     most_frequent_feature.name = "most_frequent_item_type"
@@ -119,6 +119,7 @@ def test_item_view_ops(item_table, expected_joined_event_item_dataframe):
 
     # Create a feature using aggregation with time windows and preview it
     feature = item_view_filtered.groupby("ÜSER ID", category="item_type_upper").aggregate_over(
+        value_column=None,
         method="count",
         windows=["30d"],
         feature_names=["count_30d"],
@@ -152,6 +153,7 @@ def test_item_view_ops(item_table, expected_joined_event_item_dataframe):
 
     # Create a feature using aggregation without time window and preview it
     feature = item_view_filtered.groupby("order_id").aggregate(
+        value_column=None,
         method=AggFunc.COUNT,
         feature_name="order_size",
     )
@@ -230,6 +232,7 @@ def test_item_view_joined_with_dimension_view(
     feature = (
         item_view.groupby("ÜSER ID", category="item_type_dimension")
         .aggregate_over(
+            value_column=None,
             method="count",
             windows=["30d"],
             feature_names=["count_30d"],
@@ -259,10 +262,12 @@ def test_item_view_features_from_different_filters(item_table):
     filtered_1 = view[item_type_number % 2 == 0]
     filtered_2 = view[item_type_number % 2 == 1]
     feature_1 = filtered_1.groupby("order_id").aggregate(
+        value_column=None,
         method="count",
         feature_name="feature_1",
     )
     feature_2 = filtered_2.groupby("order_id").aggregate(
+        value_column=None,
         method="count",
         feature_name="feature_2",
     )

@@ -1793,6 +1793,7 @@ def count_per_category_feature_group_fixture(snowflake_event_view_with_entity):
     """
     grouped = snowflake_event_view_with_entity.groupby("cust_id", category="col_int")
     features = grouped.aggregate_over(
+        value_column=None,
         method="count",
         windows=["30m", "2h", "1d"],
         feature_job_setting=FeatureJobSetting(blind_spot="10m", period="30m", offset="5m"),

@@ -134,6 +134,7 @@ async def test_data_warehouse_migration_v6(
     _ = bad_feature_stores
     event_view = event_table.get_view()
     features_1 = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
         method="count",
         windows=["7d"],
         feature_names=["test_data_warehouse_migration_v6_feature_count"],

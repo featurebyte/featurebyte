@@ -34,6 +34,7 @@ def count_item_type_dictionary_feature_fixture(item_table):
     """
     item_view = item_table.get_view()
     return item_view.groupby("order_id", category="item_type").aggregate(
+        value_column=None,
         method="count",
         feature_name="COUNT_ITEM_TYPE",
     )

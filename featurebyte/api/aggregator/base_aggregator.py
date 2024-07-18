@@ -79,12 +79,7 @@ class BaseAggregator(ABC):
         """
         return None
 
-    def _validate_method_and_value_column(
-        self, method: Optional[str], value_column: Optional[str]
-    ) -> None:
-        if method is None:
-            raise ValueError("method is required")
-
+    def _validate_method_and_value_column(self, method: str, value_column: Optional[str]) -> None:
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 
@@ -119,7 +114,7 @@ class BaseAggregator(ABC):
             )
 
     def get_output_var_type(
-        self, agg_method: AggFuncType, method: str, value_column: str
+        self, agg_method: AggFuncType, method: str, value_column: Optional[str]
     ) -> DBVarType:
         """
         Get output variable type for aggregation method.
@@ -130,7 +125,7 @@ class BaseAggregator(ABC):
             Aggregation method
         method: str
             Aggregation method name
-        value_column: str
+        value_column: Optional[str]
             Value column name
 
         Returns
@@ -143,7 +138,10 @@ class BaseAggregator(ABC):
             If aggregation method does not support input variable type
         """
         # value_column is None for count-like aggregation method
-        input_var_type = self.view.column_var_type_map.get(value_column, DBVarType.FLOAT)
+        if value_column in self.view.column_var_type_map:
+            input_var_type = self.view.column_var_type_map[value_column]
+        else:
+            input_var_type = DBVarType.FLOAT
         if not agg_method.is_var_type_supported(input_var_type):
             raise ValueError(
                 f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
@@ -163,7 +161,7 @@ class BaseAggregator(ABC):
         skip_fill_na: bool,
     ) -> Feature:
         # value_column is None for count-like aggregation method
-        var_type = self.get_output_var_type(agg_method, method, value_column)  # type: ignore[arg-type]
+        var_type = self.get_output_var_type(agg_method, method, value_column)
 
         feature = self.view.project_feature_from_node(
             node=aggregation_node,
