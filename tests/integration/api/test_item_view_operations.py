@@ -153,6 +153,7 @@ def test_item_view_ops(item_table, expected_joined_event_item_dataframe):
 
     # Create a feature using aggregation without time window and preview it
     feature = item_view_filtered.groupby("order_id").aggregate(
+        value_column=None,
         method=AggFunc.COUNT,
         feature_name="order_size",
     )
