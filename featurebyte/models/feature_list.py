@@ -365,7 +365,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
     feature_list_namespace_id: PydanticObjectId = Field(frozen=True, default_factory=ObjectId)
     online_enabled_feature_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
-    aggregation_ids: List[str] = Field(allow_mutation=False, default_factory=list)
+    aggregation_ids: List[str] = Field(frozen=True, default_factory=list)
 
     # store info contains the warehouse specific info for the feature list
     internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)

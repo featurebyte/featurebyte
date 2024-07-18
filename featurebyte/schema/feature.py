@@ -71,7 +71,7 @@ class BatchFeatureCreatePayload(FeatureByteBaseModel):
     # since their serialization output is the same, QueryGraphModel is used here to avoid
     # additional serialization/deserialization
     graph: QueryGraphModel
-    features: List[BatchFeatureItem] = Field(max_items=MAX_BATCH_FEATURE_ITEM_COUNT)
+    features: List[BatchFeatureItem] = Field(max_length=MAX_BATCH_FEATURE_ITEM_COUNT)
     conflict_resolution: ConflictResolution = Field(default="raise")
 
 

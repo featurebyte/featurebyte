@@ -15,7 +15,7 @@ from pathlib import Path
 import requests
 import websocket
 import yaml
-from pydantic import AnyHttpUrl, BaseModel, Field, validator
+from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
 from requests import Response
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -88,7 +88,7 @@ class LocalStorageSettings(BaseModel):
 
     local_path: Path = Field(default_factory=lambda: get_home_path().joinpath("data/files"))
 
-    @validator("local_path")
+    @field_validator("local_path")
     @classmethod
     def expand_path(cls, value: Path) -> Path:
         """
