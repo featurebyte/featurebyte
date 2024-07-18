@@ -682,15 +682,41 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         deployment_doc = create_success_response.json()
         deployment_id = deployment_doc["_id"]
 
-        feature_table_id = ObjectId()
         app_container.feature_materialize_run_service.catalog_id = ObjectId(default_catalog_id)
+
+        feature_table_id_1 = ObjectId()
         await app_container.feature_materialize_run_service.create_document(
             FeatureMaterializeRun(
-                offline_store_feature_table_id=feature_table_id,
+                offline_store_feature_table_id=feature_table_id_1,
+                offline_store_feature_table_name="customer",
                 scheduled_job_ts=datetime(2024, 7, 15, 10, 0, 0),
                 completion_ts=datetime(2024, 7, 15, 10, 10, 0),
                 completion_status="success",
                 duration_from_scheduled_seconds=10,
+                deployment_ids=[ObjectId(deployment_id)],
+            )
+        )
+        await app_container.feature_materialize_run_service.create_document(
+            FeatureMaterializeRun(
+                offline_store_feature_table_id=feature_table_id_1,
+                offline_store_feature_table_name="customer",
+                scheduled_job_ts=datetime(2024, 7, 15, 10, 10, 0),
+                completion_ts=datetime(2024, 7, 15, 10, 25, 0),
+                completion_status="success",
+                duration_from_scheduled_seconds=15,
+                deployment_ids=[ObjectId(deployment_id)],
+            )
+        )
+
+        feature_table_id_2 = ObjectId()
+        await app_container.feature_materialize_run_service.create_document(
+            FeatureMaterializeRun(
+                offline_store_feature_table_id=feature_table_id_2,
+                offline_store_feature_table_name="device",
+                scheduled_job_ts=datetime(2024, 7, 15, 10, 15, 0),
+                completion_ts=datetime(2024, 7, 15, 10, 45, 0),
+                completion_status="success",
+                duration_from_scheduled_seconds=30,
                 deployment_ids=[ObjectId(deployment_id)],
             )
         )
@@ -700,15 +726,39 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         )
         assert response.status_code == HTTPStatus.OK, response.content
         assert response.json() == {
-            "runs": [
+            "feature_table_history": [
                 {
-                    "feature_table_id": str(feature_table_id),
-                    "feature_table_name": None,
-                    "scheduled_ts": "2024-07-15T10:00:00",
-                    "completion_ts": "2024-07-15T10:10:00",
-                    "completion_status": "success",
-                    "duration_seconds": 10,
-                    "incomplete_tile_tasks_count": 0,
-                }
+                    "feature_table_id": str(feature_table_id_1),
+                    "feature_table_name": "customer",
+                    "runs": [
+                        {
+                            "scheduled_ts": "2024-07-15T10:10:00",
+                            "completion_ts": "2024-07-15T10:25:00",
+                            "completion_status": "success",
+                            "duration_seconds": 15,
+                            "incomplete_tile_tasks_count": 0,
+                        },
+                        {
+                            "scheduled_ts": "2024-07-15T10:00:00",
+                            "completion_ts": "2024-07-15T10:10:00",
+                            "completion_status": "success",
+                            "duration_seconds": 10,
+                            "incomplete_tile_tasks_count": 0,
+                        },
+                    ],
+                },
+                {
+                    "feature_table_id": str(feature_table_id_2),
+                    "feature_table_name": "device",
+                    "runs": [
+                        {
+                            "scheduled_ts": "2024-07-15T10:15:00",
+                            "completion_ts": "2024-07-15T10:45:00",
+                            "completion_status": "success",
+                            "duration_seconds": 30,
+                            "incomplete_tile_tasks_count": 0,
+                        }
+                    ],
+                },
             ]
         }
