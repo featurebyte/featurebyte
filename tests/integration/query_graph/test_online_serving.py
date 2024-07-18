@@ -50,6 +50,7 @@ def features_fixture(event_table, source_type):
     )
     # Use this feature group to test handling of empty entity column names list
     feature_without_entity = event_view.groupby([], category="PRODUCT_ACTION").aggregate_over(
+        value_column=None,
         method="count",
         windows=["24h", "7d"],
         feature_names=["TOTAL_EVENT_COUNT_BY_ACTION_24h", "TOTAL_EVENT_COUNT_BY_ACTION_7d"],

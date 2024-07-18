@@ -164,6 +164,7 @@ def test_item_table_update_critical_data_info(item_table):
     assert window_preview_df.count_12h.iloc[0] == {"type_84": 1}
 
     feature = item_view.groupby("order_id").aggregate(
+        value_column=None,
         method=AggFunc.COUNT,
         feature_name="order_size",
     )
