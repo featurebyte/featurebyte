@@ -308,8 +308,11 @@ def test_groupby__count_feature_specify_value_column(snowflake_event_view_with_e
 @pytest.mark.parametrize(
     "missing_param, expected_error",
     [
-        ("windows", "missing a required argument: 'windows'"),
-        ("feature_names", "missing a required argument: 'feature_names'"),
+        ("windows", "GroupBy.aggregate_over() missing 1 required positional argument: 'windows'"),
+        (
+            "feature_names",
+            "GroupBy.aggregate_over() missing 1 required positional argument: 'feature_names'",
+        ),
     ],
 )
 def test_groupby__required_params_missing(

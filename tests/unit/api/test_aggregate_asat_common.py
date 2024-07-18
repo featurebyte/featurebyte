@@ -39,7 +39,7 @@ def test_aggregate_asat__method_required(snowflake_scd_view_with_entity, is_forw
             ["col_boolean"],
             dict(value_column="col_float", name="asat_output"),
         )
-    assert str(exc.value) == "missing a required argument: 'method'"
+    assert "missing 1 required positional argument: 'method'" in str(exc.value)
 
 
 @pytest.mark.parametrize("is_forward", [False, True])
@@ -55,9 +55,9 @@ def test_aggregate_asat__feature_name_required(snowflake_scd_view_with_entity, i
             dict(value_column="col_float", method="sum"),
         )
     if is_forward:
-        assert str(exc.value) == "missing a required argument: 'target_name'"
+        assert "missing 1 required positional argument: 'target_name'" in str(exc.value)
     else:
-        assert str(exc.value) == "missing a required argument: 'feature_name'"
+        assert "missing 1 required positional argument: 'feature_name'" in str(exc.value)
 
 
 @pytest.mark.parametrize("is_forward", [False, True])
@@ -73,12 +73,11 @@ def test_aggregate_asat__latest_not_supported(snowflake_scd_view_with_entity, is
             dict(value_column="col_float", method="latest", name="asat_feature"),
         )
     if is_forward:
-        assert (
-            str(exc.value)
-            == "latest aggregation method is not supported for forward_aggregate_asat"
+        assert "latest aggregation method is not supported for forward_aggregate_asat" in str(
+            exc.value
         )
     else:
-        assert str(exc.value) == "latest aggregation method is not supported for aggregate_asat"
+        assert "latest aggregation method is not supported for aggregate_asat" in str(exc.value)
 
 
 @pytest.mark.parametrize("is_forward", [False, True])
