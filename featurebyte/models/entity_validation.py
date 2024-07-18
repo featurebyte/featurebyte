@@ -117,10 +117,13 @@ class EntityInfo(FeatureByteBaseModel):
         original_serving_name = entity.serving_names[0]
         if (
             self.serving_names_mapping is None
-            or original_serving_name not in self.serving_names_mapping
+            or original_serving_name
+            not in self.serving_names_mapping  # pylint: disable=unsupported-membership-test
         ):
             return original_serving_name
-        return self.serving_names_mapping[original_serving_name]
+        return self.serving_names_mapping[  # pylint: disable=unsubscriptable-object
+            original_serving_name
+        ]
 
     def format_missing_entities_error(self, missing_entity_ids: List[ObjectId]) -> str:
         """

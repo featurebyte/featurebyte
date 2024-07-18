@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 import json
 
-from pydantic import BaseModel, Field, PrivateAttr, field_serializer
+from pydantic import Field, PrivateAttr, field_serializer
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.graph import QueryGraph

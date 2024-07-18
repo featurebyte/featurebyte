@@ -75,7 +75,10 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
         """
         if self.graph is None or self.node_names is None:
             return []
-        return [self.graph.get_node_by_name(name) for name in self.node_names]
+        return [
+            self.graph.get_node_by_name(name)
+            for name in self.node_names  # pylint: disable=not-an-iterable
+        ]
 
 
 class TargetTableList(PaginationMixin):

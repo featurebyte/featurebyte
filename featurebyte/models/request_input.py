@@ -205,7 +205,9 @@ class ViewRequestInput(BaseRequestInput):
         # TODO: make this a cached_property for pydantic v2
         if self._graph is None:
             if isinstance(self.internal_graph, dict):
-                self._graph = QueryGraphModel(**self.internal_graph)
+                self._graph = QueryGraphModel(
+                    **self.internal_graph  # pylint: disable=not-a-mapping
+                )
             else:
                 self._graph = self.internal_graph
         return self._graph

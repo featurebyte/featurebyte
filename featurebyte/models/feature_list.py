@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Set
 
 import functools
-import json
 from collections import defaultdict
 from pathlib import Path
 
@@ -572,7 +571,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             return None
         if self._feature_clusters is None:
             self._feature_clusters = [
-                FeatureCluster(**cluster) for cluster in self.internal_feature_clusters
+                FeatureCluster(**cluster)
+                for cluster in self.internal_feature_clusters  # pylint: disable=not-an-iterable
             ]
         return self._feature_clusters
 

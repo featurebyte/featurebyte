@@ -22,24 +22,24 @@ class FeatureParameters(FeatureByteBaseModel):
     name: NameStr
 
 
-def feature_params_discriminator(x: Any) -> Literal["feature_ids", "feature_params"]:
+def feature_params_discriminator(value: Any) -> Literal["feature_ids", "feature_params"]:
     """
     Discriminator for feature parameters
 
     Parameters
     ----------
-    x: Any
+    value: Any
         Input value
 
     Returns
     -------
     Literal["feature_ids", "feature_params"]
     """
-    if isinstance(x, list):
-        if x:
-            return feature_params_discriminator(x[0])
+    if isinstance(value, list):
+        if value:
+            return feature_params_discriminator(value[0])
         return "feature_ids"
-    if isinstance(x, (dict, FeatureParameters)):
+    if isinstance(value, (dict, FeatureParameters)):
         return "feature_params"
     return "feature_ids"
 

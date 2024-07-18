@@ -188,7 +188,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         """
         if self.internal_entity_universe is None:
             raise ValueError("entity_universe is not set")
-        return EntityUniverseModel(**self.internal_entity_universe)
+        return EntityUniverseModel(**self.internal_entity_universe)  # pylint: disable=not-a-mapping
 
     @staticmethod
     def get_serving_names_for_table_name(

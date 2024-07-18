@@ -42,7 +42,10 @@ class HistoricalFeatureTableModel(BaseFeatureOrTargetTableModel):
         """
         if self.features_info is None:
             return None
-        return [feature_info.feature_name for feature_info in self.features_info]
+        return [
+            feature_info.feature_name
+            for feature_info in self.features_info  # pylint: disable=not-an-iterable
+        ]
 
     @property
     def feature_ids(self) -> Optional[List[PydanticObjectId]]:
@@ -55,7 +58,10 @@ class HistoricalFeatureTableModel(BaseFeatureOrTargetTableModel):
         """
         if self.features_info is None:
             return None
-        return [feature_info.feature_id for feature_info in self.features_info]
+        return [
+            feature_info.feature_id
+            for feature_info in self.features_info  # pylint: disable=not-an-iterable
+        ]
 
     class Settings(MaterializedTableModel.Settings):
         """

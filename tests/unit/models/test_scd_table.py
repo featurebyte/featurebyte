@@ -5,8 +5,7 @@ Tests for SCDTable models
 import datetime
 
 import pytest
-from _pytest._code import ExceptionInfo
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import TableStatus

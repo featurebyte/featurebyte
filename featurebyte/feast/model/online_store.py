@@ -92,4 +92,4 @@ def get_feast_online_store_details(
     -------
     FeastOnlineStoreDetails
     """
-    return TypeAdapter(FeastOnlineStoreDetails).validate_python(online_store_details.dict())  # type: ignore
+    return TypeAdapter(FeastOnlineStoreDetails).validate_python(online_store_details.dict())

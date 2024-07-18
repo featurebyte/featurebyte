@@ -5,7 +5,7 @@ Tests for DimensionTable models
 import datetime
 
 import pytest
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 from featurebyte.models import DimensionTableModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID

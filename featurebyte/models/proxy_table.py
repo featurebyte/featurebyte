@@ -38,9 +38,9 @@ class ProxyTableModel(BaseTableModel):  # pylint: disable=abstract-method
         table_class = TABLE_CLASS_MAP.get(kwargs.get("type"))
         if table_class is None:
             # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-            table = TypeAdapter(TableModel).validate_python(kwargs)
+            table = TypeAdapter(TableModel).validate_python(kwargs)  # type: ignore[var-annotated]
         else:
             # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
             # https://github.com/pydantic/pydantic/issues/6768
-            table = table_class(**kwargs)
+            table = table_class(**kwargs)  # type: ignore
         return cast(TableModel, table)

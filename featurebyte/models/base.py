@@ -76,8 +76,8 @@ class _ObjectIdPydanticAnnotation:
         def validate_from_str(input_value: str) -> ObjectId:
             try:
                 return ObjectId(input_value)
-            except InvalidId:
-                raise ValueError(f"Invalid ObjectId: {input_value}")
+            except InvalidId as exc:
+                raise ValueError(f"Invalid ObjectId: {input_value}") from exc
 
         return core_schema.union_schema(
             [

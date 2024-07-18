@@ -5,7 +5,7 @@ Tests for EventTable models
 import datetime
 
 import pytest
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.event_table import EventTableModel
