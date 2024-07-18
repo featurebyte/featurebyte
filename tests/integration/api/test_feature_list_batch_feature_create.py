@@ -14,6 +14,7 @@ def fixture_feature_group(event_table):
     """Feature group fixture"""
     event_view = event_table.get_view()
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
         method="count",
         windows=["2h", "24h"],
         feature_names=["COUNT_2h", "COUNT_24h"],

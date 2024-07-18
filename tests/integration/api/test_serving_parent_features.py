@@ -205,7 +205,10 @@ def customer_num_city_change_feature_fixture(tables):
     _ = tables
     view = Table.get(f"{table_prefix}_scd_table_1").get_change_view(track_changes_column="scd_city")
     feature = view.groupby("scd_cust_id").aggregate_over(
-        method="count", windows=["4w"], feature_names=["user_city_changes_count_4w"]
+        value_column=None,
+        method="count",
+        windows=["4w"],
+        feature_names=["user_city_changes_count_4w"],
     )["user_city_changes_count_4w"]
     return feature
 

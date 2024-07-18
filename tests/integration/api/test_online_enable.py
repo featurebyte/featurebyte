@@ -108,7 +108,7 @@ async def test_online_enable_non_time_aware_feature(item_table, config):
     """
     item_view = item_table.get_view()
     feature = item_view.groupby("order_id").aggregate(
-        method="count", feature_name="my_item_feature_for_online_enable_test"
+        value_column=None, method="count", feature_name="my_item_feature_for_online_enable_test"
     )
     feature_list = FeatureList([feature], "my_non_time_aware_list")
     feature_list.save()

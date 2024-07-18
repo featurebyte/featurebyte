@@ -298,6 +298,7 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
 
     # Create a feature and preview it
     feature = event_view.groupby("ÜSER ID", category="User Status").aggregate_over(
+        value_column=None,
         method="count",
         windows=["7d"],
         feature_names=["count_7d"],
@@ -333,6 +334,7 @@ def test_scd_lookup_feature(
     event_view = event_table.get_view()
     event_view = event_view.join(scd_view, on="ÜSER ID")
     window_feature = event_view.groupby("ÜSER ID", "User Status").aggregate_over(
+        value_column=None,
         method="count",
         windows=["7d"],
         feature_names=["count_7d"],
@@ -470,10 +472,13 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     """
     scd_view = scd_table.get_view()
     feature_1 = scd_view.groupby("User Status").aggregate_asat(
-        method="count", feature_name="Current Number of Users With This Status"
+        value_column=None, method="count", feature_name="Current Number of Users With This Status"
     )
     feature_2 = scd_view.groupby("User Status").aggregate_asat(
-        method="count", feature_name="Current Number of Users With This Status 1d", offset="1d"
+        value_column=None,
+        method="count",
+        feature_name="Current Number of Users With This Status 1d",
+        offset="1d",
     )
 
     # check preview but provides children id
@@ -563,10 +568,12 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     """
     scd_view = scd_table.get_view()
     feature = scd_view.groupby([]).aggregate_asat(
-        method="count", feature_name="Current Number of Users"
+        value_column=None, method="count", feature_name="Current Number of Users"
     )
     feature_other = scd_view.groupby("User Status").aggregate_asat(
-        method="count", feature_name="Current Number of Users With This Status V2"
+        value_column=None,
+        method="count",
+        feature_name="Current Number of Users With This Status V2",
     )
 
     # check preview
@@ -640,6 +647,7 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table, so
     event_view = event_view.join(scd_view, on="ÜSER ID")
 
     feature = event_view.groupby("User Status").aggregate_over(
+        value_column=None,
         method="count",
         windows=["30d"],
         feature_names=["count_30d"],

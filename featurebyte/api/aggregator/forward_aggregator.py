@@ -39,10 +39,10 @@ class ForwardAggregator(BaseAggregator):
 
     def forward_aggregate(
         self,
-        value_column: str,
+        value_column: Optional[str],
         method: str,
-        window: Optional[str] = None,
-        target_name: Optional[str] = None,
+        window: str,
+        target_name: str,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
         offset: Optional[str] = None,
@@ -155,8 +155,8 @@ class ForwardAggregator(BaseAggregator):
 
     def _validate_parameters(
         self,
-        value_column: str,
-        method: Optional[str] = None,
+        value_column: Optional[str],
+        method: str,
         window: Optional[str] = None,
         target_name: Optional[str] = None,
         offset: Optional[str] = None,
@@ -166,7 +166,7 @@ class ForwardAggregator(BaseAggregator):
 
         Parameters
         ----------
-        value_column: str
+        value_column: Optional[str]
             Column to be aggregated
         method: str
             Aggregation method

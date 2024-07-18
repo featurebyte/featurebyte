@@ -34,7 +34,7 @@ def feature_from_change_view(saved_scd_table, cust_id_entity):
     saved_scd_table["col_text"].as_entity(cust_id_entity.name)
     snowflake_change_view = saved_scd_table.get_change_view("col_int")
     feature_group = snowflake_change_view.groupby("col_text").aggregate_over(
-        method="count", windows=["30d"], feature_names=["feat_30d"]
+        value_column=None, method="count", windows=["30d"], feature_names=["feat_30d"]
     )
     feature = feature_group["feat_30d"]
     feature.save()
@@ -764,7 +764,7 @@ def test_change_view__aggregate_over(saved_scd_table, cust_id_entity):
     saved_scd_table["col_text"].as_entity(cust_id_entity.name)
     snowflake_change_view = saved_scd_table.get_change_view("col_int")
     feature_group = snowflake_change_view.groupby("col_text").aggregate_over(
-        method="count", windows=["30d"], feature_names=["feat_30d"]
+        value_column=None, method="count", windows=["30d"], feature_names=["feat_30d"]
     )
     feature = feature_group["feat_30d"]
     feature.save()

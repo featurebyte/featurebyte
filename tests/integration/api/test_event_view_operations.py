@@ -385,6 +385,7 @@ def create_feature_with_filtered_event_view(event_view):
     """
     event_view = event_view[event_view["PRODUCT_ACTION"] == "purchase"]
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
         method="count",
         windows=["7d"],
         feature_names=["NUM_PURCHASE_7d"],
@@ -1252,6 +1253,7 @@ def check_day_of_week_counts(event_view, preview_param):
     """Check using derived numeric column as category"""
     event_view["event_day_of_week"] = event_view["ËVENT_TIMESTAMP"].dt.day_of_week
     day_of_week_counts = event_view.groupby("ÜSER ID", category="event_day_of_week").aggregate_over(
+        value_column=None,
         method="count",
         windows=["24h"],
         feature_names=["DAY_OF_WEEK_COUNTS_24h"],
@@ -1288,6 +1290,7 @@ def get_non_time_based_feature_fixture(item_table):
     item_view = item_view[item_view["order_number"] % 2 == 0]
 
     return item_view.groupby("order_id").aggregate(
+        value_column=None,
         method=AggFunc.COUNT,
         feature_name="non_time_count_feature",
     )
@@ -1443,6 +1446,7 @@ def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     Test case to ensure non-float tile value can be added to an existing tile table without issues
     """
     feature_group_1 = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
         method="count",
         windows=["2h"],
         feature_names=["COUNT_2h"],

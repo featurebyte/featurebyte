@@ -14,6 +14,7 @@ def test_forward_aggregate_asat(scd_table, scd_dataframe, source_type):
     """
     scd_view = scd_table.get_view()
     target = scd_view.groupby("User Status").forward_aggregate_asat(
+        value_column=None,
         method="count",
         target_name="Future Number of Users With This Status",
         offset="10d",

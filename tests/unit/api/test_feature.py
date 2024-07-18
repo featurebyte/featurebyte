@@ -1560,6 +1560,7 @@ def test_feature_create_new_version__multiple_event_table(
         main_data_name, non_main_data_name = another_event_table.name, saved_event_table.name
 
     feature = event_view_used.groupby(entity_col_name).aggregate_over(
+        value_column=None,
         method="count",
         windows=["30m"],
         feature_names=["count_30m"],

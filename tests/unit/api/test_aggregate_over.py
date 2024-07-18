@@ -107,6 +107,7 @@ def test_empty_groupby_keys(snowflake_event_view_with_entity):
     Test empty groupby keys (feature without any entity)
     """
     feature_group = snowflake_event_view_with_entity.groupby([]).aggregate_over(
+        value_column=None,
         method="count",
         windows=["30d"],
         feature_names=["feat_count"],

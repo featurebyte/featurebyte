@@ -207,13 +207,13 @@ def features_fixture(
     scd_view = scd_table.get_view()
     feature_10 = scd_view["User Status"].as_feature("User Status Feature")
     feature_11 = scd_view.groupby("User Status").aggregate_asat(
-        method="count", feature_name="Current Number of Users With This Status"
+        None, method="count", feature_name="Current Number of Users With This Status"
     )
     feature_11.name = "Current Number of Users With This Status"
 
     item_view = item_table.get_view()
     item_type_counts = item_view.groupby("order_id", category="item_type").aggregate(
-        method="count", feature_name="my_item_feature"
+        None, method="count", feature_name="my_item_feature"
     )
     feature_12 = item_type_counts.cd.most_frequent()
     feature_12.name = "Most Frequent Item Type by Order"
@@ -237,6 +237,7 @@ def features_fixture(
     event_view["non_string_key"] = event_view["ËVENT_TIMESTAMP"].dt.day_of_week
     scd_view["non_string_key"] = scd_view["Effective Timestamp"].dt.day_of_week
     dict_feature = event_view.groupby("ÜSER ID", category="non_string_key").aggregate_over(
+        value_column=None,
         method="count",
         windows=["7d"],
         feature_names=["dict_feature"],

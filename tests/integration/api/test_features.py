@@ -16,6 +16,7 @@ def test_features_without_entity(event_table):
     """
     event_view = event_table.get_view()
     feature_group = event_view.groupby([]).aggregate_over(
+        value_column=None,
         method="count",
         windows=["2h", "24h"],
         feature_names=["ALL_COUNT_2h", "ALL_COUNT_24h"],
@@ -79,7 +80,7 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table,
     event_view = event_table.get_view()
     item_view = item_table.get_view()
     item_feature = item_view.groupby("order_id").aggregate(
-        method="count", feature_name="my_item_feature"
+        value_column=None, method="count", feature_name="my_item_feature"
     )
     event_view = event_view.add_feature("added_feature", item_feature, "TRANSACTION_ID")
 
@@ -130,7 +131,7 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table,
 def test_preview_with_numpy_array(item_table, source_type):
     item_view = item_table.get_view()
     item_feature = item_view.groupby("order_id").aggregate(
-        method="count", feature_name="my_item_feature"
+        value_column=None, method="count", feature_name="my_item_feature"
     )
     df_observation = pd.DataFrame(
         {
@@ -166,6 +167,7 @@ def test_relative_frequency_with_filter(event_table, scd_table):
 
     filtered_view = event_view[event_view["ÀMOUNT"] > 2]
     dict_feature = filtered_view.groupby("ÜSER ID", category="User Status").aggregate_over(
+        value_column=None,
         method="count",
         windows=["7d"],
         feature_names=["my_feature"],
@@ -203,6 +205,7 @@ def test_relative_frequency_with_non_string_keys(event_table, scd_table):
     scd_view["non_string_key"] = scd_view["Effective Timestamp"].dt.day_of_week
 
     dict_feature = event_view.groupby("ÜSER ID", category="non_string_key").aggregate_over(
+        value_column=None,
         method="count",
         windows=["7d"],
         feature_names=["dict_feature"],

@@ -39,9 +39,9 @@ class AsAtAggregator(BaseAsAtAggregator):
     @typechecked
     def aggregate_asat(
         self,
-        value_column: Optional[str] = None,
-        method: Optional[str] = None,
-        feature_name: Optional[str] = None,
+        value_column: Optional[str],
+        method: str,
+        feature_name: str,
         offset: Optional[str] = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
@@ -88,7 +88,6 @@ class AsAtAggregator(BaseAsAtAggregator):
         self._validate_parameters(
             method=method,
             value_column=value_column,
-            output_name=feature_name,
             offset=offset,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
