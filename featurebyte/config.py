@@ -119,6 +119,8 @@ class Profile(BaseModel):
 
     @field_serializer("api_url")
     def _serialize_api_url(self, system: AnyHttpUrl) -> str:
+        # In pydantic V2, trailing slash is included in the url (https://github.com/pydantic/pydantic/issues/7186).
+        # This is a workaround to remove the trailing slash.
         return str(system).rstrip("/")
 
 

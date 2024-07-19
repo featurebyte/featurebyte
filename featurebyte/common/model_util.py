@@ -217,7 +217,9 @@ def convert_seconds_to_time_format(seconds: int, components: int = 4) -> str:
 
 def get_type_to_class_map(class_list: Sequence[type[BaseModel]]) -> dict[str, type[BaseModel]]:
     """
-    Get type to class map
+    Get class type string value to class map. This is used to generate the class mapping for the
+    model deserialization. By using this map, we can avoid pydantic V2 performance issue due to
+    _core_utils.py:walk. The issue is mentioned in https://github.com/pydantic/pydantic/issues/6768.
 
     Parameters
     ----------
