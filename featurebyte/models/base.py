@@ -12,7 +12,6 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-import numpy as np
 from bson import ObjectId
 from bson.errors import InvalidId
 from pydantic import (
@@ -117,7 +116,6 @@ class FeatureByteBaseModel(BaseModel):
     model_config = ConfigDict(
         validate_assignment=True,
         use_enum_values=True,
-        json_encoders={np.ndarray: lambda arr: arr.tolist(), ObjectId: str},
         arbitrary_types_allowed=True,
     )
 

@@ -6,8 +6,6 @@ from typing import Any
 
 from abc import ABC, abstractmethod
 
-import numpy as np
-from bson import ObjectId
 from pydantic import ConfigDict
 
 from featurebyte.models.tile import TileCommonParameters
@@ -24,10 +22,6 @@ class TileCommon(TileCommonParameters, BaseSqlModel, ABC):
     model_config = ConfigDict(
         validate_assignment=True,
         use_enum_values=True,
-        json_encoders={
-            ObjectId: str,
-            np.ndarray: lambda arr: arr.tolist(),
-        },
         extra="forbid",
         arbitrary_types_allowed=True,
     )

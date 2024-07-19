@@ -21,8 +21,6 @@ from typing import (
 import copy
 from abc import ABC, abstractmethod
 
-import numpy as np
-from bson import ObjectId
 from pydantic import ConfigDict, Field
 
 from featurebyte.common.model_util import parse_duration_string
@@ -72,10 +70,6 @@ class BaseNodeParameters(FeatureByteBaseModel):
     model_config = ConfigDict(
         validate_assignment=True,
         use_enum_values=True,
-        json_encoders={
-            ObjectId: str,
-            np.ndarray: lambda arr: arr.tolist(),
-        },
         arbitrary_types_allowed=True,
         extra="forbid",
     )
