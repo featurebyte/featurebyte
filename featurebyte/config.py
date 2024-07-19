@@ -15,7 +15,7 @@ from pathlib import Path
 import requests
 import websocket
 import yaml
-from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
+from pydantic import AnyHttpUrl, BaseModel, Field, field_serializer, field_validator
 from requests import Response
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -116,6 +116,10 @@ class Profile(BaseModel):
     api_url: AnyHttpUrl
     api_token: Optional[str] = Field(default=None)
     ssl_verify: bool = Field(default=True)
+
+    @field_serializer("api_url")
+    def _serialize_api_url(self, system: AnyHttpUrl) -> str:
+        return str(system).rstrip("/")
 
 
 class ProfileList(BaseModel):
