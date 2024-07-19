@@ -145,7 +145,7 @@ class AccessorMetadata:
 
 def get_class_members_and_fields_for_class_obj(class_obj):
     class_members = sorted([attr for attr in dir(class_obj) if not attr.startswith("_")])
-    fields = getattr(class_obj, "__fields__", None)
+    fields = getattr(class_obj, "model_fields", None)
     if fields:
         for name in fields.keys():
             class_members.append(name)

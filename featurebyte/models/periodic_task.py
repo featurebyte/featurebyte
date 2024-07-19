@@ -65,8 +65,8 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
     time_modulo_frequency_second: Optional[int] = Field(default=None)
     enabled: Optional[bool] = Field(default=True)
 
-    total_run_count: Optional[int] = Field(default=0, min=0)
-    max_run_count: Optional[int] = Field(default=0, min=0)
+    total_run_count: Optional[int] = Field(default=0, ge=0)
+    max_run_count: Optional[int] = Field(default=0, ge=0)
     run_immediately: Optional[bool] = Field(default=None)
 
     date_changed: Optional[datetime] = Field(default_factory=datetime.now)
