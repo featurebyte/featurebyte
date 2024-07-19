@@ -92,11 +92,9 @@ class OnlineFeaturesResponseModel(FeatureByteBaseModel):
 
 class FeatureTableJobRun(FeatureByteBaseModel):
     """
-    Schema for feature table job run
+    Schema for a specific job run
     """
 
-    feature_table_id: PydanticObjectId
-    feature_table_name: Optional[str]
     scheduled_ts: datetime
     completion_ts: Optional[datetime]
     completion_status: Optional[CompletionStatus]
@@ -104,9 +102,19 @@ class FeatureTableJobRun(FeatureByteBaseModel):
     incomplete_tile_tasks_count: Optional[int]
 
 
+class FeatureTableJobRuns(FeatureByteBaseModel):
+    """
+    Schema for feature table job runs
+    """
+
+    feature_table_id: PydanticObjectId
+    feature_table_name: Optional[str]
+    runs: List[FeatureTableJobRun]
+
+
 class DeploymentJobHistory(FeatureByteBaseModel):
     """
     Schema for deployment job history
     """
 
-    runs: List[FeatureTableJobRun]
+    feature_table_history: List[FeatureTableJobRuns]
