@@ -4,11 +4,12 @@ This module contains Feature list store info related models
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Union, cast
 from typing_extensions import Annotated
 
-from pydantic import Field
+from pydantic import Field, TypeAdapter
 
+from featurebyte.common.model_util import get_type_to_class_map
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature import FeatureModel
@@ -461,13 +462,41 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         )
 
 
-StoreInfo = Annotated[
-    Union[
-        UninitializedStoreInfo,
-        SnowflakeStoreInfo,
-        DataBricksStoreInfo,
-        DataBricksUnityStoreInfo,
-        SparkStoreInfo,
-    ],
-    Field(discriminator="type"),
+STORE_INFO_TYPES = [
+    UninitializedStoreInfo,
+    SnowflakeStoreInfo,
+    DataBricksStoreInfo,
+    DataBricksUnityStoreInfo,
+    SparkStoreInfo,
 ]
+if TYPE_CHECKING:
+    # use StoreInfo during type checking
+    StoreInfo = BaseStoreInfo
+else:
+    StoreInfo = Annotated[Union[tuple(STORE_INFO_TYPES)], Field(discriminator="type")]
+
+# construct store info class map for deserialization
+STORE_INFO_CLASS_MAP = get_type_to_class_map(STORE_INFO_TYPES)
+
+
+def construct_store_info(**kwargs: Any) -> StoreInfo:
+    """
+    Construct store info
+
+    Parameters
+    ----------
+    **kwargs: Any
+        Keyword arguments for constructing store info
+
+    Returns
+    -------
+    StoreInfo
+    """
+    store_info_class = STORE_INFO_CLASS_MAP.get(kwargs.get("type"))  # type: ignore
+    if store_info_class is None:
+        # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
+        return TypeAdapter(StoreInfo).validate_python(kwargs)
+
+    # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+    # https://github.com/pydantic/pydantic/issues/6768
+    return cast(StoreInfo, store_info_class(**kwargs))

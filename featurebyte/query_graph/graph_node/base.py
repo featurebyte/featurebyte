@@ -42,12 +42,11 @@ def construct_graph_node_parameter(**kwargs: Any) -> GraphNodeParameters:
     graph_node_parameters_class = GRAPH_NODE_PARAM_CLASS_MAP.get(kwargs.get("type"))  # type: ignore
     if graph_node_parameters_class is None:
         # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-        graph_node_parameters = TypeAdapter(GraphNodeParameters).validate_python(kwargs)  # type: ignore
-    else:
-        # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
-        # https://github.com/pydantic/pydantic/issues/6768
-        graph_node_parameters = graph_node_parameters_class(**kwargs)
-    return cast(GraphNodeParameters, graph_node_parameters)
+        return TypeAdapter(GraphNodeParameters).validate_python(kwargs)
+
+    # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+    # https://github.com/pydantic/pydantic/issues/6768
+    return graph_node_parameters_class(**kwargs)  # type: ignore
 
 
 class GraphNode(BaseGraphNode):

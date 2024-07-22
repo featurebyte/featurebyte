@@ -4,7 +4,7 @@ Models to construct feast online store config from featurebyte BaseOnlineStoreDe
 
 from __future__ import annotations
 
-from typing import Union, cast
+from typing import TYPE_CHECKING, Union, cast
 from typing_extensions import Annotated
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
@@ -13,6 +13,7 @@ from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 from feast.repo_config import FeastConfigBaseModel
 from pydantic import Field, TypeAdapter
 
+from featurebyte.common.model_util import get_type_to_class_map
 from featurebyte.feast.online_store.mysql import FBMySQLOnlineStoreConfig
 from featurebyte.models.online_store import (
     BaseOnlineStoreDetails,
@@ -71,10 +72,19 @@ class FeastMySQLOnlineStoreDetails(BaseOnlineStoreDetailsForFeast, MySQLOnlineSt
         return cast(FeastConfigBaseModel, config)
 
 
-FeastOnlineStoreDetails = Annotated[
-    Union[FeastRedisOnlineStoreDetails, FeastMySQLOnlineStoreDetails],
-    Field(discriminator="type"),
-]
+ONLINE_STORE_DETAILS_TYPES = [FeastRedisOnlineStoreDetails, FeastMySQLOnlineStoreDetails]
+
+if TYPE_CHECKING:
+    # use FeastOnlineStoreDetails during type checking
+    FeastOnlineStoreDetails = BaseOnlineStoreDetailsForFeast
+else:
+    # during runtime, use Annotated type for pydantic model deserialization
+    FeastOnlineStoreDetails = Annotated[
+        Union[tuple(ONLINE_STORE_DETAILS_TYPES)], Field(discriminator="type")
+    ]
+
+# construct online store details class map for deserialization
+ONLINE_STORE_DETAILS_CLASS_MAP = get_type_to_class_map(ONLINE_STORE_DETAILS_TYPES)
 
 
 def get_feast_online_store_details(
@@ -92,4 +102,12 @@ def get_feast_online_store_details(
     -------
     FeastOnlineStoreDetails
     """
-    return TypeAdapter(FeastOnlineStoreDetails).validate_python(online_store_details.dict())
+    params = online_store_details.dict(by_alias=True)
+    online_store_detail_class = ONLINE_STORE_DETAILS_CLASS_MAP.get(params.get("type"))
+    if online_store_detail_class is None:
+        # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
+        return TypeAdapter(FeastOnlineStoreDetails).validate_python(params)
+
+    # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+    # https://github.com/pydantic/pydantic/issues/6768
+    return cast(FeastOnlineStoreDetails, online_store_detail_class(**params))

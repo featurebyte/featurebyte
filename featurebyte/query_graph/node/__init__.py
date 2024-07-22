@@ -43,9 +43,8 @@ def construct_node(**kwargs: Any) -> Node:
     node_class = NODE_CLASS_MAP.get(kwargs.get("type"))  # type: ignore
     if node_class is None:
         # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-        node = TypeAdapter(Node).validate_python(kwargs)  # type: ignore
-    else:
-        # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
-        # https://github.com/pydantic/pydantic/issues/6768
-        node = node_class(**kwargs)
-    return cast(Node, node)
+        return TypeAdapter(Node).validate_python(kwargs)
+
+    # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+    # https://github.com/pydantic/pydantic/issues/6768
+    return cast(Node, node_class(**kwargs))

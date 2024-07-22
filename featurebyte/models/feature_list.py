@@ -18,7 +18,6 @@ from pydantic import (
     PrivateAttr,
     RootModel,
     StrictStr,
-    TypeAdapter,
     field_serializer,
     field_validator,
     model_validator,
@@ -42,6 +41,7 @@ from featurebyte.models.feature_list_store_info import (
     SnowflakeStoreInfo,
     SparkStoreInfo,
     StoreInfo,
+    construct_store_info,
 )
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -594,7 +594,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         StoreInfo
         """
         obj_dict = self.internal_store_info or {"type": "uninitialized"}
-        return TypeAdapter(StoreInfo).validate_python(obj_dict)
+        return construct_store_info(**obj_dict)
 
     def initialize_store_info(
         self,

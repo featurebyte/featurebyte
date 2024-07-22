@@ -2,7 +2,7 @@
 Aggregation method model
 """
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union
 from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
@@ -210,9 +210,8 @@ def construct_agg_func(agg_func: AggFunc) -> AggFuncType:
     agg_func_class = AGG_FUNC_CLASS_MAP.get(str(agg_func))
     if agg_func_class is None:
         # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-        agg_func_obj = TypeAdapter(AggFuncType).validate_python({"type": agg_func})  # type: ignore
-    else:
-        # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
-        # https://github.com/pydantic/pydantic/issues/6768
-        agg_func_obj = agg_func_class(type=agg_func)
-    return cast(AggFuncType, agg_func_obj)
+        return TypeAdapter(AggFuncType).validate_python({"type": agg_func})
+
+    # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+    # https://github.com/pydantic/pydantic/issues/6768
+    return agg_func_class(type=agg_func)  # type: ignore

@@ -2,7 +2,7 @@
 This module contains specialized table related models.
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from typing_extensions import Annotated, Literal
 
 from dataclasses import dataclass
@@ -636,12 +636,11 @@ def construct_specific_data_table(**kwargs: Any) -> SpecificTableDataT:
     specific_data_table_class = SPECIFIC_DATA_TABLE_CLASS_MAP.get(kwargs.get("type"))  # type: ignore
     if specific_data_table_class is None:
         # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-        specific_data_table = TypeAdapter(SpecificTableDataT).validate_python(kwargs)  # type: ignore
-    else:
-        # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
-        # https://github.com/pydantic/pydantic/issues/6768
-        specific_data_table = specific_data_table_class(**kwargs)
-    return cast(SpecificTableDataT, specific_data_table)
+        return TypeAdapter(SpecificTableDataT).validate_python(kwargs)
+
+    # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+    # https://github.com/pydantic/pydantic/issues/6768
+    return specific_data_table_class(**kwargs)  # type: ignore
 
 
 class SpecificTableData(BaseTableData):  # pylint: disable=abstract-method

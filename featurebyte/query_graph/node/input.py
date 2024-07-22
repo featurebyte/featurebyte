@@ -175,7 +175,7 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
 class SourceTableInputNodeParameters(BaseInputNodeParameters):
     """SourceTableInputNodeParameters"""
 
-    type: Literal[TableDataType.SOURCE_TABLE] = Field(TableDataType.SOURCE_TABLE)
+    type: Literal[TableDataType.SOURCE_TABLE] = TableDataType.SOURCE_TABLE
     id: Optional[PydanticObjectId] = Field(default=None)
 
     @property

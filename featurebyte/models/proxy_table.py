@@ -4,7 +4,7 @@ This module contains ProxyTable pseudo models.
 
 from __future__ import annotations
 
-from typing import Any, Union, cast
+from typing import Any, Union
 from typing_extensions import Annotated
 
 from pydantic import Field, TypeAdapter
@@ -38,9 +38,8 @@ class ProxyTableModel(BaseTableModel):  # pylint: disable=abstract-method
         table_class = TABLE_CLASS_MAP.get(kwargs.get("type"))
         if table_class is None:
             # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-            table = TypeAdapter(TableModel).validate_python(kwargs)  # type: ignore[var-annotated]
-        else:
-            # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
-            # https://github.com/pydantic/pydantic/issues/6768
-            table = table_class(**kwargs)  # type: ignore
-        return cast(TableModel, table)
+            return TypeAdapter(TableModel).validate_python(kwargs)
+
+        # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+        # https://github.com/pydantic/pydantic/issues/6768
+        return table_class(**kwargs)  # type: ignore
