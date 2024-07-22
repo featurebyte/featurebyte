@@ -114,8 +114,12 @@ class FeatureByteBaseModel(BaseModel):
 
     # pydantic model configuration
     model_config = ConfigDict(
+        # with `validate_assignment` flag enabled, pydantic model runs validation check during attribute assignment.
         validate_assignment=True,
+        # with `use_enum_values` flag enabled, pydantic model converts the enum attribute to the enum's value when
+        # storing the value in the model (`<model>.<enum_attribute>` should return enum's value rather than enum type).
         use_enum_values=True,
+        # whether arbitrary types are allowed for field types.
         arbitrary_types_allowed=True,
     )
 

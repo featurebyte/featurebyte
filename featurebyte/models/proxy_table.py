@@ -4,28 +4,23 @@ This module contains ProxyTable pseudo models.
 
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 from typing_extensions import Annotated
 
-from pydantic import Field, TypeAdapter
+from pydantic import Field
 
-from featurebyte.enum import TableDataType
+from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableModel as BaseTableModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.scd_table import SCDTableModel
 
-TableModel = Annotated[
-    Union[EventTableModel, ItemTableModel, DimensionTableModel, SCDTableModel],
-    Field(discriminator="type"),
-]
-TABLE_CLASS_MAP = {
-    TableDataType.EVENT_TABLE.value: EventTableModel,
-    TableDataType.ITEM_TABLE.value: ItemTableModel,
-    TableDataType.DIMENSION_TABLE.value: DimensionTableModel,
-    TableDataType.SCD_TABLE.value: SCDTableModel,
-}
+TABLE_TYPES = [EventTableModel, ItemTableModel, DimensionTableModel, SCDTableModel]
+if TYPE_CHECKING:
+    TableModel = BaseTableModel
+else:
+    TableModel = Annotated[Union[tuple(TABLE_TYPES)], Field(discriminator="type")]
 
 
 class ProxyTableModel(BaseTableModel):  # pylint: disable=abstract-method
@@ -35,11 +30,9 @@ class ProxyTableModel(BaseTableModel):  # pylint: disable=abstract-method
     """
 
     def __new__(cls, **kwargs: Any) -> Any:
-        table_class = TABLE_CLASS_MAP.get(kwargs.get("type"))
-        if table_class is None:
-            # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-            return TypeAdapter(TableModel).validate_python(kwargs)
-
-        # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
-        # https://github.com/pydantic/pydantic/issues/6768
-        return table_class(**kwargs)  # type: ignore
+        construct_table_func = construct_serialize_function(
+            all_types=TABLE_TYPES,
+            annotated_type=TableModel,
+            discriminator_key="type",
+        )
+        return construct_table_func(**kwargs)

@@ -3,16 +3,16 @@ This module contains cleaning operation related classes.
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Sequence, Set, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Sequence, Set, Union
 from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 import pandas as pd
-from pydantic import Field, TypeAdapter, field_validator
+from pydantic import Field, field_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.model_util import get_type_to_class_map
+from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -489,31 +489,12 @@ else:
         Union[tuple(CLEANING_OPERATION_TYPES)], Field(discriminator="type")
     ]
 
-# construct cleaning operation class map for deserialization
-CLEANING_OPERATION_CLASS_MAP = get_type_to_class_map(CLEANING_OPERATION_TYPES)
-
-
-def construct_cleaning_operation(**kwargs: Any) -> CleaningOperation:
-    """
-    Construct cleaning operation object from the given kwargs
-
-    Parameters
-    ----------
-    kwargs: Any
-        Keyword arguments
-
-    Returns
-    -------
-    CleaningOperation
-    """
-    operation_class = CLEANING_OPERATION_CLASS_MAP.get(kwargs.get("type"))  # type: ignore
-    if operation_class is None:
-        # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-        return TypeAdapter(CleaningOperation).validate_python(kwargs)
-
-    # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
-    # https://github.com/pydantic/pydantic/issues/6768
-    return cast(CleaningOperation, operation_class(**kwargs))
+# construct function for cleaning operation deserialization
+construct_cleaning_operation = construct_serialize_function(
+    all_types=CLEANING_OPERATION_TYPES,
+    annotated_type=CleaningOperation,
+    discriminator_key="type",
+)
 
 
 class ColumnCleaningOperation(FeatureByteBaseModel):

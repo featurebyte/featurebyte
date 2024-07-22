@@ -8,7 +8,7 @@ from typing_extensions import Annotated, Literal
 from dataclasses import dataclass
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, TypeAdapter
+from pydantic import Field, StrictStr
 
 from featurebyte.common.join_utils import (
     apply_column_name_modifiers,
@@ -16,7 +16,7 @@ from featurebyte.common.join_utils import (
     combine_column_info_of_views,
     filter_columns,
 )
-from featurebyte.common.model_util import get_type_to_class_map
+from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.enum import TableDataType
 from featurebyte.exception import RepeatedColumnNamesError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -616,31 +616,12 @@ else:
     SpecificTableDataT = Annotated[Union[tuple(SPECIFIC_DATA_TABLES)], Field(discriminator="type")]
 
 
-# construct specific data table class map for deserialization
-SPECIFIC_DATA_TABLE_CLASS_MAP = get_type_to_class_map(SPECIFIC_DATA_TABLES)
-
-
-def construct_specific_data_table(**kwargs: Any) -> SpecificTableDataT:
-    """
-    Construct specific data table based on input keyword arguments
-
-    Parameters
-    ----------
-    **kwargs: Any
-        Keyword arguments used to construct the SpecificTableData object
-
-    Returns
-    -------
-    SpecificTableDataT
-    """
-    specific_data_table_class = SPECIFIC_DATA_TABLE_CLASS_MAP.get(kwargs.get("type"))  # type: ignore
-    if specific_data_table_class is None:
-        # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-        return TypeAdapter(SpecificTableDataT).validate_python(kwargs)
-
-    # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
-    # https://github.com/pydantic/pydantic/issues/6768
-    return specific_data_table_class(**kwargs)  # type: ignore
+# construct function for specific data table deserialization
+construct_specific_data_table = construct_serialize_function(
+    all_types=SPECIFIC_DATA_TABLES,
+    annotated_type=SpecificTableDataT,
+    discriminator_key="type",
+)
 
 
 class SpecificTableData(BaseTableData):  # pylint: disable=abstract-method

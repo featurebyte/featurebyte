@@ -147,14 +147,13 @@ class QueryObject(FeatureByteBaseModel):
         -------
         list[NodeType]
         """
-        # pylint: disable=no-member
         out = []
         pruned_graph, pruned_node = self.extract_pruned_graph_and_node()
         flattened_graph, node_name_map = GraphFlatteningTransformer(graph=pruned_graph).transform()
         flattened_node = flattened_graph.get_node_by_name(node_name_map[pruned_node.name])
 
         # prune the flattened graph as view graph node is not pruned before flattened
-        graph = QueryGraph(**flattened_graph.dict(by_alias=True))  # pylint: disable=no-member
+        graph = QueryGraph(**flattened_graph.dict(by_alias=True))
         pruned_flattened_graph, pruned_node_name_map = graph.prune(flattened_node)
         pruned_flattened_node = pruned_flattened_graph.get_node_by_name(
             pruned_node_name_map[flattened_node.name]

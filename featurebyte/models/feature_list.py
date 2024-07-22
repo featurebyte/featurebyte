@@ -4,7 +4,7 @@ This module contains Feature list related models
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, cast
 
 import functools
 from collections import defaultdict
@@ -594,7 +594,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         StoreInfo
         """
         obj_dict = self.internal_store_info or {"type": "uninitialized"}
-        return construct_store_info(**obj_dict)
+        return cast(StoreInfo, construct_store_info(**obj_dict))
 
     def initialize_store_info(
         self,

@@ -4,9 +4,7 @@ This module contains graph node class.
 
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-from pydantic import TypeAdapter
-
-from featurebyte.common.model_util import get_type_to_class_map
+from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -22,31 +20,12 @@ for graph_node_parameters_type in GRAPH_NODE_PARAMETERS_TYPES:
     graph_node_parameters_type.model_rebuild()
 
 
-# construct graph node parameter class map
-GRAPH_NODE_PARAM_CLASS_MAP = get_type_to_class_map(GRAPH_NODE_PARAMETERS_TYPES)
-
-
-def construct_graph_node_parameter(**kwargs: Any) -> GraphNodeParameters:
-    """
-    Construct graph node parameter based on input keyword arguments
-
-    Parameters
-    ----------
-    **kwargs: Any
-        Keyword arguments used to construct the GraphNodeParameters object
-
-    Returns
-    -------
-    GraphNodeParameters
-    """
-    graph_node_parameters_class = GRAPH_NODE_PARAM_CLASS_MAP.get(kwargs.get("type"))  # type: ignore
-    if graph_node_parameters_class is None:
-        # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-        return TypeAdapter(GraphNodeParameters).validate_python(kwargs)
-
-    # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
-    # https://github.com/pydantic/pydantic/issues/6768
-    return graph_node_parameters_class(**kwargs)  # type: ignore
+# construct function for graph node parameter deserialization
+construct_graph_node_parameter = construct_serialize_function(
+    all_types=GRAPH_NODE_PARAMETERS_TYPES,
+    annotated_type=GraphNodeParameters,
+    discriminator_key="type",
+)
 
 
 class GraphNode(BaseGraphNode):

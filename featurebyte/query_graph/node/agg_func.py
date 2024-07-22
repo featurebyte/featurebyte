@@ -2,14 +2,14 @@
 Aggregation method model
 """
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
 from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
-from pydantic import Field, TypeAdapter
+from pydantic import Field
 
-from featurebyte.common.model_util import get_type_to_class_map
+from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 
@@ -190,10 +190,6 @@ else:
     AggFuncType = Annotated[Union[tuple(AGG_FUNCS)], Field(discriminator="type")]
 
 
-# construct agg class map for deserialization
-AGG_FUNC_CLASS_MAP = get_type_to_class_map(AGG_FUNCS)
-
-
 def construct_agg_func(agg_func: AggFunc) -> AggFuncType:
     """
     Construct agg method object based on agg_func enum value
@@ -207,11 +203,9 @@ def construct_agg_func(agg_func: AggFunc) -> AggFuncType:
     -------
     AggFuncType
     """
-    agg_func_class = AGG_FUNC_CLASS_MAP.get(str(agg_func))
-    if agg_func_class is None:
-        # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
-        return TypeAdapter(AggFuncType).validate_python({"type": agg_func})
-
-    # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
-    # https://github.com/pydantic/pydantic/issues/6768
-    return agg_func_class(type=agg_func)  # type: ignore
+    construct_func = construct_serialize_function(
+        all_types=AGG_FUNCS,
+        annotated_type=AggFuncType,
+        discriminator_key="type",
+    )
+    return cast(AggFuncType, construct_func(type=agg_func))
