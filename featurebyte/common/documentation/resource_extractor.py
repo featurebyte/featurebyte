@@ -425,12 +425,12 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
 
     # get parameter description from docstring
     short_description = docstring.short_description
-    if getattr(resource, "field_info", None):
-        short_description = resource.field_info.description
+    if isinstance(resource, FieldInfo):
+        short_description = resource.description
         if resource_class.__name__ in pydantic_field_doc_overrides:
             override = pydantic_field_doc_overrides[resource_class.__name__]
-            if resource.name in override:
-                short_description = override[resource.name]
+            if resource_name in override:
+                short_description = override[resource_name]
 
     parameters_desc = (
         {param.arg_name: param.description for param in docstring.params if param.description}
@@ -468,6 +468,13 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
             )
             enum_desc[enum_name] = item.__doc__.strip()
 
+    remove_long_description = False
+    pydantic_sub_string = "`FieldInfo` is used"
+    if docstring.long_description and pydantic_sub_string in docstring.long_description:
+        # Remove long description if it is extracted from pydantic docstring
+        assert pydantic_sub_string in str(FieldInfo.__doc__), "Change in pydantic doc string"
+        remove_long_description = True
+
     return ResourceDetails(
         name=resource_name,
         realname=resource_realname,
@@ -477,7 +484,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         base_classes=base_classes,
         method_type=method_type,
         short_description=short_description,
-        long_description=docstring.long_description,
+        long_description=None if remove_long_description else docstring.long_description,
         parameters=_get_param_details(parameters, parameters_desc),
         returns=_get_return_param_details(docstring.returns, return_type),
         raises=_get_raises_from_docstring(docstring.raises),

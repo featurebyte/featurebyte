@@ -232,15 +232,8 @@ def test_get_resource_details__pydantic_field():
         type="property",
         base_classes=None,
         method_type=None,
-        short_description="This class holds information about a field.",  # TODO: this is wrong
-        long_description=(
-            "`FieldInfo` is used for any field definition regardless of whether the "
-            "[`Field()`][pydantic.fields.Field]\n"
-            "function is explicitly used.\n\n"
-            "!!! warning\n"
-            "    You generally shouldn't be creating `FieldInfo` directly, you'll only need to use it when accessing\n"
-            "    [`BaseModel`][pydantic.main.BaseModel] `.model_fields` internals."
-        ),
+        short_description="pydantic int field description",
+        long_description=None,
         parameters=[],
         returns=ParameterDetails(name=None, type="None", default=None, description=None),
         raises=[],
