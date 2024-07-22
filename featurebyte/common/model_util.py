@@ -215,7 +215,9 @@ def convert_seconds_to_time_format(seconds: int, components: int = 4) -> str:
     return "".join(time_format_parts[:components])
 
 
-def get_type_to_class_map(class_list: Sequence[type[BaseModel]]) -> dict[str, type[BaseModel]]:
+def get_type_to_class_map(
+    class_list: Sequence[type[BaseModel]], discriminator_key: str = "type"
+) -> dict[str, type[BaseModel]]:
     """
     Get class type string value to class map. This is used to generate the class mapping for the
     model deserialization. By using this map, we can avoid pydantic V2 performance issue due to
@@ -225,6 +227,8 @@ def get_type_to_class_map(class_list: Sequence[type[BaseModel]]) -> dict[str, ty
     ----------
     class_list: Sequence[type[BaseModel]]
         List of classes
+    discriminator_key: str
+        Discriminator key to use for mapping
 
     Returns
     -------
@@ -233,7 +237,7 @@ def get_type_to_class_map(class_list: Sequence[type[BaseModel]]) -> dict[str, ty
     """
     class_map = {}
     for class_ in class_list:
-        type_annotation = class_.model_fields["type"].annotation
+        type_annotation = class_.model_fields[discriminator_key].annotation
         assert type_annotation is not None, class_
         type_name = type_annotation.__args__[0]
         class_map[type_name] = class_
