@@ -4,7 +4,18 @@ Persistent base class
 
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Callable, Dict, Iterable, List, Optional, Tuple, cast
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    cast,
+)
 from typing_extensions import Literal
 
 import copy
@@ -528,7 +539,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         document: Document,
-        migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
+        migrate_func: Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
         skip_audit: bool = False,
     ) -> None:
         """
@@ -561,7 +572,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         document: Document,
-        migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
+        migrate_func: Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
     ) -> None:
         """
         Migrate record helper
@@ -579,14 +590,14 @@ class Persistent(ABC):
         await self._replace_one(
             collection_name=collection_name,
             query_filter=query_filter,
-            replacement=migrate_func(cast(Dict[str, Any], document)),
+            replacement=await migrate_func(cast(Dict[str, Any], document)),
         )
 
     async def _migrate_audit_records(
         self,
         collection_name: str,
         document_id: ObjectId,
-        migrate_func: Callable[[dict[str, Any]], dict[str, Any]],
+        migrate_func: Callable[[dict[str, Any]], Awaitable[dict[str, Any]]],
     ) -> None:
         """
         Migrate audit records helper
@@ -605,7 +616,7 @@ class Persistent(ABC):
         )
         previous: dict[str, Any] = {}
         async for audit_doc, doc_dict in doc_generator:
-            doc_dict = migrate_func(doc_dict) if doc_dict else {}
+            doc_dict = (await migrate_func(doc_dict)) if doc_dict else {}
 
             if audit_doc.action_type == AuditActionType.INSERT:
                 original_doc = {"_id": doc_dict["_id"]}

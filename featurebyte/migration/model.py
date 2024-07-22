@@ -2,9 +2,9 @@
 This module contains schema related model
 """
 
-from typing import List
+from typing import List, Optional
 
-from pydantic import Field
+from pydantic import BaseSettings, Field
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
@@ -66,3 +66,9 @@ class SchemaMetadataUpdate(BaseDocumentServiceUpdateSchema):
 
     version: int
     description: str
+
+
+class MigrationSettings(BaseSettings):
+    """Settings related to migration"""
+
+    FEATUREBYTE_ADDITIONAL_MIGRATION_SERVICES_LOCATION: Optional[str] = Field(default=None)
