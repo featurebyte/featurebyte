@@ -244,7 +244,7 @@ class EntityRelationshipExtractorService:
         async for relationship_info in self.relationship_info_service.list_documents_iterator(
             query_filter={"_id": {"$in": relationship_ids}},
         ):
-            output.append(EntityRelationshipInfo(**relationship_info.dict(by_alias=True)))
+            output.append(EntityRelationshipInfo(**relationship_info.model_dump(by_alias=True)))
         return output
 
     async def get_entity_id_to_entity(

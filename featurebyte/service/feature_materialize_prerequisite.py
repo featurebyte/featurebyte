@@ -119,5 +119,5 @@ class FeatureMaterializePrerequisiteService(
         query_filter = self._construct_get_query_filter(document.id)
         await self.update_documents(
             query_filter=query_filter,
-            update={"$push": {"completed": prerequisite_tile_task.dict(by_alias=True)}},
+            update={"$push": {"completed": prerequisite_tile_task.model_dump(by_alias=True)}},
         )

@@ -147,7 +147,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
 
         # create document ID if it is None
         data_doc_id = data.id or ObjectId()
-        payload_dict = {**data.dict(by_alias=True), "_id": data_doc_id}
+        payload_dict = {**data.model_dump(by_alias=True), "_id": data_doc_id}
         if self.is_catalog_specific:
             assert self.catalog_id
             payload_dict["catalog_id"] = self.catalog_id
@@ -161,7 +161,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         await self._check_document_unique_constraints(document=document)
         insert_id = await self.persistent.insert_one(
             collection_name=self.collection_name,
-            document=document.dict(by_alias=True),
+            document=document.model_dump(by_alias=True),
             user_id=self.user.id,
         )
         assert insert_id == document.id

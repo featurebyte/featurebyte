@@ -43,7 +43,7 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         # update document to persistent
         await self._update_document(
             document=document,
-            update_dict=data.dict(),
+            update_dict=data.model_dump(),
             update_document_class=None,
         )
 

@@ -94,7 +94,7 @@ class BatchRequestTableService(
             await self.context_service.get_document(document_id=data.context_id)
 
         return BatchRequestTableTaskPayload(
-            **data.dict(by_alias=True),
+            **data.model_dump(by_alias=True),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,

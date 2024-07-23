@@ -67,7 +67,7 @@ class ParentEntityLookupService:
             async for info in self.relationship_info_service.list_documents_iterator(
                 query_filter={},
             ):
-                relationships_info.append(EntityRelationshipInfo(**info.dict(by_alias=True)))
+                relationships_info.append(EntityRelationshipInfo(**info.model_dump(by_alias=True)))
 
         lookup_steps = EntityLookupPlanner.generate_lookup_steps(
             available_entity_ids=list(entity_info.provided_entity_ids),

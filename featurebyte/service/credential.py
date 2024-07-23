@@ -130,11 +130,11 @@ class CredentialService(
         -------
         CredentialModel
         """
-        credential = self.document_class(**data.dict(by_alias=True))
+        credential = self.document_class(**data.model_dump(by_alias=True))
         await self._validate_credential(credential=credential)
         credential.encrypt_credentials()
         return await super().create_document(
-            data=CredentialCreate(**credential.dict(by_alias=True))
+            data=CredentialCreate(**credential.model_dump(by_alias=True))
         )
 
     async def update_document(
@@ -183,8 +183,10 @@ class CredentialService(
             logger.warning("Credential is already decrypted")
 
         # verify credential is valid
-        update_dict = data.dict(exclude_none=exclude_none)
-        updated_document = self.document_class(**{**document.dict(by_alias=True), **update_dict})
+        update_dict = data.model_dump(exclude_none=exclude_none)
+        updated_document = self.document_class(
+            **{**document.model_dump(by_alias=True), **update_dict}
+        )
         await self._validate_credential(credential=updated_document)
         data.encrypt()
 

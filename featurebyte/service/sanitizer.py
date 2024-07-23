@@ -23,7 +23,7 @@ def sanitize_query_graph_for_feature_definition(graph: QueryGraphModel) -> Query
     # we need to sanitize the graph to make sure that the graph is in manual mode.
     # Otherwise, the generated feature definition & graph hash before and after
     # feature creation could be different.
-    output = graph.dict()
+    output = graph.model_dump()
     for node in output["nodes"]:
         if node["type"] == NodeType.GRAPH:
             if "view_mode" in node["parameters"]["metadata"]:

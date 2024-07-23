@@ -395,7 +395,7 @@ class ObservationTableService(
             target_namespace_id = None
 
         return ObservationTableTaskPayload(
-            **data.dict(by_alias=True),
+            **data.model_dump(by_alias=True),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
@@ -449,7 +449,7 @@ class ObservationTableService(
         )
 
         return ObservationTableUploadTaskPayload(
-            **data.dict(by_alias=True),
+            **data.model_dump(by_alias=True),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
@@ -493,7 +493,7 @@ class ObservationTableService(
             alias=previous_point_in_time_quoted,
         )
         inner_query = expressions.select(aliased_window, point_in_time_quoted).from_(
-            get_fully_qualified_table_name(table_details.dict())
+            get_fully_qualified_table_name(table_details.model_dump())
         )
 
         datediff_expr = adapter.datediff_microsecond(
@@ -604,7 +604,7 @@ class ObservationTableService(
         )
         graph, node = source_table.frame.extract_pruned_graph_and_node()
         sample = FeatureStoreSample(
-            graph=QueryGraph(**graph.dict(by_alias=True)),
+            graph=QueryGraph(**graph.model_dump(by_alias=True)),
             node_name=node.name,
             stats_names=["unique", "max", "min", "%missing"],
             feature_store_id=feature_store.id,

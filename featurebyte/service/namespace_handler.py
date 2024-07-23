@@ -96,7 +96,7 @@ class NamespaceHandler:
         """
         # Using a pruned graph, reconstruct view graph node to remove unused column cleaning
         # operations
-        graph, node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(target_node=node)
+        graph, node_name_map = QueryGraph(**graph.model_dump(by_alias=True)).prune(target_node=node)
         node = graph.get_node_by_name(node_name_map[node.name])
         constructed_graph, node_name_map = await self.view_construction_service.construct_graph(
             query_graph=graph,
@@ -107,7 +107,7 @@ class NamespaceHandler:
 
         # Prune the graph to remove unused nodes and parameters
         pruned_graph, pruned_node_name_map = QueryGraph(
-            **constructed_graph.dict(by_alias=True)
+            **constructed_graph.model_dump(by_alias=True)
         ).prune(target_node=node)
         if sanitize_for_definition:
             pruned_graph = sanitize_query_graph_for_feature_definition(graph=pruned_graph)
@@ -130,7 +130,7 @@ class NamespaceHandler:
         table_id_to_info: Dict[ObjectId, Dict[str, Any]] = {}
         for table_id in document.table_ids:
             table = await self.table_service.get_document(document_id=table_id)
-            table_id_to_info[table_id] = table.dict()
+            table_id_to_info[table_id] = table.model_dump()
 
         # create feature definition
         graph, node_name = document.graph, document.node_name

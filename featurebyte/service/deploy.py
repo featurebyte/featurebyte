@@ -100,7 +100,7 @@ class DeployFeatureManagementService:
             )
         )
         await self.feature_service.update_offline_store_info(
-            document_id=feature.id, store_info=store_info.dict(by_alias=True)
+            document_id=feature.id, store_info=store_info.model_dump(by_alias=True)
         )
         return await self.feature_service.get_document(document_id=feature.id)
 

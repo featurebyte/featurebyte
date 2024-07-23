@@ -99,7 +99,7 @@ class FeatureJobSettingAnalysisService(
                 raise DocumentError("Creation date column is not available for the event table.")
 
         return FeatureJobSettingAnalysisTaskPayload(
-            **data.dict(),
+            **data.model_dump(),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
@@ -129,7 +129,7 @@ class FeatureJobSettingAnalysisService(
         )
 
         return FeatureJobSettingAnalysisBackTestTaskPayload(
-            **data.dict(),
+            **data.model_dump(),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
@@ -155,7 +155,7 @@ class FeatureJobSettingAnalysisService(
             collection_name=self.collection_name,
             query_filter={"_id": document_id, "catalog_id": self.catalog_id},
             update={
-                "$push": {"backtest_summaries": backtest_summary.dict()},
+                "$push": {"backtest_summaries": backtest_summary.model_dump()},
             },
             user_id=self.user.id,
         )

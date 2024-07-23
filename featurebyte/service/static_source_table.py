@@ -58,7 +58,7 @@ class StaticSourceTableService(
         await self.feature_store_service.get_document(document_id=data.feature_store_id)
 
         return StaticSourceTableTaskPayload(
-            **data.dict(by_alias=True),
+            **data.model_dump(by_alias=True),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,

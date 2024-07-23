@@ -129,7 +129,7 @@ class HistoricalFeatureTableService(
                 )
 
         return HistoricalFeatureTableTaskPayload(
-            **data.dict(),
+            **data.model_dump(),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,

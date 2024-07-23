@@ -64,11 +64,11 @@ class OnlineStoreService(
         -------
         OnlineStoreModel
         """
-        online_store = self.document_class(**data.dict(by_alias=True))
+        online_store = self.document_class(**data.model_dump(by_alias=True))
         if online_store.details.credential:
             online_store.details.credential.encrypt_values()
         return await super().create_document(
-            data=OnlineStoreCreate(**online_store.dict(by_alias=True))
+            data=OnlineStoreCreate(**online_store.model_dump(by_alias=True))
         )
 
     async def get_online_store_info(self, document_id: ObjectId, verbose: bool) -> OnlineStoreInfo:
@@ -97,7 +97,7 @@ class OnlineStoreService(
             updated_at=online_store.updated_at,
             details=online_store.details,
             description=online_store.description,
-            catalogs=[CatalogBriefInfo(**doc).dict() for doc in results["data"]],
+            catalogs=[CatalogBriefInfo(**doc).model_dump() for doc in results["data"]],
         )
 
     async def get_document_as_dict(
@@ -118,7 +118,7 @@ class OnlineStoreService(
         document = self.document_class(**document_dict)
         if document.details.credential:
             document.details.credential.decrypt_values()
-        return dict(document.dict(by_alias=True))
+        return dict(document.model_dump(by_alias=True))
 
     async def list_documents_as_dict(
         self,
@@ -142,7 +142,7 @@ class OnlineStoreService(
             document = self.document_class(**document_dict)
             if document.details.credential:
                 document.details.credential.decrypt_values()
-            document_dict["details"] = document.details.dict(by_alias=True)
+            document_dict["details"] = document.details.model_dump(by_alias=True)
         return documents
 
     async def _update_document(
@@ -154,12 +154,12 @@ class OnlineStoreService(
     ) -> None:
         # encrypt credential if present in update_dict
         if "details" in update_dict:
-            document_dict = document.dict(by_alias=True)
+            document_dict = document.model_dump(by_alias=True)
             document_dict.update(update_dict)
             new_document = self.document_class(**document_dict)
             if new_document.details.credential:
                 new_document.details.credential.encrypt_values()
-                update_dict["details"]["credential"] = new_document.details.credential.dict(
+                update_dict["details"]["credential"] = new_document.details.credential.model_dump(
                     by_alias=True
                 )
 

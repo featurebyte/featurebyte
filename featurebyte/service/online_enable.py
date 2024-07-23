@@ -117,7 +117,7 @@ class OnlineEnableService:
             Whether we are recreating the working schema from scratch. Only set as True when called
             by WorkingSchemaService.
         """
-        extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
+        extended_feature_model = ExtendedFeatureModel(**feature.model_dump(by_alias=True))
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
 
         if target_online_enabled:

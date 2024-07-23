@@ -71,7 +71,7 @@ class PreviewService:
         else:
             feature_store_dict = graph.get_input_node(
                 node_name
-            ).parameters.feature_store_details.dict()
+            ).parameters.feature_store_details.model_dump()
             feature_stores = self.feature_store_service.list_documents_iterator(
                 query_filter={
                     "type": feature_store_dict["type"],

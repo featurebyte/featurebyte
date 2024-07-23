@@ -207,7 +207,7 @@ class OfflineStoreFeatureTableConstructionService:
             feature_cluster=ingest_graph_metadata.feature_cluster,
             output_column_names=ingest_graph_metadata.output_column_names,
             output_dtypes=ingest_graph_metadata.output_dtypes,
-            entity_universe=entity_universe.dict(by_alias=True),
+            entity_universe=entity_universe.model_dump(by_alias=True),
             has_ttl=has_ttl,
             feature_job_setting=feature_job_setting.normalize() if feature_job_setting else None,
             aggregation_ids=ingest_graph_metadata.aggregation_ids,
