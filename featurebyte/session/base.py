@@ -159,7 +159,7 @@ class BaseSession(BaseModel):
             return self
         new_session = self.copy()
         new_session._initialize_connection()  # pylint: disable=protected-access
-        return new_session
+        return new_session  # type: ignore
 
     @property
     def no_schema_error(self) -> Type[Exception]:

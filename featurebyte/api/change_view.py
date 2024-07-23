@@ -119,8 +119,8 @@ class ChangeView(View, GroupByMixin):
         "using the Default Feature Job Setting simplifies the process of setting up the Feature Job "
         "Setting for each feature."
     )
-    effective_timestamp_column: str = Field(allow_mutation=False)
-    natural_key_column: str = Field(allow_mutation=False)
+    effective_timestamp_column: str = Field(frozen=True)
+    natural_key_column: str = Field(frozen=True)
 
     @property
     def timestamp_column(self) -> str:

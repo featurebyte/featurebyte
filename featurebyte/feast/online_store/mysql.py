@@ -20,8 +20,8 @@ from feast.infra.online_stores.contrib.mysql_online_store.mysql import (
 class FBMySQLOnlineStoreConfig(BaseMySQLOnlineStoreConfig):
     """Configuration for the MySQL online store"""
 
-    type: Literal["mysql", "featurebyte.feast.online_store.mysql.FBMySQLOnlineStore"] = (
-        "featurebyte.feast.online_store.mysql.FBMySQLOnlineStore"
+    type: Literal["featurebyte.feast.online_store.mysql.FBMySQLOnlineStore"] = (
+        "featurebyte.feast.online_store.mysql.FBMySQLOnlineStore"  # type: ignore
     )
 
 

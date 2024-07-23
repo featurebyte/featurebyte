@@ -5,7 +5,7 @@ Request data related node classes
 from typing import List, Sequence, Tuple
 from typing_extensions import Literal
 
-from pydantic import Field, StrictStr
+from pydantic import StrictStr
 
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel
@@ -43,7 +43,7 @@ class RequestColumnNode(BaseNode):
         column_name: StrictStr
         dtype: DBVarType
 
-    type: Literal[NodeType.REQUEST_COLUMN] = Field(NodeType.REQUEST_COLUMN, const=True)
+    type: Literal[NodeType.REQUEST_COLUMN] = NodeType.REQUEST_COLUMN
     output_type: NodeOutputType
     parameters: RequestColumnNodeParameters
 

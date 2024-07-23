@@ -162,11 +162,11 @@ def test_use_profile(mock_requests_get):
 
     config = Configurations("tests/fixtures/config/config.yaml")
     assert config.profile.name == "featurebyte1"
-    assert config.get_client().base_url == "https://app1.featurebyte.com/api/v1"
+    assert str(config.get_client().base_url) == "https://app1.featurebyte.com/api/v1"
 
     config.use_profile("featurebyte2")
     assert config.profile.name == "featurebyte2"
-    assert config.get_client().base_url == "https://app2.featurebyte.com/api/v1"
+    assert str(config.get_client().base_url) == "https://app2.featurebyte.com/api/v1"
 
 
 def test_use_profile_non_existent():
@@ -190,7 +190,7 @@ def test_use_profile_invalid_endpoint():
         with pytest.raises(InvalidSettingsError) as exc_info:
             config.use_profile("invalid")
         assert (
-            str(exc_info.value) == "Service endpoint is inaccessible: http://invalid.endpoint:1234"
+            str(exc_info.value) == "Service endpoint is inaccessible: http://invalid.endpoint:1234/"
         )
 
 

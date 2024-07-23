@@ -2,9 +2,10 @@
 This module contains schema related model
 """
 
-from typing import List, Optional
+from typing import List, Literal, Optional
 
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
@@ -49,7 +50,7 @@ class MigrationMetadata(StrEnum):
 class SchemaMetadataModel(BaseMigrationMetadataModel):
     """SchemaMetadata model"""
 
-    name: str = Field(MigrationMetadata.SCHEMA_METADATA, const=True)
+    name: Literal[MigrationMetadata.SCHEMA_METADATA] = MigrationMetadata.SCHEMA_METADATA
     version: int
     description: str
 

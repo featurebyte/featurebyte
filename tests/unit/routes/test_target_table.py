@@ -6,7 +6,7 @@ from http import HTTPStatus
 
 import pandas as pd
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 
 from featurebyte.common.utils import dataframe_to_arrow_bytes
 from featurebyte.models.observation_table import TargetInput

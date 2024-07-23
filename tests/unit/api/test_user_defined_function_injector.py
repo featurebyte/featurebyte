@@ -10,6 +10,7 @@ import textwrap
 import pandas as pd
 import pytest
 from bson import ObjectId
+from typeguard import TypeCheckError
 
 from featurebyte.api.feature import Feature
 from featurebyte.api.user_defined_function_injector import (
@@ -87,11 +88,13 @@ def test_function_parameter_processor__extract_node_parameters__input_validation
     function_parameter_processor = FunctionParameterProcessor(function_parameters)
 
     # check invalid scalar type
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         function_parameter_processor._extract_node_parameters("a", 2)
     expected_error = (
-        "type of x must be one of (int, featurebyte.api.view.ViewColumn, featurebyte.api.feature.Feature); "
-        "got str instead"
+        "str did not match any element in the union:\n"
+        "  int: is not an instance of int\n"
+        "  featurebyte.api.view.ViewColumn: is not an instance of featurebyte.api.view.ViewColumn\n"
+        "  featurebyte.api.feature.Feature: is not an instance of featurebyte.api.feature.Feature"
     )
     assert expected_error in str(exc.value)
 

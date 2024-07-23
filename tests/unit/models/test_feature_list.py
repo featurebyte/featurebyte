@@ -3,7 +3,8 @@ Tests for Feature list related models
 """
 
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
+from typeguard import TypeCheckError
 
 from featurebyte import FeatureListStatus
 from featurebyte.models.base import DEFAULT_CATALOG_ID
@@ -85,7 +86,7 @@ def test_feature_list_model(feature_list_model_dict):
     feature_list_dict_sorted_ids["feature_clusters_path"] = None
     assert serialized_feature_list == feature_list_dict_sorted_ids
 
-    feature_list_json = feature_list.json(by_alias=True)
+    feature_list_json = feature_list.model_dump_json(by_alias=True)
     loaded_feature_list = FeatureListModel.parse_raw(feature_list_json)
     assert loaded_feature_list == feature_list
 
@@ -100,9 +101,7 @@ def test_feature_list_model(feature_list_model_dict):
     feature_list_model_dict["_id"] = updated_feature_list.id
     feature_list_model_dict["version"] = "V220710"
     loaded_old_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    compare_pydantic_obj(
-        loaded_old_feature_list.version, expected={"name": "V220710", "suffix": None}
-    )
+    compare_pydantic_obj(loaded_old_feature_list.version, {"name": "V220710", "suffix": None})
     assert loaded_old_feature_list == updated_feature_list
 
     # check that feature list store info for older record
@@ -121,7 +120,7 @@ def test_feature_list_namespace_model(feature_list_namespace_model_dict):
     }
     assert serialized_feature_list_namespace == feature_list_namespace_model_dict_sorted_ids
 
-    feature_list_namespace_json = feature_list_namespace.json(by_alias=True)
+    feature_list_namespace_json = feature_list_namespace.model_dump_json(by_alias=True)
     loaded_feature_list_namespace = FeatureListNamespaceModel.parse_raw(feature_list_namespace_json)
     assert loaded_feature_list_namespace == feature_list_namespace
 
@@ -161,8 +160,8 @@ def test_feature_list_status_ordering():
 )
 def test_feature_readiness_distribution_equality_check(left_dist, right_dist, expected):
     """Test feature readiness distribution - equality comparison"""
-    feat_readiness_dist1 = FeatureReadinessDistribution(__root__=left_dist)
-    feat_readiness_dist2 = FeatureReadinessDistribution(__root__=right_dist)
+    feat_readiness_dist1 = FeatureReadinessDistribution(left_dist)
+    feat_readiness_dist2 = FeatureReadinessDistribution(right_dist)
     if isinstance(expected, bool):
         assert (feat_readiness_dist1 == feat_readiness_dist2) is expected
     elif issubclass(expected, Exception):
@@ -176,15 +175,10 @@ def test_feature_readiness_distribution_equality_check(left_dist, right_dist, ex
 
 def test_feature_readiness_distribution__equality_invalid_type():
     """Test feature readiness distribution - equality comparison (invalid other type)"""
-    feat_readiness_dist = FeatureReadinessDistribution(
-        __root__=[{"readiness": "DRAFT", "count": 10}]
-    )
-    with pytest.raises(TypeError) as exc:
+    feat_readiness_dist = FeatureReadinessDistribution([{"readiness": "DRAFT", "count": 10}])
+    with pytest.raises(TypeCheckError) as exc:
         _ = feat_readiness_dist == [{"readiness": "DRAFT", "count": 10}]
-    err_msg = (
-        'type of argument "other" must be featurebyte.models.feature_list.FeatureReadinessDistribution; '
-        "got list instead"
-    )
+    err_msg = 'argument "other" (list) is not an instance of featurebyte.models.feature_list.FeatureReadinessDistribution'
     assert err_msg in str(exc.value)
 
 
@@ -239,8 +233,8 @@ def test_feature_readiness_distribution__equality_invalid_type():
 )
 def test_readiness_distribution__less_than_check(left_dist, right_dist, expected):
     """Test feature readiness distribution - equality comparison"""
-    feat_readiness_dist1 = FeatureReadinessDistribution(__root__=left_dist)
-    feat_readiness_dist2 = FeatureReadinessDistribution(__root__=right_dist)
+    feat_readiness_dist1 = FeatureReadinessDistribution(left_dist)
+    feat_readiness_dist2 = FeatureReadinessDistribution(right_dist)
     assert (feat_readiness_dist1 < feat_readiness_dist2) is expected
     assert (feat_readiness_dist1 >= feat_readiness_dist2) is not expected
 
@@ -267,14 +261,14 @@ def test_readiness_distribution__less_than_check(left_dist, right_dist, expected
 )
 def test_readiness_distribution__derive_production_ready_fraction(dist, expected):
     """Test feature readiness distribution - derive production ready fraction"""
-    feat_readiness_dist = FeatureReadinessDistribution(__root__=dist)
+    feat_readiness_dist = FeatureReadinessDistribution(dist)
     assert feat_readiness_dist.derive_production_ready_fraction() == expected
 
 
 def test_feature_readiness_distribution__worst_cast_worst_case():
     """Test feature readiness distribution - worst cast & total count"""
     feat_readiness_dist = FeatureReadinessDistribution(
-        __root__=[
+        [
             {"readiness": "DRAFT", "count": 2},
             {"readiness": "PRODUCTION_READY", "count": 5},
         ]
@@ -282,7 +276,7 @@ def test_feature_readiness_distribution__worst_cast_worst_case():
     worst_cast_readiness_dist = feat_readiness_dist.worst_case()
     assert feat_readiness_dist.total_count == 7
     assert isinstance(worst_cast_readiness_dist, FeatureReadinessDistribution)
-    assert worst_cast_readiness_dist.__root__ == [{"readiness": "DEPRECATED", "count": 7}]
+    assert worst_cast_readiness_dist.dict() == [{"readiness": "DEPRECATED", "count": 7}]
 
 
 @pytest.mark.parametrize(
@@ -297,7 +291,7 @@ def test_feature_readiness_distribution__worst_cast_worst_case():
 def test_feature_readiness_distribution__transition(from_readiness, to_readiness, expected):
     """Test feature readiness distribution - readiness transition"""
     feat_readiness_dist = FeatureReadinessDistribution(
-        __root__=[
+        [
             {"readiness": "DRAFT", "count": 2},
             {"readiness": "PRODUCTION_READY", "count": 5},
         ]
@@ -309,7 +303,5 @@ def test_feature_readiness_distribution__transition(from_readiness, to_readiness
         )
     )
     assert output == FeatureReadinessDistribution(
-        __root__=[
-            {"readiness": readiness, "count": count} for readiness, count in expected.items()
-        ],
+        [{"readiness": readiness, "count": count} for readiness, count in expected.items()],
     )

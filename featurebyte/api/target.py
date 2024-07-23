@@ -8,7 +8,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, Union, cast
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ForeignKeyMapping
@@ -73,7 +73,7 @@ class Target(
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(
         exclude=True,
-        allow_mutation=False,
+        frozen=True,
         description="Provides information about the feature store that the target is connected to.",
     )
 
@@ -99,9 +99,12 @@ class Target(
         """
         return isinstance(other_series, Target)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _set_feature_store(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "feature_store" not in values:
             tabular_source = values.get("tabular_source")
             if isinstance(tabular_source, dict):
@@ -378,7 +381,7 @@ class Target(
             files = {"observation_set": dataframe_to_arrow_bytes(observation_table)}
         observation_table_doc = self.post_async_task(
             route="/target_table",
-            payload={"payload": target_table_create_params.json()},
+            payload={"payload": target_table_create_params.model_dump_json()},
             is_payload_json=False,
             files=files,
         )

@@ -5,9 +5,20 @@ FeatureList API payload schema
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing_extensions import Annotated
 
+import numpy as np
 from bson import ObjectId
-from pydantic import Field, root_validator, validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Discriminator,
+    Field,
+    Tag,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
@@ -33,7 +44,10 @@ from featurebyte.schema.feature import (
     BatchFeatureCreatePayload,
     BatchFeatureItem,
 )
-from featurebyte.schema.worker.task.feature_list_create import FeatureParameters
+from featurebyte.schema.worker.task.feature_list_create import (
+    FeatureParameters,
+    feature_params_discriminator,
+)
 
 
 class FeatureListCreate(FeatureByteBaseModel):
@@ -43,7 +57,7 @@ class FeatureListCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    feature_ids: List[PydanticObjectId] = Field(min_items=1)
+    feature_ids: List[PydanticObjectId] = Field(min_length=1)
 
 
 class FeatureListCreateJob(FeatureByteBaseModel):
@@ -53,7 +67,10 @@ class FeatureListCreateJob(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    features: Union[List[FeatureParameters], List[PydanticObjectId]] = Field(min_items=1)
+    features: Union[
+        Annotated[List[FeatureParameters], Tag("feature_params")],
+        Annotated[List[PydanticObjectId], Tag("feature_ids")],
+    ] = Field(discriminator=Discriminator(feature_params_discriminator), min_length=1)
     features_conflict_resolution: ConflictResolution
 
 
@@ -74,9 +91,12 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
     features: List[BatchFeatureItem]
     skip_batch_feature_creation: bool = Field(default=False)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _validate_payload(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_payload(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if (
             not values.get("skip_batch_feature_creation", False)
             and len(values.get("features", [])) > MAX_BATCH_FEATURE_ITEM_COUNT
@@ -127,7 +147,7 @@ class FeatureVersionInfo(FeatureByteBaseModel):
     version: VersionIdentifier = Field(description="Feature version.")
 
     # pydantic validators
-    _version_validator = validator("version", pre=True, allow_reuse=True)(version_validator)
+    _version_validator = field_validator("version", mode="before")(version_validator)
 
 
 class FeatureListNewVersionCreate(FeatureByteBaseModel):
@@ -140,7 +160,7 @@ class FeatureListNewVersionCreate(FeatureByteBaseModel):
     allow_unchanged_feature_list_version: bool = Field(default=False)
 
     # pydantic validators
-    _validate_unique_feat_name = validator("features", allow_reuse=True)(
+    _validate_unique_feat_name = field_validator("features")(
         construct_unique_name_validator(field="name")
     )
 
@@ -160,7 +180,7 @@ class FeatureListPaginatedItem(FeatureListModelResponse):
 
     # exclude this field from the response
     internal_feature_clusters: Optional[List[Any]] = Field(
-        allow_mutation=False, alias="feature_clusters", exclude=True
+        alias="feature_clusters", default=None, exclude=True
     )
 
 
@@ -216,15 +236,11 @@ class FeatureListGetHistoricalFeatures(ComputeRequest):
     feature_clusters: Optional[List[FeatureCluster]] = Field(default=None)
     feature_list_id: Optional[PydanticObjectId] = Field(default=None)
 
-    @root_validator
-    @classmethod
-    def _validate_feature_clusters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        feature_clusters = values.get("feature_clusters", None)
-        feature_list_id = values.get("feature_list_id", None)
-        if not feature_clusters and not feature_list_id:
+    @model_validator(mode="after")
+    def _validate_feature_clusters(self) -> "FeatureListGetHistoricalFeatures":
+        if not self.feature_clusters and not self.feature_list_id:
             raise ValueError("Either feature_clusters or feature_list_id must be set")
-
-        return values
+        return self
 
 
 class PreviewObservationSet(FeatureByteBaseModel):
@@ -233,27 +249,41 @@ class PreviewObservationSet(FeatureByteBaseModel):
     """
 
     point_in_time_and_serving_name_list: Optional[List[Dict[str, Any]]] = Field(
-        min_items=1, max_items=FEATURE_PREVIEW_ROW_LIMIT
+        min_length=1, max_length=FEATURE_PREVIEW_ROW_LIMIT, default=None
     )
     observation_table_id: Optional[PydanticObjectId] = Field(default=None)
 
-    @root_validator
-    @classmethod
-    def _validate_observation_set(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        point_in_time_and_serving_name_list = values.get(
-            "point_in_time_and_serving_name_list", None
-        )
-        observation_table_id = values.get("observation_table_id", None)
-        if not point_in_time_and_serving_name_list and not observation_table_id:
+    @field_serializer("point_in_time_and_serving_name_list", when_used="json")
+    def _serialize_point_in_time_and_serving_name_list(
+        self, value: Optional[List[Dict[str, Any]]]
+    ) -> Any:
+        if isinstance(value, list):
+            output = []
+            for item in value:
+                if isinstance(item, dict):
+                    item = {
+                        key: value.tolist() if isinstance(value, np.ndarray) else value
+                        for key, value in item.items()
+                    }
+                output.append(item)
+            return output
+        return value
+
+    @model_validator(mode="after")
+    def _validate_observation_set(self) -> "PreviewObservationSet":
+        if not self.point_in_time_and_serving_name_list and not self.observation_table_id:
             raise ValueError(
                 "Either point_in_time_and_serving_name_list or observation_table_id must be set"
             )
-        if observation_table_id is not None and point_in_time_and_serving_name_list is not None:
+
+        if (
+            self.observation_table_id is not None
+            and self.point_in_time_and_serving_name_list is not None
+        ):
             raise ValueError(
                 "Only one of point_in_time_and_serving_name_list and observation_table_id can be set"
             )
-
-        return values
+        return self
 
 
 class FeatureListPreview(FeatureListGetHistoricalFeatures, PreviewObservationSet):
@@ -268,7 +298,7 @@ class OnlineFeaturesRequestPayload(FeatureByteBaseModel):
     """
 
     entity_serving_names: List[Dict[str, Any]] = Field(
-        min_items=1, max_items=ONLINE_FEATURE_REQUEST_ROW_LIMIT
+        min_length=1, max_length=ONLINE_FEATURE_REQUEST_ROW_LIMIT
     )
 
 
@@ -278,3 +308,6 @@ class SampleEntityServingNames(FeatureByteBaseModel):
     """
 
     entity_serving_names: List[Dict[str, str]]
+
+    # model configuration
+    model_config = ConfigDict(coerce_numbers_to_str=True)

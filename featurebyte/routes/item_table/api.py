@@ -8,6 +8,7 @@ from typing import Optional
 
 from http import HTTPStatus
 
+from bson import ObjectId
 from fastapi import APIRouter, Request
 
 from featurebyte.models.item_table import ItemTableModel
@@ -137,7 +138,7 @@ class ItemTableRouter(
         """
         controller = self.get_controller_for_request(request)
         info = await controller.get_info(
-            document_id=item_table_id,
+            document_id=ObjectId(item_table_id),
             verbose=verbose,
         )
         return info
@@ -150,7 +151,7 @@ class ItemTableRouter(
         """
         controller = self.get_controller_for_request(request)
         item_table: ItemTableModel = await controller.update_table(
-            document_id=item_table_id,
+            document_id=ObjectId(item_table_id),
             data=data,
         )
         return item_table
@@ -163,7 +164,7 @@ class ItemTableRouter(
         """
         controller = self.get_controller_for_request(request)
         item_table: ItemTableModel = await controller.update_column_entity(
-            document_id=item_table_id,
+            document_id=ObjectId(item_table_id),
             column_name=data.column_name,
             entity_id=data.entity_id,
         )
@@ -180,7 +181,7 @@ class ItemTableRouter(
         """
         controller = self.get_controller_for_request(request)
         item_table: ItemTableModel = await controller.update_column_critical_data_info(
-            document_id=item_table_id,
+            document_id=ObjectId(item_table_id),
             column_name=data.column_name,
             critical_data_info=data.critical_data_info,  # type: ignore
         )
@@ -197,7 +198,7 @@ class ItemTableRouter(
         """
         controller = self.get_controller_for_request(request)
         item_table: ItemTableModel = await controller.update_column_description(
-            document_id=item_table_id,
+            document_id=ObjectId(item_table_id),
             column_name=data.column_name,
             description=data.description,
         )
@@ -205,5 +206,5 @@ class ItemTableRouter(
 
     async def delete_object(self, request: Request, item_table_id: PyObjectId) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
-        await controller.delete(document_id=item_table_id)
+        await controller.delete(document_id=ObjectId(item_table_id))
         return DeleteResponse()

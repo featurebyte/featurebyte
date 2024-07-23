@@ -44,7 +44,7 @@ class CatalogUpdate(FeatureByteBaseModel):
     Catalog update schema
     """
 
-    name: Optional[NameStr]
+    name: Optional[NameStr] = Field(default=None)
 
 
 class CatalogOnlineStoreUpdate(BaseDocumentServiceUpdateSchema):
@@ -52,7 +52,7 @@ class CatalogOnlineStoreUpdate(BaseDocumentServiceUpdateSchema):
     Catalog update online store schema
     """
 
-    online_store_id: Optional[PydanticObjectId]
+    online_store_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
@@ -60,11 +60,11 @@ class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
     Catalog service update schema
     """
 
-    name: Optional[NameStr]
+    name: Optional[NameStr] = Field(default=None)
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """
-        Unique contraints checking
+        Unique constraints checking
         """
 
         unique_constraints: List[UniqueValuesConstraint] = [

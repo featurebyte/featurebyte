@@ -232,10 +232,10 @@ def test_get_resource_details__pydantic_field():
         type="property",
         base_classes=None,
         method_type=None,
-        short_description="Captures extra information about a field.",  # TODO: this is wrong
+        short_description="pydantic int field description",
         long_description=None,
         parameters=[],
-        returns=ParameterDetails(name=None, type="FieldInfo", default=None, description=None),
+        returns=ParameterDetails(name=None, type="None", default=None, description=None),
         raises=[],
         examples=[],
         see_also=None,

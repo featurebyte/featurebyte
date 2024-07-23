@@ -4,7 +4,7 @@ HistoricalTable API route controller
 
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 import pandas as pd
 from bson import ObjectId
@@ -124,9 +124,8 @@ class HistoricalFeatureTableController(
         -------
         Optional[HistoricalFeatureTableModel]
         """
-        return cast(
-            HistoricalFeatureTableModel,
-            await self.service.update_document(
-                historical_feature_table_id, data, return_document=True
-            ),
+        table = await self.service.update_document(
+            historical_feature_table_id, data, return_document=True
         )
+        assert isinstance(table, HistoricalFeatureTableModel)
+        return table

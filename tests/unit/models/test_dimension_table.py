@@ -5,8 +5,7 @@ Tests for DimensionTable models
 import datetime
 
 import pytest
-from _pytest._code import ExceptionInfo
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 from featurebyte.models import DimensionTableModel
 from featurebyte.models.base import DEFAULT_CATALOG_ID
@@ -98,18 +97,9 @@ def get_base_expected_dimension_table_model(dimension_table_model, dimension_col
 def test_dimension_table_model(dimension_table_model, expected_dimension_table_model):
     """Test creation, serialization and deserialization of DimensionTable"""
     assert dimension_table_model.dict() == expected_dimension_table_model
-    dimension_table_json = dimension_table_model.json(by_alias=True)
+    dimension_table_json = dimension_table_model.model_dump_json(by_alias=True)
     dimension_table_loaded = DimensionTableModel.parse_raw(dimension_table_json)
     assert dimension_table_loaded == dimension_table_model
-
-
-def assert_missing_column(exc_info: ExceptionInfo):
-    """Helper method to assert column validation given an exception"""
-    errors = exc_info.value.errors()
-    assert len(errors) == 1
-    error = errors[0]
-    assert error["msg"] == "field required"
-    assert error["type"] == "value_error.missing"
 
 
 def test_missing_dimension_table_id_column_errors(expected_dimension_table_model):
@@ -118,16 +108,11 @@ def test_missing_dimension_table_id_column_errors(expected_dimension_table_model
     expected_dimension_table_model.pop("dimension_id_column")
     with pytest.raises(ValidationError) as exc_info:
         DimensionTableModel.parse_obj(expected_dimension_table_model)
-    assert_missing_column(exc_info)
 
-
-def assert_type_error(exc_info: ExceptionInfo, expected_type: str):
-    """Helper method to assert type validation given an exception"""
     errors = exc_info.value.errors()
     assert len(errors) == 1
-    error = errors[0]
-    assert error["msg"] == f"{expected_type} type expected"
-    assert error["type"] == f"type_error.{expected_type}"
+    assert errors[0]["msg"] == "Field required"
+    assert errors[0]["type"] == "missing"
 
 
 def test_incorrect_dimension_table_id_type_errors(expected_dimension_table_model):
@@ -136,4 +121,8 @@ def test_incorrect_dimension_table_id_type_errors(expected_dimension_table_model
     expected_dimension_table_model["dimension_id_column"] = arbitrary_test_date_time
     with pytest.raises(ValidationError) as exc_info:
         DimensionTableModel.parse_obj(expected_dimension_table_model)
-    assert_type_error(exc_info, "str")
+
+    errors = exc_info.value.errors()
+    assert len(errors) == 1
+    assert errors[0]["msg"] == "Input should be a valid string"
+    assert errors[0]["type"] == "string_type"

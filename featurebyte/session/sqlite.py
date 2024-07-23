@@ -11,7 +11,6 @@ import os
 import sqlite3
 
 import pandas as pd
-from pydantic import Field
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -29,7 +28,7 @@ class SQLiteSession(BaseSession):
     """
 
     filename: str
-    source_type: SourceType = Field(SourceType.SQLITE, const=True)
+    source_type: SourceType = SourceType.SQLITE
 
     def initializer(self) -> Optional[BaseSchemaInitializer]:
         return None

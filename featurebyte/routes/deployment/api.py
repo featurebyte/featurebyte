@@ -6,6 +6,7 @@ from typing import Literal, Optional
 
 from http import HTTPStatus
 
+from bson import ObjectId
 from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import ORJSONResponse
 
@@ -66,7 +67,7 @@ async def get_deployment(request: Request, deployment_id: PyObjectId) -> Deploym
     Get Deployment
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
-    deployment = await controller.get(document_id=deployment_id)
+    deployment = await controller.get(document_id=ObjectId(deployment_id))
     return deployment
 
 
@@ -78,7 +79,7 @@ async def update_deployment(
     Update Deployment
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
-    task = await controller.update_deployment(document_id=deployment_id, data=data)
+    task = await controller.update_deployment(document_id=ObjectId(deployment_id), data=data)
     if isinstance(task, Task):
         # if task is returned, it means the deployment is being updated asynchronously
         response.status_code = HTTPStatus.ACCEPTED
@@ -120,7 +121,7 @@ async def delete_deployment(request: Request, deployment_id: PyObjectId) -> None
     Delete Deployment
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
-    await controller.delete(document_id=deployment_id)
+    await controller.delete(document_id=ObjectId(deployment_id))
 
 
 @router.get("/audit/{deployment_id}", response_model=AuditDocumentList)
@@ -138,7 +139,7 @@ async def list_deployment_audit_logs(
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
     audit_doc_list = await controller.list_audit(
-        document_id=deployment_id,
+        document_id=ObjectId(deployment_id),
         page=page,
         page_size=page_size,
         sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
@@ -157,7 +158,9 @@ async def get_deployment_info(
     Get Deployment Info
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
-    deployment_info = await controller.get_info(document_id=deployment_id, verbose=verbose)
+    deployment_info = await controller.get_info(
+        document_id=ObjectId(deployment_id), verbose=verbose
+    )
     return deployment_info
 
 
@@ -176,7 +179,7 @@ async def compute_online_features(
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
     result = await controller.compute_online_features(
-        deployment_id=deployment_id,
+        deployment_id=ObjectId(deployment_id),
         data=data,
     )
     return result
@@ -195,7 +198,7 @@ async def get_deployment_job_history(
     Get deployment job history
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
-    return await controller.get_deployment_job_history(deployment_id, num_runs)
+    return await controller.get_deployment_job_history(ObjectId(deployment_id), num_runs)
 
 
 @router.get("/all/")
@@ -243,7 +246,7 @@ async def update_deployment_description(
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
     deployment = await controller.update_description(
-        document_id=deployment_id,
+        document_id=ObjectId(deployment_id),
         description=data.description,
     )
     return deployment
@@ -260,7 +263,7 @@ async def get_deployment_request_code_template(
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
     request_code_template = await controller.get_request_code_template(
-        deployment_id=deployment_id,
+        deployment_id=ObjectId(deployment_id),
         language=language,
     )
     return request_code_template
@@ -280,6 +283,6 @@ async def get_deployment_sample_entity_serving_names(
     """
     controller: DeploymentController = request.state.app_container.deployment_controller
     sample_entity_serving_names = await controller.get_sample_entity_serving_names(
-        deployment_id=deployment_id, count=count
+        deployment_id=ObjectId(deployment_id), count=count
     )
     return sample_entity_serving_names

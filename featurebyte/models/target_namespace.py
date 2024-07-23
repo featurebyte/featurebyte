@@ -5,7 +5,7 @@ Target namespace module
 from typing import List, Optional
 
 import pymongo
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from featurebyte.common.validator import construct_sort_validator, duration_string_validator
 from featurebyte.enum import DBVarType
@@ -38,19 +38,17 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
     """
 
     dtype: Optional[DBVarType] = Field(
-        default=None, allow_mutation=False, description="database variable type for the target"
+        default=None, frozen=True, description="database variable type for the target"
     )
     window: Optional[str] = Field(default=None)
 
     # list of IDs attached to this feature namespace or target namespace
-    target_ids: List[PydanticObjectId] = Field(allow_mutation=False)
-    default_target_id: Optional[PydanticObjectId] = Field(default=None, allow_mutation=False)
+    target_ids: List[PydanticObjectId] = Field(frozen=True)
+    default_target_id: Optional[PydanticObjectId] = Field(default=None, frozen=True)
 
     # pydantic validators
-    _sort_ids_validator = validator("target_ids", "entity_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
-    _duration_validator = validator("window", pre=True, allow_reuse=True)(duration_string_validator)
+    _sort_ids_validator = field_validator("target_ids", "entity_ids")(construct_sort_validator())
+    _duration_validator = field_validator("window", mode="before")(duration_string_validator)
 
     class Settings(BaseFeatureNamespaceModel.Settings):
         """

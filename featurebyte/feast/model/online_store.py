@@ -4,15 +4,16 @@ Models to construct feast online store config from featurebyte BaseOnlineStoreDe
 
 from __future__ import annotations
 
-from typing import Union, cast
+from typing import TYPE_CHECKING, Union, cast
 from typing_extensions import Annotated
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from feast.infra.online_stores.redis import RedisOnlineStoreConfig
 from feast.repo_config import FeastConfigBaseModel
-from pydantic import Field, parse_obj_as
+from pydantic import Field
 
+from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.feast.online_store.mysql import FBMySQLOnlineStoreConfig
 from featurebyte.models.online_store import (
     BaseOnlineStoreDetails,
@@ -41,10 +42,11 @@ class FeastRedisOnlineStoreDetails(BaseOnlineStoreDetailsForFeast, RedisOnlineSt
     def to_feast_online_store_config(self) -> FeastConfigBaseModel:
         connection_string = self.connection_string
         if self.credential is not None:
-            if self.credential.username:
-                connection_string += f",username={self.credential.username}"
-            if self.credential.password:
-                connection_string += f",password={self.credential.password}"
+            username, password = self.credential.username, self.credential.password
+            if username:
+                connection_string += f",username={username}"
+            if password:
+                connection_string += f",password={password}"
         return RedisOnlineStoreConfig(connection_string=connection_string)
 
 
@@ -68,10 +70,16 @@ class FeastMySQLOnlineStoreDetails(BaseOnlineStoreDetailsForFeast, MySQLOnlineSt
         return cast(FeastConfigBaseModel, config)
 
 
-FeastOnlineStoreDetails = Annotated[
-    Union[FeastRedisOnlineStoreDetails, FeastMySQLOnlineStoreDetails],
-    Field(discriminator="type"),
-]
+ONLINE_STORE_DETAILS_TYPES = [FeastRedisOnlineStoreDetails, FeastMySQLOnlineStoreDetails]
+
+if TYPE_CHECKING:
+    # use FeastOnlineStoreDetails during type checking
+    FeastOnlineStoreDetails = BaseOnlineStoreDetailsForFeast
+else:
+    # during runtime, use Annotated type for pydantic model deserialization
+    FeastOnlineStoreDetails = Annotated[
+        Union[tuple(ONLINE_STORE_DETAILS_TYPES)], Field(discriminator="type")
+    ]
 
 
 def get_feast_online_store_details(
@@ -89,4 +97,10 @@ def get_feast_online_store_details(
     -------
     FeastOnlineStoreDetails
     """
-    return parse_obj_as(FeastOnlineStoreDetails, online_store_details.dict())  # type: ignore
+    params = online_store_details.dict(by_alias=True)
+    construct_online_store_details = construct_serialize_function(
+        all_types=ONLINE_STORE_DETAILS_TYPES,
+        annotated_type=FeastOnlineStoreDetails,
+        discriminator_key="type",
+    )
+    return cast(FeastOnlineStoreDetails, construct_online_store_details(**params))

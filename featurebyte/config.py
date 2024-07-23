@@ -15,7 +15,7 @@ from pathlib import Path
 import requests
 import websocket
 import yaml
-from pydantic import AnyHttpUrl, BaseModel, Field, validator
+from pydantic import AnyHttpUrl, BaseModel, Field, field_serializer, field_validator
 from requests import Response
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -88,7 +88,7 @@ class LocalStorageSettings(BaseModel):
 
     local_path: Path = Field(default_factory=lambda: get_home_path().joinpath("data/files"))
 
-    @validator("local_path")
+    @field_validator("local_path")
     @classmethod
     def expand_path(cls, value: Path) -> Path:
         """
@@ -116,6 +116,12 @@ class Profile(BaseModel):
     api_url: AnyHttpUrl
     api_token: Optional[str] = Field(default=None)
     ssl_verify: bool = Field(default=True)
+
+    @field_serializer("api_url")
+    def _serialize_api_url(self, system: AnyHttpUrl) -> str:
+        # In pydantic V2, trailing slash is included in the url (https://github.com/pydantic/pydantic/issues/7186).
+        # This is a workaround to remove the trailing slash.
+        return str(system).rstrip("/")
 
 
 class ProfileList(BaseModel):
@@ -214,9 +220,10 @@ class APIClient(BaseAPIClient):
             kwargs["timeout"] = HTTP_REQUEST_TIMEOUT
             kwargs["headers"] = headers
             kwargs["allow_redirects"] = False
+            full_url = str(self.base_url).rstrip("/") + str(url)
             return super().request(
                 method,
-                self.base_url + str(url),
+                full_url,
                 *args,
                 **kwargs,
             )
@@ -539,7 +546,7 @@ class Configurations:
             configure_featurebyte_logger(self)
 
         return APIClient(
-            api_url=self.profile.api_url,
+            api_url=str(self.profile.api_url),
             api_token=self.profile.api_token,
             ssl_verify=self.profile.ssl_verify,
         )
@@ -559,7 +566,7 @@ class Configurations:
         WebsocketClient
             Websocket client
         """
-        url = self.profile.api_url.replace("http://", "ws://").replace("https://", "wss://")
+        url = str(self.profile.api_url).replace("http://", "ws://").replace("https://", "wss://")
         url = f"{url}/ws/{task_id}"
         websocket_client = WebsocketClient(
             url=url, access_token=self.profile.api_token, ssl_verify=self.profile.ssl_verify

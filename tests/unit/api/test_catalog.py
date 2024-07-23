@@ -19,6 +19,7 @@ import pytest
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
+from typeguard import TypeCheckError
 
 from featurebyte import MySQLOnlineStoreDetails, OnlineStore, UsernamePasswordCredential
 from featurebyte.api.api_object import ApiObject
@@ -382,7 +383,7 @@ def test_catalog_creation__input_validation():
     """
     with pytest.raises(ValidationError) as exc:
         Catalog(name=123)
-    assert "str type expected (type=type_error.str)" in str(exc.value)
+    assert "Catalog\nname\n  Input should be a valid string" in str(exc.value)
 
 
 def test_catalog__update_name(new_catalog):
@@ -531,9 +532,9 @@ def test_catalog_update_name(new_catalog):
     # create another catalog
     Catalog(name="creditcard", default_feature_store_ids=[]).save()
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         new_catalog.update_name(type)
-    assert 'type of argument "name" must be str; got type instead' in str(exc.value)
+    assert 'argument "name" (class type) is not an instance of str' in str(exc.value)
 
     with pytest.raises(DuplicatedRecordException) as exc:
         new_catalog.update_name("creditcard")

@@ -2,10 +2,10 @@
 Context API payload schema
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.context import ContextModel
@@ -48,10 +48,13 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
     remove_default_eda_table: Optional[bool] = Field(default=None)
     remove_default_preview_table: Optional[bool] = Field(default=None)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _validate_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_parameters(cls, values: Any) -> Any:
         # check xor between graph & node_name
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         graph = values.get("graph")
         node_name = values.get("node_name")
         if bool(graph) != bool(node_name):

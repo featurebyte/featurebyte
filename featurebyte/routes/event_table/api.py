@@ -8,6 +8,7 @@ from typing import List, Optional
 
 from http import HTTPStatus
 
+from bson import ObjectId
 from fastapi import APIRouter, Request
 
 from featurebyte.models.event_table import EventTableModel, FeatureJobSettingHistoryEntry
@@ -145,7 +146,7 @@ class EventTableRouter(
         """
         controller = self.get_controller_for_request(request)
         info = await controller.get_info(
-            document_id=event_table_id,
+            document_id=ObjectId(event_table_id),
             verbose=verbose,
         )
         return info
@@ -158,7 +159,7 @@ class EventTableRouter(
         """
         controller = self.get_controller_for_request(request)
         event_table: EventTableModel = await controller.update_table(
-            document_id=event_table_id,
+            document_id=ObjectId(event_table_id),
             data=data,
         )
         return event_table
@@ -171,7 +172,7 @@ class EventTableRouter(
         """
         controller = self.get_controller_for_request(request)
         event_table: EventTableModel = await controller.update_column_entity(
-            document_id=event_table_id,
+            document_id=ObjectId(event_table_id),
             column_name=data.column_name,
             entity_id=data.entity_id,
         )
@@ -188,7 +189,7 @@ class EventTableRouter(
         """
         controller = self.get_controller_for_request(request)
         event_table: EventTableModel = await controller.update_column_critical_data_info(
-            document_id=event_table_id,
+            document_id=ObjectId(event_table_id),
             column_name=data.column_name,
             critical_data_info=data.critical_data_info,  # type: ignore
         )
@@ -205,7 +206,7 @@ class EventTableRouter(
         """
         controller = self.get_controller_for_request(request)
         event_table: EventTableModel = await controller.update_column_description(
-            document_id=event_table_id,
+            document_id=ObjectId(event_table_id),
             column_name=data.column_name,
             description=data.description,
         )
@@ -221,7 +222,7 @@ class EventTableRouter(
         """
         controller = self.get_controller_for_request(request)
         history_values = await controller.list_field_history(
-            document_id=event_table_id,
+            document_id=ObjectId(event_table_id),
             field="default_feature_job_setting",
         )
 
@@ -235,5 +236,5 @@ class EventTableRouter(
 
     async def delete_object(self, request: Request, event_table_id: PyObjectId) -> DeleteResponse:
         controller = self.get_controller_for_request(request)
-        await controller.delete(document_id=event_table_id)
+        await controller.delete(document_id=ObjectId(event_table_id))
         return DeleteResponse()

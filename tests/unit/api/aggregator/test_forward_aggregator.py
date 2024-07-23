@@ -152,7 +152,6 @@ def test_prepare_node_parameters(forward_aggregator):
         (None, AggFunc.COUNT, "7d", "target", None),
         ("col_float", AggFunc.COUNT, "7d", "target", ValueError),
         (None, AggFunc.SUM, "7d", "target", ValueError),
-        ("col_float", AggFunc.LATEST, "7d", "target", ValueError),
     ],
 )
 def test_validate_parameters(

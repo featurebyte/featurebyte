@@ -47,8 +47,8 @@ class BaseStringAccessorOpNode(BaseSeriesOutputWithSingleOperandNode, ABC):
 class LengthNode(BaseStringAccessorOpNode):
     """LengthNode class"""
 
-    type: Literal[NodeType.LENGTH] = Field(NodeType.LENGTH, const=True)
-    parameters: FeatureByteBaseModel = Field(default=FeatureByteBaseModel(), const=True)
+    type: Literal[NodeType.LENGTH] = NodeType.LENGTH
+    parameters: FeatureByteBaseModel = Field(default_factory=FeatureByteBaseModel)
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
         return DBVarType.INT
@@ -72,7 +72,7 @@ class TrimNode(BaseStringAccessorOpNode):
         character: Optional[str] = Field(default=None)
         side: Side
 
-    type: Literal[NodeType.TRIM] = Field(NodeType.TRIM, const=True)
+    type: Literal[NodeType.TRIM] = NodeType.TRIM
     parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -118,7 +118,7 @@ class ReplaceNode(BaseStringAccessorOpNode):
         pattern: str
         replacement: str
 
-    type: Literal[NodeType.REPLACE] = Field(NodeType.REPLACE, const=True)
+    type: Literal[NodeType.REPLACE] = NodeType.REPLACE
     parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -150,7 +150,7 @@ class PadNode(BaseStringAccessorOpNode):
         length: int
         pad: str
 
-    type: Literal[NodeType.PAD] = Field(NodeType.PAD, const=True)
+    type: Literal[NodeType.PAD] = NodeType.PAD
     parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -218,7 +218,7 @@ class StringCaseNode(BaseStringAccessorOpNode):
 
         case: Case
 
-    type: Literal[NodeType.STR_CASE] = Field(NodeType.STR_CASE, const=True)
+    type: Literal[NodeType.STR_CASE] = NodeType.STR_CASE
     parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -245,7 +245,7 @@ class StringContainsNode(BaseStringAccessorOpNode):
         pattern: str
         case: bool
 
-    type: Literal[NodeType.STR_CONTAINS] = Field(NodeType.STR_CONTAINS, const=True)
+    type: Literal[NodeType.STR_CONTAINS] = NodeType.STR_CONTAINS
     parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -275,7 +275,7 @@ class SubStringNode(BaseStringAccessorOpNode):
         start: Optional[int] = Field(default=None)
         length: Optional[int] = Field(default=1, ge=1)
 
-    type: Literal[NodeType.SUBSTRING] = Field(NodeType.SUBSTRING, const=True)
+    type: Literal[NodeType.SUBSTRING] = NodeType.SUBSTRING
     parameters: Parameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
@@ -303,7 +303,7 @@ class SubStringNode(BaseStringAccessorOpNode):
 class ConcatNode(BinaryArithmeticOpNode):
     """ConcatNode class"""
 
-    type: Literal[NodeType.CONCAT] = Field(NodeType.CONCAT, const=True)
+    type: Literal[NodeType.CONCAT] = NodeType.CONCAT
     parameters: ValueWithRightOpNodeParameters
 
     def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:

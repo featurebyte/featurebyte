@@ -60,7 +60,7 @@ class EntityRelationship(CatalogRelationship):
         Parent entities of this entity
     """
 
-    parents: List[ParentEntity] = Field(default_factory=list, allow_mutation=False)  # type: ignore
+    parents: List[ParentEntity] = Field(default_factory=list, frozen=True)  # type: ignore
 
 
 class EntityModel(EntityRelationship):
@@ -83,9 +83,9 @@ class EntityModel(EntityRelationship):
         ID of table with primary key columns associated to the entity
     """
 
-    serving_names: List[StrictStr] = Field(allow_mutation=False)
-    table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
-    primary_table_ids: List[PydanticObjectId] = Field(allow_mutation=False, default_factory=list)
+    serving_names: List[StrictStr] = Field(frozen=True)
+    table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    primary_table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

@@ -2,7 +2,7 @@
 Test view class
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from unittest.mock import MagicMock, patch
 
@@ -32,10 +32,10 @@ class SimpleTestView(View):
     Simple view that can be used, and configured for tests.
     """
 
-    _series_class = SimpleTestViewColumn
+    _series_class: ClassVar[Any] = SimpleTestViewColumn
 
     columns_info: List[ColumnInfo] = []
-    node_name = "random_node"
+    node_name: str = "random_node"
     tabular_source: TabularSource = TabularSource(
         feature_store_id=PydanticObjectId(ObjectId("6332f9651050ee7d1234660d")),
         table_details=TableDetails(table_name="table"),
@@ -52,7 +52,7 @@ class SimpleTestView(View):
         ),
     )
 
-    join_col = ""
+    join_col: str = ""
     excluded_columns_override: Optional[List[str]] = None
 
     @property

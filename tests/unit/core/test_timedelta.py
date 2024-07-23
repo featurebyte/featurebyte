@@ -3,6 +3,7 @@ Unit tests for featurebyte.core.timedelta
 """
 
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte.core.timedelta import to_timedelta
 from featurebyte.enum import DBVarType
@@ -38,9 +39,10 @@ def test_to_timedelta(int_series, unit):
 
 def test_to_timedelta__unsupported_unit(int_series):
     """Test to_timedelta() with a non-supported time unit"""
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         _ = to_timedelta(int_series, unit="month")
-    assert 'the value of argument "unit" must be one of' in str(exc.value)
+    expected_msg = "argument \"unit\" (str) is not any of ('day', 'hour', 'minute', 'second', 'millisecond', 'microsecond')"
+    assert expected_msg in str(exc.value)
 
 
 def test_to_timedelta__not_int(float_series):

@@ -232,7 +232,7 @@ class ContextController(
         return ContextInfo(
             **context.dict(),
             author=author,
-            primary_entities=EntityBriefInfoList(__root__=entity_briefs),
+            primary_entities=EntityBriefInfoList(entity_briefs),
             default_preview_table=default_preview_table_name,
             default_eda_table=default_eda_table_name,
             associated_use_cases=use_cases,

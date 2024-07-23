@@ -757,7 +757,6 @@ class FeastRegistryBuilder:
             feature_services=[],
             on_demand_feature_views=[],
             stream_feature_views=[],
-            request_feature_views=[],
         )
         for data_source in feast_data_sources + feast_request_sources:
             repo_content.data_sources.append(data_source)
@@ -925,7 +924,6 @@ class FeastRegistryBuilder:
             feature_services=[],
             on_demand_feature_views=[],
             stream_feature_views=[],
-            request_feature_views=[],
         )
 
         first_store = feast_stores[0]

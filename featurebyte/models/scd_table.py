@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, List, Optional, Tuple, Type, Union
 
-from pydantic import Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 
-from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.common.validator import construct_data_model_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import TableModel
 from featurebyte.query_graph.graph_node.base import GraphNode
@@ -42,8 +42,8 @@ class SCDTableModel(SCDTableData, TableModel):
     _table_data_class: ClassVar[Type[SCDTableData]] = SCDTableData
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
-        construct_data_model_root_validator(
+    _model_validator = model_validator(mode="after")(
+        construct_data_model_validator(
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
                 ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
@@ -56,10 +56,13 @@ class SCDTableModel(SCDTableData, TableModel):
         )
     )
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _handle_current_flag_name(cls, values: dict[str, Any]) -> dict[str, Any]:
+    def _handle_current_flag_name(cls, values: Any) -> Any:
         # DEV-556: remove this after migration
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "current_flag" in values:
             values["current_flag_column"] = values["current_flag"]
         return values

@@ -6,10 +6,10 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
 
-import datetime
+from datetime import timedelta
 
 from bson import ObjectId
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.validator import construct_sort_validator
@@ -107,9 +107,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     has_ttl: bool
 
     # pydantic validators
-    _sort_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
-        construct_sort_validator()
-    )
+    _sort_ids_validator = field_validator("primary_entity_ids")(construct_sort_validator())
 
     @classmethod
     def create_from_graph_node(
@@ -301,18 +299,18 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     udf_info: Optional[UserDefinedFunctionInfo] = Field(default=None)
 
     @property
-    def time_to_live_delta(self) -> Optional[datetime.timedelta]:
+    def time_to_live_delta(self) -> Optional[timedelta]:
         """
-        Time-to-live (TTL) in datetime.timedelta
+        Time-to-live (TTL) in timedelta
 
         Returns
         -------
-        Optional[datetime.timedelta]
-            Time-to-live (TTL) in datetime.timedelta
+        Optional[timedelta]
+            Time-to-live (TTL) in timedelta
         """
         if not self.time_to_live_in_secs:
             return None
-        return datetime.timedelta(seconds=self.time_to_live_in_secs)
+        return timedelta(seconds=self.time_to_live_in_secs)
 
     def initialize(
         self,

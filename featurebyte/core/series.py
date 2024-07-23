@@ -132,7 +132,7 @@ class FrozenSeries(
 
     # instance variables
     name: Optional[StrictStr] = Field(default=None)
-    dtype: DBVarType = Field(allow_mutation=False, description="variable type of the series")
+    dtype: DBVarType = Field(frozen=True, description="variable type of the series")
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}[{self.dtype}](name={self.name}, node_name={self.node_name})"
@@ -471,10 +471,11 @@ class FrozenSeries(
         FrozenSeriesT
             output of the date difference operation
         """
+        bin_op_other = other
         if isinstance(other, pd.Timedelta):
-            other = other.total_seconds()
+            bin_op_other = other.total_seconds()
         return self._binary_op(
-            other=other,
+            other=bin_op_other,
             node_type=NodeType.DATE_ADD,
             output_var_type=DBVarType.TIMESTAMP,
             right_op=right_op,

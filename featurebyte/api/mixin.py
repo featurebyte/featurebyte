@@ -19,7 +19,7 @@ from featurebyte.api.api_object_util import ProgressThread
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.utils import dataframe_from_json, validate_datetime_input
 from featurebyte.config import Configurations
-from featurebyte.core.mixin import HasExtractPrunedGraphAndNode, perf_logging
+from featurebyte.core.mixin import perf_logging
 from featurebyte.exception import (
     RecordCreationException,
     RecordRetrievalException,
@@ -218,7 +218,7 @@ class SampleMixin(AsyncMixin):
 
     @perf_logging
     @typechecked
-    def preview(self: HasExtractPrunedGraphAndNode, limit: int = 10, **kwargs: Any) -> pd.DataFrame:
+    def preview(self, limit: int = 10, **kwargs: Any) -> pd.DataFrame:
         """
         Retrieve a preview of the view / column.
 
@@ -262,11 +262,11 @@ class SampleMixin(AsyncMixin):
         - [View.describe](/reference/featurebyte.api.view.View.describe/):
           Retrieve a summary of a view.
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)  # type: ignore
         payload = FeatureStorePreview(
             graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
-            feature_store_id=self.feature_store.id,
+            feature_store_id=self.feature_store.id,  # type: ignore
         )
         client = Configurations().get_client()
         response = client.post(
@@ -288,7 +288,7 @@ class SampleMixin(AsyncMixin):
         return None
 
     def _get_sample_payload(
-        self: HasExtractPrunedGraphAndNode,
+        self,
         from_timestamp: Optional[Union[datetime, str]] = None,
         to_timestamp: Optional[Union[datetime, str]] = None,
         **kwargs: Any,
@@ -297,19 +297,19 @@ class SampleMixin(AsyncMixin):
         from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
         to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
 
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)  # type: ignore
         return FeatureStoreSample(
             graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=self.timestamp_column,
-            feature_store_id=self.feature_store.id,
+            feature_store_id=self.feature_store.id,  # type: ignore
         )
 
     @perf_logging
     @typechecked
-    def shape(self: HasExtractPrunedGraphAndNode, **kwargs: Any) -> Tuple[int, int]:
+    def shape(self, **kwargs: Any) -> Tuple[int, int]:
         """
         Return the shape of the view / column.
 
@@ -333,11 +333,11 @@ class SampleMixin(AsyncMixin):
         >>> catalog.get_view("INVOICEITEMS").shape()
         (300450, 10)
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)  # type: ignore
         payload = FeatureStorePreview(
             graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
-            feature_store_id=self.feature_store.id,
+            feature_store_id=self.feature_store.id,  # type: ignore
         )
         client = Configurations().get_client()
         response = client.post(url="/feature_store/shape", json=payload.json_dict())
@@ -405,7 +405,7 @@ class SampleMixin(AsyncMixin):
         - [View.sample](/reference/featurebyte.api.view.View.sample/):
           Retrieve a sample of a view.
         """
-        payload = self._get_sample_payload(from_timestamp, to_timestamp, **kwargs)  # type: ignore[misc]
+        payload = self._get_sample_payload(from_timestamp, to_timestamp, **kwargs)
         client = Configurations().get_client()
         response = client.post(
             url=f"/feature_store/sample?size={size}&seed={seed}", json=payload.json_dict()
@@ -417,7 +417,7 @@ class SampleMixin(AsyncMixin):
     @perf_logging
     @typechecked
     def describe(
-        self: HasExtractPrunedGraphAndNode,
+        self,
         size: int = 0,
         seed: int = 1234,
         from_timestamp: Optional[Union[datetime, str]] = None,
@@ -479,14 +479,14 @@ class SampleMixin(AsyncMixin):
         from_timestamp = validate_datetime_input(from_timestamp) if from_timestamp else None
         to_timestamp = validate_datetime_input(to_timestamp) if to_timestamp else None
 
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)  # type: ignore
         payload = FeatureStoreSample(
             graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
             node_name=mapped_node.name,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
             timestamp_column=self.timestamp_column,
-            feature_store_id=self.feature_store.id,
+            feature_store_id=self.feature_store.id,  # type: ignore
         )
         catalog_id = get_active_catalog_id()
         data_description = AsyncMixin.post_async_task(

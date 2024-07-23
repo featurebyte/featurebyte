@@ -84,9 +84,7 @@ class ValueFunctionParameterInput(BaseFunctionParameterInput):
     """ValueFunctionParameterInput class"""
 
     value: Optional[ValueParameterType] = Field(default=None)
-    input_form: Literal[FunctionParameterInputForm.VALUE] = Field(
-        FunctionParameterInputForm.VALUE, const=True
-    )
+    input_form: Literal[FunctionParameterInputForm.VALUE] = FunctionParameterInputForm.VALUE
 
     def get_column_args(self) -> List[Optional[str]]:
         return []
@@ -106,9 +104,7 @@ class ColumnFunctionParameterInput(BaseFunctionParameterInput):
     """ColumnFunctionParameterInput class"""
 
     column_name: Optional[str] = Field(default=None)
-    input_form: Literal[FunctionParameterInputForm.COLUMN] = Field(
-        FunctionParameterInputForm.COLUMN, const=True
-    )
+    input_form: Literal[FunctionParameterInputForm.COLUMN] = FunctionParameterInputForm.COLUMN
 
     def get_column_args(self) -> List[Optional[str]]:
         return [self.column_name]
@@ -142,7 +138,7 @@ class GenericFunctionNodeParameters(FeatureByteBaseModel):
 class GenericFunctionNode(BaseSeriesOutputNode):
     """GenericFunctionNode class"""
 
-    type: Literal[NodeType.GENERIC_FUNCTION] = Field(NodeType.GENERIC_FUNCTION, const=True)
+    type: Literal[NodeType.GENERIC_FUNCTION] = NodeType.GENERIC_FUNCTION
     parameters: GenericFunctionNodeParameters
 
     def _get_column_function_args(self) -> List[Optional[str]]:

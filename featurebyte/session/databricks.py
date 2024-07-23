@@ -11,7 +11,7 @@ from io import BytesIO
 import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
-from pydantic import Field, PrivateAttr
+from pydantic import PrivateAttr
 
 from featurebyte import AccessTokenCredential, logging
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
@@ -45,7 +45,7 @@ class DatabricksSession(BaseSparkSession):
     _storage_base_path: str = PrivateAttr()
     _dbfs_client: DbfsExt = PrivateAttr()
 
-    source_type: SourceType = Field(SourceType.DATABRICKS, const=True)
+    source_type: SourceType = SourceType.DATABRICKS
     database_credential: AccessTokenCredential
 
     def _initialize_connection(self) -> None:

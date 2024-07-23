@@ -255,7 +255,7 @@ class TileManagerService:
 
         await tile_entity_tracking_ins.execute()
 
-        return tile_entity_tracking_ins.json()
+        return str(tile_entity_tracking_ins.model_dump_json())
 
     async def schedule_online_tiles(
         self,
@@ -373,7 +373,7 @@ class TileManagerService:
                 parameters=parameters,
             )
 
-            return parameters.json()
+            return str(parameters.model_dump_json())
 
         return None
 

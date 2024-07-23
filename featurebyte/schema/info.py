@@ -8,7 +8,7 @@ from typing import Any, List, Optional
 
 from datetime import datetime
 
-from pydantic import Field, root_validator, validator
+from pydantic import Field, RootModel, field_validator, model_validator
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import (
@@ -65,12 +65,12 @@ class EntityInfo(EntityBriefInfo, BaseInfo):
     """
 
 
-class EntityBriefInfoList(FeatureByteBaseModel):
+class EntityBriefInfoList(RootModel[Any]):
     """
     Paginated list of entity brief info
     """
 
-    __root__: List[EntityBriefInfo]
+    root: List[EntityBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EntityBriefInfoList:
@@ -87,7 +87,7 @@ class EntityBriefInfoList(FeatureByteBaseModel):
         EntityBriefInfoList
         """
         entity_project = DictProject(rule=("data", ["name", "serving_names", "catalog_name"]))
-        return EntityBriefInfoList(__root__=entity_project.project(paginated_data))
+        return EntityBriefInfoList(entity_project.project(paginated_data))
 
 
 class TableBriefInfo(BaseBriefInfo):
@@ -99,12 +99,12 @@ class TableBriefInfo(BaseBriefInfo):
     catalog_name: str
 
 
-class TableBriefInfoList(FeatureByteBaseModel):
+class TableBriefInfoList(RootModel[Any]):
     """
     Paginated list of table brief info
     """
 
-    __root__: List[TableBriefInfo]
+    root: List[TableBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> TableBriefInfoList:
@@ -121,15 +121,15 @@ class TableBriefInfoList(FeatureByteBaseModel):
         TableBriefInfoList
         """
         data_project = DictProject(rule=("data", ["name", "status", "catalog_name"]))
-        return TableBriefInfoList(__root__=data_project.project(paginated_data))
+        return TableBriefInfoList(data_project.project(paginated_data))
 
 
-class EventTableBriefInfoList(FeatureByteBaseModel):
+class EventTableBriefInfoList(RootModel[Any]):
     """
     Paginated list of event table brief info
     """
 
-    __root__: List[TableBriefInfo]
+    root: List[TableBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventTableBriefInfoList:
@@ -146,7 +146,7 @@ class EventTableBriefInfoList(FeatureByteBaseModel):
         EventTableBriefInfoList
         """
         event_table_project = DictProject(rule=("data", ["name", "status"]))
-        return EventTableBriefInfoList(__root__=event_table_project.project(paginated_data))
+        return EventTableBriefInfoList(event_table_project.project(paginated_data))
 
 
 class TableColumnInfo(FeatureByteBaseModel):
@@ -276,22 +276,22 @@ class FeatureListBriefInfo(FeatureByteBaseModel):
     created_at: datetime
     production_ready_fraction: Optional[float] = Field(default=None)
 
-    @root_validator
-    @classmethod
-    def _derive_production_ready_fraction(cls, values: dict[str, Any]) -> Any:
-        if "readiness_distribution" in values and values.get("production_ready_fraction") is None:
-            values["production_ready_fraction"] = values[
-                "readiness_distribution"
-            ].derive_production_ready_fraction()
-        return values
+    @model_validator(mode="after")
+    def _derive_production_ready_fraction(self) -> "FeatureListBriefInfo":
+        # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+        # validate_assign=True in model_config.
+        self.__dict__["production_ready_fraction"] = (
+            self.readiness_distribution.derive_production_ready_fraction()
+        )
+        return self
 
 
-class FeatureListBriefInfoList(FeatureByteBaseModel):
+class FeatureListBriefInfoList(RootModel[Any]):
     """
     Paginated list of feature brief info
     """
 
-    __root__: List[FeatureListBriefInfo]
+    root: List[FeatureListBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> FeatureListBriefInfoList:
@@ -310,7 +310,7 @@ class FeatureListBriefInfoList(FeatureByteBaseModel):
         feature_list_project = DictProject(
             rule=("data", ["version", "readiness_distribution", "created_at", "catalog_id"])
         )
-        return FeatureListBriefInfoList(__root__=feature_list_project.project(paginated_data))
+        return FeatureListBriefInfoList(feature_list_project.project(paginated_data))
 
 
 class BaseFeatureListNamespaceInfo(NamespaceInfo):
@@ -543,7 +543,7 @@ class OnlineStoreInfo(BaseInfo):
     details: OnlineStoreDetails
     catalogs: List[CatalogBriefInfo]
 
-    @validator("details")
+    @field_validator("details", mode="after")
     @classmethod
     def hide_details_credentials(cls, value: OnlineStoreDetails) -> OnlineStoreDetails:
         """

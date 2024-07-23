@@ -44,9 +44,10 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             {**payload, "node_name": ["cust_id"]},
             [
                 {
+                    "input": ["cust_id"],
                     "loc": ["body", "node_name"],
-                    "msg": "str type expected",
-                    "type": "type_error.str",
+                    "msg": "Input should be a valid string",
+                    "type": "string_type",
                 }
             ],
         )
@@ -325,7 +326,7 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             context_id=None,
             observation_table_id=obs_table_id,
         )
-        data = {"payload": create.json()}
+        data = {"payload": create.model_dump_json()}
 
         with mock.patch(
             "featurebyte.service.entity_validation.EntityValidationService.validate_entities_or_prepare_for_parent_serving"

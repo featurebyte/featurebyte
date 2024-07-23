@@ -26,7 +26,7 @@ from http import HTTPStatus
 import pandas as pd
 from alive_progress import alive_bar
 from bson import ObjectId
-from pydantic import Field, parse_obj_as
+from pydantic import Field, TypeAdapter
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import (
@@ -100,7 +100,8 @@ class BaseFeatureGroup(AsyncMixin):
                     raise ValueError(f'Duplicated feature name (feature.name: "{item.name}")!')
                 if item.id in feature_ids:
                     raise ValueError(f'Duplicated feature id (feature.id: "{item.id}")!')
-                feature_objects[item.name] = item
+                feature_objects[item.name] = item.copy(deep=True)
+                feature_objects[item.name].set_parent(None)
                 feature_ids.add(item.id)
             else:
                 for name, feature in item.feature_objects.items():
@@ -110,7 +111,8 @@ class BaseFeatureGroup(AsyncMixin):
                         )
                     if feature.id in feature_ids:
                         raise ValueError(f'Duplicated feature id (feature.id: "{feature.id}")!')
-                    feature_objects[name] = feature
+                    feature_objects[name] = feature.copy(deep=True)
+                    feature_objects[name].set_parent(None)
         return feature_objects
 
     @staticmethod
@@ -524,14 +526,15 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
             feature[mask] = value
             return
 
-        # Note: since parse_obj_as() makes a copy, the changes below don't apply to the original
+        # Note: since a copy is created, the changes below don't apply to the original
         # Feature object
-        value = parse_obj_as(Feature, value)
+        feature = TypeAdapter(Feature).validate_python(value).copy(deep=True)
+        assert isinstance(feature, Feature)
         # Name setting performs validation to ensure the specified name is valid
-        value.name = key
-        self.feature_objects[key] = value
+        feature.name = key
+        self.feature_objects[key] = feature
         # sanity check: make sure we don't copy global query graph
-        assert id(self.feature_objects[key].graph.nodes) == id(value.graph.nodes)
+        assert id(self.feature_objects[key].graph.nodes) == id(feature.graph.nodes)
 
     @typechecked
     def save(self, conflict_resolution: ConflictResolution = "raise") -> None:

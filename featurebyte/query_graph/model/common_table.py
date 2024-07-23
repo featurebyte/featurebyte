@@ -7,7 +7,7 @@ from typing_extensions import Literal
 
 from abc import abstractmethod
 
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.enum import DBVarType, TableDataType
@@ -57,12 +57,13 @@ class BaseTableData(FeatureByteBaseModel):
     tabular_source: TabularSource
 
     # pydantic validators
-    _validator = validator("columns_info", allow_reuse=True)(columns_info_validator)
+    _validator = field_validator("columns_info")(columns_info_validator)
 
-    def __init_subclass__(cls, **kwargs: Any):
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         # add table into DATA_TABLES & SPECIFIC_DATA_TABLES (if not generic type)
-        table_type = cls.__fields__["type"]
-        if "Literal" in repr(table_type.type_):
+        table_type = cls.model_fields["type"]
+        if "Literal" in repr(table_type.annotation):
             DATA_TABLES.append(cls)
         if table_type.default != TableDataType.SOURCE_TABLE:
             SPECIFIC_DATA_TABLES.append(cls)

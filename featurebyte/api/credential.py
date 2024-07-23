@@ -50,7 +50,7 @@ class Credential(DeletableApiObject, SavableApiObject):
 
     # pydantic instance variable (public)
     feature_store_id: PydanticObjectId = Field(
-        allow_mutation=False,
+        frozen=True,
         description="Id of the feature store that the credential is associated with.",
     )
 

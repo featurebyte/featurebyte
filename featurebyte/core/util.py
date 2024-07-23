@@ -85,7 +85,7 @@ class SeriesBinaryOperator:
         output_var_type: DBVarType,
         right_op: bool = False,
         additional_node_params: dict[str, Any] | None = None,
-    ) -> FrozenSeriesT:  # type: ignore[type-var]
+    ) -> FrozenSeriesT:  # type: ignore
         """
         Perform the series binary operation.
 
@@ -117,7 +117,7 @@ class SeriesBinaryOperator:
 
 def construct_binary_op_series_output(
     input_series: FrozenSeries, other: FrozenSeries, node_name: str, output_var_type: DBVarType
-) -> FrozenSeriesT:  # type: ignore[type-var]
+) -> FrozenSeriesT:  # type: ignore
     """
     Construct the output series for binary operation between two series.
 

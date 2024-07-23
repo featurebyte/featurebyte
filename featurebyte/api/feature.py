@@ -12,7 +12,7 @@ from http import HTTPStatus
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
@@ -122,7 +122,7 @@ class Feature(
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(
         exclude=True,
-        allow_mutation=False,
+        frozen=True,
         description="Provides information about the feature store that the feature is connected to.",
     )
 
@@ -145,10 +145,13 @@ class Feature(
         # of their lineage.
         return tuple()
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _set_feature_store(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if "feature_store" not in values:
+    def _set_feature_store(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
+        if isinstance(values, dict) and "feature_store" not in values:
             tabular_source = values.get("tabular_source")
             if isinstance(tabular_source, dict):
                 feature_store_id = TabularSource(**tabular_source).feature_store_id
@@ -256,7 +259,7 @@ class Feature(
         >>> new_feature = lookup_feature.isin(dictionary_feature)
         >>> new_feature.name = "CustomerHasProductGroup_7d"
         """
-        return super().isin(other)  # type: ignore[no-any-return,misc]
+        return super().isin(other)
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
@@ -745,7 +748,7 @@ class Feature(
         >>> string_invoice_count_feature = feature.astype(str)
         >>> float_invoice_count_feature = feature.astype(float)
         """
-        return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
+        return super().astype(new_type=new_type)
 
     @substitute_docstring(
         doc_template=PREVIEW_DOC,

@@ -14,7 +14,8 @@ from enum import Enum
 from docstring_parser import parse
 from docstring_parser.common import DocstringExample, DocstringRaises, DocstringReturns
 from mkautodoc.extension import import_from_string, trim_docstring
-from pydantic.fields import ModelField, Undefined
+from pydantic.fields import FieldInfo
+from pydantic_core import PydanticUndefined
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.documentation.allowed_classes import nested_description_allowed_classes
@@ -86,8 +87,8 @@ def get_params(
             if render_kw_only_separator:
                 render_kw_only_separator = False
                 params.append(RawParameterDetails("*", None, None))
-        hinted_type = type_hints.get(parameter.name, Undefined)
-        if hinted_type == Undefined:
+        hinted_type = type_hints.get(parameter.name, PydanticUndefined)
+        if hinted_type == PydanticUndefined:
             hinted_type = parameter.annotation
         params.append(RawParameterDetails(value, hinted_type, default))
     return params
@@ -120,9 +121,9 @@ def get_params_from_signature(resource: Any) -> tuple[List[RawParameterDetails],
             parameters = get_params(signature, type_hints)
         except ValueError:
             parameters = []
-        return parameters, type_hints.get("return", Undefined)
+        return parameters, type_hints.get("return", PydanticUndefined)
 
-    elif isinstance(resource, ModelField):
+    elif isinstance(resource, FieldInfo):
         return [], resource.annotation
 
     return [], type(resource)
@@ -243,7 +244,7 @@ def _get_param_details(
         if type(param_type) == str:
             param_type_string = param_type
         else:
-            param_type_string = format_param_type(param_type) if param_type else None
+            param_type_string = format_param_type(param_type) if param_type else None  # type: ignore
         details.append(
             ParameterDetails(
                 name=param_name,
@@ -377,7 +378,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         class_descriptor = ".".join(parts)
         resource_class = import_resource(class_descriptor)
         resource_path = class_descriptor
-        class_fields = getattr(resource_class, "__fields__", None)
+        class_fields = getattr(resource_class, "model_fields", None)
         resource = getattr(resource_class, resource_name, EMPTY_VALUE)
         if resource == EMPTY_VALUE:
             # pydantic field
@@ -391,8 +392,11 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
 
             # get actual classname and name of the resource
             try:
-                resource_classname, resource_realname = resource.__qualname__.split(".", maxsplit=1)
-                resource_path = f"{resource.__module__}.{resource_classname}"
+                # resource.__qualname__ like `init_private_attributes` (from pydantic)
+                # does not contain a dot, so we need to skip it
+                if "." in resource.__qualname__:  # type: ignore
+                    resource_classname, resource_realname = resource.__qualname__.split(".", maxsplit=1)  # type: ignore
+                    resource_path = f"{resource.__module__}.{resource_classname}"
             except AttributeError:
                 pass
         base_classes = None
@@ -421,12 +425,12 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
 
     # get parameter description from docstring
     short_description = docstring.short_description
-    if getattr(resource, "field_info", None):
-        short_description = resource.field_info.description
+    if isinstance(resource, FieldInfo):
+        short_description = resource.description
         if resource_class.__name__ in pydantic_field_doc_overrides:
             override = pydantic_field_doc_overrides[resource_class.__name__]
-            if resource.name in override:
-                short_description = override[resource.name]
+            if resource_name in override:
+                short_description = override[resource_name]
 
     parameters_desc = (
         {param.arg_name: param.description for param in docstring.params if param.description}
@@ -464,6 +468,13 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
             )
             enum_desc[enum_name] = item.__doc__.strip()
 
+    remove_long_description = False
+    pydantic_sub_string = "`FieldInfo` is used"
+    if docstring.long_description and pydantic_sub_string in docstring.long_description:
+        # Remove long description if it is extracted from pydantic docstring
+        assert pydantic_sub_string in str(FieldInfo.__doc__), "Change in pydantic doc string"
+        remove_long_description = True
+
     return ResourceDetails(
         name=resource_name,
         realname=resource_realname,
@@ -473,7 +484,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         base_classes=base_classes,
         method_type=method_type,
         short_description=short_description,
-        long_description=docstring.long_description,
+        long_description=None if remove_long_description else docstring.long_description,
         parameters=_get_param_details(parameters, parameters_desc),
         returns=_get_return_param_details(docstring.returns, return_type),
         raises=_get_raises_from_docstring(docstring.raises),

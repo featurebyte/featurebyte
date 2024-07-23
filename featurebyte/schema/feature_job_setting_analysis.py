@@ -2,13 +2,14 @@
 FeatureJobSettingAnalysis API payload schema
 """
 
-from typing import Any, Dict, Literal, Optional, Sequence, Union
+from typing import Any, Literal, Optional, Sequence, Union
+from typing_extensions import Annotated
 
 from datetime import datetime
 
 from bson import ObjectId
 from pandas import Timestamp
-from pydantic import Field, StrictStr, root_validator
+from pydantic import AfterValidator, BaseModel, Field, StrictStr, field_validator, model_validator
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
@@ -18,6 +19,12 @@ from featurebyte.models.base import (
 )
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.schema.common.base import PaginationMixin
+
+PandasTimestamp = Union[
+    Timestamp,
+    Annotated[str, AfterValidator(Timestamp)],
+    Annotated[datetime, AfterValidator(Timestamp)],
+]
 
 
 class EventTableCandidate(FeatureByteBaseModel):
@@ -48,20 +55,20 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
     job_time_buffer_setting: Union[int, Literal["auto"]] = Field(default="auto")
     late_data_allowance: float = Field(gt=0, le=0.5, default=0.005 / 100)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def validate_event_table_parameters(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_event_table_parameters(cls, values: Any) -> Any:
         """
         Validate Event Table parameters are provided
 
         Parameters
         ----------
-        values : Dict[str, Any]
+        values : Any
             Values to validate
 
         Returns
         -------
-        Dict[str, Any]
+        Any
             Validated values
 
         Raises
@@ -69,6 +76,9 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
         ValueError
             If neither event_table_id or event_table_candidate is provided
         """
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         event_table_id = values.get("event_table_id")
         event_table_candidate = values.get("event_table_candidate")
         if not (event_table_id or event_table_candidate):
@@ -81,8 +91,8 @@ class AnalysisOptions(FeatureByteBaseModel):
     Analysis options
     """
 
-    analysis_date: Timestamp
-    analysis_start: Timestamp
+    analysis_date: PandasTimestamp
+    analysis_start: PandasTimestamp
     analysis_length: int
     blind_spot_buffer_setting: int
     exclude_late_job: bool
@@ -117,22 +127,24 @@ class FeatureJobSetting(FeatureByteBaseModel):
     blind_spot: int
     feature_cutoff_modulo_frequency: int
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_backward_compatibility(cls, values: Any) -> Any:
         """
         Handle backward compatibility
 
         Parameters
         ----------
-        values : Dict[str, Any]
+        values : Any
             Values to validate
 
         Returns
         -------
-        Dict[str, Any]
-            Validated values
+        Any
         """
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "frequency" in values:
             values["period"] = values.pop("frequency")
         if "job_time_modulo_frequency" in values:
@@ -170,6 +182,11 @@ class FeatureJobSettingAnalysisWHJobTimeModuloFrequency(FeatureByteBaseModel):
     ends_wo_late: int
     job_at_end_of_cycle: bool
 
+    @field_validator("starts", "ends", "ends_wo_late", mode="before")
+    @classmethod
+    def _coerce_float_to_int(cls, value: Any) -> int:
+        return int(value)
+
 
 class FeatureJobSettingAnalysisWarehouseRecord(FeatureByteBaseDocumentModel):
     """
@@ -193,9 +210,12 @@ class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
     recommended_feature_job_setting: FeatureJobSetting
     stats_on_wh_jobs: FeatureJobSettingAnalysisWarehouseRecord
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _extract_recommended_feature_job_setting(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_recommended_feature_job_setting(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "recommended_feature_job_setting" not in values:
             values["recommended_feature_job_setting"] = values["analysis_result"][
                 "recommended_feature_job_setting"
@@ -227,9 +247,12 @@ class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):
     offset: int = Field(ge=0, le=3600 * 24 * 28)
     blind_spot: int = Field(ge=0, le=3600 * 24 * 28)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _handle_backward_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _handle_backward_compatibility(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if "frequency" in values:
             values["period"] = values.pop("frequency")
         if "job_time_modulo_frequency" in values:

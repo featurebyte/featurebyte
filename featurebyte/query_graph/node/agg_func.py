@@ -2,13 +2,14 @@
 Aggregation method model
 """
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
 from typing_extensions import Annotated, Literal
 
 from abc import abstractmethod  # pylint: disable=wrong-import-order
 
-from pydantic import Field, parse_obj_as
+from pydantic import Field
 
+from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 
@@ -20,8 +21,9 @@ class BaseAggFunc(FeatureByteBaseModel):
 
     type: AggFunc
 
-    def __init_subclass__(cls, **kwargs: Any):
-        if "Literal" in repr(cls.__fields__["type"].type_):
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
+        if "Literal" in repr(cls.model_fields["type"].annotation):
             # only add agg method class to AGG_FUNCS if the type variable is a literal (to filter out base classes)
             AGG_FUNCS.append(cls)
 
@@ -73,7 +75,7 @@ class BaseAggFunc(FeatureByteBaseModel):
 class SumAggFunc(BaseAggFunc):
     """SumAggFunc class"""
 
-    type: Literal[AggFunc.SUM] = Field(AggFunc.SUM, const=True)
+    type: Literal[AggFunc.SUM] = AggFunc.SUM
     _var_type_map: ClassVar[Dict[DBVarType, DBVarType]] = {
         DBVarType.INT: DBVarType.INT,
         DBVarType.FLOAT: DBVarType.FLOAT,
@@ -113,13 +115,13 @@ class BaseNumAggFunc(BaseAggFunc):
 class AvgAggFunc(BaseNumAggFunc):
     """AvgAggFunc class"""
 
-    type: Literal[AggFunc.AVG] = Field(AggFunc.AVG, const=True)
+    type: Literal[AggFunc.AVG] = AggFunc.AVG
 
 
 class StdAggFunc(BaseNumAggFunc):
     """StdAggFunc class"""
 
-    type: Literal[AggFunc.STD] = Field(AggFunc.STD, const=True)
+    type: Literal[AggFunc.STD] = AggFunc.STD
 
 
 class MatchingVarTypeAggFunc(BaseAggFunc):
@@ -137,13 +139,13 @@ class MatchingVarTypeAggFunc(BaseAggFunc):
 class MaxAggFunc(MatchingVarTypeAggFunc):
     """MaxAggFunc class"""
 
-    type: Literal[AggFunc.MAX] = Field(AggFunc.MAX, const=True)
+    type: Literal[AggFunc.MAX] = AggFunc.MAX
 
 
 class MinAggFunc(MatchingVarTypeAggFunc):
     """MinAggFunc class"""
 
-    type: Literal[AggFunc.MIN] = Field(AggFunc.MIN, const=True)
+    type: Literal[AggFunc.MIN] = AggFunc.MIN
 
 
 class BaseCountAggFunc(BaseAggFunc):
@@ -161,25 +163,25 @@ class BaseCountAggFunc(BaseAggFunc):
 class CountAggFunc(BaseCountAggFunc):
     """CountAggFunc class"""
 
-    type: Literal[AggFunc.COUNT] = Field(AggFunc.COUNT, const=True)
+    type: Literal[AggFunc.COUNT] = AggFunc.COUNT
 
 
 class CountDistinctAggFunc(BaseCountAggFunc):
     """CountDistinctAggFunc class"""
 
-    type: Literal[AggFunc.COUNT_DISTINCT] = Field(AggFunc.COUNT_DISTINCT, const=True)
+    type: Literal[AggFunc.COUNT_DISTINCT] = AggFunc.COUNT_DISTINCT
 
 
 class NaCountAggFunc(BaseCountAggFunc):
     """NaCountAggFunc class"""
 
-    type: Literal[AggFunc.NA_COUNT] = Field(AggFunc.NA_COUNT, const=True)
+    type: Literal[AggFunc.NA_COUNT] = AggFunc.NA_COUNT
 
 
 class LatestAggFunc(MatchingVarTypeAggFunc):
     """LatestAggFunc class"""
 
-    type: Literal[AggFunc.LATEST] = Field(AggFunc.LATEST, const=True)
+    type: Literal[AggFunc.LATEST] = AggFunc.LATEST
 
 
 if TYPE_CHECKING:
@@ -201,5 +203,9 @@ def construct_agg_func(agg_func: AggFunc) -> AggFuncType:
     -------
     AggFuncType
     """
-    agg_func_obj = parse_obj_as(AggFuncType, {"type": agg_func})  # type: ignore
-    return agg_func_obj
+    construct_func = construct_serialize_function(
+        all_types=AGG_FUNCS,
+        annotated_type=AggFuncType,
+        discriminator_key="type",
+    )
+    return cast(AggFuncType, construct_func(type=agg_func))

@@ -44,7 +44,7 @@ class FeatureMaterializeRun(FeatureByteCatalogBaseDocumentModel):
     completion_ts: Optional[datetime] = Field(default=None)
     completion_status: Optional[CompletionStatus] = Field(default=None)
     duration_from_scheduled_seconds: Optional[float] = Field(default=None)
-    incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default_factory=None)
+    incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default=None)
     deployment_ids: Optional[List[PydanticObjectId]] = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
@@ -71,4 +71,4 @@ class FeatureMaterializeRunUpdate(BaseDocumentServiceUpdateSchema):
     completion_ts: Optional[datetime] = Field(default=None)
     completion_status: Optional[CompletionStatus] = Field(default=None)
     duration_from_scheduled_seconds: Optional[float] = Field(default=None)
-    incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default_factory=None)
+    incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default=None)

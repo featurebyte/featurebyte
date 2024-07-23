@@ -9,6 +9,7 @@ from typing import Optional
 import json
 from http import HTTPStatus
 
+from bson import ObjectId
 from fastapi import APIRouter, Form, Request, UploadFile
 from starlette.responses import StreamingResponse
 
@@ -78,7 +79,7 @@ async def get_historical_feature_table(
     controller: HistoricalFeatureTableController = (
         request.state.app_container.historical_feature_table_controller
     )
-    return await controller.get(document_id=historical_feature_table_id)
+    return await controller.get(document_id=ObjectId(historical_feature_table_id))
 
 
 @router.delete(
@@ -93,7 +94,9 @@ async def delete_historical_feature_table(
     controller: HistoricalFeatureTableController = (
         request.state.app_container.historical_feature_table_controller
     )
-    return await controller.delete_materialized_table(document_id=historical_feature_table_id)
+    return await controller.delete_materialized_table(
+        document_id=ObjectId(historical_feature_table_id)
+    )
 
 
 @router.get("", response_model=HistoricalFeatureTableList)
@@ -135,7 +138,7 @@ async def list_historical_feature_table_audit_logs(
     """
     controller = request.state.app_container.historical_feature_table_controller
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        document_id=historical_feature_table_id,
+        document_id=ObjectId(historical_feature_table_id),
         page=page,
         page_size=page_size,
         sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
@@ -154,7 +157,9 @@ async def get_historical_feature_table_info(
     controller: HistoricalFeatureTableController = (
         request.state.app_container.historical_feature_table_controller
     )
-    return await controller.get_info(document_id=historical_feature_table_id, verbose=verbose)
+    return await controller.get_info(
+        document_id=ObjectId(historical_feature_table_id), verbose=verbose
+    )
 
 
 @router.get("/pyarrow_table/{historical_feature_table_id}")
@@ -167,7 +172,9 @@ async def download_table_as_pyarrow_table(
     controller: HistoricalFeatureTableController = (
         request.state.app_container.historical_feature_table_controller
     )
-    return await controller.download_materialized_table(document_id=historical_feature_table_id)
+    return await controller.download_materialized_table(
+        document_id=ObjectId(historical_feature_table_id)
+    )
 
 
 @router.get("/parquet/{historical_feature_table_id}")
@@ -181,7 +188,7 @@ async def download_table_as_parquet(
         request.state.app_container.historical_feature_table_controller
     )
     return await controller.download_materialized_table_as_parquet(
-        document_id=historical_feature_table_id,
+        document_id=ObjectId(historical_feature_table_id),
     )
 
 
@@ -200,7 +207,7 @@ async def update_historical_feature_table_description(
         request.state.app_container.historical_feature_table_controller
     )
     return await controller.update_description(
-        document_id=historical_feature_table_id,
+        document_id=ObjectId(historical_feature_table_id),
         description=data.description,
     )
 
@@ -217,7 +224,8 @@ async def update_historical_feature_table(
     controller: HistoricalFeatureTableController = (
         request.state.app_container.historical_feature_table_controller
     )
-    return await controller.update_historical_feature_table(
-        historical_feature_table_id=historical_feature_table_id,
+    table = await controller.update_historical_feature_table(
+        historical_feature_table_id=ObjectId(historical_feature_table_id),
         data=data,
     )
+    return table

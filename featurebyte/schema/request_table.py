@@ -2,10 +2,10 @@
 Base class for all request tables.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.request_input import RequestInputType
@@ -31,9 +31,12 @@ class BaseRequestTableListRecord(BaseMaterializedTableListRecord):
     feature_store_id: PydanticObjectId
     type: RequestInputType
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _extract_base_request_table_fields(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_base_request_table_fields(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         values["type"] = values["request_input"]["type"]
         values["feature_store_id"] = values["location"]["feature_store_id"]
         return values

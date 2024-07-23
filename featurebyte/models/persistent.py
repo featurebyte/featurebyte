@@ -7,11 +7,12 @@ from typing import Any, Dict, List, Mapping, Optional
 from datetime import datetime
 
 from bson import ObjectId
-from pydantic import Field
+from pydantic import Field, field_serializer
 
 from featurebyte.common.model_util import get_utc_now
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.utils import serialize_obj
 from featurebyte.schema.common.base import PaginationMixin
 
 Document = Dict[str, Any]
@@ -44,7 +45,7 @@ class AuditDocument(FeatureByteBaseModel):
     Audit document
     """
 
-    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", allow_mutation=False)
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id", frozen=True)
     user_id: Optional[PydanticObjectId] = Field(default=None)
     name: str
     document_id: Any = Field(default=None)
@@ -52,6 +53,16 @@ class AuditDocument(FeatureByteBaseModel):
     action_type: AuditActionType
     previous_values: Dict[str, Any]
     current_values: Dict[str, Any]
+
+    @field_serializer("previous_values", "current_values", when_used="json")
+    @staticmethod
+    def _serialize_values(values: Any) -> Any:
+        return serialize_obj(values)
+
+    @field_serializer("document_id", when_used="json")
+    @staticmethod
+    def _serialize_document_id(document_id: Any) -> str:
+        return str(document_id)
 
 
 class AuditDocumentList(PaginationMixin):

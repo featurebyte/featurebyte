@@ -4,12 +4,13 @@ This module contains the implementation of feature job setting validation
 
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any, Callable, Sequence, Tuple
 
 import re
 from datetime import datetime
 
 import pandas as pd
+from pydantic import BaseModel, TypeAdapter
 from typeguard import typechecked
 
 
@@ -212,3 +213,73 @@ def convert_seconds_to_time_format(seconds: int, components: int = 4) -> str:
 
     # Include only the most significant components as specified
     return "".join(time_format_parts[:components])
+
+
+def get_type_to_class_map(
+    class_list: Sequence[type[BaseModel]], discriminator_key: str = "type"
+) -> dict[str, type[BaseModel]]:
+    """
+    Get class type string value to class map. This is used to generate the class mapping for the
+    model deserialization. By using this map, we can avoid pydantic V2 performance issue due to
+    _core_utils.py:walk. The issue is mentioned in https://github.com/pydantic/pydantic/issues/6768.
+
+    Parameters
+    ----------
+    class_list: Sequence[type[BaseModel]]
+        List of classes
+    discriminator_key: str
+        Discriminator key to use for mapping
+
+    Returns
+    -------
+    dict[str, type[BaseModel]]
+        Type to class map
+    """
+    class_map = {}
+    for class_ in class_list:
+        type_annotation = class_.model_fields[discriminator_key].annotation
+        assert type_annotation is not None, class_
+        type_name = type_annotation.__args__[0]
+        class_map[type_name] = class_
+    return class_map
+
+
+def construct_serialize_function(
+    all_types: Sequence[type[BaseModel]],
+    annotated_type: Any,
+    discriminator_key: str,
+) -> Callable[..., Any]:
+    """
+    Construct serialize function use to serialize the object
+
+    Parameters
+    ----------
+    all_types: Sequence[type[BaseModel]]
+        List of all types
+    annotated_type: Any
+        Annotated type to use for serialization
+    discriminator_key: str
+        Discriminator key to use for mapping
+
+    Returns
+    -------
+    Callable[..., Any]
+        Function to serialize the object
+    """
+
+    # construct class map for deserialization
+    class_map = get_type_to_class_map(all_types, discriminator_key=discriminator_key)
+
+    # construct function to construct the object
+    def _construct_function(**kwargs: Any) -> Any:
+        specific_model_class = class_map.get(kwargs.get(discriminator_key))  # type: ignore
+        if specific_model_class is None:
+            # use pydantic builtin version to throw validation error (slow due to pydantic V2 performance issue)
+            return TypeAdapter(annotated_type).validate_python(kwargs)
+
+        # use internal method to avoid current pydantic V2 performance issue due to _core_utils.py:walk
+        # https://github.com/pydantic/pydantic/issues/6768
+        return specific_model_class(**kwargs)
+
+    # return the constructed function
+    return _construct_function

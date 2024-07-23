@@ -4,11 +4,12 @@ This module contains Feature list store info related models
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Set, Tuple, Union
 from typing_extensions import Annotated
 
 from pydantic import Field
 
+from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.feature import FeatureModel
@@ -74,7 +75,7 @@ class UninitializedStoreInfo(BaseStoreInfo):
     Uninitialized store info
     """
 
-    type: Literal["uninitialized"] = Field("uninitialized", const=True)
+    type: Literal["uninitialized"] = "uninitialized"
 
     @classmethod
     def create(
@@ -92,7 +93,7 @@ class SnowflakeStoreInfo(BaseStoreInfo):
     Snowflake store info
     """
 
-    type: Literal["snowflake"] = Field("snowflake", const=True)
+    type: Literal["snowflake"] = "snowflake"
 
 
 class DataBricksStoreInfo(BaseStoreInfo):
@@ -100,7 +101,7 @@ class DataBricksStoreInfo(BaseStoreInfo):
     DataBricks store info
     """
 
-    type: Literal["databricks"] = Field(default="databricks", const=True)
+    type: Literal["databricks"] = "databricks"
 
 
 class SparkStoreInfo(BaseStoreInfo):
@@ -108,7 +109,7 @@ class SparkStoreInfo(BaseStoreInfo):
     Spark store info
     """
 
-    type: Literal["spark"] = Field(default="spark", const=True)
+    type: Literal["spark"] = "spark"
 
 
 class DataBricksFeatureLookup(FeatureByteBaseModel):
@@ -118,8 +119,8 @@ class DataBricksFeatureLookup(FeatureByteBaseModel):
 
     table_name: str
     lookup_key: List[str]
-    timestamp_lookup_key: Optional[str]
-    lookback_window: Optional[str]
+    timestamp_lookup_key: Optional[str] = Field(default=None)
+    lookback_window: Optional[str] = Field(default=None)
     feature_names: List[str]
     rename_outputs: Dict[str, str]
 
@@ -146,7 +147,7 @@ class DataBricksFeatureFunction(FeatureByteBaseModel):
     input_bindings: Dict[str, str]
     output_name: str
 
-    def __repr_name__(self) -> str:
+    def __repr_name__(self) -> str:  # type: ignore
         return "FeatureFunction"
 
 
@@ -155,7 +156,7 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
     DataBricks store info
     """
 
-    type: Literal["databricks_unity"] = Field(default="databricks_unity", const=True)
+    type: Literal["databricks_unity"] = "databricks_unity"
     databricks_sdk_version: str = Field(default="0.16.3")
     feature_specs: List[Union[DataBricksFeatureLookup, DataBricksFeatureFunction]]
     base_dataframe_specs: List[ColumnSpec]
@@ -461,13 +462,20 @@ class DataBricksUnityStoreInfo(BaseStoreInfo):
         )
 
 
-StoreInfo = Annotated[
-    Union[
-        UninitializedStoreInfo,
-        SnowflakeStoreInfo,
-        DataBricksStoreInfo,
-        DataBricksUnityStoreInfo,
-        SparkStoreInfo,
-    ],
-    Field(discriminator="type"),
+STORE_INFO_TYPES = [
+    UninitializedStoreInfo,
+    SnowflakeStoreInfo,
+    DataBricksStoreInfo,
+    DataBricksUnityStoreInfo,
+    SparkStoreInfo,
 ]
+if TYPE_CHECKING:
+    # use StoreInfo during type checking
+    StoreInfo = BaseStoreInfo
+else:
+    StoreInfo = Annotated[Union[tuple(STORE_INFO_TYPES)], Field(discriminator="type")]
+
+# construct function for store info deserialization
+construct_store_info = construct_serialize_function(
+    all_types=STORE_INFO_TYPES, annotated_type=StoreInfo, discriminator_key="type"
+)

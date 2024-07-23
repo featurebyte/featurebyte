@@ -5,7 +5,7 @@ Tests FeatureByteBaseModel
 from typing import List
 
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 from pydantic import StrictStr, ValidationError
 
 from featurebyte.models.base import (
@@ -28,11 +28,13 @@ def test_featurebyte_base_model__error_message():
 
     with pytest.raises(ValidationError) as exc:
         Basket(items="hello")
-    assert "value is not a valid list (type=type_error.list)" in str(exc.value)
+    assert "1 validation error for Basket\nitems\n  Input should be a valid list " in str(exc.value)
 
     with pytest.raises(ValidationError) as exc:
         Basket(items=[1])
-    assert "str type expected (type=type_error.str)" in str(exc.value)
+    assert "1 validation error for Basket\nitems.0\n  Input should be a valid string " in str(
+        exc.value
+    )
 
 
 def test_featurebyte_base_model__pydantic_model_type_error_message():
@@ -52,9 +54,8 @@ def test_featurebyte_base_model__pydantic_model_type_error_message():
 
     with pytest.raises(ValidationError) as exc:
         Basket(items="hello")
-    expected_msg = (
-        "value is not a valid Items type (type=type_error.featurebytetype; object_type=Items)"
-    )
+
+    expected_msg = "1 validation error for Basket\nitems\n  Input should be a valid dictionary or instance of Items "
     assert expected_msg in str(exc.value)
 
 
@@ -105,4 +106,5 @@ def test_base_model__name_validation():
     assert model.id is not None
     with pytest.raises(ValidationError) as exc:
         FeatureByteBaseDocumentModel(name="t" * 256)
-    assert "ensure this value has at most 255 characters" in str(exc.value)
+    expected_error = "1 validation error for FeatureByteBaseDocumentModel\nname\n  String should have at most 255 characters "
+    assert expected_error in str(exc.value)

@@ -10,7 +10,7 @@ import json
 from enum import IntEnum
 
 from bson import ObjectId
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from featurebyte.enum import StrEnum, WorkerCommand
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -54,13 +54,8 @@ class BaseTaskPayload(FeatureByteBaseModel):
     user_id: Optional[PydanticObjectId] = Field(default=None)
     catalog_id: PydanticObjectId
 
-    class Config:
-        """
-        Configurations for BaseTaskPayload
-        """
-
-        # With `frozen` flag enable, all the object attributes are immutable.
-        frozen = True
+    # pydantic model configuration
+    model_config = ConfigDict(frozen=True)
 
     @property
     def task(self) -> str:
@@ -116,8 +111,8 @@ class BaseTaskPayload(FeatureByteBaseModel):
         output["is_revocable"] = self.is_revocable
         return output
 
-    def json(self, *args: Any, **kwargs: Any) -> str:
-        json_string = super().json(*args, **kwargs)
+    def model_dump_json(self, *args: Any, **kwargs: Any) -> str:
+        json_string = super().model_dump_json(*args, **kwargs)
         json_dict = json.loads(json_string)
 
         # include class variables

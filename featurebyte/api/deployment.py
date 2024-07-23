@@ -319,7 +319,7 @@ class Deployment(DeletableApiObject):
         if response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY and response_dict["detail"][
             0
         ].get("loc") == ["query", "language"]:
-            message = response_dict["detail"][0]["ctx"]["permitted"]
+            message = response_dict["detail"][0]["ctx"]["expected"]
             raise NotImplementedError(f"Supported languages: {message}")
         if (
             response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
@@ -332,7 +332,7 @@ class Deployment(DeletableApiObject):
         code_template = response_dict["code_template"]
         return CodeStr(
             code_template.replace(
-                "<FEATUREBYTE_SERVICE_URL>", str(current_profile.api_url)
+                "<FEATUREBYTE_SERVICE_URL>", str(current_profile.api_url).rstrip("/")
             ).replace("<API_TOKEN>", str(current_profile.api_token)),
         )
 

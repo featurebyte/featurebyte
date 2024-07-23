@@ -262,7 +262,7 @@ class UseCaseController(
         return UseCaseInfo(
             **use_case.dict(),
             author=author,
-            primary_entities=EntityBriefInfoList(__root__=entity_briefs),
+            primary_entities=EntityBriefInfoList(entity_briefs),
             context_name=context.name,
             target_name=target_name,
             default_preview_table=default_preview_table_name,
@@ -303,7 +303,8 @@ class UseCaseController(
         query_filter = {}
         if feature_list_id:
             feature_list_doc = await self.feature_list_service.get_document_as_dict(
-                document_id=feature_list_id, projection={"supported_serving_entity_ids": 1}
+                document_id=ObjectId(feature_list_id),
+                projection={"supported_serving_entity_ids": 1},
             )
             supported_serving_entity_ids = feature_list_doc.get("supported_serving_entity_ids")
             if supported_serving_entity_ids:

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
@@ -32,9 +32,12 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     context_id: Optional[PydanticObjectId] = Field(default=None)
     skip_entity_validation_checks: bool = Field(default=False)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _check_graph_and_node_names(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _check_graph_and_node_names(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         graph = values.get("graph", None)
         node_names = values.get("node_names", None)
         target_id = values.get("target_id", None)
@@ -72,7 +75,10 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
         """
         if self.graph is None or self.node_names is None:
             return []
-        return [self.graph.get_node_by_name(name) for name in self.node_names]
+        return [
+            self.graph.get_node_by_name(name)
+            for name in self.node_names  # pylint: disable=not-an-iterable
+        ]
 
 
 class TargetTableList(PaginationMixin):
@@ -91,8 +97,11 @@ class TargetTableListRecord(BaseMaterializedTableListRecord):
     feature_store_id: PydanticObjectId
     observation_table_id: PydanticObjectId
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _extract(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         values["feature_store_id"] = values["location"]["feature_store_id"]
         return values

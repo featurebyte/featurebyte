@@ -4,15 +4,14 @@ This module generic query object classes
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Dict, Optional, Tuple, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, TypeVar
 
-import json
 import operator
 from abc import abstractmethod
 
 from cachetools import LRUCache, cachedmethod
 from cachetools.keys import hashkey
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.common.utils import get_version
@@ -82,8 +81,8 @@ class QueryObject(FeatureByteBaseModel):
     # instance variables
     graph: QueryGraph = Field(default_factory=GlobalQueryGraph)
     node_name: str
-    tabular_source: TabularSource = Field(allow_mutation=False)
-    feature_store: FeatureStoreModel = Field(exclude=True, allow_mutation=False)
+    tabular_source: TabularSource = Field(frozen=True)
+    feature_store: FeatureStoreModel = Field(exclude=True, frozen=True)
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(node_name={self.node_name})"
@@ -176,14 +175,15 @@ class QueryObject(FeatureByteBaseModel):
         """
         return self.operation_structure.output_category
 
-    @root_validator
-    @classmethod
-    def _convert_query_graph_to_global_query_graph(cls, values: dict[str, Any]) -> dict[str, Any]:
-        if not isinstance(values["graph"], GlobalQueryGraph):
-            global_graph, node_name_map = GlobalQueryGraph().load(values["graph"])
-            values["graph"] = global_graph
-            values["node_name"] = node_name_map[values["node_name"]]
-        return values
+    @model_validator(mode="after")
+    def _convert_query_graph_to_global_query_graph(self) -> "QueryObject":
+        if not isinstance(self.graph, GlobalQueryGraph):
+            global_graph, node_name_map = GlobalQueryGraph().load(self.graph)
+            # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+            # validate_assign=True in model_config.
+            self.__dict__["graph"] = global_graph
+            self.__dict__["node_name"] = node_name_map[self.node_name]
+        return self
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
         """
@@ -249,7 +249,7 @@ class QueryObject(FeatureByteBaseModel):
     ) -> QueryObjectT:
         update_dict = update or {}
         update_dict.update({"feature_store": self.feature_store.copy(deep=deep)})
-        return super().copy(
+        return super().copy(  # type: ignore
             include=include,
             exclude=exclude,
             update=update_dict,
@@ -268,48 +268,7 @@ class QueryObject(FeatureByteBaseModel):
             # global one.
             new_object.__dict__["graph"] = pruned_graph
             return new_object.dict(*args, **kwargs)
-        return super().dict(*args, **kwargs)
-
-    def json(
-        self,
-        *,
-        include: AbstractSetIntStr | MappingIntStrAny | None = None,
-        exclude: AbstractSetIntStr | MappingIntStrAny | None = None,
-        by_alias: bool = False,
-        skip_defaults: bool | None = None,
-        exclude_unset: bool = False,
-        exclude_defaults: bool = False,
-        exclude_none: bool = False,
-        encoder: Callable[[Any], Any] | None = None,
-        models_as_dict: bool = True,
-        **dumps_kwargs: Any,
-    ) -> str:
-        # Serialization of query object requires both graph & node (to prune the graph).
-        # However, pydantic `json()` does not call `dict()` directly. It iterates inner attributes
-        # and trigger theirs `dict()`. To fix this issue, we call the pydantic `json()` first to
-        # serialize the whole object, then calling `QueryObject.dict()` to construct pruned graph & node map.
-        # After that, use the `QueryObject.dict()` result to overwrite pydantic `json()` results.
-        json_object = super().json(
-            include=include,
-            exclude=exclude,
-            by_alias=by_alias,
-            skip_defaults=skip_defaults,
-            exclude_unset=exclude_unset,
-            exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none,
-            encoder=encoder,
-            models_as_dict=models_as_dict,
-            **dumps_kwargs,
-        )
-        encoder = cast(Callable[[Any], Any], encoder or self.__json_encoder__)
-        dict_object = json.loads(json_object)
-        if "graph" in dict_object:
-            pruned_dict_object = self.dict()
-            for key in ["graph", "node_name"]:
-                if key in dict_object:
-                    dict_object[key] = pruned_dict_object[key]
-            json_object = self.__config__.json_dumps(dict_object, default=encoder, **dumps_kwargs)
-        return json_object
+        return dict(super().dict(*args, **kwargs))
 
     @classmethod
     def clear_operation_structure_cache(cls) -> None:

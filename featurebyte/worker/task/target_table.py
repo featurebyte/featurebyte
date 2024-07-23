@@ -131,7 +131,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                     feature_store=feature_store,
                     serving_names_remapping=payload.serving_names_mapping,
                     skip_entity_validation_checks=payload.skip_entity_validation_checks,
-                    primary_entity_ids=primary_entity_ids,  # type: ignore[arg-type]
+                    primary_entity_ids=primary_entity_ids,
                 )
             )
 

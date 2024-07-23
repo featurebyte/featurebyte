@@ -4,8 +4,7 @@ This module contains graph node class.
 
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-from pydantic import parse_obj_as
-
+from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -18,7 +17,15 @@ from featurebyte.query_graph.node.nested import (
 
 # update forward references after QueryGraph is defined
 for graph_node_parameters_type in GRAPH_NODE_PARAMETERS_TYPES:
-    graph_node_parameters_type.update_forward_refs(QueryGraphModel=QueryGraphModel)
+    graph_node_parameters_type.model_rebuild()
+
+
+# construct function for graph node parameter deserialization
+construct_graph_node_parameter = construct_serialize_function(
+    all_types=GRAPH_NODE_PARAMETERS_TYPES,
+    annotated_type=GraphNodeParameters,
+    discriminator_key="type",
+)
 
 
 class GraphNode(BaseGraphNode):
@@ -95,7 +102,7 @@ class GraphNode(BaseGraphNode):
         graph_node = GraphNode(
             name="graph",
             output_type=nested_node.output_type,
-            parameters=parse_obj_as(GraphNodeParameters, graph_node_parameters),  # type: ignore
+            parameters=construct_graph_node_parameter(**graph_node_parameters),
         )
         return graph_node, proxy_input_nodes
 

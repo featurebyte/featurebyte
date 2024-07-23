@@ -78,7 +78,7 @@ class ListHandler:
         for item_dict in iterate_api_object_using_paginated_routes(
             route=self.route, params={"page_size": PAGINATED_CALL_PAGE_SIZE, **params}
         ):
-            output.append(json.loads(self.list_schema(**item_dict).json()))
+            output.append(json.loads(self.list_schema(**item_dict).model_dump_json()))
 
         fields = self.list_fields
         if include_id:

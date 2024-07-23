@@ -5,6 +5,7 @@ Unit test for EventViewGroupBy
 from typing import List, Type
 
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte import FeatureJobSetting
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
@@ -56,18 +57,24 @@ def test_constructor__wrong_input_type(snowflake_event_view):
     """
     Test not valid object type passed to the constructor
     """
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         GroupBy(obj=True, keys="whatever")
     expected_msg = (
-        'type of argument "obj" must be one of (featurebyte.api.event_view.EventView, '
-        "featurebyte.api.item_view.ItemView, featurebyte.api.change_view.ChangeView, "
-        "featurebyte.api.scd_view.SCDView); got bool instead"
+        'argument "obj" (bool) did not match any element in the union:'
+        "\n  featurebyte.api.event_view.EventView: is not an instance of featurebyte.api.event_view.EventView"
+        "\n  featurebyte.api.item_view.ItemView: is not an instance of featurebyte.api.item_view.ItemView"
+        "\n  featurebyte.api.change_view.ChangeView: is not an instance of featurebyte.api.change_view.ChangeView"
+        "\n  featurebyte.api.scd_view.SCDView: is not an instance of featurebyte.api.scd_view.SCDView"
     )
     assert expected_msg in str(exc.value)
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         GroupBy(snowflake_event_view, True)
-    expected_msg = 'type of argument "keys" must be one of (str, List[str]); got bool instead'
+    expected_msg = (
+        'argument "keys" (bool) did not match any element in the union:'
+        "\n  str: is not an instance of str"
+        "\n  List[str]: is not a list"
+    )
     assert expected_msg in str(exc.value)
 
 
@@ -301,8 +308,11 @@ def test_groupby__count_feature_specify_value_column(snowflake_event_view_with_e
 @pytest.mark.parametrize(
     "missing_param, expected_error",
     [
-        ("windows", "missing a required argument: 'windows'"),
-        ("feature_names", "missing a required argument: 'feature_names'"),
+        ("windows", "GroupBy.aggregate_over() missing 1 required positional argument: 'windows'"),
+        (
+            "feature_names",
+            "GroupBy.aggregate_over() missing 1 required positional argument: 'feature_names'",
+        ),
     ],
 )
 def test_groupby__required_params_missing(

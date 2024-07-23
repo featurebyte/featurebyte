@@ -543,7 +543,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter=self._construct_get_query_filter(document_id=document_id),
-            update={"$set": {"readiness_distribution": readiness_distribution.dict()["__root__"]}},
+            update={"$set": {"readiness_distribution": readiness_distribution.dict()}},
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
         )

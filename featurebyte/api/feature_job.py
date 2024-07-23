@@ -14,6 +14,7 @@ from io import BytesIO
 import humanize
 import numpy as np
 import pandas as pd
+from pydantic import ConfigDict
 from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
@@ -40,12 +41,8 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
     feature_job_summary: pd.DataFrame
     job_session_logs: pd.DataFrame
 
-    class Config:
-        """
-        Config for pydantic model
-        """
-
-        arbitrary_types_allowed: bool = True
+    # pydantic model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
     def request_parameters(self) -> Dict[str, Any]:

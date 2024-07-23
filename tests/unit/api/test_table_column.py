@@ -5,6 +5,7 @@ Unit test for DataColumn class
 import textwrap
 
 import pytest
+from typeguard import TypeCheckError
 
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
@@ -39,11 +40,14 @@ def test_table_column__as_entity(snowflake_event_table, mock_api_object_cache):
         if col.name == "col_int":
             assert col.entity_id == entity.id
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeCheckError) as exc:
         snowflake_event_table.col_int.as_entity(1234)
-    assert 'type of argument "entity_name" must be one of (str, NoneType); got int instead' in str(
-        exc.value
+    expected_msg = (
+        'argument "entity_name" (int) did not match any element in the union:'
+        "\n  str: is not an instance of str"
+        "\n  NoneType: is not an instance of NoneType"
     )
+    assert expected_msg in str(exc.value)
 
     with pytest.raises(RecordRetrievalException) as exc:
         snowflake_event_table.col_int.as_entity("some_random_entity")

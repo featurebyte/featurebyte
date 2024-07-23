@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, validator
+from pydantic import Field, field_validator
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.entity import EntityModel
@@ -30,7 +30,7 @@ class EntityInfo(FeatureByteBaseModel):
     provided_entities: List[EntityModel]
     serving_names_mapping: Optional[Dict[str, str]] = Field(default=None)
 
-    @validator("required_entities", "provided_entities")
+    @field_validator("required_entities", "provided_entities")
     @classmethod
     def _deduplicate_entities(cls, val: List[EntityModel]) -> List[EntityModel]:
         entities_dict: dict[ObjectId, EntityModel] = {}
@@ -117,10 +117,13 @@ class EntityInfo(FeatureByteBaseModel):
         original_serving_name = entity.serving_names[0]
         if (
             self.serving_names_mapping is None
-            or original_serving_name not in self.serving_names_mapping
+            or original_serving_name
+            not in self.serving_names_mapping  # pylint: disable=unsupported-membership-test
         ):
             return original_serving_name
-        return self.serving_names_mapping[original_serving_name]
+        return self.serving_names_mapping[  # pylint: disable=unsubscriptable-object
+            original_serving_name
+        ]
 
     def format_missing_entities_error(self, missing_entity_ids: List[ObjectId]) -> str:
         """

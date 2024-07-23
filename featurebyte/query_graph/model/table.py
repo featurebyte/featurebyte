@@ -8,7 +8,7 @@ from typing_extensions import Annotated, Literal
 from dataclasses import dataclass
 
 from bson import ObjectId
-from pydantic import Field, StrictStr, parse_obj_as
+from pydantic import Field, StrictStr
 
 from featurebyte.common.join_utils import (
     apply_column_name_modifiers,
@@ -16,6 +16,7 @@ from featurebyte.common.join_utils import (
     combine_column_info_of_views,
     filter_columns,
 )
+from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.enum import TableDataType
 from featurebyte.exception import RepeatedColumnNamesError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -41,7 +42,7 @@ from featurebyte.query_graph.node.schema import FeatureStoreDetails
 class SourceTableData(BaseTableData):
     """SourceTableData class"""
 
-    type: Literal[TableDataType.SOURCE_TABLE] = Field(TableDataType.SOURCE_TABLE, const=True)
+    type: Literal[TableDataType.SOURCE_TABLE] = TableDataType.SOURCE_TABLE
 
     @property
     def primary_key_columns(self) -> List[str]:
@@ -61,7 +62,7 @@ class SourceTableData(BaseTableData):
 class EventTableData(BaseTableData):
     """EventTableData class"""
 
-    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     event_timestamp_column: StrictStr
     event_id_column: StrictStr
@@ -124,7 +125,7 @@ class EventTableData(BaseTableData):
 class ItemTableData(BaseTableData):
     """ItemTableData class"""
 
-    type: Literal[TableDataType.ITEM_TABLE] = Field(TableDataType.ITEM_TABLE, const=True)
+    type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     event_id_column: StrictStr
     item_id_column: StrictStr
@@ -332,7 +333,7 @@ class ItemTableData(BaseTableData):
 class DimensionTableData(BaseTableData):
     """DimensionTableData class"""
 
-    type: Literal[TableDataType.DIMENSION_TABLE] = Field(TableDataType.DIMENSION_TABLE, const=True)
+    type: Literal[TableDataType.DIMENSION_TABLE] = TableDataType.DIMENSION_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     dimension_id_column: StrictStr
 
@@ -399,7 +400,7 @@ class ChangeViewColumnNames:
 class SCDTableData(BaseTableData):
     """SCDTableData class"""
 
-    type: Literal[TableDataType.SCD_TABLE] = Field(TableDataType.SCD_TABLE, const=True)
+    type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     natural_key_column: StrictStr
     effective_timestamp_column: StrictStr
@@ -615,6 +616,14 @@ else:
     SpecificTableDataT = Annotated[Union[tuple(SPECIFIC_DATA_TABLES)], Field(discriminator="type")]
 
 
+# construct function for specific data table deserialization
+construct_specific_data_table = construct_serialize_function(
+    all_types=SPECIFIC_DATA_TABLES,
+    annotated_type=SpecificTableDataT,
+    discriminator_key="type",
+)
+
+
 class SpecificTableData(BaseTableData):  # pylint: disable=abstract-method
     """
     Pseudo TableData class to support multiple table types.
@@ -622,7 +631,7 @@ class SpecificTableData(BaseTableData):  # pylint: disable=abstract-method
     """
 
     def __new__(cls, **kwargs: Any) -> Any:
-        return parse_obj_as(SpecificTableDataT, kwargs)  # type: ignore[misc]
+        return construct_specific_data_table(**kwargs)
 
 
 class TableSpec(FeatureByteBaseModel):
@@ -643,7 +652,7 @@ class TableDetails(FeatureByteBaseModel):
     fully_qualified_name: str
 
     @property
-    def description(self) -> str:
+    def description(self) -> Optional[str]:
         """
         Get the description of the table
 

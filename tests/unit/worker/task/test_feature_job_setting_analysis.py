@@ -95,7 +95,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
         assert document
         result = FeatureJobSettingAnalysisModel(
-            **json.loads(FeatureJobSettingAnalysisModel(**document).json())
+            **json.loads(FeatureJobSettingAnalysisModel(**document).model_dump_json())
         )
 
         # check document output

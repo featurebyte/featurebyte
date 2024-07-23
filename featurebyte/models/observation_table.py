@@ -11,7 +11,7 @@ from datetime import datetime  # pylint: disable=wrong-import-order
 
 import pymongo
 from bson import ObjectId
-from pydantic import Field, StrictStr, validator
+from pydantic import Field, StrictStr, field_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
@@ -149,7 +149,7 @@ class ObservationTableModel(MaterializedTableModel):
     has_row_index: Optional[bool] = Field(default=False)
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
 
-    _sort_primary_entity_ids_validator = validator("primary_entity_ids", allow_reuse=True)(
+    _sort_primary_entity_ids_validator = field_validator("primary_entity_ids")(
         construct_sort_validator()
     )
 
@@ -167,7 +167,7 @@ class ObservationTableModel(MaterializedTableModel):
             return self.request_input.target_id
         return None
 
-    @validator("most_recent_point_in_time", "least_recent_point_in_time")
+    @field_validator("most_recent_point_in_time", "least_recent_point_in_time")
     @classmethod
     def _validate_most_recent_point_in_time(cls, value: Optional[str]) -> Optional[str]:
         if value is None:

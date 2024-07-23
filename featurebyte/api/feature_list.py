@@ -23,7 +23,7 @@ from http import HTTPStatus
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
@@ -97,7 +97,7 @@ class FeatureListNamespaceListHandler(ListHandler):
         feature_lists["num_feature"] = feature_lists.feature_namespace_ids.apply(len)
         feature_lists["readiness_frac"] = feature_lists.readiness_distribution.apply(
             lambda readiness_distribution: FeatureReadinessDistribution(
-                __root__=readiness_distribution
+                readiness_distribution
             ).derive_production_ready_fraction()
         )
         return feature_lists
@@ -318,14 +318,16 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     )
     internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
 
-    @root_validator
-    @classmethod
-    def _initialize_feature_list_parameters(cls, values: dict[str, Any]) -> dict[str, Any]:
+    @model_validator(mode="after")
+    def _initialize_feature_list_parameters(self) -> "FeatureList":
         # set the following values if it is empty (used mainly by the SDK constructed feature list)
         # for the feature list constructed during serialization, following codes should be skipped
-        features = list(values["feature_objects"].values())
-        values["internal_feature_ids"] = [feature.id for feature in features]
-        return values
+        # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
+        # validate_assign=True in model_config.
+        self.__dict__["internal_feature_ids"] = [
+            feature.id for feature in self.feature_objects.values()
+        ]
+        return self
 
     @typechecked
     def __init__(self, items: Sequence[Item], name: str, **kwargs: Any):
@@ -1085,7 +1087,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         client = Configurations().get_client()
         response = client.post(
             "/feature_list/historical_features_sql",
-            data={"payload": payload.json()},
+            data={"payload": payload.model_dump_json()},
             files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
         )
         if response.status_code != HTTPStatus.OK:
@@ -1262,7 +1264,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             files = {"observation_set": dataframe_to_arrow_bytes(observation_set)}
         historical_feature_table_doc = self.post_async_task(
             route="/historical_feature_table",
-            payload={"payload": feature_table_create_params.json()},
+            payload={"payload": feature_table_create_params.model_dump_json()},
             is_payload_json=False,
             files=files,
         )

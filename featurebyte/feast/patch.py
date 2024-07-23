@@ -18,7 +18,7 @@ from feast.field import Field
 from feast.online_response import OnlineResponse
 from feast.protos.feast.serving.ServingService_pb2 import FieldStatus, GetOnlineFeaturesResponse
 from feast.type_map import python_values_to_proto_values
-from google.protobuf.timestamp_pb2 import Timestamp  # type: ignore[import]
+from google.protobuf.timestamp_pb2 import Timestamp
 
 
 def augment_response_with_on_demand_transforms(
@@ -175,7 +175,7 @@ def get_transformed_features_df(
                 df_with_features.add_column_alias(feature.name, full_feature_ref)
 
     # Compute transformed values and apply to each result row
-    df_with_transformed_features = feature_view.udf(df_with_features)
+    df_with_transformed_features = feature_view.feature_transformation.udf(df_with_features)  # type: ignore
 
     # Work out whether the correct columns names are used.
     rename_columns: Dict[str, str] = {}

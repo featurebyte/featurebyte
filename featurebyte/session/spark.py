@@ -66,7 +66,7 @@ class SparkSession(BaseSparkSession):
     port: int
     use_http_transport: bool
     use_ssl: bool
-    source_type: SourceType = Field(SourceType.SPARK, const=True)
+    source_type: SourceType = SourceType.SPARK
     database_credential: Optional[SparkDatabaseCredential] = Field(default=None)
     storage_credential: Optional[StorageCredential] = Field(default=None)
 
@@ -85,7 +85,7 @@ class SparkSession(BaseSparkSession):
                 access_token = self.database_credential.access_token
             else:
                 raise NotImplementedError(
-                    f"Unsupported credential type: {self.database_credential.type}"
+                    f"Unsupported credential type: {self.database_credential.type}"  # pylint: disable=no-member
                 )
 
         # determine transport scheme

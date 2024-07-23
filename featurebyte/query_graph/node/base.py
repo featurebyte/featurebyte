@@ -21,7 +21,7 @@ from typing import (
 import copy
 from abc import ABC, abstractmethod
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
@@ -66,11 +66,13 @@ class BaseNodeParameters(FeatureByteBaseModel):
     BaseNodeParameters class
     """
 
-    class Config:
-        """Model configuration"""
-
-        # cause validation to fail if extra attributes are included (https://docs.pydantic.dev/usage/model_config/)
-        extra = "forbid"
+    # pydantic model configuration
+    model_config = ConfigDict(
+        validate_assignment=True,
+        use_enum_values=True,
+        arbitrary_types_allowed=True,
+        extra="forbid",
+    )
 
 
 class BaseNode(FeatureByteBaseModel):
@@ -99,21 +101,18 @@ class BaseNode(FeatureByteBaseModel):
     # nested parameter field names to be normalized
     _normalize_nested_parameter_field_names: ClassVar[Optional[List[str]]] = None
 
-    class Config:
-        """Model configuration"""
-
-        extra = "forbid"
+    # pydantic model configuration
+    model_config = ConfigDict(extra="forbid")
 
     def __init__(self, **kwargs: Any):
         super().__init__(**kwargs)
 
         # make sure subclass set certain properties correctly
-        assert self.__fields__["type"].field_info.const is True
-        assert "Literal" in repr(self.__fields__["type"].type_)
-        assert self.__fields__["output_type"].type_ is NodeOutputType
+        assert "Literal" in repr(self.model_fields["type"].annotation)
 
-    def __init_subclass__(cls, **kwargs: Any):
-        if "Literal" in repr(cls.__fields__["type"].type_):
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
+        if "Literal" in repr(cls.model_fields["type"].annotation):
             # only add node type class to NODE_TYPES if the type variable is a literal (to filter out base classes)
             NODE_TYPES.append(cls)
 
@@ -871,7 +870,7 @@ class SeriesOutputNodeOpStructMixin:
     """SeriesOutputNodeOpStructMixin class"""
 
     name: str
-    transform_info: str
+    transform_info: ClassVar[Callable[[], str]]
     output_type: NodeOutputType
 
     @abstractmethod
@@ -923,7 +922,7 @@ class SeriesOutputNodeOpStructMixin:
                 DerivedDataColumn.create(
                     name=None,
                     columns=columns,
-                    transform=self.transform_info,
+                    transform=self.transform_info,  # type: ignore
                     node_name=self.name,
                     dtype=self.derive_var_type(inputs),
                 )
@@ -934,7 +933,7 @@ class SeriesOutputNodeOpStructMixin:
                 PostAggregationColumn.create(
                     name=None,
                     columns=aggregations,
-                    transform=self.transform_info,
+                    transform=self.transform_info,  # type: ignore
                     node_name=self.name,
                     dtype=self.derive_var_type(inputs),
                 )
@@ -951,8 +950,8 @@ class SeriesOutputNodeOpStructMixin:
 class BaseSeriesOutputNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output"""
 
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
-    parameters: FeatureByteBaseModel = Field(default=FeatureByteBaseModel(), const=True)
+    output_type: NodeOutputType = NodeOutputType.SERIES
+    parameters: FeatureByteBaseModel = Field(default_factory=FeatureByteBaseModel)
 
 
 class SingleValueNodeParameters(BaseNodeParameters):
@@ -970,7 +969,7 @@ class ValueWithRightOpNodeParameters(SingleValueNodeParameters):
 class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNode, ABC):
     """Base class for node produces series output & contain a single scalar parameter"""
 
-    output_type: NodeOutputType = Field(NodeOutputType.SERIES, const=True)
+    output_type: NodeOutputType = NodeOutputType.SERIES
     parameters: SingleValueNodeParameters
 
     @property

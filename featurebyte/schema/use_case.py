@@ -2,9 +2,9 @@
 Use Case API payload schema
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
-from pydantic import Field, StrictStr, root_validator
+from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.use_case import UseCaseModel
@@ -23,9 +23,12 @@ class UseCaseCreate(FeatureByteBaseModel):
     context_id: PydanticObjectId
     description: Optional[StrictStr] = Field(default=None)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _validate_target(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_target(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         target_id = values.get("target_id", None)
         target_namespace_id = values.get("target_namespace_id", None)
         if not target_id and not target_namespace_id:
@@ -47,9 +50,12 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
 
     name: Optional[NameStr] = Field(default=None)
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _validate_input(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_input(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         default_preview_table_id = values.get("default_preview_table_id", None)
         default_eda_table_id = values.get("default_eda_table_id", None)
         observation_table_id_to_remove = values.get("observation_table_id_to_remove", None)

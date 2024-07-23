@@ -36,7 +36,7 @@ def node_fixture():
             nested_params: NestedNodeParams
             anything: Any
 
-        type: Literal["type"] = Field("node_type", const=True)
+        type: Literal["type"] = "node_type"
         parameters: NodeParams
 
         def max_input_count(self) -> int:

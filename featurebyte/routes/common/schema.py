@@ -2,9 +2,11 @@
 Common classes mixin for API payload schema
 """
 
-from fastapi import Query
+from typing import Any
 
-from featurebyte.models.base import PydanticObjectId
+from bson import ObjectId
+from fastapi import Query
+from pydantic_core import core_schema
 
 # route query parameters
 COLUMN_STR_MAX_LENGTH = 255
@@ -28,8 +30,46 @@ AuditLogSortByQuery = Query(
 VerboseQuery = Query(default=False)
 
 
-# TODO: Change this to a PyObjectId class when upgrading to Pydantic V2.
-# In Pydantic V2, PyObjectId behaves more like a str that is validated as an ObjectId whereas
-# PydanticObjectId behaves like a real ObjectId. Newer FastAPI expects PyObjectId to behave like a str.
-# Otherwise, FastAPI will throw an error when trying to parse the request body.
-PyObjectId = PydanticObjectId
+class PyObjectId(str):
+    """
+    Pydantic ObjectId type for API route path parameter
+    """
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, _source_type: Any, _handler: Any
+    ) -> core_schema.CoreSchema:
+        return core_schema.json_or_python_schema(
+            json_schema=core_schema.str_schema(),
+            python_schema=core_schema.union_schema(
+                [
+                    core_schema.is_instance_schema(ObjectId),
+                    core_schema.chain_schema(
+                        [
+                            core_schema.str_schema(),
+                            core_schema.no_info_plain_validator_function(cls.validate),
+                        ]
+                    ),
+                ]
+            ),
+            serialization=core_schema.plain_serializer_function_ser_schema(str),
+        )
+
+    @classmethod
+    def validate(cls, value: Any) -> ObjectId:
+        """
+        Validate ObjectId
+
+        Parameters
+        ----------
+        value: Any
+            value to validate
+
+        Returns
+        -------
+        ObjectId
+            ObjectId value
+        """
+        if not ObjectId.is_valid(value):
+            raise ValueError("Invalid ObjectId")
+        return ObjectId(value)

@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
-from bson import ObjectId
+from bson.objectid import ObjectId
 from sqlglot import expressions
 
 from featurebyte.common.utils import dataframe_to_arrow_bytes

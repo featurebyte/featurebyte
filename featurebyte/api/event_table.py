@@ -11,13 +11,13 @@ from datetime import datetime
 
 import pandas as pd
 from bson import ObjectId
-from pydantic import Field, StrictStr, root_validator
+from pydantic import Field, StrictStr, model_validator
 from typeguard import typechecked
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.api.feature_job_setting_analysis import FeatureJobSettingAnalysis
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.validator import construct_data_model_root_validator
+from featurebyte.common.validator import construct_data_model_validator
 from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import InvalidSettingsError, RecordRetrievalException
 from featurebyte.models.event_table import EventTableModel
@@ -70,7 +70,7 @@ class EventTable(TableApiObject):
     _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
 
     # pydantic instance variable (public)
-    type: Literal[TableDataType.EVENT_TABLE] = Field(TableDataType.EVENT_TABLE, const=True)
+    type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
 
     # pydantic instance variable (internal use)
     internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
@@ -88,8 +88,8 @@ class EventTable(TableApiObject):
     )
 
     # pydantic validators
-    _root_validator = root_validator(allow_reuse=True)(
-        construct_data_model_root_validator(
+    _model_validator = model_validator(mode="after")(
+        construct_data_model_validator(
             columns_info_key="internal_columns_info",
             expected_column_field_name_type_pairs=[
                 (

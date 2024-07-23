@@ -49,7 +49,7 @@ def _get_cache_collection_name(
 ) -> str:
     if hasattr(obj, "_get_schema"):
         collection_name = (
-            obj._get_schema.Settings.collection_name  # type: ignore # pylint: disable=protected-access
+            obj._get_schema.Settings.collection_name  # pylint: disable=protected-access
         )
     else:
         collection_name = obj.Settings.collection_name

@@ -176,7 +176,7 @@ class RelationshipService(OpsServiceMixin):
             updated_document = await self.document_service.update_document(
                 document_id=child_id,
                 data=self.prepare_document_update_payload(
-                    ancestor_ids=set(child_object.ancestor_ids).difference(  # type: ignore[arg-type]
+                    ancestor_ids=set(child_object.ancestor_ids).difference(
                         self.include_object_id(parent_object.ancestor_ids, parent_id)
                     ),
                     parents=[par for par in child_object.parents if par.id != parent_id],

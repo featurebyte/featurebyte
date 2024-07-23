@@ -408,9 +408,7 @@ class FeatureListController(
             return VersionIdentifier(**version_dict).to_str()
 
         def _to_prod_ready_fraction(readiness_dist: List[Dict[str, Any]]) -> float:
-            return FeatureReadinessDistribution(
-                __root__=readiness_dist
-            ).derive_production_ready_fraction()
+            return FeatureReadinessDistribution(readiness_dist).derive_production_ready_fraction()
 
         def _to_default_feature_fraction(
             feature_ids: List[ObjectId], default_feat_ids: Set[ObjectId]

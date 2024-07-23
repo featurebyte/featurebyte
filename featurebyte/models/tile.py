@@ -2,10 +2,10 @@
 This module contains Tile related models
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, root_validator, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from featurebyte.enum import InternalName, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -67,24 +67,23 @@ class TileSpec(FeatureByteBaseModel):
     windows: List[Optional[str]] = Field(default=None)
     offset: Optional[str] = Field(default=None)
 
-    class Config:
-        """
-        Config for pydantic model
-        """
+    # pydantic model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-        arbitrary_types_allowed: bool = True
-
-    @root_validator(pre=True)
+    @model_validator(mode="before")
     @classmethod
-    def _default_entity_tracker_table_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _default_entity_tracker_table_name(cls, values: Any) -> Any:
         # Fill in default entity_tracker_table_name if not provided. For tests.
+        if isinstance(values, BaseModel):
+            values = values.dict(by_alias=True)
+
         if values.get("entity_tracker_table_name") is None:
             values["entity_tracker_table_name"] = (
                 values.get("aggregation_id", "") + InternalName.TILE_ENTITY_TRACKER_SUFFIX
             )
         return values
 
-    @validator("tile_id")
+    @field_validator("tile_id")
     @classmethod
     def stripped(cls, value: str) -> str:
         """
@@ -108,16 +107,10 @@ class TileSpec(FeatureByteBaseModel):
             raise ValueError("value cannot be empty")
         return value.strip()
 
-    @root_validator
-    @classmethod
-    def check_time_modulo_and_frequency_minute(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def check_time_modulo_and_frequency_minute(self) -> "TileSpec":
         """
         Root Validator for time-modulo-frequency
-
-        Parameters
-        ----------
-        values: dict
-            dict of attribute and value
 
         Raises
         ------
@@ -130,15 +123,15 @@ class TileSpec(FeatureByteBaseModel):
         -------
             original dict
         """
-        if values["frequency_minute"] > 60 and values["frequency_minute"] % 60 != 0:
+        if self.frequency_minute > 60 and self.frequency_minute % 60 != 0:
             raise ValueError("frequency_minute should be a multiple of 60 if it is more than 60")
 
-        if values["time_modulo_frequency_second"] > values["frequency_minute"] * 60:
+        if self.time_modulo_frequency_second > self.frequency_minute * 60:
             raise ValueError(
-                f"time_modulo_frequency_second must be less than {values['frequency_minute'] * 60}"
+                f"time_modulo_frequency_second must be less than {self.frequency_minute * 60}"
             )
 
-        return values
+        return self
 
 
 class TileCommonParameters(FeatureByteBaseModel):
@@ -158,10 +151,8 @@ class TileCommonParameters(FeatureByteBaseModel):
     value_column_names: List[str]
     value_column_types: List[str]
 
-    class Config(FeatureByteBaseModel.Config):
-        """Model configuration"""
-
-        extra = "forbid"
+    # pydantic model configuration
+    model_config = ConfigDict(extra="forbid")
 
 
 class TileScheduledJobParameters(TileCommonParameters):

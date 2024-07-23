@@ -500,7 +500,7 @@ class ViewColumn(Series, SampleMixin):
         >>> event_view["Amount"] = event_view["Amount"].astype(str)
         >>> event_view["Amount"] = event_view["Amount"].astype(int)
         """
-        return super().astype(new_type=new_type)  # type: ignore[no-any-return,misc]
+        return super().astype(new_type=new_type)
 
     @typechecked
     def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
@@ -532,7 +532,7 @@ class ViewColumn(Series, SampleMixin):
         3  a817d904-bc58-4048-978d-c13857969a69       Fruits
         4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
         """
-        return super().isin(other=other)  # type: ignore[no-any-return,misc]
+        return super().isin(other=other)
 
 
 class GroupByMixin:

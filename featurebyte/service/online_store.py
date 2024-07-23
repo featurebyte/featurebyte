@@ -118,7 +118,7 @@ class OnlineStoreService(
         document = self.document_class(**document_dict)
         if document.details.credential:
             document.details.credential.decrypt_values()
-        return document.dict(by_alias=True)
+        return dict(document.dict(by_alias=True))
 
     async def list_documents_as_dict(
         self,

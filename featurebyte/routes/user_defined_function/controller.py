@@ -78,16 +78,16 @@ class UserDefinedFunctionController(
                 await self.service.delete_document(document_id=user_defined_function.id)
             raise exception_class(f"{exc}") from exc
 
-    async def _get_feature_store_id(self) -> PyObjectId:
+    async def _get_feature_store_id(self) -> ObjectId:
         """
         Get feature store id from active catalog
 
         Returns
         -------
-        PyObjectId
+        ObjectId
         """
         active_catalog = await self.catalog_service.get_document(document_id=self.active_catalog_id)
-        return active_catalog.default_feature_store_ids[0]
+        return ObjectId(active_catalog.default_feature_store_ids[0])
 
     async def create_user_defined_function(
         self,
@@ -153,7 +153,7 @@ class UserDefinedFunctionController(
             If user defined function used in any saved feature
         """
         # check if user defined function exists
-        document = await self.service.get_document(document_id=document_id)
+        document = await self.service.get_document(document_id=ObjectId(document_id))
 
         # check if no changes found in function parameters
         updated_document = UserDefinedFunctionModel(
@@ -164,7 +164,7 @@ class UserDefinedFunctionController(
 
         # check if function used in any saved feature
         await self.verify_operation_by_checking_reference(
-            document_id=document_id, exception_class=DocumentUpdateError
+            document_id=ObjectId(document_id), exception_class=DocumentUpdateError
         )
 
         # retrieve feature store
@@ -182,7 +182,7 @@ class UserDefinedFunctionController(
 
         # update user defined function
         output_document = await self.service.update_document(
-            document_id=document_id,
+            document_id=ObjectId(document_id),
             data=UserDefinedFunctionServiceUpdate(
                 **data.dict(by_alias=True, exclude_none=True),
                 signature=updated_document.generate_signature(),

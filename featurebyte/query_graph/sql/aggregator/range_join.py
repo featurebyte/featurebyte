@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, List, Set
 
-from pydantic import Field
+from pydantic import ConfigDict, Field
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
@@ -25,6 +25,9 @@ class BaseTable(FeatureByteBaseModel):
     join_keys: list[str]
     columns: list[str]
     disable_quote_columns: Set[str] = Field(default_factory=set)
+
+    # pydantic model configuration
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
     def get_qualified_column(self, column_name: str) -> Expression:
         """
@@ -65,14 +68,6 @@ class BaseTable(FeatureByteBaseModel):
         List[Expression]
         """
         return [self.get_qualified_column(key) for key in self.columns]
-
-    class Config:
-        """
-        Allow Expression field
-        """
-
-        arbitrary_types_allowed = True
-        extra = "forbid"
 
 
 class LeftTable(BaseTable):
