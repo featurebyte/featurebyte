@@ -256,7 +256,7 @@ class QueryObject(FeatureByteBaseModel):
             deep=deep,
         )
 
-    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
             pruned_graph, node_name_map = self.graph.quick_prune(target_node_names=[self.node_name])
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
@@ -267,8 +267,8 @@ class QueryObject(FeatureByteBaseModel):
             # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
             # global one.
             new_object.__dict__["graph"] = pruned_graph
-            return new_object.dict(*args, **kwargs)
-        return dict(super().dict(*args, **kwargs))
+            return new_object.model_dump(*args, **kwargs)
+        return dict(super().model_dump(*args, **kwargs))
 
     @classmethod
     def clear_operation_structure_cache(cls) -> None:
