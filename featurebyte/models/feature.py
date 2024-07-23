@@ -125,7 +125,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     @field_serializer("internal_offline_store_info", when_used="json")
     def _serialize_offline_store_info(self, value: Optional[Any]) -> Optional[Any]:
         if value:
-            return serialize_obj(self.offline_store_info.dict(by_alias=True))
+            return serialize_obj(self.offline_store_info.model_dump(by_alias=True))
         return value
 
     @staticmethod
@@ -154,7 +154,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             # extract table ids & entity ids from the graph
             graph_dict = self.internal_graph
             if isinstance(graph_dict, QueryGraphModel):
-                graph_dict = graph_dict.dict(by_alias=True)
+                graph_dict = graph_dict.model_dump(by_alias=True)
             graph = QueryGraph(**graph_dict)
             node_name = self.node_name
             decompose_state = graph.get_decompose_state(
@@ -567,7 +567,7 @@ class FeatureModel(BaseFeatureModel):
 
         graph_dict = self.internal_graph
         if isinstance(graph_dict, QueryGraphModel):
-            graph_dict = graph_dict.dict(by_alias=True)
+            graph_dict = graph_dict.model_dump(by_alias=True)
         graph = QueryGraph(**graph_dict)
         node_name = self.node_name
         feature_store_type = graph.get_input_node(node_name).parameters.feature_store_details.type

@@ -218,7 +218,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
 
         # if the query graph is decomposed, update the graph output column name to match output_column_name
         if output_node.type != NodeType.ALIAS:
-            graph = QueryGraphModel(**self.graph.dict(by_alias=True))
+            graph = QueryGraphModel(**self.graph.model_dump(by_alias=True))
         else:
             output_parent_node_name = self.graph.backward_edges_map[self.node_name][0]
             transformer = QuickGraphStructurePruningTransformer(graph=self.graph)

@@ -585,7 +585,7 @@ def get_entity_universe_constructor(
 
 def _apply_join_step(universe_expr: Expression, join_step: EntityLookupStep) -> Expression:
     assert isinstance(universe_expr, Subqueryable)
-    table_details_dict = join_step.table.tabular_source.table_details.dict()
+    table_details_dict = join_step.table.tabular_source.table_details.model_dump()
     updated_universe_expr = (
         select(
             expressions.alias_(
@@ -708,7 +708,9 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
     filtered_event_table_expr = (
         expressions.select(quoted_identifier(event_table_model.event_id_column))
         .from_(
-            get_fully_qualified_table_name((event_table_model.tabular_source.table_details.dict()))
+            get_fully_qualified_table_name(
+                (event_table_model.tabular_source.table_details.model_dump())
+            )
         )
         .where(
             expressions.and_(
@@ -729,7 +731,7 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
         .from_(
             expressions.Table(
                 this=get_fully_qualified_table_name(
-                    item_table_model.tabular_source.table_details.dict()
+                    item_table_model.tabular_source.table_details.model_dump()
                 ),
                 alias="ITEM",
             ),

@@ -71,7 +71,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
     @classmethod
     def _generate_default_entity_lookup_steps(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         entity_relationships_info: List[EntityRelationshipInfo] = values[
             "entity_relationships_info"

@@ -54,7 +54,7 @@ class DimensionTableModel(DimensionTableData, TableModel):
     def create_view_graph_node(
         self, input_node: InputNode, metadata: ViewMetadata, **kwargs: Any
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
-        table_data = DimensionTableData(**self.dict(by_alias=True)).clone(
+        table_data = DimensionTableData(**self.model_dump(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations
         )
         return table_data.construct_dimension_view_graph_node(  # pylint: disable=no-member

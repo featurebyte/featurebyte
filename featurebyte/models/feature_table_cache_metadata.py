@@ -29,7 +29,7 @@ class CachedFeatureDefinition(FeatureByteBaseModel):
     @classmethod
     def _set_feature_name(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if "feature_name" not in values:
             definition_hash = values["definition_hash"]

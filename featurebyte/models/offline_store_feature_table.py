@@ -154,18 +154,18 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         """
         entity_lookup_info = None
         if self.entity_lookup_info:
-            entity_lookup_info = self.entity_lookup_info.dict(by_alias=True)
+            entity_lookup_info = self.entity_lookup_info.model_dump(by_alias=True)
         precomputed_lookup_feature_table_info = None
         if self.precomputed_lookup_feature_table_info:
-            precomputed_lookup_feature_table_info = self.precomputed_lookup_feature_table_info.dict(
-                by_alias=True
+            precomputed_lookup_feature_table_info = (
+                self.precomputed_lookup_feature_table_info.model_dump(by_alias=True)
             )
         return {
             "catalog_id": self.catalog_id,
             "primary_entity_ids": self.primary_entity_ids,
             "serving_names": self.serving_names,
             "feature_job_setting": (
-                self.feature_job_setting.dict() if self.feature_job_setting else None
+                self.feature_job_setting.model_dump() if self.feature_job_setting else None
             ),
             "has_ttl": self.has_ttl,
             "entity_lookup_info": entity_lookup_info,

@@ -67,7 +67,7 @@ class FeatureListNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     @classmethod
     def _derive_feature_related_attributes(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         # "features" is not an attribute to the FeatureList model, when it appears in the input to
         # constructor, it is intended to be used to derive other feature-related attributes

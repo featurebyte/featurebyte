@@ -258,7 +258,7 @@ class FeatureCluster(FeatureByteBaseModel):
     @classmethod
     def _derive_combined_relationships_info(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if "combined_relationships_info" in values:
             return values
@@ -385,7 +385,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     def _serialize_clusters(self, clusters: Optional[List[Any]]) -> Optional[List[Any]]:
         feature_clusters = self.feature_clusters
         if clusters and feature_clusters:
-            return [serialize_obj(cluster.dict(by_alias=True)) for cluster in feature_clusters]
+            return [
+                serialize_obj(cluster.model_dump(by_alias=True)) for cluster in feature_clusters
+            ]
         return None
 
     @field_validator("supported_serving_entity_ids")
@@ -402,7 +404,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     @classmethod
     def _derive_feature_related_attributes(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         # "features" is not an attribute to the FeatureList model, when it appears in the input to
         # constructor, it is intended to be used to derive other feature-related attributes
@@ -632,7 +634,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                 feature_table_map=feature_table_map,
                 serving_entity_specs=serving_entity_specs,
             )
-            self.internal_store_info = store_info.dict(by_alias=True)
+            self.internal_store_info = store_info.model_dump(by_alias=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
