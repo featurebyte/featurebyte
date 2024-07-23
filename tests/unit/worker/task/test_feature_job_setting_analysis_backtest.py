@@ -44,7 +44,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
             payload = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
             await persistent.insert_one(
                 collection_name=FeatureStoreModel.collection_name(),
-                document=FeatureStoreModel(**payload).dict(by_alias=True),
+                document=FeatureStoreModel(**payload).model_dump(by_alias=True),
                 user_id=None,
             )
         except DuplicateDocumentError:
@@ -56,7 +56,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         payload["catalog_id"] = catalog.id
         await persistent.insert_one(
             collection_name=EventTableModel.collection_name(),
-            document=EventTableModel(**payload).dict(by_alias=True),
+            document=EventTableModel(**payload).model_dump(by_alias=True),
             user_id=None,
         )
 

@@ -43,7 +43,7 @@ async def test_get_task_description(
             "name": f"Test {expected_description}",
             "location": TabularSource(
                 feature_store_id=ObjectId(), table_details=TableDetails(table_name="test")
-            ).dict(by_alias=True),
+            ).model_dump(by_alias=True),
             "columns_info": [],
             "num_rows": 100,
             "feature_list_id": ObjectId(),
@@ -52,7 +52,7 @@ async def test_get_task_description(
                     feature_store_id=ObjectId(),
                     table_details=TableDetails(table_name="test_table"),
                 ),
-            ).dict(by_alias=True),
+            ).model_dump(by_alias=True),
             "most_recent_point_in_time": "2021-01-01",
             "target_id": ObjectId(),
             "batch_request_table_id": ObjectId(),

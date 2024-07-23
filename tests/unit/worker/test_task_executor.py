@@ -39,7 +39,7 @@ def test_extend_base_task_payload():
     payload_obj = RandomTaskPayload(
         user_id=user_id, catalog_id=DEFAULT_CATALOG_ID, output_document_id=document_id
     )
-    assert payload_obj.dict() == {
+    assert payload_obj.model_dump() == {
         "command": "random_command",
         "user_id": user_id,
         "catalog_id": DEFAULT_CATALOG_ID,
