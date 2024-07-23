@@ -1493,7 +1493,7 @@ def mock_task_manager(request, persistent, storage):
                     queue="default",
                     traceback=traceback_info,
                 )
-                document = task.dict(by_alias=True)
+                document = task.model_dump(by_alias=True)
                 document["_id"] = str(document["_id"])
                 await persistent._db[TaskModel.collection_name()].insert_one(document)
                 return task_id

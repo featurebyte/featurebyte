@@ -58,7 +58,7 @@ async def test_list_tables(config, feature_store, credentials_mapping):
     session = await session_manager.get_session(feature_store)
 
     tables = await session.list_tables(database_name="demo_datasets", schema_name="grocery")
-    assert [table.dict() for table in tables] == [
+    assert [table.model_dump() for table in tables] == [
         {
             "name": "invoiceitems",
             "description": "The grocery item details within each invoice, including the "

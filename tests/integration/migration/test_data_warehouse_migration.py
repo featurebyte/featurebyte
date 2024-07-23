@@ -29,7 +29,7 @@ def get_tile_id(feature: Feature):
     """
     graph, _ = feature.extract_pruned_graph_and_node()
     groupby_node = graph.get_node_by_name("groupby_1")
-    return groupby_node.parameters.dict()["tile_id"]
+    return groupby_node.parameters.model_dump()["tile_id"]
 
 
 def get_aggregation_id(feature: Feature):
@@ -38,7 +38,7 @@ def get_aggregation_id(feature: Feature):
     """
     graph, _ = feature.extract_pruned_graph_and_node()
     groupby_node = graph.get_node_by_name("groupby_1")
-    return groupby_node.parameters.dict()["aggregation_id"]
+    return groupby_node.parameters.model_dump()["aggregation_id"]
 
 
 @contextlib.asynccontextmanager

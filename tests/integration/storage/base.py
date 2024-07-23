@@ -188,7 +188,7 @@ class BaseStorageTestSuite:
 
         # download should work
         value = await test_storage.get_object(remote_path)
-        assert value == pydantic_object.dict()
+        assert value == pydantic_object.model_dump()
 
     @pytest.mark.asyncio
     async def test_delete_object_fail(self, test_storage: Storage):
