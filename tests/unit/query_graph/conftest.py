@@ -1436,7 +1436,7 @@ def query_graph_single_node(
         node_params={
             "type": "event_table",
             "columns": [{"name": "column", "dtype": "FLOAT"}],
-            "table_details": event_table_details.dict(),
+            "table_details": event_table_details.model_dump(),
             "feature_store_details": snowflake_feature_store_details_dict,
         },
         node_output_type=NodeOutputType.FRAME,
@@ -1445,8 +1445,8 @@ def query_graph_single_node(
     pruned_graph, node_name_map = global_graph.prune(target_node=node_input)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_input.name])
     assert mapped_node.name == "input_1"
-    graph_dict = global_graph.dict()
-    assert graph_dict == pruned_graph.dict()
+    graph_dict = global_graph.model_dump()
+    assert graph_dict == pruned_graph.model_dump()
     assert graph_dict["nodes"] == [
         {
             "name": "input_1",
@@ -1454,7 +1454,7 @@ def query_graph_single_node(
             "parameters": {
                 "type": "event_table",
                 "columns": [{"name": "column", "dtype": "FLOAT"}],
-                "table_details": event_table_details.dict(),
+                "table_details": event_table_details.model_dump(),
                 "feature_store_details": snowflake_feature_store_details_dict,
                 "timestamp_column": None,
                 "id": None,
@@ -1486,8 +1486,8 @@ def query_graph_two_nodes(graph_single_node):
     pruned_graph, node_name_map = graph.prune(target_node=node_proj)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_proj.name])
     assert mapped_node.name == "project_1"
-    graph_dict = graph.dict()
-    assert graph_dict == pruned_graph.dict()
+    graph_dict = graph.model_dump()
+    assert graph_dict == pruned_graph.model_dump()
     assert set(node["name"] for node in graph_dict["nodes"]) == {"input_1", "project_1"}
     assert graph_dict["edges"] == [{"source": "input_1", "target": "project_1"}]
     assert node_proj == construct_node(
@@ -1511,8 +1511,8 @@ def query_graph_three_nodes(graph_two_nodes):
     pruned_graph, node_name_map = graph.prune(target_node=node_eq)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_eq.name])
     assert mapped_node.name == "eq_1"
-    graph_dict = graph.dict()
-    assert graph_dict == pruned_graph.dict()
+    graph_dict = graph.model_dump()
+    assert graph_dict == pruned_graph.model_dump()
     assert set(node["name"] for node in graph_dict["nodes"]) == {"input_1", "project_1", "eq_1"}
     assert graph_dict["edges"] == [
         {"source": "input_1", "target": "project_1"},
@@ -1539,8 +1539,8 @@ def query_graph_four_nodes(graph_three_nodes):
     pruned_graph, node_name_map = graph.prune(target_node=node_filter)
     mapped_node = pruned_graph.get_node_by_name(node_name_map[node_filter.name])
     assert mapped_node.name == "filter_1"
-    graph_dict = graph.dict()
-    assert graph_dict == pruned_graph.dict()
+    graph_dict = graph.model_dump()
+    assert graph_dict == pruned_graph.model_dump()
     assert set(node["name"] for node in graph_dict["nodes"]) == {
         "input_1",
         "project_1",

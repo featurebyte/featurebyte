@@ -563,7 +563,7 @@ def test_feature_execution_planner__entity_relationships_context(
     assert plan.feature_entity_lookup_steps == {
         "cust_id_100000000000000000000000": EntityLookupStep(
             id=ObjectId("100000000000000000000000"),
-            table=relation_table.dict(by_alias=True),
+            table=relation_table.model_dump(by_alias=True),
             parent=EntityLookupInfo(
                 entity_id=business_entity_id,
                 key="relation_biz_id",

@@ -43,7 +43,7 @@ def test_table_id_feature_job_setting():
     assert setting1 == setting2
 
     # compare with dict
-    assert setting1 == setting2.dict()
+    assert setting1 == setting2.model_dump()
 
     # check that table setting is hashable
     assert hash(setting1) == hash(setting2)

@@ -152,7 +152,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
     # check nested graph edges (note that assign node is pruned)
     nested_graph = pruned_graph.nodes_map["graph_1"].parameters.graph
     assert nested_graph.edges_map == {"proxy_input_1": ["groupby_1"]}
-    assert nested_graph.get_node_by_name("groupby_1").dict() == {
+    assert nested_graph.get_node_by_name("groupby_1").model_dump() == {
         "name": "groupby_1",
         "output_type": "frame",
         "parameters": {

@@ -36,7 +36,7 @@ def check_internal_state_after_deserialization(graph):
         internal_vars[field] = getattr(graph, field).copy()
 
     # convert global graph to query graph first
-    query_graph = QueryGraph(**graph.dict())
+    query_graph = QueryGraph(**graph.model_dump())
 
     # check whether the internal variables are set properly
     for field in internal_fields:
@@ -68,7 +68,7 @@ def test_add_operation__add_duplicated_node_on_two_nodes_graph(graph_two_nodes):
     assert node_duplicated == node_another_duplicated
     assert len(graph.nodes) == node_num
 
-    graph_dict = graph.dict()
+    graph_dict = graph.model_dump()
     input_node = get_node(graph_dict, "input_1")
     project_node = get_node(graph_dict, "project_1")
     assert input_node == {
@@ -108,7 +108,7 @@ def test_serialization_deserialization__clean_global_graph(graph_four_nodes):
     """
     graph, _, _, _, _ = graph_four_nodes
     check_internal_state_after_deserialization(graph)
-    graph_dict = graph.dict()
+    graph_dict = graph.model_dump()
     deserialized_graph = QueryGraph.parse_obj(graph_dict)
     assert graph == deserialized_graph
 
@@ -117,7 +117,7 @@ def test_serialization_deserialization__clean_global_graph(graph_four_nodes):
     new_global_graph = GlobalQueryGraph()
     assert new_global_graph.nodes == []
     new_global_graph.load(graph)
-    assert new_global_graph.dict() == graph_dict
+    assert new_global_graph.model_dump() == graph_dict
 
 
 def test_serialization_deserialization__with_existing_non_empty_graph(dataframe):
@@ -163,7 +163,7 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     ).construct_preview_sql(mapped_node_before_load.name)
 
     # deserialize the graph, load the graph to global query graph & check the generated query
-    graph = QueryGraph.parse_obj(pruned_graph.dict())
+    graph = QueryGraph.parse_obj(pruned_graph.model_dump())
     _, node_name_map = GlobalQueryGraph().load(graph)
     node_global = GlobalQueryGraph().get_node_by_name(node_name_map[mapped_node.name])
     assert (
@@ -234,8 +234,8 @@ def test_query_graph__reconstruct(query_graph_with_groupby, replacement_map):
     replace_nodes_map = {}
     for node_name, other_params in replacement_map.items():
         node = query_graph_with_groupby.get_node_by_name(node_name)
-        parameters = {**node.parameters.dict(), **other_params}
-        replace_node = construct_node(**{**node.dict(), "parameters": parameters})
+        parameters = {**node.parameters.model_dump(), **other_params}
+        replace_node = construct_node(**{**node.model_dump(), "parameters": parameters})
         assert replace_node != node
         replace_nodes_map[node_name] = replace_node
 
@@ -249,7 +249,9 @@ def test_query_graph__reconstruct(query_graph_with_groupby, replacement_map):
         found = False
         assert query_graph_with_groupby.nodes_map[node_name] != replace_node
         for node in output.nodes:
-            if node.dict(exclude={"name": True}) == replace_node.dict(exclude={"name": True}):
+            if node.model_dump(exclude={"name": True}) == replace_node.model_dump(
+                exclude={"name": True}
+            ):
                 found = True
         assert found
 
@@ -413,7 +415,7 @@ def insert_add_node(graph, first_node, second_node):
 def query_graph_abc_and_node_fixture(input_node):
     """Query graph with three project nodes"""
     graph = QueryGraph()
-    node_input = insert_input_node(graph, input_node.parameters.dict())
+    node_input = insert_input_node(graph, input_node.parameters.model_dump())
     node_a = insert_project_node(graph, node_input, "a")
     node_b = insert_project_node(graph, node_input, "b")
     node_c = insert_project_node(graph, node_input, "ts")
@@ -426,7 +428,7 @@ def query_graph_abc_and_node_fixture(input_node):
 def query_graph_cab_and_node_fixture(input_node):
     """Query graph with three project nodes"""
     graph = QueryGraph()
-    node_input = insert_input_node(graph, input_node.parameters.dict())
+    node_input = insert_input_node(graph, input_node.parameters.model_dump())
     node_c = insert_project_node(graph, node_input, "ts")
     node_a = insert_project_node(graph, node_input, "a")
     node_b = insert_project_node(graph, node_input, "b")
@@ -439,7 +441,7 @@ def query_graph_cab_and_node_fixture(input_node):
 def query_graph_bca_and_node_fixture(input_node):
     """Query graph with three project nodes"""
     graph = QueryGraph()
-    node_input = insert_input_node(graph, input_node.parameters.dict())
+    node_input = insert_input_node(graph, input_node.parameters.model_dump())
     node_b = insert_project_node(graph, node_input, "b")
     node_c = insert_project_node(graph, node_input, "ts")
     node_a = insert_project_node(graph, node_input, "a")
@@ -527,7 +529,7 @@ def test_get_table_ids(
         node_params={
             "type": "event_table",
             "columns": [{"name": "column", "dtype": "FLOAT"}],
-            "table_details": event_table_details.dict(),
+            "table_details": event_table_details.model_dump(),
             "feature_store_details": snowflake_feature_store_details_dict,
             "id": table_id,
         },
@@ -575,7 +577,7 @@ def test_input_node_hash_calculation_ignores_feature_store_details(
     input_node_params = {
         "type": "event_table",
         "columns": [{"name": "column", "dtype": "FLOAT"}],
-        "table_details": event_table_details.dict(),
+        "table_details": event_table_details.model_dump(),
         "feature_store_details": snowflake_feature_store_details_dict,
         "id": ObjectId(),
     }
@@ -594,7 +596,7 @@ def test_input_node_hash_calculation_ignores_feature_store_details(
 def test_global_query_graph__clear(input_node):
     """Test global query graph clear method"""
     graph = GlobalQueryGraph()
-    node_input = insert_input_node(graph, input_node.parameters.dict())
+    node_input = insert_input_node(graph, input_node.parameters.model_dump())
     insert_project_node(graph, node_input, "a")
 
     # check serialized attributes
