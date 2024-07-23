@@ -4,7 +4,7 @@ Migration script
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Callable, Set, cast
+from typing import Any, AsyncGenerator, Callable, Iterator, Optional, Set, cast
 
 import asyncio
 import importlib
@@ -16,7 +16,12 @@ from redis import Redis
 from featurebyte.common.path_util import import_submodules
 from featurebyte.logging import get_logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
-from featurebyte.migration.model import MigrationMetadata, SchemaMetadataModel, SchemaMetadataUpdate
+from featurebyte.migration.model import (
+    MigrationMetadata,
+    MigrationSettings,
+    SchemaMetadataModel,
+    SchemaMetadataUpdate,
+)
 from featurebyte.migration.service import MigrationInfo
 from featurebyte.migration.service.mixin import (
     BaseMigrationServiceMixin,
@@ -26,10 +31,10 @@ from featurebyte.migration.service.mixin import (
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.routes.app_container_config import _get_class_name
+from featurebyte.routes.app_container_config import AppContainerConfig, _get_class_name
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.routes.registry import app_container_config
+from featurebyte.routes.registry import app_container_config as default_app_container_config
 from featurebyte.service.catalog import AllCatalogService
 from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
@@ -61,6 +66,30 @@ def _extract_migrate_methods(service_class: Any) -> list[tuple[int, str]]:
     return output
 
 
+def import_migration_modules() -> Iterator[Any]:
+    """
+    Import and yield migration modules
+
+    Yields
+    ------
+    Iterator[Any]
+        Migration module
+    """
+
+    # import migration service first so that submodules can be imported properly
+    def _import_migration_modules(migration_service_dir: str) -> Iterator[Any]:
+        importlib.import_module(migration_service_dir)
+        for mod in import_submodules(migration_service_dir).values():
+            yield mod
+
+    yield from _import_migration_modules(f"{__name__.rsplit('.', 1)[0]}.service")
+    additional_services_location = (
+        MigrationSettings().FEATUREBYTE_ADDITIONAL_MIGRATION_SERVICES_LOCATION
+    )
+    if additional_services_location is not None:
+        yield from _import_migration_modules(additional_services_location)
+
+
 def retrieve_all_migration_methods(data_warehouse_migrations_only: bool = False) -> dict[int, Any]:
     """
     List all the migration methods
@@ -80,12 +109,8 @@ def retrieve_all_migration_methods(data_warehouse_migrations_only: bool = False)
     ValueError
         When duplicated version is detected
     """
-    # import migration service first so that submodules can be imported properly
-    migration_service_dir = f"{__name__.rsplit('.', 1)[0]}.service"
-    importlib.import_module(migration_service_dir)
-
     migrate_methods = {}
-    for mod in import_submodules(migration_service_dir).values():
+    for mod in import_migration_modules():
         for attr_name in dir(mod):
             attr = getattr(mod, attr_name)
             if inspect.isclass(attr) and issubclass(attr, BaseMigrationServiceMixin):
@@ -117,6 +142,7 @@ async def catalog_specific_migration_method_constructor(
     migrate_method_name: str,
     migration_marker: MigrationInfo,
     max_concurrency: int = 10,
+    app_container_config: Optional[AppContainerConfig] = None,
 ) -> Callable[[], Any]:
     """
     Decorator for catalog specific migration method. This decorator will loop through all the catalogs
@@ -138,6 +164,9 @@ async def catalog_specific_migration_method_constructor(
         Migration marker
     max_concurrency: int
         Maximum number of concurrent tasks
+    app_container_config: Optional[AppContainerConfig]
+        AppContainerConfig to use when initializing the app container. If not specified, the default
+        config will be used.
 
     Returns
     -------
@@ -166,7 +195,11 @@ async def catalog_specific_migration_method_constructor(
                 "catalog_id": catalog_id,
             }
             app_container = LazyAppContainer(
-                app_container_config=app_container_config,
+                app_container_config=(
+                    app_container_config
+                    if app_container_config is not None
+                    else default_app_container_config
+                ),
                 instance_map=instance_map,
             )
             migrate_service = app_container.get(migrate_service_instance_name)
@@ -192,7 +225,7 @@ async def catalog_specific_migration_method_constructor(
     return migration_marker(decorated_migrate_method)
 
 
-async def migrate_method_generator(
+async def migrate_method_generator(  # pylint: disable=too-many-locals
     user: Any,
     persistent: Persistent,
     get_credential: Any,
@@ -201,6 +234,7 @@ async def migrate_method_generator(
     temp_storage: Storage,
     schema_metadata: SchemaMetadataModel,
     include_data_warehouse_migrations: bool,
+    app_container_config: Optional[AppContainerConfig] = None,
 ) -> AsyncGenerator[tuple[BaseMigrationServiceMixin, Callable[..., Any]], None]:
     """
     Migrate method generator
@@ -223,6 +257,9 @@ async def migrate_method_generator(
         Schema metadata
     include_data_warehouse_migrations: bool
         Whether to include data warehouse migrations
+    app_container_config: Optional[AppContainerConfig]
+        AppContainerConfig to use when initializing the app container. If not specified, the default
+        config will be used.
 
     Yields
     ------
@@ -239,7 +276,11 @@ async def migrate_method_generator(
         "catalog_id": DEFAULT_CATALOG_ID,
     }
     app_container = LazyAppContainer(
-        app_container_config=app_container_config,
+        app_container_config=(
+            app_container_config
+            if app_container_config is not None
+            else default_app_container_config
+        ),
         instance_map=instance_map,
     )
     migrate_methods = retrieve_all_migration_methods()
@@ -267,6 +308,7 @@ async def migrate_method_generator(
                     migrate_service_instance_name=migrate_service_instance_name,
                     migrate_method_name=migrate_method_name,
                     migration_marker=_extract_migrate_method_marker(migrate_method),
+                    app_container_config=app_container_config,
                 )
 
         yield migrate_service, migrate_method
@@ -309,6 +351,7 @@ async def run_migration(
     temp_storage: Storage,
     redis: Redis[Any],
     include_data_warehouse_migrations: bool = True,
+    app_container_config: Optional[AppContainerConfig] = None,
 ) -> None:
     """
     Run database migration
@@ -331,6 +374,9 @@ async def run_migration(
         Redis object
     include_data_warehouse_migrations: bool
         Whether to include data warehouse migrations
+    app_container_config: Optional[AppContainerConfig]
+        AppContainerConfig to use when initializing the app container. If not specified, the default
+        config will be used.
     """
     schema_metadata_service = SchemaMetadataService(
         user=user,
@@ -352,6 +398,7 @@ async def run_migration(
         temp_storage=temp_storage,
         schema_metadata=schema_metadata,
         include_data_warehouse_migrations=include_data_warehouse_migrations,
+        app_container_config=app_container_config,
     )
     async for service, migrate_method in method_generator:
         marker = _extract_migrate_method_marker(migrate_method)

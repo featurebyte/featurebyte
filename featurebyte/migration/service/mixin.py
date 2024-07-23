@@ -150,7 +150,7 @@ class BaseMongoCollectionMigration(BaseMigrationServiceMixin, ABC):
         """
         return self.delegate_service.is_catalog_specific
 
-    def migrate_document_record(self, record: dict[str, Any]) -> dict[str, Any]:
+    async def migrate_document_record(self, record: dict[str, Any]) -> dict[str, Any]:
         """
         Migrate older document record to the current document record format
 

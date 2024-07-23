@@ -17,6 +17,13 @@ from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.utils.persistent import MongoDBImpl
 
 
+async def dummy_migrate_func(doc):
+    """
+    A dummy migrate function that just returns the input
+    """
+    return doc
+
+
 @pytest.mark.parametrize("disable_audit", [False, True])
 @pytest.mark.asyncio
 async def test_insert_one(mongo_persistent, test_document, disable_audit):
@@ -56,7 +63,7 @@ async def test_insert_one(mongo_persistent, test_document, disable_audit):
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": inserted_id}).to_list()
     await persistent._migrate_audit_records(
-        collection_name="data", document_id=inserted_id, migrate_func=lambda d: d
+        collection_name="data", document_id=inserted_id, migrate_func=dummy_migrate_func
     )
     after = await client["test"]["__audit__data"].find({"document_id": inserted_id}).to_list()
     assert before == after
@@ -236,7 +243,7 @@ async def test_update_one(mongo_persistent, test_document, disable_audit):
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     await persistent._migrate_audit_records(
-        collection_name="data", document_id=doc_id, migrate_func=lambda d: d
+        collection_name="data", document_id=doc_id, migrate_func=dummy_migrate_func
     )
     after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     assert before == after
@@ -347,7 +354,7 @@ async def test_replace_one(mongo_persistent, test_document, test_documents, disa
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     await persistent._migrate_audit_records(
-        collection_name="data", document_id=doc_id, migrate_func=lambda d: d
+        collection_name="data", document_id=doc_id, migrate_func=dummy_migrate_func
     )
     after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     assert before == after
@@ -401,7 +408,7 @@ async def test_delete_one(mongo_persistent, test_documents, disable_audit):
     # due to identity migration function)
     before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     await persistent._migrate_audit_records(
-        collection_name="data", document_id=doc_id, migrate_func=lambda d: d
+        collection_name="data", document_id=doc_id, migrate_func=dummy_migrate_func
     )
     after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     assert before == after
