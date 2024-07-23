@@ -94,7 +94,7 @@ class SparkThriftOfflineStoreConfig(BaseSparkThriftOfflineStoreConfig):
     storage_credential: Optional[StorageCredential]
 
     def get_db_session(self) -> BaseSparkSession:
-        return SparkSession(**self.dict())
+        return SparkSession(**self.model_dump())
 
 
 class SparkThriftOfflineStore(OfflineStore):

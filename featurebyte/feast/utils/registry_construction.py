@@ -597,7 +597,7 @@ class FeastRegistryBuilder:
             Offline store configuration
         """
         feature_store_details = FeatureStoreDetailsWithFeastConfiguration(
-            **feature_store_model.get_feature_store_details().dict()
+            **feature_store_model.get_feature_store_details().model_dump()
         )
         database_credential = None
         storage_credential = None
@@ -830,7 +830,7 @@ class FeastRegistryBuilder:
         name_to_feast_feature_view: Dict[str, FeastFeatureView] = {}
         all_feast_feature_views = []
         feature_store_details = FeatureStoreDetailsWithFeastConfiguration(
-            **feature_store.get_feature_store_details().dict()
+            **feature_store.get_feature_store_details().model_dump()
         )
         for offline_store_table in offline_store_tables:
             entity_key = offline_store_table.primary_entity_ids

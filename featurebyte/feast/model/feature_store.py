@@ -200,7 +200,7 @@ class FeastSparkDetails(AbstractDatabaseDetailsForFeast, SparkDetails):
         storage_credential: Optional[BaseStorageCredential],
     ) -> Any:
         return SparkThriftOfflineStoreConfig(
-            **self.dict(),
+            **self.model_dump(),
             database_credential=database_credential,
             storage_credential=storage_credential,
         )
@@ -254,7 +254,9 @@ class FeastDataBricksDetails(AbstractDatabaseDetailsForFeast, DatabricksDetails)
         database_credential: Optional[BaseDatabaseCredential],
         storage_credential: Optional[BaseStorageCredential],
     ) -> Any:
-        return DataBricksOfflineStoreConfig(**self.dict(), database_credential=database_credential)
+        return DataBricksOfflineStoreConfig(
+            **self.model_dump(), database_credential=database_credential
+        )
 
 
 class FeastDataBricksUnityDetails(AbstractDatabaseDetailsForFeast, DatabricksUnityDetails):
@@ -306,7 +308,7 @@ class FeastDataBricksUnityDetails(AbstractDatabaseDetailsForFeast, DatabricksUni
         storage_credential: Optional[BaseStorageCredential],
     ) -> Any:
         return DataBricksUnityOfflineStoreConfig(
-            **self.dict(), database_credential=database_credential
+            **self.model_dump(), database_credential=database_credential
         )
 
 
