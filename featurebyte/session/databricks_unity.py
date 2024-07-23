@@ -216,7 +216,7 @@ class DatabricksUnitySession(DatabricksSession):
                 database_name=None, schema_name=None, table_name=table_details
             )
         fully_qualified_table_name = sql_to_string(
-            get_fully_qualified_table_name(table_details.dict()), source_type=self.source_type
+            get_fully_qualified_table_name(table_details.model_dump()), source_type=self.source_type
         )
         await self.set_owner(kind, fully_qualified_table_name)
         return result
