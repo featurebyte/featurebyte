@@ -71,6 +71,7 @@ from tests.unit.conftest_config import (
     config_fixture,
     mock_config_path_env_fixture,
 )
+from tests.util.helper import inject_request_side_effect
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
@@ -98,8 +99,7 @@ def mock_api_client_fixture(request):
     else:
         with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
             with TestClient(app) as client:
-                mock_request.side_effect = client.request
-                yield mock_request
+                yield inject_request_side_effect(mock_request, client)
 
 
 @pytest.fixture(autouse=True)

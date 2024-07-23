@@ -1031,3 +1031,15 @@ def compare_pydantic_obj(maybe_pydantic_obj, expected):
             compare_pydantic_obj(left, right)
     else:
         assert maybe_pydantic_obj == expected, f"Expected {expected}, got {maybe_pydantic_obj}"
+
+
+def inject_request_side_effect(mock_request, client):
+    """Inject side effect for mock_request to use the client for making requests"""
+
+    def _request_func(*args, **kwargs):
+        if "allow_redirects" in kwargs:
+            kwargs["follow_redirects"] = kwargs.pop("allow_redirects")
+        return client.request(*args, **kwargs)
+
+    mock_request.side_effect = _request_func
+    return mock_request

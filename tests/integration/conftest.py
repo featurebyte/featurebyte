@@ -239,6 +239,9 @@ def config_fixture(storage):
 
                         def wrapped_test_client_request_func(*args, stream=None, **kwargs):
                             _ = stream
+                            if "allow_redirects" in kwargs:
+                                kwargs["follow_redirects"] = kwargs.pop("allow_redirects")
+
                             response = client.request(*args, **kwargs)
                             response.iter_content = response.iter_bytes
                             return response
