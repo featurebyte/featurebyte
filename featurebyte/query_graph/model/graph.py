@@ -61,7 +61,7 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, QueryGraphModel):
-            return bool(self.dict() == other.dict())
+            return bool(self.model_dump() == other.model_dump())
         return False
 
     def _is_cache_invalid(self) -> bool:
@@ -217,7 +217,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         -------
         Dict[str, Any]
         """
-        node_parameters = node.parameters.dict()
+        node_parameters = node.parameters.model_dump()
         if node.type == NodeType.GRAPH:
             nested_graph = node.parameters.graph  # type: ignore
             node_parameters["graph"] = nested_graph.node_name_to_ref[node.parameters.output_node_name]  # type: ignore

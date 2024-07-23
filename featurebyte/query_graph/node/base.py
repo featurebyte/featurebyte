@@ -127,7 +127,7 @@ class BaseNode(FeatureByteBaseModel):
         """
         parameters = sorted(
             f"{key}='{value}'" if isinstance(value, str) else f"{key}={value}"
-            for key, value in self.parameters.dict().items()
+            for key, value in self.parameters.model_dump().items()
             if value
         )
         if parameters and len(parameters) < 4:
@@ -459,7 +459,7 @@ class BaseNode(FeatureByteBaseModel):
         -------
         NodeT
         """
-        return type(self)(**{**self.dict(), **kwargs})
+        return type(self)(**{**self.model_dump(), **kwargs})
 
     def prune(
         self: NodeT,
@@ -743,7 +743,7 @@ class BaseNode(FeatureByteBaseModel):
         AssertionError
             If required input columns is not empty
         """
-        input_columns = self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        input_columns = self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
         assert len(input_columns) == 0
         return input_columns
 
@@ -808,7 +808,7 @@ class BaseNode(FeatureByteBaseModel):
         if self._inherit_first_input_column_name_mapping:
             output_column_remap.update(**input_node_column_mapping)
 
-        node_params = self.parameters.dict(by_alias=True)
+        node_params = self.parameters.model_dump(by_alias=True)
         for param_name, value in node_params.items():
             if isinstance(value, InColumnStr):
                 node_params[param_name] = input_node_column_mapping.get(value, value)

@@ -38,7 +38,7 @@ def get_source_expr(
     -------
     Select
     """
-    select_expr = expressions.select().from_(get_fully_qualified_table_name(source.dict()))
+    select_expr = expressions.select().from_(get_fully_qualified_table_name(source.model_dump()))
     if column_names:
         select_expr = select_expr.select(*[quoted_identifier(col) for col in column_names])
     else:
@@ -65,7 +65,7 @@ def get_source_count_expr(
         expressions.alias_(
             expressions.Count(this=expressions.Star()), alias="row_count", quoted=True
         )
-    ).from_(get_fully_qualified_table_name(source.dict()))
+    ).from_(get_fully_qualified_table_name(source.model_dump()))
 
 
 def get_view_expr(

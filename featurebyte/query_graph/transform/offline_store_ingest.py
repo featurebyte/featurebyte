@@ -139,7 +139,7 @@ class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-insta
         """
         inserted_node = self.graph.add_operation(
             node_type=node.type,
-            node_params=node.parameters.dict(by_alias=True),
+            node_params=node.parameters.model_dump(by_alias=True),
             node_output_type=node.output_type,
             input_nodes=input_nodes,
         )

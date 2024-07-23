@@ -53,7 +53,7 @@ class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
         params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
 
         # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)
-        parameters_dict = self.parameters.dict(exclude={"parent", "agg_func", "name"})
+        parameters_dict = self.parameters.model_dump(exclude={"parent", "agg_func", "name"})
         if parameters_dict.get("entity_ids") is not None:
             parameters_dict["entity_ids"] = [
                 str(entity_id) for entity_id in parameters_dict["entity_ids"]

@@ -97,7 +97,7 @@ class ProjectNode(BaseNode):
             # for feature, the available columns are the aggregations
             avail_columns = set(col.name for col in input_op_struct.aggregations)
 
-        node_params = self.parameters.dict()
+        node_params = self.parameters.model_dump()
         node_params["columns"] = [col for col in self.parameters.columns if col in avail_columns]  # type: ignore
         return self.clone(parameters=node_params)
 
@@ -646,7 +646,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
-        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
     def _derive_sdk_code(
         self,
@@ -705,7 +705,7 @@ class GroupByNodeParameters(BaseWindowAggregateParameters):
     @classmethod
     def _handle_backward_compatibility(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         old_keys = ["frequency", "time_modulo_frequency", "blind_spot"]
         if all(key in values for key in old_keys) and "feature_job_setting" not in values:
@@ -732,7 +732,7 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
-        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
         cols = self.parameters.keys + [self.parameters.timestamp]
@@ -782,7 +782,7 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
                 )
             )
             params = self.parameters
-            pruned_params_dict = self.parameters.dict()
+            pruned_params_dict = self.parameters.model_dump()
             pruned_params_dict.update(names=[], windows=[])
             for name, window in zip(params.names, params.windows):  # type: ignore
                 if name in required_columns:
@@ -915,7 +915,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
-        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]
@@ -996,7 +996,7 @@ class SCDBaseParameters(FeatureByteBaseModel):
     def _convert_node_parameters_format(cls, values: Any) -> Any:
         # DEV-556: backward compatibility
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if "right_timestamp_column" in values:
             values["effective_timestamp_column"] = values["right_timestamp_column"]
@@ -1036,7 +1036,7 @@ class LookupParameters(FeatureByteBaseModel):
     @classmethod
     def _validate_input_column_names_feature_names_same_length(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         input_column_names = values["input_column_names"]
         feature_names = values["feature_names"]
@@ -1063,7 +1063,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
-        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
     def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
         parent_columns = [col for col in columns if col.name in self.parameters.input_column_names]
@@ -1232,7 +1232,7 @@ class JoinMetadata(FeatureByteBaseModel):
     @classmethod
     def _backward_compat_fill_rprefix(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if values.get("rprefix") is None:
             values["rprefix"] = ""
@@ -1336,7 +1336,7 @@ class JoinNode(BasePrunableNode):
         assert len(input_operation_structures) == 2
         left_avail_columns = [col.name for col in input_operation_structures[0].columns]
         right_avail_columns = [col.name for col in input_operation_structures[1].columns]
-        node_params = self.parameters.dict()
+        node_params = self.parameters.model_dump()
         (
             node_params["left_input_columns"],
             node_params["left_output_columns"],
@@ -1819,7 +1819,7 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
-        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
     def _exclude_source_columns(self) -> List[str]:
         return [str(key) for key in self.parameters.keys]

@@ -147,7 +147,9 @@ class MaterializedTableObservationSet(ObservationSet):
         await session.create_table_as(
             table_details=TableDetails(table_name=request_table_name),
             select_expr=expressions.select(*columns).from_(
-                get_fully_qualified_table_name(self.observation_table.location.table_details.dict())
+                get_fully_qualified_table_name(
+                    self.observation_table.location.table_details.model_dump()
+                )
             ),
         )
 

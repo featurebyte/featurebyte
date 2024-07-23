@@ -200,7 +200,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         -------
         Expression
         """
-        destination_expr = get_fully_qualified_table_name(table_details.dict())
+        destination_expr = get_fully_qualified_table_name(table_details.model_dump())
         return expressions.Create(
             this=expressions.Table(this=destination_expr),
             kind=kind,

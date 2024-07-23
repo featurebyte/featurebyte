@@ -45,7 +45,7 @@ class ColumnInfo(ColumnSpecWithDescription):
     @classmethod
     def _validate_column_info(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         critical_data_info = values.get("critical_data_info")
         dtype = DBVarType(values.get("dtype"))

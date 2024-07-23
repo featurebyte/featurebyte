@@ -124,12 +124,12 @@ def _get_lookup_spec_from_join_step(
 ) -> LookupSpec:
     # Set up data specific parameters
     if join_step.table.type == TableDataType.SCD_TABLE:
-        scd_parameters = SCDLookupParameters(**join_step.table.dict())
+        scd_parameters = SCDLookupParameters(**join_step.table.model_dump())
     else:
         scd_parameters = None
 
     if join_step.table.type == TableDataType.EVENT_TABLE:
-        event_parameters = EventLookupParameters(**join_step.table.dict())
+        event_parameters = EventLookupParameters(**join_step.table.model_dump())
     else:
         event_parameters = None
 

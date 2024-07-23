@@ -62,7 +62,7 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
     def _convert_columns_format(cls, values: Any) -> Any:
         # DEV-556: convert list of string to list of dictionary
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         columns = values.get("columns")
         if columns and isinstance(columns[0], str):
@@ -93,7 +93,7 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
         return ClassEnum.FEATURE_STORE(
             name=feature_store_name,
             type=self.feature_store_details.type,
-            details=source_details(**database_details.dict()),
+            details=source_details(**database_details.model_dump()),
         )
 
     def extract_tabular_source_object(self, feature_store_id: ObjectId) -> ObjectClass:
@@ -379,7 +379,7 @@ class InputNode(BaseNode):
     def _get_required_input_columns(
         self, input_index: int, available_column_names: List[str]
     ) -> Sequence[str]:
-        return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+        return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
     def _derive_node_operation_info(
         self,

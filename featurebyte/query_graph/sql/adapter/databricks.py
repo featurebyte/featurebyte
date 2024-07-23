@@ -243,7 +243,7 @@ class DatabricksAdapter(BaseAdapter):
         -------
         Expression
         """
-        destination_expr = get_fully_qualified_table_name(table_details.dict())
+        destination_expr = get_fully_qualified_table_name(table_details.model_dump())
 
         if kind == "TABLE":
             table_properties = [

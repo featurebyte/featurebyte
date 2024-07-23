@@ -166,7 +166,9 @@ def construct_request_table_query(
         expr = expr.from_(request_table_expr.subquery(alias="REQ"))
     else:
         assert request_table_details is not None
-        expr = expr.from_(get_fully_qualified_table_name(request_table_details.dict(), alias="REQ"))
+        expr = expr.from_(
+            get_fully_qualified_table_name(request_table_details.model_dump(), alias="REQ")
+        )
     return expr
 
 

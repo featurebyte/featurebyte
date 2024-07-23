@@ -76,7 +76,7 @@ class SnowflakeDetails(BaseDatabaseDetails):
     def _support_old_parameters(cls, values: Any) -> Any:
         # support old parameters
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         database = values.get("database")
         if database:
@@ -159,7 +159,7 @@ class DatabricksDetails(BaseDatabricksDetails):  # pylint: disable=abstract-meth
     def _support_old_parameters(cls, values: Any) -> Any:
         # support old parameters
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
         featurebyte_catalog = values.get("featurebyte_catalog")
         if featurebyte_catalog:
             values["catalog_name"] = featurebyte_catalog
@@ -261,7 +261,7 @@ class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     def _support_old_parameters(cls, values: Any) -> Any:
         # support old parameters
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
         featurebyte_catalog = values.get("featurebyte_catalog")
         if featurebyte_catalog:
             values["catalog_name"] = featurebyte_catalog

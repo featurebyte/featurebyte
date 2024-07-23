@@ -101,7 +101,7 @@ class GroupByNode(BaseGroupbyNode, BasePruningSensitiveNode):
         row_index_lineage_hash = cls._get_row_index_lineage_hash(
             pruned_graph=pruned_graph, pruned_input_node_name=pruned_input_node_name
         )
-        parameters_dict = temp_node.parameters.dict()
+        parameters_dict = temp_node.parameters.model_dump()
         tile_id_version = parameters_dict.pop("tile_id_version")
         if tile_id_version == 1:
             tile_id = get_tile_table_identifier_v1(
@@ -209,7 +209,7 @@ def add_pruning_sensitive_operation(
     node = graph.add_operation(
         node_type=temp_node.type,
         node_params={
-            **temp_node.parameters.dict(),
+            **temp_node.parameters.model_dump(),
             **additional_parameters,
         },
         node_output_type=NodeOutputType.FRAME,
@@ -250,7 +250,7 @@ class GraphReconstructionTransformer(
             inserted_node = add_pruning_sensitive_operation(
                 graph=global_state.graph,
                 node_cls=PRUNING_SENSITIVE_NODE_MAP[node.type],  # type: ignore
-                node_params=node_to_insert.parameters.dict(),
+                node_params=node_to_insert.parameters.model_dump(),
                 input_node=input_nodes[0],
             )
         else:
