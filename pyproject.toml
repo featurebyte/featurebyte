@@ -250,6 +250,10 @@ min-similarity-lines = 10
 [tool.pytest.ini_options]
 addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure", "--ignore-glob=tests/fixtures/*"] # Extra options:
 doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
+filterwarnings = [
+    "ignore::Warning:pkg_resources",
+    "ignore::Warning:mongomock",
+]
 markers = [
     "disable_task_manager_mock: disable use of autouse task manager fixture",
     "no_mock_websocket_client: skip mocking websocket client",

@@ -248,13 +248,8 @@ class QueryObject(FeatureByteBaseModel):
         deep: bool = False,
     ) -> QueryObjectT:
         update_dict = update or {}
-        update_dict.update({"feature_store": self.feature_store.copy(deep=deep)})
-        return super().copy(  # type: ignore
-            include=include,
-            exclude=exclude,
-            update=update_dict,
-            deep=deep,
-        )
+        update_dict.update({"feature_store": self.feature_store.model_copy(deep=deep)})
+        return self.model_copy(update=update_dict, deep=deep)
 
     def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
