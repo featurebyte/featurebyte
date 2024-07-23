@@ -241,7 +241,7 @@ def get_migration_methods_to_apply(current_metadata_version: int) -> list[Any]:
     """
     migrate_methods = retrieve_all_migration_methods()
     new_versions_to_apply = sorted(
-        version for version in migrate_methods.keys() if version > current_metadata_version
+        version for version in migrate_methods if version > current_metadata_version
     )
     migration_methods_to_apply = []
     for version in new_versions_to_apply:
