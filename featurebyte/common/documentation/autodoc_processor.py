@@ -404,7 +404,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
         autodoc_config = resource.__dict__.get("__fbautodoc__", FBAutoDoc())
 
         # include fields for pydantic classes
-        fields = getattr(resource, "__fields__", None)
+        fields = getattr(resource, "model_fields", None)
         if fields:
             members.extend(list(fields.keys()))
 

@@ -79,7 +79,7 @@ class BaseCredential(FeatureByteBaseModel):
         func: Callable[[str], str]
             Function to apply
         """
-        for field_name, field in self.__fields__.items():
+        for field_name, field in self.model_fields.items():
             if field.annotation is str and field.metadata == [Strict(strict=True)]:
                 setattr(self, field_name, func(getattr(self, field_name)))
             else:

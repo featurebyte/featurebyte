@@ -979,7 +979,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
         # set special columns to invalid values
         special_columns = [
             field_name
-            for field_name in self.data_create_schema_class.__fields__
+            for field_name in self.data_create_schema_class.model_fields
             if field_name.endswith("column")
         ]
         for special_column in special_columns:

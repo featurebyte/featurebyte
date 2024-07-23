@@ -60,7 +60,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         -------
         str
         """
-        return str(self.document_class.__fields__["type"].default.value)
+        return str(self.document_class.model_fields["type"].default.value)
 
     @property
     def table_type_to_class_name_map(self) -> dict[str, str]:

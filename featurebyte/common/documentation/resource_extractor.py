@@ -378,7 +378,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
         class_descriptor = ".".join(parts)
         resource_class = import_resource(class_descriptor)
         resource_path = class_descriptor
-        class_fields = getattr(resource_class, "__fields__", None)
+        class_fields = getattr(resource_class, "model_fields", None)
         resource = getattr(resource_class, resource_name, EMPTY_VALUE)
         if resource == EMPTY_VALUE:
             # pydantic field
