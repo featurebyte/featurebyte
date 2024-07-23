@@ -79,7 +79,7 @@ def test_feature_list_creation__success(
     """Test FeatureList can be created with valid inputs"""
     flist = FeatureList([production_ready_feature], name="my_feature_list")
 
-    assert flist.dict(by_alias=True) == {
+    assert flist.model_dump(by_alias=True) == {
         "_id": flist.id,
         "name": "my_feature_list",
         "feature_ids": [production_ready_feature.id],
@@ -141,7 +141,7 @@ def test_feature_list_creation__feature_and_group(production_ready_feature, feat
         [production_ready_feature, feature_group[["sum_30m", "sum_1d"]]],
         name="my_feature_list",
     )
-    assert flist.dict(by_alias=True) == {
+    assert flist.model_dump(by_alias=True) == {
         "_id": flist.id,
         "created_at": None,
         "updated_at": None,
@@ -413,7 +413,7 @@ def test_deserialization(production_ready_feature, draft_feature):
     """
     feature_group = FeatureGroup([production_ready_feature, draft_feature])
     feature_list = FeatureList([feature_group], name="my_feature_list")
-    feature_list_dict = feature_list.dict(by_alias=True)
+    feature_list_dict = feature_list.model_dump(by_alias=True)
     expected_status = FeatureListStatus.TEMPLATE
     expected_version = {"name": "V220701", "suffix": None}
     feature_list_dict["status"] = expected_status
@@ -425,8 +425,8 @@ def test_deserialization(production_ready_feature, draft_feature):
         with patch("featurebyte.api.feature_store.FeatureStore._get_by_id") as mock_get_by_id:
             mock_get_by_id.return_value = production_ready_feature.feature_store
             mock_iterate.return_value = [
-                production_ready_feature.dict(by_alias=True),
-                draft_feature.dict(by_alias=True),
+                production_ready_feature.model_dump(by_alias=True),
+                draft_feature.model_dump(by_alias=True),
             ]
             loaded_feature_list = FeatureList(**feature_list_dict, items=[])
 
@@ -488,14 +488,14 @@ def test_get_feature_list(
     Test get feature list using feature list name
     """
     loaded_feature_list_by_name = FeatureList.get(name=saved_feature_list.name)
-    assert loaded_feature_list_by_name.dict() == saved_feature_list.dict()
+    assert loaded_feature_list_by_name.model_dump() == saved_feature_list.model_dump()
     assert loaded_feature_list_by_name == saved_feature_list
     assert loaded_feature_list_by_name.feature_objects == saved_feature_list.feature_objects
     assert loaded_feature_list_by_name.items == saved_feature_list.items
     assert loaded_feature_list_by_name.saved is True
 
     loaded_feature_list_by_id = FeatureList.get_by_id(saved_feature_list.id)
-    assert loaded_feature_list_by_id.dict() == saved_feature_list.dict()
+    assert loaded_feature_list_by_id.model_dump() == saved_feature_list.model_dump()
     assert loaded_feature_list_by_id == saved_feature_list
     assert loaded_feature_list_by_id.feature_objects == saved_feature_list.feature_objects
     assert loaded_feature_list_by_id.items == saved_feature_list.items
@@ -1170,23 +1170,25 @@ def test_feature_list__check_feature_readiness_update(saved_feature_list, mock_a
 
     feature_list = FeatureList([new_feat], name="my_fl")
     assert feature_list.production_ready_fraction == 0.0
-    assert feature_list.readiness_distribution.dict() == [{"readiness": "DRAFT", "count": 1}]
+    assert feature_list.readiness_distribution.model_dump() == [{"readiness": "DRAFT", "count": 1}]
 
     new_feat.update_readiness(readiness="PRODUCTION_READY")
     assert feature_list.production_ready_fraction == 1.0
-    assert feature_list.readiness_distribution.dict() == [
+    assert feature_list.readiness_distribution.model_dump() == [
         {"readiness": "PRODUCTION_READY", "count": 1}
     ]
 
     feature_list.save()
     assert feature_list.production_ready_fraction == 1.0
-    assert feature_list.readiness_distribution.dict() == [
+    assert feature_list.readiness_distribution.model_dump() == [
         {"readiness": "PRODUCTION_READY", "count": 1}
     ]
 
     new_feat.update_readiness(readiness="PUBLIC_DRAFT")
     assert feature_list.production_ready_fraction == 0.0
-    assert feature_list.readiness_distribution.dict() == [{"readiness": "PUBLIC_DRAFT", "count": 1}]
+    assert feature_list.readiness_distribution.model_dump() == [
+        {"readiness": "PUBLIC_DRAFT", "count": 1}
+    ]
 
 
 def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache):
@@ -1223,7 +1225,7 @@ def test_feature_list_properties_from_cached_model__before_save(feature_list):
     # check properties derived from feature list model directly
     assert feature_list.saved is False
     assert feature_list.online_enabled_feature_ids == []
-    assert feature_list.readiness_distribution.dict() == [{"readiness": "DRAFT", "count": 3}]
+    assert feature_list.readiness_distribution.model_dump() == [{"readiness": "DRAFT", "count": 3}]
     assert feature_list.production_ready_fraction == 0.0
     assert feature_list.deployed is False
 
@@ -1239,7 +1241,9 @@ def test_feature_list_properties_from_cached_model__after_save(saved_feature_lis
     # check properties derived from feature list model directly
     assert saved_feature_list.saved
     assert saved_feature_list.online_enabled_feature_ids == []
-    assert saved_feature_list.readiness_distribution.dict() == [{"readiness": "DRAFT", "count": 1}]
+    assert saved_feature_list.readiness_distribution.model_dump() == [
+        {"readiness": "DRAFT", "count": 1}
+    ]
     assert saved_feature_list.production_ready_fraction == 0.0
     assert saved_feature_list.deployed is False
 

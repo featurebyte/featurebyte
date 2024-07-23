@@ -18,7 +18,7 @@ def test_aggregate_asat__valid(
         value_column="col_float", method="sum", feature_name="asat_feature"
     )
     assert isinstance(feature, Feature)
-    feature_dict = feature.dict()
+    feature_dict = feature.model_dump()
     graph_dict = feature_dict["graph"]
 
     node_dict = get_node(graph_dict, feature_dict["node_name"])
@@ -57,7 +57,7 @@ def test_aggregate_asat__valid(
     ]
 
     # check SDK code generation
-    scd_table_columns_info = snowflake_scd_table.dict(by_alias=True)["columns_info"]
+    scd_table_columns_info = snowflake_scd_table.model_dump(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
@@ -82,7 +82,7 @@ def test_aggregate_asat__offset(snowflake_scd_view_with_entity, gender_entity_id
     )
 
     assert isinstance(feature, Feature)
-    feature_dict = feature.dict()
+    feature_dict = feature.model_dump()
     graph_dict = feature_dict["graph"]
 
     node_dict = get_node(graph_dict, feature_dict["node_name"])

@@ -34,7 +34,7 @@ async def saved_analysis_fixture(mock_get_persistent, saved_event_table, catalog
     analysis.catalog_id = catalog.id
     return await persistent.insert_one(
         collection_name=FeatureJobSettingAnalysisModel.collection_name(),
-        document=analysis.dict(),
+        document=analysis.model_dump(),
         user_id=None,
     )
 

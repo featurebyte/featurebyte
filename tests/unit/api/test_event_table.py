@@ -164,7 +164,7 @@ def test_create_event_table(snowflake_database_table, event_table_dict, catalog)
     assert set(event_table.columns).issubset(dir(event_table))
     assert event_table._ipython_key_completions_() == set(event_table.columns)
 
-    output = event_table.dict(by_alias=True)
+    output = event_table.model_dump(by_alias=True)
     event_table_dict["_id"] = event_table.id
     event_table_dict["created_at"] = event_table.created_at
     event_table_dict["updated_at"] = event_table.updated_at

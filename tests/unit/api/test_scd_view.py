@@ -90,7 +90,7 @@ def test_event_view_join_scd_view(
     Test additional join parameters are added for SCDView
     """
     joined_view = snowflake_event_view.join(snowflake_scd_view, rsuffix="_scd")
-    assert joined_view.node.parameters.dict() == {
+    assert joined_view.node.parameters.model_dump() == {
         "left_on": "col_text",
         "right_on": "col_text",
         "left_input_columns": [
@@ -164,7 +164,7 @@ def test_scd_view_as_feature(snowflake_scd_table, cust_id_entity):
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = snowflake_scd_table.get_view()
     feature = scd_view["col_float"].as_feature("FloatFeature", offset="7d")
-    graph_dict = feature.dict()["graph"]
+    graph_dict = feature.model_dump()["graph"]
     lookup_node = get_node(graph_dict, "lookup_1")
     assert lookup_node == {
         "name": "lookup_1",
@@ -188,7 +188,7 @@ def test_scd_view_as_feature(snowflake_scd_table, cust_id_entity):
     }
 
     # check SDK code generation
-    scd_table_columns_info = snowflake_scd_table.dict(by_alias=True)["columns_info"]
+    scd_table_columns_info = snowflake_scd_table.model_dump(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
@@ -235,7 +235,7 @@ def test_scd_view_as_feature__special_column(
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)
     scd_view = snowflake_scd_table.get_view()
     feature = scd_view["effective_timestamp"].as_feature("Latest Record Change Date")
-    lookup_node_dict = get_node(feature.dict()["graph"], "lookup_1")
+    lookup_node_dict = get_node(feature.model_dump()["graph"], "lookup_1")
     assert feature.name == "Latest Record Change Date"
     assert lookup_node_dict["parameters"] == {
         "input_column_names": ["effective_timestamp"],
@@ -254,7 +254,7 @@ def test_scd_view_as_feature__special_column(
     }
 
     # check SDK code generation
-    scd_table_columns_info = snowflake_scd_table.dict(by_alias=True)["columns_info"]
+    scd_table_columns_info = snowflake_scd_table.model_dump(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,

@@ -76,7 +76,7 @@ def float_feature_dict_fixture(float_feature):
     # before serialization, global query graph is used
     assert float_feature.saved is False
     assert isinstance(float_feature.graph, GlobalQueryGraph)
-    feat_dict = float_feature.dict()
+    feat_dict = float_feature.model_dump()
 
     # after serialization, pruned query graph is used
     assert set(node["name"] for node in feat_dict["graph"]["nodes"]) == {
@@ -118,12 +118,12 @@ def test_feature__bool_series_key_scalar_value(float_feature, bool_feature):
     Test Feature conditional assignment
     """
     float_feature[bool_feature] = 10
-    assert float_feature.node.dict(exclude={"name": True}) == {
+    assert float_feature.node.model_dump(exclude={"name": True}) == {
         "type": "alias",
         "parameters": {"name": "sum_1d"},
         "output_type": "series",
     }
-    float_feature_dict = float_feature.dict()
+    float_feature_dict = float_feature.model_dump()
     cond_node = get_node(float_feature_dict["graph"], "conditional_1")
     assert cond_node == {
         "name": "conditional_1",
@@ -148,7 +148,7 @@ def test_feature__cond_assign_unnamed(float_feature, bool_feature):
     """
     temp_feature = float_feature + 123.0
     temp_feature[bool_feature] = 0.0
-    temp_feature_dict = temp_feature.dict()
+    temp_feature_dict = temp_feature.model_dump()
     cond_node = get_node(temp_feature_dict["graph"], node_name="conditional_1")
     assert cond_node == {
         "name": "conditional_1",
@@ -190,7 +190,7 @@ def test_feature__cond_assign_different_groupby_operations(
         feature_names=["feature_2"],
     )["feature_2"]
     feature_1[feature_2 < 0] = 100
-    feature_dict = feature_1.dict()
+    feature_dict = feature_1.model_dump()
     cond_node = get_node(feature_dict["graph"], "conditional_1")
     assert cond_node == {
         "name": "conditional_1",
@@ -254,7 +254,7 @@ def test_feature_deserialization(
             offset="5m",
         ),
     )
-    same_float_feature_dict = feature_group["sum_1d"].dict(exclude={"id": True})
+    same_float_feature_dict = feature_group["sum_1d"].model_dump(exclude={"id": True})
     float_feature_dict.pop("_id")
     float_feature_dict.pop("feature_store")
 
@@ -304,7 +304,7 @@ def saved_feature_fixture(
     assert float_feature.saved is False
 
     # check the groupby node before feature is saved
-    graph = QueryGraphModel(**float_feature.dict()["graph"])
+    graph = QueryGraphModel(**float_feature.model_dump()["graph"])
     groupby_node = graph.nodes_map["groupby_1"]
     assert groupby_node.parameters.names == ["sum_30m", "sum_2h", "sum_1d"]
     assert groupby_node.parameters.windows == ["30m", "2h", "1d"]
@@ -316,7 +316,7 @@ def saved_feature_fixture(
     assert float_feature.cached_model.definition_hash == "e2778a5f89053e279269b5b177e33f3ac51c18b8"
 
     # check the groupby node after feature is saved (node parameters should get pruned)
-    graph = QueryGraphModel(**float_feature.dict()["graph"])
+    graph = QueryGraphModel(**float_feature.model_dump()["graph"])
     groupby_node = graph.nodes_map["groupby_1"]
     assert groupby_node.parameters.names == ["sum_1d"]
     assert groupby_node.parameters.windows == ["1d"]
@@ -436,7 +436,7 @@ def test_feature_name__set_name_when_unnamed(float_feature):
     new_feature = float_feature + 1234
 
     assert new_feature.name is None
-    assert new_feature.node.dict(exclude={"name": True}) == {
+    assert new_feature.node.model_dump(exclude={"name": True}) == {
         "type": "add",
         "parameters": {"value": 1234, "right_op": False},
         "output_type": "series",
@@ -444,7 +444,7 @@ def test_feature_name__set_name_when_unnamed(float_feature):
     old_node_name = new_feature.node.name
 
     new_feature.name = "my_feature_1234"
-    assert new_feature.node.dict(exclude={"name": True}) == {
+    assert new_feature.node.model_dump(exclude={"name": True}) == {
         "type": "alias",
         "parameters": {"name": "my_feature_1234"},
         "output_type": "series",
@@ -490,9 +490,9 @@ def test_get_feature(saved_feature):
     """
     feature = Feature.get(name=saved_feature.name)
     assert feature.saved is True
-    assert feature.dict() == saved_feature.dict()
+    assert feature.model_dump() == saved_feature.model_dump()
     get_by_id_feat = Feature.get_by_id(feature.id)
-    assert get_by_id_feat.dict() == feature.dict()
+    assert get_by_id_feat.model_dump() == feature.model_dump()
     assert get_by_id_feat.saved is True
 
     # ensure Proxy object works in binary operations
@@ -633,7 +633,7 @@ def test_create_new_version(saved_feature, snowflake_event_table):
     saved_feature_version = saved_feature.version
     assert new_version.version == f"{saved_feature_version}_1"
 
-    new_version_dict = new_version.dict()
+    new_version_dict = new_version.model_dump()
     assert new_version_dict["graph"]["nodes"][1]["type"] == "graph"
     groupby_node = new_version_dict["graph"]["nodes"][2]
     groupby_node_params = groupby_node["parameters"]
@@ -1424,7 +1424,7 @@ def test_feature_graph_prune_unused_cleaning_operations(feature_with_clean_colum
 
     # check feature graph after saving
     feature.save()
-    graph = QueryGraphModel(**feature.dict()["graph"])
+    graph = QueryGraphModel(**feature.model_dump()["graph"])
 
     # check event view graph node metadata
     event_view_graph_node = graph.get_node_by_name("graph_1")
@@ -1971,7 +1971,7 @@ def test_complex_feature_with_duplicated_feature_job_setting(
     complex_feat.save()
     table_id_feature_job_settings = complex_feat.cached_model.table_id_feature_job_settings
     assert len(table_id_feature_job_settings) == 1
-    assert table_id_feature_job_settings[0].dict() == {
+    assert table_id_feature_job_settings[0].model_dump() == {
         "table_id": snowflake_event_table_with_entity.id,
         "feature_job_setting": {
             "blind_spot": "600s",

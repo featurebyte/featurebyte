@@ -50,7 +50,7 @@ def test_unbounded_window__valid(snowflake_event_view_with_entity, cust_id_entit
         feature_names=["feat_latest"],
         feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
     )
-    feature_dict = feature_group["feat_latest"].dict()
+    feature_dict = feature_group["feat_latest"].model_dump()
     node = get_node(feature_dict["graph"], "groupby_1")
     assert node["parameters"]["windows"] == [None]
 
@@ -96,7 +96,7 @@ def test_unbounded_window__composite_keys(snowflake_event_view_with_entity):
         feature_names=["feat_latest"],
         feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
     )
-    feature_dict = feature_group["feat_latest"].dict()
+    feature_dict = feature_group["feat_latest"].model_dump()
     node = get_node(feature_dict["graph"], "groupby_1")
     assert node["parameters"]["windows"] == [None]
     assert node["parameters"]["keys"] == ["cust_id", "col_int"]
@@ -113,12 +113,12 @@ def test_empty_groupby_keys(snowflake_event_view_with_entity):
         feature_names=["feat_count"],
         feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
     )
-    feature_dict = feature_group["feat_count"].dict()
+    feature_dict = feature_group["feat_count"].model_dump()
     node = get_node(feature_dict["graph"], "groupby_1")
     assert node["parameters"]["keys"] == []
     assert node["parameters"]["entity_ids"] == []
 
-    feature_model = FeatureModel(**feature_group["feat_count"].dict())
+    feature_model = FeatureModel(**feature_group["feat_count"].model_dump())
     assert feature_model.entity_ids == []
 
 
@@ -136,7 +136,7 @@ def test_offset(snowflake_event_view_with_entity):
             blind_spot="1m30s", frequency="6m", time_modulo_frequency="3m"
         ),
     )
-    feature_dict = feature_group["feature"].dict()
+    feature_dict = feature_group["feature"].model_dump()
     node = get_node(feature_dict["graph"], "groupby_1")
     assert node["parameters"]["offset"] == "12h"
 
@@ -178,7 +178,7 @@ def test_count_distinct_agg_func(snowflake_event_view_with_entity, cust_id_entit
     aggregation_node_name = feature.graph.backward_edges_map[feature_node_name][0]
     aggregation_node = feature.graph.get_node_by_name(aggregation_node_name)
     assert aggregation_node.type == NodeType.NON_TILE_WINDOW_AGGREGATE
-    assert aggregation_node.parameters.dict() == {
+    assert aggregation_node.parameters.model_dump() == {
         "agg_func": "count_distinct",
         "entity_ids": [cust_id_entity.id],
         "feature_job_setting": {

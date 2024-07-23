@@ -81,10 +81,10 @@ class TestItemView(BaseViewTestSuite):
         assert row_subset.event_id_column == view_under_test.event_id_column
         assert row_subset.item_id_column == view_under_test.item_id_column
         assert row_subset.event_table_id == view_under_test.event_table_id
-        assert row_subset.event_view.dict() == view_under_test.event_view.dict()
+        assert row_subset.event_view.model_dump() == view_under_test.event_view.model_dump()
         assert (
-            row_subset.default_feature_job_setting.dict()
-            == view_under_test.default_feature_job_setting.dict()
+            row_subset.default_feature_job_setting.model_dump()
+            == view_under_test.default_feature_job_setting.model_dump()
         )
 
     def get_test_view_column_get_item_series_fixture_override(self, view_under_test):
@@ -113,7 +113,7 @@ def test_get_view__auto_join_columns(
     Test ItemView automatically joins timestamp column and entity columns from related EventTable
     """
     view = snowflake_item_table.get_view(event_suffix="_event_table")
-    view_dict = view.dict()
+    view_dict = view.model_dump()
 
     # Check node is a join node which will make event timestamp and EventTable entities available
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
@@ -304,7 +304,7 @@ def test_setitem__str_key_series_value(
     double_value = snowflake_item_view["item_amount"] * 2
     assert isinstance(double_value, Series)
     snowflake_item_view["double_value"] = double_value
-    assert snowflake_item_view.node.dict(exclude={"name": True}) == {
+    assert snowflake_item_view.node.model_dump(exclude={"name": True}) == {
         "type": NodeType.ASSIGN,
         "parameters": {"name": "double_value", "value": None},
         "output_type": NodeOutputType.FRAME,
@@ -321,7 +321,7 @@ def test_join_event_table_attributes__more_columns(
     """
     view = snowflake_item_view
     joined_view = view.join_event_table_attributes(["col_float"])
-    view_dict = joined_view.dict()
+    view_dict = joined_view.model_dump()
 
     # Check node
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
@@ -483,7 +483,7 @@ def test_item_view__item_table_same_event_id_column_as_event_table(
     item_view = snowflake_item_table_same_event_id.get_view()
     assert item_view.timestamp_column == "event_timestamp"
 
-    view_dict = item_view.dict()
+    view_dict = item_view.model_dump()
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict == {
         "name": "graph_2",
@@ -568,7 +568,7 @@ def test_item_view_groupby__item_table_column(
         feature_names=["item_amount_sum_24h"],
         feature_job_setting=feature_job_setting,
     )["item_amount_sum_24h"]
-    feature_dict = feature.dict()
+    feature_dict = feature.model_dump()
     assert feature_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "graph_1"},
         {"source": "input_2", "target": "graph_2"},
@@ -713,7 +713,7 @@ def test_item_view_groupby__event_id_column(
         feature_name="order_size",
     )
     assert isinstance(feature, Feature)
-    feature_dict = feature.dict()
+    feature_dict = feature.model_dump()
     assert feature_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "graph_1"},
         {"source": "input_2", "target": "graph_2"},
@@ -735,8 +735,8 @@ def test_item_view_groupby__event_id_column(
     # check SDK code generation
     # since the table is not saved, we need to pass in the columns info
     # otherwise, entity id will be missing and code generation will fail during GroupBy construction
-    event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
-    item_table_columns_info = snowflake_item_table.dict(by_alias=True)["columns_info"]
+    event_table_columns_info = snowflake_event_table.model_dump(by_alias=True)["columns_info"]
+    item_table_columns_info = snowflake_item_table.model_dump(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         api_object=feature,
         to_use_saved_data=False,
@@ -932,7 +932,7 @@ def test_as_feature__from_view_column(
     assert feature.name == "ItemAmountFeature"
     assert feature.dtype == DBVarType.FLOAT
 
-    feature_dict = feature.dict()
+    feature_dict = feature.model_dump()
     graph_dict = feature_dict["graph"]
     feature_node_dict = get_node(graph_dict, feature_dict["node_name"])
     lookup_node_dict = get_node(graph_dict, "lookup_1")

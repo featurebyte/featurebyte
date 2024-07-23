@@ -322,7 +322,7 @@ def test_get_change_view__check_entity_id(snowflake_scd_table):
 
     # create change view
     change_view = snowflake_scd_table.get_change_view("col_float")
-    columns_info_dict = change_view.dict()["columns_info"]
+    columns_info_dict = change_view.model_dump()["columns_info"]
     assert columns_info_dict == [
         {
             "critical_data_info": None,

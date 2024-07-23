@@ -566,9 +566,13 @@ def test_get_catalog(catalog):
     exclude = {"created_at": True, "updated_at": True}
     get_grocery_catalog = Catalog.get("grocery")
     assert get_grocery_catalog.saved is True
-    assert get_grocery_catalog.dict(exclude=exclude) == grocery_catalog.dict(exclude=exclude)
-    assert Catalog.get("grocery").dict(exclude=exclude) == get_grocery_catalog.dict(exclude=exclude)
-    assert Catalog.get("creditcard").dict(exclude=exclude) == creditcard_catalog.dict(
+    assert get_grocery_catalog.model_dump(exclude=exclude) == grocery_catalog.model_dump(
+        exclude=exclude
+    )
+    assert Catalog.get("grocery").model_dump(exclude=exclude) == get_grocery_catalog.model_dump(
+        exclude=exclude
+    )
+    assert Catalog.get("creditcard").model_dump(exclude=exclude) == creditcard_catalog.model_dump(
         exclude=exclude
     )
     assert Catalog.get_by_id(id=healthcare_catalog.id) == healthcare_catalog

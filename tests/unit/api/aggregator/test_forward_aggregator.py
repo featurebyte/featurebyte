@@ -54,16 +54,12 @@ def test_forward_aggregate_fill_na(forward_aggregator):
     assert len(conditional_nodes) == 1
     conditional_node = conditional_nodes[0]
     assert conditional_node.type == NodeType.CONDITIONAL
-    assert conditional_node.parameters.dict() == {
-        "value": 1,
-    }
+    assert conditional_node.parameters.model_dump() == {"value": 1}
 
     # Check that the final node is the alias node, and that it has the target name
     assert target_node.type == NodeType.ALIAS
     assert target_node.output_type == NodeOutputType.SERIES
-    assert target_node.parameters.dict() == {
-        "name": "target",
-    }
+    assert target_node.parameters.model_dump() == {"name": "target"}
 
 
 @pytest.mark.parametrize("offset", [None, "1d"])
@@ -88,7 +84,7 @@ def test_forward_aggregate(forward_aggregator, offset):
     forward_aggregate_node = forward_aggregate_nodes[0]
     assert forward_aggregate_node.type == NodeType.FORWARD_AGGREGATE
     assert forward_aggregate_node.output_type == NodeOutputType.FRAME
-    assert forward_aggregate_node.parameters.dict() == {
+    assert forward_aggregate_node.parameters.model_dump() == {
         "keys": forward_aggregator.keys,
         "name": "target",
         "parent": "col_float",
@@ -104,9 +100,7 @@ def test_forward_aggregate(forward_aggregator, offset):
     # Assert Target's current node is the project node
     assert target_node.type == NodeType.PROJECT
     assert target_node.output_type == NodeOutputType.SERIES
-    assert target_node.parameters.dict() == {
-        "columns": ["target"],
-    }
+    assert target_node.parameters.model_dump() == {"columns": ["target"]}
 
     # Get operation structure to verify output category
     operation_structure = target.graph.extract_operation_structure(

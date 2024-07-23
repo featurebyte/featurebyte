@@ -253,7 +253,7 @@ class BaseViewTestSuite:
         double_value = view_under_test[self.col] * 2
         assert isinstance(double_value, Series)
         view_under_test["double_value"] = double_value
-        assert view_under_test.node.dict(exclude={"name": True}) == {
+        assert view_under_test.node.model_dump(exclude={"name": True}) == {
             "type": NodeType.ASSIGN,
             "parameters": {"name": "double_value", "value": None},
             "output_type": NodeOutputType.FRAME,
@@ -276,7 +276,7 @@ class BaseViewTestSuite:
         Test assigning scalar value to a view
         """
         view_under_test["magic_number"] = 1000
-        assert view_under_test.node.dict(exclude={"name": True}) == {
+        assert view_under_test.node.model_dump(exclude={"name": True}) == {
             "type": NodeType.ASSIGN,
             "parameters": {"name": "magic_number", "value": 1000},
             "output_type": NodeOutputType.FRAME,
@@ -311,7 +311,7 @@ class BaseViewTestSuite:
         cust_id = view_under_test[self.col]
         assert isinstance(cust_id, Series)
 
-        assert cust_id.node.dict(exclude={"name": True}) == {
+        assert cust_id.node.model_dump(exclude={"name": True}) == {
             "type": NodeType.PROJECT,
             "parameters": {"columns": [self.col]},
             "output_type": NodeOutputType.SERIES,
@@ -339,7 +339,7 @@ class BaseViewTestSuite:
         assert isinstance(subset_cols, self.view_class)
 
         # note that protected columns are auto-included
-        assert subset_cols.node.dict(exclude={"name": True}) == {
+        assert subset_cols.node.model_dump(exclude={"name": True}) == {
             "type": NodeType.PROJECT,
             "parameters": {"columns": subset_cols.node.parameters.columns},
             "output_type": NodeOutputType.FRAME,
@@ -409,7 +409,7 @@ class BaseViewTestSuite:
         output = column[mask]
         assert output.name == column.name
         assert output.dtype == column.dtype
-        output_dict = output.dict()
+        output_dict = output.model_dump()
         assert output_dict["node_name"] == "filter_1"
         output_graph = QueryGraph(**output_dict["graph"])
         filter_node = next(

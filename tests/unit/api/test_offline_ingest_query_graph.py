@@ -643,7 +643,7 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
     )
 
     # check on-demand view code
-    feature.internal_offline_store_info = offline_store_info.dict(by_alias=True)
+    feature.internal_offline_store_info = offline_store_info.model_dump(by_alias=True)
     check_on_demand_feature_code_generation(feature_model=feature)
 
     # check the actual code

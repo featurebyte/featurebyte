@@ -207,9 +207,13 @@ def test_get_entity(catalog):
     exclude = {"created_at": True, "updated_at": True}
     get_cust_entity = Entity.get("customer")
     assert get_cust_entity.saved is True
-    assert get_cust_entity.dict(exclude=exclude) == cust_entity.dict(exclude=exclude)
-    assert Entity.get("product").dict(exclude=exclude) == prod_entity.dict(exclude=exclude)
-    assert Entity.get("region").dict(exclude=exclude) == region_entity.dict(exclude=exclude)
+    assert get_cust_entity.model_dump(exclude=exclude) == cust_entity.model_dump(exclude=exclude)
+    assert Entity.get("product").model_dump(exclude=exclude) == prod_entity.model_dump(
+        exclude=exclude
+    )
+    assert Entity.get("region").model_dump(exclude=exclude) == region_entity.model_dump(
+        exclude=exclude
+    )
     assert Entity.get_by_id(id=cust_entity.id) == cust_entity
 
     # test unexpected retrieval exception for Entity.get

@@ -27,7 +27,7 @@ def test_point_in_time_request_column():
     """
     point_in_time = RequestColumn.point_in_time()
     assert isinstance(point_in_time, RequestColumn)
-    node_dict = point_in_time.node.dict()
+    node_dict = point_in_time.node.model_dump()
     assert node_dict == {
         "name": "request_column_1",
         "type": "request_column",

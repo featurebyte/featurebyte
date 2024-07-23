@@ -197,7 +197,7 @@ def test_create_dimension_table(snowflake_database_table, dimension_table_dict, 
     assert set(dimension_table.columns).issubset(dir(dimension_table))
     assert dimension_table._ipython_key_completions_() == set(dimension_table.columns)
 
-    output = dimension_table.dict(by_alias=True)
+    output = dimension_table.model_dump(by_alias=True)
     dimension_table_dict["_id"] = dimension_table.id
     dimension_table_dict["created_at"] = dimension_table.created_at
     dimension_table_dict["updated_at"] = dimension_table.updated_at
