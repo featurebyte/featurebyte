@@ -109,7 +109,7 @@ class FeatureByteBaseModel(BaseModel):
         -------
         dict[str, Any]
         """
-        output: dict[str, Any] = json.loads(self.json(by_alias=True, **kwargs))
+        output: dict[str, Any] = json.loads(self.model_dump_json(by_alias=True, **kwargs))
         return output
 
     # pydantic model configuration

@@ -111,8 +111,8 @@ class BaseTaskPayload(FeatureByteBaseModel):
         output["is_revocable"] = self.is_revocable
         return output
 
-    def json(self, *args: Any, **kwargs: Any) -> str:
-        json_string = super().json(*args, **kwargs)
+    def model_dump_json(self, *args: Any, **kwargs: Any) -> str:
+        json_string = super().model_dump_json(*args, **kwargs)
         json_dict = json.loads(json_string)
 
         # include class variables
