@@ -57,9 +57,9 @@ def test_feature_model(feature_model_dict, api_object_to_id):
     feature = FeatureModel(**feature_model_dict)
     feature_json = feature.model_dump_json(by_alias=True)
     loaded_feature = FeatureModel.parse_raw(feature_json)
-    feature_dict = feature.dict(by_alias=True)
+    feature_dict = feature.model_dump(by_alias=True)
     assert loaded_feature.id == feature.id
-    assert loaded_feature.dict(by_alias=True) == feature_dict
+    assert loaded_feature.model_dump(by_alias=True) == feature_dict
     assert feature_dict == {
         "created_at": None,
         "deployed_feature_list_ids": [],
@@ -150,7 +150,7 @@ def test_feature_name_validation(feature_model_dict):
 def test_feature_name_space(feature_namespace_dict):
     """Test feature namespace model"""
     feature_name_space = FeatureNamespaceModel.parse_obj(feature_namespace_dict)
-    serialized_feature_name_space = feature_name_space.dict(exclude={"id": True})
+    serialized_feature_name_space = feature_name_space.model_dump(exclude={"id": True})
     feature_name_space_dict_sorted_ids = {
         key: sorted(value) if key.endswith("_ids") else value
         for key, value in feature_namespace_dict.items()

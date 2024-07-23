@@ -74,7 +74,7 @@ def feature_list_namespace_model_dict_fixture():
 def test_feature_list_model(feature_list_model_dict):
     """Test feature list model"""
     feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
-    serialized_feature_list = feature_list.dict(exclude={"id": True}, by_alias=True)
+    serialized_feature_list = feature_list.model_dump(exclude={"id": True}, by_alias=True)
     feature_list_dict_sorted_ids = {
         key: sorted(value) if key.endswith("_ids") and key != "feature_ids" else value
         for key, value in feature_list_model_dict.items()
@@ -111,7 +111,7 @@ def test_feature_list_model(feature_list_model_dict):
 def test_feature_list_namespace_model(feature_list_namespace_model_dict):
     """Test feature list namespace model"""
     feature_list_namespace = FeatureListNamespaceModel.parse_obj(feature_list_namespace_model_dict)
-    serialized_feature_list_namespace = feature_list_namespace.dict(
+    serialized_feature_list_namespace = feature_list_namespace.model_dump(
         exclude={"id": True}, by_alias=True
     )
     feature_list_namespace_model_dict_sorted_ids = {
@@ -276,7 +276,7 @@ def test_feature_readiness_distribution__worst_cast_worst_case():
     worst_cast_readiness_dist = feat_readiness_dist.worst_case()
     assert feat_readiness_dist.total_count == 7
     assert isinstance(worst_cast_readiness_dist, FeatureReadinessDistribution)
-    assert worst_cast_readiness_dist.dict() == [{"readiness": "DEPRECATED", "count": 7}]
+    assert worst_cast_readiness_dist.model_dump() == [{"readiness": "DEPRECATED", "count": 7}]
 
 
 @pytest.mark.parametrize(
