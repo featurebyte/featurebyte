@@ -47,7 +47,7 @@ class BatchFeatureTableListRecord(BaseMaterializedTableListRecord):
     @classmethod
     def _extract(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         values["feature_store_id"] = values["location"]["feature_store_id"]
         return values

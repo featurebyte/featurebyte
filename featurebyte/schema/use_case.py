@@ -27,7 +27,7 @@ class UseCaseCreate(FeatureByteBaseModel):
     @classmethod
     def _validate_target(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         target_id = values.get("target_id", None)
         target_namespace_id = values.get("target_namespace_id", None)
@@ -54,7 +54,7 @@ class UseCaseUpdate(BaseDocumentServiceUpdateSchema):
     @classmethod
     def _validate_input(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         default_preview_table_id = values.get("default_preview_table_id", None)
         default_eda_table_id = values.get("default_eda_table_id", None)

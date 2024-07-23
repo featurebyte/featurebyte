@@ -35,7 +35,7 @@ class BaseRequestTableListRecord(BaseMaterializedTableListRecord):
     @classmethod
     def _extract_base_request_table_fields(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         values["type"] = values["request_input"]["type"]
         values["feature_store_id"] = values["location"]["feature_store_id"]
