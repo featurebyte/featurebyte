@@ -212,7 +212,7 @@ async def test_feature_list_deployed(
     )
 
     # Check result
-    assert result.dict() == {"features": [{"cust_id": 1.0, "feature_value": 123.0}]}
+    assert result.model_dump() == {"features": [{"cust_id": 1.0, "feature_value": 123.0}]}
 
     # Check query used
     assert len(mock_session_for_online_serving.execute_query_long_running.call_args_list) == 1

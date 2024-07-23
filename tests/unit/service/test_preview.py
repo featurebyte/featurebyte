@@ -105,7 +105,7 @@ def feature_store_sample_fixture(feature_store_preview):
     """
     Fixture for a FeatureStoreSample
     """
-    return FeatureStoreSample(**feature_store_preview.dict())
+    return FeatureStoreSample(**feature_store_preview.model_dump())
 
 
 @pytest.mark.asyncio

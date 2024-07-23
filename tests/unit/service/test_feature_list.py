@@ -34,7 +34,7 @@ from featurebyte.schema.feature_list import (
 @pytest.mark.asyncio
 async def test_create_document__duplicated_feature_error(feature_list_service, feature_list):
     """Test feature creation - document inconsistency error"""
-    data_dict = feature_list.dict(by_alias=True)
+    data_dict = feature_list.model_dump(by_alias=True)
     data_dict["_id"] = ObjectId()
     data_dict["feature_ids"] = data_dict["feature_ids"] * 2
     with pytest.raises(DocumentError) as exc:
@@ -177,13 +177,13 @@ async def test_update_document__inconsistency_error(
     feature_list_service, feature_service, feature_list, feature
 ):
     """Test feature creation - document inconsistency error"""
-    feat_data_dict = feature.dict(by_alias=True)
+    feat_data_dict = feature.model_dump(by_alias=True)
     feat_data_dict["_id"] = ObjectId()
     feat_data_dict["name"] = "random_name"
     feat_data_dict["feature_namespace_id"] = ObjectId()
     new_feat = await feature_service.create_document(data=FeatureServiceCreate(**feat_data_dict))
 
-    flist_data_dict = feature_list.dict(by_alias=True)
+    flist_data_dict = feature_list.model_dump(by_alias=True)
     flist_data_dict["_id"] = ObjectId()
     flist_data_dict["name"] = "random_name"
     flist_data_dict["feature_ids"] = [new_feat.id]
@@ -197,7 +197,7 @@ async def test_update_document__inconsistency_error(
     )
     assert expected_msg in str(exc.value)
 
-    flist_data_dict = feature_list.dict(by_alias=True)
+    flist_data_dict = feature_list.model_dump(by_alias=True)
     flist_data_dict["_id"] = ObjectId()
     flist_data_dict["version"] = {"name": "V220917"}
     flist_data_dict["feature_ids"] += [new_feat.id]

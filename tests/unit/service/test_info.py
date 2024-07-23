@@ -122,7 +122,7 @@ async def test_get_event_table_info(app_container, event_table):
     )
     assert info == EventTableInfo(
         **{
-            **expected_info.dict(),
+            **expected_info.model_dump(),
             "columns_info": [
                 TableColumnInfo(name="col_int", dtype="INT"),
                 TableColumnInfo(name="col_float", dtype="FLOAT", description="Float column"),
@@ -178,7 +178,7 @@ async def test_get_item_table_info(app_container, item_table, event_table):
     )
     assert info == ItemTableInfo(
         **{
-            **expected_info.dict(),
+            **expected_info.model_dump(),
             "columns_info": [
                 TableColumnInfo(name="event_id_col", dtype="INT"),
                 TableColumnInfo(name="item_id_col", dtype="VARCHAR"),
@@ -223,7 +223,7 @@ async def test_get_dimension_table_info(app_container, dimension_table):
     )
     assert info == DimensionTableInfo(
         **{
-            **expected_info.dict(),
+            **expected_info.model_dump(),
             "columns_info": [
                 TableColumnInfo(name="col_int", dtype="INT"),
                 TableColumnInfo(name="col_float", dtype="FLOAT", description="Float column"),
@@ -275,7 +275,7 @@ async def test_get_scd_table_info(app_container, scd_table):
     info = await app_container.scd_table_controller.get_info(document_id=scd_table.id, verbose=True)
     assert info == SCDTableInfo(
         **{
-            **expected_info.dict(),
+            **expected_info.model_dump(),
             "columns_info": [
                 TableColumnInfo(name="col_int", dtype="INT"),
                 TableColumnInfo(name="col_float", dtype="FLOAT"),
@@ -368,7 +368,7 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
     )
     assert info == FeatureInfo(
         **{
-            **expected_info.dict(),
+            **expected_info.model_dump(),
             "versions_info": [
                 FeatureBriefInfo(
                     version=production_ready_feature.version,
@@ -490,11 +490,11 @@ async def test_get_feature_info__complex_feature(
         document_id=feature_iet.id, verbose=False
     )
     expected = {
-        **expected_feature_iet_info.dict(),
+        **expected_feature_iet_info.model_dump(),
         "created_at": info.created_at,
         "updated_at": info.updated_at,
     }
-    assert info.dict() == expected
+    assert info.model_dump() == expected
 
 
 @pytest.mark.asyncio
@@ -524,7 +524,7 @@ async def test_get_feature_info__complex_feature_with_cdi(
     )
     expected_version = expected_feature_iet_info.version
     expected = {
-        **expected_feature_iet_info.dict(),
+        **expected_feature_iet_info.model_dump(),
         "created_at": info.created_at,
         "updated_at": info.updated_at,
         "table_cleaning_operation": {
@@ -541,10 +541,10 @@ async def test_get_feature_info__complex_feature_with_cdi(
             ],
             "default": [],
         },
-        "version": {**expected_version.dict(), "this": new_version.version.to_str()},
+        "version": {**expected_version.model_dump(), "this": new_version.version.to_str()},
         "version_count": 2,
     }
-    assert info.dict() == expected
+    assert info.model_dump() == expected
 
 
 @pytest.mark.asyncio
@@ -621,7 +621,7 @@ async def test_get_feature_list_info(app_container, feature_list, feature_list_n
     info = await controller.get_info(document_id=feature_list.id, verbose=True)
     assert info == FeatureListInfo(
         **{
-            **expected_info.dict(),
+            **expected_info.model_dump(),
             "versions_info": [
                 FeatureListBriefInfo(
                     version=feature_list.version,

@@ -58,7 +58,7 @@ async def test_tabular_source_uniqueness_check_excludes_deprecated_tables(
     """Test tabular source uniqueness check excludes deprecated tables"""
     assert event_table.status == TableStatus.PUBLIC_DRAFT
     new_table_payload = EventTableCreate(
-        **event_table.dict(exclude={"_id": True, "name": True}), name="new_table"
+        **event_table.model_dump(exclude={"_id": True, "name": True}), name="new_table"
     )
     with pytest.raises(DocumentConflictError) as exc:
         await event_table_service.create_document(data=new_table_payload)

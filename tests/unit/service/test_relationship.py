@@ -35,7 +35,7 @@ class FamilyDocumentService(BaseDocumentService):
     async def create_document(self, data):
         insert_id = await self.persistent.insert_one(
             collection_name=self.collection_name,
-            document=data.dict(by_alias=True),
+            document=data.model_dump(by_alias=True),
             user_id=self.user.id,
         )
         return await self.get_document(document_id=insert_id)
@@ -53,7 +53,7 @@ class FamilyDocumentService(BaseDocumentService):
         await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter=self._construct_get_query_filter(document_id=document_id),
-            update={"$set": data.dict(exclude_none=exclude_none)},
+            update={"$set": data.model_dump(exclude_none=exclude_none)},
             user_id=self.user.id,
         )
         if return_document:

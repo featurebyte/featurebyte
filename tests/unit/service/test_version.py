@@ -102,7 +102,7 @@ async def test_create_new_feature_version(
         "entity_ids": [ObjectId(api_object_to_id["entity"])],
     }
     parameters = feature.graph.get_node_by_name("groupby_1").parameters
-    assert parameters.dict() == {
+    assert parameters.model_dump() == {
         **expected_common_params,
         "feature_job_setting": {
             "blind_spot": "600s",
@@ -116,7 +116,7 @@ async def test_create_new_feature_version(
     }
 
     new_parameters = version.graph.get_node_by_name("groupby_1").parameters
-    assert new_parameters.dict() == {
+    assert new_parameters.model_dump() == {
         **expected_common_params,
         "feature_job_setting": {
             "blind_spot": "86400s",
@@ -619,8 +619,8 @@ async def test_create_new_feature_version__with_item_event_feature(
     new_item_view_graph_node = new_version.graph.get_node_by_name("graph_2")
     expected_event_metadata = {**event_metadata, **expected_event_metadata}
     expected_item_metadata = {**item_metadata, **expected_item_metadata}
-    assert new_event_view_graph_node.parameters.metadata.dict() == expected_event_metadata
-    assert new_item_view_graph_node.parameters.metadata.dict() == expected_item_metadata
+    assert new_event_view_graph_node.parameters.metadata.model_dump() == expected_event_metadata
+    assert new_item_view_graph_node.parameters.metadata.model_dump() == expected_item_metadata
 
     # check consistencies
     event_metadata = new_event_view_graph_node.parameters.metadata

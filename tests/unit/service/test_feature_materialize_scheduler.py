@@ -48,7 +48,7 @@ async def fixture_offline_store_feature_table(app_container, feature_job_setting
             query_template=SqlglotExpressionModel(
                 formatted_expression="SELECT DISTINCT cust_id FROM my_table",
             )
-        ).dict(by_alias=True),
+        ).model_dump(by_alias=True),
         catalog_id=app_container.catalog_id,
     )
     await app_container.offline_store_feature_table_service.create_document(feature_table)

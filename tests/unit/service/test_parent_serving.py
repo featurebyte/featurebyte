@@ -129,7 +129,7 @@ async def test_get_join_steps__two_branches(
     assert join_steps == [
         EntityLookupStep(
             id=rel_a_to_b.id,
-            table=data_a_to_b.dict(by_alias=True),
+            table=data_a_to_b.model_dump(by_alias=True),
             parent=EntityLookupInfo(
                 key="b",
                 serving_name="B",
@@ -343,7 +343,9 @@ async def test_get_join_steps__use_provided_relationships(
     # Use [b_is_parent_of_a] as the relationships
     join_steps = await parent_entity_lookup_service.get_required_join_steps(
         entity_info,
-        relationships_info=[EntityRelationshipInfo(**relationship_info_1.dict(by_alias=True))],
+        relationships_info=[
+            EntityRelationshipInfo(**relationship_info_1.model_dump(by_alias=True))
+        ],
     )
     assert join_steps == [
         EntityLookupStep(

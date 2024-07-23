@@ -27,7 +27,7 @@ async def test_update_feature_namespace__no_update_except_updated_at(
     updated_namespace = await feature_readiness_service.update_feature_namespace(
         feature_namespace_id=feature.feature_namespace_id
     )
-    assert updated_namespace.dict(exclude={"updated_at"}) == feature_namespace.dict(
+    assert updated_namespace.model_dump(exclude={"updated_at"}) == feature_namespace.model_dump(
         exclude={"updated_at"}
     )
 
@@ -40,7 +40,7 @@ async def test_update_feature_list__no_update(feature_readiness_service, feature
         from_readiness="DRAFT",
         to_readiness="DRAFT",
     )
-    expected = feature_list.dict(by_alias=True)
+    expected = feature_list.model_dump(by_alias=True)
     expected["feature_clusters"] = None
     assert updated_feature_list == expected
 
@@ -53,9 +53,9 @@ async def test_update_feature_list_namespace__no_update_except_updated_at(
     updated_namespace = await feature_readiness_service.update_feature_list_namespace(
         feature_list_namespace_id=feature_list.feature_list_namespace_id,
     )
-    assert updated_namespace.dict(exclude={"updated_at": True}) == feature_list_namespace.dict(
+    assert updated_namespace.model_dump(
         exclude={"updated_at": True}
-    )
+    ) == feature_list_namespace.model_dump(exclude={"updated_at": True})
 
 
 async def check_states_after_readiness_change(
@@ -88,7 +88,8 @@ async def check_states_after_readiness_change(
     # check feature list version get updated (new feature list readiness distribution get updated)
     updated_flist = await feature_list_service.get_document(document_id=new_feature_list.id)
     assert (
-        updated_flist.readiness_distribution.dict() == expected_feature_list_readiness_distribution
+        updated_flist.readiness_distribution.model_dump()
+        == expected_feature_list_readiness_distribution
     )
 
     # check feature list namespace (new feature list becomes the default one)

@@ -17,7 +17,7 @@ async def test_update_document(feature_namespace_service, feature_service, featu
     assert namespace.feature_ids == [feature.id]
 
     # add new feature with the same feature namespace ID
-    feat_dict = feature.dict(by_alias=True)
+    feat_dict = feature.model_dump(by_alias=True)
     feat_dict["_id"] = ObjectId()
     feat_dict["version"] = {"name": "V220917"}
     new_feat = await feature_service.create_document(data=FeatureServiceCreate(**feat_dict))
@@ -29,7 +29,7 @@ async def test_update_document(feature_namespace_service, feature_service, featu
     assert namespace.feature_ids == sorted([feature.id, new_feat.id])
 
     # add a new feature with different feature namespace ID
-    feat_dict = feature.dict(by_alias=True)
+    feat_dict = feature.model_dump(by_alias=True)
     feat_dict["_id"] = ObjectId()
     feat_dict["name"] = "random_name"
     feat_dict["feature_namespace_id"] = ObjectId()

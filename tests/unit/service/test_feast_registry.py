@@ -82,7 +82,7 @@ async def registry_without_path_fixture(
 ):
     """Fixture for registry without path"""
     registry_id = ObjectId()
-    registry_doc = registry_with_path.dict(by_alias=True)
+    registry_doc = registry_with_path.model_dump(by_alias=True)
     registry_doc["_id"] = registry_id
     registry_doc["registry_path"] = None
     registry_doc["registry"] = registry_with_path.registry

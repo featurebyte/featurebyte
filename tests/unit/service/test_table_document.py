@@ -58,7 +58,7 @@ async def test_table_document_services__creation_conflict(
 ):
     """Test table document services - document creation conflict"""
     with pytest.raises(DocumentConflictError) as exc:
-        event_table_dict = event_table.dict(by_alias=True)
+        event_table_dict = event_table.model_dump(by_alias=True)
         event_table_dict["_id"] = item_table.id
         await event_table_service.create_document(data=EventTableCreate(**event_table_dict))
 
@@ -69,7 +69,7 @@ async def test_table_document_services__creation_conflict(
     assert expected_msg in str(exc.value)
 
     with pytest.raises(DocumentConflictError) as exc:
-        item_table_dict = item_table.dict(by_alias=True)
+        item_table_dict = item_table.model_dump(by_alias=True)
         item_table_dict["_id"] = event_table.id
         await item_table_service.create_document(data=ItemTableCreate(**item_table_dict))
 

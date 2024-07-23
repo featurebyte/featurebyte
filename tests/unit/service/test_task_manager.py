@@ -83,7 +83,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
             retries=0,
             queue="default",
         )
-        document = task.dict(by_alias=True)
+        document = task.model_dump(by_alias=True)
         document["_id"] = str(document["_id"])
         await persistent._db[Task.collection_name()].insert_one(document)
 
@@ -121,7 +121,7 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
             retries=0,
             queue="default",
         )
-        document = task.dict(by_alias=True)
+        document = task.model_dump(by_alias=True)
         document["_id"] = str(document["_id"])
         await persistent._db[Task.collection_name()].insert_one(document)
         time.sleep(0.1)
@@ -219,7 +219,7 @@ async def test_task_manager__revoke_tasks(task_manager, celery, user_id, persist
         retries=0,
         queue="default",
     )
-    document = task.dict(by_alias=True)
+    document = task.model_dump(by_alias=True)
     document["_id"] = str(document["_id"])
     await persistent._db[Task.collection_name()].insert_one(document)
 

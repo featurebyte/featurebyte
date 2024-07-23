@@ -46,7 +46,7 @@ async def test_update_columns_info(
         data=EntityServiceUpdate(table_ids=[other_table_id], primary_table_ids=[other_table_id]),
     )
     new_semantic = await semantic_service.get_or_create_document(name="a_semantic")
-    columns_info = event_table.dict()["columns_info"]
+    columns_info = event_table.model_dump()["columns_info"]
     columns_info[0]["entity_id"] = new_entity.id
     columns_info[0]["semantic_id"] = new_semantic.id
 
@@ -124,7 +124,7 @@ async def test_update_columns_info__critical_data_info(
     """Test update_columns_info (critical data info)"""
     # prepare columns info by adding critical data info & removing all entity ids & semantic ids
     _ = entity, transaction_entity
-    event_table_doc = event_table.dict()
+    event_table_doc = event_table.model_dump()
     columns_info = event_table_doc["columns_info"]
     columns_info[0]["critical_data_info"] = {
         "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
