@@ -78,7 +78,7 @@ class Target(
     )
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = TargetCreate(**self.dict(by_alias=True))
+        data = TargetCreate(**self.model_dump(by_alias=True))
         return data.json_dict()
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
@@ -103,7 +103,7 @@ class Target(
     @classmethod
     def _set_feature_store(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if "feature_store" not in values:
             tabular_source = values.get("tabular_source")

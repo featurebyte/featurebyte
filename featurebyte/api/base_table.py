@@ -546,9 +546,9 @@ class TableApiObject(
             Table data object used for SQL query construction.
         """
         try:
-            return self._table_data_class(**self.cached_model.dict(by_alias=True))
+            return self._table_data_class(**self.cached_model.model_dump(by_alias=True))
         except RecordRetrievalException:
-            return self._table_data_class(**self.dict(by_alias=True))
+            return self._table_data_class(**self.model_dump(by_alias=True))
 
     @property
     def columns_info(self) -> List[ColumnInfo]:
@@ -694,7 +694,9 @@ class TableApiObject(
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None
-        data = self._create_schema_class(**self.dict(by_alias=True))  # pylint: disable=not-callable
+        data = self._create_schema_class(
+            **self.model_dump(by_alias=True)
+        )  # pylint: disable=not-callable
         return data.json_dict()
 
     @classmethod
@@ -752,7 +754,7 @@ class TableApiObject(
             response_dict = response.json()
             if not response_dict["data"]:
                 table = cls(
-                    **data.dict(by_alias=True),
+                    **data.model_dump(by_alias=True),
                     feature_store=source_table.feature_store,
                     _validate_schema=True,
                 )
@@ -1095,7 +1097,7 @@ class TableApiObject(
         self.update(
             update_payload={
                 "column_name": column_name,
-                "critical_data_info": critical_data_info.dict(),
+                "critical_data_info": critical_data_info.model_dump(),
             },
             allow_update_local=False,
             url=f"{self._route}/{self.id}/column_critical_data_info",

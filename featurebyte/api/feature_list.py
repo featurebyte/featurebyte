@@ -393,7 +393,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
         feature_tile_specs = []
         for feature in self.feature_objects.values():
-            tile_specs = ExtendedFeatureModel(**feature.dict(by_alias=True)).tile_specs
+            tile_specs = ExtendedFeatureModel(**feature.model_dump(by_alias=True)).tile_specs
             if tile_specs:
                 feature_tile_specs.append((str(feature.name), tile_specs))
         return feature_tile_specs
@@ -622,7 +622,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     def _get_create_payload(self) -> dict[str, Any]:
         feature_ids = [feature.id for feature in self.feature_objects.values()]
         data = FeatureListCreate(
-            **{**self.dict(by_alias=True, exclude_none=True), "feature_ids": feature_ids}
+            **{**self.model_dump(by_alias=True, exclude_none=True), "feature_ids": feature_ids}
         )
         return data.json_dict()
 
@@ -1365,7 +1365,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             url=self._route,
             json={
                 "source_feature_list_id": str(self.id),
-                "features": [feature.dict() for feature in features] if features else [],
+                "features": [feature.model_dump() for feature in features] if features else [],
                 "allow_unchanged_feature_list_version": True,
             },
         )

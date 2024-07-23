@@ -69,10 +69,10 @@ class SimpleTestView(View):
     def get_join_column(self) -> str:
         return self.join_col
 
-    def dict(self, **kwargs: Any) -> Dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
         if "exclude" in kwargs:
             return {}
-        return super().dict(**kwargs)
+        return super().model_dump(**kwargs)
 
     def set_join_col_override(self, join_col_override: str):
         """
@@ -382,7 +382,7 @@ def test_join__left_join(generic_input_node_params, join_type_param):
     assert joined_view.node_name == "join_1"
 
     # assert graph node
-    view_dict = joined_view.dict()
+    view_dict = joined_view.model_dump()
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict == {
         "name": "join_1",

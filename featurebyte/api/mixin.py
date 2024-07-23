@@ -264,7 +264,7 @@ class SampleMixin(AsyncMixin):
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)  # type: ignore
         payload = FeatureStorePreview(
-            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
+            graph=QueryGraph(**pruned_graph.model_dump(by_alias=True)),
             node_name=mapped_node.name,
             feature_store_id=self.feature_store.id,  # type: ignore
         )
@@ -299,7 +299,7 @@ class SampleMixin(AsyncMixin):
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)  # type: ignore
         return FeatureStoreSample(
-            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
+            graph=QueryGraph(**pruned_graph.model_dump(by_alias=True)),
             node_name=mapped_node.name,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,
@@ -335,7 +335,7 @@ class SampleMixin(AsyncMixin):
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)  # type: ignore
         payload = FeatureStorePreview(
-            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
+            graph=QueryGraph(**pruned_graph.model_dump(by_alias=True)),
             node_name=mapped_node.name,
             feature_store_id=self.feature_store.id,  # type: ignore
         )
@@ -481,7 +481,7 @@ class SampleMixin(AsyncMixin):
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)  # type: ignore
         payload = FeatureStoreSample(
-            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
+            graph=QueryGraph(**pruned_graph.model_dump(by_alias=True)),
             node_name=mapped_node.name,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,

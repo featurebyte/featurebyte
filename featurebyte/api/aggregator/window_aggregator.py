@@ -214,7 +214,7 @@ class WindowAggregator(BaseAggregator):
             "windows": windows,
             "offset": offset,
             "timestamp": timestamp_column or self.view.timestamp_column,
-            "feature_job_setting": parsed_feature_job_setting.dict(),
+            "feature_job_setting": parsed_feature_job_setting.model_dump(),
             "names": feature_names,
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,

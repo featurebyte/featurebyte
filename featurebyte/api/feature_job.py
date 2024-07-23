@@ -394,7 +394,7 @@ class FeatureJobMixin(ApiObject):
             for tile_spec in tile_spec_list:
                 data.append(
                     {
-                        **tile_spec.dict(),
+                        **tile_spec.model_dump(),
                         "aggregation_hash": tile_spec.aggregation_id.split("_")[-1][:8],
                         "feature_name": feature_name,
                     }

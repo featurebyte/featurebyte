@@ -99,7 +99,7 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
             "entity_ids": self.entity_ids,
             "name": target_name,
             "offset": offset,
-            **view.get_common_scd_parameters().dict(),
+            **view.get_common_scd_parameters().model_dump(),
         }
         node = self.view.graph.add_operation(
             node_type=NodeType.FORWARD_AGGREGATE_AS_AT,

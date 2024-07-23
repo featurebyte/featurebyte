@@ -132,7 +132,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return OnlineStore.get_by_id(self.online_store_id)  # pylint: disable=no-member
 
     def _get_create_payload(self) -> Dict[str, Any]:
-        data = CatalogCreate(**self.dict(by_alias=True))
+        data = CatalogCreate(**self.model_dump(by_alias=True))
         return data.json_dict()
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:

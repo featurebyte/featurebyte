@@ -151,7 +151,7 @@ class SCDView(View, GroupByMixin, RawMixin):
         return {
             "scd_parameters": {
                 "left_timestamp_column": left_timestamp_column,
-                **self.get_common_scd_parameters().dict(),
+                **self.get_common_scd_parameters().model_dump(),
             }
         }
 
@@ -169,6 +169,6 @@ class SCDView(View, GroupByMixin, RawMixin):
         return {
             "scd_parameters": {
                 "offset": offset,
-                **self.get_common_scd_parameters().dict(),
+                **self.get_common_scd_parameters().model_dump(),
             }
         }

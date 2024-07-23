@@ -32,7 +32,7 @@ class OnlineStore(OnlineStoreModel, SavableApiObject, DeletableApiObject):
     _list_fields: ClassVar[List[str]] = ["name", "details", "created_at"]
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = OnlineStoreCreate(**self.dict(by_alias=True))
+        data = OnlineStoreCreate(**self.model_dump(by_alias=True))
         return data.json_dict()
 
     def info(self, verbose: bool = False) -> Dict[str, Any]:
