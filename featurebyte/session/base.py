@@ -157,9 +157,9 @@ class BaseSession(BaseModel):
         """
         if self.is_threadsafe():
             return self
-        new_session = self.copy()
+        new_session = self.model_copy()
         new_session._initialize_connection()  # pylint: disable=protected-access
-        return new_session  # type: ignore
+        return new_session
 
     @property
     def no_schema_error(self) -> Type[Exception]:

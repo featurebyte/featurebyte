@@ -585,7 +585,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         -------
         node: Node
         """
-        node = node.copy()
+        node = node.model_copy()
         node.name = self._generate_node_name(node.type)
         self.nodes.append(node)
         self.nodes_map[node.name] = node
