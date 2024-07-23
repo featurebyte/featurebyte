@@ -221,7 +221,7 @@ class Storage(ABC):
         remote_path: Path
             Path of remote file to upload to
         """
-        await self.put_text(data.json(), remote_path)
+        await self.put_text(data.model_dump_json(), remote_path)
 
     async def get_object(self, remote_path: Path) -> Any:
         """

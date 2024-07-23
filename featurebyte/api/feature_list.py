@@ -1087,7 +1087,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         client = Configurations().get_client()
         response = client.post(
             "/feature_list/historical_features_sql",
-            data={"payload": payload.json()},
+            data={"payload": payload.model_dump_json()},
             files={"observation_set": dataframe_to_arrow_bytes(observation_set)},
         )
         if response.status_code != HTTPStatus.OK:
@@ -1264,7 +1264,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             files = {"observation_set": dataframe_to_arrow_bytes(observation_set)}
         historical_feature_table_doc = self.post_async_task(
             route="/historical_feature_table",
-            payload={"payload": feature_table_create_params.json()},
+            payload={"payload": feature_table_create_params.model_dump_json()},
             is_payload_json=False,
             files=files,
         )

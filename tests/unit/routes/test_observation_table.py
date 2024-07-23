@@ -326,7 +326,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             write_file_obj.flush()
             with open(write_file_obj.name, "rb") as file_obj:
                 files = {"observation_set": file_obj}
-                data = {"payload": upload_request.json()}
+                data = {"payload": upload_request.model_dump_json()}
 
                 # Call upload route
                 response = test_api_client.post(f"{self.base_route}/upload", data=data, files=files)
@@ -414,7 +414,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
             write_file_obj.flush()
             with open(write_file_obj.name, "rb") as file_obj:
                 files = {"observation_set": file_obj}
-                data = {"payload": upload_request.json()}
+                data = {"payload": upload_request.model_dump_json()}
 
                 # Call upload route
                 response = test_api_client.post(f"{self.base_route}/upload", data=data, files=files)

@@ -55,7 +55,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
     """Test feature model serialize & deserialize"""
     # pylint: disable=duplicate-code
     feature = FeatureModel(**feature_model_dict)
-    feature_json = feature.json(by_alias=True)
+    feature_json = feature.model_dump_json(by_alias=True)
     loaded_feature = FeatureModel.parse_raw(feature_json)
     feature_dict = feature.dict(by_alias=True)
     assert loaded_feature.id == feature.id
@@ -157,7 +157,7 @@ def test_feature_name_space(feature_namespace_dict):
     }
     assert serialized_feature_name_space == feature_name_space_dict_sorted_ids
     loaded_feature_name_space = FeatureNamespaceModel.parse_raw(
-        feature_name_space.json(by_alias=True)
+        feature_name_space.model_dump_json(by_alias=True)
     )
     assert loaded_feature_name_space == feature_name_space
 

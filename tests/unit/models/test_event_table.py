@@ -107,7 +107,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         "is_deleted": False,
     }
     assert event_table.dict() == expected_event_table_dict
-    event_table_json = event_table.json(by_alias=True)
+    event_table_json = event_table.model_dump_json(by_alias=True)
     event_table_loaded = EventTableModel.parse_raw(event_table_json)
     assert event_table_loaded == event_table
 

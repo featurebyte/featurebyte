@@ -274,15 +274,15 @@ def test_feature_to_json(float_feature):
     Test feature to_json
     """
     # do not include any keys
-    output_include = float_feature.json(include={})
+    output_include = float_feature.model_dump_json(include={})
     assert output_include == "{}"
 
     # exclude graph key
-    output_exclude = float_feature.json(exclude={"graph": True})
+    output_exclude = float_feature.model_dump_json(exclude={"graph": True})
     assert "graph" not in output_exclude
 
     # exclude_none
-    output_exclude_none = float_feature.json(exclude_none=True)
+    output_exclude_none = float_feature.model_dump_json(exclude_none=True)
     assert "is_default" not in output_exclude_none
 
 

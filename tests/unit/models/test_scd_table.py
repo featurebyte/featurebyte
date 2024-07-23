@@ -139,7 +139,7 @@ def test_scd_table_model(scd_table_model, expected_scd_table_model):
     """Test creation, serialization and deserialization of SCDTable"""
     # rename current_flag to current_flag_column (check the model handle it properly)
     assert scd_table_model.dict() == expected_scd_table_model
-    scd_table_json = scd_table_model.json(by_alias=True)
+    scd_table_json = scd_table_model.model_dump_json(by_alias=True)
     scd_table_loaded = SCDTableModel.parse_raw(scd_table_json)
     assert scd_table_loaded == scd_table_model
 

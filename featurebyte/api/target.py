@@ -381,7 +381,7 @@ class Target(
             files = {"observation_set": dataframe_to_arrow_bytes(observation_table)}
         observation_table_doc = self.post_async_task(
             route="/target_table",
-            payload={"payload": target_table_create_params.json()},
+            payload={"payload": target_table_create_params.model_dump_json()},
             is_payload_json=False,
             files=files,
         )

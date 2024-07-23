@@ -326,7 +326,7 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             context_id=None,
             observation_table_id=obs_table_id,
         )
-        data = {"payload": create.json()}
+        data = {"payload": create.model_dump_json()}
 
         with mock.patch(
             "featurebyte.service.entity_validation.EntityValidationService.validate_entities_or_prepare_for_parent_serving"
