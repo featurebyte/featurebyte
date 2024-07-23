@@ -18,6 +18,9 @@ class TestClassA:
     Test class A
     """
 
+    # add this to fix PytestCollectionWarning
+    __test__ = False
+
     def __init__(self):
         self.a = "a"
 
@@ -26,6 +29,9 @@ class TestClassB:
     """
     Test class B
     """
+
+    # add this to fix PytestCollectionWarning
+    __test__ = False
 
     def __init__(self, test_class_a: TestClassA):
         self.test_class_a = test_class_a
@@ -36,6 +42,9 @@ class TestClassC:
     Test class C
     """
 
+    # add this to fix PytestCollectionWarning
+    __test__ = False
+
     def __init__(self, test_class_d: TestClassD):
         self.test_class_d = test_class_d
 
@@ -45,6 +54,9 @@ class TestClassD:
     Test class D
     """
 
+    # add this to fix PytestCollectionWarning
+    __test__ = False
+
     def __init__(self, test_class_e: TestClassE):
         self.test_class_e = test_class_e
 
@@ -53,6 +65,9 @@ class TestClassE:
     """
     Test class E
     """
+
+    # add this to fix PytestCollectionWarning
+    __test__ = False
 
     def __init__(self, test_class_c: TestClassC):
         self.test_class_c = test_class_c

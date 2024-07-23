@@ -27,6 +27,9 @@ class TestServiceWithOneDep:
     Test service with one dep
     """
 
+    # add this to fix PytestCollectionWarning
+    __test__ = False
+
     def __init__(self, no_deps: NoDeps):
         self.no_deps = no_deps
 
@@ -35,6 +38,9 @@ class TestService:
     """
     Test service
     """
+
+    # add this to fix PytestCollectionWarning
+    __test__ = False
 
     def __init__(self, user: Any, persistent: Any, catalog_id: ObjectId):
         self.user = user
@@ -47,6 +53,9 @@ class TestServiceWithOtherDeps:
     Test service with other deps
     """
 
+    # add this to fix PytestCollectionWarning
+    __test__ = False
+
     def __init__(self, user: Any, persistent: Any, catalog_id: ObjectId, other_dep: Any):
         self.user = user
         self.persistent = persistent
@@ -58,6 +67,9 @@ class TestController:
     """
     Test controller
     """
+
+    # add this to fix PytestCollectionWarning
+    __test__ = False
 
     def __init__(self, test_service: TestService):
         self.test_service = test_service

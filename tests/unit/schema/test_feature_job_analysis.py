@@ -12,6 +12,9 @@ from featurebyte.schema.feature_job_setting_analysis import PandasTimestamp
 class TestModel(BaseModel):
     """Test model for timestamp"""
 
+    # add this to fix PytestCollectionWarning
+    __test__ = False
+
     timestamp: PandasTimestamp
 
     # pydantic configuration
