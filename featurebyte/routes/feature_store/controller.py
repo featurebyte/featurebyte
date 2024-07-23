@@ -155,7 +155,7 @@ class FeatureStoreController(
             )
             # Try to persist credential
             credential_doc = await self.credential_service.create_document(
-                data=CredentialCreate(**credential.dict(by_alias=True))
+                data=CredentialCreate(**credential.model_dump(by_alias=True))
             )
 
             # If no error thrown from creating, try to create the metadata table with the feature store ID.
@@ -479,10 +479,10 @@ class FeatureStoreController(
         """
         document: FeatureStoreModel = await self.service.get_document(feature_store_id)
         # ensure fields are updatable
-        details_dict = data.dict(exclude_none=True)
+        details_dict = data.model_dump(exclude_none=True)
         for key, _ in details_dict.items():
             assert key in document.details.updatable_fields, f"Field is not updatable: {key}"
-        updated_details = {**document.details.dict(by_alias=True), **details_dict}
+        updated_details = {**document.details.model_dump(by_alias=True), **details_dict}
 
         # test connection
         update_data = DatabaseDetailsServiceUpdate(details=updated_details)

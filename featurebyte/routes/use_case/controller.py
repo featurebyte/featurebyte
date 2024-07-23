@@ -260,7 +260,7 @@ class UseCaseController(
         ]
 
         return UseCaseInfo(
-            **use_case.dict(),
+            **use_case.model_dump(),
             author=author,
             primary_entities=EntityBriefInfoList(entity_briefs),
             context_name=context.name,

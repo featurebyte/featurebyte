@@ -114,7 +114,7 @@ class UserDefinedFunctionController(
         # create user defined function & validate
         catalog_id = None if data.is_global else self.active_catalog_id
         service_data = UserDefinedFunctionServiceCreate(
-            **data.dict(by_alias=True),
+            **data.model_dump(by_alias=True),
             catalog_id=catalog_id,
             feature_store_id=feature_store.id,
         )
@@ -157,7 +157,10 @@ class UserDefinedFunctionController(
 
         # check if no changes found in function parameters
         updated_document = UserDefinedFunctionModel(
-            **{**document.dict(by_alias=True), **data.dict(by_alias=True, exclude_none=True)}
+            **{
+                **document.model_dump(by_alias=True),
+                **data.model_dump(by_alias=True, exclude_none=True),
+            }
         )
         if updated_document == document:
             raise DocumentUpdateError("No changes detected in user defined function")
@@ -184,7 +187,7 @@ class UserDefinedFunctionController(
         output_document = await self.service.update_document(
             document_id=ObjectId(document_id),
             data=UserDefinedFunctionServiceUpdate(
-                **data.dict(by_alias=True, exclude_none=True),
+                **data.model_dump(by_alias=True, exclude_none=True),
                 signature=updated_document.generate_signature(),
             ),
         )

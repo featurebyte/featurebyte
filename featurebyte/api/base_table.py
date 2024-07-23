@@ -694,9 +694,9 @@ class TableApiObject(
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None
-        data = self._create_schema_class(
+        data = self._create_schema_class(  # pylint: disable=not-callable
             **self.model_dump(by_alias=True)
-        )  # pylint: disable=not-callable
+        )
         return data.json_dict()
 
     @classmethod

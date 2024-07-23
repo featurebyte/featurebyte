@@ -104,7 +104,9 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
             Entity object with updated attribute(s)
         """
         await self.service.update_document(
-            document_id=entity_id, data=EntityServiceUpdate(**data.dict()), return_document=False
+            document_id=entity_id,
+            data=EntityServiceUpdate(**data.model_dump()),
+            return_document=False,
         )
         return await self.get(document_id=entity_id)
 
