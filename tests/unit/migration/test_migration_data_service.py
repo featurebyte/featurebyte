@@ -20,7 +20,7 @@ async def test_get_or_create_document(schema_metadata_service):
     assert created_doc.version == 0
     docs = await schema_metadata_service.list_documents_as_dict()
     assert len(docs["data"]) == 1
-    assert docs["data"][0] == created_doc.dict(by_alias=True)
+    assert docs["data"][0] == created_doc.model_dump(by_alias=True)
 
     retrieved_doc = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA
@@ -28,7 +28,7 @@ async def test_get_or_create_document(schema_metadata_service):
     assert retrieved_doc == created_doc
     docs = await schema_metadata_service.list_documents_as_dict()
     assert len(docs["data"]) == 1
-    assert docs["data"][0] == retrieved_doc.dict(by_alias=True)
+    assert docs["data"][0] == retrieved_doc.model_dump(by_alias=True)
 
 
 @pytest.mark.asyncio

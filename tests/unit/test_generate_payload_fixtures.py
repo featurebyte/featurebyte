@@ -57,7 +57,7 @@ def replace_obj_id(obj: Any, obj_id: ObjectId) -> Any:
     """
     Helper function to replace the object ID of the type
     """
-    params = obj.dict()
+    params = obj.model_dump()
     params["_id"] = obj_id
     return type(obj)(**params)
 
@@ -247,7 +247,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     )
     graph, node = snowflake_event_table.frame.extract_pruned_graph_and_node()
     feature_store_sample = FeatureStoreSample(
-        graph=QueryGraph(**graph.dict(by_alias=True)),
+        graph=QueryGraph(**graph.model_dump(by_alias=True)),
         node_name=node.name,
         feature_store_id=snowflake_feature_store.id,
         from_timestamp="2012-11-24T11:00:00",

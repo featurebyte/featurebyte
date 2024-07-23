@@ -922,7 +922,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):  # pylint: disable=too-man
     @pytest.fixture(name="feature_store_details")
     def feature_store_details_fixture(self, snowflake_feature_store):
         """Fixture for feature store details"""
-        return FeatureStoreDetails(**snowflake_feature_store.dict())
+        return FeatureStoreDetails(**snowflake_feature_store.model_dump())
 
     @pytest.fixture(name="columns_info")
     def column_info_fixture(self):

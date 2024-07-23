@@ -71,7 +71,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         credential_model.encrypt_credentials()
         await persistent.insert_one(
             collection_name=CredentialModel.collection_name(),
-            document=credential_model.dict(by_alias=True),
+            document=credential_model.model_dump(by_alias=True),
             user_id=user_id,
         )
 

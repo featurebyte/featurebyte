@@ -8,7 +8,7 @@ from featurebyte.models.base import VersionIdentifier
 def test_extended_feature_model__float_feature(float_feature, snowflake_feature_store):
     """Test ExtendedFeatureModel has correct tile_specs"""
     model = ExtendedFeatureModel(
-        **float_feature.dict(exclude={"version": True}),
+        **float_feature.model_dump(exclude={"version": True}),
         version=VersionIdentifier(name=get_version()),
     )
     aggregation_id = "e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
@@ -75,7 +75,7 @@ def test_extended_feature_model__agg_per_category_feature(
 ):
     """Test ExtendedFeatureModel has correct tile_specs for category groupby feature"""
     model = ExtendedFeatureModel(
-        **agg_per_category_feature.dict(exclude={"version": True}),
+        **agg_per_category_feature.model_dump(exclude={"version": True}),
         version=VersionIdentifier(name=get_version()),
     )
     aggregation_id = "254bde514925221168a524ba7467c9b6ef83685d"

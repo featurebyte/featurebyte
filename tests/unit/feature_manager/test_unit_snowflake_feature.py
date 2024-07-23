@@ -20,7 +20,7 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
     ExtendedFeatureModel object fixture
     """
     return ExtendedFeatureModel(
-        **mock_snowflake_feature.dict(exclude={"version": True}),
+        **mock_snowflake_feature.model_dump(exclude={"version": True}),
         version=get_version(),
     )
 

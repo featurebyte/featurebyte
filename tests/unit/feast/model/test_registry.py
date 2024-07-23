@@ -17,7 +17,7 @@ def test_feast_registry_model(feast_registry_proto):
         registry=registry_bytes,
         feature_store_id=feature_store_id,
     )
-    feast_registry_dict = feast_registry.dict()
+    feast_registry_dict = feast_registry.model_dump()
     assert "registry" not in feast_registry_dict
 
     deserialize_feast_registry = FeastRegistryModel(**feast_registry_dict, registry=registry_bytes)
