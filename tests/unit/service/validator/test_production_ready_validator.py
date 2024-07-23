@@ -214,7 +214,7 @@ async def test_get_feature_job_setting_diffs__settings_differ(
 
     # create a feature with a different feature job setting from the event table
     event_view = snowflake_event_table_with_entity.get_view()
-    updated_feature_job_setting = feature_group_feature_job_setting.copy()
+    updated_feature_job_setting = feature_group_feature_job_setting.model_copy()
     assert updated_feature_job_setting.blind_spot == "600s"
     new_feature_job_settings_dict = updated_feature_job_setting.json_dict()
     new_feature_job_settings_dict["blind_spot"] = "300s"  # set a new value

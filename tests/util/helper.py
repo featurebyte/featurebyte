@@ -747,7 +747,7 @@ def check_on_demand_feature_code_generation(
 
     # introduce some missing values to test null handling for datetime
     if df.shape[0] > 1:
-        df["POINT_IN_TIME"].iloc[1] = None
+        df.loc[df.POINT_IN_TIME == df.POINT_IN_TIME.max(), "POINT_IN_TIME"] = None
 
     # generate on demand feature view code
     odfv_codes = offline_store_info.odfv_info.codes

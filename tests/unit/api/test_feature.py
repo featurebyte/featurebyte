@@ -891,7 +891,7 @@ def check_offline_store_ingest_graph_on_composite_feature(
             relation_table_id=ObjectId(),
         ),
     ]
-    new_feature_model = feature_model.copy(update={"relationships_info": relationships_info})
+    new_feature_model = feature_model.model_copy(update={"relationships_info": relationships_info})
     transformer = OfflineStoreIngestQueryGraphTransformer(graph=new_feature_model.graph)
     decomposed_result = transformer.transform(
         target_node=new_feature_model.node,

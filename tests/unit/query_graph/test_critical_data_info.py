@@ -3,7 +3,7 @@ Tests for featurebyte.query_graph.graph_node.critical_data_info
 """
 
 import pytest
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
