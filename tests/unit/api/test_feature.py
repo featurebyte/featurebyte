@@ -229,7 +229,7 @@ def test_feature_deserialization(
     global_graph = GlobalQueryGraph()
     float_feature_dict["_id"] = float_feature_dict.pop("id")
     float_feature_dict["feature_store"] = snowflake_feature_store
-    deserialized_float_feature = Feature.parse_obj(float_feature_dict)
+    deserialized_float_feature = Feature.model_validate(float_feature_dict)
     assert deserialized_float_feature.saved is False
     assert deserialized_float_feature.id == float_feature.id
     assert deserialized_float_feature.name == float_feature.name

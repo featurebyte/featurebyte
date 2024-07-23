@@ -109,7 +109,7 @@ def test_serialization_deserialization__clean_global_graph(graph_four_nodes):
     graph, _, _, _, _ = graph_four_nodes
     check_internal_state_after_deserialization(graph)
     graph_dict = graph.model_dump()
-    deserialized_graph = QueryGraph.parse_obj(graph_dict)
+    deserialized_graph = QueryGraph.model_validate(graph_dict)
     assert graph == deserialized_graph
 
     # clean up global query graph state & load the deserialized graph to the clean global query graph
@@ -163,7 +163,7 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe)
     ).construct_preview_sql(mapped_node_before_load.name)
 
     # deserialize the graph, load the graph to global query graph & check the generated query
-    graph = QueryGraph.parse_obj(pruned_graph.model_dump())
+    graph = QueryGraph.model_validate(pruned_graph.model_dump())
     _, node_name_map = GlobalQueryGraph().load(graph)
     node_global = GlobalQueryGraph().get_node_by_name(node_name_map[mapped_node.name])
     assert (

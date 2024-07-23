@@ -229,7 +229,7 @@ def test_deserialization(
     _ = snowflake_execute_query
     # setup proper configuration to deserialize the event table object
     event_table_dict["feature_store"] = snowflake_feature_store
-    event_table = EventTable.parse_obj(event_table_dict)
+    event_table = EventTable.model_validate(event_table_dict)
     assert event_table.preview_sql() == expected_snowflake_table_preview_query
 
 
@@ -243,13 +243,13 @@ def test_deserialization__column_name_not_found(
     event_table_dict["feature_store"] = snowflake_feature_store
     event_table_dict["record_creation_timestamp_column"] = "some_random_name"
     with pytest.raises(ValueError) as exc:
-        EventTable.parse_obj(event_table_dict)
+        EventTable.model_validate(event_table_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
     event_table_dict["record_creation_timestamp_column"] = "created_at"
     event_table_dict["event_timestamp_column"] = "some_timestamp_column"
     with pytest.raises(ValueError) as exc:
-        EventTable.parse_obj(event_table_dict)
+        EventTable.model_validate(event_table_dict)
     assert 'Column "some_timestamp_column" not found in the table!' in str(exc.value)
 
 

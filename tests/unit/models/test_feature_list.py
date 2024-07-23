@@ -73,7 +73,7 @@ def feature_list_namespace_model_dict_fixture():
 
 def test_feature_list_model(feature_list_model_dict):
     """Test feature list model"""
-    feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
+    feature_list = FeatureListModel.model_validate(feature_list_model_dict)
     serialized_feature_list = feature_list.model_dump(exclude={"id": True}, by_alias=True)
     feature_list_dict_sorted_ids = {
         key: sorted(value) if key.endswith("_ids") and key != "feature_ids" else value
@@ -94,13 +94,13 @@ def test_feature_list_model(feature_list_model_dict):
     feature_list_model_dict["readiness_distribution"] = [
         {"readiness": "PRODUCTION_READY", "count": 2}
     ]
-    updated_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
+    updated_feature_list = FeatureListModel.model_validate(feature_list_model_dict)
     assert updated_feature_list.readiness_distribution.derive_production_ready_fraction() == 1.0
 
     # DEV-556: check older record conversion
     feature_list_model_dict["_id"] = updated_feature_list.id
     feature_list_model_dict["version"] = "V220710"
-    loaded_old_feature_list = FeatureListModel.parse_obj(feature_list_model_dict)
+    loaded_old_feature_list = FeatureListModel.model_validate(feature_list_model_dict)
     compare_pydantic_obj(loaded_old_feature_list.version, {"name": "V220710", "suffix": None})
     assert loaded_old_feature_list == updated_feature_list
 
@@ -110,7 +110,9 @@ def test_feature_list_model(feature_list_model_dict):
 
 def test_feature_list_namespace_model(feature_list_namespace_model_dict):
     """Test feature list namespace model"""
-    feature_list_namespace = FeatureListNamespaceModel.parse_obj(feature_list_namespace_model_dict)
+    feature_list_namespace = FeatureListNamespaceModel.model_validate(
+        feature_list_namespace_model_dict
+    )
     serialized_feature_list_namespace = feature_list_namespace.model_dump(
         exclude={"id": True}, by_alias=True
     )

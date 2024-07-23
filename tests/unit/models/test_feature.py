@@ -149,7 +149,7 @@ def test_feature_name_validation(feature_model_dict):
 
 def test_feature_name_space(feature_namespace_dict):
     """Test feature namespace model"""
-    feature_name_space = FeatureNamespaceModel.parse_obj(feature_namespace_dict)
+    feature_name_space = FeatureNamespaceModel.model_validate(feature_namespace_dict)
     serialized_feature_name_space = feature_name_space.model_dump(exclude={"id": True})
     feature_name_space_dict_sorted_ids = {
         key: sorted(value) if key.endswith("_ids") else value

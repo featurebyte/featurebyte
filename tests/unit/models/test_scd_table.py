@@ -150,7 +150,7 @@ def test_missing_scd_table_id_column_errors(expected_scd_table_model, column):
     # Remove the `column` so that we can test the missing column validation
     expected_scd_table_model.pop(column)
     with pytest.raises(ValidationError) as exc_info:
-        SCDTableModel.parse_obj(expected_scd_table_model)
+        SCDTableModel.model_validate(expected_scd_table_model)
 
     errors = exc_info.value.errors()
     assert len(errors) == 1
@@ -163,7 +163,7 @@ def test_incorrect_scd_table_id_type_errors(expected_scd_table_model):
     # Update type to non str
     expected_scd_table_model["natural_key_column"] = arbitrary_test_date_time
     with pytest.raises(ValidationError) as exc_info:
-        SCDTableModel.parse_obj(expected_scd_table_model)
+        SCDTableModel.model_validate(expected_scd_table_model)
 
     errors = exc_info.value.errors()
     assert len(errors) == 1

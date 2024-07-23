@@ -107,7 +107,7 @@ def test_missing_dimension_table_id_column_errors(expected_dimension_table_model
     # Remove the "dimension_table_id_column" so that we can test the missing column validation
     expected_dimension_table_model.pop("dimension_id_column")
     with pytest.raises(ValidationError) as exc_info:
-        DimensionTableModel.parse_obj(expected_dimension_table_model)
+        DimensionTableModel.model_validate(expected_dimension_table_model)
 
     errors = exc_info.value.errors()
     assert len(errors) == 1
@@ -120,7 +120,7 @@ def test_incorrect_dimension_table_id_type_errors(expected_dimension_table_model
     # Update type to non str
     expected_dimension_table_model["dimension_id_column"] = arbitrary_test_date_time
     with pytest.raises(ValidationError) as exc_info:
-        DimensionTableModel.parse_obj(expected_dimension_table_model)
+        DimensionTableModel.model_validate(expected_dimension_table_model)
 
     errors = exc_info.value.errors()
     assert len(errors) == 1
