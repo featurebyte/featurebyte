@@ -267,7 +267,7 @@ def test_timezone_offset__manually_specified_constant(timestamp_series):
     """
     timestamp_hour = timestamp_series.dt.tz_offset("+08:00").hour
 
-    assert timestamp_hour.node.parameters.dict() == {
+    assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": "+08:00",
     }
@@ -281,11 +281,14 @@ def test_timezone_offset__manually_specified_column(timestamp_series, varchar_se
     """
     timestamp_hour = timestamp_series.dt.tz_offset(varchar_series).hour
 
-    assert timestamp_hour.node.parameters.dict() == {"property": "hour", "timezone_offset": None}
+    assert timestamp_hour.node.parameters.model_dump() == {
+        "property": "hour",
+        "timezone_offset": None,
+    }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2
     _, tz_offset_node = dt_extract_input_nodes
-    assert timestamp_hour.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+    assert timestamp_hour.graph.get_node_by_name(tz_offset_node).parameters.model_dump() == {
         "columns": ["PRODUCT_ACTION"]
     }
 

@@ -24,7 +24,7 @@ def test__getitem__series_key(int_series, bool_series):
     """
     series = int_series[bool_series]
     assert series.parent is None
-    series_dict = series.dict()
+    series_dict = series.model_dump()
     assert series_dict["node_name"] == "filter_1"
     assert series_dict["name"] == int_series.name
     assert series_dict["dtype"] == int_series.dtype
@@ -94,7 +94,7 @@ def test__setitem__bool_series_key_scalar_value(dataframe, bool_series, column, 
     assert series.parent is dataframe
     series[bool_series] = value
     assert series.parent is dataframe
-    series_dict = series.dict()
+    series_dict = series.model_dump()
     assert series_dict["node_name"] == "project_3"
     cond_node = get_node(series_dict["graph"], "conditional_1")
     assert cond_node == {
@@ -128,7 +128,7 @@ def test__setitem__cond_assign_with_same_input_nodes(bool_series):
     """
     bool_series[bool_series] = True
     assert bool_series.parent is not None
-    bool_series_dict = bool_series.dict()
+    bool_series_dict = bool_series.model_dump()
     assert bool_series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "conditional_1"},
@@ -146,7 +146,7 @@ def test__setitem__cond_assign_consecutive(dataframe, bool_series):
     series = dataframe["VALUE"]
     series[bool_series] = 100
     series[bool_series] = 200
-    series_dict = series.dict()
+    series_dict = series.model_dump()
     cond1_node = get_node(series_dict["graph"], "conditional_1")
     cond2_node = get_node(series_dict["graph"], "conditional_2")
     assert cond1_node == {
@@ -184,7 +184,7 @@ def test__setitem__conditional_assign_series(int_series):
     double_series = int_series * 2
     mask = int_series > 5
     int_series[mask] = double_series[mask]
-    int_series_dict = int_series.dict()
+    int_series_dict = int_series.model_dump()
     assert int_series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "gt_1"},
@@ -206,7 +206,7 @@ def test__setitem__conditional_assign_unnamed_series(int_series, bool_series):
     """
     temp_series = int_series + 1234
     temp_series[bool_series] = 0
-    temp_series_dict = temp_series.dict()
+    temp_series_dict = temp_series.model_dump()
     # Unnamed series stays unnamed (not a PROJECT node)
     assert temp_series_dict["node_name"] == "conditional_1"
     cond_node = get_node(temp_series_dict["graph"], "conditional_1")
@@ -293,7 +293,7 @@ def test_logical_operators(bool_series, int_series):
     output_and_series = bool_series & bool_series
     assert output_and_series.name is None
     assert output_and_series.parent is None
-    output_and_series_dict = output_and_series.dict()
+    output_and_series_dict = output_and_series.model_dump()
 
     assert output_and_series_dict["node_name"] == "and_1"
     and_node = get_node(output_and_series_dict["graph"], "and_1")
@@ -312,7 +312,7 @@ def test_logical_operators(bool_series, int_series):
     output_or_scalar = bool_series | False
     assert output_or_scalar.name is None
     assert output_or_scalar.parent is None
-    output_or_scalar_dict = output_or_scalar.dict()
+    output_or_scalar_dict = output_or_scalar.model_dump()
     assert output_or_scalar_dict["node_name"] == "or_1"
     node = get_node(output_or_scalar_dict["graph"], "or_1")
     assert node == {
@@ -350,8 +350,8 @@ def _check_node_equality(
     """
     Check left node & right node equality
     """
-    left_node_dict = left_node.dict(exclude=exclude)
-    assert left_node_dict == right_node.dict(exclude=exclude)
+    left_node_dict = left_node.model_dump(exclude=exclude)
+    assert left_node_dict == right_node.model_dump(exclude=exclude)
     parameters = left_node_dict["parameters"]
     if has_value_params:
         assert "value" in parameters
@@ -773,7 +773,7 @@ def test_date_add_operator__date_diff_timedelta(timestamp_series, timedelta_seri
         ),
         exclude={"name": True},
     )
-    series_dict = new_series.dict()
+    series_dict = new_series.model_dump()
     assert series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "input_1", "target": "project_2"},
@@ -800,7 +800,7 @@ def test_date_add_operator__constructed_timedelta(timestamp_series, timedelta_se
         ),
         exclude={"name": True},
     )
-    series_dict = new_series.dict()
+    series_dict = new_series.model_dump()
     assert series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "timedelta_1"},
@@ -830,7 +830,7 @@ def test_date_add_operator__scalar_timedelta(timestamp_series, right_side_op):
         ),
         exclude={"name": True},
     )
-    series_dict = new_series.dict()
+    series_dict = new_series.model_dump()
     assert series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "date_add_1"},
@@ -903,7 +903,7 @@ def test_fillna(float_series):
     Test fillna operation
     """
     float_series.fillna(0.0)
-    float_series_dict = float_series.dict()
+    float_series_dict = float_series.model_dump()
     assert float_series_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "is_null_1"},
@@ -1105,7 +1105,7 @@ def test_numeric_operations(
     new_series = op_func(float_series)
     assert_series_attributes_equal(new_series, float_series)
     assert new_series.dtype == expected_dtype
-    assert new_series.node.parameters.dict() == expected_params
+    assert new_series.node.parameters.model_dump() == expected_params
     assert new_series.node.type == expected_node_type
     assert new_series.node.output_type == NodeOutputType.SERIES
     expected_sql = expression_sql_template.format(expression=expected_expr)
@@ -1167,7 +1167,7 @@ def test_scalar_timestamp__valid(
     Test scalar timestamp value in a relational operation
     """
     result = op_func(timestamp_series, scalar_timestamp)
-    assert result.node.parameters.value.dict() == {
+    assert result.node.parameters.value.model_dump() == {
         "iso_format_str": "2023-01-15T10:00:00",
         "type": "timestamp",
     }
@@ -1189,7 +1189,7 @@ def test_scalar_timestamp__with_tz(timestamp_series, scalar_timestamp_tz):
     Test scalar timestamp value with timezone in a relational operation
     """
     result = timestamp_series > scalar_timestamp_tz
-    assert result.node.parameters.value.dict() == {
+    assert result.node.parameters.value.model_dump() == {
         "iso_format_str": "2023-01-15T10:00:00+08:00",
         "type": "timestamp",
     }

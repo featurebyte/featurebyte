@@ -27,7 +27,7 @@ def test__getitem__str_key(dataframe, item, expected_type):
     """
     series = dataframe[item]
     assert isinstance(series, Series)
-    series_dict = series.dict()
+    series_dict = series.model_dump()
     assert series_dict["name"] == item
     assert series_dict["dtype"] == expected_type
     assert series_dict["node_name"] == "project_1"
@@ -56,7 +56,7 @@ def test__getitem__list_of_str_key(dataframe):
     """
     sub_dataframe = dataframe[["CUST_ID", "VALUE"]]
     assert isinstance(sub_dataframe, Frame)
-    sub_dataframe_dict = sub_dataframe.dict()
+    sub_dataframe_dict = sub_dataframe.model_dump()
     assert sub_dataframe_dict["columns_info"] == [
         {
             "name": "CUST_ID",
@@ -103,7 +103,7 @@ def test__getitem__series_key(dataframe, bool_series):
     assert sub_dataframe.columns_info == dataframe.columns_info
     assert isinstance(sub_dataframe, Frame)
     assert sub_dataframe.row_index_lineage == ("input_1", "filter_1")
-    sub_dataframe_dict = sub_dataframe.dict()
+    sub_dataframe_dict = sub_dataframe.model_dump()
     assert sub_dataframe_dict["node_name"] == "filter_1"
     node = get_node(sub_dataframe_dict["graph"], "filter_1")
     assert node == {
@@ -172,7 +172,7 @@ def test__setitem__str_key_scalar_value(
     Test scalar value assignment
     """
     dataframe[key] = value
-    dataframe_dict = dataframe.dict()
+    dataframe_dict = dataframe.model_dump()
     assert dataframe.column_var_type_map[key] == expected_type
     assert dataframe_dict["node_name"] == "assign_1"
     node = get_node(dataframe_dict["graph"], "assign_1")
@@ -193,7 +193,7 @@ def test__setitem__tuple_assignment_with_mask(dataframe):
     mask = dataframe["MASK"]
     key_to_use = "VALUE"
     dataframe[mask, key_to_use] = 1
-    dataframe_dict = dataframe.dict()
+    dataframe_dict = dataframe.model_dump()
     node = get_node(dataframe_dict["graph"], "conditional_1")
     assert node == {
         "name": "conditional_1",
@@ -230,7 +230,7 @@ def test__setitem__str_key_series_value(
     value = dataframe[value_key]
     assert isinstance(value, Series)
     dataframe[key] = value
-    dataframe_dict = dataframe.dict()
+    dataframe_dict = dataframe.model_dump()
     assert dataframe.column_var_type_map[key] == expected_type
     assert dataframe_dict["node_name"] == "assign_1"
     node = get_node(dataframe_dict["graph"], "assign_1")
@@ -300,8 +300,8 @@ def test_multiple_statements(dataframe):
     dataframe["amount"] = cust_id + dataframe["VALUE"]
     dataframe["vip_customer"] = (dataframe["CUST_ID"] < 1000) & (dataframe["amount"] > 1000.0)
 
-    cust_id_dict = cust_id.dict()
-    dataframe_dict = dataframe.dict()
+    cust_id_dict = cust_id.model_dump()
+    dataframe_dict = dataframe.model_dump()
 
     assert cust_id_dict["name"] == "CUST_ID"
     assert cust_id_dict["node_name"] == "project_2"
@@ -452,7 +452,7 @@ def test_frame__dict(dataframe):
     unused_dataframe = dataframe[dataframe["VALUE"] > 100.0]
     filtered_dataframe = dataframe[dataframe["MASK"]]
     sub_dataframe = filtered_dataframe[["VALUE", "CUST_ID"]]
-    sub_dataframe_dict = sub_dataframe.dict()
+    sub_dataframe_dict = sub_dataframe.model_dump()
     assert isinstance(unused_dataframe, Frame)
     assert sub_dataframe.row_index_lineage == ("input_1", "filter_2")
     sub_dataframe_dict["feature_store"] = dataframe.feature_store
@@ -525,7 +525,7 @@ def test_frame__project_always_uses_current_node_as_input(dataframe):
 
     # check the pruned graph (expected to be improved in the future - project_1 should be pruned
     # automatically since it is redundant)
-    graph = cust_id.dict()["graph"]
+    graph = cust_id.model_dump()["graph"]
     assert graph["edges"] == [
         {"source": "input_1", "target": "project_1"},
         {"source": "project_1", "target": "project_2"},
