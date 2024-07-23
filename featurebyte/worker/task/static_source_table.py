@@ -59,7 +59,9 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask[StaticSourceTableTaskPa
                     db_session, location.table_details
                 )
             )
-            logger.debug("Creating a new StaticSourceTable", extra=location.table_details.dict())
+            logger.debug(
+                "Creating a new StaticSourceTable", extra=location.table_details.model_dump()
+            )
             static_source_table = StaticSourceTableModel(
                 _id=payload.output_document_id,
                 user_id=payload.user_id,

@@ -113,7 +113,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                 db_session, location.table_details
             )
             logger.debug(
-                "Creating a new HistoricalFeatureTable", extra=location.table_details.dict()
+                "Creating a new HistoricalFeatureTable", extra=location.table_details.model_dump()
             )
             historical_feature_table = HistoricalFeatureTableModel(
                 _id=payload.output_document_id,

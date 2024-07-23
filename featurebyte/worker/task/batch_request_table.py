@@ -59,7 +59,9 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
             columns_info, num_rows = await service.get_columns_info_and_num_rows(
                 db_session, location.table_details
             )
-            logger.debug("Creating a new BatchRequestTable", extra=location.table_details.dict())
+            logger.debug(
+                "Creating a new BatchRequestTable", extra=location.table_details.model_dump()
+            )
             batch_request_table = BatchRequestTableModel(
                 _id=payload.output_document_id,
                 user_id=payload.user_id,

@@ -89,7 +89,9 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
             ) = await self.batch_request_table_service.get_columns_info_and_num_rows(
                 db_session, location.table_details
             )
-            logger.debug("Creating a new BatchFeatureTable", extra=location.table_details.dict())
+            logger.debug(
+                "Creating a new BatchFeatureTable", extra=location.table_details.model_dump()
+            )
             batch_feature_table_model = BatchFeatureTableModel(
                 _id=payload.output_document_id,
                 user_id=payload.user_id,

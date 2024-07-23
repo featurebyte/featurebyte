@@ -70,7 +70,9 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 )
             )
 
-            logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())
+            logger.debug(
+                "Creating a new ObservationTable", extra=location.table_details.model_dump()
+            )
             primary_entity_ids = payload.primary_entity_ids or []
             observation_table = ObservationTableModel(
                 _id=payload.output_document_id,

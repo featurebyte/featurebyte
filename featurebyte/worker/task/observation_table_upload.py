@@ -92,7 +92,9 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
             )
 
             # Store metadata of the observation table in mongo
-            logger.debug("Creating a new ObservationTable", extra=location.table_details.dict())
+            logger.debug(
+                "Creating a new ObservationTable", extra=location.table_details.model_dump()
+            )
             observation_table = ObservationTableModel(
                 _id=payload.output_document_id,
                 user_id=payload.user_id,

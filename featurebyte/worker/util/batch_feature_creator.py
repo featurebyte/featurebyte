@@ -323,7 +323,7 @@ class BatchFeatureCreator:
             feature_create = FeatureServiceCreate(
                 _id=feature_item.id,
                 name=feature_item.name,
-                graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
+                graph=QueryGraph(**pruned_graph.model_dump(by_alias=True)),
                 node_name=node_name_map[feature_item.node_name],
                 tabular_source=feature_item.tabular_source,
             )

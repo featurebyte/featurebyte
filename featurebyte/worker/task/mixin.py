@@ -55,7 +55,7 @@ class DataWarehouseMixin:
         except Exception as exc:
             logger.error(
                 "Failed to create request table. Dropping table.",
-                extra={"error": str(exc), "task_payload": payload.dict()},
+                extra={"error": str(exc), "task_payload": payload.model_dump()},
             )
             assert table_details.schema_name is not None
             assert table_details.database_name is not None
