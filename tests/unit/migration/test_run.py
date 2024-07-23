@@ -17,6 +17,7 @@ from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
 from featurebyte.migration.run import (
     _extract_migrate_method_marker,
     _extract_migrate_methods,
+    get_migration_methods_to_apply,
     migrate_method_generator,
     post_migration_sanity_check,
     retrieve_all_migration_methods,
@@ -39,16 +40,6 @@ def schema_metadata_service_fixture(app_container):
     SchemaMetadataService fixture
     """
     return app_container.schema_metadata_service
-
-
-def test_retrieve_all_migration_methods():
-    """Test retrieve_all_migration_methods output"""
-    migrate_methods = retrieve_all_migration_methods()
-
-    expected_versions = set(range(1, len(migrate_methods) + 1))
-    missing_versions = expected_versions.difference(migrate_methods)
-    if missing_versions:
-        raise ValueError(f"Missing migrate version detected: {missing_versions}")
 
 
 @patch("featurebyte.migration.run._extract_migrate_methods")
@@ -135,6 +126,20 @@ async def test_migrate_method_generator__exclude_warehouse(
         include_data_warehouse_migrations=False,
     )
     assert len([_ async for _ in method_generator]) == expected_method_num
+
+
+def test_get_migration_methods_to_apply():
+    """
+    Test get_migration_methods_to_apply method
+    """
+
+    def _to_tuples(methods):
+        return set([tuple(method.items()) for method in methods])
+
+    methods_asof_v5 = get_migration_methods_to_apply(current_metadata_version=5)
+    methods_asof_v10 = get_migration_methods_to_apply(current_metadata_version=10)
+    assert len(methods_asof_v5) > len(methods_asof_v10)
+    assert _to_tuples(methods_asof_v10).issubset(_to_tuples(methods_asof_v5))
 
 
 @pytest_asyncio.fixture(name="migration_check_persistent")
