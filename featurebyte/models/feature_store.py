@@ -43,7 +43,7 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
         -------
         FeatureStoreDetails
         """
-        return FeatureStoreDetails(**self.dict(by_alias=True))
+        return FeatureStoreDetails(**self.model_dump(by_alias=True))
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """
@@ -177,7 +177,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         -------
         BaseTableData
         """
-        return self._table_data_class(**self.dict(by_alias=True))
+        return self._table_data_class(**self.model_dump(by_alias=True))
 
     @property
     def table_primary_key_entity_ids(self) -> List[PydanticObjectId]:

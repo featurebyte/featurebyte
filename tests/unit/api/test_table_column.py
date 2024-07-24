@@ -114,7 +114,7 @@ def _check_event_table_with_critical_data_info(event_table):
     # update critical data info with empty cleaning operation list
     assert event_table.col_boolean.info.critical_data_info is None
     event_table.col_boolean.update_critical_data_info(cleaning_operations=[])
-    assert event_table.col_boolean.info.dict() == {
+    assert event_table.col_boolean.info.model_dump() == {
         "name": "col_boolean",
         "dtype": "BOOL",
         "entity_id": None,

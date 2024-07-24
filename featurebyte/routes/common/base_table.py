@@ -128,7 +128,9 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
         for col_info in document.columns_info:
             semantic = column_semantic_map.get(col_info.name)
             if semantic:
-                columns_info.append(ColumnInfo(**{**col_info.dict(), "semantic_id": semantic.id}))
+                columns_info.append(
+                    ColumnInfo(**{**col_info.model_dump(), "semantic_id": semantic.id})
+                )
             else:
                 columns_info.append(col_info)
 
@@ -225,7 +227,9 @@ class BaseTableDocumentController(  # pylint: disable=too-many-instance-attribut
             )
 
         # update other parameters
-        update_dict = data.dict(exclude={"status": True, "columns_info": True}, exclude_none=True)
+        update_dict = data.model_dump(
+            exclude={"status": True, "columns_info": True}, exclude_none=True
+        )
         if update_dict:
             await self.service.update_document(
                 document_id=document_id,

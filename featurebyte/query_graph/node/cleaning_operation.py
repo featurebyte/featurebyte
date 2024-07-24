@@ -48,7 +48,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
 
     def __str__(self) -> str:
         class_name = self.__class__.__name__
-        return f"{class_name}({self.dict()})"
+        return f"{class_name}({self.model_dump()})"
 
     def add_cleaning_operation(
         self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType

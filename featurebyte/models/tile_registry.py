@@ -41,7 +41,7 @@ class LastRunMetadata(FeatureByteBaseModel):
     def _convert_start_date(cls, values: Any) -> Any:
         # DEV-556: backward compatibility after renaming field
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if values.get("start_date"):
             values["tile_end_date"] = values["start_date"]

@@ -61,7 +61,7 @@ class SCDTableModel(SCDTableData, TableModel):
     def _handle_current_flag_name(cls, values: Any) -> Any:
         # DEV-556: remove this after migration
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if "current_flag" in values:
             values["current_flag_column"] = values["current_flag"]
@@ -89,7 +89,7 @@ class SCDTableModel(SCDTableData, TableModel):
         metadata: Union[ViewMetadata, ChangeViewMetadata],
         **kwargs: Any,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
-        table_data = SCDTableData(**self.dict(by_alias=True)).clone(
+        table_data = SCDTableData(**self.model_dump(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations,
         )
         if isinstance(metadata, ChangeViewMetadata):

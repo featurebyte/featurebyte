@@ -95,7 +95,7 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
     @classmethod
     def _validate_payload(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if (
             not values.get("skip_batch_feature_creation", False)

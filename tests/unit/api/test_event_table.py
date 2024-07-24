@@ -164,7 +164,7 @@ def test_create_event_table(snowflake_database_table, event_table_dict, catalog)
     assert set(event_table.columns).issubset(dir(event_table))
     assert event_table._ipython_key_completions_() == set(event_table.columns)
 
-    output = event_table.dict(by_alias=True)
+    output = event_table.model_dump(by_alias=True)
     event_table_dict["_id"] = event_table.id
     event_table_dict["created_at"] = event_table.created_at
     event_table_dict["updated_at"] = event_table.updated_at
@@ -229,7 +229,7 @@ def test_deserialization(
     _ = snowflake_execute_query
     # setup proper configuration to deserialize the event table object
     event_table_dict["feature_store"] = snowflake_feature_store
-    event_table = EventTable.parse_obj(event_table_dict)
+    event_table = EventTable.model_validate(event_table_dict)
     assert event_table.preview_sql() == expected_snowflake_table_preview_query
 
 
@@ -243,13 +243,13 @@ def test_deserialization__column_name_not_found(
     event_table_dict["feature_store"] = snowflake_feature_store
     event_table_dict["record_creation_timestamp_column"] = "some_random_name"
     with pytest.raises(ValueError) as exc:
-        EventTable.parse_obj(event_table_dict)
+        EventTable.model_validate(event_table_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
     event_table_dict["record_creation_timestamp_column"] = "created_at"
     event_table_dict["event_timestamp_column"] = "some_timestamp_column"
     with pytest.raises(ValueError) as exc:
-        EventTable.parse_obj(event_table_dict)
+        EventTable.model_validate(event_table_dict)
     assert 'Column "some_timestamp_column" not found in the table!' in str(exc.value)
 
 

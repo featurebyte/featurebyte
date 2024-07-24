@@ -130,7 +130,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         BaseTableData
             Table data object used for SQL query construction.
         """
-        return self._table_data_class(**self.dict(by_alias=True))
+        return self._table_data_class(**self.model_dump(by_alias=True))
 
     @property
     def frame(self) -> TableDataFrame:
@@ -146,7 +146,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         # into the global query graph.
         graph, node = self.construct_graph_and_node(
             feature_store_details=self.feature_store.get_feature_store_details(),
-            table_data_dict=self.table_data.dict(by_alias=True),
+            table_data_dict=self.table_data.model_dump(by_alias=True),
         )
         return TableDataFrame(
             feature_store=self.feature_store,

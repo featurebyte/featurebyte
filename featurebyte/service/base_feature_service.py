@@ -102,7 +102,7 @@ class BaseFeatureService(
         -------
         FeatureOrTargetDerivedData
         """
-        query_graph = QueryGraph(**graph.dict(by_alias=True))
+        query_graph = QueryGraph(**graph.model_dump(by_alias=True))
         entity_ids = query_graph.get_entity_ids(node_name=node_name)
         extractor = self.entity_relationship_extractor_service
         entity_id_to_entity = await extractor.get_entity_id_to_entity(entity_ids=entity_ids)

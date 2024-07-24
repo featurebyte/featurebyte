@@ -40,7 +40,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         try:
             await persistent.insert_one(
                 collection_name=FeatureStoreModel.collection_name(),
-                document=FeatureStoreModel(**payload).dict(by_alias=True),
+                document=FeatureStoreModel(**payload).model_dump(by_alias=True),
                 user_id=None,
             )
         except DuplicateDocumentError:
@@ -52,7 +52,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         payload["catalog_id"] = catalog.id
         await persistent.insert_one(
             collection_name=EventTableModel.collection_name(),
-            document=EventTableModel(**payload).dict(by_alias=True),
+            document=EventTableModel(**payload).model_dump(by_alias=True),
             user_id=None,
         )
 
@@ -295,7 +295,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
                 "featurebyte.worker.task.feature_job_setting_analysis.SessionManagerService.get_feature_store_session"
             ),
         ):
-            feature_store = FeatureStoreModel(**snowflake_feature_store.dict(by_alias=True))
+            feature_store = FeatureStoreModel(**snowflake_feature_store.model_dump(by_alias=True))
             mock_get_document.return_value = feature_store
             feature_store.details = DatabricksDetails(
                 host="hostname",

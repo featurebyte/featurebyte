@@ -190,7 +190,7 @@ class SessionValidatorService:
             Feature store ID if present. If not, returns None.
         """
         response = await self.feature_store_service.list_documents_as_dict(
-            query_filter={"details": details.dict()}
+            query_filter={"details": details.model_dump()}
         )
 
         count = response["total"]

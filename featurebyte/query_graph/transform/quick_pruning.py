@@ -34,7 +34,7 @@ class QuickGraphStructurePruningTransformer(
         ]
         inserted_node = global_state.graph.add_operation(
             node_type=node.type,
-            node_params=node.parameters.dict(),
+            node_params=node.parameters.model_dump(),
             node_output_type=node.output_type,
             input_nodes=input_nodes,
         )

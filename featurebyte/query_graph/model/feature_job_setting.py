@@ -88,7 +88,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
         """
         _ = cls
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         # handle backward compatibility
         if "frequency" in values and "period" not in values:

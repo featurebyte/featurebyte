@@ -70,7 +70,7 @@ class FeatureNamespaceController(
             document_id=document.default_feature_id
         )
         output = FeatureNamespaceModelResponse(
-            **document.dict(by_alias=True),
+            **document.model_dump(by_alias=True),
             primary_table_ids=default_feature.primary_table_ids,
             primary_entity_ids=default_feature.primary_entity_ids,
         )

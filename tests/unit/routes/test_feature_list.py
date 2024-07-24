@@ -2,12 +2,10 @@
 Tests for FeatureList route
 """
 
-import collections
-
 # pylint: disable=too-many-lines
 import os
 import textwrap
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from http import HTTPStatus
 from unittest.mock import AsyncMock, Mock, call, patch
 
@@ -757,7 +755,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         test_api_client, _ = test_api_client_persistent
         expected_df = pd.DataFrame({"a": [0, 1, 2]})
         mock_session = mock_get_session.return_value
-        mock_session.list_table_schema.return_value = collections.OrderedDict(
+        mock_session.list_table_schema.return_value = OrderedDict(
             {
                 "cust_id": ColumnSpecWithDescription(
                     name="cust_id",
@@ -840,7 +838,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-p
         assert len(feature_clusters) == 1
         expected_feature_cluster = featurelist_feature_clusters[0]
         graph = QueryGraphModel(**expected_feature_cluster["graph"])
-        groupby_node = graph.get_node_by_name("groupby_1").parameters.dict()
+        groupby_node = graph.get_node_by_name("groupby_1").parameters.model_dump()
         groupby_node["names"] = ["sum_30m"]
         groupby_node["windows"] = ["30m"]
         assert feature_clusters[0] == expected_feature_cluster

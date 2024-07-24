@@ -198,7 +198,7 @@ class ViewConstructionService:
         GraphInconsistencyError
             If the graph has unexpected structure
         """
-        query_graph = QueryGraph(**query_graph.dict(by_alias=True))
+        query_graph = QueryGraph(**query_graph.model_dump(by_alias=True))
         node_name_to_replacement_node: dict[str, Node] = {}
         table_name_to_column_cleaning_operations: dict[str, list[ColumnCleaningOperation]] = {
             table_clean_op.table_name: table_clean_op.column_cleaning_operations
@@ -296,7 +296,7 @@ class ViewConstructionService:
             table_cleaning_operations=table_cleaning_operations,
             use_source_settings=False,
         )
-        updated_query_graph, node_name_map = QueryGraph(**query_graph.dict()).reconstruct(
+        updated_query_graph, node_name_map = QueryGraph(**query_graph.model_dump()).reconstruct(
             node_name_to_replacement_node=node_name_to_replacement_node,
             regenerate_groupby_hash=True,
         )

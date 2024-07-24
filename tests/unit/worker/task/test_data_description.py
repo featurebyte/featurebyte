@@ -49,7 +49,7 @@ class TestDataDescriptionTask(BaseTaskTestSuite):
         try:
             await persistent.insert_one(
                 collection_name=FeatureStoreModel.collection_name(),
-                document=FeatureStoreModel(**payload).dict(by_alias=True),
+                document=FeatureStoreModel(**payload).model_dump(by_alias=True),
                 user_id=None,
             )
         except DuplicateDocumentError:

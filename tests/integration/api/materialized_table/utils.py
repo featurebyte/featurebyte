@@ -38,7 +38,7 @@ def check_location_valid(table_details: TableDetails, session: BaseSession):
     """
     Check that the location attribute of the materialized table is valid
     """
-    table_details_dict = table_details.dict()
+    table_details_dict = table_details.model_dump()
     table_details_dict.pop("table_name")
     assert table_details_dict == {
         "database_name": session.database_name,

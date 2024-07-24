@@ -361,7 +361,7 @@ class EventTable(TableApiObject):
         >>> event_table.update_default_feature_job_setting(new_feature_job_setting)  # doctest: +SKIP
         """
         self.update(
-            update_payload={"default_feature_job_setting": feature_job_setting.dict()},
+            update_payload={"default_feature_job_setting": feature_job_setting.model_dump()},
             allow_update_local=True,
             add_internal_prefix=True,
         )

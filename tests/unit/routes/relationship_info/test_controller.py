@@ -116,7 +116,7 @@ async def test_validate_relationship_info_create__no_error_thrown(
     _ = entities
 
     # Try to create relationship info again - expect no error
-    create_dict = relationship_info_create.dict()
+    create_dict = relationship_info_create.model_dump()
     create_dict["relation_table_id"] = event_table.id  # update table source ID to a valid table ID
     relationship_info_create = RelationshipInfoCreate(**create_dict)
     await relationship_info_controller._validate_relationship_info_create(relationship_info_create)

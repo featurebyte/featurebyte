@@ -247,7 +247,7 @@ class FeaturePreviewService(PreviewService):
         dict[str, Any]
             Dataframe converted to json string
         """
-        params = feature_preview.dict()
+        params = feature_preview.model_dump()
         if feature_preview.feature_id is not None:
             document = await self.feature_service.get_document(feature_preview.feature_id)
             params["graph"] = document.graph
@@ -269,7 +269,7 @@ class FeaturePreviewService(PreviewService):
         dict[str, Any]
             Dataframe converted to json string
         """
-        params = target_preview.dict()
+        params = target_preview.model_dump()
         if target_preview.target_id is not None:
             document = await self.target_service.get_document(target_preview.target_id)
             params["graph"] = document.graph

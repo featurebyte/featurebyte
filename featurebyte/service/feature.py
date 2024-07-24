@@ -97,7 +97,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         -------
         FeatureModel
         """
-        data_dict = data.dict(by_alias=True)
+        data_dict = data.model_dump(by_alias=True)
         graph = QueryGraph(**data_dict.pop("graph"))
         node = graph.get_node_by_name(data_dict.pop("node_name"))
         # Prepare the graph to store. This performs the required pruning steps to remove any
@@ -225,10 +225,10 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
                 document={
-                    **document.dict(by_alias=True),
+                    **document.model_dump(by_alias=True),
                     "definition": definition,
                     "definition_hash": definition_hash_output.definition_hash,
-                    "raw_graph": data.graph.dict(),
+                    "raw_graph": data.graph.model_dump(),
                 },
                 user_id=self.user.id,
             )
@@ -291,7 +291,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             If the specified feature name & version cannot be found
         """
         out_feat = None
-        query_filter = {"name": name, "version": version.dict()}
+        query_filter = {"name": name, "version": version.model_dump()}
         async for feat in self.list_documents_iterator(query_filter=query_filter):
             out_feat = feat
 

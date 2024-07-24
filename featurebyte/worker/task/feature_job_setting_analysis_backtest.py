@@ -70,12 +70,12 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask[FeatureJobSettingAnalysisBa
         analysis_doc = await self.feature_job_setting_analysis_service.get_document(
             document_id=document_id
         )
-        document = analysis_doc.dict(by_alias=True)
+        document = analysis_doc.model_dump(by_alias=True)
 
         # retrieve analysis data from storage
         remote_path = Path(f"feature_job_setting_analysis/{document_id}/data.json")
         analysis_data_raw = await self.storage.get_object(remote_path=remote_path)
-        analysis_data = FeatureJobSettingAnalysisData(**analysis_data_raw).dict()
+        analysis_data = FeatureJobSettingAnalysisData(**analysis_data_raw).model_dump()
 
         # reconstruct analysis object
         analysis_result = analysis_data.pop("analysis_result")

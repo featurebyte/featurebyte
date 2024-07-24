@@ -894,7 +894,9 @@ class PreviewMixin(BaseGraphInterpreter):
         OperationStructure
         """
         flat_node = self.get_flattened_node(node_name)
-        operation_structure = QueryGraph(**self.query_graph.dict()).extract_operation_structure(
+        operation_structure = QueryGraph(
+            **self.query_graph.model_dump()
+        ).extract_operation_structure(
             self.query_graph.get_node_by_name(flat_node.name), keep_all_source_columns=True
         )
         return operation_structure

@@ -435,7 +435,7 @@ class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instan
             has_ttl=feature_table_dict["has_ttl"],
             feature_job_setting=feature_job_setting,
         )
-        update_schema = FeaturesUpdate(**feature_table_model.dict(by_alias=True))
+        update_schema = FeaturesUpdate(**feature_table_model.model_dump(by_alias=True))
         return cast(
             OfflineStoreFeatureTableModel,
             await self.offline_store_feature_table_service.update_document(

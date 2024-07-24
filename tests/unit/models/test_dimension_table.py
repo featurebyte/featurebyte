@@ -96,7 +96,7 @@ def get_base_expected_dimension_table_model(dimension_table_model, dimension_col
 
 def test_dimension_table_model(dimension_table_model, expected_dimension_table_model):
     """Test creation, serialization and deserialization of DimensionTable"""
-    assert dimension_table_model.dict() == expected_dimension_table_model
+    assert dimension_table_model.model_dump() == expected_dimension_table_model
     dimension_table_json = dimension_table_model.model_dump_json(by_alias=True)
     dimension_table_loaded = DimensionTableModel.parse_raw(dimension_table_json)
     assert dimension_table_loaded == dimension_table_model
@@ -107,7 +107,7 @@ def test_missing_dimension_table_id_column_errors(expected_dimension_table_model
     # Remove the "dimension_table_id_column" so that we can test the missing column validation
     expected_dimension_table_model.pop("dimension_id_column")
     with pytest.raises(ValidationError) as exc_info:
-        DimensionTableModel.parse_obj(expected_dimension_table_model)
+        DimensionTableModel.model_validate(expected_dimension_table_model)
 
     errors = exc_info.value.errors()
     assert len(errors) == 1
@@ -120,7 +120,7 @@ def test_incorrect_dimension_table_id_type_errors(expected_dimension_table_model
     # Update type to non str
     expected_dimension_table_model["dimension_id_column"] = arbitrary_test_date_time
     with pytest.raises(ValidationError) as exc_info:
-        DimensionTableModel.parse_obj(expected_dimension_table_model)
+        DimensionTableModel.model_validate(expected_dimension_table_model)
 
     errors = exc_info.value.errors()
     assert len(errors) == 1

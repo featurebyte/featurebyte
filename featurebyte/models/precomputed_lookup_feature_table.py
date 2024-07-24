@@ -171,7 +171,7 @@ def get_precomputed_lookup_feature_table(
                     feature_store=feature_store_model,
                 )
             )
-        ).dict(by_alias=True),
+        ).model_dump(by_alias=True),
         precomputed_lookup_feature_table_info=PrecomputedLookupFeatureTableInfo(
             lookup_steps=lookup_steps,
             source_feature_table_id=feature_table_id,

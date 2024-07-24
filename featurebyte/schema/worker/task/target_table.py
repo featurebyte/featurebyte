@@ -28,7 +28,7 @@ class TargetTableTaskPayload(BaseTaskPayload, TargetTableCreate):
     @classmethod
     def _check_observation_data(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         observation_set_storage_path = values.get("observation_set_storage_path", None)
         observation_table_id = values.get("observation_table_id", None)

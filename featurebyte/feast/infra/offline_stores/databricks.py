@@ -24,7 +24,7 @@ class DataBricksOfflineStoreConfig(BaseSparkThriftOfflineStoreConfig):
     database_credential: AccessTokenCredential
 
     def get_db_session(self) -> BaseSparkSession:
-        return DatabricksSession(**self.dict())
+        return DatabricksSession(**self.model_dump())
 
 
 class DataBricksUnityOfflineStoreConfig(BaseSparkThriftOfflineStoreConfig):
@@ -37,7 +37,7 @@ class DataBricksUnityOfflineStoreConfig(BaseSparkThriftOfflineStoreConfig):
     database_credential: AccessTokenCredential
 
     def get_db_session(self) -> BaseSparkSession:
-        return DatabricksUnitySession(**self.dict())
+        return DatabricksUnitySession(**self.model_dump())
 
 
 class DataBricksOfflineStore(SparkThriftOfflineStore):

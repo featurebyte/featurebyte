@@ -126,11 +126,11 @@ class VersionService:
                 if feature_job_setting:
                     # input node will be used when we need to support updating specific
                     # GroupBy node given event table ID
-                    parameters = group_by_node.parameters.dict()
-                    parameters["feature_job_setting"] = feature_job_setting.dict()
-                    if group_by_node.parameters.dict() != parameters:
+                    parameters = group_by_node.parameters.model_dump()
+                    parameters["feature_job_setting"] = feature_job_setting.model_dump()
+                    if group_by_node.parameters.model_dump() != parameters:
                         node_name_to_replacement_node[group_by_node.name] = GroupByNode(
-                            **{**group_by_node.dict(), "parameters": parameters}
+                            **{**group_by_node.model_dump(), "parameters": parameters}
                         )
 
         return node_name_to_replacement_node
@@ -161,7 +161,7 @@ class VersionService:
         node_name = node_name_map[feature.node_name]
 
         # prune the graph to remove unused nodes
-        pruned_graph, node_name_map = QueryGraph(**graph.dict(by_alias=True)).prune(
+        pruned_graph, node_name_map = QueryGraph(**graph.model_dump(by_alias=True)).prune(
             target_node=graph.get_node_by_name(node_name),
         )
         pruned_node_name = node_name_map[node_name]
@@ -175,7 +175,7 @@ class VersionService:
             include_fields = {"name", "tabular_source", "feature_namespace_id"}
             return FeatureModel(
                 **{
-                    **feature.dict(include=include_fields),
+                    **feature.model_dump(include=include_fields),
                     "graph": pruned_graph,
                     "node_name": pruned_node_name,
                     "_id": ObjectId(),
@@ -265,7 +265,7 @@ class VersionService:
         )
         if to_save:
             return await self.feature_service.create_document(
-                data=FeatureServiceCreate(**new_feature.dict(by_alias=True))
+                data=FeatureServiceCreate(**new_feature.model_dump(by_alias=True))
             )
         return new_feature
 
@@ -339,7 +339,7 @@ class VersionService:
 
         return FeatureListModel(
             **{
-                **feature_list.dict(),
+                **feature_list.model_dump(),
                 "_id": ObjectId(),
                 "feature_ids": feature_ids,
                 "features": features,
@@ -379,5 +379,5 @@ class VersionService:
             return feature_list
 
         return await self.feature_list_service.create_document(
-            data=FeatureListServiceCreate(**new_feature_list.dict(by_alias=True)),
+            data=FeatureListServiceCreate(**new_feature_list.model_dump(by_alias=True)),
         )

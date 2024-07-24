@@ -40,6 +40,9 @@ class TestIOTaskPayload(BaseTaskPayload):
     Test IO Task Payload
     """
 
+    # add this to fix PytestCollectionWarning
+    __test__ = False
+
     # class variables
     command: ClassVar[WorkerCommand] = WorkerCommand.TEST
 

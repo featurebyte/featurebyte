@@ -484,7 +484,7 @@ def event_table_factory_fixture(test_dir, feature_store, event_table_service, se
             )
             columns_info = []
             for col in event_table.columns_info:
-                col_dict = col.dict()
+                col_dict = col.model_dump()
                 if col.name == "event_timestamp":
                     col_dict["semantic_id"] = event_timestamp_sem.id
                 columns_info.append(col_dict)
@@ -715,7 +715,7 @@ async def insert_feature_into_persistent(
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_sum_30m.json")
     with open(fixture_path) as fhandle:
         payload = json.loads(fhandle.read())
-        payload = FeatureServiceCreate(**payload, user_id=user.id).dict(by_alias=True)
+        payload = FeatureServiceCreate(**payload, user_id=user.id).model_dump(by_alias=True)
         payload["_id"] = ObjectId()
         payload["readiness"] = readiness
         payload["catalog_id"] = catalog_id or DEFAULT_CATALOG_ID
@@ -1174,14 +1174,14 @@ async def deployed_feature_list_requiring_parent_serving_fixture(
             feature_id=new_feature.id,
             feature_list_to_feature_primary_entity_join_steps=[],
             feature_internal_entity_join_steps=[
-                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+                EntityRelationshipInfo(**expected_relationship_info.model_dump(by_alias=True))
             ],
         ),
         FeatureEntityLookupInfo(
             feature_id=new_feature_2.id,
             feature_list_to_feature_primary_entity_join_steps=[],
             feature_internal_entity_join_steps=[
-                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+                EntityRelationshipInfo(**expected_relationship_info.model_dump(by_alias=True))
             ],
         ),
     ]
@@ -1239,7 +1239,7 @@ async def deployed_feature_list_requiring_parent_serving_ttl_fixture(
             feature_id=new_feature.id,
             feature_list_to_feature_primary_entity_join_steps=[],
             feature_internal_entity_join_steps=[
-                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+                EntityRelationshipInfo(**expected_relationship_info.model_dump(by_alias=True))
             ],
         ),
     ]
@@ -1305,7 +1305,7 @@ async def deployed_feature_list_requiring_parent_serving_composite_entity_fixtur
             feature_id=new_feature.id,
             feature_list_to_feature_primary_entity_join_steps=[],
             feature_internal_entity_join_steps=[
-                EntityRelationshipInfo(**expected_relationship_info.dict(by_alias=True))
+                EntityRelationshipInfo(**expected_relationship_info.model_dump(by_alias=True))
             ],
         ),
     ]

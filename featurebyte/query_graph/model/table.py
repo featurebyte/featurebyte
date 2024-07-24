@@ -251,7 +251,7 @@ class ItemTableData(BaseTableData):
         )
         node = graph.add_operation(
             node_type=NodeType.JOIN,
-            node_params=join_parameters.dict(),
+            node_params=join_parameters.model_dump(),
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[item_view_node, event_view_node],
         )
@@ -548,11 +548,15 @@ class SCDTableData(BaseTableData):
         assert natural_key_col_info, f"{self.natural_key_column} is not in columns_info"
         return [
             natural_key_col_info,
-            ColumnInfo(**{**time_col_info.dict(), "name": column_names.new_valid_from_column_name}),
+            ColumnInfo(
+                **{**time_col_info.model_dump(), "name": column_names.new_valid_from_column_name}
+            ),
             ColumnInfo(
                 name=column_names.previous_valid_from_column_name, dtype=time_col_info.dtype
             ),
-            ColumnInfo(**{**track_col_info.dict(), "name": column_names.new_tracked_column_name}),
+            ColumnInfo(
+                **{**track_col_info.model_dump(), "name": column_names.new_tracked_column_name}
+            ),
             ColumnInfo(name=column_names.previous_tracked_column_name, dtype=track_col_info.dtype),
         ]
 

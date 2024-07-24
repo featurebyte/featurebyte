@@ -239,6 +239,9 @@ def config_fixture(storage):
 
                         def wrapped_test_client_request_func(*args, stream=None, **kwargs):
                             _ = stream
+                            if "allow_redirects" in kwargs:
+                                kwargs["follow_redirects"] = kwargs.pop("allow_redirects")
+
                             response = client.request(*args, **kwargs)
                             response.iter_content = response.iter_bytes
                             return response
@@ -1490,7 +1493,7 @@ def mock_task_manager(request, persistent, storage):
                     queue="default",
                     traceback=traceback_info,
                 )
-                document = task.dict(by_alias=True)
+                document = task.model_dump(by_alias=True)
                 document["_id"] = str(document["_id"])
                 await persistent._db[TaskModel.collection_name()].insert_one(document)
                 return task_id

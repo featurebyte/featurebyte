@@ -50,7 +50,7 @@ async def test_get_tile_model(tile_registry_service, saved_tile_model):
     """
     retrieved_tile_model = await tile_registry_service.get_tile_model("some_tile_id", "some_agg_id")
     assert retrieved_tile_model is not None
-    assert retrieved_tile_model.dict() == saved_tile_model.dict()
+    assert retrieved_tile_model.model_dump() == saved_tile_model.model_dump()
 
 
 @pytest.mark.parametrize("tile_type", [TileType.ONLINE, TileType.OFFLINE])

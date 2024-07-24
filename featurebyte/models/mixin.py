@@ -49,6 +49,6 @@ class QueryGraphMixin(FeatureByteBaseModel):
                     graph_dict = self.internal_graph
                 else:
                     # for example, QueryGraphModel
-                    graph_dict = self.internal_graph.dict(by_alias=True)
+                    graph_dict = self.internal_graph.model_dump(by_alias=True)
                 self._graph = QueryGraph(**graph_dict)
         return self._graph

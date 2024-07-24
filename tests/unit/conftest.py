@@ -71,6 +71,7 @@ from tests.unit.conftest_config import (
     config_fixture,
     mock_config_path_env_fixture,
 )
+from tests.util.helper import inject_request_side_effect
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
@@ -98,8 +99,7 @@ def mock_api_client_fixture(request):
     else:
         with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
             with TestClient(app) as client:
-                mock_request.side_effect = client.request
-                yield mock_request
+                yield inject_request_side_effect(mock_request, client)
 
 
 @pytest.fixture(autouse=True)
@@ -2289,7 +2289,7 @@ async def insert_credential_fixture(persistent, user, snowflake_feature_store_id
     credential_model.encrypt_credentials()
     await persistent.insert_one(
         collection_name=CredentialModel.collection_name(),
-        document=credential_model.dict(by_alias=True),
+        document=credential_model.model_dump(by_alias=True),
         user_id=user.id,
     )
 
@@ -2371,7 +2371,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     queue="default",
                     traceback=traceback_info,
                 )
-                document = task.dict(by_alias=True)
+                document = task.model_dump(by_alias=True)
                 document["_id"] = str(document["_id"])
                 await persistent._db[TaskModel.collection_name()].insert_one(document)
 
@@ -2449,7 +2449,7 @@ def mysql_online_store_config_fixture():
                 username="mysql_user",
                 password="mysql_password",
             ),
-        ).dict(),
+        ).model_dump(),
     }
 
 
@@ -2479,7 +2479,7 @@ def mock_update_data_warehouse(app_container):
 
     async def mock_func(feature, target_online_enabled):
         _ = target_online_enabled
-        extended_feature_model = ExtendedFeatureModel(**feature.dict(by_alias=True))
+        extended_feature_model = ExtendedFeatureModel(**feature.model_dump(by_alias=True))
         online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
         if target_online_enabled:
             for query in online_feature_spec.precompute_queries:

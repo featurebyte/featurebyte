@@ -50,7 +50,7 @@ def decrypt_credential(docs):
         # decrypt credential
         credential = UsernamePasswordCredential(**doc["details"]["credential"])
         credential.decrypt_values()
-        doc["details"]["credential"] = credential.dict()
+        doc["details"]["credential"] = credential.model_dump()
 
 
 @pytest_asyncio.fixture(name="saved_mysql_online_store")
@@ -95,7 +95,7 @@ async def saved_mysql_online_store_fixture(mysql_online_store, mock_get_persiste
             {
                 "id": [str(mysql_online_store.id)],
                 "name": [mysql_online_store.name],
-                "details": [mysql_online_store.details.dict()],
+                "details": [mysql_online_store.details.model_dump()],
                 "created_at": [mysql_online_store.created_at.isoformat()],
             }
         ),

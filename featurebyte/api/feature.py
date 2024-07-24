@@ -127,14 +127,14 @@ class Feature(
     )
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = FeatureCreate(**self.dict(by_alias=True))
+        data = FeatureCreate(**self.model_dump(by_alias=True))
         return data.json_dict()
 
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
 
     def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
-        tile_specs = ExtendedFeatureModel(**self.dict(by_alias=True)).tile_specs
+        tile_specs = ExtendedFeatureModel(**self.model_dump(by_alias=True)).tile_specs
         return [(str(self.name), tile_specs)] if tile_specs else []
 
     @property
@@ -149,7 +149,7 @@ class Feature(
     @classmethod
     def _set_feature_store(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if isinstance(values, dict) and "feature_store" not in values:
             tabular_source = values.get("tabular_source")
@@ -951,14 +951,14 @@ class Feature(
                 "source_feature_id": str(self.id),
                 "table_feature_job_settings": (
                     [
-                        table_feature_job_setting.dict()
+                        table_feature_job_setting.model_dump()
                         for table_feature_job_setting in table_feature_job_settings
                     ]
                     if table_feature_job_settings
                     else None
                 ),
                 "table_cleaning_operations": (
-                    [clean_ops.dict() for clean_ops in table_cleaning_operations]
+                    [clean_ops.model_dump() for clean_ops in table_cleaning_operations]
                     if table_cleaning_operations
                     else None
                 ),
@@ -1093,7 +1093,7 @@ class Feature(
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = FeatureSQL(
-            graph=QueryGraph(**pruned_graph.dict(by_alias=True)),
+            graph=QueryGraph(**pruned_graph.model_dump(by_alias=True)),
             node_name=mapped_node.name,
         )
 

@@ -44,7 +44,7 @@ def node_fixture():
 
         def _get_required_input_columns(self, input_index: int, available_column_names: List[str]):
             _ = input_index
-            return self._extract_column_str_values(self.parameters.dict(), InColumnStr)
+            return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
         def _derive_node_operation_info(self, inputs, branch_state, global_state):
             _ = inputs, branch_state, global_state
@@ -99,7 +99,7 @@ def test_get_required_input_columns(node):
 )
 def test_count_dict_transform_node(parameters):
     """Test CountDitTransformNode not introducing additional param for unique_count transform type"""
-    assert CountDictTransformNode(**parameters).dict(exclude={"type": True}) == parameters
+    assert CountDictTransformNode(**parameters).model_dump(exclude={"type": True}) == parameters
 
 
 @pytest.mark.parametrize(

@@ -108,7 +108,7 @@ def get_online_feature_spec(feature_model):
     """
     Helper function to get an OnlineFeatureSpec from a feature
     """
-    extended_feature_model = ExtendedFeatureModel(**feature_model.dict(by_alias=True))
+    extended_feature_model = ExtendedFeatureModel(**feature_model.model_dump(by_alias=True))
     online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
     return online_feature_spec
 
@@ -117,7 +117,7 @@ async def get_tile_model(app_container, feature_model):
     """
     Helper function to get a tile model for a feature
     """
-    tile_specs = ExtendedFeatureModel(**feature_model.dict(by_alias=True)).tile_specs
+    tile_specs = ExtendedFeatureModel(**feature_model.model_dump(by_alias=True)).tile_specs
     assert len(tile_specs) == 1
     return await app_container.tile_registry_service.get_tile_model(
         tile_specs[0].tile_id, tile_specs[0].aggregation_id

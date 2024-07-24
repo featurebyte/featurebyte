@@ -38,7 +38,7 @@ def to_dict(obj, exclude=None, include=None):
     ):
         return to_dict(asdict(obj), exclude=exclude, include=include)
     if hasattr(obj, "dict"):
-        return to_dict(obj.dict(), exclude=exclude, include=include)
+        return to_dict(obj.model_dump(), exclude=exclude, include=include)
     return obj
 
 

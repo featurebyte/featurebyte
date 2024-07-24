@@ -52,9 +52,9 @@ class BaseLookupSpec(NonTileBasedAggregationSpec, ABC):
             "entity_column": self.entity_column,
         }
         if self.scd_parameters is not None:
-            params["scd_parameters"] = self.scd_parameters.dict()
+            params["scd_parameters"] = self.scd_parameters.model_dump()
         if self.event_parameters is not None:
-            params["event_parameters"] = self.event_parameters.dict()
+            params["event_parameters"] = self.event_parameters.model_dump()
         return params
 
     @classmethod

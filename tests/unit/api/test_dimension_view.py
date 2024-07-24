@@ -171,7 +171,7 @@ def test_as_features__with_primary_key_column(
     assert feature_group["FloatFeature"].dtype == DBVarType.FLOAT
     assert feature_group["CharFeature"].dtype == DBVarType.CHAR
 
-    float_feature_dict = feature_group["CharFeature"].dict()
+    float_feature_dict = feature_group["CharFeature"].model_dump()
     graph_dict = float_feature_dict["graph"]
     float_feature_node_dict = get_node(graph_dict, float_feature_dict["node_name"])
     lookup_node_dict = get_node(graph_dict, "lookup_1")
@@ -202,7 +202,9 @@ def test_as_features__with_primary_key_column(
     }
 
     # check SDK code generation
-    dimension_table_columns_info = snowflake_dimension_table.dict(by_alias=True)["columns_info"]
+    dimension_table_columns_info = snowflake_dimension_table.model_dump(by_alias=True)[
+        "columns_info"
+    ]
     for feature_name in feature_names:
         check_sdk_code_generation(
             feature_group[feature_name],
@@ -243,7 +245,9 @@ def test_as_features__offset_provided_but_ignored(
     )
 
     # check SDK code generation
-    dimension_table_columns_info = snowflake_dimension_table.dict(by_alias=True)["columns_info"]
+    dimension_table_columns_info = snowflake_dimension_table.model_dump(by_alias=True)[
+        "columns_info"
+    ]
     check_sdk_code_generation(
         feature_group["col_float"],
         to_use_saved_data=False,
@@ -305,7 +309,7 @@ def test_as_target__from_view_column(snowflake_dimension_view_with_entity, cust_
     assert feature.name == "FloatTarget"
     assert feature.dtype == DBVarType.FLOAT
 
-    feature_dict = feature.dict()
+    feature_dict = feature.model_dump()
     graph_dict = feature_dict["graph"]
     float_feature_node_dict = get_node(graph_dict, feature_dict["node_name"])
     lookup_node_dict = get_node(graph_dict, "lookup_target_1")
@@ -346,7 +350,7 @@ def test_as_feature__from_view_column(snowflake_dimension_view_with_entity, cust
     assert feature.name == "FloatFeature"
     assert feature.dtype == DBVarType.FLOAT
 
-    feature_dict = feature.dict()
+    feature_dict = feature.model_dump()
     graph_dict = feature_dict["graph"]
     float_feature_node_dict = get_node(graph_dict, feature_dict["node_name"])
     lookup_node_dict = get_node(graph_dict, "lookup_1")

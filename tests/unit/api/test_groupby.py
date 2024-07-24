@@ -194,7 +194,7 @@ def test_groupby__default_feature_job_setting(
     feature_node_name = feature.node.name
     groupby_node_name = feature.graph.backward_edges_map[feature_node_name][0]
     groupby_node = feature.graph.get_node_by_name(groupby_node_name)
-    assert groupby_node.parameters.dict() == {
+    assert groupby_node.parameters.model_dump() == {
         "keys": ["cust_id"],
         "parent": "col_float",
         "agg_func": "sum",
@@ -235,7 +235,7 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
     feature_node_name = feature.node.name
     groupby_node_name = feature.graph.backward_edges_map[feature_node_name][0]
     groupby_node = feature.graph.get_node_by_name(groupby_node_name)
-    assert groupby_node.parameters.dict() == {
+    assert groupby_node.parameters.model_dump() == {
         "keys": ["cust_id"],
         "parent": "col_float",
         "agg_func": "sum",
@@ -278,7 +278,7 @@ def test_groupby__count_features(snowflake_event_view_with_entity, method, categ
         "cust_id", category=category
     ).aggregate_over(**aggregate_kwargs)
     feature = feature_group["feat_30m"]
-    feature_dict = feature.dict()
+    feature_dict = feature.model_dump()
     assert feature_dict["node_name"] == "project_1"
     if category is None:
         assert feature_dict["dtype"] == DBVarType.INT
@@ -354,7 +354,7 @@ def test_groupby__prune(snowflake_event_view_with_entity):
         feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
     )
     feature = feature_group["feat_30m"]
-    feature_dict = feature.dict()
+    feature_dict = feature.model_dump()
     graph_edges = feature_dict["graph"]["edges"]
     # check that the two assign nodes not get pruned
     assert graph_edges == [
@@ -414,7 +414,7 @@ def get_graph_edges_from_feature(feature):
     """
     Helper method to get graph edges from feature
     """
-    return feature.dict()["graph"]["edges"]
+    return feature.model_dump()["graph"]["edges"]
 
 
 @pytest.fixture(name="test_aggregator_and_sum_feature")
@@ -507,7 +507,7 @@ def get_node_from_feature(feature, node_name):
     """
     Helper function to get a node from a feature, given a node name.
     """
-    feature_dict = feature.dict()
+    feature_dict = feature.model_dump()
     nodes = {}
     for node in feature_dict["graph"]["nodes"]:
         nodes[node["name"]] = node

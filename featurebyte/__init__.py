@@ -116,7 +116,7 @@ def list_profiles() -> pd.DataFrame:
     0  local  http://127.0.0.1:8088      None        True
     """
     profiles = Configurations().profiles
-    return pd.DataFrame([profile.dict() for profile in profiles] if profiles else [])
+    return pd.DataFrame([profile.model_dump() for profile in profiles] if profiles else [])
 
 
 def _versions_compatible(first_version: str, second_version: str) -> bool:

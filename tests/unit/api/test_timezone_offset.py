@@ -47,7 +47,7 @@ def test_datetime_property_extraction__event_timestamp(
     view["event_timestamp_hour"] = timestamp_hour
 
     # Check DT_EXTRACT node set up correctly
-    assert timestamp_hour.node.parameters.dict() == {
+    assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": "-05:30",
     }
@@ -89,11 +89,14 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
     view["event_timestamp_hour"] = timestamp_hour
 
     # Check DT_EXTRACT node set up correctly
-    assert timestamp_hour.node.parameters.dict() == {"property": "hour", "timezone_offset": None}
+    assert timestamp_hour.node.parameters.model_dump() == {
+        "property": "hour",
+        "timezone_offset": None,
+    }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2
     _, tz_offset_node = dt_extract_input_nodes
-    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+    assert view.graph.get_node_by_name(tz_offset_node).parameters.model_dump() == {
         "columns": ["tz_offset"]
     }
 
@@ -147,7 +150,7 @@ def test_datetime_property_extraction__manually_specified_timezone_offset(
     view["event_timestamp_hour"] = timestamp_hour
 
     # Check DT_EXTRACT node set up correctly
-    assert timestamp_hour.node.parameters.dict() == {
+    assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": "+08:00",
     }
@@ -174,11 +177,14 @@ def test_datetime_property_extraction__manually_specified_timezone_offset_column
     view["event_timestamp_hour"] = timestamp_hour
 
     # Check DT_EXTRACT node set up correctly
-    assert timestamp_hour.node.parameters.dict() == {"property": "hour", "timezone_offset": None}
+    assert timestamp_hour.node.parameters.model_dump() == {
+        "property": "hour",
+        "timezone_offset": None,
+    }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2
     _, tz_offset_node = dt_extract_input_nodes
-    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+    assert view.graph.get_node_by_name(tz_offset_node).parameters.model_dump() == {
         "columns": ["tz_offset"]
     }
 
@@ -202,11 +208,14 @@ def test_datetime_property_extraction__event_timestamp_in_item_view(
     view["timestamp_hour"] = timestamp_hour
 
     # Check DT_EXTRACT node set up correctly
-    assert timestamp_hour.node.parameters.dict() == {"property": "hour", "timezone_offset": None}
+    assert timestamp_hour.node.parameters.model_dump() == {
+        "property": "hour",
+        "timezone_offset": None,
+    }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2
     _, tz_offset_node = dt_extract_input_nodes
-    assert view.graph.get_node_by_name(tz_offset_node).parameters.dict() == {
+    assert view.graph.get_node_by_name(tz_offset_node).parameters.model_dump() == {
         "columns": ["tz_offset_event_table"]
     }
 

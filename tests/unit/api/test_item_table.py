@@ -126,7 +126,7 @@ def test_create_item_table(snowflake_database_table_item_table, item_table_dict,
     assert set(item_table.columns).issubset(dir(item_table))
     assert item_table._ipython_key_completions_() == set(item_table.columns)
 
-    output = item_table.dict(by_alias=True)
+    output = item_table.model_dump(by_alias=True)
     item_table_dict["_id"] = item_table.id
     item_table_dict["created_at"] = item_table.created_at
     item_table_dict["updated_at"] = item_table.updated_at
@@ -211,7 +211,7 @@ def test_deserialization(
     _ = snowflake_execute_query
     # setup proper configuration to deserialize the event table object
     item_table_dict["feature_store"] = snowflake_feature_store
-    item_table = ItemTable.parse_obj(item_table_dict)
+    item_table = ItemTable.model_validate(item_table_dict)
     assert item_table.preview_sql() == expected_item_table_preview_query
 
 
@@ -226,7 +226,7 @@ def test_deserialization__column_name_not_found(
     item_table_dict["feature_store"] = snowflake_feature_store
     item_table_dict[column_name] = "some_random_name"
     with pytest.raises(ValueError) as exc:
-        ItemTable.parse_obj(item_table_dict)
+        ItemTable.model_validate(item_table_dict)
     assert 'Column "some_random_name" not found in the table!' in str(exc.value)
 
 

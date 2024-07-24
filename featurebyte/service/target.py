@@ -96,7 +96,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         """
         document = TargetModel(
             **{
-                **data.dict(by_alias=True),
+                **data.model_dump(by_alias=True),
                 "version": await self.get_document_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
@@ -114,7 +114,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         # create a new target document (so that the derived attributes like table_ids is generated properly)
         return TargetModel(
             **{
-                **document.dict(by_alias=True),
+                **document.model_dump(by_alias=True),
                 "graph": graph,
                 "node_name": node_name,
                 "primary_entity_ids": derived_data.primary_entity_ids,
@@ -186,9 +186,9 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
                 document={
-                    **document.dict(by_alias=True),
+                    **document.model_dump(by_alias=True),
                     "definition": definition,
-                    "raw_graph": data.graph.dict(),
+                    "raw_graph": data.graph.model_dump(),
                 },
                 user_id=self.user.id,
             )

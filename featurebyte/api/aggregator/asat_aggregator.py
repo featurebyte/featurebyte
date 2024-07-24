@@ -104,7 +104,7 @@ class AsAtAggregator(BaseAsAtAggregator):
             "entity_ids": self.entity_ids,
             "offset": offset,
             "backward": backward,
-            **view.get_common_scd_parameters().dict(),
+            **view.get_common_scd_parameters().model_dump(),
         }
         asat_node = self.view.graph.add_operation(
             node_type=NodeType.AGGREGATE_AS_AT,

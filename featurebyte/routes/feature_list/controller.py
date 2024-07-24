@@ -136,7 +136,7 @@ class FeatureListController(
         """
         payload = FeatureListCreateWithBatchFeatureCreationTaskPayload(
             **{
-                **data.dict(by_alias=True),
+                **data.model_dump(by_alias=True),
                 "user_id": self.service.user.id,
                 "catalog_id": self.service.catalog_id,
                 "output_document_id": data.id,
@@ -165,7 +165,7 @@ class FeatureListController(
         )
         feature_parameters = FeaturesParameters(features=data.features)
         await self.storage.put_text(
-            json_util.dumps(feature_parameters.dict(by_alias=True)), features_parameters_path
+            json_util.dumps(feature_parameters.model_dump(by_alias=True)), features_parameters_path
         )
         payload = FeatureListCreateTaskPayload(
             **{
@@ -202,7 +202,7 @@ class FeatureListController(
             Newly created feature list object
         """
         if isinstance(data, FeatureListCreate):
-            create_data = FeatureListServiceCreate(**data.dict(by_alias=True))
+            create_data = FeatureListServiceCreate(**data.model_dump(by_alias=True))
             document = await self.feature_list_facade_service.create_feature_list(
                 data=create_data, progress_callback=progress_callback
             )
@@ -221,7 +221,7 @@ class FeatureListController(
             document_id=document.feature_list_namespace_id
         )
         output = FeatureListModelResponse(
-            **document.dict(by_alias=True),
+            **document.model_dump(by_alias=True),
             is_default=namespace.default_feature_list_id == document.id,
         )
         return output
@@ -311,7 +311,7 @@ class FeatureListController(
         # pylint: disable=too-many-locals
         params: Dict[str, Any] = {"search": search, "name": name}
         if version:
-            params["version"] = VersionIdentifier.from_str(version).dict()
+            params["version"] = VersionIdentifier.from_str(version).model_dump()
 
         if feature_list_namespace_id:
             query_filter = params.get("query_filter", {}).copy()

@@ -574,7 +574,7 @@ def test_extract_definition__aggregate_asat(
 ):
     """Test extract definition for aggregate asat"""
     asat_node = global_graph.get_node_by_name("aggregate_as_at_1")
-    asat_node_params = asat_node.parameters.dict()
+    asat_node_params = asat_node.parameters.model_dump()
     asat_node_params["name"] = "another_asat_feature"
     another_asat_node = global_graph.add_operation(
         node_type=NodeType.AGGREGATE_AS_AT,
@@ -734,7 +734,7 @@ def test_extract_definition__forward_aggregate(query_graph_and_assign_node, even
         },
     )
     project_node = output.graph.get_node_by_name("project_3")
-    assert project_node.parameters.dict() == {
+    assert project_node.parameters.model_dump() == {
         "columns": ["target_fd6dbe7f77a1fad176370bdb7712f82d794c23af"]
     }
 

@@ -30,6 +30,9 @@ class TestDocumentation:
     Some example code.
     """
 
+    # add this to fix PytestCollectionWarning
+    __test__ = False
+
     pydantic_int_field: int = Field(description="pydantic int field description")
 
     def __init__(self, constructor_param: str):
@@ -83,6 +86,9 @@ class TestDocumentationEnum(StrEnum):
     """
     Test documentation for enum classes.
     """
+
+    # add this to fix PytestCollectionWarning
+    __test__ = False
 
     TEST = "test", "test field 1"
     TEST2 = "test2", "test field 2"

@@ -186,7 +186,7 @@ async def check_delete_static_source_table(
     reference_ids = [
         str(doc["_id"])
         async for doc in table_service.list_documents_as_dict_iterator(
-            query_filter={"tabular_source": document.location.dict()},
+            query_filter={"tabular_source": document.location.model_dump()},
             projection={"_id": 1},
         )
     ]

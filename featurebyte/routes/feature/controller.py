@@ -103,7 +103,7 @@ class FeatureController(
         # the conflict resolution in the API payload schema (BatchFeatureCreate).
         payload = BatchFeatureCreateTaskPayload(
             **{
-                **data.dict(by_alias=True),
+                **data.model_dump(by_alias=True),
                 "user_id": self.service.user.id,
                 "catalog_id": self.service.catalog_id,
             }
@@ -128,7 +128,7 @@ class FeatureController(
             Newly created feature object
         """
         if isinstance(data, FeatureCreate):
-            create_data = FeatureServiceCreate(**data.dict(by_alias=True))
+            create_data = FeatureServiceCreate(**data.model_dump(by_alias=True))
             document = await self.feature_facade_service.create_feature(data=create_data)
         else:
             document = await self.feature_facade_service.create_new_version(data=data)
@@ -145,7 +145,7 @@ class FeatureController(
             document_id=document.feature_namespace_id
         )
         output = FeatureModelResponse(
-            **document.dict(by_alias=True),
+            **document.model_dump(by_alias=True),
             is_default=namespace.default_feature_id == document.id,
         )
         return output
@@ -230,7 +230,7 @@ class FeatureController(
         # pylint: disable=too-many-locals
         params: Dict[str, Any] = {"search": search, "name": name}
         if version:
-            params["version"] = VersionIdentifier.from_str(version).dict()
+            params["version"] = VersionIdentifier.from_str(version).model_dump()
 
         if feature_list_id:
             feature_list_document = await self.feature_list_service.get_document(
@@ -351,7 +351,7 @@ class FeatureController(
 
         _, metadata = await self.feature_or_target_metadata_extractor.extract_from_object(feature)
 
-        namespace_info_dict = namespace_info.dict()
+        namespace_info_dict = namespace_info.model_dump()
         # use feature list description instead of namespace description
         namespace_description = namespace_info_dict.pop("description", None)
         return FeatureInfo(
@@ -414,7 +414,7 @@ class FeatureController(
         """
         feature = await self.service.get_document(feature_id)
         return await self.tile_job_log_service.get_feature_job_logs(
-            features=[ExtendedFeatureModel(**feature.dict(by_alias=True))],
+            features=[ExtendedFeatureModel(**feature.model_dump(by_alias=True))],
             hour_limit=hour_limit,
         )
 

@@ -87,7 +87,7 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
             )
             document["primary_entity_ids"] = sorted(primary_entity_ids)
             document["relationships_info"] = [
-                relationship.dict(by_alias=True) for relationship in relationships_info
+                relationship.model_dump(by_alias=True) for relationship in relationships_info
             ]
         return documents
 

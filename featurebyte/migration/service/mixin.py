@@ -165,7 +165,7 @@ class BaseMongoCollectionMigration(BaseMigrationServiceMixin, ABC):
             Record in newer format
         """
         document_class = self.delegate_service.document_class
-        return dict(document_class(**record).dict(by_alias=True))
+        return dict(document_class(**record).model_dump(by_alias=True))
 
     async def migrate_record(self, document: Document, version: Optional[int]) -> None:
         _ = version

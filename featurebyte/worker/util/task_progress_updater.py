@@ -37,7 +37,7 @@ class TaskProgressUpdater:
             Optional parameters
         """
         progress = ProgressModel(percent=percent, message=message, **kwargs)
-        progress_dict = progress.dict(exclude_none=True)
+        progress_dict = progress.model_dump(exclude_none=True)
 
         # write to persistent
         await self.persistent.update_one(

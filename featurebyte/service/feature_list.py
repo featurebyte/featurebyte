@@ -187,7 +187,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         assert document.internal_feature_clusters is not None
         for cluster in document.internal_feature_clusters:
             if isinstance(cluster, FeatureCluster):
-                feature_clusters.append(cluster.dict(by_alias=True))
+                feature_clusters.append(cluster.model_dump(by_alias=True))
             else:
                 feature_clusters.append(dict(cluster))
         await self.storage.put_text(json_util.dumps(feature_clusters), feature_cluster_path)
@@ -378,7 +378,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         self, feature_list: FeatureListModel, features: List[FeatureModel]
     ) -> ObjectId:
         assert feature_list.feature_clusters is None
-        feature_list_doc = feature_list.dict(by_alias=True)
+        feature_list_doc = feature_list.model_dump(by_alias=True)
         feature_namespace_ids = [feature.feature_namespace_id for feature in features]
 
         # check whether feature list namespace exists or not
@@ -447,7 +447,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(
             **{
-                **data.dict(by_alias=True),
+                **data.model_dump(by_alias=True),
                 "version": await self._get_feature_list_version(data.name),
                 "user_id": self.user.id,
                 "catalog_id": self.catalog_id,
@@ -475,7 +475,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         # update document with derived output
         document = FeatureListModel(
             **{
-                **document.dict(by_alias=True),
+                **document.model_dump(by_alias=True),
                 "features": feature_data["features"],
                 "primary_entity_ids": entity_relationship_data.primary_entity_ids,
                 "relationships_info": entity_relationship_data.relationships_info,
@@ -543,7 +543,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         await self.persistent.update_one(
             collection_name=self.collection_name,
             query_filter=self._construct_get_query_filter(document_id=document_id),
-            update={"$set": {"readiness_distribution": readiness_distribution.dict()}},
+            update={"$set": {"readiness_distribution": readiness_distribution.model_dump()}},
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
         )
@@ -573,7 +573,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
             document_id=document_id, populate_remote_attributes=False
         )
         assert set(feature_list.feature_ids) == set(feature.id for feature in features)
-        self._check_document_modifiable(document=feature_list.dict(by_alias=True))
+        self._check_document_modifiable(document=feature_list.model_dump(by_alias=True))
 
         feature_store = await self.feature_store_service.get_document(
             document_id=features[0].tabular_source.feature_store_id

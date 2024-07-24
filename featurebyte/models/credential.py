@@ -303,7 +303,7 @@ class GCSStorageCredential(BaseStorageCredential):
     @classmethod
     def _validate_service_account_info(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         service_account_info = values.get("service_account_info")
         if isinstance(service_account_info, str):

@@ -138,7 +138,7 @@ def get_base_expected_scd_table_model(scd_table_model, scd_columns_info):
 def test_scd_table_model(scd_table_model, expected_scd_table_model):
     """Test creation, serialization and deserialization of SCDTable"""
     # rename current_flag to current_flag_column (check the model handle it properly)
-    assert scd_table_model.dict() == expected_scd_table_model
+    assert scd_table_model.model_dump() == expected_scd_table_model
     scd_table_json = scd_table_model.model_dump_json(by_alias=True)
     scd_table_loaded = SCDTableModel.parse_raw(scd_table_json)
     assert scd_table_loaded == scd_table_model
@@ -150,7 +150,7 @@ def test_missing_scd_table_id_column_errors(expected_scd_table_model, column):
     # Remove the `column` so that we can test the missing column validation
     expected_scd_table_model.pop(column)
     with pytest.raises(ValidationError) as exc_info:
-        SCDTableModel.parse_obj(expected_scd_table_model)
+        SCDTableModel.model_validate(expected_scd_table_model)
 
     errors = exc_info.value.errors()
     assert len(errors) == 1
@@ -163,7 +163,7 @@ def test_incorrect_scd_table_id_type_errors(expected_scd_table_model):
     # Update type to non str
     expected_scd_table_model["natural_key_column"] = arbitrary_test_date_time
     with pytest.raises(ValidationError) as exc_info:
-        SCDTableModel.parse_obj(expected_scd_table_model)
+        SCDTableModel.model_validate(expected_scd_table_model)
 
     errors = exc_info.value.errors()
     assert len(errors) == 1

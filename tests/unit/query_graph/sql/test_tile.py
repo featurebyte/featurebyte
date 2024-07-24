@@ -56,7 +56,7 @@ def get_tile_sql_used_in_scheduled_tasks(feature):
     """
     Helper function to get the tile SQL used in scheduled tasks
     """
-    tile_specs = ExtendedFeatureModel(**feature.dict(by_alias=True)).tile_specs
+    tile_specs = ExtendedFeatureModel(**feature.model_dump(by_alias=True)).tile_specs
     assert len(tile_specs) == 1
     return tile_specs[0].tile_sql
 

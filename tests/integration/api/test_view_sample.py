@@ -7,7 +7,7 @@ from typing import Any
 import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 
 def maybe_tz_convert(ts: Any):

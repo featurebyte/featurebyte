@@ -133,7 +133,7 @@ class OfflineStoreInfoInitializationService:
         -------
         Tuple[QueryGraphModel, str]
         """
-        query_graph = QueryGraph(**graph.dict(by_alias=True))
+        query_graph = QueryGraph(**graph.model_dump(by_alias=True))
 
         node_name_to_repl_node: Dict[str, BaseNode] = {}
         for node in query_graph.iterate_sorted_graph_nodes(

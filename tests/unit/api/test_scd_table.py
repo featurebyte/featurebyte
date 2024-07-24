@@ -237,7 +237,7 @@ def test_create_scd_table(snowflake_database_table_scd_table, scd_table_dict, ca
     assert set(scd_table.columns).issubset(dir(scd_table))
     assert scd_table._ipython_key_completions_() == set(scd_table.columns)
 
-    output = scd_table.dict(by_alias=True)
+    output = scd_table.model_dump(by_alias=True)
     scd_table_dict["_id"] = scd_table.id
     scd_table_dict["current_flag_column"] = scd_table_dict.pop("current_flag")  # DEV-556
     scd_table_dict["created_at"] = scd_table.created_at

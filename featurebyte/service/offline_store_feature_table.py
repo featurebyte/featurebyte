@@ -172,7 +172,7 @@ class OfflineStoreFeatureTableService(
                 await self.storage.try_delete_if_exists(Path(original_doc.feature_cluster_path))
 
             table = OfflineStoreFeatureTableModel(
-                **{**original_doc.dict(by_alias=True), **data.dict(by_alias=True)}
+                **{**original_doc.model_dump(by_alias=True), **data.model_dump(by_alias=True)}
             )
             table = await self._move_feature_cluster_to_storage(table)
             data.feature_cluster = None

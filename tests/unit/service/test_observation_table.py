@@ -44,7 +44,7 @@ def observation_table_from_source_table_fixture(event_table, user):
     return ObservationTableModel(
         name="observation_table_from_source_table",
         location=location,
-        request_input=request_input.dict(by_alias=True),
+        request_input=request_input.model_dump(by_alias=True),
         columns_info=[
             {"name": "a", "dtype": "INT"},
             {"name": "b", "dtype": "INT"},
@@ -130,8 +130,10 @@ async def test_create_observation_table_from_source_table(
     loaded_table = await observation_table_service.get_document(
         observation_table_from_source_table.id
     )
-    loaded_table_dict = loaded_table.dict(exclude={"created_at", "updated_at"})
-    expected_dict = observation_table_from_source_table.dict(exclude={"created_at", "updated_at"})
+    loaded_table_dict = loaded_table.model_dump(exclude={"created_at", "updated_at"})
+    expected_dict = observation_table_from_source_table.model_dump(
+        exclude={"created_at", "updated_at"}
+    )
     expected_dict["catalog_id"] = catalog.id
     assert expected_dict == loaded_table_dict
 

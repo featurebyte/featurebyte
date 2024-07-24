@@ -124,7 +124,7 @@ async def list_online_store_cleanup_tasks(
     List online store cleanup tasks for the given feature
     """
     feature_model = await feature_service.get_document(saved_feature.id)
-    feature_spec = OnlineFeatureSpec(feature=feature_model.dict(by_alias=True))
+    feature_spec = OnlineFeatureSpec(feature=feature_model.model_dump(by_alias=True))
     out = []
     for query in feature_spec.precompute_queries:
         task = await online_store_cleanup_scheduler_service.get_periodic_task(query.table_name)
@@ -309,7 +309,7 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     assert session.source_type == "snowflake"
 
     online_feature_spec = OnlineFeatureSpec(
-        feature=ExtendedFeatureModel(**online_enabled_feature_sum_30h.dict(by_alias=True))
+        feature=ExtendedFeatureModel(**online_enabled_feature_sum_30h.model_dump(by_alias=True))
     )
     tile_spec = online_feature_spec.feature.tile_specs[0]
 

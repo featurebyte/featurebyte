@@ -97,7 +97,7 @@ def get_feast_online_store_details(
     -------
     FeastOnlineStoreDetails
     """
-    params = online_store_details.dict(by_alias=True)
+    params = online_store_details.model_dump(by_alias=True)
     construct_online_store_details = construct_serialize_function(
         all_types=ONLINE_STORE_DETAILS_TYPES,
         annotated_type=FeastOnlineStoreDetails,

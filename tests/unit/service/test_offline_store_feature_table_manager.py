@@ -716,7 +716,9 @@ async def test_feature_table_one_feature_deployed(
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_dict = feature_table.model_dump(
+        by_alias=True, exclude={"created_at", "updated_at"}
+    )
     feature_table_id = feature_table_dict.pop("_id")
     feature_cluster = feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
@@ -789,7 +791,7 @@ async def test_feature_table_one_feature_deployed(
 
     # check precomputed lookup feature table
     feature_table = feature_tables[f"cat1_cust_id_30m_via_transaction_id_{expected_suffix}"]
-    feature_table_dict = feature_table.dict(
+    feature_table_dict = feature_table.model_dump(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
     entity_universe = feature_table_dict.pop("entity_universe")
@@ -814,7 +816,7 @@ async def test_feature_table_one_feature_deployed(
         "output_column_names": [],
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
-            "lookup_steps": [transaction_to_customer_relationship_info.dict(by_alias=True)],
+            "lookup_steps": [transaction_to_customer_relationship_info.model_dump(by_alias=True)],
             "lookup_mapping": [
                 {
                     "lookup_feature_table_serving_name": "transaction_id",
@@ -862,7 +864,7 @@ async def test_feature_table_two_features_deployed(
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
-    feature_table_dict = feature_table.dict(
+    feature_table_dict = feature_table.model_dump(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
     feature_cluster = feature_table_dict.pop("feature_cluster")
@@ -964,7 +966,7 @@ async def test_feature_table_undeploy(
     }
     feature_table = feature_tables["cat1_cust_id_30m"]
 
-    feature_table_dict = feature_table.dict(
+    feature_table_dict = feature_table.model_dump(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
     feature_cluster = feature_table_dict.pop("feature_cluster")
@@ -1104,7 +1106,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
 
     # Check customer entity feature table
     feature_table = feature_tables["cat1_cust_id_30m"]
-    feature_table_dict = feature_table.dict(
+    feature_table_dict = feature_table.model_dump(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
     _ = feature_table_dict.pop("feature_cluster")
@@ -1157,7 +1159,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
 
     # Check item entity feature table
     feature_table = feature_tables["cat1_cust_id_3h"]
-    feature_table_dict = feature_table.dict(
+    feature_table_dict = feature_table.model_dump(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
     _ = feature_table_dict.pop("feature_cluster")
@@ -1236,7 +1238,7 @@ async def test_feature_table_without_entity(
     assert len(feature_tables) == 1
     feature_table = feature_tables["cat1__no_entity_1d"]
 
-    feature_table_dict = feature_table.dict(
+    feature_table_dict = feature_table.model_dump(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
     _ = feature_table_dict.pop("feature_cluster")
@@ -1300,7 +1302,7 @@ async def test_lookup_feature(
     assert len(feature_tables) == 1
     feature_table = feature_tables["cat1_cust_id_1d"]
 
-    feature_table_dict = feature_table.dict(
+    feature_table_dict = feature_table.model_dump(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
     _ = feature_table_dict.pop("feature_cluster")
@@ -1372,7 +1374,9 @@ async def test_aggregate_asat_feature(
     }
     feature_table = feature_tables["cat1_gender_1d"]
 
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_dict = feature_table.model_dump(
+        by_alias=True, exclude={"created_at", "updated_at"}
+    )
     feature_table_id = feature_table_dict.pop("_id")
     _ = feature_table_dict.pop("feature_cluster")
     entity_universe = feature_table_dict.pop("entity_universe")
@@ -1425,7 +1429,7 @@ async def test_aggregate_asat_feature(
 
     # check precomputed lookup feature table
     feature_table = feature_tables[f"cat1_gender_1d_via_cust_id_{expected_suffix}"]
-    feature_table_dict = feature_table.dict(
+    feature_table_dict = feature_table.model_dump(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
     entity_universe = feature_table_dict.pop("entity_universe")
@@ -1450,7 +1454,7 @@ async def test_aggregate_asat_feature(
         "output_column_names": [],
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
-            "lookup_steps": [customer_to_gender_relationship_info.dict(by_alias=True)],
+            "lookup_steps": [customer_to_gender_relationship_info.model_dump(by_alias=True)],
             "lookup_mapping": [
                 {
                     "lookup_feature_table_serving_name": "cust_id",
@@ -1533,7 +1537,7 @@ async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
             entity_id: str(entity_id) for entity_id in feature_model.entity_ids
         },
     )
-    feature_model.internal_offline_store_info = offline_store_info.dict(by_alias=True)
+    feature_model.internal_offline_store_info = offline_store_info.model_dump(by_alias=True)
 
     offline_ingest_graph_container = await OfflineIngestGraphContainer.build([feature_model])
     offline_store_table_name_to_feature_ids = {
@@ -1633,7 +1637,7 @@ async def test_feature_with_internal_parent_child_relationships(
     }
     feature_table = feature_tables["cat1_cust_id_1d"]
 
-    feature_table_dict = feature_table.dict(
+    feature_table_dict = feature_table.model_dump(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
     feature_cluster = feature_table_dict.pop("feature_cluster")
@@ -1848,7 +1852,9 @@ async def test_item_view_window_aggregate(
     }
     feature_table = feature_tables["cat1_item_type_30m"]
 
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_dict = feature_table.model_dump(
+        by_alias=True, exclude={"created_at", "updated_at"}
+    )
     feature_table_id = feature_table_dict.pop("_id")
     feature_table_dict.pop("feature_cluster")
     assert feature_table_dict == {
@@ -1899,7 +1905,7 @@ async def test_item_view_window_aggregate(
 
     # check precomputed lookup feature table
     feature_table = feature_tables[f"cat1_item_type_30m_via_item_id_{expected_suffix}"]
-    feature_table_dict = feature_table.dict(
+    feature_table_dict = feature_table.model_dump(
         by_alias=True, exclude={"created_at", "updated_at", "id"}
     )
     entity_universe = feature_table_dict.pop("entity_universe")
@@ -1924,7 +1930,7 @@ async def test_item_view_window_aggregate(
         "output_column_names": [],
         "output_dtypes": [],
         "precomputed_lookup_feature_table_info": {
-            "lookup_steps": [item_id_to_item_type_relationship_info.dict(by_alias=True)],
+            "lookup_steps": [item_id_to_item_type_relationship_info.model_dump(by_alias=True)],
             "lookup_mapping": [
                 {
                     "lookup_feature_table_serving_name": "item_id",
@@ -1965,7 +1971,9 @@ async def test_latest_aggregation_features(
 
     # Check latest aggregation with window
     feature_table = feature_tables["cat1_cust_id_30m"]
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_dict = feature_table.model_dump(
+        by_alias=True, exclude={"created_at", "updated_at"}
+    )
     feature_table_dict.pop("_id")
     _ = feature_table_dict.pop("feature_cluster")
     entity_universe = feature_table_dict.pop("entity_universe")
@@ -2015,7 +2023,9 @@ async def test_latest_aggregation_features(
 
     # Check latest aggregation without window
     feature_table = feature_tables["cat1_cust_id_30m_1"]
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_dict = feature_table.model_dump(
+        by_alias=True, exclude={"created_at", "updated_at"}
+    )
     feature_table_dict.pop("_id")
     _ = feature_table_dict.pop("feature_cluster")
     entity_universe = feature_table_dict.pop("entity_universe")
@@ -2082,7 +2092,9 @@ async def test_count_distinct_window_aggregate_feature(
 
     # Check feature table
     feature_table = feature_tables["cat1_cust_id_30m"]
-    feature_table_dict = feature_table.dict(by_alias=True, exclude={"created_at", "updated_at"})
+    feature_table_dict = feature_table.model_dump(
+        by_alias=True, exclude={"created_at", "updated_at"}
+    )
     feature_table_dict.pop("_id")
     _ = feature_table_dict.pop("feature_cluster")
     entity_universe = feature_table_dict.pop("entity_universe")

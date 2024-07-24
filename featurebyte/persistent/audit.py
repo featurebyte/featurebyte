@@ -235,7 +235,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
                     action_type=action_type,
                     previous_values=previous_values,
                     current_values=current_values,
-                ).dict(by_alias=True)
+                ).model_dump(by_alias=True)
             )
 
         await persistent._insert_many(  # pylint: disable=protected-access

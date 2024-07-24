@@ -113,7 +113,7 @@ def generic_table_node_fixture(input_event_table_node):
     """Input generic table node"""
     input_event_table_node["parameters"]["id"] = None
     input_event_table_node["parameters"]["type"] = "source_table"
-    return InputNode(**input_event_table_node).dict()
+    return InputNode(**input_event_table_node).model_dump()
 
 
 @pytest.fixture(name="invalid_input_event_table_node")

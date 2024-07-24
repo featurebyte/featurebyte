@@ -83,7 +83,7 @@ class FeatureListNamespaceController(
         )
         output = FeatureListNamespaceModelResponse(
             **{
-                **document.dict(by_alias=True),
+                **document.model_dump(by_alias=True),
                 "primary_entity_ids": default_feature_list_doc["primary_entity_ids"],
                 "entity_ids": default_feature_list_doc["entity_ids"],
                 "table_ids": default_feature_list_doc["table_ids"],

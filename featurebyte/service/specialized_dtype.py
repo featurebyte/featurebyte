@@ -60,7 +60,7 @@ class SpecializedDtypeDetectionService:
         )
         graph, node = table.construct_graph_and_node(
             feature_store_details=feature_store.get_feature_store_details(),
-            table_data_dict=table.dict(by_alias=True),
+            table_data_dict=table.model_dump(by_alias=True),
         )
         columns = [
             col.name

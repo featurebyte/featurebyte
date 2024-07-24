@@ -18,7 +18,7 @@ def test_forward_aggregate_asat__valid(
         target_name="asat_target",
     )
     assert isinstance(target, Target)
-    target_dict = target.dict()
+    target_dict = target.model_dump()
     graph_dict = target_dict["graph"]
 
     node_dict = get_node(graph_dict, target_dict["node_name"])
@@ -57,7 +57,7 @@ def test_forward_aggregate_asat__valid(
     ]
 
     # check SDK code generation
-    scd_table_columns_info = snowflake_scd_table.dict(by_alias=True)["columns_info"]
+    scd_table_columns_info = snowflake_scd_table.model_dump(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         target,
         to_use_saved_data=False,
@@ -82,7 +82,7 @@ def test_aggregate_asat__offset(snowflake_scd_view_with_entity, gender_entity_id
     )
 
     assert isinstance(target, Target)
-    target_dict = target.dict()
+    target_dict = target.model_dump()
     graph_dict = target_dict["graph"]
 
     node_dict = get_node(graph_dict, target_dict["node_name"])

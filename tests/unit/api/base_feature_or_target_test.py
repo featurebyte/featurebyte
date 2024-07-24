@@ -16,6 +16,9 @@ class TestItemType(StrEnum):
     Test item type
     """
 
+    # add this to fix PytestCollectionWarning
+    __test__ = False
+
     FEATURE = "Feature"
     TARGET = "Target"
 

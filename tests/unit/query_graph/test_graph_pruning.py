@@ -65,7 +65,10 @@ def test_prune__redundant_assign_node_with_same_target_column_name(dataframe):
         ],
     )
     mapped_node = pruned_graph.get_node_by_name(node_name_map[dataframe.node.name])
-    assert pruned_graph.nodes_map["assign_1"].parameters.dict() == {"name": "VALUE", "value": None}
+    assert pruned_graph.nodes_map["assign_1"].parameters.model_dump() == {
+        "name": "VALUE",
+        "value": None,
+    }
     assert mapped_node.name == "assign_1"
 
 
@@ -364,7 +367,7 @@ def test_join_is_prunable(
         input_nodes=[event_table_input_node, item_table_input_node],
     )
     pruned_graph, node_name_map = global_graph.prune(target_node=join_node)
-    pruned_graph = QueryGraph(**pruned_graph.dict())
+    pruned_graph = QueryGraph(**pruned_graph.model_dump())
     pruned_ev_node = pruned_graph.get_node_by_name(node_name_map[event_table_input_node.name])
     pruned_it_node = pruned_graph.get_node_by_name(node_name_map[item_table_input_node.name])
 

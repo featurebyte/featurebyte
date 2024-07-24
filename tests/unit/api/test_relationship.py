@@ -78,7 +78,7 @@ async def test_relationship_get_by_id_without_updated_by(
     Test relationship get by id without updated by field.
     """
     # Create a RelationshipInfoCreate struct with no updated_by field
-    default_values = relationship_info_create.dict()
+    default_values = relationship_info_create.model_dump()
     default_values["updated_by"] = None
     updated_relationship_info_create = RelationshipInfoCreate(**default_values)
 

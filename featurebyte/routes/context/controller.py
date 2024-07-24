@@ -162,7 +162,7 @@ class ContextController(
             )
 
         await self.service.update_document(
-            document_id=context_id, data=ContextUpdate(**data.dict()), return_document=False
+            document_id=context_id, data=ContextUpdate(**data.model_dump()), return_document=False
         )
 
         return await self.get(document_id=context_id)
@@ -230,7 +230,7 @@ class ContextController(
         ]
 
         return ContextInfo(
-            **context.dict(),
+            **context.model_dump(),
             author=author,
             primary_entities=EntityBriefInfoList(entity_briefs),
             default_preview_table=default_preview_table_name,

@@ -62,7 +62,7 @@ def test_graph_node_create__empty_input_nodes(input_node_params):
     compare_pydantic_obj(
         graph_node.parameters.graph,
         expected={
-            "nodes": [expected_nested_input_node, project_node.dict(by_alias=True)],
+            "nodes": [expected_nested_input_node, project_node.model_dump(by_alias=True)],
             "edges": [{"source": "input_1", "target": project_node.name}],
         },
     )
@@ -339,7 +339,7 @@ def deep_nested_graph_fixture(input_node_params):
     )
     inner_graph_node, _ = GraphNode.create(
         node_type=NodeType.GRAPH,
-        node_params=deepest_graph_node.parameters.dict(),
+        node_params=deepest_graph_node.parameters.model_dump(),
         node_output_type=deepest_graph_node.output_type,
         input_nodes=[],
         graph_node_type=GraphNodeType.CLEANING,
@@ -354,7 +354,7 @@ def deep_nested_graph_fixture(input_node_params):
     )
     graph_node, _ = GraphNode.create(
         node_type=NodeType.GRAPH,
-        node_params=inner_graph_node.parameters.dict(),
+        node_params=inner_graph_node.parameters.model_dump(),
         node_output_type=inner_graph_node.output_type,
         input_nodes=[],
         graph_node_type=GraphNodeType.CLEANING,

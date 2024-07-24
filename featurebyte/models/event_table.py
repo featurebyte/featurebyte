@@ -97,7 +97,7 @@ class EventTableModel(EventTableData, TableModel):
     def create_view_graph_node(
         self, input_node: InputNode, metadata: ViewMetadata, **kwargs: Any
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
-        table_data = EventTableData(**self.dict(by_alias=True)).clone(
+        table_data = EventTableData(**self.model_dump(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations
         )
         return table_data.construct_event_view_graph_node(  # pylint: disable=no-member

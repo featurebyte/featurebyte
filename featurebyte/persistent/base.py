@@ -629,7 +629,7 @@ class Persistent(ABC):
 
             updated_audit_doc = AuditDocument(
                 **{
-                    **audit_doc.dict(by_alias=True),
+                    **audit_doc.model_dump(by_alias=True),
                     "previous_values": previous_values,
                     "current_values": current_values,
                 }

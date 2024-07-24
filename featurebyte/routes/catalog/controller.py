@@ -71,7 +71,7 @@ class CatalogController(
         """
         await self.service.update_document(
             document_id=catalog_id,
-            data=CatalogServiceUpdate(**data.dict()),
+            data=CatalogServiceUpdate(**data.model_dump()),
             return_document=False,
         )
         return await self.get(document_id=catalog_id)

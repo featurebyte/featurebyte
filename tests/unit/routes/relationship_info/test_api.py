@@ -170,7 +170,7 @@ class TestRelationshipInfoApi(BaseCatalogApiTestSuite):
         # Update enabled to False
         data_update = RelationshipInfoUpdate(enabled=False)
         response = test_api_client.patch(
-            f"{self.base_route}/{response_dict['_id']}", json=data_update.dict()
+            f"{self.base_route}/{response_dict['_id']}", json=data_update.model_dump()
         )
         assert response.status_code == HTTPStatus.OK
 

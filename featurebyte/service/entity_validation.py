@@ -306,7 +306,7 @@ class EntityValidationService:
                     )
                 )
 
-        feature_store_details = FeatureStoreDetails(**feature_store.dict())
+        feature_store_details = FeatureStoreDetails(**feature_store.model_dump())
         return ParentServingPreparation(
             join_steps=join_steps,
             feature_store_details=feature_store_details,

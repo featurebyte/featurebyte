@@ -161,7 +161,7 @@ def dimension_table_data_fixture(tabular_source):
 def source_table_input_node_fixture(feature_store_details, source_table_data):
     """Generic table input node"""
     input_node = source_table_data.construct_input_node(feature_store_details=feature_store_details)
-    assert input_node.dict() == {
+    assert input_node.model_dump() == {
         "type": "input",
         "name": "temp",
         "parameters": {
@@ -171,7 +171,9 @@ def source_table_input_node_fixture(feature_store_details, source_table_data):
             ],
             "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": None,
-            "table_details": source_table_data.tabular_source.table_details.dict(by_alias=True),
+            "table_details": source_table_data.tabular_source.table_details.model_dump(
+                by_alias=True
+            ),
             "type": "source_table",
         },
         "output_type": "frame",
@@ -183,7 +185,7 @@ def source_table_input_node_fixture(feature_store_details, source_table_data):
 def event_input_node_fixture(feature_store_details, event_table_data):
     """Event table input node"""
     input_node = event_table_data.construct_input_node(feature_store_details=feature_store_details)
-    assert input_node.dict() == {
+    assert input_node.model_dump() == {
         "type": "input",
         "name": "temp",
         "parameters": {
@@ -194,7 +196,9 @@ def event_input_node_fixture(feature_store_details, event_table_data):
             ],
             "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": event_table_data.id,
-            "table_details": event_table_data.tabular_source.table_details.dict(by_alias=True),
+            "table_details": event_table_data.tabular_source.table_details.model_dump(
+                by_alias=True
+            ),
             "id_column": "event_id",
             "timestamp_column": "event_timestamp",
             "type": "event_table",
@@ -219,7 +223,7 @@ def dimension_input_node_fixture(feature_store_details, dimension_table_data):
     input_node = dimension_table_data.construct_input_node(
         feature_store_details=feature_store_details
     )
-    assert input_node.dict() == {
+    assert input_node.model_dump() == {
         "type": "input",
         "name": "temp",
         "parameters": {
@@ -230,7 +234,9 @@ def dimension_input_node_fixture(feature_store_details, dimension_table_data):
             ],
             "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": dimension_table_data.id,
-            "table_details": dimension_table_data.tabular_source.table_details.dict(by_alias=True),
+            "table_details": dimension_table_data.tabular_source.table_details.model_dump(
+                by_alias=True
+            ),
             "id_column": "user_id",
             "type": "dimension_table",
         },

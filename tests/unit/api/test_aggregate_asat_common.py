@@ -2,6 +2,8 @@
 Test common behaviour shared between aggregate_asat and forward_aggregate_asat
 """
 
+import warnings
+
 import pytest
 
 from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
@@ -125,6 +127,6 @@ def test_conditional_set_skip_fill_na():
         conditional_set_skip_fill_na(skip_fill_na=True, fill_value=None)
 
     # test the default is set to True
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", category=DeprecationWarning)
         assert conditional_set_skip_fill_na(skip_fill_na=None, fill_value=None) is True
-    assert len(record) == 0

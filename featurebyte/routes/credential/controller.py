@@ -55,10 +55,10 @@ class CredentialController(
         """
         document = await self.service.update_document(
             document_id=ObjectId(credential_id),
-            data=CredentialServiceUpdate(**data.dict(by_alias=True)),
+            data=CredentialServiceUpdate(**data.model_dump(by_alias=True)),
         )
         assert document is not None
-        return CredentialRead(**document.dict(by_alias=True))
+        return CredentialRead(**document.model_dump(by_alias=True))
 
     async def get_info(
         self,

@@ -77,7 +77,7 @@ class FeatureJobSettingAnalysisCreate(FeatureByteBaseModel):
             If neither event_table_id or event_table_candidate is provided
         """
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         event_table_id = values.get("event_table_id")
         event_table_candidate = values.get("event_table_candidate")
@@ -143,7 +143,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
         Any
         """
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if "frequency" in values:
             values["period"] = values.pop("frequency")
@@ -214,7 +214,7 @@ class FeatureJobSettingAnalysisRecord(FeatureByteBaseDocumentModel):
     @classmethod
     def _extract_recommended_feature_job_setting(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if "recommended_feature_job_setting" not in values:
             values["recommended_feature_job_setting"] = values["analysis_result"][
@@ -251,7 +251,7 @@ class FeatureJobSettingAnalysisBacktest(FeatureByteBaseModel):
     @classmethod
     def _handle_backward_compatibility(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if "frequency" in values:
             values["period"] = values.pop("frequency")

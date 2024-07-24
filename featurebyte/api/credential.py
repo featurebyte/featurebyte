@@ -55,7 +55,7 @@ class Credential(DeletableApiObject, SavableApiObject):
     )
 
     def _get_create_payload(self) -> Dict[str, Any]:
-        data = CredentialCreate(**self.dict(by_alias=True))
+        data = CredentialCreate(**self.model_dump(by_alias=True))
         return data.json_dict()
 
     @property

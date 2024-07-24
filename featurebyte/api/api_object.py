@@ -295,7 +295,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
             key = hashkey(collection_name, id)
             cached_value = cls._cache.get(key, CacheKeyNotFound)
             if cached_value is not CacheKeyNotFound:
-                return cls.from_persistent_object_dict(cached_value.dict(by_alias=True))
+                return cls.from_persistent_object_dict(cached_value.model_dump(by_alias=True))
         return cls.from_persistent_object_dict(cls._get_object_dict_by_id(id_value=id))
 
     @classmethod
@@ -453,7 +453,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
             if self._update_schema_class is None:
                 raise NotImplementedError
             data = self._update_schema_class(  # pylint: disable=not-callable
-                **{**self.dict(by_alias=True), **update_payload}
+                **{**self.model_dump(by_alias=True), **update_payload}
             ).json_dict()
 
         url = url or f"{self._route}/{self.id}"

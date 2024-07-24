@@ -267,7 +267,9 @@ def test_event_view_groupby__prune(
     }
 
     # check SDK code generation
-    event_table_columns_info = snowflake_event_table_with_entity.dict(by_alias=True)["columns_info"]
+    event_table_columns_info = snowflake_event_table_with_entity.model_dump(by_alias=True)[
+        "columns_info"
+    ]
     check_sdk_code_generation(
         feature,
         to_use_saved_data=False,
@@ -602,7 +604,7 @@ def test_add_feature(
     assert new_view.row_index_lineage == (snowflake_event_table.frame.node_name,)
 
     # assert graph node (excluding name since that can changed by graph pruning)
-    view_dict = new_view.dict()
+    view_dict = new_view.model_dump()
     node_dict = get_node(view_dict["graph"], view_dict["node_name"])
     assert node_dict["output_type"] == "frame"
     assert node_dict["type"] == "join_feature"
@@ -623,8 +625,8 @@ def test_add_feature(
     ]
 
     # check SDK code generation
-    event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
-    item_table_columns_info = snowflake_item_table.dict(by_alias=True)["columns_info"]
+    event_table_columns_info = snowflake_event_table.model_dump(by_alias=True)["columns_info"]
+    item_table_columns_info = snowflake_item_table.model_dump(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         new_view,
         to_use_saved_data=False,

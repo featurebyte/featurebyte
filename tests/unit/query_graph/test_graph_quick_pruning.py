@@ -15,7 +15,7 @@ def check_quick_pruned_graph(original_graph, quick_pruned_graph, target_nodes, m
         pruned_target_node_name = node_name_map[target_node.name]
 
         # convert query graph from QueryGraphModel to QueryGraph
-        quick_pruned_graph = QueryGraph(**quick_pruned_graph.dict())
+        quick_pruned_graph = QueryGraph(**quick_pruned_graph.model_dump())
         target_node_quick = quick_pruned_graph.get_node_by_name(mapped_node_name)
 
         # perform pruning on quick-pruned graph

@@ -71,7 +71,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
     @classmethod
     def _generate_default_entity_lookup_steps(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         entity_relationships_info: List[EntityRelationshipInfo] = values[
             "entity_relationships_info"
@@ -146,7 +146,7 @@ class EntityLookupStepCreator(FeatureByteBaseModel):
         assert relationship_info_id in self.default_entity_lookup_steps
         entity_lookup_step = self.default_entity_lookup_steps[relationship_info_id]
         if child_serving_name_override is not None or parent_serving_name_override is not None:
-            entity_lookup_step = entity_lookup_step.copy()
+            entity_lookup_step = entity_lookup_step.model_copy()
             if child_serving_name_override is not None:
                 entity_lookup_step.child.serving_name = child_serving_name_override
             if parent_serving_name_override is not None:

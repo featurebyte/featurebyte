@@ -154,7 +154,7 @@ class TileJobLogService(
         for feature in features:
             if feature.tile_specs:
                 _tile_specs = pd.DataFrame.from_dict(
-                    [tile_spec.dict() for tile_spec in feature.tile_specs]
+                    [tile_spec.model_dump() for tile_spec in feature.tile_specs]
                 )
                 tile_specs.append(_tile_specs[tile_specs_cols])
         feature_tile_specs = (

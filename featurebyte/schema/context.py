@@ -53,7 +53,7 @@ class ContextUpdate(BaseDocumentServiceUpdateSchema):
     def _validate_parameters(cls, values: Any) -> Any:
         # check xor between graph & node_name
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         graph = values.get("graph")
         node_name = values.get("node_name")

@@ -240,7 +240,7 @@ class ViewMetadata(FeatureByteBaseModel):
         """
         return type(self)(
             **{
-                **self.dict(by_alias=True),
+                **self.model_dump(by_alias=True),
                 "view_mode": view_mode,
                 "column_cleaning_operations": column_cleaning_operations,
                 **kwargs,
@@ -274,7 +274,7 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
         self, target_columns: List[str], input_nodes: Sequence[NodeT]
     ) -> Dict[str, Any]:
         _ = input_nodes
-        metadata = self.metadata.dict(by_alias=True)
+        metadata = self.metadata.model_dump(by_alias=True)
         metadata["column_cleaning_operations"] = [
             col
             for col in self.metadata.column_cleaning_operations
@@ -491,7 +491,7 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
         feature_job_setting: Optional[ObjectClass] = None
         if self.metadata.default_feature_job_setting:
             feature_job_setting = ClassEnum.FEATURE_JOB_SETTING(
-                **self.metadata.default_feature_job_setting.dict(by_alias=True)
+                **self.metadata.default_feature_job_setting.model_dump(by_alias=True)
             )
 
         assert len(input_var_name_expressions) == 1

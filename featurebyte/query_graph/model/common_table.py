@@ -113,12 +113,12 @@ class BaseTableData(FeatureByteBaseModel):
             else:
                 col.critical_data_info = None
             columns_info.append(col)
-        return type(self)(**{**self.dict(by_alias=True), "columns_info": columns_info})
+        return type(self)(**{**self.model_dump(by_alias=True), "columns_info": columns_info})
 
     def _get_common_input_node_parameters(self) -> Dict[str, Any]:
         return {
             "type": self.type,
-            "columns": [ColumnSpec(**col.dict()) for col in self.columns_info],
+            "columns": [ColumnSpec(**col.model_dump()) for col in self.columns_info],
             "table_details": self.tabular_source.table_details,
         }
 
@@ -315,7 +315,7 @@ class BaseTableData(FeatureByteBaseModel):
             # cleaning graph node only requires single input
             view_graph_node.add_operation(
                 node_type=NodeType.GRAPH,
-                node_params=cleaning_graph_node.parameters.dict(by_alias=True),
+                node_params=cleaning_graph_node.parameters.model_dump(by_alias=True),
                 node_output_type=NodeOutputType.FRAME,
                 input_nodes=[view_graph_node.output_node],
             )

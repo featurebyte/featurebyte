@@ -407,7 +407,7 @@ class FeatureByteCatalogBaseDocumentModel(FeatureByteBaseDocumentModel):
     @classmethod
     def _validate_catalog_id(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         catalog_id = values.get("catalog_id")
         if catalog_id is None:

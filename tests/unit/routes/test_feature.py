@@ -266,7 +266,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         # check feature job setting using the specified feature job setting
         graph = QueryGraphModel(**response_dict["graph"])
         groupby_node = graph.get_node_by_name("groupby_1")
-        parameters = groupby_node.parameters.dict()
+        parameters = groupby_node.parameters.model_dump()
         assert parameters["feature_job_setting"] == {
             "offset": "3600s",
             "period": "86400s",

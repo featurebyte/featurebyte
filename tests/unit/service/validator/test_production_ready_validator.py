@@ -139,7 +139,9 @@ async def test_assert_no_other_production_ready_feature__exists(
 
     """
     with pytest.raises(DocumentUpdateError) as exc:
-        another_feature = FeatureModel(**{**production_ready_feature.dict(), "_id": ObjectId()})
+        another_feature = FeatureModel(
+            **{**production_ready_feature.model_dump(), "_id": ObjectId()}
+        )
         await production_ready_validator._assert_no_other_production_ready_feature(another_feature)
 
     expected_msg = (
@@ -212,7 +214,7 @@ async def test_get_feature_job_setting_diffs__settings_differ(
 
     # create a feature with a different feature job setting from the event table
     event_view = snowflake_event_table_with_entity.get_view()
-    updated_feature_job_setting = feature_group_feature_job_setting.copy()
+    updated_feature_job_setting = feature_group_feature_job_setting.model_copy()
     assert updated_feature_job_setting.blind_spot == "600s"
     new_feature_job_settings_dict = updated_feature_job_setting.json_dict()
     new_feature_job_settings_dict["blind_spot"] = "300s"  # set a new value

@@ -148,7 +148,7 @@ def add_groupby_operation(
     """
     Helper function to add a groupby node
     """
-    groupby_node_params = GroupByNodeParameters(**groupby_node_params).dict(by_alias=True)
+    groupby_node_params = GroupByNodeParameters(**groupby_node_params).model_dump(by_alias=True)
     node = graph.add_operation(
         node_type=NodeType.GROUPBY,
         node_params={
@@ -210,7 +210,7 @@ def _replace_view_mode_to_manual(pruned_graph):
     # to enable graph comparison, we need to replace view_mode to manual.
     # otherwise, the comparison will fail equality check even if the graphs are the same
     # (only difference is the view_mode in metadata).
-    pruned_graph_dict = pruned_graph.dict()
+    pruned_graph_dict = pruned_graph.model_dump()
     for node in pruned_graph_dict["nodes"]:
         if node["type"] == NodeType.GRAPH:
             if "view_mode" in node["parameters"]["metadata"]:
@@ -465,7 +465,7 @@ async def get_dataframe_from_materialized_table(session, materialized_table):
     """
     query = sql_to_string(
         expressions.select("*").from_(
-            get_fully_qualified_table_name(materialized_table.location.table_details.dict())
+            get_fully_qualified_table_name(materialized_table.location.table_details.model_dump())
         ),
         source_type=session.source_type,
     )
@@ -591,7 +591,9 @@ def check_decomposed_graph_output_node_hash(feature_model, output=None):
 
     # flatten the decomposed graph
     decom_node_name = output.node_name_map[feature_model.node_name]
-    flattened_decom_graph, node_name_map = QueryGraph(**output.graph.dict(by_alias=True)).flatten()
+    flattened_decom_graph, node_name_map = QueryGraph(
+        **output.graph.model_dump(by_alias=True)
+    ).flatten()
     flattened_decom_node_name = node_name_map[decom_node_name]
 
     # check the output node hash is the same
@@ -745,7 +747,7 @@ def check_on_demand_feature_code_generation(
 
     # introduce some missing values to test null handling for datetime
     if df.shape[0] > 1:
-        df["POINT_IN_TIME"].iloc[1] = None
+        df.loc[df.POINT_IN_TIME == df.POINT_IN_TIME.max(), "POINT_IN_TIME"] = None
 
     # generate on demand feature view code
     odfv_codes = offline_store_info.odfv_info.codes
@@ -980,7 +982,7 @@ async def get_relationship_info(app_container, child_entity_id, parent_entity_id
     async for info in app_container.relationship_info_service.list_documents_iterator(
         query_filter={"entity_id": child_entity_id, "related_entity_id": parent_entity_id}
     ):
-        return EntityRelationshipInfo(**info.dict(by_alias=True))
+        return EntityRelationshipInfo(**info.model_dump(by_alias=True))
     raise AssertionError("Relationship not found")
 
 
@@ -1000,7 +1002,7 @@ async def manage_document(doc_service, create_data, storage):
         doc = await doc_service.create_document(data=create_data)
 
         # check remote paths are created
-        for path in type(doc)._get_remote_attribute_paths(doc.dict(by_alias=True)):
+        for path in type(doc)._get_remote_attribute_paths(doc.model_dump(by_alias=True)):
             full_path = os.path.join(storage.base_path, path)
             assert os.path.exists(full_path), f"Remote path {full_path} not created"
 
@@ -1011,7 +1013,7 @@ async def manage_document(doc_service, create_data, storage):
             await doc_service.delete_document(document_id=doc.id)
 
             # check remote paths are deleted
-            for path in type(doc)._get_remote_attribute_paths(doc.dict(by_alias=True)):
+            for path in type(doc)._get_remote_attribute_paths(doc.model_dump(by_alias=True)):
                 full_path = os.path.join(storage.base_path, path)
                 assert not os.path.exists(full_path), f"Remote path {full_path} not deleted"
 
@@ -1019,9 +1021,9 @@ async def manage_document(doc_service, create_data, storage):
 def compare_pydantic_obj(maybe_pydantic_obj, expected):
     """Compare pydantic object with dict"""
     if isinstance(maybe_pydantic_obj, BaseModel):
-        maybe_pydantic_obj = maybe_pydantic_obj.dict(by_alias=True)
+        maybe_pydantic_obj = maybe_pydantic_obj.model_dump(by_alias=True)
     if isinstance(expected, BaseModel):
-        expected = expected.dict(by_alias=True)
+        expected = expected.model_dump(by_alias=True)
 
     if isinstance(maybe_pydantic_obj, list) and isinstance(expected, list):
         assert len(maybe_pydantic_obj) == len(expected)
@@ -1029,3 +1031,15 @@ def compare_pydantic_obj(maybe_pydantic_obj, expected):
             compare_pydantic_obj(left, right)
     else:
         assert maybe_pydantic_obj == expected, f"Expected {expected}, got {maybe_pydantic_obj}"
+
+
+def inject_request_side_effect(mock_request, client):
+    """Inject side effect for mock_request to use the client for making requests"""
+
+    def _request_func(*args, **kwargs):
+        if "allow_redirects" in kwargs:
+            kwargs["follow_redirects"] = kwargs.pop("allow_redirects")
+        return client.request(*args, **kwargs)
+
+    mock_request.side_effect = _request_func
+    return mock_request

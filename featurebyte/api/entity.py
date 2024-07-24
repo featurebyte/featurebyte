@@ -40,7 +40,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
     internal_serving_names: List[str] = Field(alias="serving_names")
 
     def _get_create_payload(self) -> dict[str, Any]:
-        data = EntityCreate(serving_name=self.serving_name, **self.dict(by_alias=True))
+        data = EntityCreate(serving_name=self.serving_name, **self.model_dump(by_alias=True))
         return data.json_dict()
 
     @property

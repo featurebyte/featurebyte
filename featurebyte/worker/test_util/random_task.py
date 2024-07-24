@@ -17,6 +17,9 @@ from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 class TestCommand(StrEnum):
     """Command enum used for testing"""
 
+    # add this to fix PytestCollectionWarning
+    __test__ = False
+
     RANDOM_COMMAND = "random_command"
 
 

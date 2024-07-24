@@ -72,7 +72,7 @@ class StaticSourceTableController(
         self, document_id: ObjectId
     ) -> List[Tuple[Any, QueryFilter]]:
         document = await self.service.get_document(document_id=document_id)
-        return [(self.table_service, {"tabular_source": document.location.dict()})]
+        return [(self.table_service, {"tabular_source": document.location.model_dump()})]
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> StaticSourceTableInfo:
         """

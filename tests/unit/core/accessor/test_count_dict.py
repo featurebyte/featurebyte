@@ -52,12 +52,12 @@ def test_transformation(
     assert new_feature.node.output_type == NodeOutputType.SERIES
     assert new_feature.dtype == expected_var_type
     assert new_feature.node.type == NodeType.COUNT_DICT_TRANSFORM
-    assert new_feature.node.parameters.dict(exclude_none=True) == expected_parameters
+    assert new_feature.node.parameters.model_dump(exclude_none=True) == expected_parameters
     assert new_feature.table_ids == count_per_category_feature.table_ids
     assert new_feature.entity_ids == count_per_category_feature.entity_ids
 
     # check SDK code generation
-    event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
+    event_table_columns_info = snowflake_event_table.model_dump(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         new_feature,
         to_use_saved_data=False,
@@ -87,7 +87,7 @@ def test_cosine_similarity(
     Test cosine_similarity operation
     """
     result = count_per_category_feature.cd.cosine_similarity(count_per_category_feature_2h)
-    result_dict = result.dict()
+    result_dict = result.model_dump()
     assert result_dict["graph"]["edges"] == [
         {"source": "input_1", "target": "graph_1"},
         {"source": "graph_1", "target": "groupby_1"},
@@ -105,7 +105,7 @@ def test_cosine_similarity(
     }
 
     # check SDK code generation
-    event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
+    event_table_columns_info = snowflake_event_table.model_dump(by_alias=True)["columns_info"]
     check_sdk_code_generation(
         result,
         to_use_saved_data=False,
@@ -157,7 +157,7 @@ def test_get_value_from_dictionary__success(
     """Test get_value method"""
     # count don't have parent column & sum has parent column,
     # use different aggregation methods to cover both cases
-    event_table_columns_info = snowflake_event_table.dict(by_alias=True)["columns_info"]
+    event_table_columns_info = snowflake_event_table.model_dump(by_alias=True)["columns_info"]
     for per_cat_feat in [count_per_category_feature, sum_per_category_feature]:
         # check the count_dict has a proper dtype
         count_dict_op_struct = per_cat_feat.graph.extract_operation_structure(
@@ -167,7 +167,7 @@ def test_get_value_from_dictionary__success(
         assert count_dict_op_struct.aggregations[0].dtype == "OBJECT"
 
         result = per_cat_feat.cd.get_value("key")
-        result_dict = result.dict()
+        result_dict = result.model_dump()
         if per_cat_feat.name == count_per_category_feature.name:
             expected_dtype = "INT"
         else:

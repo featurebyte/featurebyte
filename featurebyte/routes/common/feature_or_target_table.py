@@ -275,5 +275,5 @@ class FeatureOrTargetTableController(
         additional_params = await self.get_additional_info_params(document)
         return self.info_class(
             **additional_params,
-            **basic_info.dict(),
+            **basic_info.model_dump(),
         )

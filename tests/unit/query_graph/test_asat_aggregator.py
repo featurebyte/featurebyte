@@ -34,7 +34,7 @@ def aggregate_as_at_node_parameters(entity_id):
 
 @pytest.fixture
 def aggregate_as_at_node_parameters_with_end_timestamp(aggregate_as_at_node_parameters):
-    params = aggregate_as_at_node_parameters.copy()
+    params = aggregate_as_at_node_parameters.model_copy()
     params.end_timestamp_column = "end_ts"
     return params
 
@@ -108,10 +108,10 @@ def aggregation_specs_same_source_different_agg_funcs(
 ):
     params = aggregate_as_at_node_parameters_with_end_timestamp
 
-    params_1 = params.copy()
+    params_1 = params.model_copy()
     params_1.agg_func = "min"
 
-    params_2 = params.copy()
+    params_2 = params.model_copy()
     params_2.agg_func = "max"
 
     specs = []
@@ -141,10 +141,10 @@ def aggregation_specs_same_source_different_keys(
 ):
     params = aggregate_as_at_node_parameters_with_end_timestamp
 
-    params_1 = params.copy()
+    params_1 = params.model_copy()
     params_1.__dict__.update({"keys": ["key_1"], "serving_names": ["serving_key_1"]})
 
-    params_2 = params.copy()
+    params_2 = params.model_copy()
     params_2.__dict__.update({"keys": ["key_2"], "serving_names": ["serving_key_2"]})
 
     specs = []
@@ -170,7 +170,7 @@ def aggregation_specs_same_source_different_keys(
 def aggregation_spec_with_category(
     aggregate_as_at_node_parameters_with_end_timestamp, scd_aggregation_source, entity_id
 ):
-    parameters = aggregate_as_at_node_parameters_with_end_timestamp.copy()
+    parameters = aggregate_as_at_node_parameters_with_end_timestamp.model_copy()
     parameters.value_by = "category_col"
     return AggregateAsAtSpec(
         node_name="aggregate_as_at_1",
@@ -189,7 +189,7 @@ def aggregation_spec_with_category(
 def aggregation_spec_with_offset(
     aggregate_as_at_node_parameters, scd_aggregation_source, entity_id
 ):
-    parameters = aggregate_as_at_node_parameters.copy()
+    parameters = aggregate_as_at_node_parameters.model_copy()
     parameters.offset = "7d"
     return AggregateAsAtSpec(
         node_name="aggregate_as_at_4",
@@ -208,7 +208,7 @@ def aggregation_spec_with_offset(
 def forward_aggregation_spec_with_offset(
     aggregate_as_at_node_parameters, scd_aggregation_source, entity_id
 ):
-    parameters = aggregate_as_at_node_parameters.copy()
+    parameters = aggregate_as_at_node_parameters.model_copy()
     parameters.offset = "7d"
     return ForwardAggregateAsAtSpec(
         node_name="forward_aggregate_as_at_1",

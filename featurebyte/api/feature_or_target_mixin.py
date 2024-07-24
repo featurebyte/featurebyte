@@ -87,7 +87,7 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
 
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         preview_params = {
-            "graph": QueryGraph(**pruned_graph.dict(by_alias=True)),
+            "graph": QueryGraph(**pruned_graph.model_dump(by_alias=True)),
             "node_name": mapped_node.name,
             "feature_store_id": self.feature_store.id,
         }

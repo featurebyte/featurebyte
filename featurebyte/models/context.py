@@ -43,7 +43,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
     @classmethod
     def _set_primary_entity_ids(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         entity_ids = values.get("entity_ids", None)
         primary_entity_ids = values.get("primary_entity_ids", None)

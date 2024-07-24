@@ -99,7 +99,7 @@ async def test_user_defined_function_service__creation(
     with pytest.raises(DocumentConflictError) as exc:
         await user_defined_function_service.create_document(
             data=UserDefinedFunctionServiceCreate(
-                **global_user_defined_function_doc.dict(exclude={"_id": True})
+                **global_user_defined_function_doc.model_dump(exclude={"_id": True})
             )
         )
     expected_error_message = 'Global user defined function with name "method_name" already exists.'

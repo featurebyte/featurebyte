@@ -153,7 +153,7 @@ class QueryObject(FeatureByteBaseModel):
         flattened_node = flattened_graph.get_node_by_name(node_name_map[pruned_node.name])
 
         # prune the flattened graph as view graph node is not pruned before flattened
-        graph = QueryGraph(**flattened_graph.dict(by_alias=True))
+        graph = QueryGraph(**flattened_graph.model_dump(by_alias=True))
         pruned_flattened_graph, pruned_node_name_map = graph.prune(flattened_node)
         pruned_flattened_node = pruned_flattened_graph.get_node_by_name(
             pruned_node_name_map[flattened_node.name]
@@ -248,15 +248,10 @@ class QueryObject(FeatureByteBaseModel):
         deep: bool = False,
     ) -> QueryObjectT:
         update_dict = update or {}
-        update_dict.update({"feature_store": self.feature_store.copy(deep=deep)})
-        return super().copy(  # type: ignore
-            include=include,
-            exclude=exclude,
-            update=update_dict,
-            deep=deep,
-        )
+        update_dict.update({"feature_store": self.feature_store.model_copy(deep=deep)})
+        return self.model_copy(update=update_dict, deep=deep)
 
-    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         if isinstance(self.graph, GlobalQueryGraph):
             pruned_graph, node_name_map = self.graph.quick_prune(target_node_names=[self.node_name])
             mapped_node = pruned_graph.get_node_by_name(node_name_map[self.node.name])
@@ -267,8 +262,8 @@ class QueryObject(FeatureByteBaseModel):
             # `_convert_query_graph_to_global_query_graph` validation check and convert the pruned graph into
             # global one.
             new_object.__dict__["graph"] = pruned_graph
-            return new_object.dict(*args, **kwargs)
-        return dict(super().dict(*args, **kwargs))
+            return new_object.model_dump(*args, **kwargs)
+        return dict(super().model_dump(*args, **kwargs))
 
     @classmethod
     def clear_operation_structure_cache(cls) -> None:

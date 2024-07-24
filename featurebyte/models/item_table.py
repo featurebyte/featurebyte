@@ -80,7 +80,7 @@ class ItemTableModel(ItemTableData, TableModel):
         metadata: ItemViewMetadata,
         **kwargs: Any,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
-        table_data = ItemTableData(**self.dict(by_alias=True)).clone(
+        table_data = ItemTableData(**self.model_dump(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations
         )
         (

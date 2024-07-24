@@ -252,7 +252,7 @@ class UserDefinedFunctionInjector:
         ]
         node = graph.add_operation(
             node_type=NodeType.GENERIC_FUNCTION,
-            node_params=node_params.dict(by_alias=True),
+            node_params=node_params.model_dump(by_alias=True),
             node_output_type=NodeOutputType.SERIES,
             input_nodes=input_nodes,
         )

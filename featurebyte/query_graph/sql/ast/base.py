@@ -54,7 +54,7 @@ class SQLNodeContext:  # pylint: disable=too-many-instance-attributes
     aggregation_specs: Optional[dict[str, list[AggregationSpec]]]
 
     def __post_init__(self) -> None:
-        self.parameters = self.query_node.parameters.dict()
+        self.parameters = self.query_node.parameters.model_dump()
         self.current_query_node = self.query_node
         if self.to_filter_scd_by_current_flag is None:
             self.to_filter_scd_by_current_flag = False

@@ -120,7 +120,7 @@ async def test_feature_no_point_in_time(
     result = await online_serving_service.get_online_features_by_feast(
         deployed_feature_list_with_float_feature, deployment, feast_feature_store, request_data
     )
-    assert result.dict() == {"features": [{"cust_id": "a", "sum_1d": None}]}
+    assert result.model_dump() == {"features": [{"cust_id": "a", "sum_1d": None}]}
 
 
 @pytest.mark.asyncio
@@ -146,7 +146,7 @@ async def test_feature_with_point_in_time(
         feast_feature_store,
         request_data,
     )
-    assert result.dict() == {
+    assert result.model_dump() == {
         "features": [{"cust_id": "a", "feature_with_point_in_time_request_column": None}]
     }
 
@@ -204,7 +204,7 @@ async def test_feature_requiring_parent_serving(
         feast_feature_store,
         request_data,
     )
-    assert result.dict() == {
+    assert result.model_dump() == {
         "features": [
             {
                 "cust_id": "a",
@@ -238,7 +238,7 @@ async def test_feature_requiring_parent_serving_composite_entity(
         feast_feature_store,
         request_data,
     )
-    assert result.dict() == {
+    assert result.model_dump() == {
         "features": [
             {
                 "another_key": "a",

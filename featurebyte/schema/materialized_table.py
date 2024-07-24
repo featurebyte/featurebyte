@@ -20,7 +20,7 @@ class BaseMaterializedTableListRecord(FeatureByteBaseDocumentModel):
     @classmethod
     def _extract_common_materialized_table_fields(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         values["shape"] = values["num_rows"], len(values["columns_info"])
         return values

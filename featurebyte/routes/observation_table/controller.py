@@ -229,5 +229,5 @@ class ObservationTableController(  # pylint: disable=too-many-instance-attribute
         """
 
         return await self.observation_table_service.update_observation_table(
-            observation_table_id, ObservationTableServiceUpdate(**data.dict(by_alias=True))
+            observation_table_id, ObservationTableServiceUpdate(**data.model_dump(by_alias=True))
         )

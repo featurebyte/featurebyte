@@ -36,7 +36,7 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     @classmethod
     def _check_graph_and_node_names(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         graph = values.get("graph", None)
         node_names = values.get("node_names", None)
@@ -101,7 +101,7 @@ class TargetTableListRecord(BaseMaterializedTableListRecord):
     @classmethod
     def _extract(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         values["feature_store_id"] = values["location"]["feature_store_id"]
         return values

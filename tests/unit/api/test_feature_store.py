@@ -32,7 +32,7 @@ async def test_get_session(
     """
     _ = snowflake_connector, snowflake_execute_query
     session = await SessionManager(credentials=credentials).get_session(snowflake_feature_store)
-    assert session.dict() == {
+    assert session.model_dump() == {
         "source_type": "snowflake",
         "account": "sf_account",
         "warehouse": "sf_warehouse",

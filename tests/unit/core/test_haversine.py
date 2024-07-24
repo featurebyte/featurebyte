@@ -14,7 +14,7 @@ def test_to_haversine(int_series):
     """
     haversine_series = haversine(int_series, int_series, int_series, int_series)
     assert haversine_series.dtype == DBVarType.FLOAT
-    series_dict = haversine_series.dict()
+    series_dict = haversine_series.model_dump()
     assert series_dict["node_name"] == "haversine_1"
     timedelta_node = get_node(series_dict["graph"], "haversine_1")
     assert timedelta_node == {

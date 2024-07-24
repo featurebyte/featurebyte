@@ -290,7 +290,7 @@ class BaseDocumentService(
 
         document = self.document_class(
             **{
-                **data.dict(by_alias=True),
+                **data.model_dump(by_alias=True),
                 **kwargs,
                 "user_id": self.user.id,
             },
@@ -301,7 +301,7 @@ class BaseDocumentService(
             document=document,
             document_class=self.document_class,
         )
-        return dict(document.dict(by_alias=True))
+        return dict(document.model_dump(by_alias=True))
 
     def _construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
@@ -1022,8 +1022,8 @@ class BaseDocumentService(
         Iterator[UniqueConstraintData]
             List of unique constraint data
         """
-        doc_dict = document.dict(by_alias=True)
-        original_dict = original_document.dict(by_alias=True) if original_document else None
+        doc_dict = document.model_dump(by_alias=True)
+        original_dict = original_document.model_dump(by_alias=True) if original_document else None
         for constraint in document_class.Settings.unique_constraints:
             query_filter = {field: doc_dict[field] for field in constraint.fields}
 
@@ -1124,11 +1124,11 @@ class BaseDocumentService(
         """
         if not skip_block_modification_check:
             # check if document is modifiable
-            self._check_document_modifiable(document=document.dict(by_alias=True))
+            self._check_document_modifiable(document=document.model_dump(by_alias=True))
 
         # check any conflict with existing documents
         updated_document = self.document_class(
-            **{**document.dict(by_alias=True), **copy.deepcopy(update_dict)}
+            **{**document.model_dump(by_alias=True), **copy.deepcopy(update_dict)}
         )
         await self._check_document_unique_constraints(
             document=updated_document,
@@ -1282,7 +1282,7 @@ class BaseDocumentService(
             collection_name=self.collection_name,
             query_filter=query_filter,
             update={
-                "$addToSet": {"block_modification_by": reference_info.dict(by_alias=True)},
+                "$addToSet": {"block_modification_by": reference_info.model_dump(by_alias=True)},
             },
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
@@ -1305,7 +1305,7 @@ class BaseDocumentService(
             collection_name=self.collection_name,
             query_filter=query_filter,
             update={
-                "$pull": {"block_modification_by": reference_info.dict(by_alias=True)},
+                "$pull": {"block_modification_by": reference_info.model_dump(by_alias=True)},
             },
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,

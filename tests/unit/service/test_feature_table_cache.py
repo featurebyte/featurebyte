@@ -79,7 +79,7 @@ async def observation_table_fixture(event_table, user, observation_table_service
     observation_table = ObservationTableModel(
         name="observation_table_from_source_table",
         location=location,
-        request_input=request_input.dict(by_alias=True),
+        request_input=request_input.model_dump(by_alias=True),
         columns_info=[
             {"name": "cust_id", "dtype": "INT"},
             {"name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
@@ -108,7 +108,7 @@ async def features_fixture(event_table, entity, feature_service, test_dir):
             sanitize_for_definition=True,
         )
         feature = await feature_service.create_document(
-            data=FeatureServiceCreate(**sanitized_document.dict(by_alias=True))
+            data=FeatureServiceCreate(**sanitized_document.model_dump(by_alias=True))
         )
         features.append(feature)
     return features

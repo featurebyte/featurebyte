@@ -62,7 +62,7 @@ def execute_query_fixture():
 @pytest.mark.asyncio
 async def test_update_document__inconsistency_error(feature_service, feature):
     """Test feature creation - document inconsistency error"""
-    data_dict = feature.dict(by_alias=True)
+    data_dict = feature.model_dump(by_alias=True)
     data_dict["_id"] = ObjectId()
     data_dict["name"] = "random_name"
     with pytest.raises(DocumentInconsistencyError) as exc:
@@ -168,8 +168,8 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
         raw_graph = QueryGraphModel(**doc["raw_graph"])
         groupby_node = graph.get_node_by_name("groupby_1")
         raw_groupby_node = raw_graph.get_node_by_name("groupby_1")
-        assert groupby_node.dict() == expected_groupby_node
-        assert raw_groupby_node.dict() == expected_raw_groupby_node
+        assert groupby_node.model_dump() == expected_groupby_node
+        assert raw_groupby_node.model_dump() == expected_raw_groupby_node
 
 
 @pytest.mark.asyncio
@@ -207,14 +207,14 @@ async def test_update_last_updated_date(feature_service, feature):
 
 def test_validate_feature(feature_service, feature, snowflake_event_table_id):
     """Test validate feature method"""
-    feature_dict = feature.dict(by_alias=True)
+    feature_dict = feature.model_dump(by_alias=True)
 
     # construct a feature with inconsistent feature job setting
     query_graph = QueryGraph(**feature_dict["graph"])
     view_node = query_graph.get_node_by_name(node_name="graph_1")
     groupby_node = query_graph.get_node_by_name(node_name="groupby_1")
     feature_node = query_graph.get_node_by_name(node_name="project_1")
-    node_params = groupby_node.dict(by_alias=True)["parameters"]
+    node_params = groupby_node.model_dump(by_alias=True)["parameters"]
     node_params["names"] = ["sum_1w"]
     node_params["windows"] = ["1w"]
     node_params["feature_job_setting"]["period"] = "3600s"

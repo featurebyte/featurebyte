@@ -103,8 +103,8 @@ class BaseTaskPayload(FeatureByteBaseModel):
             return f"/{self.output_collection_name}/{self.output_document_id}"
         return None
 
-    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
-        output: dict[str, Any] = super().dict(*args, **kwargs)
+    def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        output: dict[str, Any] = super().model_dump(*args, **kwargs)
         if self.command:
             output["command"] = self.command.value
         output["output_collection_name"] = self.output_collection_name

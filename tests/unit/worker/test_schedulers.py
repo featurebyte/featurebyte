@@ -44,6 +44,6 @@ def test_mongo_schedule_entry_due_check(current_time, last_run_at, expected):
             last_run_at=pd.to_datetime(last_run_at),
             queue="io_task",
         )
-        task = PeriodicTaskDoc(**periodic_task.dict())
+        task = PeriodicTaskDoc(**periodic_task.model_dump())
         print(MongoScheduleEntry(task).is_due())
         assert MongoScheduleEntry(task).is_due() == expected

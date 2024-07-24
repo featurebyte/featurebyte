@@ -132,7 +132,7 @@ async def test_initialize_prerequisite(service, offline_store_feature_table_1):
     with freeze_time(current_time):
         prerequisite = await service.initialize_prerequisite(offline_store_feature_table_1.id)
     assert prerequisite is not None
-    prerequisite_dict = prerequisite.dict(
+    prerequisite_dict = prerequisite.model_dump(
         include={"offline_store_feature_table_id", "scheduled_job_ts", "completed"}, by_alias=True
     )
     assert prerequisite_dict == {
@@ -243,7 +243,7 @@ async def test_run_feature_materialize__no_prerequisites(
 
     # Check materialize task is triggered
     assert len(mock_task_manager_submit.call_args_list) == 1
-    submitted_payload = mock_task_manager_submit.call_args[0][0].dict()
+    submitted_payload = mock_task_manager_submit.call_args[0][0].model_dump()
     assert {
         "command": "SCHEDULED_FEATURE_MATERIALIZE",
         "offline_store_feature_table_name": offline_store_feature_table_no_aggregation_ids.name,
@@ -263,7 +263,7 @@ async def test_run_feature_materialize__no_prerequisites(
         "offline_store_feature_table_name": "cust_id_1d",
         "scheduled_job_ts": datetime(2024, 1, 15, 0, 0, 0),
         "incomplete_tile_tasks": None,
-    }.items() <= run_model.dict().items()
+    }.items() <= run_model.model_dump().items()
 
 
 @freeze_time(datetime(2024, 1, 15, 9, 12, 0), tick=True)
@@ -303,7 +303,7 @@ async def test_run_feature_materialize__prerequisite_met(
     # Check materialize task is triggered
     assert caplog.records[-1].msg == "Prerequisites for feature materialize task met"
     assert len(mock_task_manager_submit.call_args_list) == 1
-    submitted_payload = mock_task_manager_submit.call_args[0][0].dict()
+    submitted_payload = mock_task_manager_submit.call_args[0][0].model_dump()
     assert {
         "command": "SCHEDULED_FEATURE_MATERIALIZE",
         "offline_store_feature_table_name": offline_store_feature_table_1.name,
@@ -323,7 +323,7 @@ async def test_run_feature_materialize__prerequisite_met(
         "offline_store_feature_table_name": "cust_id_1h",
         "scheduled_job_ts": datetime(2024, 1, 15, 9, 10, 0),
         "incomplete_tile_tasks": None,
-    }.items() <= run_model.dict().items()
+    }.items() <= run_model.model_dump().items()
 
 
 @freeze_time(datetime(2024, 1, 15, 9, 12, 0), tick=True)
@@ -355,7 +355,7 @@ async def test_run_feature_materialize__timeout(
         caplog.records[-1].msg == "Running feature materialize task but prerequisites are not met"
     )
     assert len(mock_task_manager_submit.call_args_list) == 1
-    submitted_payload = mock_task_manager_submit.call_args[0][0].dict()
+    submitted_payload = mock_task_manager_submit.call_args[0][0].model_dump()
     assert {
         "command": "SCHEDULED_FEATURE_MATERIALIZE",
         "offline_store_feature_table_name": offline_store_feature_table_1.name,
@@ -375,4 +375,4 @@ async def test_run_feature_materialize__timeout(
         "offline_store_feature_table_name": "cust_id_1h",
         "scheduled_job_ts": datetime(2024, 1, 15, 9, 10, 0),
         "incomplete_tile_tasks": [{"aggregation_id": "agg_id_x", "reason": "timeout"}],
-    }.items() <= run_model.dict().items()
+    }.items() <= run_model.model_dump().items()

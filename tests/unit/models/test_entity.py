@@ -19,7 +19,7 @@ def test_entity_model():
         updated_at=datetime(2022, 6, 30),
         user_id=ObjectId(),
     )
-    entity_dict = entity.dict(by_alias=True)
+    entity_dict = entity.model_dump(by_alias=True)
     assert set(entity_dict.keys()) == {
         "_id",
         "user_id",

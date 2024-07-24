@@ -106,7 +106,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         "description": None,
         "is_deleted": False,
     }
-    assert event_table.dict() == expected_event_table_dict
+    assert event_table.model_dump() == expected_event_table_dict
     event_table_json = event_table.model_dump_json(by_alias=True)
     event_table_loaded = EventTableModel.parse_raw(event_table_json)
     assert event_table_loaded == event_table
@@ -122,7 +122,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
 )
 def test_invalid_job_setting__invalid_unit(feature_job_setting, field, value):
     """Test validation on invalid job settings"""
-    setting_dict = feature_job_setting.dict()
+    setting_dict = feature_job_setting.model_dump()
     setting_dict[field] = value
     with pytest.raises(ValidationError) as exc_info:
         FeatureJobSetting(**setting_dict)
@@ -131,7 +131,7 @@ def test_invalid_job_setting__invalid_unit(feature_job_setting, field, value):
 
 def test_invalid_job_setting__too_small(feature_job_setting):
     """Test validation on invalid job settings"""
-    setting_dict = feature_job_setting.dict()
+    setting_dict = feature_job_setting.model_dump()
     setting_dict["period"] = "1s"
     with pytest.raises(ValidationError) as exc_info:
         FeatureJobSetting(**setting_dict)

@@ -75,7 +75,7 @@ class TileSpec(FeatureByteBaseModel):
     def _default_entity_tracker_table_name(cls, values: Any) -> Any:
         # Fill in default entity_tracker_table_name if not provided. For tests.
         if isinstance(values, BaseModel):
-            values = values.dict(by_alias=True)
+            values = values.model_dump(by_alias=True)
 
         if values.get("entity_tracker_table_name") is None:
             values["entity_tracker_table_name"] = (
