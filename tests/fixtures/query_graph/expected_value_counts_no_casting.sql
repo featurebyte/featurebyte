@@ -1,4 +1,4 @@
-WITH data AS (
+WITH "data" AS (
   SELECT
     "a" AS "a"
   FROM "db"."public"."event_table"
@@ -13,7 +13,7 @@ FROM (
   SELECT
     "a",
     COUNT(*) AS "__FB_COUNTS"
-  FROM data
+  FROM "data"
   GROUP BY
     "a"
   ORDER BY

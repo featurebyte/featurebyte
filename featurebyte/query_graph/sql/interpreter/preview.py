@@ -571,7 +571,7 @@ class PreviewMixin(BaseGraphInterpreter):
                     quoted=True,
                 ),
             )
-            .from_(CASTED_DATA_TABLE_NAME if use_casted_data else "data")
+            .from_(quoted_identifier(CASTED_DATA_TABLE_NAME if use_casted_data else "data"))
             .group_by(col_expr)
             .order_by(
                 expressions.Ordered(this=quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), desc=True)
@@ -690,7 +690,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 )
             )
         sql_tree = expressions.select(*casted_columns).from_(quoted_identifier(input_table_name))
-        return CASTED_DATA_TABLE_NAME, sql_tree
+        return quoted_identifier(CASTED_DATA_TABLE_NAME), sql_tree
 
     @staticmethod
     def _clip_column_before_stats_func(
