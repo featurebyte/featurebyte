@@ -16,6 +16,7 @@ from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.schema.feature_list import FeatureListPreview
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.schema.preview import FeatureOrTargetPreview
+from featurebyte.warning import QueryNoLimitWarning
 
 
 @pytest.fixture(name="empty_graph")
@@ -252,6 +253,18 @@ async def test_preview_featurelist__missing_entity(
     assert str(exc.value) == expected
 
 
+async def mock_execute_query(query):
+    """Execute query mock"""
+    if "%missing" not in query:
+        return pd.DataFrame({"count": [100]})
+    result_column_names = [
+        col.alias_or_name for col in parse_one(query, read="snowflake").expressions
+    ]
+    # Make %missing stats null in all columns
+    data = {col: ["some_value"] if "%missing" not in col else [None] for col in result_column_names}
+    return pd.DataFrame(data)
+
+
 @pytest.mark.parametrize("drop_all_null_stats", [False, True])
 @pytest.mark.asyncio
 async def test_describe_drop_all_null_stats(
@@ -265,18 +278,6 @@ async def test_describe_drop_all_null_stats(
     """
 
     # pylint: disable=no-member
-    async def mock_execute_query(query):
-        if "%missing" not in query:
-            return pd.DataFrame({"count": [100]})
-        result_column_names = [
-            col.alias_or_name for col in parse_one(query, read="snowflake").expressions
-        ]
-        # Make %missing stats null in all columns
-        data = {
-            col: ["some_value"] if "%missing" not in col else [None] for col in result_column_names
-        }
-        return pd.DataFrame(data)
-
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     result = dataframe_from_json(
@@ -361,3 +362,25 @@ async def test_value_counts_not_convert_keys_to_string(
         convert_keys_to_string=False,
     )
     assert result == expected
+
+
+@pytest.mark.asyncio
+async def test_query_no_limit_warning_is_raised(
+    preview_service,
+    feature_store_sample,
+    feature_store_preview,
+    mock_snowflake_session,
+):
+    """Test query no limit warning is raised"""
+
+    # mock execute query & check warning
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    with pytest.warns(QueryNoLimitWarning):
+        await preview_service.describe(feature_store_sample, size=0, seed=0)
+
+    with pytest.warns(QueryNoLimitWarning):
+        await preview_service.sample(feature_store_sample, size=0, seed=0)
+
+    with pytest.warns(QueryNoLimitWarning):
+        await preview_service.preview(feature_store_preview, limit=0)

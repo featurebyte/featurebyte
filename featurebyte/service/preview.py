@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Any, Optional, Tuple, Type
 
+import warnings
+
 import pandas as pd
 from bson import ObjectId
 
@@ -23,6 +25,7 @@ from featurebyte.schema.feature_store import (
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
+from featurebyte.warning import QueryNoLimitWarning
 
 DEFAULT_COLUMNS_BATCH_SIZE = 50
 
@@ -151,6 +154,12 @@ class PreviewService:
             node_name=preview.node_name,
             feature_store_id=preview.feature_store_id,
         )
+        if limit == 0:
+            warnings.warn(
+                "No limit on sampling size is not recommended and may be slow and trigger OOM errors.",
+                QueryNoLimitWarning,
+            )
+
         preview_sql, type_conversions = GraphInterpreter(
             preview.graph, source_type=feature_store.type
         ).construct_preview_sql(node_name=preview.node_name, num_rows=limit)
@@ -183,7 +192,12 @@ class PreviewService:
         if size > 0:
             total_num_rows = await self._get_row_count(session, sample)
         else:
+            warnings.warn(
+                "No limit on sampling size is not recommended and may be slow and trigger OOM errors.",
+                QueryNoLimitWarning,
+            )
             total_num_rows = None
+
         sample_sql, type_conversions = GraphInterpreter(
             sample.graph, source_type=feature_store.type
         ).construct_sample_sql(
@@ -241,6 +255,10 @@ class PreviewService:
         if size > 0:
             total_num_rows = await self._get_row_count(session, sample)
         else:
+            warnings.warn(
+                "No limit on sampling size is not recommended and may be slow and trigger OOM errors.",
+                QueryNoLimitWarning,
+            )
             total_num_rows = None
 
         describe_queries = GraphInterpreter(
