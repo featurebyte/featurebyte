@@ -225,6 +225,30 @@ async def catalog_specific_migration_method_constructor(
     return migration_marker(decorated_migrate_method)
 
 
+def get_migration_methods_to_apply(current_metadata_version: int) -> list[Any]:
+    """
+    Get new migration methods to apply based on the current metadata version
+
+    Parameters
+    ----------
+    current_metadata_version: int
+        Current metadata version
+
+    Returns
+    -------
+    list[Any]
+        List of migration methods to apply
+    """
+    migrate_methods = retrieve_all_migration_methods()
+    new_versions_to_apply = sorted(
+        version for version in migrate_methods if version > current_metadata_version
+    )
+    migration_methods_to_apply = []
+    for version in new_versions_to_apply:
+        migration_methods_to_apply.append(migrate_methods[version])
+    return migration_methods_to_apply
+
+
 async def migrate_method_generator(  # pylint: disable=too-many-locals
     user: Any,
     persistent: Persistent,
@@ -283,10 +307,8 @@ async def migrate_method_generator(  # pylint: disable=too-many-locals
         ),
         instance_map=instance_map,
     )
-    migrate_methods = retrieve_all_migration_methods()
-    version_start = schema_metadata.version + 1
-    for version in range(version_start, len(migrate_methods) + 1):
-        migrate_method_data = migrate_methods[version]
+    new_methods_to_apply = get_migration_methods_to_apply(schema_metadata.version)
+    for migrate_method_data in new_methods_to_apply:
         module = importlib.import_module(migrate_method_data["module"])
         migrate_service_class = getattr(module, migrate_method_data["class"])
         migrate_service_instance_name = _get_class_name(migrate_service_class.__name__)
