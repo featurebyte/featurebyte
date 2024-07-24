@@ -4,7 +4,7 @@ Test for ObservationTableService
 
 import textwrap
 from unittest import mock
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pandas as pd
 import pytest
@@ -23,6 +23,17 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.service.observation_table import validate_columns_info
 from featurebyte.session.base import BaseSession
+
+
+@pytest.fixture(autouse=True)
+def patch_unique_identifier():
+    """
+    Patch unique identifier generator
+    """
+    with patch(
+        "featurebyte.query_graph.sql.interpreter.preview.ObjectId", return_value=ObjectId("0" * 24)
+    ):
+        yield
 
 
 @pytest.fixture(name="observation_table_from_source_table")
@@ -115,6 +126,8 @@ def db_session_fixture(point_in_time_has_missing_values):
         list_table_schema=Mock(side_effect=mock_list_table_schema),
         execute_query_long_running=Mock(side_effect=execute_query_long_running),
         source_type=SourceType.SNOWFLAKE,
+        schema_name="my_schema",
+        database_name="my_db",
     )
     return mock_db_session
 
@@ -192,12 +205,7 @@ async def test_validate__most_recent_point_in_time(
 
         expected_query = textwrap.dedent(
             """
-            WITH data AS (
-              SELECT
-                "POINT_IN_TIME" AS "POINT_IN_TIME",
-                "cust_id" AS "cust_id"
-              FROM "fb_database"."fb_schema"."fb_table"
-            ), stats AS (
+            WITH stats AS (
               SELECT
                 COUNT(DISTINCT "POINT_IN_TIME") AS "unique__0",
                 (
@@ -225,7 +233,7 @@ async def test_validate__most_recent_point_in_time(
                 ) * 100 AS "%missing__1",
                 NULL AS "min__1",
                 NULL AS "max__1"
-              FROM data
+              FROM "__TEMP_SAMPLED_DATA_000000000000000000000000"
             ), joined_tables_0 AS (
               SELECT
                 *
