@@ -259,6 +259,7 @@ class PreviewService:
         await session.create_table_as(
             table_details=describe_queries.data.output_table_name,
             select_expr=describe_queries.data.expr,
+            kind="VIEW",
         )
         try:
             df_queries = []
