@@ -731,6 +731,8 @@ class PreviewMixin(BaseGraphInterpreter):
 
         Parameters
         ----------
+        input_table_name: str
+            Table name to use for input data
         sql_tree: expressions.Select
             SQL Expression to describe
         columns: List[ViewDataColumn]
