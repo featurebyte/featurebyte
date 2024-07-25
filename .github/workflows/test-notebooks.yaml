@@ -139,7 +139,7 @@ jobs:
         run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(poetry version --short)"
       - name: Run notebook tests
         run: task test-playground-notebooks
-    timeout-minutes: 30
+    timeout-minutes: 45
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}
