@@ -10,7 +10,7 @@ name: test-notebooks
     branches:
       - main
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: "${{ github.workflow }}-${{ github.head_ref }}"
   cancel-in-progress: true
 env:
   GCR_DOCKER_LOCATION: us-central1
@@ -139,7 +139,7 @@ jobs:
         run: docker tag featurebyte-server:latest "featurebyte/featurebyte-server:$(poetry version --short)"
       - name: Run notebook tests
         run: task test-playground-notebooks
-    timeout-minutes: 30
+    timeout-minutes: 45
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}
@@ -194,7 +194,7 @@ jobs:
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "```test-quick-start-notebooks: [${{ env.TEST_QUICK_START_NOTEBOOKS_RESULT }}]\n--> test-deep-dive-notebooks: [${{ env.TEST_DEEP_DIVE_NOTEBOOKS_RESULT }}]\n--> test-playground-notebooks: [${{ env.TEST_PLAYGROUND_NOTEBOOKS_RESULT }}]```"
+                            "text": "```test-quick-start-notebooks: [${{ env.TEST_QUICK_START_NOTEBOOKS_RESULT }}]\ntest-deep-dive-notebooks: [${{ env.TEST_DEEP_DIVE_NOTEBOOKS_RESULT }}]\ntest-playground-notebooks: [${{ env.TEST_PLAYGROUND_NOTEBOOKS_RESULT }}]```"
                         }
                     }
                 ]
