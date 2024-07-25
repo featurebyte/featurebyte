@@ -1,22 +1,11 @@
-WITH data AS (
-  SELECT
-    "ts" AS "ts",
-    "cust_id" AS "cust_id",
-    "a" AS "a",
-    "b" AS "b",
-    "a" AS "a_copy"
-  FROM "db"."public"."event_table"
-  ORDER BY
-    RANDOM(1234)
-  LIMIT 10
-), casted_data AS (
+WITH "casted_data" AS (
   SELECT
     CAST("ts" AS STRING) AS "ts",
     CAST("cust_id" AS STRING) AS "cust_id",
     CAST("a" AS STRING) AS "a",
     CAST("b" AS STRING) AS "b",
     CAST("a_copy" AS STRING) AS "a_copy"
-  FROM data
+  FROM "__TEMP_SAMPLED_DATA_000000000000000000000000"
 ), counts__1 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict."COUNT_DICT") AS "entropy__1",
@@ -32,7 +21,7 @@ WITH data AS (
       SELECT
         "cust_id",
         COUNT(*) AS "__FB_COUNTS"
-      FROM casted_data
+      FROM "casted_data"
       GROUP BY
         "cust_id"
       ORDER BY

@@ -274,21 +274,32 @@ class PreviewService:
             columns_batch_size=columns_batch_size,
             total_num_rows=total_num_rows,
         )
-        df_queries = []
-        for describe_query in describe_queries.queries:
-            logger.debug("Execute describe SQL", extra={"describe_sql": describe_query.sql})
-            result = await session.execute_query_long_running(describe_query.sql)
-            columns = describe_query.columns
-            assert result is not None
-            df_query = pd.DataFrame(
-                result.values.reshape(len(columns), -1).T,
-                index=describe_query.row_names,
-                columns=[str(column.name) for column in columns],
+        await session.create_table_as(
+            table_details=describe_queries.data.output_table_name,
+            select_expr=describe_queries.data.expr,
+        )
+        try:
+            df_queries = []
+            for describe_query in describe_queries.queries:
+                logger.debug("Execute describe SQL", extra={"describe_sql": describe_query.sql})
+                result = await session.execute_query_long_running(describe_query.sql)
+                columns = describe_query.columns
+                assert result is not None
+                df_query = pd.DataFrame(
+                    result.values.reshape(len(columns), -1).T,
+                    index=describe_query.row_names,
+                    columns=[str(column.name) for column in columns],
+                )
+                df_queries.append(df_query)
+            results = pd.concat(df_queries, axis=1)
+            if drop_all_null_stats:
+                results = results.dropna(axis=0, how="all")
+        finally:
+            await session.drop_table(
+                table_name=describe_queries.data.output_table_name,
+                schema_name=session.schema_name,
+                database_name=session.database_name,
             )
-            df_queries.append(df_query)
-        results = pd.concat(df_queries, axis=1)
-        if drop_all_null_stats:
-            results = results.dropna(axis=0, how="all")
         return dataframe_to_json(results, describe_queries.type_conversions, skip_prepare=True)
 
     async def value_counts(

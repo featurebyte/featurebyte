@@ -1,15 +1,4 @@
-WITH data AS (
-  SELECT
-    "ts" AS "ts",
-    "cust_id" AS "cust_id",
-    "a" AS "a",
-    "b" AS "b",
-    "a" AS "a_copy"
-  FROM "db"."public"."event_table"
-  ORDER BY
-    RANDOM(1234)
-  LIMIT 10
-), stats AS (
+WITH stats AS (
   SELECT
     MIN(
       IFF(
@@ -31,7 +20,7 @@ WITH data AS (
     NULL AS "max__1",
     MIN("a") AS "min__2",
     MAX("a") AS "max__2"
-  FROM data
+  FROM "__TEMP_SAMPLED_DATA_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
