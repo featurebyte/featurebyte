@@ -310,11 +310,15 @@ async def test_value_counts(
     )
     result = await preview_service.value_counts(
         feature_store_preview,
+        column_names=["col_int", "col_float", "col_char"],
         num_rows=100000,
         num_categories_limit=500,
-        convert_keys_to_string=True,
     )
-    assert result == {"1": 100, "2": 50, None: 3}
+    assert result == {
+        "col_int": {1: 100, 2: 50, None: 3},
+        "col_float": {1.0: 100, 2.0: 50, None: 3},
+        "col_char": {"1": 100, "2": 50, None: 3},
+    }
 
 
 @pytest.mark.parametrize(
@@ -341,6 +345,7 @@ async def test_value_counts(
 async def test_value_counts_not_convert_keys_to_string(
     preview_service,
     feature_store_preview_project_column,
+    project_column,
     keys,
     expected,
     mock_snowflake_session,
@@ -357,7 +362,7 @@ async def test_value_counts_not_convert_keys_to_string(
     result = await preview_service.value_counts(
         feature_store_preview_project_column,
         num_rows=100000,
+        column_names=[project_column],
         num_categories_limit=500,
-        convert_keys_to_string=False,
     )
-    assert result == expected
+    assert result == {project_column: expected}
