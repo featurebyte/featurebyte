@@ -4,11 +4,10 @@ This module contains the mixin class used by api objects.
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, Union
-
 import time
 from datetime import datetime
 from http import HTTPStatus
+from typing import Any, Optional, Tuple, Union
 
 import pandas as pd
 from alive_progress import alive_bar

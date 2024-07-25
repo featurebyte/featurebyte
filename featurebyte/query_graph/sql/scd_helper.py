@@ -4,9 +4,8 @@ Utilities for SCD join / lookup
 
 from __future__ import annotations
 
-from typing import Literal, Optional, cast
-
 from dataclasses import dataclass
+from typing import Literal, Optional, cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select

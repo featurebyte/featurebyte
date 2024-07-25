@@ -2,9 +2,8 @@
 Featurebyte registry store
 """
 
-from typing import cast
-
 from pathlib import Path
+from typing import cast
 
 # pylint: disable=no-name-in-module
 from feast.infra.registry.file import FileRegistryStore

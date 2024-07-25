@@ -2,9 +2,8 @@
 Deployment API routes
 """
 
-from typing import Literal, Optional
-
 from http import HTTPStatus
+from typing import Literal, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Query, Request, Response

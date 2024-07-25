@@ -4,10 +4,9 @@ Historical features SQL generation
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple, cast
-
 import datetime
 from abc import ABC, abstractmethod
+from typing import List, Optional, Tuple, cast
 
 import numpy as np
 import pandas as pd

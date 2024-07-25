@@ -6,12 +6,11 @@ FeatureMaterializeService class
 
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Tuple, cast
-
 import textwrap
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Tuple, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -407,7 +406,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         source_feature_table_serving_names: List[str],
         lookup_feature_table: OfflineStoreFeatureTableModel,
     ) -> MaterializedFeatures:
-
         # Construct a lookup universe table with both the child and parent entities to be joined
         # with the source feature table
         unique_id = ObjectId()
@@ -472,12 +470,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         if len(lookup_feature_table.serving_names) > 1:
             combined_serving_names = get_combined_serving_names(lookup_feature_table.serving_names)
             serving_name_exprs[combined_serving_names] = expressions.alias_(
-                get_combined_serving_names_expr(
-                    [
-                        serving_name_exprs[serving_name]
-                        for serving_name in lookup_feature_table.serving_names
-                    ]
-                ),
+                get_combined_serving_names_expr([
+                    serving_name_exprs[serving_name]
+                    for serving_name in lookup_feature_table.serving_names
+                ]),
                 alias=combined_serving_names,
             )
 
@@ -627,8 +623,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                     feature_table_model=current_feature_table, online_store_id=None
                 )
                 if feature_store and feature_store.config.online_store is not None:
-                    online_store_last_materialized_at = current_feature_table.get_online_store_last_materialized_at(
-                        feature_store.online_store_id  # type: ignore
+                    online_store_last_materialized_at = (
+                        current_feature_table.get_online_store_last_materialized_at(
+                            feature_store.online_store_id  # type: ignore
+                        )
                     )
                     await self._materialize_online(
                         feature_store=feature_store,
@@ -756,7 +754,6 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         session: BaseSession,
         feature_table_model: OfflineStoreFeatureTableModel,
     ) -> AsyncIterator[MaterializedFeatures]:
-
         timestamp_cols = [quoted_identifier(InternalName.FEATURE_TIMESTAMP_COLUMN.value)]
         join_key_cols = [quoted_identifier(col) for col in feature_table_model.serving_names]
 
@@ -1127,12 +1124,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                     quoted=True,
                 )
             )
-            .select(
-                *[
-                    quoted_identifier(column)
-                    for column in materialized_features.serving_names_and_column_names
-                ]
-            )
+            .select(*[
+                quoted_identifier(column)
+                for column in materialized_features.serving_names_and_column_names
+            ])
             .from_(quoted_identifier(materialized_features.materialized_table_name)),
         )
         await cls._add_primary_key_constraint_if_necessary(
@@ -1197,12 +1192,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                         quoted=True,
                     )
                 )
-                .select(
-                    *[
-                        quoted_identifier(column)
-                        for column in materialized_features.serving_names_and_column_names
-                    ]
-                )
+                .select(*[
+                    quoted_identifier(column)
+                    for column in materialized_features.serving_names_and_column_names
+                ])
                 .from_(quoted_identifier(materialized_features.materialized_table_name)),
             ),
             source_type=session.source_type,
@@ -1287,12 +1280,10 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                 this=quoted_identifier(feature_table_name),
                 alias=expressions.TableAlias(this="offline_store_table"),
             ),
-            using=expressions.select(
-                *[
-                    quoted_identifier(column)
-                    for column in materialized_features.serving_names_and_column_names
-                ]
-            )
+            using=expressions.select(*[
+                quoted_identifier(column)
+                for column in materialized_features.serving_names_and_column_names
+            ])
             .from_(quoted_identifier(materialized_features.materialized_table_name))
             .subquery(alias="materialized_features"),
             on=expressions.and_(*merge_conditions) if merge_conditions else expressions.false(),

@@ -2,6 +2,7 @@
 """
 Common test fixtures used across unit test directories
 """
+
 import copy
 import json
 import logging
@@ -113,9 +114,7 @@ def mock_websocket_client_fixture(request):
         with mock.patch(
             "featurebyte.config.Configurations.get_websocket_client"
         ) as mock_get_websocket_client:
-            mock_get_websocket_client.return_value.__enter__.return_value.receive_json.return_value = (
-                None
-            )
+            mock_get_websocket_client.return_value.__enter__.return_value.receive_json.return_value = None
             yield mock_get_websocket_client
 
 

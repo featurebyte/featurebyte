@@ -4,10 +4,9 @@ This module contains DataBricks accessor class
 
 from __future__ import annotations
 
+import os
 from types import ModuleType
 from typing import Any, List, Optional
-
-import os
 
 import pandas as pd
 

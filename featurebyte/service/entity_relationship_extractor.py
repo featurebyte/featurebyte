@@ -2,11 +2,10 @@
 Entity Relationship Extractor Service
 """
 
-from typing import Dict, List, Optional, Sequence
-
 import itertools
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Sequence
 
 from bson import ObjectId
 

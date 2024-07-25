@@ -4,12 +4,11 @@ API Object Util
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterator, List, Optional, Union
-
 import ctypes
 import threading
 from dataclasses import dataclass
 from http import HTTPStatus
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 from bson import ObjectId
 

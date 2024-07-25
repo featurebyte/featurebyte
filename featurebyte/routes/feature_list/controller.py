@@ -4,10 +4,9 @@ FeatureList API route controller
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Tuple, Union
-
 import copy
 from http import HTTPStatus
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Tuple, Union
 
 from bson import ObjectId, json_util
 from fastapi import UploadFile
@@ -134,14 +133,12 @@ class FeatureListController(
         Optional[Task]
             Task object
         """
-        payload = FeatureListCreateWithBatchFeatureCreationTaskPayload(
-            **{
-                **data.model_dump(by_alias=True),
-                "user_id": self.service.user.id,
-                "catalog_id": self.service.catalog_id,
-                "output_document_id": data.id,
-            }
-        )
+        payload = FeatureListCreateWithBatchFeatureCreationTaskPayload(**{
+            **data.model_dump(by_alias=True),
+            "user_id": self.service.user.id,
+            "catalog_id": self.service.catalog_id,
+            "output_document_id": data.id,
+        })
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_manager.get_task(task_id=str(task_id))
 
@@ -167,17 +164,15 @@ class FeatureListController(
         await self.storage.put_text(
             json_util.dumps(feature_parameters.model_dump(by_alias=True)), features_parameters_path
         )
-        payload = FeatureListCreateTaskPayload(
-            **{
-                "feature_list_id": data.id,
-                "feature_list_name": data.name,
-                "features_parameters_path": str(features_parameters_path),
-                "features_conflict_resolution": data.features_conflict_resolution,
-                "user_id": self.service.user.id,
-                "catalog_id": self.service.catalog_id,
-                "output_document_id": data.id,
-            }
-        )
+        payload = FeatureListCreateTaskPayload(**{
+            "feature_list_id": data.id,
+            "feature_list_name": data.name,
+            "features_parameters_path": str(features_parameters_path),
+            "features_conflict_resolution": data.features_conflict_resolution,
+            "user_id": self.service.user.id,
+            "catalog_id": self.service.catalog_id,
+            "output_document_id": data.id,
+        })
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_manager.get_task(task_id=str(task_id))
 

@@ -5,15 +5,14 @@ Feature and FeatureList classes
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, Union, cast
-from typing_extensions import Literal
-
 from http import HTTPStatus
+from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, Union, cast
 
 import pandas as pd
 from bson import ObjectId
 from pydantic import BaseModel, Field, model_validator
 from typeguard import typechecked
+from typing_extensions import Literal
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature import FeatureListHandler
@@ -675,11 +674,13 @@ class Feature(
         Examples
         --------
         >>> grocery_invoice_view = catalog.get_view("GROCERYINVOICE")
-        >>> invoice_amount_avg_60days = grocery_invoice_view.groupby("GroceryCustomerGuid").aggregate_over(
-        ...   value_column="Amount",
-        ...   method="avg",
-        ...   feature_names=["InvoiceAmountAvg_60days"],
-        ...   windows=["60d"],
+        >>> invoice_amount_avg_60days = grocery_invoice_view.groupby(
+        ...     "GroceryCustomerGuid"
+        ... ).aggregate_over(
+        ...     value_column="Amount",
+        ...     method="avg",
+        ...     feature_names=["InvoiceAmountAvg_60days"],
+        ...     windows=["60d"],
         ... )["InvoiceAmountAvg_60days"]
         >>> invoice_amount_avg_60days.save()  # doctest: +SKIP
         """
@@ -859,16 +860,16 @@ class Feature(
         Create a new feature with a different feature job setting:
 
         >>> new_feature = feature.create_new_version(
-        ...   table_feature_job_settings=[
-        ...     fb.TableFeatureJobSetting(
-        ...       table_name="GROCERYINVOICE",
-        ...       feature_job_setting=fb.FeatureJobSetting(
-        ...         blind_spot="60s",
-        ...         period="3600s",
-        ...         offset="90s",
-        ...       )
-        ...     )
-        ...   ]
+        ...     table_feature_job_settings=[
+        ...         fb.TableFeatureJobSetting(
+        ...             table_name="GROCERYINVOICE",
+        ...             feature_job_setting=fb.FeatureJobSetting(
+        ...                 blind_spot="60s",
+        ...                 period="3600s",
+        ...                 offset="90s",
+        ...             ),
+        ...         )
+        ...     ]
         ... )
         >>> new_feature.info()["table_feature_job_setting"]
         {'this': [{'table_name': 'GROCERYINVOICE',
@@ -891,17 +892,17 @@ class Feature(
         Create a new version of a feature with different table cleaning operations:
 
         >>> new_feature = feature.create_new_version(
-        ...   table_cleaning_operations=[
-        ...     fb.TableCleaningOperation(
-        ...       table_name="GROCERYINVOICE",
-        ...       column_cleaning_operations=[
-        ...         fb.ColumnCleaningOperation(
-        ...           column_name="Amount",
-        ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+        ...     table_cleaning_operations=[
+        ...         fb.TableCleaningOperation(
+        ...             table_name="GROCERYINVOICE",
+        ...             column_cleaning_operations=[
+        ...                 fb.ColumnCleaningOperation(
+        ...                     column_name="Amount",
+        ...                     cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+        ...                 )
+        ...             ],
         ...         )
-        ...       ],
-        ...     )
-        ...   ]
+        ...     ]
         ... )
         >>> new_feature.info()["table_cleaning_operation"]
         {'this': [{'table_name': 'GROCERYINVOICE',
@@ -919,17 +920,17 @@ class Feature(
         table name or column name is not used by the feature):
 
         >>> feature.create_new_version(
-        ...   table_cleaning_operations=[
-        ...     fb.TableCleaningOperation(
-        ...       table_name="GROCERYPRODUCT",
-        ...       column_cleaning_operations=[
-        ...         fb.ColumnCleaningOperation(
-        ...           column_name="GroceryProductGuid",
-        ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0)],
+        ...     table_cleaning_operations=[
+        ...         fb.TableCleaningOperation(
+        ...             table_name="GROCERYPRODUCT",
+        ...             column_cleaning_operations=[
+        ...                 fb.ColumnCleaningOperation(
+        ...                     column_name="GroceryProductGuid",
+        ...                     cleaning_operations=[fb.MissingValueImputation(imputed_value=0)],
+        ...                 )
+        ...             ],
         ...         )
-        ...       ],
-        ...     )
-        ...   ]
+        ...     ]
         ... )
         Traceback (most recent call last):
         ...

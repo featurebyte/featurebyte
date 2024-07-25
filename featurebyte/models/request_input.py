@@ -4,9 +4,8 @@ RequestInput is the base class for all request input types.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, cast
-
 from abc import abstractmethod
+from typing import Any, Dict, List, Literal, Optional, cast
 
 from pydantic import Field, PrivateAttr, StrictStr
 from sqlglot import expressions

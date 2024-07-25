@@ -1,5 +1,4 @@
-"""Tests for feature job setting validation
-"""
+"""Tests for feature job setting validation"""
 
 import pytest
 

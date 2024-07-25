@@ -2,13 +2,12 @@
 Common test fixtures used across files in worker directory
 """
 
-from typing import Any
-
 import os
 import subprocess
 import tempfile
 import threading
 import time
+from typing import Any
 
 import pymongo
 import pytest
@@ -75,15 +74,13 @@ def celery_service_fixture(worker_type):
         client = pymongo.MongoClient(MONGO_CONNECTION)
         persistent = MongoDB(uri=MONGO_CONNECTION, database=database_name)
         env = os.environ.copy()
-        env.update(
-            {
-                "MONGODB_URI": MONGO_CONNECTION,
-                "MONGODB_DB": database_name,
-                "FEATUREBYTE_SERVER": "http://127.0.0.1:8080",
-                "FEATUREBYTE_HOME": tempdir,
-                "REDIS_URI": TEST_REDIS_URI,
-            }
-        )
+        env.update({
+            "MONGODB_URI": MONGO_CONNECTION,
+            "MONGODB_DB": database_name,
+            "FEATUREBYTE_SERVER": "http://127.0.0.1:8080",
+            "FEATUREBYTE_HOME": tempdir,
+            "REDIS_URI": TEST_REDIS_URI,
+        })
         celery = get_celery(redis_uri=TEST_REDIS_URI, mongo_uri=MONGO_CONNECTION)
         celery.conf.mongodb_backend_settings["database"] = database_name
         proc = subprocess.Popen(command, env=env, stdout=subprocess.PIPE)

@@ -4,15 +4,14 @@ Base class for SQL adapters
 
 from __future__ import annotations
 
-from typing import List, Optional
-from typing_extensions import Literal
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import List, Optional
 
 from numpy import format_float_positional
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.query_graph.node.schema import TableDetails

@@ -4,9 +4,8 @@ This module contains EventTable related models
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Tuple, Type
-
 from datetime import datetime
+from typing import Any, ClassVar, List, Optional, Tuple, Type
 
 from pydantic import Field, model_validator
 

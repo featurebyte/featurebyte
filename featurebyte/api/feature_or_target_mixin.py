@@ -2,11 +2,10 @@
 Mixin class containing common methods for feature or target classes
 """
 
-from typing import Any, Sequence, Union, cast
-
 import time
 from abc import ABC
 from http import HTTPStatus
+from typing import Any, Sequence, Union, cast
 
 import pandas as pd
 from bson import ObjectId

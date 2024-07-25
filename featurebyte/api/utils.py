@@ -4,9 +4,8 @@ Utility functions for API Objects
 
 from __future__ import annotations
 
-from typing import Any
-
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import pyarrow as pa

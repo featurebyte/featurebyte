@@ -4,6 +4,9 @@ Persistent base class
 
 from __future__ import annotations
 
+import copy
+from abc import ABC, abstractmethod
+from contextlib import asynccontextmanager
 from typing import (
     Any,
     AsyncIterator,
@@ -16,13 +19,9 @@ from typing import (
     Tuple,
     cast,
 )
-from typing_extensions import Literal
-
-import copy
-from abc import ABC, abstractmethod
-from contextlib import asynccontextmanager
 
 from bson import ObjectId
+from typing_extensions import Literal
 
 from featurebyte.common.model_util import get_utc_now
 from featurebyte.models.persistent import (
@@ -627,13 +626,11 @@ class Persistent(ABC):
                 original_doc, doc_dict
             )
 
-            updated_audit_doc = AuditDocument(
-                **{
-                    **audit_doc.model_dump(by_alias=True),
-                    "previous_values": previous_values,
-                    "current_values": current_values,
-                }
-            )
+            updated_audit_doc = AuditDocument(**{
+                **audit_doc.model_dump(by_alias=True),
+                "previous_values": previous_values,
+                "current_values": current_values,
+            })
             await self._update_one(
                 collection_name=get_audit_collection_name(collection_name),
                 query_filter={"_id": audit_doc.id},

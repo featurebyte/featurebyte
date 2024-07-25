@@ -4,9 +4,8 @@ This module functions used to patch the Feast library.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Union
-
 from collections import defaultdict
+from typing import Any, Dict, Iterable, List, Union
 
 import pandas as pd
 
@@ -204,14 +203,12 @@ def _hash_feature(feature: Field) -> int:
     -------
     int
     """
-    return hash(
-        (
-            feature.name,
-            hash(feature.dtype),
-            hash(feature.description),
-            hash(frozenset(feature.tags.items())),
-        )
-    )
+    return hash((
+        feature.name,
+        hash(feature.dtype),
+        hash(feature.description),
+        hash(frozenset(feature.tags.items())),
+    ))
 
 
 def with_projection(

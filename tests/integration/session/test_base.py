@@ -19,22 +19,20 @@ def sample_dataframe():
     """
     Test dataframe
     """
-    return pd.DataFrame(
-        {
-            "bool": [False, True] * 6,
-            "int": [1] * 10 + [2, 3],
-            "float": [1.1] * 10 + [2.2, 3.3],
-            "string": [None] * 10 + ["Bob", "Charlie"],
-            "date": [pd.Timestamp("2020-01-01")] * 10
-            + [pd.Timestamp("2020-01-02"), pd.Timestamp("2020-01-03")],
-            "timestamp": [pd.Timestamp("2020-01-01 12:00:00")] * 10
-            + [pd.Timestamp("2020-01-02 12:00:00"), pd.Timestamp("2020-01-03 12:00:00")],
-            "int_list": [None] * 10 + [[4, 5, 6], [7, 8, 9]],
-            "float_list": [None] * 10 + [[1.4, 2.5, 3.6], [1.7, 2.8, 3.9]],
-            "string_list": [None] * 10 + [["a", "b"], ["c", "d"]],
-            "dict": [None] * 10 + [{"x": 3, "y": 4}, {"x": 5, "y": 6}],
-        }
-    )
+    return pd.DataFrame({
+        "bool": [False, True] * 6,
+        "int": [1] * 10 + [2, 3],
+        "float": [1.1] * 10 + [2.2, 3.3],
+        "string": [None] * 10 + ["Bob", "Charlie"],
+        "date": [pd.Timestamp("2020-01-01")] * 10
+        + [pd.Timestamp("2020-01-02"), pd.Timestamp("2020-01-03")],
+        "timestamp": [pd.Timestamp("2020-01-01 12:00:00")] * 10
+        + [pd.Timestamp("2020-01-02 12:00:00"), pd.Timestamp("2020-01-03 12:00:00")],
+        "int_list": [None] * 10 + [[4, 5, 6], [7, 8, 9]],
+        "float_list": [None] * 10 + [[1.4, 2.5, 3.6], [1.7, 2.8, 3.9]],
+        "string_list": [None] * 10 + [["a", "b"], ["c", "d"]],
+        "dict": [None] * 10 + [{"x": 3, "y": 4}, {"x": 5, "y": 6}],
+    })
 
 
 @pytest_asyncio.fixture(scope="module", autouse=True)
@@ -86,20 +84,18 @@ async def test_arrow_schema(session):
     arrow_table = reader.read_all()
 
     # expect arrays and dicts to be converted to strings
-    expected_schema = pa.schema(
-        [
-            pa.field("bool", pa.bool_()),
-            pa.field("int", pa.int64()),
-            pa.field("float", pa.float64()),
-            pa.field("string", pa.string()),
-            pa.field("date", pa.timestamp("ns", tz=None)),
-            pa.field("timestamp", pa.timestamp("ns", tz=None)),
-            pa.field("int_list", pa.string()),
-            pa.field("float_list", pa.string()),
-            pa.field("string_list", pa.string()),
-            pa.field("dict", pa.string()),
-        ]
-    )
+    expected_schema = pa.schema([
+        pa.field("bool", pa.bool_()),
+        pa.field("int", pa.int64()),
+        pa.field("float", pa.float64()),
+        pa.field("string", pa.string()),
+        pa.field("date", pa.timestamp("ns", tz=None)),
+        pa.field("timestamp", pa.timestamp("ns", tz=None)),
+        pa.field("int_list", pa.string()),
+        pa.field("float_list", pa.string()),
+        pa.field("string_list", pa.string()),
+        pa.field("dict", pa.string()),
+    ])
     assert arrow_table.schema == expected_schema
 
     # check db variable type metadata

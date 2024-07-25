@@ -200,12 +200,10 @@ class FeatureTableCacheService:
             if definition_hash in cached_hashes or definition_hash in added_hashes:
                 continue
             added_hashes.add(definition_hash)
-            non_cached_nodes.append(
-                (
-                    node,
-                    CachedFeatureDefinition(definition_hash=definition_hash),
-                )
-            )
+            non_cached_nodes.append((
+                node,
+                CachedFeatureDefinition(definition_hash=definition_hash),
+            ))
         return non_cached_nodes
 
     async def _populate_intermediate_table(  # pylint: disable=too-many-arguments
@@ -618,13 +616,11 @@ class FeatureTableCacheService:
             )
             .select(*columns_expr)
             .from_(
-                get_fully_qualified_table_name(
-                    {
-                        "database_name": db_session.database_name,
-                        "schema_name": db_session.schema_name,
-                        "table_name": cache_metadata.table_name,
-                    }
-                )
+                get_fully_qualified_table_name({
+                    "database_name": db_session.database_name,
+                    "schema_name": db_session.schema_name,
+                    "table_name": cache_metadata.table_name,
+                })
             )
         )
         sql = sql_to_string(select_expr, source_type=db_session.source_type)
@@ -709,13 +705,11 @@ class FeatureTableCacheService:
             .select(*request_columns)
             .select(*columns_expr)
             .from_(
-                get_fully_qualified_table_name(
-                    {
-                        "database_name": db_session.database_name,
-                        "schema_name": db_session.schema_name,
-                        "table_name": cache_metadata.table_name,
-                    }
-                )
+                get_fully_qualified_table_name({
+                    "database_name": db_session.database_name,
+                    "schema_name": db_session.schema_name,
+                    "table_name": cache_metadata.table_name,
+                })
             )
         )
         try:

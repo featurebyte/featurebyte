@@ -4,6 +4,10 @@ Feature group module.
 
 from __future__ import annotations
 
+import collections
+import time
+from datetime import datetime
+from http import HTTPStatus
 from typing import (
     Any,
     ClassVar,
@@ -17,11 +21,6 @@ from typing import (
     Union,
     cast,
 )
-
-import collections
-import time
-from datetime import datetime
-from http import HTTPStatus
 
 import pandas as pd
 from alive_progress import alive_bar

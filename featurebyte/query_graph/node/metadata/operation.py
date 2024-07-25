@@ -2,6 +2,8 @@
 This module contains models used to store node output operation info
 """
 
+import dataclasses
+from collections import defaultdict
 from typing import (
     Any,
     DefaultDict,
@@ -18,12 +20,9 @@ from typing import (
     Union,
     overload,
 )
-from typing_extensions import Annotated  # pylint: disable=wrong-import-order
-
-import dataclasses
-from collections import defaultdict
 
 from pydantic import Field
+from typing_extensions import Annotated  # pylint: disable=wrong-import-order
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId

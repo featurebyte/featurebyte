@@ -4,9 +4,8 @@ SCDTable API routes
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from http import HTTPStatus
+from typing import List, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Request

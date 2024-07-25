@@ -4,11 +4,10 @@ Migration script
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Callable, Iterator, Optional, Set, cast
-
 import asyncio
 import importlib
 import inspect
+from typing import Any, AsyncGenerator, Callable, Iterator, Optional, Set, cast
 
 from celery import Celery
 from redis import Redis

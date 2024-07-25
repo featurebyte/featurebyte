@@ -2,10 +2,9 @@
 Customized Hive Connection class
 """
 
-from typing import Any, Mapping, Optional
-
 import logging
 from ssl import CERT_NONE, create_default_context
+from typing import Any, Mapping, Optional
 
 from pyhive import hive
 from pyhive.exc import OperationalError

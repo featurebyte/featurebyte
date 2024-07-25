@@ -4,10 +4,9 @@ Celery worker
 
 from __future__ import annotations
 
-from typing import Any
-
 import asyncio
 from threading import Thread
+from typing import Any
 
 from bson.errors import InvalidDocument
 from celery import Celery

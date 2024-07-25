@@ -3,11 +3,11 @@ Unit tests for featurebyte/query_graph/node/base.py
 """
 
 from typing import Any, List
-from typing_extensions import Literal
 
 import pandas as pd
 import pytest
 from pydantic import BaseModel, Field
+from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.base import BaseNode

@@ -77,12 +77,10 @@ async def test_task_executor(random_task_class, persistent, app_container):
     # run executor
     user_id = ObjectId()
     document_id = ObjectId()
-    app_container.override_instances_for_test(
-        {
-            "persistent": persistent,
-            "user": User(id=user_id),
-        }
-    )
+    app_container.override_instances_for_test({
+        "persistent": persistent,
+        "user": User(id=user_id),
+    })
     await TaskExecutor(
         payload={
             "command": "random_command",

@@ -4,9 +4,8 @@ FeatureStore API routes
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
 from http import HTTPStatus
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from fastapi import Query, Request

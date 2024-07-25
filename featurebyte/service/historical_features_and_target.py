@@ -4,9 +4,8 @@ Module with utility functions to compute historical features
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Optional, Union
-
 import time
+from typing import Any, Callable, Coroutine, Optional, Union
 
 import pandas as pd
 from bson import ObjectId

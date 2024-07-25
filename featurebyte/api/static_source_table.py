@@ -4,9 +4,8 @@ StaticSourceTable class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Union
-
 from pathlib import Path
+from typing import Any, ClassVar, List, Optional, Union
 
 import pandas as pd
 
@@ -50,7 +49,9 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table(
+        ...     "static_source_table_name"
+        ... )  # doctest: +SKIP
         >>> static_source_table.to_pandas()  # doctest: +SKIP
         """
         return super().to_pandas()
@@ -83,7 +84,9 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table(
+        ...     "static_source_table_name"
+        ... )  # doctest: +SKIP
         >>> static_source_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
@@ -107,7 +110,9 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table(
+        ...     "static_source_table_name"
+        ... )  # doctest: +SKIP
         >>> static_source_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
@@ -130,7 +135,9 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table(
+        ...     "static_source_table_name"
+        ... )  # doctest: +SKIP
         >>> static_source_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
@@ -157,8 +164,12 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
-        >>> downloaded_path = static_source_table.download(output_path="path/to/download")  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table(
+        ...     "static_source_table_name"
+        ... )  # doctest: +SKIP
+        >>> downloaded_path = static_source_table.download(
+        ...     output_path="path/to/download"
+        ... )  # doctest: +SKIP
 
         # noqa: DAR402
         """
@@ -175,7 +186,9 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table(
+        ...     "static_source_table_name"
+        ... )  # doctest: +SKIP
         >>> static_source_table.delete()  # doctest: +SKIP
 
         # noqa: DAR402

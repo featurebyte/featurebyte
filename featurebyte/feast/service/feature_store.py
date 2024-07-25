@@ -3,9 +3,8 @@ This module contains classes for constructing feast repository config
 """
 
 # pylint: disable=no-name-in-module
-from typing import Any, Optional
-
 import tempfile
+from typing import Any, Optional
 
 from asyncache import cached
 from bson import ObjectId

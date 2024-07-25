@@ -117,8 +117,7 @@ class EntityInfo(FeatureByteBaseModel):
         original_serving_name = entity.serving_names[0]
         if (
             self.serving_names_mapping is None
-            or original_serving_name
-            not in self.serving_names_mapping  # pylint: disable=unsupported-membership-test
+            or original_serving_name not in self.serving_names_mapping  # pylint: disable=unsupported-membership-test
         ):
             return original_serving_name
         return self.serving_names_mapping[  # pylint: disable=unsubscriptable-object

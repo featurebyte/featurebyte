@@ -1,10 +1,9 @@
 """Python Library for FeatureOps"""
 
-from typing import Any, List, Optional
-
 import os
 import shutil
 import sys
+from typing import Any, List, Optional
 
 import pandas as pd
 import yaml
@@ -222,7 +221,7 @@ def register_profile(
     >>> fb.register_profile(  # doctest: +SKIP
     ...     profile_name="tutorial",
     ...     api_url="https://tutorials.featurebyte.com/api/v1",
-    ...     api_token="your_api_token"
+    ...     api_token="your_api_token",
     ... )
     """
     # Read configuration file
@@ -241,13 +240,11 @@ def register_profile(
             break
     # Add tutorial profile if it's not already there
     else:
-        profiles.append(
-            {
-                "name": profile_name,
-                "api_url": api_url,
-                "api_token": api_token,
-            }
-        )
+        profiles.append({
+            "name": profile_name,
+            "api_url": api_url,
+            "api_token": api_token,
+        })
         loaded_config["profile"] = profiles
         updated_profile = True
 

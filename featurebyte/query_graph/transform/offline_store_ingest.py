@@ -2,9 +2,8 @@
 This module contains offline store ingest query extraction related classes.
 """
 
-from typing import Any, Dict, List, Optional, Set
-
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph_node.base import GraphNode

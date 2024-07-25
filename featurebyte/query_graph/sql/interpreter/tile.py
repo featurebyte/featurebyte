@@ -4,9 +4,8 @@ This module contains the Query Graph Interpreter
 
 from __future__ import annotations
 
-from typing import Optional, cast
-
 from dataclasses import dataclass
+from typing import Optional, cast
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.algorithm import dfs_traversal

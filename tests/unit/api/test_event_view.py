@@ -456,9 +456,10 @@ def test_get_feature_entity_id(
     assert entity_id == cust_id_entity.id
     comp_feature = non_time_based_feature + float_feature
     comp_feature.name = "comp_feature"
-    assert comp_feature.graph.get_entity_ids(node_name=comp_feature.node_name) == sorted(
-        [cust_id_entity.id, transaction_entity.id]
-    )
+    assert comp_feature.graph.get_entity_ids(node_name=comp_feature.node_name) == sorted([
+        cust_id_entity.id,
+        transaction_entity.id,
+    ])
 
     # verify that multiple entity IDs raises error
     with pytest.raises(ValueError) as exc_info:

@@ -312,9 +312,9 @@ def test_tile_table_id__agg_parameters(
         if key in feature_job_setting_params:
             existing_fjs_dict[key] = overrides[key]
     aggregate_kwargs["feature_job_setting"] = FeatureJobSetting(**existing_fjs_dict)
-    aggregate_kwargs.update(
-        {key: val for key, val in overrides.items() if key not in feature_job_setting_params}
-    )
+    aggregate_kwargs.update({
+        key: val for key, val in overrides.items() if key not in feature_job_setting_params
+    })
     tile_id, agg_id = run_groupby_and_get_tile_table_identifier(
         snowflake_event_table, aggregate_kwargs
     )

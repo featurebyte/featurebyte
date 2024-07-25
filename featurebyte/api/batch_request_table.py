@@ -5,9 +5,8 @@ BatchRequestTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Union
-
 from pathlib import Path
+from typing import Any, ClassVar, List, Optional, Union
 
 import pandas as pd
 
@@ -51,7 +50,9 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_request_table = catalog.get_batch_request_table("my_batch_request_table")  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table(
+        ...     "my_batch_request_table"
+        ... )  # doctest: +SKIP
         >>> batch_request_table.to_pandas()  # doctest: +SKIP
         """
         return super().to_pandas()
@@ -84,7 +85,9 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_request_table = catalog.get_batch_request_table("my_batch_request_table")  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table(
+        ...     "my_batch_request_table"
+        ... )  # doctest: +SKIP
         >>> batch_request_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
@@ -108,7 +111,9 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_request_table = catalog.get_batch_request_table("my_batch_request_table")  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table(
+        ...     "my_batch_request_table"
+        ... )  # doctest: +SKIP
         >>> batch_request_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
@@ -131,7 +136,9 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_request_table = catalog.get_batch_request_table("my_batch_request_table")  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table(
+        ...     "my_batch_request_table"
+        ... )  # doctest: +SKIP
         >>> batch_request_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
@@ -158,8 +165,12 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_request_table = catalog.get_batch_request_table("batch_request_table_name")  # doctest: +SKIP
-        >>> downloaded_path = batch_request_table.download(output_path="path/to/download")  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table(
+        ...     "batch_request_table_name"
+        ... )  # doctest: +SKIP
+        >>> downloaded_path = batch_request_table.download(
+        ...     output_path="path/to/download"
+        ... )  # doctest: +SKIP
 
         # noqa: DAR402
         """
@@ -176,7 +187,9 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
 
         Examples
         --------
-        >>> batch_request_table = catalog.get_batch_request_table("batch_request_table_name")  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table(
+        ...     "batch_request_table_name"
+        ... )  # doctest: +SKIP
         >>> batch_request_table.delete()  # doctest: +SKIP
 
         # noqa: DAR402

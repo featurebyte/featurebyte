@@ -4,9 +4,8 @@ Feature Job Setting Analysis task
 
 from __future__ import annotations
 
-from typing import Any
-
 from pathlib import Path
+from typing import Any
 
 from featurebyte_freeware.feature_job_analysis.analysis import create_feature_job_settings_analysis
 from featurebyte_freeware.feature_job_analysis.database import EventDataset

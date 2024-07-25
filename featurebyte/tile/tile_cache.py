@@ -4,10 +4,9 @@ Module for TileCache and its implementors
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Iterator, Optional, cast
-
 import time
 from dataclasses import dataclass
+from typing import Any, Callable, Coroutine, Iterator, Optional, cast
 
 from bson import ObjectId
 from sqlglot import expressions, parse_one
@@ -777,11 +776,9 @@ class TileCache:
 
         tile_compute_sql = cast(
             str,
-            tile_info.sql_template.render(
-                {
-                    InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery(),
-                }
-            ),
+            tile_info.sql_template.render({
+                InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery(),
+            }),
         )
         request = OnDemandTileComputeRequest(
             tile_table_id=tile_info.tile_table_id,

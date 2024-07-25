@@ -3,10 +3,9 @@ DatabricksSession class
 """
 
 # pylint: disable=duplicate-code
-from typing import Any, AsyncGenerator, BinaryIO, Optional
-
 import os
 from io import BytesIO
+from typing import Any, AsyncGenerator, BinaryIO, Optional
 
 import pandas as pd
 import pyarrow as pa

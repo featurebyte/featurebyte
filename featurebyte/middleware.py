@@ -2,10 +2,9 @@
 Handles API requests middleware
 """
 
-from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
-
 import inspect
 from http import HTTPStatus
+from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
 
 from fastapi import FastAPI, Request, Response
 from pydantic import ValidationError

@@ -2,9 +2,8 @@
 Customized smart_open WebHDFS client to support Kerberos authentication
 """
 
-from typing import Any, Dict, List
-
 from http import HTTPStatus
+from typing import Any, Dict, List
 
 import requests
 import requests_kerberos

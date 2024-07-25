@@ -4,11 +4,10 @@ SQLiteSession class
 
 from __future__ import annotations
 
-from typing import Optional, OrderedDict
-
 import collections
 import os
 import sqlite3
+from typing import Optional, OrderedDict
 
 import pandas as pd
 

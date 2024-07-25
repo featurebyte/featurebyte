@@ -139,13 +139,13 @@ class EntityServingNamesService:
                     if existing_sample_values and column.name not in table.primary_key_columns:
                         continue
 
-                    entities[column.entity_id]["sample_value"] = (
-                        await self.get_table_column_unique_values(
-                            feature_store=feature_store,
-                            table=table,
-                            column_name=column.name,
-                            num_rows=count,
-                        )
+                    entities[column.entity_id][
+                        "sample_value"
+                    ] = await self.get_table_column_unique_values(
+                        feature_store=feature_store,
+                        table=table,
+                        column_name=column.name,
+                        num_rows=count,
                     )
 
         return [

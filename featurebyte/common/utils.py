@@ -4,8 +4,6 @@ Common utility functions
 
 from __future__ import annotations
 
-from typing import Any, Generator, Iterator, List, Optional, Union
-
 import ast
 import functools
 import json
@@ -16,6 +14,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
+from typing import Any, Generator, Iterator, List, Optional, Union
 
 import numpy as np
 import pandas as pd

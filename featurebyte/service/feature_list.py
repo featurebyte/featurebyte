@@ -4,10 +4,9 @@ FeatureListService class
 
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, cast
-
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, cast
 
 from bson import ObjectId, json_util
 from redis import Redis
@@ -445,14 +444,12 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
     ) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
-        document = FeatureListModel(
-            **{
-                **data.model_dump(by_alias=True),
-                "version": await self._get_feature_list_version(data.name),
-                "user_id": self.user.id,
-                "catalog_id": self.catalog_id,
-            }
-        )
+        document = FeatureListModel(**{
+            **data.model_dump(by_alias=True),
+            "version": await self._get_feature_list_version(data.name),
+            "user_id": self.user.id,
+            "catalog_id": self.catalog_id,
+        })
         # check any conflict with existing documents
         await self._check_document_unique_constraints(document=document)
 
@@ -473,16 +470,14 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         )
 
         # update document with derived output
-        document = FeatureListModel(
-            **{
-                **document.model_dump(by_alias=True),
-                "features": feature_data["features"],
-                "primary_entity_ids": entity_relationship_data.primary_entity_ids,
-                "relationships_info": entity_relationship_data.relationships_info,
-                "supported_serving_entity_ids": entity_relationship_data.supported_serving_entity_ids,
-                "features_entity_lookup_info": entity_relationship_data.features_entity_lookup_info,
-            }
-        )
+        document = FeatureListModel(**{
+            **document.model_dump(by_alias=True),
+            "features": feature_data["features"],
+            "primary_entity_ids": entity_relationship_data.primary_entity_ids,
+            "relationships_info": entity_relationship_data.relationships_info,
+            "supported_serving_entity_ids": entity_relationship_data.supported_serving_entity_ids,
+            "features_entity_lookup_info": entity_relationship_data.features_entity_lookup_info,
+        })
 
         if progress_callback:
             await progress_callback(70, "Moving feature clusters to storage")

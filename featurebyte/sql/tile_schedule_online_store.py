@@ -2,10 +2,9 @@
 Tile Generate online store Job Script
 """
 
-from typing import List, Optional
-
 import textwrap
 from datetime import datetime
+from typing import List, Optional
 
 from pydantic import ConfigDict, Field
 
@@ -133,9 +132,9 @@ class TileScheduleOnlineStore(BaseSqlModel):
     async def _retrieve_online_store_compute_queries(self) -> List[OnlineStoreComputeQueryModel]:
         if self.aggregation_result_name is not None:
             # Retrieve compute queries for a specific result name (e.g. sum_30d)
-            iterator = self.online_store_compute_query_service.list_by_result_names(
-                [self.aggregation_result_name]
-            )
+            iterator = self.online_store_compute_query_service.list_by_result_names([
+                self.aggregation_result_name
+            ])
         else:
             # Retrieve all compute queries associated with an aggregation_id (e.g. sum_1d, sum_7d,
             # sum_30d, etc)

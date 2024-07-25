@@ -28,13 +28,11 @@ async def app_service_fixture(persistent, storage):
     """
     # use the same database as persistent fixture
     env = os.environ.copy()
-    env.update(
-        {
-            "MONGODB_URI": MONGO_CONNECTION,
-            "MONGODB_DB": persistent._database,
-            "FEATUREBYTE_LOCAL_STORAGE_PATH": storage.base_path,
-        }
-    )
+    env.update({
+        "MONGODB_URI": MONGO_CONNECTION,
+        "MONGODB_DB": persistent._database,
+        "FEATUREBYTE_LOCAL_STORAGE_PATH": storage.base_path,
+    })
     with subprocess.Popen(
         [
             "uvicorn",

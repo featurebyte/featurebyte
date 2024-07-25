@@ -4,9 +4,8 @@ MigrationServiceMixin class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
-
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from celery import Celery
 

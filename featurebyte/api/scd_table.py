@@ -5,11 +5,11 @@ SCDTable class
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, cast
-from typing_extensions import Literal
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, model_validator
 from typeguard import typechecked
+from typing_extensions import Literal
 
 from featurebyte.api.base_table import TableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
@@ -160,16 +160,16 @@ class SCDTable(TableApiObject):
 
         >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
         >>> scd_view = scd_table.get_view(
-        ...   view_mode="manual",
-        ...   drop_column_names=["record_available_at", "CurrentRecord"],
-        ...   column_cleaning_operations=[
-        ...     fb.ColumnCleaningOperation(
-        ...       column_name="Gender",
-        ...       cleaning_operations=[
-        ...         fb.MissingValueImputation(imputed_value="Unknown"),
-        ...       ],
-        ...     )
-        ...   ],
+        ...     view_mode="manual",
+        ...     drop_column_names=["record_available_at", "CurrentRecord"],
+        ...     column_cleaning_operations=[
+        ...         fb.ColumnCleaningOperation(
+        ...             column_name="Gender",
+        ...             cleaning_operations=[
+        ...                 fb.MissingValueImputation(imputed_value="Unknown"),
+        ...             ],
+        ...         )
+        ...     ],
         ... )
         """
         # pylint: disable=import-outside-toplevel
@@ -292,8 +292,8 @@ class SCDTable(TableApiObject):
 
         >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
         >>> change_view = scd_table.get_change_view(
-        ...   track_changes_column="State",
-        ...   prefixes=("previous_", "next_"),
+        ...     track_changes_column="State",
+        ...     prefixes=("previous_", "next_"),
         ... )
         """
         # pylint: disable=import-outside-toplevel
@@ -519,9 +519,9 @@ class SCDTable(TableApiObject):
 
         >>> from featurebyte import FeatureJobSetting
         >>> new_feature_job_setting = FeatureJobSetting(
-        ...   blind_spot="10m",
-        ...   period="24h",
-        ...   offset="65m",
+        ...     blind_spot="10m",
+        ...     period="24h",
+        ...     offset="65m",
         ... )
 
 

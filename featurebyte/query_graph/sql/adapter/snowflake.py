@@ -4,14 +4,13 @@ SnowflakeAdapter class for generating Snowflake specific SQL expressions
 
 from __future__ import annotations
 
-from typing import List, Optional, cast
-from typing_extensions import Literal
-
 import re
 import string
+from typing import List, Optional, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Identifier, Select, alias_, select
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
 from featurebyte.query_graph.node.schema import TableDetails
@@ -515,9 +514,9 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
     ) -> str:
         alter_table_sql = f"ALTER TABLE {sql_to_string(table, source_type=cls.source_type)}"
         first = sql_to_string(columns[0], source_type=cls.source_type)
-        rest = ",\n".join(
-            [sql_to_string(col, source_type=cls.source_type) for col in columns[1:]]
-        ).strip()
+        rest = ",\n".join([
+            sql_to_string(col, source_type=cls.source_type) for col in columns[1:]
+        ]).strip()
         alter_table_sql += f" ADD COLUMN {first}"
         if rest:
             alter_table_sql += f",\n{rest}"

@@ -5,7 +5,6 @@ FeatureList API payload schema
 from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from typing_extensions import Annotated
 
 import numpy as np
 from bson import ObjectId
@@ -19,6 +18,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from typing_extensions import Annotated
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
@@ -135,7 +135,9 @@ class FeatureVersionInfo(FeatureByteBaseModel):
     Examples
     --------
     >>> new_feature_list = feature_list.create_new_version(  # doctest: +SKIP
-    ...   features=[fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)]
+    ...     features=[
+    ...         fb.FeatureVersionInfo(name="InvoiceCount_60days", version=new_feature.version)
+    ...     ]
     ... )
     """
 

@@ -4,11 +4,10 @@ This module contains Feature list related models
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set, cast
-
 import functools
 from collections import defaultdict
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, cast
 
 import pymongo
 from bson import ObjectId
@@ -224,9 +223,9 @@ class FeatureReadinessDistribution(RootModel[Any]):
         -------
         FeatureReadinessDistribution
         """
-        return FeatureReadinessDistribution(
-            [FeatureReadinessCount(readiness=min(FeatureReadiness), count=self.total_count)]
-        )
+        return FeatureReadinessDistribution([
+            FeatureReadinessCount(readiness=min(FeatureReadiness), count=self.total_count)
+        ])
 
 
 class FeatureNodeDefinitionHash(FeatureByteBaseModel):
@@ -337,7 +336,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     version: VersionIdentifier = Field(frozen=True, description="Feature list version")
     relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
-        frozen=True, default=None  # DEV-556
+        frozen=True,
+        default=None,  # DEV-556
     )
     features_entity_lookup_info: Optional[List[FeatureEntityLookupInfo]] = Field(
         frozen=True, default=None
@@ -464,12 +464,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         readiness_count_map: dict[FeatureReadiness, int] = defaultdict(int)
         for feature in features:
             readiness_count_map[feature.readiness] += 1
-        return FeatureReadinessDistribution(
-            [
-                FeatureReadinessCount(readiness=readiness, count=count)
-                for readiness, count in readiness_count_map.items()
-            ]
-        )
+        return FeatureReadinessDistribution([
+            FeatureReadinessCount(readiness=readiness, count=count)
+            for readiness, count in readiness_count_map.items()
+        ])
 
     @staticmethod
     def derive_dtype_distribution(features: List[FeatureModel]) -> List[FeatureTypeFeatureCount]:

@@ -77,7 +77,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         ...     name="amount_7d_target",
         ...     window="7d",
         ...     dtype=DBVarType.FLOAT,
-        ...     primary_entity=["customer"]
+        ...     primary_entity=["customer"],
         ... )
         """
         entity_ids = [Entity.get(entity_name).id for entity_name in primary_entity]
@@ -160,7 +160,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         ...     name="amount_7d_target",
         ...     window="7d",
         ...     dtype=DBVarType.FLOAT,
-        ...     primary_entity=["customer"]
+        ...     primary_entity=["customer"],
         ... )
         >>> target_namespace.delete()  # doctest: +SKIP
         """

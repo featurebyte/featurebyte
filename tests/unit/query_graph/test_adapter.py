@@ -1,6 +1,5 @@
-from typing import cast
-
 import textwrap
+from typing import cast
 
 import pytest
 from sqlglot import expressions, parse_one

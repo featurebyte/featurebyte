@@ -5,10 +5,9 @@ ObservationTable class
 # pylint: disable=duplicate-code
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Sequence, Union
-
 import os
 from pathlib import Path
+from typing import Any, ClassVar, List, Optional, Sequence, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -43,9 +42,7 @@ from featurebyte.schema.observation_table import (
 DOCSTRING_FORMAT_PARAMS = {"class_name": "ObservationTable"}
 
 
-class ObservationTable(
-    PrimaryEntityMixin, MaterializedTableMixin
-):  # pylint: disable=too-many-public-methods
+class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):  # pylint: disable=too-many-public-methods
     """
     ObservationTable class
     """
@@ -241,7 +238,9 @@ class ObservationTable(
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table(
+        ...     "observation_table_name"
+        ... )  # doctest: +SKIP
         >>> observation_table.to_pandas()  # doctest: +SKIP
         """
         return super().to_pandas()
@@ -274,7 +273,9 @@ class ObservationTable(
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table(
+        ...     "observation_table_name"
+        ... )  # doctest: +SKIP
         >>> observation_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
@@ -298,7 +299,9 @@ class ObservationTable(
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table(
+        ...     "observation_table_name"
+        ... )  # doctest: +SKIP
         >>> observation_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
@@ -321,7 +324,9 @@ class ObservationTable(
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table(
+        ...     "observation_table_name"
+        ... )  # doctest: +SKIP
         >>> observation_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
@@ -348,8 +353,12 @@ class ObservationTable(
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
-        >>> downloaded_path = observation_table.download(output_path="path/to/download")  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table(
+        ...     "observation_table_name"
+        ... )  # doctest: +SKIP
+        >>> downloaded_path = observation_table.download(
+        ...     output_path="path/to/download"
+        ... )  # doctest: +SKIP
 
         # noqa: DAR402
         """
@@ -366,7 +375,9 @@ class ObservationTable(
 
         Examples
         --------
-        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table(
+        ...     "observation_table_name"
+        ... )  # doctest: +SKIP
         >>> observation_table.delete()  # doctest: +SKIP
 
         # noqa: DAR402

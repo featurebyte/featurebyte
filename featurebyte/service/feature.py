@@ -4,9 +4,8 @@ FeatureService class
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from redis import Redis
@@ -144,10 +143,10 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             entity_id: entity.serving_names[0]
             for entity_id, entity in derived_data.entity_id_to_entity.items()
         }
-        feature_dict["entity_join_steps"] = (
-            await store_info_service.get_entity_join_steps_for_feature_table(
-                feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
-            )
+        feature_dict[
+            "entity_join_steps"
+        ] = await store_info_service.get_entity_join_steps_for_feature_table(
+            feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
         )
         return FeatureModel(**feature_dict)
 

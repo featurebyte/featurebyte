@@ -2,9 +2,8 @@
 Feast registry model
 """
 
-from typing import Any, Dict, List, Optional
-
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import pymongo
 

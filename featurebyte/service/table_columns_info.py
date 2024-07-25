@@ -4,9 +4,8 @@ TableColumnsInfoService
 
 from __future__ import annotations
 
-from typing import List, Tuple, Union
-
 from collections import defaultdict
+from typing import List, Tuple, Union
 
 from bson import ObjectId
 from pymongo.errors import OperationFailure
@@ -79,13 +78,11 @@ class TableColumnsInfoService(OpsServiceMixin):
         ]
         missing_id_values = sorted(set(id_values).difference(found_id_values))
         if missing_id_values:
-            column_name_id_pairs = sorted(
-                [
-                    (col_info.name, getattr(col_info, field_name))
-                    for col_info in columns_info
-                    if getattr(col_info, field_name) in missing_id_values
-                ]
-            )
+            column_name_id_pairs = sorted([
+                (col_info.name, getattr(col_info, field_name))
+                for col_info in columns_info
+                if getattr(col_info, field_name) in missing_id_values
+            ])
             col_names, id_vals = zip(*column_name_id_pairs)
             id_vals = [str(id_val) for id_val in id_vals]
             raise DocumentUpdateError(

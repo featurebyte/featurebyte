@@ -2,10 +2,9 @@
 Classes to support precomputed lookup feature tables
 """
 
-from typing import Dict, List, Optional, Tuple, cast
-
 import hashlib
 import json
+from typing import Dict, List, Optional, Tuple, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
@@ -302,18 +301,16 @@ def get_child_entity_universe_template(
         join_steps=entity_lookup_steps,
         feature_store_details=feature_store.get_feature_store_details(),
     )
-    final_universe_expr = construct_cte_sql(
-        [
-            (request_table_name, request_expr),
-            (
-                parent_entity_lookup_result.new_request_table_name,
-                parent_entity_lookup_result.table_expr,
-            ),
-        ]
-    )
-    final_universe_expr = final_universe_expr.select(
-        *[quoted_identifier(col) for col in parent_entity_lookup_result.new_request_table_columns]
-    ).from_(parent_entity_lookup_result.new_request_table_name)
+    final_universe_expr = construct_cte_sql([
+        (request_table_name, request_expr),
+        (
+            parent_entity_lookup_result.new_request_table_name,
+            parent_entity_lookup_result.table_expr,
+        ),
+    ])
+    final_universe_expr = final_universe_expr.select(*[
+        quoted_identifier(col) for col in parent_entity_lookup_result.new_request_table_columns
+    ]).from_(parent_entity_lookup_result.new_request_table_name)
     return final_universe_expr
 
 

@@ -84,15 +84,13 @@ async def test_get_jobs_dataframe_default_hour_limit(tile_job_log_service):
     df = await tile_job_log_service.get_logs_dataframe(["agg_id_1"], 1)
     df.sort_values("CREATED_AT", inplace=True)
     df = df.reset_index(drop=True)
-    expected_df = pd.DataFrame(
-        {
-            "SESSION_ID": ["session_id_1"],
-            "CREATED_AT": [datetime(2023, 1, 15, 12, 0, 0)],
-            "AGGREGATION_ID": ["agg_id_1"],
-            "STATUS": ["FAILED"],
-            "MESSAGE": ["bad"],
-        }
-    )
+    expected_df = pd.DataFrame({
+        "SESSION_ID": ["session_id_1"],
+        "CREATED_AT": [datetime(2023, 1, 15, 12, 0, 0)],
+        "AGGREGATION_ID": ["agg_id_1"],
+        "STATUS": ["FAILED"],
+        "MESSAGE": ["bad"],
+    })
     expected_df.columns = [col.upper() for col in expected_df]
     pd.testing.assert_frame_equal(df, expected_df)
 
@@ -107,15 +105,13 @@ async def test_get_jobs_dataframe_custom_hour_limit(tile_job_log_service):
     df = await tile_job_log_service.get_logs_dataframe(["agg_id_1"], 3)
     df.sort_values("CREATED_AT", inplace=True)
     df = df.reset_index(drop=True)
-    expected_df = pd.DataFrame(
-        {
-            "SESSION_ID": ["session_id_1"] * 2,
-            "CREATED_AT": [datetime(2023, 1, 15, 10, 0, 0), datetime(2023, 1, 15, 12, 0, 0)],
-            "AGGREGATION_ID": ["agg_id_1"] * 2,
-            "STATUS": ["STARTED", "FAILED"],
-            "MESSAGE": ["good", "bad"],
-        }
-    )
+    expected_df = pd.DataFrame({
+        "SESSION_ID": ["session_id_1"] * 2,
+        "CREATED_AT": [datetime(2023, 1, 15, 10, 0, 0), datetime(2023, 1, 15, 12, 0, 0)],
+        "AGGREGATION_ID": ["agg_id_1"] * 2,
+        "STATUS": ["STARTED", "FAILED"],
+        "MESSAGE": ["good", "bad"],
+    })
     expected_df.columns = [col.upper() for col in expected_df]
     pd.testing.assert_frame_equal(df, expected_df)
 
@@ -130,15 +126,13 @@ async def test_get_jobs_dataframe_multiple_aggregation_ids(tile_job_log_service)
     df = await tile_job_log_service.get_logs_dataframe(["agg_id_1", "agg_id_2"], 1)
     df.sort_values("CREATED_AT", inplace=True)
     df = df.reset_index(drop=True)
-    expected_df = pd.DataFrame(
-        {
-            "SESSION_ID": ["session_id_1", "session_id_2"],
-            "CREATED_AT": [datetime(2023, 1, 15, 12, 0, 0), datetime(2023, 1, 15, 12, 15, 0)],
-            "AGGREGATION_ID": ["agg_id_1", "agg_id_2"],
-            "STATUS": ["FAILED", "COMPLETED"],
-            "MESSAGE": ["bad", ""],
-        }
-    )
+    expected_df = pd.DataFrame({
+        "SESSION_ID": ["session_id_1", "session_id_2"],
+        "CREATED_AT": [datetime(2023, 1, 15, 12, 0, 0), datetime(2023, 1, 15, 12, 15, 0)],
+        "AGGREGATION_ID": ["agg_id_1", "agg_id_2"],
+        "STATUS": ["FAILED", "COMPLETED"],
+        "MESSAGE": ["bad", ""],
+    })
     pd.testing.assert_frame_equal(df, expected_df)
 
 
@@ -152,13 +146,11 @@ async def test_get_jobs_dataframe_empty(tile_job_log_service):
     df = await tile_job_log_service.get_logs_dataframe(["agg_id_1", "agg_id_2"], 1)
     df.sort_values("CREATED_AT", inplace=True)
     df = df.reset_index(drop=True)
-    expected_df = pd.DataFrame(
-        {
-            "SESSION_ID": [],
-            "CREATED_AT": [],
-            "AGGREGATION_ID": [],
-            "STATUS": [],
-            "MESSAGE": [],
-        }
-    )
+    expected_df = pd.DataFrame({
+        "SESSION_ID": [],
+        "CREATED_AT": [],
+        "AGGREGATION_ID": [],
+        "STATUS": [],
+        "MESSAGE": [],
+    })
     pd.testing.assert_frame_equal(df, expected_df, check_dtype=False)

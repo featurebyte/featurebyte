@@ -6,12 +6,10 @@ SparkSession class
 # pylint: disable=wrong-import-order
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Optional, Union, cast
-from typing_extensions import Annotated
-
 import os
 import subprocess
 import tempfile
+from typing import Any, AsyncGenerator, Optional, Union, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -19,6 +17,7 @@ from pyarrow import ArrowTypeError, Schema
 from pydantic import Field, PrivateAttr
 from pyhive.exc import OperationalError
 from thrift.transport.TTransport import TTransportException
+from typing_extensions import Annotated
 
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import SourceType, StorageType

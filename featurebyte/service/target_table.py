@@ -4,9 +4,8 @@ TargetTableService class
 
 from __future__ import annotations
 
-from typing import Any, Optional
-
 from pathlib import Path
+from typing import Any, Optional
 
 import pandas as pd
 from bson import ObjectId

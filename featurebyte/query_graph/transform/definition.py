@@ -2,9 +2,8 @@
 Definition extractor used to extract the definition hash of a query graph.
 """
 
-from typing import Any, Dict, List, Tuple
-
 from dataclasses import dataclass
+from typing import Any, Dict, List, Tuple
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel

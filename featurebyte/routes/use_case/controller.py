@@ -33,9 +33,7 @@ from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_service import UserService
 
 
-class UseCaseController(
-    BaseDocumentController[UseCaseModel, UseCaseService, UseCaseList]
-):  # pylint: disable=too-many-instance-attributes
+class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, UseCaseList]):  # pylint: disable=too-many-instance-attributes
     """
     UseCase controller
     """

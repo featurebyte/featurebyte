@@ -4,9 +4,8 @@ Session related helper functions
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, List, Optional, Union
-
 import os
+from typing import Any, Callable, Coroutine, List, Optional, Union
 
 import pandas as pd
 from sqlglot import expressions

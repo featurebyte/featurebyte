@@ -2,13 +2,12 @@
 Batch feature creator
 """
 
-from typing import Any, Callable, Coroutine, Dict, Iterator, List, Sequence, Set, Union
-
 import asyncio
 import concurrent
 import os
 from contextlib import ExitStack, contextmanager
 from functools import wraps
+from typing import Any, Callable, Coroutine, Dict, Iterator, List, Sequence, Set, Union
 from unittest.mock import patch
 
 from bson import ObjectId
@@ -55,7 +54,7 @@ def patch_api_object_cache(ttl: int = 7200) -> Any:
     """
 
     def decorator(
-        func: Callable[..., Coroutine[Any, Any, Any]]
+        func: Callable[..., Coroutine[Any, Any, Any]],
     ) -> Callable[..., Coroutine[Any, Any, Any]]:
         # pylint: disable=protected-access
         @wraps(func)
@@ -453,7 +452,7 @@ class BatchFeatureCreator:
 
             # update the progress
             percent = int(100 * (i + 1) / total_features)
-            message = f"Completed {i+1}/{total_features} features"
+            message = f"Completed {i + 1}/{total_features} features"
             await ranged_progress_update(percent, message, metadata={"processed_features": i + 1})
 
         if inconsistent_feature_names:

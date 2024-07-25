@@ -4,10 +4,9 @@ Feast registry service
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 import random
 from pathlib import Path
+from typing import Any, List, Optional
 
 from bson import ObjectId
 from redis import Redis

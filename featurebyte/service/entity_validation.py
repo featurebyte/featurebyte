@@ -4,9 +4,8 @@ Module to support serving using parent-child relationship
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Tuple
-
 from dataclasses import dataclass
+from typing import List, Optional, Sequence, Tuple
 
 from bson import ObjectId
 
@@ -301,9 +300,9 @@ class EntityValidationService:
                 )
             except RequiredEntityNotProvidedError:
                 raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
-                    entity_info.format_missing_entities_error(
-                        [entity.id for entity in entity_info.missing_entities]
-                    )
+                    entity_info.format_missing_entities_error([
+                        entity.id for entity in entity_info.missing_entities
+                    ])
                 )
 
         feature_store_details = FeatureStoreDetails(**feature_store.model_dump())

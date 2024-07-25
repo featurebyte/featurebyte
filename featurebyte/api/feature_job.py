@@ -2,14 +2,13 @@
 FeatureJobMixin class
 """
 
-from typing import Any, Dict, List, Tuple
-
 import base64
 import textwrap
 from abc import abstractmethod
 from datetime import datetime, timedelta
 from http import HTTPStatus
 from io import BytesIO
+from typing import Any, Dict, List, Tuple
 
 import humanize
 import numpy as np
@@ -60,13 +59,11 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
         }
 
     def __str__(self) -> str:
-        return "\n\n".join(
-            [
-                str(pd.DataFrame.from_dict([self.request_parameters])),
-                str(self.feature_tile_table),
-                str(self.feature_job_summary),
-            ]
-        )
+        return "\n\n".join([
+            str(pd.DataFrame.from_dict([self.request_parameters])),
+            str(self.feature_tile_table),
+            str(self.feature_job_summary),
+        ])
 
     def __repr__(self) -> str:
         return str(self)
@@ -392,13 +389,11 @@ class FeatureJobMixin(ApiObject):
         for feature_name, tile_spec_list in feature_tile_specs:
             data = []
             for tile_spec in tile_spec_list:
-                data.append(
-                    {
-                        **tile_spec.model_dump(),
-                        "aggregation_hash": tile_spec.aggregation_id.split("_")[-1][:8],
-                        "feature_name": feature_name,
-                    }
-                )
+                data.append({
+                    **tile_spec.model_dump(),
+                    "aggregation_hash": tile_spec.aggregation_id.split("_")[-1][:8],
+                    "feature_name": feature_name,
+                })
             tile_specs.append(pd.DataFrame.from_dict(data))
 
         feature_tile_specs_df = (

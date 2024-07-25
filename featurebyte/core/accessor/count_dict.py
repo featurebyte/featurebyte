@@ -120,7 +120,14 @@ class CountDictAccessor:
         Preview the features:
 
         >>> features = fb.FeatureGroup([counts, new_feature])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+        >>> df = features.preview(
+        ...     pd.DataFrame([
+        ...         {
+        ...             "POINT_IN_TIME": "2022-04-15 10:00:00",
+        ...             "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0",
+        ...         }
+        ...     ])
+        ... )
 
 
         Dictionary feature:
@@ -159,7 +166,14 @@ class CountDictAccessor:
         Preview the features:
 
         >>> features = fb.FeatureGroup([counts, new_feature])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+        >>> df = features.preview(
+        ...     pd.DataFrame([
+        ...         {
+        ...             "POINT_IN_TIME": "2022-04-15 10:00:00",
+        ...             "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0",
+        ...         }
+        ...     ])
+        ... )
 
 
         Dictionary feature:
@@ -200,7 +214,14 @@ class CountDictAccessor:
         Preview the features:
 
         >>> features = fb.FeatureGroup([counts, new_feature])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+        >>> df = features.preview(
+        ...     pd.DataFrame([
+        ...         {
+        ...             "POINT_IN_TIME": "2022-04-15 10:00:00",
+        ...             "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0",
+        ...         }
+        ...     ])
+        ... )
 
 
         Dictionary feature:
@@ -238,7 +259,14 @@ class CountDictAccessor:
         Preview the features:
 
         >>> features = fb.FeatureGroup([counts, new_feature])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+        >>> df = features.preview(
+        ...     pd.DataFrame([
+        ...         {
+        ...             "POINT_IN_TIME": "2022-04-15 10:00:00",
+        ...             "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0",
+        ...         }
+        ...     ])
+        ... )
 
 
         Dictionary feature:
@@ -281,7 +309,14 @@ class CountDictAccessor:
         Preview the features:
 
         >>> features = fb.FeatureGroup([counts, new_feature])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+        >>> df = features.preview(
+        ...     pd.DataFrame([
+        ...         {
+        ...             "POINT_IN_TIME": "2022-04-15 10:00:00",
+        ...             "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0",
+        ...         }
+        ...     ])
+        ... )
 
 
         Dictionary feature:
@@ -328,7 +363,14 @@ class CountDictAccessor:
         Preview the features:
 
         >>> features = fb.FeatureGroup([feature_1, feature_2, similarity])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+        >>> df = features.preview(
+        ...     pd.DataFrame([
+        ...         {
+        ...             "POINT_IN_TIME": "2022-04-15 10:00:00",
+        ...             "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0",
+        ...         }
+        ...     ])
+        ... )
 
 
         Dictionary feature 1:
@@ -381,7 +423,14 @@ class CountDictAccessor:
         Preview the features:
 
         >>> features = fb.FeatureGroup([counts, new_feature])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+        >>> df = features.preview(
+        ...     pd.DataFrame([
+        ...         {
+        ...             "POINT_IN_TIME": "2022-04-15 10:00:00",
+        ...             "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0",
+        ...         }
+        ...     ])
+        ... )
 
 
         Dictionary feature:
@@ -442,7 +491,14 @@ class CountDictAccessor:
         Preview the features:
 
         >>> features = fb.FeatureGroup([counts, new_feature])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+        >>> df = features.preview(
+        ...     pd.DataFrame([
+        ...         {
+        ...             "POINT_IN_TIME": "2022-04-15 10:00:00",
+        ...             "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0",
+        ...         }
+        ...     ])
+        ... )
 
 
         Dictionary feature:
@@ -499,7 +555,14 @@ class CountDictAccessor:
         Preview the features:
 
         >>> features = fb.FeatureGroup([counts, new_feature])
-        >>> df = features.preview(pd.DataFrame([{"POINT_IN_TIME": "2022-04-15 10:00:00", "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0"}]))
+        >>> df = features.preview(
+        ...     pd.DataFrame([
+        ...         {
+        ...             "POINT_IN_TIME": "2022-04-15 10:00:00",
+        ...             "GROCERYCUSTOMERGUID": "2f4c1578-29d6-44b7-83da-7c5bfb981fa0",
+        ...         }
+        ...     ])
+        ... )
 
 
         Dictionary feature:

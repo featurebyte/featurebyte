@@ -4,9 +4,8 @@ Utilities related to SQL generation for groupby operations
 
 from __future__ import annotations
 
-from typing import List, Optional, cast
-
 from dataclasses import dataclass
+from typing import List, Optional, cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select

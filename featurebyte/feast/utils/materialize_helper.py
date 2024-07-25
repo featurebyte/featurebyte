@@ -4,10 +4,9 @@ Helper function for feature materialization
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 import copy
 from datetime import datetime
+from typing import Any, List, Optional
 from unittest.mock import patch
 
 from cachetools import TTLCache

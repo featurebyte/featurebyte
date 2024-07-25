@@ -4,10 +4,9 @@ This module contains the implementation of feature job setting validation
 
 from __future__ import annotations
 
-from typing import Any, Callable, Sequence, Tuple
-
 import re
 from datetime import datetime
+from typing import Any, Callable, Sequence, Tuple
 
 import pandas as pd
 from pydantic import BaseModel, TypeAdapter

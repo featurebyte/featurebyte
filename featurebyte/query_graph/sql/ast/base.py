@@ -4,11 +4,10 @@ Module containing base classes and functions for building syntax tree
 
 from __future__ import annotations
 
-from typing import Optional, Type, TypeVar, cast
-
 from abc import ABC, abstractmethod
 from copy import copy
 from dataclasses import dataclass, field
+from typing import Optional, Type, TypeVar, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select

@@ -17,16 +17,14 @@ def static_source_table_from_source_table_fixture(event_table, user):
     Fixture for an StaticSourceTable from a source table
     """
     request_input = SourceTableStaticSourceInput(source=event_table.tabular_source)
-    location = TabularSource(
-        **{
-            "feature_store_id": event_table.tabular_source.feature_store_id,
-            "table_details": {
-                "database_name": "fb_database",
-                "schema_name": "fb_schema",
-                "table_name": "fb_materialized_table",
-            },
-        }
-    )
+    location = TabularSource(**{
+        "feature_store_id": event_table.tabular_source.feature_store_id,
+        "table_details": {
+            "database_name": "fb_database",
+            "schema_name": "fb_schema",
+            "table_name": "fb_materialized_table",
+        },
+    })
     return StaticSourceTableModel(
         name="static_source_table_from_source_table",
         location=location,

@@ -2,9 +2,8 @@
 Tests functions/methods in routes/common directory
 """
 
-from typing import List
-
 from datetime import datetime
+from typing import List
 from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np

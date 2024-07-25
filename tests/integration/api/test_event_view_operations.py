@@ -59,8 +59,8 @@ def pyramid_sum(event_view, group_by_col, window, numeric_column, name):
     for r in range(column_num - 1):
         for idx in reversed(range(r, column_num - 1)):
             col_idx = idx + 1
-            event_view[f"column_{col_idx+1}"] = (
-                event_view[f"column_{col_idx}"] + event_view[f"column_{col_idx+1}"]
+            event_view[f"column_{col_idx + 1}"] = (
+                event_view[f"column_{col_idx}"] + event_view[f"column_{col_idx + 1}"]
             )
 
     output = None
@@ -207,21 +207,17 @@ def test_feature_preview__same_entity_multiple_point_in_times(feature_group):
     """
     Test previewing features when the same entity has multiple point in times in the request data
     """
-    preview_data = pd.DataFrame(
-        {
-            "POINT_IN_TIME": ["2001-01-20 10:00:00", "2001-01-02 10:00:00"],
-            "üser id": [1, 1],
-        }
-    )
+    preview_data = pd.DataFrame({
+        "POINT_IN_TIME": ["2001-01-20 10:00:00", "2001-01-02 10:00:00"],
+        "üser id": [1, 1],
+    })
     df_feature_preview = feature_group.preview(preview_data)
-    df_expected = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-01-20 10:00:00", "2001-01-02 10:00:00"]),
-            "üser id": [1, 1],
-            "COUNT_2h": [np.nan, 3],
-            "COUNT_24h": [17, 14],
-        }
-    )
+    df_expected = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-20 10:00:00", "2001-01-02 10:00:00"]),
+        "üser id": [1, 1],
+        "COUNT_2h": [np.nan, 3],
+        "COUNT_24h": [17, 14],
+    })
     fb_assert_frame_equal(df_feature_preview, df_expected)
 
 
@@ -474,81 +470,77 @@ def new_user_id_entity_fixture():
 
 def get_training_events_and_expected_result():
     """Returns training events and expected historical result"""
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
-            "üser id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        }
-    )
-    df_historical_expected = pd.DataFrame(
-        {
-            "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
-            "üser id": df_training_events["üser id"],
-            "COUNT_2h": [3, 1, 1, np.nan, np.nan, 3, np.nan, np.nan, 1, np.nan],
-            "COUNT_24h": [14, 12, 13, 11, 13, 18, 18, 13, 14, np.nan],
-            "COUNT_BY_ACTION_24h": [
-                '{\n  "__MISSING__": 1,\n  "detail": 2,\n  "purchase": 4,\n  "rëmove": 1,\n  "àdd": 6\n}',
-                '{\n  "__MISSING__": 5,\n  "detail": 2,\n  "rëmove": 4,\n  "àdd": 1\n}',
-                '{\n  "__MISSING__": 3,\n  "detail": 4,\n  "purchase": 4,\n  "rëmove": 2\n}',
-                '{\n  "__MISSING__": 4,\n  "detail": 1,\n  "purchase": 1,\n  "àdd": 5\n}',
-                '{\n  "__MISSING__": 2,\n  "detail": 3,\n  "purchase": 4,\n  "rëmove": 2,\n  "àdd": 2\n}',
-                '{\n  "__MISSING__": 4,\n  "detail": 2,\n  "purchase": 6,\n  "rëmove": 2,\n  "àdd": 4\n}',
-                '{\n  "__MISSING__": 3,\n  "detail": 5,\n  "purchase": 6,\n  "rëmove": 3,\n  "àdd": 1\n}',
-                '{\n  "__MISSING__": 4,\n  "detail": 1,\n  "purchase": 1,\n  "rëmove": 6,\n  "àdd": 1\n}',
-                '{\n  "__MISSING__": 3,\n  "detail": 3,\n  "purchase": 2,\n  "rëmove": 4,\n  "àdd": 2\n}',
-                None,
-            ],
-            "ENTROPY_BY_ACTION_24h": [
-                1.3760552852604169,
-                1.236684869140504,
-                1.3516811946858949,
-                1.162225544921092,
-                1.564957250242801,
-                1.5229550675313184,
-                1.4798484184768594,
-                1.3114313374732374,
-                1.5740973368489728,
-                np.nan,
-            ],
-            "MOST_FREQUENT_ACTION_24h": [
-                "àdd",
-                "__MISSING__",
-                "detail",
-                "àdd",
-                "purchase",
-                "purchase",
-                "purchase",
-                "rëmove",
-                "rëmove",
-                None,
-            ],
-            "NUM_UNIQUE_ACTION_24h": [5.0, 4.0, 4.0, 4.0, 5.0, 5.0, 5.0, 5.0, 5.0, 0.0],
-            "COUNT_2h / COUNT_24h": [
-                0.214286,
-                0.083333,
-                0.076923,
-                np.nan,
-                np.nan,
-                0.166667,
-                np.nan,
-                np.nan,
-                0.071429,
-                np.nan,  # Note: zero divide by zero
-            ],
-            "ACTION_SIMILARITY_2h_to_24h": [
-                0.9395523512235255,
-                0.5897678246195885,
-                0.4472135954999579,
-                np.nan,
-                np.nan,
-                0.8207826816681232,
-                np.nan,
-                np.nan,
-                0.4629100498862757,
-                np.nan,
-            ],
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"] * 5),
+        "üser id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    })
+    df_historical_expected = pd.DataFrame({
+        "POINT_IN_TIME": df_training_events["POINT_IN_TIME"],
+        "üser id": df_training_events["üser id"],
+        "COUNT_2h": [3, 1, 1, np.nan, np.nan, 3, np.nan, np.nan, 1, np.nan],
+        "COUNT_24h": [14, 12, 13, 11, 13, 18, 18, 13, 14, np.nan],
+        "COUNT_BY_ACTION_24h": [
+            '{\n  "__MISSING__": 1,\n  "detail": 2,\n  "purchase": 4,\n  "rëmove": 1,\n  "àdd": 6\n}',
+            '{\n  "__MISSING__": 5,\n  "detail": 2,\n  "rëmove": 4,\n  "àdd": 1\n}',
+            '{\n  "__MISSING__": 3,\n  "detail": 4,\n  "purchase": 4,\n  "rëmove": 2\n}',
+            '{\n  "__MISSING__": 4,\n  "detail": 1,\n  "purchase": 1,\n  "àdd": 5\n}',
+            '{\n  "__MISSING__": 2,\n  "detail": 3,\n  "purchase": 4,\n  "rëmove": 2,\n  "àdd": 2\n}',
+            '{\n  "__MISSING__": 4,\n  "detail": 2,\n  "purchase": 6,\n  "rëmove": 2,\n  "àdd": 4\n}',
+            '{\n  "__MISSING__": 3,\n  "detail": 5,\n  "purchase": 6,\n  "rëmove": 3,\n  "àdd": 1\n}',
+            '{\n  "__MISSING__": 4,\n  "detail": 1,\n  "purchase": 1,\n  "rëmove": 6,\n  "àdd": 1\n}',
+            '{\n  "__MISSING__": 3,\n  "detail": 3,\n  "purchase": 2,\n  "rëmove": 4,\n  "àdd": 2\n}',
+            None,
+        ],
+        "ENTROPY_BY_ACTION_24h": [
+            1.3760552852604169,
+            1.236684869140504,
+            1.3516811946858949,
+            1.162225544921092,
+            1.564957250242801,
+            1.5229550675313184,
+            1.4798484184768594,
+            1.3114313374732374,
+            1.5740973368489728,
+            np.nan,
+        ],
+        "MOST_FREQUENT_ACTION_24h": [
+            "àdd",
+            "__MISSING__",
+            "detail",
+            "àdd",
+            "purchase",
+            "purchase",
+            "purchase",
+            "rëmove",
+            "rëmove",
+            None,
+        ],
+        "NUM_UNIQUE_ACTION_24h": [5.0, 4.0, 4.0, 4.0, 5.0, 5.0, 5.0, 5.0, 5.0, 0.0],
+        "COUNT_2h / COUNT_24h": [
+            0.214286,
+            0.083333,
+            0.076923,
+            np.nan,
+            np.nan,
+            0.166667,
+            np.nan,
+            np.nan,
+            0.071429,
+            np.nan,  # Note: zero divide by zero
+        ],
+        "ACTION_SIMILARITY_2h_to_24h": [
+            0.9395523512235255,
+            0.5897678246195885,
+            0.4472135954999579,
+            np.nan,
+            np.nan,
+            0.8207826816681232,
+            np.nan,
+            np.nan,
+            0.4629100498862757,
+            np.nan,
+        ],
+    })
     return df_training_events, df_historical_expected
 
 
@@ -966,20 +958,18 @@ async def test_get_target__feature_table_cache(
 
     df_training_events, _ = get_training_events_and_expected_result()
 
-    expected_targets = pd.Series(
-        [
-            59.69888889,
-            44.19846154,
-            62.31333333,
-            44.30076923,
-            51.52,
-            54.336,
-            51.28,
-            34.06888889,
-            53.68,
-            np.nan,
-        ]
-    )
+    expected_targets = pd.Series([
+        59.69888889,
+        44.19846154,
+        62.31333333,
+        44.30076923,
+        51.52,
+        54.336,
+        51.28,
+        34.06888889,
+        53.68,
+        np.nan,
+    ])
     df_expected = pd.concat([df_training_events, expected_targets], axis=1)
     df_expected.columns = ["POINT_IN_TIME", "üser id", "avg_24h_target"]
 

@@ -231,7 +231,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Create a new catalog.
 
-        >>> catalog = fb.Catalog.create("new_catalog", "feature_store_name", "mysql_online_store")  # doctest: +SKIP
+        >>> catalog = fb.Catalog.create(
+        ...     "new_catalog", "feature_store_name", "mysql_online_store"
+        ... )  # doctest: +SKIP
         """
         feature_store = FeatureStore.get(feature_store_name)
         if online_store_name:
@@ -533,7 +535,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         List all features having grocerycustomer or frenchstate as primary entity.
 
         >>> customer_or_state_features = catalog.list_features(
-        ...   primary_entity = ["grocerycustomer", "frenchstate"]
+        ...     primary_entity=["grocerycustomer", "frenchstate"]
         ... )
         """
         return Feature.list(
@@ -714,11 +716,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         List all relationships.
 
-        >>> catalog.list_relationships()[[
-        ...     "relationship_type",
-        ...     "entity",
-        ...     "related_entity",
-        ... ]]
+        >>> catalog.list_relationships()[
+        ...     [
+        ...         "relationship_type",
+        ...         "entity",
+        ...         "related_entity",
+        ...     ]
+        ... ]
           relationship_type           entity   related_entity
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
@@ -1275,7 +1279,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
         Examples
         --------
-        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis("analysis_name")  # doctest: +SKIP
+        >>> feature_job_setting_analysis = catalog.get_feature_job_setting_analysis(
+        ...     "analysis_name"
+        ... )  # doctest: +SKIP
         """
         return FeatureJobSettingAnalysis.get(name=name)
 
@@ -1391,7 +1397,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved observation table.
 
-        >>> observation_table = catalog.get_observation_table("observation_table_name")  # doctest: +SKIP
+        >>> observation_table = catalog.get_observation_table(
+        ...     "observation_table_name"
+        ... )  # doctest: +SKIP
         """
         return ObservationTable.get(name=name)
 
@@ -1414,7 +1422,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved historical feature table.
 
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         """
         return HistoricalFeatureTable.get(name=name)
 
@@ -1437,7 +1447,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved batch request table.
 
-        >>> batch_request_table = catalog.get_batch_request_table("batch_request_table_name")  # doctest: +SKIP
+        >>> batch_request_table = catalog.get_batch_request_table(
+        ...     "batch_request_table_name"
+        ... )  # doctest: +SKIP
         """
         return BatchRequestTable.get(name=name)
 
@@ -1460,7 +1472,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved batch feature table.
 
-        >>> batch_feature_table = catalog.get_batch_feature_table("batch_feature_table_name") # doctest: +SKIP
+        >>> batch_feature_table = catalog.get_batch_feature_table(
+        ...     "batch_feature_table_name"
+        ... )  # doctest: +SKIP
         """
         return BatchFeatureTable.get(name=name)
 
@@ -1483,7 +1497,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved static source table.
 
-        >>> static_source_table = catalog.get_static_source_table("static_source_table_name")  # doctest: +SKIP
+        >>> static_source_table = catalog.get_static_source_table(
+        ...     "static_source_table_name"
+        ... )  # doctest: +SKIP
         """
         return StaticSourceTable.get(name=name)
 
@@ -1506,6 +1522,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         --------
         Get a saved user defined function.
 
-        >>> user_defined_function = catalog.get_user_defined_function("user_defined_function_name")  # doctest: +SKIP
+        >>> user_defined_function = catalog.get_user_defined_function(
+        ...     "user_defined_function_name"
+        ... )  # doctest: +SKIP
         """
         return UserDefinedFunction.get(name=name)

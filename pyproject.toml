@@ -29,17 +29,6 @@ branch = true
 command_line = "-m pytest -c pyproject.toml --timeout=120 --junitxml=pytest.xml tests featurebyte"
 source = ["featurebyte"]
 
-[tool.isort]  # https://github.com/PyCQA/isort
-color_output = true
-include_trailing_comma = true
-indent = 4
-known_typing = ["typing", "types", "typing_extensions", "mypy", "mypy_extensions"]
-line_length = 100
-multi_line_output = 3
-profile = "black"
-sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
-skip_glob = ["tests/fixtures/sdk_code/*"]
-
 [tool.mypy]  # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
 allow_redefinition = false
 check_untyped_defs = true
@@ -168,7 +157,6 @@ pytest-split = "^0.8.2"
 pytest-timeout = "^2.1.0"
 pytest-xdist = "^3.0.2"
 pyupgrade = "^2.37.2"
-toml-sort = "^0.20.0"
 
 [tool.poetry.group.docs.dependencies]
 docstring-parser = "^0.15"
@@ -190,12 +178,9 @@ mkdocs-table-reader-plugin = "^1.1.1"
 [tool.poetry.group.lint.dependencies]
 bandit = "^1.7.4"
 darglint = "^1.8.1"
-isort = { extras = ["colors"], version = "^5.10.1" }
 mypy = "^1.0.1"
 mypy-extensions = "^0.4.3"
 pip-audit = "^2.4.4"
-pylint = "^2.14.5"
-pylint-pydantic = "^0.3.2"
 types-Markdown = "^3.4.2.1"
 types-PyYAML = "^6.0.11"
 types-aiofiles = "^23.1.0.2"
@@ -220,32 +205,11 @@ types-typed-ast = "^1.5.8.4"
 types-tzlocal = "^4.2.2"
 types-ujson = "^5.4.0"
 types-urllib3 = "^1.26.16"
+toml-sort = "^0.20.0"
+ruff = "^0.5.1"
 
 [tool.poetry.scripts]
 featurebyte = "featurebyte.__main__:app"
-
-[tool.pylint.classes]  # https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml
-max-args = 10
-max-locals = 20
-
-[tool.pylint.design]
-max-attributes = 8
-max-parents = 20
-
-[tool.pylint.format]
-max-line-length = 150
-
-[tool.pylint.main]
-disable = ["Miscellaneous","wrong-import-order"]
-extension-pkg-whitelist = ["pydantic"]
-ignored-modules = ["featurebyte_freeware"]
-jobs = 0
-output-format = "text"
-recursive = false
-
-[tool.pylint.similarities]
-ignore-signatures = true
-min-similarity-lines = 10
 
 [tool.pytest.ini_options]
 addopts = ["--strict-markers", "-v", "--doctest-modules", "--durations=50", "--doctest-continue-on-failure", "--ignore-glob=tests/fixtures/*"] # Extra options:
@@ -260,3 +224,28 @@ markers = [
     "no_mock_api_client: skip mocking api client",
 ]
 norecursedirs = ["hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
+
+[tool.ruff]
+preview = true
+extend-exclude = ["scripts", "hive-udf", "docs", "docker", "assets", ".task", ".mypy_cache", "site", "tests/fixtures", "docs/notebooks/"]
+line-length = 100
+indent-width = 4
+target-version = "py39"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint]
+select = ["E1", "E4", "E7", "E9", "F", "I"]  # Rules to use by default. Consider adding "UP" for upgradability checks.
+ignore = []
+fixable = ["ALL"]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 150

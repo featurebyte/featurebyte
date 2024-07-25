@@ -4,12 +4,11 @@ Extract resource details given a path descriptor.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, get_type_hints
-
 import inspect
 import re
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional, get_type_hints
 
 from docstring_parser import parse
 from docstring_parser.common import DocstringExample, DocstringRaises, DocstringReturns
@@ -395,7 +394,9 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
                 # resource.__qualname__ like `init_private_attributes` (from pydantic)
                 # does not contain a dot, so we need to skip it
                 if "." in resource.__qualname__:  # type: ignore
-                    resource_classname, resource_realname = resource.__qualname__.split(".", maxsplit=1)  # type: ignore
+                    resource_classname, resource_realname = resource.__qualname__.split(
+                        ".", maxsplit=1
+                    )  # type: ignore
                     resource_path = f"{resource.__module__}.{resource_classname}"
             except AttributeError:
                 pass

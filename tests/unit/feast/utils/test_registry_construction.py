@@ -75,9 +75,9 @@ async def test_feast_registry_construction__with_post_processing_features(  # py
     deployment.enable()
 
     helper_service = app_container.entity_lookup_feature_table_service
-    entity_lookup_steps_mapping = await helper_service.get_entity_lookup_steps_mapping(
-        [feature_list.cached_model]
-    )
+    entity_lookup_steps_mapping = await helper_service.get_entity_lookup_steps_mapping([
+        feature_list.cached_model
+    ])
     feast_registry_proto = FeastRegistryBuilder.create(
         feature_store=snowflake_feature_store.cached_model,
         online_store=mysql_online_store.cached_model,
@@ -169,17 +169,15 @@ def expected_data_sources_fixture(expected_data_source_names):
         for data_source_name in expected_data_source_names
         if data_source_name != "POINT_IN_TIME"
     ]
-    expected_data_sources.append(
-        {
-            "dataSourceClassType": "feast.data_source.RequestSource",
-            "name": "POINT_IN_TIME",
-            "project": "featurebyte_project",
-            "requestDataOptions": {
-                "schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]
-            },
-            "type": "REQUEST_SOURCE",
-        }
-    )
+    expected_data_sources.append({
+        "dataSourceClassType": "feast.data_source.RequestSource",
+        "name": "POINT_IN_TIME",
+        "project": "featurebyte_project",
+        "requestDataOptions": {
+            "schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]
+        },
+        "type": "REQUEST_SOURCE",
+    })
     return expected_data_sources
 
 

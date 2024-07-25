@@ -98,7 +98,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
     )
     expected_proxy_nodes = [
         {
-            "name": f"proxy_input_{i+1}",
+            "name": f"proxy_input_{i + 1}",
             "type": "proxy_input",
             "parameters": {"input_order": i},
             "output_type": "series",

@@ -4,9 +4,8 @@ This module contains mixin classes for models.
 
 from __future__ import annotations
 
-from typing import Any, Optional
-
 import json
+from typing import Any, Optional
 
 from pydantic import Field, PrivateAttr, field_serializer
 

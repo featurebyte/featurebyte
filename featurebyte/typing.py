@@ -3,11 +3,11 @@ Common utilities related to typing
 """
 
 from typing import Any, Callable, Optional, Sequence, Type, Union, cast
-from typing_extensions import Literal
 
 import pandas as pd
 from pandas.api.types import is_scalar as pd_is_scalar
 from pydantic import StrictFloat, StrictInt, StrictStr
+from typing_extensions import Literal
 
 DatetimeSupportedPropertyType = Literal[
     "year",

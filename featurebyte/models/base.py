@@ -4,13 +4,11 @@ FeatureByte specific BaseModel
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
-from typing_extensions import Annotated
-
 import json
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -25,6 +23,7 @@ from pydantic import (
 )
 from pydantic_core import core_schema
 from pymongo.operations import IndexModel
+from typing_extensions import Annotated
 
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import StrEnum

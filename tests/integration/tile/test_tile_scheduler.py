@@ -46,12 +46,10 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     assert job_details.interval == Interval(every=tile_spec.frequency_minute * 60, period="seconds")
 
     task_id = uuid4()
-    app_container.override_instances_for_test(
-        {
-            "task_id": task_id,
-            "progress": Mock(),
-        }
-    )
+    app_container.override_instances_for_test({
+        "task_id": task_id,
+        "progress": Mock(),
+    })
     task_executor = TaskExecutor(
         payload=job_details.kwargs, task_id=task_id, app_container=app_container
     )

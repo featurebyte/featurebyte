@@ -2,10 +2,9 @@
 Reused types
 """
 
-from typing import Any, Dict, List, Literal, Optional
-
 import os
 from dataclasses import dataclass
+from typing import Any, Dict, List, Literal, Optional
 
 from docstring_parser import DocstringMeta
 from docstring_parser.common import Docstring as BaseDocstring

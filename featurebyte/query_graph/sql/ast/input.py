@@ -4,9 +4,8 @@ Module for input data sql generation
 
 from __future__ import annotations
 
-from typing import Any
-
 from dataclasses import dataclass
+from typing import Any
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select

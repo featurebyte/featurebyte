@@ -4,9 +4,8 @@ OfflineStoreFeatureTableCommentService
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
-
 from dataclasses import dataclass
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
 
 from featurebyte.logging import get_logger
 from featurebyte.models.entity import EntityModel

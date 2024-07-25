@@ -98,12 +98,10 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
     feature = feature_for_tile_cache_tests
     _ = groupby_category
 
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
-            "üser id": [1, 2, 3, 4, np.nan],
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
+        "üser id": [1, 2, 3, 4, np.nan],
+    })
 
     request_id = session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
@@ -118,14 +116,12 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
         request_table_name=request_table_name,
     )
     assert len(requests) == 1
-    df_entity_expected = pd.DataFrame(
-        {
-            "LAST_TILE_START_DATE": pd.to_datetime(["2001-01-02 07:45:00"] * 5),
-            "ÜSER ID": [1.0, 2.0, 3.0, 4.0, np.nan],
-            "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(["2001-01-02 08:45:00"] * 5),
-            "__FB_ENTITY_TABLE_START_DATE": pd.to_datetime(["1969-12-31 23:45:00"] * 5),
-        }
-    )
+    df_entity_expected = pd.DataFrame({
+        "LAST_TILE_START_DATE": pd.to_datetime(["2001-01-02 07:45:00"] * 5),
+        "ÜSER ID": [1.0, 2.0, 3.0, 4.0, np.nan],
+        "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(["2001-01-02 08:45:00"] * 5),
+        "__FB_ENTITY_TABLE_START_DATE": pd.to_datetime(["1969-12-31 23:45:00"] * 5),
+    })
     await check_entity_table_sql_and_tile_compute_sql(
         session,
         requests[0],
@@ -147,14 +143,10 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
     assert len(requests) == 0
 
     # Check using training events with outdated entities (user 3, 4, 5)
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(
-                ["2001-01-02 10:00:00"] * 2 + ["2001-01-03 10:00:00"] * 3
-            ),
-            "üser id": [1, 2, 3, 4, np.nan],
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 2 + ["2001-01-03 10:00:00"] * 3),
+        "üser id": [1, 2, 3, 4, np.nan],
+    })
     await session.register_table(request_table_name, df_training_events)
     request_id = session.generate_session_unique_id()
     requests = await tile_cache.get_required_computation(
@@ -164,14 +156,12 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
         request_table_name=request_table_name,
     )
     assert len(requests) == 1
-    df_entity_expected = pd.DataFrame(
-        {
-            "LAST_TILE_START_DATE": pd.to_datetime(["2001-01-03 07:45:00"] * 3),
-            "ÜSER ID": [3, 4, np.nan],
-            "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(["2001-01-03 08:45:00"] * 3),
-            "__FB_ENTITY_TABLE_START_DATE": pd.to_datetime(["2001-01-02 08:45:00"] * 3),
-        }
-    )
+    df_entity_expected = pd.DataFrame({
+        "LAST_TILE_START_DATE": pd.to_datetime(["2001-01-03 07:45:00"] * 3),
+        "ÜSER ID": [3, 4, np.nan],
+        "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(["2001-01-03 08:45:00"] * 3),
+        "__FB_ENTITY_TABLE_START_DATE": pd.to_datetime(["2001-01-02 08:45:00"] * 3),
+    })
     await check_entity_table_sql_and_tile_compute_sql(
         session,
         requests[0],
@@ -193,12 +183,10 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
     assert len(requests) == 0
 
     # Check using training events with new (6. 7) and existing (1) entities
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-01-03 10:00:00"] + ["2001-01-02 10:00:00"] * 2),
-            "üser id": [1, 6, 7],
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-03 10:00:00"] + ["2001-01-02 10:00:00"] * 2),
+        "üser id": [1, 6, 7],
+    })
 
     request_id = session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
@@ -210,20 +198,18 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
         request_table_name=request_table_name,
     )
     assert len(requests) == 1
-    df_entity_expected = pd.DataFrame(
-        {
-            "LAST_TILE_START_DATE": pd.to_datetime(
-                ["2001-01-03 07:45:00"] + ["2001-01-02 07:45:00"] * 2
-            ),
-            "ÜSER ID": [1, 6, 7],
-            "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(
-                ["2001-01-03 08:45:00"] + ["2001-01-02 08:45:00"] * 2
-            ),
-            "__FB_ENTITY_TABLE_START_DATE": pd.to_datetime(
-                ["2001-01-02 08:45:00"] + ["1969-12-31 23:45:00"] * 2
-            ),
-        }
-    )
+    df_entity_expected = pd.DataFrame({
+        "LAST_TILE_START_DATE": pd.to_datetime(
+            ["2001-01-03 07:45:00"] + ["2001-01-02 07:45:00"] * 2
+        ),
+        "ÜSER ID": [1, 6, 7],
+        "__FB_ENTITY_TABLE_END_DATE": pd.to_datetime(
+            ["2001-01-03 08:45:00"] + ["2001-01-02 08:45:00"] * 2
+        ),
+        "__FB_ENTITY_TABLE_START_DATE": pd.to_datetime(
+            ["2001-01-02 08:45:00"] + ["1969-12-31 23:45:00"] * 2
+        ),
+    })
     await check_entity_table_sql_and_tile_compute_sql(
         session,
         requests[0],

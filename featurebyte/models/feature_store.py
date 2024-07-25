@@ -4,9 +4,8 @@ This module contains DatabaseSource related models
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
-
 from abc import ABC, abstractmethod
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
 import pymongo
 from pydantic import Field, StrictStr

@@ -260,8 +260,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
         Examples
         --------
         >>> entity = fb.Entity.get_or_create(
-        ...     name="grocerycustomer",
-        ...     serving_names=["GROCERYCUSTOMERGUID"]
+        ...     name="grocerycustomer", serving_names=["GROCERYCUSTOMERGUID"]
         ... )
         >>> entity.name
         'grocerycustomer'

@@ -4,10 +4,9 @@ SQL generation for JOIN_FEATURE query node type
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, cast
-
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Optional, Tuple, cast
 
 from sqlglot.expressions import Expression, Select, select
 
@@ -144,9 +143,9 @@ class JoinFeature(TableNode):
                 item_aggregator.update(agg_spec)
                 agg_specs_mapping[agg_spec.node_name].append(agg_spec)
 
-        view_table_expr = select(
-            *[get_qualified_column_identifier(col, "REQ") for col in view_node.columns]
-        ).from_(cast(Select, view_node.sql).subquery(alias="REQ"))
+        view_table_expr = select(*[
+            get_qualified_column_identifier(col, "REQ") for col in view_node.columns
+        ]).from_(cast(Select, view_node.sql).subquery(alias="REQ"))
 
         result = item_aggregator.update_aggregation_table_expr(
             table_expr=view_table_expr,

@@ -4,7 +4,7 @@
 
 ### Python
 
-We use `python` >=3.8 with `poetry>=1.5` to manage the dependencies. </br><small>Refer to [poetry](https://python-poetry.org/docs/#installation) for installation instructions.</small>
+We use `python` >=3.9 with `poetry>=1.8` to manage the dependencies. </br><small>Refer to [poetry](https://python-poetry.org/docs/#installation) for installation instructions.</small>
 
 ### Java
 
@@ -34,15 +34,9 @@ To activate your `virtualenv` run `poetry shell`.
 Run `task init` to install precommit hooks and
 validate that you have all the required dependencies to develop.
 
-### Checks
+### Linting
 
-Many checks are configured for this project:
-
-* Command `task lint-style` will check black, isort and darglint
-* Command `task lint-type` will check typing issues using mypy
-* Command `task lint-safety` command will look at the security of your code
-
-Command `task lint` applies all checks.
+Linting tools are configured for this project, Command `task lint` applies all lints.
 
 ## Testing
 

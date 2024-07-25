@@ -2,11 +2,10 @@
 Test gen ref pages docs builder.
 """
 
-from typing import Any, Set
-
 import re
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Any, Set
 
 import pytest
 

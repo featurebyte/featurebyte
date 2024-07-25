@@ -120,27 +120,25 @@ async def test_get_event_table_info(app_container, event_table):
     info = await app_container.event_table_controller.get_info(
         document_id=event_table.id, verbose=True
     )
-    assert info == EventTableInfo(
-        **{
-            **expected_info.model_dump(),
-            "columns_info": [
-                TableColumnInfo(name="col_int", dtype="INT"),
-                TableColumnInfo(name="col_float", dtype="FLOAT", description="Float column"),
-                TableColumnInfo(name="col_char", dtype="CHAR", description="Char column"),
-                TableColumnInfo(name="col_text", dtype="VARCHAR", description="Text column"),
-                TableColumnInfo(name="col_binary", dtype="BINARY"),
-                TableColumnInfo(name="col_boolean", dtype="BOOL"),
-                TableColumnInfo(
-                    name="event_timestamp",
-                    dtype="TIMESTAMP_TZ",
-                    semantic="event_timestamp",
-                    description="Timestamp column",
-                ),
-                TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
-                TableColumnInfo(name="cust_id", dtype="INT"),
-            ],
-        }
-    )
+    assert info == EventTableInfo(**{
+        **expected_info.model_dump(),
+        "columns_info": [
+            TableColumnInfo(name="col_int", dtype="INT"),
+            TableColumnInfo(name="col_float", dtype="FLOAT", description="Float column"),
+            TableColumnInfo(name="col_char", dtype="CHAR", description="Char column"),
+            TableColumnInfo(name="col_text", dtype="VARCHAR", description="Text column"),
+            TableColumnInfo(name="col_binary", dtype="BINARY"),
+            TableColumnInfo(name="col_boolean", dtype="BOOL"),
+            TableColumnInfo(
+                name="event_timestamp",
+                dtype="TIMESTAMP_TZ",
+                semantic="event_timestamp",
+                description="Timestamp column",
+            ),
+            TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
+            TableColumnInfo(name="cust_id", dtype="INT"),
+        ],
+    })
 
 
 @pytest.mark.asyncio
@@ -176,19 +174,17 @@ async def test_get_item_table_info(app_container, item_table, event_table):
     info = await app_container.item_table_controller.get_info(
         document_id=item_table.id, verbose=True
     )
-    assert info == ItemTableInfo(
-        **{
-            **expected_info.model_dump(),
-            "columns_info": [
-                TableColumnInfo(name="event_id_col", dtype="INT"),
-                TableColumnInfo(name="item_id_col", dtype="VARCHAR"),
-                TableColumnInfo(name="item_type", dtype="VARCHAR"),
-                TableColumnInfo(name="item_amount", dtype="FLOAT"),
-                TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
-                TableColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
-            ],
-        }
-    )
+    assert info == ItemTableInfo(**{
+        **expected_info.model_dump(),
+        "columns_info": [
+            TableColumnInfo(name="event_id_col", dtype="INT"),
+            TableColumnInfo(name="item_id_col", dtype="VARCHAR"),
+            TableColumnInfo(name="item_type", dtype="VARCHAR"),
+            TableColumnInfo(name="item_amount", dtype="FLOAT"),
+            TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
+            TableColumnInfo(name="event_timestamp", dtype="TIMESTAMP_TZ"),
+        ],
+    })
 
 
 @pytest.mark.asyncio
@@ -221,24 +217,22 @@ async def test_get_dimension_table_info(app_container, dimension_table):
     info = await app_container.dimension_table_controller.get_info(
         document_id=dimension_table.id, verbose=True
     )
-    assert info == DimensionTableInfo(
-        **{
-            **expected_info.model_dump(),
-            "columns_info": [
-                TableColumnInfo(name="col_int", dtype="INT"),
-                TableColumnInfo(name="col_float", dtype="FLOAT", description="Float column"),
-                TableColumnInfo(name="col_char", dtype="CHAR", description="Char column"),
-                TableColumnInfo(name="col_text", dtype="VARCHAR", description="Text column"),
-                TableColumnInfo(name="col_binary", dtype="BINARY"),
-                TableColumnInfo(name="col_boolean", dtype="BOOL"),
-                TableColumnInfo(
-                    name="event_timestamp", dtype="TIMESTAMP_TZ", description="Timestamp column"
-                ),
-                TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
-                TableColumnInfo(name="cust_id", dtype="INT"),
-            ],
-        }
-    )
+    assert info == DimensionTableInfo(**{
+        **expected_info.model_dump(),
+        "columns_info": [
+            TableColumnInfo(name="col_int", dtype="INT"),
+            TableColumnInfo(name="col_float", dtype="FLOAT", description="Float column"),
+            TableColumnInfo(name="col_char", dtype="CHAR", description="Char column"),
+            TableColumnInfo(name="col_text", dtype="VARCHAR", description="Text column"),
+            TableColumnInfo(name="col_binary", dtype="BINARY"),
+            TableColumnInfo(name="col_boolean", dtype="BOOL"),
+            TableColumnInfo(
+                name="event_timestamp", dtype="TIMESTAMP_TZ", description="Timestamp column"
+            ),
+            TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
+            TableColumnInfo(name="cust_id", dtype="INT"),
+        ],
+    })
 
 
 @pytest.mark.asyncio
@@ -273,24 +267,22 @@ async def test_get_scd_table_info(app_container, scd_table):
     assert info == expected_info
 
     info = await app_container.scd_table_controller.get_info(document_id=scd_table.id, verbose=True)
-    assert info == SCDTableInfo(
-        **{
-            **expected_info.model_dump(),
-            "columns_info": [
-                TableColumnInfo(name="col_int", dtype="INT"),
-                TableColumnInfo(name="col_float", dtype="FLOAT"),
-                TableColumnInfo(name="is_active", dtype="BOOL"),
-                TableColumnInfo(name="col_text", dtype="VARCHAR"),
-                TableColumnInfo(name="col_binary", dtype="BINARY"),
-                TableColumnInfo(name="col_boolean", dtype="BOOL"),
-                TableColumnInfo(name="effective_timestamp", dtype="TIMESTAMP_TZ"),
-                TableColumnInfo(name="end_timestamp", dtype="TIMESTAMP_TZ"),
-                TableColumnInfo(name="date_of_birth", dtype="TIMESTAMP"),
-                TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
-                TableColumnInfo(name="cust_id", dtype="INT"),
-            ],
-        }
-    )
+    assert info == SCDTableInfo(**{
+        **expected_info.model_dump(),
+        "columns_info": [
+            TableColumnInfo(name="col_int", dtype="INT"),
+            TableColumnInfo(name="col_float", dtype="FLOAT"),
+            TableColumnInfo(name="is_active", dtype="BOOL"),
+            TableColumnInfo(name="col_text", dtype="VARCHAR"),
+            TableColumnInfo(name="col_binary", dtype="BINARY"),
+            TableColumnInfo(name="col_boolean", dtype="BOOL"),
+            TableColumnInfo(name="effective_timestamp", dtype="TIMESTAMP_TZ"),
+            TableColumnInfo(name="end_timestamp", dtype="TIMESTAMP_TZ"),
+            TableColumnInfo(name="date_of_birth", dtype="TIMESTAMP"),
+            TableColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
+            TableColumnInfo(name="cust_id", dtype="INT"),
+        ],
+    })
 
 
 @pytest.mark.asyncio
@@ -366,18 +358,16 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
     info = await app_container.feature_controller.get_info(
         document_id=production_ready_feature.id, verbose=True
     )
-    assert info == FeatureInfo(
-        **{
-            **expected_info.model_dump(),
-            "versions_info": [
-                FeatureBriefInfo(
-                    version=production_ready_feature.version,
-                    readiness="PRODUCTION_READY",
-                    created_at=production_ready_feature.created_at,
-                )
-            ],
-        }
-    )
+    assert info == FeatureInfo(**{
+        **expected_info.model_dump(),
+        "versions_info": [
+            FeatureBriefInfo(
+                version=production_ready_feature.version,
+                readiness="PRODUCTION_READY",
+                created_at=production_ready_feature.created_at,
+            )
+        ],
+    })
 
 
 @pytest.fixture(name="expected_feature_iet_info")
@@ -619,19 +609,17 @@ async def test_get_feature_list_info(app_container, feature_list, feature_list_n
     assert info == expected_info
 
     info = await controller.get_info(document_id=feature_list.id, verbose=True)
-    assert info == FeatureListInfo(
-        **{
-            **expected_info.model_dump(),
-            "versions_info": [
-                FeatureListBriefInfo(
-                    version=feature_list.version,
-                    readiness_distribution=[{"readiness": "DRAFT", "count": 1}],
-                    created_at=feature_list.created_at,
-                    production_ready_fraction=0.0,
-                ),
-            ],
-        }
-    )
+    assert info == FeatureListInfo(**{
+        **expected_info.model_dump(),
+        "versions_info": [
+            FeatureListBriefInfo(
+                version=feature_list.version,
+                readiness_distribution=[{"readiness": "DRAFT", "count": 1}],
+                created_at=feature_list.created_at,
+                production_ready_fraction=0.0,
+            ),
+        ],
+    })
 
 
 @pytest.mark.asyncio

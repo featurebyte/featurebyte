@@ -5,8 +5,6 @@ This module contains utility functions used in tests
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Generator
-
 import importlib
 import json
 import os
@@ -16,6 +14,7 @@ import tempfile
 import textwrap
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
+from typing import Generator
 from unittest.mock import Mock
 
 import numpy as np

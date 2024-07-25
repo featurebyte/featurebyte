@@ -4,9 +4,8 @@ Semantic API routes
 
 from __future__ import annotations
 
-from typing import Optional
-
 from http import HTTPStatus
+from typing import Optional
 
 from fastapi import Request
 

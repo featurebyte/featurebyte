@@ -4,10 +4,9 @@ SQL generation for online serving
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
-
 import time
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import pandas as pd
 from bson import ObjectId

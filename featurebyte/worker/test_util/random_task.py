@@ -2,9 +2,8 @@
 Random task util. Mainly used in tests, but placing in src so that we can register for DI.
 """
 
-from typing import ClassVar
-
 import time
+from typing import ClassVar
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import User

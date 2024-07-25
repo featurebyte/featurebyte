@@ -4,9 +4,8 @@ PreviewService class
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, Type
-
 import warnings
+from typing import Any, Optional, Tuple, Type
 
 import pandas as pd
 from bson import ObjectId

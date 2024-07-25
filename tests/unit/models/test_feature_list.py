@@ -269,12 +269,10 @@ def test_readiness_distribution__derive_production_ready_fraction(dist, expected
 
 def test_feature_readiness_distribution__worst_cast_worst_case():
     """Test feature readiness distribution - worst cast & total count"""
-    feat_readiness_dist = FeatureReadinessDistribution(
-        [
-            {"readiness": "DRAFT", "count": 2},
-            {"readiness": "PRODUCTION_READY", "count": 5},
-        ]
-    )
+    feat_readiness_dist = FeatureReadinessDistribution([
+        {"readiness": "DRAFT", "count": 2},
+        {"readiness": "PRODUCTION_READY", "count": 5},
+    ])
     worst_cast_readiness_dist = feat_readiness_dist.worst_case()
     assert feat_readiness_dist.total_count == 7
     assert isinstance(worst_cast_readiness_dist, FeatureReadinessDistribution)
@@ -292,12 +290,10 @@ def test_feature_readiness_distribution__worst_cast_worst_case():
 )
 def test_feature_readiness_distribution__transition(from_readiness, to_readiness, expected):
     """Test feature readiness distribution - readiness transition"""
-    feat_readiness_dist = FeatureReadinessDistribution(
-        [
-            {"readiness": "DRAFT", "count": 2},
-            {"readiness": "PRODUCTION_READY", "count": 5},
-        ]
-    )
+    feat_readiness_dist = FeatureReadinessDistribution([
+        {"readiness": "DRAFT", "count": 2},
+        {"readiness": "PRODUCTION_READY", "count": 5},
+    ])
 
     output = feat_readiness_dist.update_readiness(
         transition=FeatureReadinessTransition(

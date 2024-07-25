@@ -4,10 +4,9 @@ Utility functions
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
-
 import hashlib
 import json
+from typing import Any, Dict, List
 
 from bson import json_util
 

@@ -135,12 +135,10 @@ async def test_online_serving_sql(
     # We can compute the historical features using the expected previous job time as point in time.
     # The historical feature values should match with the online feature values.
     user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime([point_in_time] * len(user_ids)),
-            "üser id": user_ids,
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime([point_in_time] * len(user_ids)),
+        "üser id": user_ids,
+    })
     df_historical = feature_list.compute_historical_features(df_training_events)
 
     try:

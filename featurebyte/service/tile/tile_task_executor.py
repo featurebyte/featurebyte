@@ -2,11 +2,10 @@
 Tile Generate Schedule script
 """
 
-from typing import Any, Dict, List, Optional
-
 import time
 import traceback
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 import dateutil.parser
 

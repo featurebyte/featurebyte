@@ -2,8 +2,6 @@
 Read configurations from ini file
 """
 
-from typing import Any, Dict, Iterator, List, Optional, Union, cast
-
 import json
 import os
 import ssl
@@ -11,6 +9,7 @@ import time
 from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Union, cast
 
 import requests
 import websocket

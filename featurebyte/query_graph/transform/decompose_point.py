@@ -2,9 +2,8 @@
 This module contains
 """
 
-from typing import Any, Dict, List, Optional, Set, Tuple
-
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId

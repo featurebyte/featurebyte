@@ -4,10 +4,9 @@ Base class for testing worker tasks
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
-
 import json
 from abc import abstractmethod
+from typing import Any, Dict, Optional
 from unittest.mock import Mock
 
 import pytest

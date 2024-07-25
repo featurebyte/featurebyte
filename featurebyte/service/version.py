@@ -129,9 +129,10 @@ class VersionService:
                     parameters = group_by_node.parameters.model_dump()
                     parameters["feature_job_setting"] = feature_job_setting.model_dump()
                     if group_by_node.parameters.model_dump() != parameters:
-                        node_name_to_replacement_node[group_by_node.name] = GroupByNode(
-                            **{**group_by_node.model_dump(), "parameters": parameters}
-                        )
+                        node_name_to_replacement_node[group_by_node.name] = GroupByNode(**{
+                            **group_by_node.model_dump(),
+                            "parameters": parameters,
+                        })
 
         return node_name_to_replacement_node
 
@@ -173,14 +174,12 @@ class VersionService:
             # only include fields that are required for creating a new feature version,
             # other attributes will be re-generated when the new feature version is constructed
             include_fields = {"name", "tabular_source", "feature_namespace_id"}
-            return FeatureModel(
-                **{
-                    **feature.model_dump(include=include_fields),
-                    "graph": pruned_graph,
-                    "node_name": pruned_node_name,
-                    "_id": ObjectId(),
-                }
-            )
+            return FeatureModel(**{
+                **feature.model_dump(include=include_fields),
+                "graph": pruned_graph,
+                "node_name": pruned_node_name,
+                "_id": ObjectId(),
+            })
         return None
 
     async def _create_new_feature_version(
@@ -337,14 +336,12 @@ class VersionService:
 
             raise DocumentError("No change detected on the new feature list version.")
 
-        return FeatureListModel(
-            **{
-                **feature_list.model_dump(),
-                "_id": ObjectId(),
-                "feature_ids": feature_ids,
-                "features": features,
-            }
-        )
+        return FeatureListModel(**{
+            **feature_list.model_dump(),
+            "_id": ObjectId(),
+            "feature_ids": feature_ids,
+            "features": features,
+        })
 
     async def create_new_feature_list_version(
         self,

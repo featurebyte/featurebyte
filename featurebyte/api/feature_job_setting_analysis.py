@@ -4,10 +4,9 @@ FeatureJobSettingAnalysis class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Union
-
 from io import BytesIO
 from pathlib import Path
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -41,8 +40,8 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
     Examples
     --------
     >>> analysis = invoice_table.create_new_feature_job_setting_analysis(  # doctest: +SKIP
-    ...   analysis_date=pd.Timestamp('2023-04-10'),
-    ...   analysis_length=3600*24*28,
+    ...     analysis_date=pd.Timestamp("2023-04-10"),
+    ...     analysis_length=3600 * 24 * 28,
     ... )
     """
 
@@ -187,11 +186,13 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         >>> analysis = fb.FeatureJobSettingAnalysis.get_by_id(<analysis_id>)  # doctest: +SKIP
         >>> # Backtest a manual setting
         >>> manual_setting = fb.FeatureJobSetting(  # doctest: +SKIP
-        ...   blind_spot="135s",
-        ...   period="60m",
-        ...   offset="90s",
+        ...     blind_spot="135s",
+        ...     period="60m",
+        ...     offset="90s",
         ... )
-        >>> backtest_result = analysis.backtest(feature_job_setting=manual_setting)  # doctest: +SKIP
+        >>> backtest_result = analysis.backtest(
+        ...     feature_job_setting=manual_setting
+        ... )  # doctest: +SKIP
         """
         payload = FeatureJobSettingAnalysisBacktest(
             feature_job_setting_analysis_id=self.id,
@@ -243,7 +244,8 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
 
     @classmethod
     def get_by_id(
-        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+        cls,
+        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
     ) -> FeatureJobSettingAnalysis:
         """
         Retrieves an analysis of the data availability and freshness of a table. This returns a

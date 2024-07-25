@@ -19,12 +19,10 @@ async def setup_test_data_fixture(session):
     Setup test data
     """
     # Prepare test data
-    table = pd.DataFrame(
-        {
-            "id_col": ["1", "2"],
-            "val_col": [None, -1.5],
-        }
-    )
+    table = pd.DataFrame({
+        "id_col": ["1", "2"],
+        "val_col": [None, -1.5],
+    })
     await session.register_table(table_name=TEST_TABLE_NAME, dataframe=table)
     yield
     await session.drop_table(

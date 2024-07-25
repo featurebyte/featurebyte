@@ -5,8 +5,6 @@ Session class
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, ClassVar, Dict, Literal, Optional, OrderedDict, Type
-
 import asyncio
 import contextvars
 import ctypes
@@ -18,6 +16,7 @@ from abc import ABC, abstractmethod
 from asyncio import events
 from io import BytesIO
 from random import randint
+from typing import Any, AsyncGenerator, ClassVar, Dict, Literal, Optional, OrderedDict, Type
 
 import aiofiles
 import pandas as pd
@@ -701,13 +700,11 @@ class BaseSession(BaseModel):
         """
 
         async def _drop(is_view: bool) -> None:
-            fully_qualified_table_name = get_fully_qualified_table_name(
-                {
-                    "table_name": table_name,
-                    "schema_name": schema_name,
-                    "database_name": database_name,
-                }
-            )
+            fully_qualified_table_name = get_fully_qualified_table_name({
+                "table_name": table_name,
+                "schema_name": schema_name,
+                "database_name": database_name,
+            })
             query = sql_to_string(
                 expressions.Drop(
                     this=expressions.Table(this=fully_qualified_table_name),

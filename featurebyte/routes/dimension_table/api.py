@@ -4,9 +4,8 @@ DimensionTable API routes
 
 from __future__ import annotations
 
-from typing import Optional
-
 from http import HTTPStatus
+from typing import Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Request

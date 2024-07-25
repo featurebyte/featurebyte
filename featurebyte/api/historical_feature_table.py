@@ -4,9 +4,8 @@ HistoricalFeatureTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, TypeVar, Union
-
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, TypeVar, Union
 
 import pandas as pd
 from typeguard import typechecked
@@ -148,7 +147,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.list_deployments()  # doctest: +SKIP
         """
         # pylint: disable=import-outside-toplevel
@@ -172,7 +173,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
@@ -196,7 +199,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
@@ -219,7 +224,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
@@ -246,8 +253,12 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
-        >>> downloaded_path = historical_feature_table.download(output_path="path/to/download")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
+        >>> downloaded_path = historical_feature_table.download(
+        ...     output_path="path/to/download"
+        ... )  # doctest: +SKIP
 
         # noqa: DAR402
         """
@@ -264,7 +275,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.delete()  # doctest: +SKIP
 
         # noqa: DAR402
@@ -283,7 +296,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.update_description(description)  # doctest: +SKIP
         """
         super().update_description(description)

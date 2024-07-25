@@ -4,14 +4,13 @@ Code to run in mkdocs#gen_ref_pages.py
 This is placed in here so that it can be imported as part of the featurebyte package.
 """
 
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
-
 import importlib
 import inspect
 import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
@@ -535,7 +534,7 @@ def _get_accessor_metadata(doc_path: str) -> Optional[AccessorMetadata]:
 
 
 def _add_pure_methods_to_doc_groups(
-    doc_groups: Dict[DocGroupKey, DocGroupValue]
+    doc_groups: Dict[DocGroupKey, DocGroupValue],
 ) -> Dict[DocGroupKey, DocGroupValue]:
     """
     Add pure methods to the doc groups.
@@ -606,7 +605,7 @@ def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
 
 
 def generate_documentation_for_docs(
-    doc_groups: Dict[DocGroupKey, DocGroupValue]
+    doc_groups: Dict[DocGroupKey, DocGroupValue],
 ) -> Tuple[Dict[str, str], DocItems]:
     """
     This function generates the documentation for the docs.

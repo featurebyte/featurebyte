@@ -37,12 +37,12 @@ class SnowflakeDetails(BaseDatabaseDetails):
 
     Examples
     --------
-    >>> details= fb.SnowflakeDetails(
-    ...   account="<account>",
-    ...   warehouse="snowflake",
-    ...   database_name="<database_name>",
-    ...   schema_name="<schema_name>",
-    ...   role_name="<role_name>",
+    >>> details = fb.SnowflakeDetails(
+    ...     account="<account>",
+    ...     warehouse="snowflake",
+    ...     database_name="<database_name>",
+    ...     schema_name="<schema_name>",
+    ...     role_name="<role_name>",
     ... )
     """
 
@@ -130,11 +130,11 @@ class DatabricksDetails(BaseDatabricksDetails):  # pylint: disable=abstract-meth
     Examples
     --------
     >>> details = fb.DatabricksDetails(
-    ...   host="<host_name>",
-    ...   http_path="<http_path>",
-    ...   catalog_name="hive_metastore",
-    ...   schema_name="<schema_name>",
-    ...   storage_path="dbfs:/FileStore/<schema_name>",
+    ...     host="<host_name>",
+    ...     http_path="<http_path>",
+    ...     catalog_name="hive_metastore",
+    ...     schema_name="<schema_name>",
+    ...     storage_path="dbfs:/FileStore/<schema_name>",
     ... )
     """
 
@@ -179,11 +179,11 @@ class DatabricksUnityDetails(BaseDatabricksDetails):  # pylint: disable=abstract
     Examples
     --------
     >>> details = fb.DatabricksUnityDetails(
-    ...   host="<host_name>",
-    ...   http_path="<http_path>",
-    ...   catalog_name="hive_metastore",
-    ...   schema_name="<schema_name>",
-    ...   group_name="<group_name>",
+    ...     host="<host_name>",
+    ...     http_path="<http_path>",
+    ...     catalog_name="hive_metastore",
+    ...     schema_name="<schema_name>",
+    ...     group_name="<group_name>",
     ... )
     """
 
@@ -213,13 +213,13 @@ class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     Examples
     --------
     >>> details = fb.SparkDetails(
-    ...   host="<host>",
-    ...   port=10003,
-    ...   catalog_name="spark_catalog",
-    ...   schema_name="<schema_name>",
-    ...   storage_type=fb.StorageType.S3,
-    ...   storage_url="<storage_url>",
-    ...   storage_path="gs://dataproc-cluster-staging/{<schema_name>}"
+    ...     host="<host>",
+    ...     port=10003,
+    ...     catalog_name="spark_catalog",
+    ...     schema_name="<schema_name>",
+    ...     storage_type=fb.StorageType.S3,
+    ...     storage_url="<storage_url>",
+    ...     storage_path="gs://dataproc-cluster-staging/{<schema_name>}",
     ... )
     """
 

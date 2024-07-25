@@ -4,10 +4,9 @@ ObservationTableService class
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
-
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, List, Optional, cast
 
 import pandas as pd
 from bson import ObjectId

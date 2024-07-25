@@ -70,12 +70,10 @@ def test_item_aggregation_with_category(item_aggregate_with_category_features, e
 
     # check historical features
     df = item_aggregate_with_category_features.compute_historical_features(
-        pd.DataFrame(
-            {
-                "POINT_IN_TIME": ["2001-11-15 10:00:00"] * 3,
-                "order_id": [f"T{i}" for i in range(3)],
-            }
-        )
+        pd.DataFrame({
+            "POINT_IN_TIME": ["2001-11-15 10:00:00"] * 3,
+            "order_id": [f"T{i}" for i in range(3)],
+        })
     )
     df = df.sort_values("order_id")
     assert df["most_frequent_item_type"].tolist() == ["type_2", "type_18", "type_13"]
@@ -130,12 +128,10 @@ def test_item_view_ops(item_table, expected_joined_event_item_dataframe):
         "üser id": 1,
         "count_30d": {"TYPE_42": 4},
     }
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"] * 10),
-            "üser id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"] * 10),
+        "üser id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    })
     feature_list = FeatureList([feature], name="feature_list")
     df_historical_features = feature_list.compute_historical_features(df_training_events)
     assert df_historical_features["count_30d"].tolist() == [
@@ -240,12 +236,10 @@ def test_item_view_joined_with_dimension_view(
         .cd.most_frequent()
     )
     feature.name = "most_frequent_item_type_30d"
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
-            "üser id": [1, 2, 3, 4, 5],
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
+        "üser id": [1, 2, 3, 4, 5],
+    })
     feature_list = FeatureList([feature], name="feature_list")
     df_historical_features = feature_list.compute_historical_features(df_training_events)
     assert df_historical_features.sort_values("üser id")[
@@ -272,12 +266,10 @@ def test_item_view_features_from_different_filters(item_table):
         feature_name="feature_2",
     )
     feature_list = FeatureList([feature_1, feature_2], name="feature_list")
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
-            "order_id": ["T1", "T2", "T3", "T4", "T5"],
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 5),
+        "order_id": ["T1", "T2", "T3", "T4", "T5"],
+    })
     df_historical_features = feature_list.compute_historical_features(df_training_events)
     assert df_historical_features["feature_1"].equals(pd.Series([2, 4, np.nan, 5, 1]))
     assert df_historical_features["feature_2"].tolist() == [1, 5, 2, 3, 2]

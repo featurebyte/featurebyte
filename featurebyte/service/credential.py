@@ -184,9 +184,10 @@ class CredentialService(
 
         # verify credential is valid
         update_dict = data.model_dump(exclude_none=exclude_none)
-        updated_document = self.document_class(
-            **{**document.model_dump(by_alias=True), **update_dict}
-        )
+        updated_document = self.document_class(**{
+            **document.model_dump(by_alias=True),
+            **update_dict,
+        })
         await self._validate_credential(credential=updated_document)
         data.encrypt()
 

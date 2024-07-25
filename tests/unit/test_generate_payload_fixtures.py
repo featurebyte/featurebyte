@@ -2,9 +2,8 @@
 Test module for generating payload fixtures for testing api route
 """
 
-from typing import Any
-
 import json
+from typing import Any
 
 import pytest
 from bson import ObjectId

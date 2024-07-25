@@ -2,13 +2,12 @@
 TaskStatus API payload schema
 """
 
-from typing import Any, Dict, List, Optional, Set, Union
-from typing_extensions import Annotated
-
 import datetime
 import uuid
+from typing import Any, Dict, List, Optional, Set, Union
 
 from pydantic import AfterValidator, Field
+from typing_extensions import Annotated
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId

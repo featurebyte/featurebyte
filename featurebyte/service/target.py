@@ -94,14 +94,12 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         -------
         FeatureModel
         """
-        document = TargetModel(
-            **{
-                **data.model_dump(by_alias=True),
-                "version": await self.get_document_version(data.name),
-                "user_id": self.user.id,
-                "catalog_id": self.catalog_id,
-            }
-        )
+        document = TargetModel(**{
+            **data.model_dump(by_alias=True),
+            "version": await self.get_document_version(data.name),
+            "user_id": self.user.id,
+            "catalog_id": self.catalog_id,
+        })
 
         # prepare the graph to store
         graph, node_name = await self.namespace_handler.prepare_graph_to_store(
@@ -112,15 +110,13 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         derived_data = await self.extract_derived_data(graph=graph, node_name=node_name)
 
         # create a new target document (so that the derived attributes like table_ids is generated properly)
-        return TargetModel(
-            **{
-                **document.model_dump(by_alias=True),
-                "graph": graph,
-                "node_name": node_name,
-                "primary_entity_ids": derived_data.primary_entity_ids,
-                "relationships_info": derived_data.relationships_info,
-            }
-        )
+        return TargetModel(**{
+            **document.model_dump(by_alias=True),
+            "graph": graph,
+            "node_name": node_name,
+            "primary_entity_ids": derived_data.primary_entity_ids,
+            "relationships_info": derived_data.relationships_info,
+        })
 
     @staticmethod
     def derive_window(document: TargetModel, namespace: TargetNamespaceModel) -> Optional[str]:

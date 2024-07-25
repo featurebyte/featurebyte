@@ -2,9 +2,8 @@
 This model contains query graph internal model structures
 """
 
-from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, cast
-
 from collections import defaultdict
+from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, cast
 
 from pydantic import Field, PrivateAttr, field_validator, model_validator
 
@@ -220,7 +219,9 @@ class QueryGraphModel(FeatureByteBaseModel):
         node_parameters = node.parameters.model_dump()
         if node.type == NodeType.GRAPH:
             nested_graph = node.parameters.graph  # type: ignore
-            node_parameters["graph"] = nested_graph.node_name_to_ref[node.parameters.output_node_name]  # type: ignore
+            node_parameters["graph"] = nested_graph.node_name_to_ref[
+                node.parameters.output_node_name
+            ]  # type: ignore
             # remove node name from graph parameters to prevent the node name
             # from affecting the graph hash (node name could be different if the insert order is different)
             # even if the final graph is the same

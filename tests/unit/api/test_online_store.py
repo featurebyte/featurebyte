@@ -91,14 +91,12 @@ async def saved_mysql_online_store_fixture(mysql_online_store, mock_get_persiste
     online_stores = OnlineStore.list()
     assert_frame_equal(
         online_stores,
-        pd.DataFrame(
-            {
-                "id": [str(mysql_online_store.id)],
-                "name": [mysql_online_store.name],
-                "details": [mysql_online_store.details.model_dump()],
-                "created_at": [mysql_online_store.created_at.isoformat()],
-            }
-        ),
+        pd.DataFrame({
+            "id": [str(mysql_online_store.id)],
+            "name": [mysql_online_store.name],
+            "details": [mysql_online_store.details.model_dump()],
+            "created_at": [mysql_online_store.created_at.isoformat()],
+        }),
     )
     yield mysql_online_store
 

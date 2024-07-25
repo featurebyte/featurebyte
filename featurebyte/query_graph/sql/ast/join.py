@@ -4,13 +4,12 @@ Module for join operation sql generation
 
 from __future__ import annotations
 
-from typing import Optional, cast
-from typing_extensions import Literal
-
 from dataclasses import dataclass
+from typing import Optional, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Select
+from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode

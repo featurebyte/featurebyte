@@ -4,13 +4,12 @@ This module contains models used for sdk code extractor.
 
 from __future__ import annotations
 
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
-
 import ast
 import json
 import os
 from collections import defaultdict
 from enum import Enum
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 from black import FileMode, format_str
 from bson import ObjectId

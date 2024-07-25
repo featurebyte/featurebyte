@@ -4,10 +4,9 @@ SQL generation for lookup features
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
-
 from abc import abstractmethod
 from dataclasses import dataclass
+from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
 
 import pandas as pd
 from sqlglot import expressions

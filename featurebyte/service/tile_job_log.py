@@ -4,10 +4,9 @@ TileJobStatusService class
 
 from __future__ import annotations
 
-from typing import Any, List
-
 import datetime
 from collections import defaultdict
+from typing import Any, List
 
 import pandas as pd
 
@@ -138,9 +137,9 @@ class TileJobLogService(
 
             # extract timestamps for key steps
             standard_statuses = ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
-            summarized_logs = pd.DataFrame(
-                {status: [timestamps.get(status, pd.NaT)] for status in standard_statuses}
-            )
+            summarized_logs = pd.DataFrame({
+                status: [timestamps.get(status, pd.NaT)] for status in standard_statuses
+            })
 
             # extract error message if any
             summarized_logs["ERROR"] = None
@@ -153,9 +152,9 @@ class TileJobLogService(
         tile_specs_cols = ["aggregation_id", "frequency_minute", "time_modulo_frequency_second"]
         for feature in features:
             if feature.tile_specs:
-                _tile_specs = pd.DataFrame.from_dict(
-                    [tile_spec.model_dump() for tile_spec in feature.tile_specs]
-                )
+                _tile_specs = pd.DataFrame.from_dict([
+                    tile_spec.model_dump() for tile_spec in feature.tile_specs
+                ])
                 tile_specs.append(_tile_specs[tile_specs_cols])
         feature_tile_specs = (
             pd.concat(tile_specs).drop_duplicates()

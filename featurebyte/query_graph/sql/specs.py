@@ -4,12 +4,11 @@ Module for data structures that describe different types of aggregations that fo
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
-
 import hashlib
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
 
 import pandas as pd
 from bson import ObjectId
