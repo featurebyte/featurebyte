@@ -65,7 +65,8 @@ services:
         --conf spark.sql.catalogImplementation=hive  \
         --conf spark.sql.warehouse.dir=file:///opt/spark/data/derby/warehouse/ \
         --conf spark.sql.hive.thriftServer.singleSession=false \
-        --conf spark.hadoop.metastore.catalog.default=spark
+        --conf spark.hadoop.metastore.catalog.default=spark \
+        --conf spark.sql.parquet.int96RebaseModeInWrite=CORRECTED
     healthcheck:
       test: netstat -ltn | grep -c 10000
       interval: 10s
