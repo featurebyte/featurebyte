@@ -8,7 +8,7 @@ import json
 import textwrap
 from datetime import datetime
 from http import HTTPStatus
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -660,7 +660,11 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         mock_session.generate_session_unique_id = Mock(return_value="1")
         sample_payload = copy.deepcopy(data_sample_payload)
         sample_payload["graph"]["nodes"][1]["parameters"]["columns"] = ["col_float", "col_text"]
-        response = test_api_client.post("/feature_store/description", json=sample_payload)
+        with patch(
+            "featurebyte.query_graph.sql.interpreter.preview.ObjectId",
+            return_value=ObjectId("0" * 24),
+        ):
+            response = test_api_client.post("/feature_store/description", json=sample_payload)
         assert response.status_code == HTTPStatus.OK, response.json()
         assert_frame_equal(dataframe_from_json(response.json()), expected_df, check_dtype=False)
 

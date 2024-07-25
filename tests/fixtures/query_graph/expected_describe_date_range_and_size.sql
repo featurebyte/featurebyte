@@ -1,34 +1,4 @@
-WITH data AS (
-  SELECT
-    "ts",
-    "cust_id",
-    "a",
-    "b",
-    "a_copy"
-  FROM (
-    SELECT
-      CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
-      "ts",
-      "cust_id",
-      "a",
-      "b",
-      "a_copy"
-    FROM (
-      SELECT
-        "ts" AS "ts",
-        "cust_id" AS "cust_id",
-        "a" AS "a",
-        "b" AS "b",
-        "a" AS "a_copy"
-      FROM "db"."public"."event_table"
-    )
-  )
-  WHERE
-    "prob" <= 0.15000000000000002
-  ORDER BY
-    "prob"
-  LIMIT 10
-), stats AS (
+WITH stats AS (
   SELECT
     MIN(
       IFF(
@@ -54,7 +24,7 @@ WITH data AS (
     MAX("b") AS "max__3",
     MIN("a_copy") AS "min__4",
     MAX("a_copy") AS "max__4"
-  FROM data
+  FROM "__TEMP_SAMPLED_DATA_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
