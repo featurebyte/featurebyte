@@ -539,6 +539,8 @@ class FeatureExecutionPlan:
             request_table_columns = request_table_columns + list(new_columns)
             exclude_columns.update(new_columns)
 
+        # FIXME: Adding REQ.__FB_WINDOW_START_EPOCH & REQ.__FB_WINDOW_END_EPOCH to request table
+
         for aggregator in self.iter_aggregators():
             cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))
 

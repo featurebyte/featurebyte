@@ -1510,3 +1510,15 @@ def test_create_observation_table__errors_with_no_entities(event_view):
         primary_entities=[],
         skip_entity_validation_checks=True,
     )
+
+
+def test_count_distinct_features(count_distinct_feature_group):
+    """Test count distinct features"""
+    observation_set = pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T0"}])
+    feature_list = FeatureList([count_distinct_feature_group], name="test_count_distinct_fl")
+
+    # test historical feature computation
+    df_historical = feature_list.compute_historical_features(observation_set=observation_set)
+
+    # test feature preview
+    fl_preview = feature_list.preview(observation_set=observation_set)

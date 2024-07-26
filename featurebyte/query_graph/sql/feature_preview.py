@@ -62,6 +62,7 @@ def get_feature_or_target_preview_sql(
         is_online_serving=False,
     )
     execution_plan = planner.generate_plan(nodes)
+    # FIXME: Adding REQ.__FB_WINDOW_START_EPOCH & REQ.__FB_WINDOW_END_EPOCH to request table
 
     exclude_columns = set()
     cte_statements: Optional[List[CteStatement]] = None
