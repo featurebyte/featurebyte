@@ -41,7 +41,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
 
     document_class = TargetModel
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,
@@ -236,7 +236,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
                 )
         return await self.get_document(document_id=insert_id)
 
-    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
+    async def get_sample_entity_serving_names(
         self, target_id: ObjectId, count: int
     ) -> List[Dict[str, str]]:
         """

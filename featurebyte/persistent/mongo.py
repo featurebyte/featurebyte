@@ -46,7 +46,7 @@ class MongoDB(Persistent):
 
         if not client:
             # use global client to enforce connection throttling
-            global MONGODB_CLIENT  # pylint: disable=global-statement
+            global MONGODB_CLIENT
             if MONGODB_CLIENT is None:
                 MONGODB_CLIENT = AsyncIOMotorClient(uri, uuidRepresentation="standard")
 

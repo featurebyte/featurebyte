@@ -413,7 +413,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         return super().list_observation_tables()
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> "UseCase":  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls, id: ObjectId) -> "UseCase":
         """
         Returns a UseCase object by its unique identifier (ID).
 

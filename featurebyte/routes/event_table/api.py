@@ -43,8 +43,6 @@ class EventTableRouter(
     Event table router
     """
 
-    # pylint: disable=arguments-renamed
-
     object_model = EventTableModel
     list_object_model = EventTableList
     create_object_schema = EventTableCreate

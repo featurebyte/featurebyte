@@ -174,7 +174,7 @@ def test_graph_node_create__non_empty_input_nodes(input_node_params):
         "is_time_based": False,
     }
     # check neither node nor edge is pruned
-    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)
+    pruned_graph, node_name_map = graph.prune(target_node=inserted_graph_node)  # noqa: F841
     assert len(pruned_graph.nodes) == len(graph.nodes)
     assert len(pruned_graph.edges) == len(graph.edges)
 
@@ -460,7 +460,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
 
     def add_graph_node(query_graph, input_nodes):
         # construct a graph node which contains a single node (ASSIGN node)
-        node_graph, proxy_inputs = GraphNode.create(
+        node_graph, proxy_inputs = GraphNode.create(  # noqa: F841
             node_type=NodeType.ASSIGN,
             node_params={"name": "col_int_plus_one"},
             node_output_type=NodeOutputType.FRAME,
@@ -521,7 +521,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
         "is_time_based": False,
     }
     # the cleaning graph node is pruned as it does not contribute to the final output
-    pruned_graph, node_name_map = graph.prune(target_node=proj_node)
+    pruned_graph, node_name_map = graph.prune(target_node=proj_node)  # noqa: F841
     assert pruned_graph.edges_map == {"input_1": ["project_1"]}
 
 

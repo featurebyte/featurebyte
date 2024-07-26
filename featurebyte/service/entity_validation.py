@@ -299,7 +299,7 @@ class EntityValidationService:
                     ),
                 )
             except RequiredEntityNotProvidedError:
-                raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
+                raise RequiredEntityNotProvidedError(
                     entity_info.format_missing_entities_error([
                         entity.id for entity in entity_info.missing_entities
                     ])

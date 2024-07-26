@@ -2,8 +2,6 @@
 FeatureMaterializeService class
 """
 
-# pylint: disable=too-many-lines
-
 from __future__ import annotations
 
 import textwrap
@@ -164,14 +162,14 @@ class MaterializedFeaturesSet:
             yield self.table_name_to_feature_table[table_name], materialized_features
 
 
-class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
+class FeatureMaterializeService:
     """
     FeatureMaterializeService is responsible for materialising a set of currently online enabled
     features so that they can be published to an external feature store. These features are
     materialised into a new table in the data warehouse.
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         feature_service: FeatureService,
         online_store_table_version_service: OnlineStoreTableVersionService,
@@ -198,7 +196,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
         self.redis = redis
 
     @asynccontextmanager
-    async def materialize_features(  # pylint: disable=too-many-locals
+    async def materialize_features(
         self,
         feature_table_model: OfflineStoreFeatureTableModel,
         selected_columns: Optional[List[str]] = None,
@@ -749,7 +747,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
                     )
 
     @asynccontextmanager
-    async def _get_latest_from_feature_table(  # pylint: disable=too-many-locals
+    async def _get_latest_from_feature_table(
         self,
         session: BaseSession,
         feature_table_model: OfflineStoreFeatureTableModel,
@@ -1094,7 +1092,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
     ) -> Iterator[None]:
         try:
             yield
-        except BaseException:  # pylint: disable=broad-exception-caught
+        except BaseException:
             logger.error(
                 "Unexpected error when attempting to modify offline store feature table",
                 extra={"method_name": method_name, "feature_table_id": str(feature_table_model.id)},
@@ -1319,7 +1317,7 @@ class FeatureMaterializeService:  # pylint: disable=too-many-instance-attributes
             )
             result = await session.execute_query_long_running(query)
             return cast(int, result.iloc[0][0])  # type: ignore[union-attr]
-        except session._no_schema_error:  # pylint: disable=protected-access
+        except session._no_schema_error:
             return None
 
     @classmethod

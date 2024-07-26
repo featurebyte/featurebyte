@@ -47,7 +47,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
 
     document_class = FeatureModel
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,
@@ -374,7 +374,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             },
         )
 
-    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
+    async def get_sample_entity_serving_names(
         self, feature_id: ObjectId, count: int
     ) -> List[Dict[str, str]]:
         """

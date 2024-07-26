@@ -49,8 +49,6 @@ class DimensionTableRouter(
     Dimension table router
     """
 
-    # pylint: disable=arguments-renamed
-
     object_model = DimensionTableModel
     list_object_model = DimensionTableList
     create_object_schema = DimensionTableCreate

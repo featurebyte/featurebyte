@@ -38,7 +38,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
         """
         Execute tile schedule online store operation
         """
-        # pylint: disable=too-many-locals,too-many-statements
+
         compute_queries = await self._retrieve_online_store_compute_queries()
 
         for compute_query in compute_queries:

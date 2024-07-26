@@ -2,7 +2,7 @@
 Feature store operations test class
 """
 
-from typing import Any, Optional
+from typing import Optional
 from unittest.mock import patch
 
 import pytest

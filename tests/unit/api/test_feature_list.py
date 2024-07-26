@@ -594,8 +594,8 @@ def test_list_versions(saved_feature_list):
     # save a few more feature list
     feature_group = FeatureGroup(items=[])
     feat = saved_feature_list["sum_1d"]
-    feature_group[f"new_feat1"] = feat + 1
-    feature_group[f"new_feat2"] = feat + 2
+    feature_group["new_feat1"] = feat + 1
+    feature_group["new_feat2"] = feat + 2
     feature_group.save()
     flist_1 = FeatureList([feat, feature_group["new_feat1"]], name="new_flist_1")
     flist_2 = FeatureList([feat, feature_group["new_feat2"]], name="new_flist_2")
@@ -1197,7 +1197,7 @@ def test_feature_list_synchronization(saved_feature_list, mock_api_object_cache)
     assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.DRAFT
     deployment = saved_feature_list.deploy(make_production_ready=True)
     deployment.enable()
-    assert deployment.enabled == True
+    assert deployment.enabled
     assert saved_feature_list["sum_1d"].readiness == FeatureReadiness.PRODUCTION_READY
     assert saved_feature_list.deployed is True
 

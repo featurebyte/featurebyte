@@ -248,7 +248,7 @@ def _convert_to_utc_ntz(
     return expressions.Cast(this=utc_ts_expr, to=parse_one("TIMESTAMP"))
 
 
-def augment_table_with_effective_timestamp(  # pylint: disable=too-many-locals
+def augment_table_with_effective_timestamp(
     left_table: Table,
     right_table: Table,
     adapter: BaseAdapter,

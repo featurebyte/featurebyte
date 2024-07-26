@@ -12,7 +12,6 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
-from pydantic import Field
 from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.enum import SourceType

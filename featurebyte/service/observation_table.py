@@ -239,7 +239,7 @@ class ObservationTableService(
     document_class = ObservationTableModel
     materialized_table_name_prefix = MaterializedTableNamePrefix.OBSERVATION_TABLE
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,
@@ -586,7 +586,6 @@ class ObservationTableService(
         -------
         ObservationTableStats
         """
-        # pylint: disable=no-member
 
         # Get describe statistics
         source_table = SourceTable(
@@ -730,7 +729,7 @@ class ObservationTableService(
             "min_interval_secs_between_entities": min_interval_secs_between_entities,
         }
 
-    async def update_observation_table(  # pylint: disable=too-many-branches
+    async def update_observation_table(
         self, observation_table_id: ObjectId, data: ObservationTableServiceUpdate
     ) -> Optional[ObservationTableModel]:
         """

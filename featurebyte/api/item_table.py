@@ -209,7 +209,7 @@ class ItemTable(TableApiObject):
         ...     ],
         ... )
         """
-        from featurebyte.api.item_view import ItemView  # pylint: disable=import-outside-toplevel
+        from featurebyte.api.item_view import ItemView
 
         self._validate_view_mode_params(
             view_mode=view_mode,
@@ -369,7 +369,7 @@ class ItemTable(TableApiObject):
         return None
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> ItemTable:  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls, id: ObjectId) -> ItemTable:
         """
         Returns an ItemTable object by its unique identifier (ID).
 

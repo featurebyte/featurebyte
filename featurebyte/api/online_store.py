@@ -181,7 +181,7 @@ class OnlineStore(OnlineStoreModel, SavableApiObject, DeletableApiObject):
     @classmethod
     def get_by_id(
         cls,
-        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
+        id: ObjectId,
     ) -> OnlineStore:
         """
         Returns a OnlineStore object by its unique identifier (ID).

@@ -2,7 +2,6 @@
 Tests for feature materialization service
 """
 
-# pylint: disable=too-many-lines
 import json
 import os
 import textwrap
@@ -111,7 +110,7 @@ def udf_cos_fixture(catalog):
 
 
 @pytest.fixture(name="features", scope="module")
-def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):  # pylint: disable=too-many-locals
+def features_fixture(event_table, scd_table, source_type, item_table, udf_cos):
     """
     Fixture for feature
     """

@@ -78,7 +78,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         FeatureList
             FeatureList object
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.feature_list import FeatureList
 
         feature_list_id = self.cached_model.feature_list_id
@@ -111,7 +111,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         # Add mlflow tracking in get_historical_tables
         try:
-            import mlflow  # pylint: disable=import-outside-toplevel
+            import mlflow
         except ImportError:
             mlflow = None
 
@@ -129,7 +129,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
                         "primary_entity": [entity.name for entity in feature_list.primary_entity],
                     },
                 )
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.warning(
                     f"Failed to log featurebyte training data information to mlflow: {exc}"
                 )
@@ -152,7 +152,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         ... )  # doctest: +SKIP
         >>> historical_feature_table.list_deployments()  # doctest: +SKIP
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.deployment import Deployment
 
         return Deployment.list(feature_list_id=self.cached_model.feature_list_id)

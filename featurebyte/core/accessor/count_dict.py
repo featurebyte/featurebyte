@@ -33,7 +33,7 @@ class CdAccessorMixin:
     """
 
     @property
-    def cd(self: Feature) -> CountDictAccessor:  # type: ignore # pylint: disable=invalid-name
+    def cd(self: Feature) -> CountDictAccessor:  # type: ignore
         """
         Accessor object that provides transformations on count dictionary features
 
@@ -68,7 +68,6 @@ class CountDictSeriesOperator(SeriesBinaryOperator):
 
 
 class CountDictAccessor:
-    # pylint: disable=line-too-long
     """
     CountDictAccessor used to manipulate dict-like type Feature object
     """

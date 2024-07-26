@@ -92,7 +92,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
         --------
         - [Catalog](/reference/featurebyte.api.catalog.Catalog)
         """
-        return self.cached_model.catalog_id  # pylint: disable=no-member
+        return self.cached_model.catalog_id
 
     @property
     def serving_name(self) -> str:

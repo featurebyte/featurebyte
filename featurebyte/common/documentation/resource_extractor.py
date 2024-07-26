@@ -240,7 +240,7 @@ def _get_param_details(
         # If the type is already a string, just use that as the type.
         # If we pass it into format_param_type, the returned value will be enclosed in quotes, such as `'"str"'`, which
         # looks weird.
-        if type(param_type) == str:
+        if type(param_type) == str:  # noqa: E721
             param_type_string = param_type
         else:
             param_type_string = format_param_type(param_type) if param_type else None  # type: ignore

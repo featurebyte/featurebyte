@@ -68,9 +68,8 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
     def __repr__(self) -> str:
         return str(self)
 
-    def _repr_html_(self) -> str:  # pylint: disable=too-many-statements
+    def _repr_html_(self) -> str:
         try:
-            # pylint: disable=import-outside-toplevel
             from matplotlib import pyplot as plt
 
             matplotlib_available = True
@@ -378,7 +377,7 @@ class FeatureJobMixin(ApiObject):
         logs = dataframe_from_json(result)
 
         # Compute short aggregation hash
-        log_columns = logs.columns.to_list()  # pylint: disable=no-member
+        log_columns = logs.columns.to_list()
         logs["AGGREGATION_HASH"] = logs["AGGREGATION_ID"].apply(lambda x: x.split("_")[-1][:8])
         logs = logs[["AGGREGATION_HASH"] + log_columns]
         logs["IS_LATE"] = logs["TOTAL_DURATION"] > job_duration_tolerance

@@ -2,7 +2,6 @@
 View class
 """
 
-# pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -617,7 +616,7 @@ class GroupByMixin:
         ...     )
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.groupby import GroupBy
 
         return GroupBy(obj=self, keys=by_keys, category=category)  # type: ignore
@@ -1194,7 +1193,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         self,
         other_view: View,
         rsuffix: str = "",
-        on: Optional[str] = None,  # pylint: disable=invalid-name
+        on: Optional[str] = None,
         rprefix: str = "",
     ) -> None:
         """
@@ -1283,10 +1282,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         return []
 
     @typechecked
-    def join(  # pylint: disable=too-many-locals
+    def join(
         self: ViewT,
         other_view: View,
-        on: Optional[str] = None,  # pylint: disable=invalid-name
+        on: Optional[str] = None,
         how: Literal["left", "inner"] = "left",
         rsuffix: str = "",
         rprefix: str = "",
@@ -1386,9 +1385,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             "join_type": how,
             "metadata": JoinMetadata(rsuffix=rsuffix, rprefix=rprefix),
         }
-        node_params.update(
-            other_view._get_join_parameters(self)  # pylint: disable=protected-access
-        )
+        node_params.update(other_view._get_join_parameters(self))
 
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
@@ -1723,7 +1720,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         ...     context_id=context_id,
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.context import Context
 
         context_id = Context.get(context_name).id if context_name else None

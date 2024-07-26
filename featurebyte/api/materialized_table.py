@@ -105,7 +105,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         """
 
         try:
-            from pyspark.sql import SparkSession  # pylint: disable=import-outside-toplevel
+            from pyspark.sql import SparkSession
 
             spark = SparkSession.builder.getOrCreate()
 

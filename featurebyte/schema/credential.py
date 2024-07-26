@@ -15,8 +15,6 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
-
-# pylint: disable=too-many-ancestors
 from featurebyte.models.credential import (
     BaseCredential,
     CredentialModel,

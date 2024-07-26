@@ -143,7 +143,7 @@ class DimensionTable(TableApiObject):
         ...     ],
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.dimension_view import DimensionView
 
         self._validate_view_mode_params(
@@ -213,7 +213,7 @@ class DimensionTable(TableApiObject):
     @classmethod
     def get_by_id(
         cls,
-        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
+        id: ObjectId,
     ) -> DimensionTable:
         """
         Returns a DimensionTable object by its unique identifier (ID).

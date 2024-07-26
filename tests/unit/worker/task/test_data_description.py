@@ -109,9 +109,7 @@ class TestDataDescriptionTask(BaseTaskTestSuite):
         yield
 
     @pytest.mark.asyncio
-    async def test_execute_success(  # pylint: disable=too-many-locals
-        self, task_completed, temp_storage
-    ):
+    async def test_execute_success(self, task_completed, temp_storage):
         """
         Test successful task execution
         """

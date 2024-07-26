@@ -34,8 +34,6 @@ class ContextRouter(BaseApiRouter[ContextModel, ContextList, ContextCreate, Cont
     Context API router
     """
 
-    # pylint: disable=arguments-renamed
-
     object_model = ContextModel
     list_object_model = ContextList
     create_object_schema = ContextCreate

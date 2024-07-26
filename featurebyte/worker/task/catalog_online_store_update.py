@@ -99,9 +99,7 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
             current_table_index += 1
 
             if session is None:
-                session = await self.feature_materialize_service._get_session(  # pylint: disable=protected-access
-                    feature_table_model
-                )
+                session = await self.feature_materialize_service._get_session(feature_table_model)
 
             if feature_table_model.deployment_ids:
                 service = self.feast_feature_store_service

@@ -53,7 +53,7 @@ class TileColumnTypeExtractor:
                 feature_model = ExtendedFeatureModel(**doc)
                 try:
                     tile_specs = feature_model.tile_specs
-                except:  # pylint: disable=bare-except
+                except BaseException as _:
                     logger.exception(f"Failed to extract tile_specs for {doc}")
                     # For tile columns with no known type, they will be given a FLOAT type below
                     continue

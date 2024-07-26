@@ -2,7 +2,6 @@
 SourceTable class
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -110,7 +109,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         tabular_source = dict(values["tabular_source"])
         if "feature_store" not in values:
             # attempt to set feature_store object if it does not exist in the input
-            from featurebyte.api.feature_store import (  # pylint: disable=import-outside-toplevel,cyclic-import
+            from featurebyte.api.feature_store import (
                 FeatureStore,
             )
 
@@ -347,7 +346,6 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         to_timestamp: Optional[Union[datetime, str]] = None,
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
-        # pylint: disable=line-too-long
         """
         Returns descriptive statistics of the table columns.
 
@@ -520,7 +518,7 @@ class SourceTable(AbstractTableData):
         ...     record_creation_timestamp_column="record_available_at",
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.event_table import EventTable
 
         return EventTable.create(
@@ -599,7 +597,7 @@ class SourceTable(AbstractTableData):
         ...     event_table_name="GROCERYINVOICE",
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.event_table import EventTable
         from featurebyte.api.item_table import ItemTable
 
@@ -673,7 +671,7 @@ class SourceTable(AbstractTableData):
         ...     name="GROCERYPRODUCT", dimension_id_column="GroceryProductGuid"
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.dimension_table import DimensionTable
 
         return DimensionTable.create(
@@ -768,7 +766,7 @@ class SourceTable(AbstractTableData):
         ...     record_creation_timestamp_column="record_available_at",
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.scd_table import SCDTable
 
         return SCDTable.create(
@@ -819,7 +817,7 @@ class SourceTable(AbstractTableData):
         -------
         EventTable
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.event_table import EventTable
 
         return EventTable.get_or_create(
@@ -870,7 +868,7 @@ class SourceTable(AbstractTableData):
         -------
         ItemTable
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.event_table import EventTable
         from featurebyte.api.item_table import ItemTable
 
@@ -918,7 +916,7 @@ class SourceTable(AbstractTableData):
         -------
         DimensionTable
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.dimension_table import DimensionTable
 
         return DimensionTable.get_or_create(
@@ -975,7 +973,7 @@ class SourceTable(AbstractTableData):
         -------
         SCDTable
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.scd_table import SCDTable
 
         return SCDTable.get_or_create(
@@ -1057,7 +1055,7 @@ class SourceTable(AbstractTableData):
         ...   context_id=context_id,
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.context import Context
         from featurebyte.api.observation_table import ObservationTable
 
@@ -1129,7 +1127,7 @@ class SourceTable(AbstractTableData):
         ...   columns_rename_mapping={ <entity_column_name>: <entity_serving_name>, }
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.batch_request_table import BatchRequestTable
 
         payload = BatchRequestTableCreate(
@@ -1187,7 +1185,7 @@ class SourceTable(AbstractTableData):
         ...     sample_rows=desired_sample_size,
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.static_source_table import StaticSourceTable
 
         payload = StaticSourceTableCreate(
@@ -1207,7 +1205,7 @@ class SourceTable(AbstractTableData):
 
     @perf_logging
     @typechecked
-    def preview(self, limit: int = 10) -> pd.DataFrame:  # pylint: disable=arguments-differ
+    def preview(self, limit: int = 10) -> pd.DataFrame:
         """
         Retrieve a preview of the source table / column.
 
@@ -1253,7 +1251,7 @@ class SourceTable(AbstractTableData):
 
     @perf_logging
     @typechecked
-    def shape(self) -> Tuple[int, int]:  # pylint: disable=arguments-differ
+    def shape(self) -> Tuple[int, int]:
         """
         Return the shape of the source table
 

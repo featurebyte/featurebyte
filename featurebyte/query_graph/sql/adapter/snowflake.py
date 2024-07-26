@@ -25,7 +25,7 @@ from featurebyte.query_graph.sql.common import (
 )
 
 
-class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
+class SnowflakeAdapter(BaseAdapter):
     """
     Helper class to generate Snowflake specific SQL expressions
     """
@@ -387,7 +387,7 @@ class SnowflakeAdapter(BaseAdapter):  # pylint: disable=too-many-public-methods
         Select
             The group by query
         """
-        # pylint: disable=too-many-locals
+
         # If there are no vector aggregate expressions, we can use the standard group by.
         normal_groupby_expr = super().group_by(input_expr, select_keys, agg_exprs, keys)
         if not vector_aggregate_columns:

@@ -3,7 +3,7 @@ This module contains cleaning operation related classes.
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from abc import abstractmethod  # pylint: disable=wrong-import-order
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Sequence, Set, Union
 
 import pandas as pd
@@ -87,9 +87,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
         return graph_node.output_node
 
     @staticmethod
-    def _cast_scalar_parameter_to_dtype(  # pylint: disable=too-many-return-statements
-        value: Any, dtype: DBVarType
-    ) -> Any:
+    def _cast_scalar_parameter_to_dtype(value: Any, dtype: DBVarType) -> Any:
         if value is not None:
             if dtype in {DBVarType.CHAR, DBVarType.VARCHAR}:
                 return str(value)

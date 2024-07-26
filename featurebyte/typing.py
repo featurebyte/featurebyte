@@ -129,7 +129,7 @@ def validate_type_is_feature(obj: Any, obj_name: str) -> None:
     obj_name: str
         Name of the object to check
     """
-    # pylint: disable=import-outside-toplevel,cyclic-import
+
     from featurebyte.api.feature import Feature
 
     validate_type_is(obj, obj_name, Feature)

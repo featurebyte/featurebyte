@@ -230,7 +230,7 @@ class FeatureManagerService:
             session, tile_spec, job_schedule_ts_str, aggregation_result_name
         )
 
-    async def _backfill_tiles(  # pylint: disable=too-many-branches
+    async def _backfill_tiles(
         self, session: BaseSession, tile_spec: TileSpec, schedule_time: datetime
     ) -> None:
         """

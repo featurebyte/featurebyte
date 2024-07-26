@@ -2,7 +2,6 @@
 Fixture for Service related unit tests
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import json
@@ -1247,7 +1246,7 @@ async def deployed_feature_list_requiring_parent_serving_ttl_fixture(
 
 
 @pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving_composite_entity")
-async def deployed_feature_list_requiring_parent_serving_composite_entity_fixture(  # pylint: disable=too-many-arguments
+async def deployed_feature_list_requiring_parent_serving_composite_entity_fixture(
     app_container,
     descendant_of_gender_feature,
     aggregate_asat_composite_entity_feature,

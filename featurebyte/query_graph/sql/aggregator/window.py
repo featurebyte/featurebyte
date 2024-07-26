@@ -415,7 +415,7 @@ class WindowAggregator(TileBasedAggregator):
             result_names.append(updated_agg_result_name)
         return output_columns, result_names
 
-    def construct_aggregation_sql(  # pylint: disable=too-many-arguments
+    def construct_aggregation_sql(
         self,
         expanded_request_table_name: str,
         tile_table_id: str,

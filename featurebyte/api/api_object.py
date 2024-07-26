@@ -47,9 +47,7 @@ def _get_cache_collection_name(
     obj: Union[ApiObjectT, FeatureByteBaseDocumentModel, Type[ApiObjectT]],
 ) -> str:
     if hasattr(obj, "_get_schema"):
-        collection_name = (
-            obj._get_schema.Settings.collection_name  # pylint: disable=protected-access
-        )
+        collection_name = obj._get_schema.Settings.collection_name
     else:
         collection_name = obj.Settings.collection_name
     return str(collection_name)
@@ -286,7 +284,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
     @classmethod
     def _get_by_id(
         cls: Type[ApiObjectT],
-        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
+        id: ObjectId,
         use_cache: bool = True,
     ) -> ApiObjectT:
         if use_cache:
@@ -300,7 +298,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
     @classmethod
     def get_by_id(
         cls: Type[ApiObjectT],
-        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
+        id: ObjectId,
     ) -> ApiObjectT:
         """
         Retrieve the object from the persistent data store given the object's ID.
@@ -452,9 +450,10 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         else:
             if self._update_schema_class is None:
                 raise NotImplementedError
-            data = self._update_schema_class(  # pylint: disable=not-callable
-                **{**self.model_dump(by_alias=True), **update_payload}
-            ).json_dict()
+            data = self._update_schema_class(**{
+                **self.model_dump(by_alias=True),
+                **update_payload,
+            }).json_dict()
 
         url = url or f"{self._route}/{self.id}"
         client = Configurations().get_client()
@@ -496,7 +495,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
             "old_value",
             "new_value",
         ]
-        return record_df[column_order]  # pylint: disable=unsubscriptable-object
+        return record_df[column_order]
 
     def audit(self) -> pd.DataFrame:
         """

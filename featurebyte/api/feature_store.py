@@ -231,7 +231,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
     @classmethod
     def get_by_id(
         cls,
-        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
+        id: ObjectId,
     ) -> FeatureStore:
         """
         Returns a FeatureStore object by its unique identifier (ID).

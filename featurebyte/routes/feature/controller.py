@@ -46,7 +46,6 @@ from featurebyte.service.table import TableService
 from featurebyte.service.tile_job_log import TileJobLogService
 
 
-# pylint: disable=too-many-instance-attributes
 class FeatureController(
     BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList]
 ):
@@ -70,7 +69,6 @@ class FeatureController(
         feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
         tile_job_log_service: TileJobLogService,
     ):
-        # pylint: disable=too-many-arguments
         super().__init__(feature_service)
         self.feature_facade_service = feature_facade_service
         self.feature_namespace_service = feature_namespace_service
@@ -224,7 +222,7 @@ class FeatureController(
         FeaturePaginatedList
             List of documents fulfilled the filtering condition
         """
-        # pylint: disable=too-many-locals
+
         params: Dict[str, Any] = {"search": search, "name": name}
         if version:
             params["version"] = VersionIdentifier.from_str(version).model_dump()

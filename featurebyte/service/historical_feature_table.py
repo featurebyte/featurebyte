@@ -35,7 +35,7 @@ class HistoricalFeatureTableService(
     HistoricalFeatureTableService class
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,

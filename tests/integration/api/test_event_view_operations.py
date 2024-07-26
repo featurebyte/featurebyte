@@ -225,7 +225,7 @@ def test_isnull_compare_with_bool(event_view):
     """
     Test a special case of using isnull with bool literal
     """
-    filtered_view = event_view[event_view["ÀMOUNT"].isnull() == False]
+    filtered_view = event_view[not event_view["ÀMOUNT"].isnull()]
     df = filtered_view.preview()
     assert df["ÀMOUNT"].notnull().all()
 
@@ -263,7 +263,7 @@ def test_feature_operations__complex_feature_preview(
     special_feature = create_feature_with_filtered_event_view(event_view)
     if source_type == SourceType.SNOWFLAKE:
         # should only save once since the feature names are the same
-        special_feature.save()  # pylint: disable=no-member
+        special_feature.save()
 
     # preview a more complex feature group (multiple group by, some have the same tile_id)
     features = [

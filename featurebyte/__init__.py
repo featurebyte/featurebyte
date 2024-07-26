@@ -1,5 +1,8 @@
 """Python Library for FeatureOps"""
 
+# Ignore import errors
+# ruff: noqa: F401
+
 import os
 import shutil
 import sys
@@ -575,8 +578,7 @@ if is_notebook():
     # 1. The exception class and message
     # 2. The line number of the code that invoked the featurebyte api
 
-    # pylint: disable=import-outside-toplevel
-    import IPython  # pylint: disable=import-error
+    import IPython
 
     Shell = IPython.core.interactiveshell.InteractiveShell
     default_showtraceback = Shell.showtraceback

@@ -76,8 +76,6 @@ class SCDJoin(TableNode):
     SCDJoin joins the latest record per natural key from the right table to the left table
     """
 
-    # pylint: disable=too-many-instance-attributes
-
     left_node: TableNode
     right_node: TableNode
     left_on: str

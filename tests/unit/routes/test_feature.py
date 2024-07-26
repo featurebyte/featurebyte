@@ -4,8 +4,6 @@ Tests for Feature route
 
 import collections
 import textwrap
-
-# pylint: disable=too-many-lines
 from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
@@ -34,8 +32,6 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
     """
     TestFeatureApi class
     """
-
-    # pylint: disable=too-many-public-methods
 
     class_name = "Feature"
     base_route = "/feature"
@@ -193,7 +189,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             yield payload
 
     @pytest.mark.asyncio
-    async def test_create_201(self, test_api_client_persistent, create_success_response, user_id):  # pylint: disable=invalid-overridden-method
+    async def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
         """Test creation (success)"""
         super().test_create_201(test_api_client_persistent, create_success_response, user_id)
         response_dict = create_success_response.json()

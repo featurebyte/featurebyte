@@ -52,7 +52,7 @@ from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.use_case import UseCaseService
 
 
-class DeploymentController(  # pylint: disable=too-many-instance-attributes, too-many-arguments
+class DeploymentController(
     BaseDocumentController[DeploymentModel, DeploymentService, DeploymentList]
 ):
     """

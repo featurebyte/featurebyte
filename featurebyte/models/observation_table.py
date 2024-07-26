@@ -4,7 +4,7 @@ ObservationTableModel models
 
 from __future__ import annotations
 
-from datetime import datetime  # pylint: disable=wrong-import-order
+from datetime import datetime
 from typing import Dict, List, Optional, Union
 
 import pymongo

@@ -43,8 +43,6 @@ class ItemTableRouter(
     Item table router
     """
 
-    # pylint: disable=arguments-renamed
-
     object_model = ItemTableModel
     list_object_model = ItemTableList
     create_object_schema = ItemTableCreate

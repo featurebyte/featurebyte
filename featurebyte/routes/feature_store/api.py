@@ -48,8 +48,6 @@ class FeatureStoreRouter(
     Feature Store API router
     """
 
-    # pylint: disable=arguments-renamed
-
     object_model = FeatureStoreModel
     list_object_model = FeatureStoreList
     create_object_schema = FeatureStoreCreate

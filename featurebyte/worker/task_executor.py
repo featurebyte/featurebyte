@@ -306,7 +306,7 @@ class IOBoundTask(BaseCeleryTask):
     name = "featurebyte.worker.task_executor.execute_io_task"
 
     def run(self: Any, *args: Any, **payload: Any) -> Any:
-        global WORKER_TERMINATED  # pylint: disable=global-statement
+        global WORKER_TERMINATED
         if WORKER_TERMINATED:
             raise WorkerTerminate(True)
         try:

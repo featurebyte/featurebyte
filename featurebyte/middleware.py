@@ -101,7 +101,7 @@ class ExecutionContext:
         """
         try:
             return await self.call_next(self.request)
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             for except_class, (
                 handle_status_code,
                 handle_message,
@@ -226,7 +226,7 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         try:
             async with ExecutionContext(request, call_next) as executor:
                 response: Response = await executor.execute()
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.exception(str(exc))
             return JSONResponse(
                 content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR

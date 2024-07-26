@@ -84,7 +84,7 @@ class BaseTaskTestSuite:
         """
         Execute task with payload
         """
-        # pylint: disable=not-callable
+
         user = User(id=payload.get("user_id"))
         app_container.override_instance_for_test("persistent", persistent)
         app_container.override_instance_for_test("user", user)

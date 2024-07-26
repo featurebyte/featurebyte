@@ -56,7 +56,6 @@ def patch_api_object_cache(ttl: int = 7200) -> Any:
     def decorator(
         func: Callable[..., Coroutine[Any, Any, Any]],
     ) -> Callable[..., Coroutine[Any, Any, Any]]:
-        # pylint: disable=protected-access
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Save the original cache settings
@@ -390,7 +389,7 @@ class BatchFeatureCreator:
         DocumentInconsistencyError
             If the generated feature is not the same as the expected feature
         """
-        # pylint: disable=too-many-locals
+
         # identify the saved feature ids & prepare conflict resolution feature id mapping
         feature_ids = [feature.id for feature in payload.features]
         feature_names = [feature.name for feature in payload.features]

@@ -172,7 +172,7 @@ class SCDTable(TableApiObject):
         ...     ],
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.scd_view import SCDView
 
         self._validate_view_mode_params(
@@ -191,7 +191,7 @@ class SCDTable(TableApiObject):
         if view_mode == ViewMode.AUTO and self.current_flag_column:
             drop_column_names.append(self.current_flag_column)
 
-        data_node = self.frame.node  # pylint: disable=duplicate-code
+        data_node = self.frame.node
         assert isinstance(data_node, InputNode)
         scd_table_data = cast(SCDTableData, self.table_data)
         column_cleaning_operations = column_cleaning_operations or []
@@ -296,7 +296,7 @@ class SCDTable(TableApiObject):
         ...     prefixes=("previous_", "next_"),
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.change_view import ChangeView
 
         # Validate input
@@ -481,7 +481,7 @@ class SCDTable(TableApiObject):
         return self._get_audit_history(field_name="default_feature_job_setting")
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> SCDTable:  # pylint: disable=redefined-builtin,invalid-name
+    def get_by_id(cls, id: ObjectId) -> SCDTable:
         """
         Returns a SCDTable object by its unique identifier (ID).
 

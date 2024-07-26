@@ -46,7 +46,6 @@ class TileGenSql:
         as determining the required tiles to build on demand during preview.
     """
 
-    # pylint: disable=too-many-instance-attributes
     tile_table_id: str
     tile_id_version: int
     aggregation_id: str

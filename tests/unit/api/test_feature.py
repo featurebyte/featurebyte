@@ -4,7 +4,6 @@ Unit test for Feature classes
 
 import textwrap
 import time
-from datetime import datetime
 from unittest.mock import patch
 
 import numpy as np
@@ -265,7 +264,7 @@ def test_feature_deserialization(
     )
 
     # check pruned graph and node_name are set properly
-    pruned_graph, mapped_node = feature_group["sum_1d"].extract_pruned_graph_and_node()
+    pruned_graph, mapped_node = feature_group["sum_1d"].extract_pruned_graph_and_node()  # noqa: F841
     assert mapped_node.name != feature_group["sum_1d"].node_name
 
 
@@ -1124,8 +1123,8 @@ def test_list_versions(saved_feature):
     """
     # save a few more features
     feature_group = FeatureGroup(items=[])
-    feature_group[f"new_feat1"] = saved_feature + 1
-    feature_group[f"new_feat2"] = saved_feature + 2
+    feature_group["new_feat1"] = saved_feature + 1
+    feature_group["new_feat2"] = saved_feature + 2
     feature_group.save()
 
     # check feature class list_version & feature object list_versions
@@ -1647,14 +1646,14 @@ def test_list_unsaved_features(
         activate_and_get_catalog("catalog")
 
         # create unsaved features
-        unsaved_feature = float_feature
-        feature_group = FeatureGroup(
+        unsaved_feature = float_feature  # noqa: F841
+        feature_group = FeatureGroup(  # noqa: F841
             [float_feature, sum_per_category_feature],
         )
         feature_list_1 = FeatureList(
             [count_per_category_feature_group, sum_per_category_feature], name="FL1"
         )
-        feature_list_2 = FeatureList(
+        feature_list_2 = FeatureList(  # noqa: F841
             [float_feature, sum_per_category_feature, count_per_category_feature], name="FL2"
         )
 

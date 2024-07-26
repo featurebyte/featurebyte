@@ -86,7 +86,7 @@ class SpecializedDtypeDetectionService:
                 seed=RANDOM_SEED,
             )
         )
-        if sample.shape[0] > 0:  # pylint: disable=no-member
+        if sample.shape[0] > 0:
             for detector in self.detectors:
                 await detector.detect(table.columns_info, sample)
 

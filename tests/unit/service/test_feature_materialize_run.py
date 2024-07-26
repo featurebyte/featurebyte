@@ -1,11 +1,10 @@
 """
 Unit tests for FeatureMaterializeRunService
 """
-
-# pylint: disable=wildcard-import,unused-wildcard-import
+# ruff: noqa: F405
 
 from featurebyte.models.feature_materialize_run import IncompleteTileTask
-from tests.unit.service.fixtures_feature_materialize_runs import *
+from tests.unit.service.fixtures_feature_materialize_runs import *  # noqa
 
 
 @pytest.fixture

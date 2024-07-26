@@ -23,7 +23,7 @@ else:
     TableModel = Annotated[Union[tuple(TABLE_TYPES)], Field(discriminator="type")]
 
 
-class ProxyTableModel(BaseTableModel):  # pylint: disable=abstract-method
+class ProxyTableModel(BaseTableModel):
     """
     Pseudo Data class to support multiple table types.
     This class basically parses the persistent table model record & deserialized it into proper type.

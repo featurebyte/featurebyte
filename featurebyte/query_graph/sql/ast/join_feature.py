@@ -110,10 +110,10 @@ class JoinFeature(TableNode):
         Select
         """
 
-        from featurebyte.query_graph.sql.aggregator.item import (  # pylint: disable=import-outside-toplevel
+        from featurebyte.query_graph.sql.aggregator.item import (
             ItemAggregator,
         )
-        from featurebyte.query_graph.sql.specs import (  # pylint: disable=import-outside-toplevel
+        from featurebyte.query_graph.sql.specs import (
             ItemAggregationSpec,
         )
 
@@ -181,7 +181,7 @@ class JoinFeature(TableNode):
         Expression
         """
 
-        from featurebyte.query_graph.sql.builder import (  # pylint: disable=import-outside-toplevel
+        from featurebyte.query_graph.sql.builder import (
             SQLOperationGraph,
         )
 

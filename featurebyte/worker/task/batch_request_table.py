@@ -25,7 +25,7 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
 
     payload_class = BatchRequestTableTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,

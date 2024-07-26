@@ -107,7 +107,7 @@ class FeatureListEntityRelationshipData:
     features_entity_lookup_info: List[FeatureEntityLookupInfo]
 
 
-class FeatureListService(  # pylint: disable=too-many-instance-attributes
+class FeatureListService(
     BaseDocumentService[FeatureListModel, FeatureListServiceCreate, FeatureListServiceUpdate]
 ):
     """
@@ -116,7 +116,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
 
     document_class = FeatureListModel
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,
@@ -241,7 +241,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
         }
         return derived_output
 
-    async def extract_entity_relationship_data(  # pylint: disable=too-many-locals
+    async def extract_entity_relationship_data(
         self,
         features: List[FeatureModel],
         progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
@@ -626,7 +626,7 @@ class FeatureListService(  # pylint: disable=too-many-instance-attributes
 
         return await super().delete_document(document_id=feature_list.id)
 
-    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
+    async def get_sample_entity_serving_names(
         self, feature_list_id: ObjectId, count: int
     ) -> List[Dict[str, str]]:
         """

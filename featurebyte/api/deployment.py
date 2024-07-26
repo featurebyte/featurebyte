@@ -396,7 +396,7 @@ class Deployment(DeletableApiObject):
     @classmethod
     def get_by_id(
         cls,
-        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
+        id: ObjectId,
     ) -> Deployment:
         """
         Returns a Deployment object by its unique identifier (ID).

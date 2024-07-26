@@ -167,7 +167,7 @@ class EventTable(TableApiObject):
         ...     ],
         ... )
         """
-        from featurebyte.api.event_view import EventView  # pylint: disable=import-outside-toplevel
+        from featurebyte.api.event_view import EventView
 
         self._validate_view_mode_params(
             view_mode=view_mode,
@@ -310,7 +310,7 @@ class EventTable(TableApiObject):
     @classmethod
     def get_by_id(
         cls,
-        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
+        id: ObjectId,
     ) -> EventTable:
         """
         Returns an EventTable object by its unique identifier (ID).

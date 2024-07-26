@@ -80,7 +80,7 @@ def update_or_check_payload_fixture(request_payload_dir, name, json_payload, upd
             )
 
 
-def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
+def test_save_payload_fixtures(
     reset_configurations,
     update_fixtures,
     request_payload_dir,
@@ -99,7 +99,7 @@ def test_save_payload_fixtures(  # pylint: disable=too-many-arguments
     """
     Write request payload for testing api route
     """
-    # pylint: disable=too-many-locals
+
     _ = reset_configurations
     feature_sum_30m = feature_group["sum_30m"]
     feature_sum_30m = replace_obj_id(feature_sum_30m, ObjectId("646f6c1b0ed28a5271fb02c4"))

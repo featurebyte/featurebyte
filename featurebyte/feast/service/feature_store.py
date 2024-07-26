@@ -2,7 +2,6 @@
 This module contains classes for constructing feast repository config
 """
 
-# pylint: disable=no-name-in-module
 import tempfile
 from typing import Any, Optional
 

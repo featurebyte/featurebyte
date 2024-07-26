@@ -6,7 +6,7 @@ from typing import Any, List
 
 import pandas as pd
 import pytest
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeOutputType

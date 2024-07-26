@@ -1,4 +1,3 @@
-# pylint: disable=too-many-lines
 """
 Common test fixtures used across unit test directories
 """
@@ -2062,7 +2061,7 @@ def session_manager_fixture(credentials, snowflake_connector):
     """
     Session manager fixture
     """
-    # pylint: disable=E1101
+
     _ = snowflake_connector
     session_cache.clear()
     yield SessionManager(credentials=credentials)
@@ -2349,7 +2348,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     task_result = await task.execute(task_payload)
                     status = TaskStatus.SUCCESS
                     traceback_info = None
-                except Exception:  # pylint: disable=broad-except
+                except Exception:
                     status = TaskStatus.FAILURE
                     traceback_info = traceback.format_exc()
 

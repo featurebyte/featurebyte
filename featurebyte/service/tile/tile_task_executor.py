@@ -77,7 +77,7 @@ class TileTaskExecutor:
                     status=final_status,
                 )
 
-    async def _execute(  # pylint: disable=too-many-locals,too-many-statements
+    async def _execute(
         self,
         session: BaseSession,
         params: TileScheduledJobParameters,

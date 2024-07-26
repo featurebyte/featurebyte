@@ -139,7 +139,7 @@ class BaseFeatureGroup(AsyncMixin):
                 feature = Feature.from_persistent_object_dict(object_dict=feature_dict)
                 feature_id_to_object[str(feature.id)] = feature
                 progress_bar.text = feature.name
-                progress_bar()  # pylint: disable=not-callable
+                progress_bar()
 
             # preserve the order of features
             items = []
@@ -374,7 +374,7 @@ class BaseFeatureGroup(AsyncMixin):
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return dataframe_from_json(result)  # pylint: disable=no-member
+        return dataframe_from_json(result)
 
     @property
     def sql(self) -> str:

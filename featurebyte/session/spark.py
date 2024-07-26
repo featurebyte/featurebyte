@@ -2,8 +2,6 @@
 SparkSession class
 """
 
-# pylint: disable=duplicate-code
-# pylint: disable=wrong-import-order
 from __future__ import annotations
 
 import os
@@ -84,7 +82,7 @@ class SparkSession(BaseSparkSession):
                 access_token = self.database_credential.access_token
             else:
                 raise NotImplementedError(
-                    f"Unsupported credential type: {self.database_credential.type}"  # pylint: disable=no-member
+                    f"Unsupported credential type: {self.database_credential.type}"
                 )
 
         # determine transport scheme

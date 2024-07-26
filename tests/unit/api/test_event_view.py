@@ -250,7 +250,7 @@ def test_event_view_groupby__prune(
         )["sum_a_plus_one_24h"]
         * b
     )
-    pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()
+    pruned_graph, mappped_node = feature.extract_pruned_graph_and_node()  # noqa: F841
     # assign 1 & assign 2 dependency are kept
     assert pruned_graph.edges_map == {
         "add_1": ["add_2", "assign_1"],
@@ -765,7 +765,7 @@ def test_pruned_feature_only_keeps_minimum_required_cleaning_operations(
     feat = feature_group["sum_30m"]
 
     # check pruned graph's nested graph nodes
-    pruned_graph, node = feat.extract_pruned_graph_and_node()
+    pruned_graph, node = feat.extract_pruned_graph_and_node()  # noqa: F841
     nested_view_graph_node = pruned_graph.get_node_by_name("graph_1")
     assert nested_view_graph_node.parameters.type == "event_view"
 

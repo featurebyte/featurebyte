@@ -130,7 +130,7 @@ class OfflineIngestGraphContainer:
             yield table_name, features
 
 
-class OfflineStoreFeatureTableManagerService:  # pylint: disable=too-many-instance-attributes,too-many-arguments
+class OfflineStoreFeatureTableManagerService:
     """
     OfflineStoreFeatureTableManagerService class
     """

@@ -53,7 +53,7 @@ class SqlExpressionTemplate:
                 lambda node: self._replace_placeholder(
                     node,
                     placeholder_name,
-                    replacement_value,  # pylint: disable=cell-var-from-loop
+                    replacement_value,
                 )
             )
         if as_str:

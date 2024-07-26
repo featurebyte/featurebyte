@@ -5,7 +5,6 @@ This module contains generic function related node classes
 import pytest
 from bson import ObjectId
 
-from featurebyte import SnowflakeDetails
 from featurebyte.enum import AggFunc, DBVarType, TableDataType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.metadata.operation import (

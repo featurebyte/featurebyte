@@ -163,4 +163,4 @@ def test_versions_compatible(first_version, second_version, expected):
     """
     Test versions_compatible function
     """
-    assert fb._versions_compatible(first_version, second_version) is expected  # pylint: disable=protected-access
+    assert fb._versions_compatible(first_version, second_version) is expected

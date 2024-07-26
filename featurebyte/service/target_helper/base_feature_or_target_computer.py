@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, Generic, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Callable, Coroutine, Generic, List, Optional, TypeVar, Union
 
 import pandas as pd
 

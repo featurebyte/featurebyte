@@ -75,7 +75,7 @@ class ProgressThread(threading.Thread):
                         # end of stream
                         if percent == -1:
                             break
-                        self.progress_bar(percent / 100)  # pylint: disable=not-callable
+                        self.progress_bar(percent / 100)
             finally:
                 pass
 

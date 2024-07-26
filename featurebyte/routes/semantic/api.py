@@ -34,8 +34,6 @@ class SemanticRouter(
     Semantic API router
     """
 
-    # pylint: disable=arguments-renamed
-
     object_model = SemanticModel
     list_object_model = SemanticList
     create_object_schema = SemanticCreate

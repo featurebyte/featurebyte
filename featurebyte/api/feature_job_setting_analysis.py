@@ -245,7 +245,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
     @classmethod
     def get_by_id(
         cls,
-        id: ObjectId,  # pylint: disable=redefined-builtin,invalid-name
+        id: ObjectId,
     ) -> FeatureJobSettingAnalysis:
         """
         Retrieves an analysis of the data availability and freshness of a table. This returns a

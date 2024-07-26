@@ -99,7 +99,7 @@ class EventTableModel(EventTableData, TableModel):
         table_data = EventTableData(**self.model_dump(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations
         )
-        return table_data.construct_event_view_graph_node(  # pylint: disable=no-member
+        return table_data.construct_event_view_graph_node(
             event_table_node=input_node,
             drop_column_names=metadata.drop_column_names,
             metadata=metadata,

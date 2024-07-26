@@ -38,8 +38,6 @@ class StaticSourceTableRouter(BaseMaterializedTableRouter[StaticSourceTableModel
     Static source table router
     """
 
-    # pylint: disable=arguments-renamed
-
     table_model = StaticSourceTableModel
     controller = "static_source_table_controller"
 

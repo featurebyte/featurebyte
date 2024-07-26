@@ -91,14 +91,14 @@ class SnowflakeDetails(BaseDatabaseDetails):
         return {"warehouse"}
 
 
-class SQLiteDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
+class SQLiteDetails(BaseDatabaseDetails):
     """Model for SQLite data source information"""
 
     filename: StrictStr
     is_local_source: ClassVar[bool] = True
 
 
-class BaseDatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
+class BaseDatabricksDetails(BaseDatabaseDetails):
     """
     Base model for details used to connect to a Databricks data source.
     """
@@ -123,7 +123,7 @@ class BaseDatabricksDetails(BaseDatabaseDetails):  # pylint: disable=abstract-me
         return {"http_path"}
 
 
-class DatabricksDetails(BaseDatabricksDetails):  # pylint: disable=abstract-method
+class DatabricksDetails(BaseDatabricksDetails):
     """
     Model for details used to connect to a Databricks data source.
 
@@ -172,7 +172,7 @@ class DatabricksDetails(BaseDatabricksDetails):  # pylint: disable=abstract-meth
         return values
 
 
-class DatabricksUnityDetails(BaseDatabricksDetails):  # pylint: disable=abstract-method
+class DatabricksUnityDetails(BaseDatabricksDetails):
     """
     Model for details used to connect to a Databricks Unity data source.
 
@@ -206,7 +206,7 @@ class DatabricksUnityDetails(BaseDatabricksDetails):  # pylint: disable=abstract
     )
 
 
-class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
+class SparkDetails(BaseDatabaseDetails):
     """
     Model for details used to connect to a Spark data source.
 
@@ -274,7 +274,7 @@ class SparkDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
         return values
 
 
-class TestDatabaseDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
+class TestDatabaseDetails(BaseDatabaseDetails):
     """Model for a no-op mock database details for use in tests"""
 
 

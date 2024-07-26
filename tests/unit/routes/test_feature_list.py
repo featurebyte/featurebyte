@@ -2,7 +2,6 @@
 Tests for FeatureList route
 """
 
-# pylint: disable=too-many-lines
 import os
 import textwrap
 from collections import OrderedDict, defaultdict
@@ -27,7 +26,7 @@ from tests.unit.common.test_utils import create_feature_list_batch_feature_creat
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
-class TestFeatureListApi(BaseCatalogApiTestSuite):  # pylint: disable=too-many-public-methods
+class TestFeatureListApi(BaseCatalogApiTestSuite):
     """
     TestFeatureListApi class
     """

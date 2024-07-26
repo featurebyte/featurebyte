@@ -156,7 +156,7 @@ class BaseEntityUniverseConstructor:
         """
 
     @classmethod
-    def get_event_table_timestamp_filter(  # pylint: disable=useless-return
+    def get_event_table_timestamp_filter(
         cls, graph: QueryGraphModel, node: Node
     ) -> Optional[EventTableTimestampFilter]:
         """

@@ -38,7 +38,7 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
 
     payload_class = FeatureJobSettingAnalysisTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         storage: Storage,
         event_table_service: EventTableService,

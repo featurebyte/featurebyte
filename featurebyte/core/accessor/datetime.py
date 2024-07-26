@@ -36,7 +36,7 @@ class DtAccessorMixin:
     """
 
     @property
-    def dt(self: FrozenSeries) -> DatetimeAccessor:  # type: ignore # pylint: disable=invalid-name
+    def dt(self: FrozenSeries) -> DatetimeAccessor:  # type: ignore
         """
         dt accessor object
 

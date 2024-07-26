@@ -277,7 +277,6 @@ async def test_describe_drop_all_null_stats(
     Test describe
     """
 
-    # pylint: disable=no-member
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     result = dataframe_from_json(

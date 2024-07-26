@@ -115,7 +115,7 @@ def test_get_missing_core_object_file_template():
     Test get missing core object file template.
     """
     content = get_missing_core_object_file_template("hello", "random string")
-    assert content == f"Missing hello markdown documentation file.\n\nrandom string"
+    assert content == "Missing hello markdown documentation file.\n\nrandom string"
 
 
 @pytest.mark.parametrize(

@@ -204,7 +204,7 @@ def get_vector_agg_column_snowflake(
     -------
     VectorAggColumn
     """
-    # pylint: disable=too-many-locals
+
     initial_data_table_name = "INITIAL_DATA"
     select_keys = [
         alias_(

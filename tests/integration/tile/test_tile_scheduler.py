@@ -2,6 +2,8 @@
 This module contains integration tests for TileManager scheduler
 """
 
+# ruff:
+
 from unittest import mock
 from unittest.mock import Mock
 from uuid import uuid4

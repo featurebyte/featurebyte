@@ -571,8 +571,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
             return None
         if self._feature_clusters is None:
             self._feature_clusters = [
-                FeatureCluster(**cluster)
-                for cluster in self.internal_feature_clusters  # pylint: disable=not-an-iterable
+                FeatureCluster(**cluster) for cluster in self.internal_feature_clusters
             ]
         return self._feature_clusters
 

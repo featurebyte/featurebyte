@@ -40,7 +40,7 @@ class FeastRegistryService(
 
     document_class = FeastRegistryModel
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,
@@ -171,7 +171,7 @@ class FeastRegistryService(
         )
         return registry
 
-    async def _construct_feast_registry_model(  # pylint: disable=too-many-locals
+    async def _construct_feast_registry_model(
         self,
         project_name: Optional[str],
         offline_table_name_prefix: Optional[str],

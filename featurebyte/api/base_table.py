@@ -2,7 +2,6 @@
 DataColumn class
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from datetime import datetime
@@ -529,7 +528,7 @@ class TableApiObject(
         -------
         List[PydanticObjectId]
         """
-        return self.cached_model.entity_ids  # pylint: disable=no-member
+        return self.cached_model.entity_ids
 
     @property
     def table_data(self) -> BaseTableData:
@@ -569,7 +568,7 @@ class TableApiObject(
         - [TableColumn.update_critical_data_info](/reference/featurebyte.api.base_table.TableColumn.update_critical_data_info)
         """
         try:
-            return self.cached_model.columns_info  # pylint: disable=no-member
+            return self.cached_model.columns_info
         except RecordRetrievalException:
             return self.internal_columns_info
 
@@ -587,7 +586,7 @@ class TableApiObject(
         --------
         - [Catalog](/reference/featurebyte.api.catalog.Catalog)
         """
-        return self.cached_model.catalog_id  # pylint: disable=no-member
+        return self.cached_model.catalog_id
 
     @property
     def primary_key_columns(self) -> List[str]:
@@ -599,7 +598,7 @@ class TableApiObject(
         List[str]
             List of primary key columns
         """
-        return self.cached_model.primary_key_columns  # pylint: disable=no-member
+        return self.cached_model.primary_key_columns
 
     @property
     def status(self) -> TableStatus:
@@ -615,7 +614,7 @@ class TableApiObject(
             Table status
         """
         try:
-            return self.cached_model.status  # pylint: disable=no-member
+            return self.cached_model.status
         except RecordRetrievalException:
             return TableStatus.PUBLIC_DRAFT
 
@@ -633,13 +632,12 @@ class TableApiObject(
             Record creation timestamp column name
         """
         try:
-            return self.cached_model.record_creation_timestamp_column  # pylint: disable=no-member
+            return self.cached_model.record_creation_timestamp_column
         except RecordRetrievalException:
             return self.internal_record_creation_timestamp_column
 
     @property
     def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
-        # pylint: disable=line-too-long
         """
         List of column cleaning operations associated with this table. Column cleaning operation is a list of
         cleaning operations to be applied to a column of this table.
@@ -688,9 +686,7 @@ class TableApiObject(
 
     def _get_create_payload(self) -> dict[str, Any]:
         assert self._create_schema_class is not None
-        data = self._create_schema_class(  # pylint: disable=not-callable
-            **self.model_dump(by_alias=True)
-        )
+        data = self._create_schema_class(**self.model_dump(by_alias=True))
         return data.json_dict()
 
     @classmethod
@@ -733,7 +729,7 @@ class TableApiObject(
         assert cls._create_schema_class is not None
 
         data_id_value = _id or ObjectId()
-        data = cls._create_schema_class(  # pylint: disable=not-callable
+        data = cls._create_schema_class(
             _id=data_id_value,
             name=name,
             tabular_source=source_table.tabular_source,

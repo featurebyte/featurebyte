@@ -2,7 +2,6 @@
 FeatureListVersion class
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
 from http import HTTPStatus
@@ -259,7 +258,6 @@ class FeatureListNamespace(ApiObject):
         return feature_lists
 
 
-# pylint: disable=too-many-public-methods
 class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, FeatureJobMixin):
     """
     The FeatureList class is used as a constructor to create a FeatureList Object.
@@ -643,7 +641,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         >>> feature_list = catalog.get_feature_list("invoice_feature_list")
         >>> feature_list.list_deployments()  # doctest: +SKIP
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.deployment import Deployment
 
         return Deployment.list(feature_list_id=self.id)
@@ -1493,7 +1491,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             payload=deployment_payload.json_dict(),
         )
 
-        from featurebyte.api.deployment import Deployment  # pylint: disable=import-outside-toplevel
+        from featurebyte.api.deployment import Deployment
 
         return Deployment.get_by_id(ObjectId(output["_id"]))
 

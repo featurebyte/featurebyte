@@ -94,7 +94,6 @@ class VersionService:
                 for data_feature_job_setting in table_feature_job_settings
             }
             table_id_to_table: dict[ObjectId, ProxyTableModel] = {
-                # pylint: disable=abstract-class-instantiated
                 doc["_id"]: ProxyTableModel(**doc)  # type: ignore
                 async for doc in self.table_service.list_documents_as_dict_iterator(
                     query_filter={"_id": {"$in": feature.table_ids}}

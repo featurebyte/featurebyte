@@ -2,7 +2,6 @@
 Spark Thrift Server Data Source
 """
 
-# pylint: disable=no-name-in-module
 import json
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple, cast
 

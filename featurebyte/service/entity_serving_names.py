@@ -74,7 +74,7 @@ class EntityServingNamesService:
         unique_values: List[Any] = result[column_name].to_list()
         return unique_values
 
-    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
+    async def get_sample_entity_serving_names(
         self, entity_ids: Sequence[ObjectId], table_ids: Optional[Sequence[ObjectId]], count: int
     ) -> List[Dict[str, str]]:
         """

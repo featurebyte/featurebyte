@@ -86,7 +86,7 @@ class AsyncMixin(FeatureByteBaseModel):
 
                 if status == TaskStatus.SUCCESS:
                     progress_bar.title = "Done!"
-                    progress_bar(1)  # pylint: disable=not-callable
+                    progress_bar(1)
             except KeyboardInterrupt:
                 # try to revoke task
                 client.patch(f"/task/{task_id}", json={"revoke": True})

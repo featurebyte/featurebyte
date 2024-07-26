@@ -36,7 +36,7 @@ class VectorAggColumn:
     result_name: str
 
 
-class BaseAdapter(ABC):  # pylint: disable=too-many-public-methods
+class BaseAdapter(ABC):
     """
     Helper class to generate engine specific SQL expressions
     """

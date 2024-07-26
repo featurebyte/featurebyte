@@ -185,7 +185,7 @@ class SnowflakeSession(BaseSession):
             When the cursor description is not as expected
         """
         fields = []
-        description = cursor._description or []  # pylint: disable=protected-access
+        description = cursor._description or []
         for field in description:
             if not hasattr(field, "type_code"):
                 raise CursorSchemaError()
@@ -338,7 +338,7 @@ class SnowflakeSession(BaseSession):
         )
 
     @staticmethod
-    def get_columns_schema_from_dataframe(  # pylint: disable=too-many-branches
+    def get_columns_schema_from_dataframe(
         dataframe: pd.DataFrame,
     ) -> list[tuple[str, str]]:
         """Get schema that can be used in CREATE TABLE statement from pandas DataFrame

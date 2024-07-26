@@ -40,8 +40,6 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
     Catalog API router
     """
 
-    # pylint: disable=arguments-renamed
-
     object_model = CatalogModel
     list_object_model = CatalogList
     create_object_schema = CatalogCreate

@@ -124,7 +124,7 @@ def entity_id_fixture():
 @pytest.fixture(name="input_node")
 def input_node_fixture(global_graph, input_details):
     """Fixture of a query with some operations ready to run groupby"""
-    # pylint: disable=duplicate-code
+
     node_params = {
         "type": "event_table",
         "columns": [
@@ -238,7 +238,7 @@ def dimension_table_input_node_fixture(global_graph, dimension_table_input_detai
 @pytest.fixture(name="event_table_input_node")
 def event_table_input_node_fixture(global_graph, input_details):
     """Fixture of an EventTable input node"""
-    # pylint: disable=duplicate-code
+
     node_params = {
         "type": "event_table",
         "columns": [
@@ -262,7 +262,7 @@ def event_table_input_node_fixture(global_graph, input_details):
 @pytest.fixture(name="query_graph_and_assign_node")
 def query_graph_and_assign_node_fixture(global_graph, input_node):
     """Fixture of a query with some operations ready to run groupby"""
-    # pylint: disable=duplicate-code
+
     proj_a = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a"]},

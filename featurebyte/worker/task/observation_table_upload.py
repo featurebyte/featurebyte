@@ -32,7 +32,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
 
     payload_class = ObservationTableUploadTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         temp_storage: Storage,
         feature_store_service: FeatureStoreService,

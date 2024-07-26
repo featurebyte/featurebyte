@@ -46,7 +46,7 @@ class EventTableController(
         "event_timestamp_timezone_offset_column": SemanticType.TIME_ZONE,
     }
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         event_table_service: TableDocumentService,
         table_facade_service: TableFacadeService,

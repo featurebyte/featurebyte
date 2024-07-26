@@ -248,7 +248,7 @@ def get_migration_methods_to_apply(current_metadata_version: int) -> list[Any]:
     return migration_methods_to_apply
 
 
-async def migrate_method_generator(  # pylint: disable=too-many-locals
+async def migrate_method_generator(
     user: Any,
     persistent: Persistent,
     get_credential: Any,

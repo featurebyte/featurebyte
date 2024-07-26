@@ -61,7 +61,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         )
 
     @pytest_asyncio.fixture(autouse=True)
-    async def setup(  # pylint: disable=W0221
+    async def setup(
         self,
         mongo_persistent,
         storage,
@@ -91,7 +91,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         )
 
     @pytest.mark.asyncio
-    async def test_execute_success(  # pylint: disable=too-many-locals
+    async def test_execute_success(
         self,
         mongo_persistent,
         task_completed,

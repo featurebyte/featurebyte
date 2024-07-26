@@ -44,8 +44,6 @@ class SCDTableRouter(
     SCD table router
     """
 
-    # pylint: disable=arguments-renamed
-
     object_model = SCDTableModel
     list_object_model = SCDTableList
     create_object_schema = SCDTableCreate

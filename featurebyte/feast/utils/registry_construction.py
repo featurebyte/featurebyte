@@ -2,7 +2,6 @@
 This module contains classes for constructing feast registry
 """
 
-# pylint: disable=no-name-in-module, too-many-lines
 from __future__ import annotations
 
 import tempfile
@@ -777,7 +776,7 @@ class FeastRegistryBuilder:
         return registry_proto
 
     @classmethod
-    def create(  # pylint: disable=too-many-locals
+    def create(
         cls,
         feature_store: FeatureStoreModel,
         online_store: Optional[OnlineStoreModel],

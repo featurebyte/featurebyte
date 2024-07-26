@@ -309,7 +309,7 @@ class ItemTableData(BaseTableData):
             drop_column_names=drop_column_names,
             metadata=metadata,
         )
-        (  # pylint: disable=unbalanced-tuple-unpacking
+        (
             proxy_item_table_node,
             proxy_event_view_node,
         ) = proxy_input_nodes
@@ -617,7 +617,7 @@ if TYPE_CHECKING:
     AllTableDataT = BaseTableData
     SpecificTableDataT = BaseTableData
 else:
-    AllTableDataT = Union[tuple(DATA_TABLES)]  # pylint: disable=invalid-name
+    AllTableDataT = Union[tuple(DATA_TABLES)]
     SpecificTableDataT = Annotated[Union[tuple(SPECIFIC_DATA_TABLES)], Field(discriminator="type")]
 
 
@@ -629,7 +629,7 @@ construct_specific_data_table = construct_serialize_function(
 )
 
 
-class SpecificTableData(BaseTableData):  # pylint: disable=abstract-method
+class SpecificTableData(BaseTableData):
     """
     Pseudo TableData class to support multiple table types.
     This class basically parses the dictionary into proper type based on its type parameter value.

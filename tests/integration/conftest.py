@@ -2,7 +2,6 @@
 Common test fixtures used across files in integration directory
 """
 
-# pylint: disable=too-many-lines
 import asyncio
 import json
 import os
@@ -258,7 +257,7 @@ def event_loop():
         loop = asyncio.get_event_loop()
         yield loop
         loop.close()
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:
         if "there is no current event loop in thread" in str(e):
             logger.exception(
                 "no event loop found. explicitly recreating and resetting new event loop.",
@@ -532,7 +531,7 @@ def transaction_dataframe(source_type):
     """
     Simulated transaction Dataframe
     """
-    # pylint: disable=no-member
+
     row_number = 24 * 366
     rng = np.random.RandomState(1234)
     product_actions = ["detail", "àdd", "purchase", "rëmove", None]
@@ -617,7 +616,7 @@ def items_dataframe_fixture(transaction_data_upper_case):
     """
     DataFrame fixture with item based table corresponding to the transaction table
     """
-    rng = np.random.RandomState(0)  # pylint: disable=no-member
+    rng = np.random.RandomState(0)
     data = defaultdict(list)
     item_types = [f"type_{i}" for i in range(100)]
 
@@ -668,7 +667,7 @@ def scd_dataframe_fixture(transaction_data):
     """
     DataFrame fixture with slowly changing dimension
     """
-    rng = np.random.RandomState(0)  # pylint: disable=no-member
+    rng = np.random.RandomState(0)
 
     natural_key_values = sorted(transaction_data["üser id"].unique())
     dates = pd.to_datetime(transaction_data["ëvent_timestamp"], utc=True).dt.floor("d")
@@ -718,7 +717,7 @@ def observation_set(transaction_data_upper_case):
     df.rename({"ËVENT_TIMESTAMP": "POINT_IN_TIME"}, axis=1, inplace=True)
 
     # Add random spikes to point in time of some rows
-    rng = np.random.RandomState(0)  # pylint: disable=no-member
+    rng = np.random.RandomState(0)
     spike_mask = rng.randint(0, 2, len(df)).astype(bool)
     spike_shift = pd.to_timedelta(rng.randint(0, 3601, len(df)), unit="s")
     df.loc[spike_mask, "POINT_IN_TIME"] = (
@@ -1461,7 +1460,7 @@ def mock_task_manager(request, persistent, storage):
                     await task.execute(task_payload)
                     status = TaskStatus.SUCCESS
                     traceback_info = None
-                except Exception:  # pylint: disable=broad-except
+                except Exception:
                     status = TaskStatus.FAILURE
                     traceback_info = traceback.format_exc()
 

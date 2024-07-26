@@ -45,7 +45,7 @@ def test_feast_registry_construction__missing_asset(
 
 
 @pytest.mark.asyncio
-async def test_feast_registry_construction__with_post_processing_features(  # pylint: disable=too-many-locals,too-many-arguments
+async def test_feast_registry_construction__with_post_processing_features(
     snowflake_feature_store,
     mysql_online_store,
     cust_id_entity,

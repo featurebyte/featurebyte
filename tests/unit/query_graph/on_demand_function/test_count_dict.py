@@ -184,7 +184,7 @@ def test_derive_on_demand_view_code__cosine_similarity(
 def test_derive_on_demand_view_code__dictionary_keys(count_dict_feature1, odfv_config, udf_config):
     """Test derive_on_demand_view_code"""
     node = DictionaryKeysNode(**NODE_PARAMS)
-    node_inputs = [VariableNameStr(f"feat")]
+    node_inputs = [VariableNameStr("feat")]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,

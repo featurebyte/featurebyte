@@ -4,7 +4,7 @@ Models to construct feast online store config from featurebyte BaseOnlineStoreDe
 
 from __future__ import annotations
 
-from abc import abstractmethod  # pylint: disable=wrong-import-order
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Union, cast
 
 from feast.infra.online_stores.redis import RedisOnlineStoreConfig

@@ -42,8 +42,6 @@ class CredentialRouter(
     Credential API router
     """
 
-    # pylint: disable=arguments-renamed
-
     object_model = CredentialRead
     list_object_model = CredentialList
     create_object_schema = CredentialCreate

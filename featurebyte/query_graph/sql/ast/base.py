@@ -25,7 +25,7 @@ TableNodeT = TypeVar("TableNodeT", bound="TableNode")
 
 
 @dataclass
-class SQLNodeContext:  # pylint: disable=too-many-instance-attributes
+class SQLNodeContext:
     """
     Context containing information required when constructing instances of SQLNode
 
@@ -98,9 +98,7 @@ class SQLNode(ABC):
         """
 
     @classmethod
-    def build(  # pylint: disable=useless-return
-        cls: Type[SQLNodeT], context: SQLNodeContext
-    ) -> Optional[SQLNodeT]:
+    def build(cls: Type[SQLNodeT], context: SQLNodeContext) -> Optional[SQLNodeT]:
         """Create an instance of SQLNode given a context if applicable
 
         Parameters

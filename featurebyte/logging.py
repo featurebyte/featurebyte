@@ -18,7 +18,7 @@ class CustomLogger(logging.Logger):
     Custom logger to capture extra field
     """
 
-    def makeRecord(  # pylint: disable=too-many-arguments
+    def makeRecord(
         self,
         name: str,
         level: int,

@@ -3,7 +3,6 @@ Base adapter test class that can be reused across all adapters
 """
 
 import textwrap
-from select import select
 from typing import cast
 
 from sqlglot import select

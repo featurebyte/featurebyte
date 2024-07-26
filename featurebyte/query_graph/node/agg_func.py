@@ -2,7 +2,7 @@
 Aggregation method model
 """
 
-from abc import abstractmethod  # pylint: disable=wrong-import-order
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
 
 from pydantic import Field

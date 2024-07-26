@@ -22,7 +22,7 @@ class TargetStrAccessorMixin:
     """
 
     @property
-    def str(self: Target) -> StringAccessor:  # type: ignore # pylint: disable=invalid-name
+    def str(self: Target) -> StringAccessor:  # type: ignore
         """
         str accessor object
 

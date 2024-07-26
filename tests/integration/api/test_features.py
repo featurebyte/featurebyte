@@ -108,7 +108,7 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table,
 
     # preview using observation table
     observation_table = item_view.create_observation_table(
-        f"OBSERVATION_TABLE_FROM_ITEM_VIEW_FOR_PREVIEW",
+        "OBSERVATION_TABLE_FROM_ITEM_VIEW_FOR_PREVIEW",
         sample_rows=5,
         columns=[event_view.timestamp_column, "order_id"],
         columns_rename_mapping={event_view.timestamp_column: "POINT_IN_TIME"},

@@ -312,7 +312,7 @@ def add_concatenated_serving_names(
     return updated_select_expr
 
 
-def get_online_features_query_set(  # pylint: disable=too-many-arguments,too-many-locals
+def get_online_features_query_set(
     graph: QueryGraph,
     node_groups: list[list[Node]],
     source_type: SourceType,
@@ -462,7 +462,7 @@ class TemporaryBatchRequestTable(FeatureByteBaseModel):
     table_details: TableDetails
 
 
-async def get_online_features(  # pylint: disable=too-many-locals,too-many-branches
+async def get_online_features(
     session: BaseSession,
     graph: QueryGraph,
     nodes: list[Node],

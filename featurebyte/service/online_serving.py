@@ -69,12 +69,12 @@ class RequestColumnsMetadata:
     df_extra_columns: Optional[pd.DataFrame]
 
 
-class OnlineServingService:  # pylint: disable=too-many-instance-attributes
+class OnlineServingService:
     """
     OnlineServingService is responsible for retrieving features from online store
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         session_manager_service: SessionManagerService,
         entity_validation_service: EntityValidationService,
@@ -171,7 +171,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
             return None
         return OnlineFeaturesResponseModel(features=features)
 
-    async def get_online_features_by_feast(  # pylint: disable=too-many-locals
+    async def get_online_features_by_feast(
         self,
         feature_list: FeatureListModel,
         deployment: DeploymentModel,
@@ -223,7 +223,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                 required_entities=required_entities,
                 provided_entities=provided_entities,
             )
-            raise RequiredEntityNotProvidedError(  # pylint: disable=raise-missing-from
+            raise RequiredEntityNotProvidedError(
                 entity_info.format_missing_entities_error([
                     entity.id for entity in entity_info.missing_entities
                 ])
@@ -383,7 +383,7 @@ class OnlineServingService:  # pylint: disable=too-many-instance-attributes
                     return True
         return False
 
-    async def get_request_code_template(  # pylint: disable=too-many-locals
+    async def get_request_code_template(
         self,
         deployment: DeploymentModel,
         feature_list: FeatureListModel,

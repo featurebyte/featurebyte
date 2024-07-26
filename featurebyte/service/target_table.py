@@ -34,7 +34,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
     document_class = TargetTableModel
     materialized_table_name_prefix = MaterializedTableNamePrefix.TARGET_TABLE
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,

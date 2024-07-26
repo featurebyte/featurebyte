@@ -102,7 +102,7 @@ async def test_observation_table_min_interval_between_entities(
     )
     sample_rows = 123
     observation_table = database_table.create_observation_table(
-        f"MY_OBSERVATION_TABLE_FOR_INTERVALS", sample_rows=sample_rows
+        "MY_OBSERVATION_TABLE_FOR_INTERVALS", sample_rows=sample_rows
     )
     assert observation_table.min_interval_secs_between_entities == 3600
 

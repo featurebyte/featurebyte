@@ -206,7 +206,7 @@ class FeatureTableCacheService:
             ))
         return non_cached_nodes
 
-    async def _populate_intermediate_table(  # pylint: disable=too-many-arguments
+    async def _populate_intermediate_table(
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
@@ -261,7 +261,7 @@ class FeatureTableCacheService:
                 progress_callback=progress_callback,
             )
 
-    async def _create_table(  # pylint: disable=too-many-arguments
+    async def _create_table(
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
@@ -322,7 +322,7 @@ class FeatureTableCacheService:
                 if_exists=True,
             )
 
-    async def _update_table(  # pylint: disable=too-many-arguments
+    async def _update_table(
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
@@ -447,7 +447,7 @@ class FeatureTableCacheService:
             )
             _ = await session.execute_query_long_running(query)
             return True
-        except session._no_schema_error:  # pylint: disable=protected-access
+        except session._no_schema_error:
             return False
 
     async def create_or_update_feature_table_cache(
@@ -719,7 +719,7 @@ class FeatureTableCacheService:
                 kind="VIEW",
             )
             return True
-        except:  # pylint: disable=bare-except
+        except BaseException as _:
             logger.info(
                 "Failed to create view. Trying to create a table instead",
                 extra={"observation_table_id": observation_table.id},

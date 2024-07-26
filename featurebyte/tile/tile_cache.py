@@ -282,7 +282,7 @@ class TileCache:
             )
         self._materialized_temp_table_names = set()
 
-    async def get_required_computation(  # pylint: disable=too-many-locals
+    async def get_required_computation(
         self,
         request_id: str,
         graph: QueryGraph,
@@ -568,7 +568,7 @@ class TileCache:
         request_table_name : str
             Name of the request table
         """
-        # pylint: disable=too-many-locals
+
         table_expr = select().from_(f"{request_table_name} AS REQ")
 
         columns = []

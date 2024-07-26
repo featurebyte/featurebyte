@@ -3,8 +3,6 @@ Tests for OfflineStoreFeatureTableManagerService
 """
 
 import os
-
-# pylint: disable=too-many-lines,too-many-arguments,too-many-locals
 import pickle
 import textwrap
 from typing import Dict

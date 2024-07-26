@@ -149,7 +149,7 @@ async def test_snowflake_session__credential_from_config(
         },
         fully_qualified_name='"sf_database"."sf_schema"."sf_table"',
     )
-    assert table_details.description == None
+    assert table_details.description is None
 
 
 @pytest.fixture(name="mock_snowflake_cursor")
@@ -821,4 +821,4 @@ def test_convert_to_internal_variable_type(snowflake_var_info, expected):
     """
     Test convert_to_internal_variable_type
     """
-    assert SnowflakeSession._convert_to_internal_variable_type(snowflake_var_info) == expected  # pylint: disable=protected-access
+    assert SnowflakeSession._convert_to_internal_variable_type(snowflake_var_info) == expected

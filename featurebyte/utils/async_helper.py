@@ -37,7 +37,7 @@ def asyncio_gather(*coros: Coroutine[Any, Any, Any], max_concurrency: int = 0) -
     async def _coro(coro: Coroutine[Any, Any, Any]) -> Any:
         async with semaphore:
             nonlocal failed, tasks, tasks_canceled
-            if failed:  # pylint: disable=used-before-assignment
+            if failed:
                 # Close unawaited coroutines on failure
                 coro.close()
                 return

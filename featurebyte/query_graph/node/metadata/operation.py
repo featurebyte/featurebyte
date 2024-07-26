@@ -22,7 +22,7 @@ from typing import (
 )
 
 from pydantic import Field
-from typing_extensions import Annotated  # pylint: disable=wrong-import-order
+from typing_extensions import Annotated
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -639,7 +639,7 @@ class OperationStructure:
         -------
         GroupOperationStructure
         """
-        # pylint: disable=unpacking-non-sequence
+
         source_columns, derived_columns = self._split_column_by_type(columns=self.columns)
         aggregations, post_aggregations = self._split_column_by_type(columns=self.aggregations)
         assert len(post_aggregations) <= 1

@@ -36,16 +36,14 @@ from featurebyte.service.target_table import TargetTableService
 from featurebyte.service.use_case import UseCaseService
 
 
-class TargetController(  # pylint: disable=too-many-instance-attributes
-    BaseDocumentController[TargetModel, TargetService, TargetList]
-):
+class TargetController(BaseDocumentController[TargetModel, TargetService, TargetList]):
     """
     Target controller
     """
 
     paginated_document_class = TargetList
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         target_service: TargetService,
         target_namespace_service: TargetNamespaceService,

@@ -1,4 +1,3 @@
-# pylint: disable=too-many-lines
 """
 Test for FeatureStore route
 """
@@ -34,7 +33,7 @@ from tests.unit.routes.base import BaseApiTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-methods
+class TestFeatureStoreApi(BaseApiTestSuite):
     """
     TestFeatureStoreApi
     """

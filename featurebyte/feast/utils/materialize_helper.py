@@ -82,7 +82,7 @@ async def materialize_partial(
 
     assert start_date < end_date
 
-    provider = feature_store._get_provider()  # pylint: disable=protected-access
+    provider = feature_store._get_provider()
 
     def silent_tqdm_builder(length: int) -> tqdm:
         return tqdm(total=length, ncols=100, disable=True)
@@ -121,7 +121,7 @@ async def materialize_partial(
                 feature_view=partial_feature_view,
                 start_date=start_date,
                 end_date=end_date,
-                registry=feature_store._registry,  # pylint: disable=protected-access
+                registry=feature_store._registry,
                 project=feature_store.project,
                 tqdm_builder=silent_tqdm_builder,
             )

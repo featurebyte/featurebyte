@@ -3,7 +3,7 @@ This module contains nested graph related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
+from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -105,7 +105,7 @@ class ProxyInputNode(BaseNode):
 class BaseGraphNodeParameters(FeatureByteBaseModel):
     """Graph node parameters"""
 
-    graph: "QueryGraphModel"  # type: ignore[name-defined]
+    graph: "QueryGraphModel"  # type: ignore[name-defined] # noqa: F821
     output_node_name: str
     type: GraphNodeType
 

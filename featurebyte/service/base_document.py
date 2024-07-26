@@ -2,7 +2,6 @@
 BaseService class
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import copy
@@ -108,8 +107,6 @@ class BaseDocumentService(
     collection. It will perform model level validation before writing to persistent and after
     reading from the persistent.
     """
-
-    # pylint: disable=too-many-public-methods
 
     document_class: Type[Document]
     _remote_attribute_cache: Any = LRUCache(maxsize=1024)
@@ -532,9 +529,7 @@ class BaseDocumentService(
         return int(num_of_records_deleted)
 
     async def _delete_remote_attributes_in_storage(self, document_dict: Dict[str, Any]) -> None:
-        for remote_path in self.document_class._get_remote_attribute_paths(  # pylint: disable=protected-access
-            document_dict
-        ):
+        for remote_path in self.document_class._get_remote_attribute_paths(document_dict):
             await self.storage.try_delete_if_exists(remote_path)
 
     async def soft_delete_document(self, document_id: ObjectId) -> None:

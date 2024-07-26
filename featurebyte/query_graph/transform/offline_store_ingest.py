@@ -64,7 +64,7 @@ def extract_dtype_from_graph(
 
 
 @dataclass
-class OfflineStoreIngestQueryGraphGlobalState:  # pylint: disable=too-many-instance-attributes
+class OfflineStoreIngestQueryGraphGlobalState:
     """OfflineStoreIngestQueryGlobalState class"""
 
     # decomposed graph output
