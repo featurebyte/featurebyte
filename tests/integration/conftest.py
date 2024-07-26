@@ -35,6 +35,7 @@ from featurebyte import (
     Catalog,
     Configurations,
     DatabricksDetails,
+    FeatureGroup,
     FeatureJobSetting,
     OnlineStore,
     RedisOnlineStoreDetails,
@@ -1712,6 +1713,28 @@ def feature_group_per_category_fixture(event_view):
     )
 
     return feature_group_per_category
+
+
+@pytest.fixture(name="count_distinct_feature_group")
+def count_distinct_feature_group_fixture(item_table):
+    """
+    Count distinct feature group fixture
+    """
+    item_view = item_table.get_view()
+    item_count_by_cust = item_view.groupby("CUST_ID").aggregate_over(
+        value_column=None, method="count", feature_names=["cust_count_of_items_1w"], windows=["1w"]
+    )["cust_count_of_items_1w"]
+    item_count_distinct_by_cust = item_view.groupby("CUST_ID").aggregate_over(
+        value_column="item_id",
+        method="count_distinct",
+        feature_names=["cust_count_distinct_items_1w"],
+        windows=["1w"],
+    )["cust_count_distinct_items_1w"]
+    cust_avg_count_of_items_per_type = item_count_by_cust / item_count_distinct_by_cust
+    cust_avg_count_of_items_per_type.name = "cust_avg_count_of_items_per_type_1w"
+    return FeatureGroup(
+        [item_count_by_cust, item_count_distinct_by_cust, cust_avg_count_of_items_per_type]
+    )
 
 
 @pytest.fixture(name="mock_graph_clear_period", autouse=True)

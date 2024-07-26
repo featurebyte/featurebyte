@@ -73,7 +73,7 @@ class NonTileRequestTablePlan:
                 window_spec += f"_O{aggregation_spec.offset}"
             job_settings = aggregation_spec.parameters.feature_job_setting
             table_name = (
-                f"REQUEST_TABLE"
+                f"REQUEST_TABLE_NO_TILE"
                 f"_{window_spec}"
                 f"_F{job_settings.period_seconds}"
                 f"_BS{job_settings.blind_spot_seconds}"
