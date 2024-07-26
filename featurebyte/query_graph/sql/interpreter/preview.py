@@ -13,6 +13,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
 
+from bson import ObjectId
 from sqlglot import expressions, parse_one
 
 from featurebyte.enum import DBVarType
@@ -37,6 +38,16 @@ NUM_TABLES_PER_JOIN = 10
 
 
 @dataclass
+class DataQuery:
+    """
+    Query to obtain possibly sampled data
+    """
+
+    expr: expressions.Select
+    output_table_name: str
+
+
+@dataclass
 class DescribeQuery:
     """
     Query to describe selected columns for a given node
@@ -53,6 +64,7 @@ class DescribeQueries:
     Collection of queries to describe all columns for a given node
     """
 
+    data: DataQuery
     queries: List[DescribeQuery]
     type_conversions: dict[Optional[str], DBVarType]
 
@@ -559,7 +571,7 @@ class PreviewMixin(BaseGraphInterpreter):
                     quoted=True,
                 ),
             )
-            .from_(CASTED_DATA_TABLE_NAME if use_casted_data else "data")
+            .from_(quoted_identifier(CASTED_DATA_TABLE_NAME if use_casted_data else "data"))
             .group_by(col_expr)
             .order_by(
                 expressions.Ordered(this=quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), desc=True)
@@ -662,7 +674,9 @@ class PreviewMixin(BaseGraphInterpreter):
         )
 
     @staticmethod
-    def _get_cte_with_casted_data(sql_tree: expressions.Expression) -> CteStatement:
+    def _get_cte_with_casted_data(
+        sql_tree: expressions.Expression, input_table_name: str
+    ) -> CteStatement:
         # get subquery with columns casted to string to compute value counts
         casted_columns = []
         for col_expr in sql_tree.expressions:
@@ -675,8 +689,8 @@ class PreviewMixin(BaseGraphInterpreter):
                     quoted=True,
                 )
             )
-        sql_tree = expressions.select(*casted_columns).from_("data")
-        return CASTED_DATA_TABLE_NAME, sql_tree
+        sql_tree = expressions.select(*casted_columns).from_(quoted_identifier(input_table_name))
+        return quoted_identifier(CASTED_DATA_TABLE_NAME), sql_tree
 
     @staticmethod
     def _clip_column_before_stats_func(
@@ -707,6 +721,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
     def _construct_stats_sql(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         self,
+        input_table_name: str,
         sql_tree: expressions.Select,
         columns: List[ViewDataColumn],
         stats_names: Optional[List[str]] = None,
@@ -716,6 +731,8 @@ class PreviewMixin(BaseGraphInterpreter):
 
         Parameters
         ----------
+        input_table_name: str
+            Table name to use for input data
         sql_tree: expressions.Select
             SQL Expression to describe
         columns: List[ViewDataColumn]
@@ -732,11 +749,8 @@ class PreviewMixin(BaseGraphInterpreter):
             column.name: column for column in columns if column.name or len(columns) == 1
         }
 
-        # original data
-        cte_statements: List[CteStatement] = [("data", sql_tree)]
-
         # data casted to string
-        cte_casted_data = self._get_cte_with_casted_data(sql_tree)
+        cte_casted_data = self._get_cte_with_casted_data(sql_tree, input_table_name)
 
         # only extract requested stats if specified
         required_stats_expressions = {}
@@ -744,6 +758,7 @@ class PreviewMixin(BaseGraphInterpreter):
             if stats_names is None or stats_name in stats_names:
                 required_stats_expressions[stats_name] = stats_values
 
+        cte_statements: List[CteStatement] = []
         stats_selections = []
         count_tables = []
         final_selections = []
@@ -831,21 +846,23 @@ class PreviewMixin(BaseGraphInterpreter):
         # get statistics
         all_tables = []
         if stats_selections:
-            sql_tree = expressions.select(*stats_selections).from_("data")
+            sql_tree = expressions.select(*stats_selections).from_(
+                quoted_identifier(input_table_name)
+            )
             cte_statements.append(("stats", sql_tree))
             all_tables.append("stats")
         all_tables.extend(count_tables)
 
         # check if data casted to string is used and if so add it to cte_statements
         used_casted_data = False
-        for _, cte_expr in cte_statements[1:]:
+        for _, cte_expr in cte_statements:
             for cur_expr, _, _ in cte_expr.walk():
                 if isinstance(cur_expr, expressions.Identifier):
                     if cur_expr.alias_or_name == CASTED_DATA_TABLE_NAME:
                         used_casted_data = True
                         break
         if used_casted_data:
-            cte_statements.insert(1, cte_casted_data)
+            cte_statements.insert(0, cte_casted_data)
 
         sql_tree = self._join_all_tables(cte_statements, all_tables).select(*final_selections)
 
@@ -952,6 +969,7 @@ class PreviewMixin(BaseGraphInterpreter):
             skip_conversion=True,
             total_num_rows=total_num_rows,
         )
+        sample_table_name = f"__TEMP_SAMPLED_DATA_{ObjectId()}".upper()
 
         if not columns_batch_size:
             columns_batch_size = len(operation_structure.columns)
@@ -959,6 +977,7 @@ class PreviewMixin(BaseGraphInterpreter):
         queries = []
         for i in range(0, len(operation_structure.columns), columns_batch_size):
             sql_tree, row_indices, columns = self._construct_stats_sql(
+                input_table_name=sample_table_name,
                 sql_tree=sample_sql_tree,
                 columns=operation_structure.columns[i : i + columns_batch_size],
                 stats_names=stats_names,
@@ -970,7 +989,11 @@ class PreviewMixin(BaseGraphInterpreter):
                     columns=columns,
                 )
             )
-        return DescribeQueries(queries=queries, type_conversions=type_conversions)
+        return DescribeQueries(
+            data=DataQuery(expr=sample_sql_tree, output_table_name=sample_table_name),
+            queries=queries,
+            type_conversions=type_conversions,
+        )
 
     def construct_value_counts_sql(
         self,
@@ -1007,11 +1030,11 @@ class PreviewMixin(BaseGraphInterpreter):
             seed=seed,
         )
         cte_statements: List[CteStatement] = [
-            ("data", sql_tree),
+            (quoted_identifier("data"), sql_tree),
         ]
         if convert_keys_to_string:
             cte_statements.append(
-                self._get_cte_with_casted_data(sql_tree),
+                self._get_cte_with_casted_data(sql_tree, "data"),
             )
         # It's expected that this function is called on a node that is associated with a column and
         # not a frame, so here we simply take the first column.

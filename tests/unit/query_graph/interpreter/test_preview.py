@@ -6,6 +6,7 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
+from bson import ObjectId
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
@@ -19,6 +20,17 @@ def patch_num_tables_per_join():
     Patch NUM_TABLES_PER_JOIN to 2 for all tests
     """
     with patch("featurebyte.query_graph.sql.interpreter.preview.NUM_TABLES_PER_JOIN", 2):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def patch_unique_identifier():
+    """
+    Patch unique identifier generator
+    """
+    with patch(
+        "featurebyte.query_graph.sql.interpreter.preview.ObjectId", return_value=ObjectId("0" * 24)
+    ):
         yield
 
 

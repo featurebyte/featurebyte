@@ -1,16 +1,8 @@
-WITH data AS (
-  SELECT
-    "col_float" AS "col_float",
-    "col_text" AS "col_text"
-  FROM "sf_database"."sf_schema"."sf_table"
-  WHERE
-    "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMPNTZ)
-    AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMPNTZ)
-), casted_data AS (
+WITH "casted_data" AS (
   SELECT
     CAST("col_float" AS STRING) AS "col_float",
     CAST("col_text" AS STRING) AS "col_text"
-  FROM data
+  FROM "__TEMP_SAMPLED_DATA_000000000000000000000000"
 ), counts__1 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict."COUNT_DICT") AS "entropy__1",
@@ -26,7 +18,7 @@ WITH data AS (
       SELECT
         "col_text",
         COUNT(*) AS "__FB_COUNTS"
-      FROM casted_data
+      FROM "casted_data"
       GROUP BY
         "col_text"
       ORDER BY
@@ -67,7 +59,7 @@ WITH data AS (
     NULL AS "max__1",
     NULL AS "min TZ offset__1",
     NULL AS "max TZ offset__1"
-  FROM data
+  FROM "__TEMP_SAMPLED_DATA_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
