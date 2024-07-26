@@ -1387,19 +1387,6 @@ def non_tile_window_ggregation_feature_node_fixture(global_graph, input_node):
     return feature_node
 
 
-@pytest.fixture(name="tile_with_non_tile_window_aggregate_feature_node")
-def tile_with_non_tile_window_aggregate_feature_node_fixture(
-    global_graph, non_tile_window_aggregate_feature_node, latest_value_aggregation_feature_node
-):
-    feature_node = global_graph.add_operation(
-        node_type=NodeType.ADD,
-        node_params={},
-        node_output_type=NodeOutputType.SERIES,
-        input_nodes=[non_tile_window_aggregate_feature_node, latest_value_aggregation_feature_node],
-    )
-    return feature_node
-
-
 @pytest.fixture(name="feature_nodes_all_types")
 def feature_nodes_all_types_fixture(
     mixed_point_in_time_and_item_aggregations,
