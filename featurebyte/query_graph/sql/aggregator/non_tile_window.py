@@ -285,17 +285,19 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
 
         # Right table: source view
         source_view_table_name = self.get_source_view_table_name(spec)
+        right_columns = set(
+            agg_spec.parameters.parent
+            for agg_spec in specs
+            if agg_spec.parameters.parent is not None
+        )
+        if spec.parameters.value_by is not None:
+            right_columns.add(spec.parameters.value_by)
         right_table = RightTable(
             name=quoted_identifier(source_view_table_name),
             alias="VIEW",
             join_keys=spec.parameters.keys[:],
             range_column=InternalName.VIEW_TIMESTAMP_EPOCH,
-            columns=[
-                agg_spec.parameters.parent
-                for agg_spec in specs
-                if agg_spec.parameters.parent is not None
-            ]
-            + ([spec.parameters.value_by] if spec.parameters.value_by is not None else []),
+            columns=list(right_columns),
         )
         groupby_input_expr = range_join_tables(
             left_table=left_table,
