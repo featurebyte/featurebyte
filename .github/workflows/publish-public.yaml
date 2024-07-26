@@ -137,7 +137,7 @@ jobs:
           password: ${{ secrets.DOCKER_IO_PASSWORD }}
       - name: Build & Tag & Push Image to docker.io
         if: ${{ github.event.inputs.docker == 'true' }}
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           push: true
           tags: |-
