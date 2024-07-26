@@ -394,9 +394,9 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
                 # resource.__qualname__ like `init_private_attributes` (from pydantic)
                 # does not contain a dot, so we need to skip it
                 if "." in resource.__qualname__:  # type: ignore
-                    resource_classname, resource_realname = resource.__qualname__.split(
+                    resource_classname, resource_realname = resource.__qualname__.split(  # type: ignore
                         ".", maxsplit=1
-                    )  # type: ignore
+                    )
                     resource_path = f"{resource.__module__}.{resource_classname}"
             except AttributeError:
                 pass
