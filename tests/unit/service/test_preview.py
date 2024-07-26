@@ -308,17 +308,25 @@ async def test_value_counts(
             "count": [100, 50, 3],
         }
     )
+
+    callback_call_args = []
+
+    async def completion_callback(n):
+        callback_call_args.append(n)
+
     result = await preview_service.value_counts(
         feature_store_preview,
         column_names=["col_int", "col_float", "col_char"],
         num_rows=100000,
         num_categories_limit=500,
+        completion_callback=completion_callback,
     )
     assert result == {
         "col_int": {1: 100, 2: 50, None: 3},
         "col_float": {1.0: 100, 2.0: 50, None: 3},
         "col_char": {"1": 100, "2": 50, None: 3},
     }
+    assert callback_call_args == [1, 2, 3]
 
 
 @pytest.mark.parametrize(

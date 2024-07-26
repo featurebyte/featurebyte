@@ -4,7 +4,7 @@ PreviewService class
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, Type
+from typing import Any, Callable, Coroutine, Optional, Tuple, Type
 
 import pandas as pd
 from bson import ObjectId
@@ -293,6 +293,7 @@ class PreviewService:
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
+        completion_callback: Optional[Callable[[int], Coroutine[Any, Any, None]]] = None,
     ) -> dict[str, dict[Any, int]]:
         """
         Get value counts for a column
@@ -310,6 +311,9 @@ class PreviewService:
             the data, the result will include the most frequent categories up to this number.
         seed: int
             Random seed to use for sampling
+        completion_callback: Optional[Callable[int], None]
+            Callback to call when a column is processed. The callback will be called with the number
+            of columns processed so far.
 
         Returns
         -------
@@ -336,6 +340,14 @@ class PreviewService:
             select_expr=value_counts_queries.data.expr,
         )
         try:
+            processed = 0
+
+            async def _callback() -> None:
+                nonlocal processed
+                processed += 1
+                if completion_callback:
+                    await completion_callback(processed)
+
             coroutines = []
             for query in value_counts_queries.queries:
                 column_dtype = column_dtype_mapping[query.column_name]
@@ -344,6 +356,7 @@ class PreviewService:
                         session=session,
                         value_counts_query=query,
                         column_dtype=column_dtype,
+                        done_callback=_callback,
                     )
                 )
             results = await run_coroutines(coroutines)
@@ -360,6 +373,7 @@ class PreviewService:
         session: BaseSession,
         value_counts_query: ValueCountsQuery,
         column_dtype: DBVarType,
+        done_callback: Callable[[], Coroutine[Any, Any, None]],
     ) -> Tuple[str, dict[Any, int]]:
         session = await session.clone_if_not_threadsafe()
         df_result = await session.execute_query(value_counts_query.sql)
@@ -384,6 +398,7 @@ class PreviewService:
             return key
 
         output = {_cast_key(key): value for (key, value) in output.items()}
+        await done_callback()
         return value_counts_query.column_name, output
 
     @staticmethod
