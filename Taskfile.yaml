@@ -118,6 +118,12 @@ tasks:
     desc: Runs integration tests against Snowflake
     deps:
       - task: install
+    vars:
+      # Default to 1 split 1 group
+      PYTEST_GROUP:
+        sh: printenv PYTEST_GROUP || echo "1"
+      PYTEST_SPLITS:
+        sh: printenv PYTEST_SPLITS || echo "1"
     cmds:
       - task: test-setup
       - poetry run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1 --cov=featurebyte tests/integration --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
