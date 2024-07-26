@@ -1514,11 +1514,26 @@ def test_create_observation_table__errors_with_no_entities(event_view):
 
 def test_count_distinct_features(count_distinct_feature_group):
     """Test count distinct features"""
-    observation_set = pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": "T0"}])
+    observation_set = pd.DataFrame([{"POINT_IN_TIME": "2001-02-02 10:00:00", "order_id": "T0"}])
     feature_list = FeatureList([count_distinct_feature_group], name="test_count_distinct_fl")
 
     # test historical feature computation
-    df_historical = feature_list.compute_historical_features(observation_set=observation_set)
+    df_hist = feature_list.compute_historical_features(observation_set=observation_set)
 
     # test feature preview
     fl_preview = feature_list.preview(observation_set=observation_set)
+
+    # check values
+    expected = pd.DataFrame(
+        [
+            {
+                "POINT_IN_TIME": pd.Timestamp("2001-02-02 10:00:00"),
+                "order_id": "T0",
+                "cust_count_of_items_1w": 10,
+                "cust_count_distinct_items_1w": 10,
+                "cust_avg_count_of_items_per_type_1w": 1.0,
+            }
+        ]
+    )
+    pd.testing.assert_frame_equal(df_hist, expected, check_dtype=False)
+    pd.testing.assert_frame_equal(fl_preview, expected, check_dtype=False)
