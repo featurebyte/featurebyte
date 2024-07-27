@@ -1723,7 +1723,7 @@ def feature_group_per_category_fixture(event_view):
 
 
 @pytest.fixture(name="count_distinct_feature_group")
-def count_distinct_feature_group_fixture(event_table, item_table, dimension_table):
+def count_distinct_feature_group_fixture(item_table, dimension_table):
     """
     Count distinct feature group fixture
     """

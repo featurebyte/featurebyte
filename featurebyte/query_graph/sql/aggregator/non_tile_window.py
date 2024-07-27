@@ -259,7 +259,7 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
         current_query_index: int,
     ) -> AggregationResult:
         queries = []
-        existing_columns = set()
+        existing_columns: set[str] = set()
         for specs in self.grouped_specs.values():
             query = self._get_aggregation_subquery(specs, existing_columns)
             existing_columns.update(query.column_names)
