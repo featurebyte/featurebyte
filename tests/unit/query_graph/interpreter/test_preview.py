@@ -197,28 +197,22 @@ def test_describe_with_date_range_and_size(simple_graph, update_fixtures):
     assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
 
 
-def test_value_counts_sql(project_from_simple_graph, update_fixtures):
+def test_value_counts_sql_no_casting(graph, node_input, update_fixtures):
     """Test value counts sql"""
-    graph, node = project_from_simple_graph
     interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    sql_code = interpreter.construct_value_counts_sql(
-        node.name,
+    value_counts_queries = interpreter.construct_value_counts_sql(
+        node_input.name,
+        column_names=["a", "b"],
         num_rows=50000,
         num_categories_limit=1000,
     )
-    expected_filename = f"tests/fixtures/query_graph/expected_value_counts.sql"
-    assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
-
-
-def test_value_counts_sql_no_casting(project_from_simple_graph, update_fixtures):
-    """Test value counts sql"""
-    graph, node = project_from_simple_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
-    sql_code = interpreter.construct_value_counts_sql(
-        node.name,
-        num_rows=50000,
-        num_categories_limit=1000,
-        convert_keys_to_string=False,
+    assert len(value_counts_queries.queries) == 2
+    for query in value_counts_queries.queries:
+        expected_filename = (
+            f"tests/fixtures/query_graph/expected_value_counts_{query.column_name}.sql"
+        )
+        assert_equal_with_expected_fixture(query.sql, expected_filename, update_fixtures)
+    expected_filename = f"tests/fixtures/query_graph/expected_value_counts_sampled_data.sql"
+    assert_equal_with_expected_fixture(
+        value_counts_queries.data.expr.sql(pretty=True), expected_filename, update_fixtures
     )
-    expected_filename = f"tests/fixtures/query_graph/expected_value_counts_no_casting.sql"
-    assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)

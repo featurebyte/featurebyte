@@ -69,6 +69,26 @@ class DescribeQueries:
     type_conversions: dict[Optional[str], DBVarType]
 
 
+@dataclass
+class ValueCountsQuery:
+    """
+    Query to obtain value counts for a column
+    """
+
+    sql: str
+    column_name: str
+
+
+@dataclass
+class ValueCountsQueries:
+    """
+    Set of queries to obtain value counts for multiple columns
+    """
+
+    data: DataQuery
+    queries: List[ValueCountsQuery]
+
+
 class PreviewMixin(BaseGraphInterpreter):
     """
     Preview mixin for Graph Interpreter
@@ -561,6 +581,7 @@ class PreviewMixin(BaseGraphInterpreter):
         col_expr: expressions.Expression,
         num_categories_limit: int = 500,
         use_casted_data: bool = True,
+        input_table_name: str = "data",
     ) -> expressions.Select:
         return (
             expressions.select(
@@ -571,7 +592,9 @@ class PreviewMixin(BaseGraphInterpreter):
                     quoted=True,
                 ),
             )
-            .from_(quoted_identifier(CASTED_DATA_TABLE_NAME if use_casted_data else "data"))
+            .from_(
+                quoted_identifier(CASTED_DATA_TABLE_NAME if use_casted_data else input_table_name)
+            )
             .group_by(col_expr)
             .order_by(
                 expressions.Ordered(this=quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), desc=True)
@@ -998,11 +1021,11 @@ class PreviewMixin(BaseGraphInterpreter):
     def construct_value_counts_sql(
         self,
         node_name: str,
+        column_names: list[str],
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
-        convert_keys_to_string: bool = True,
-    ) -> str:
+    ) -> ValueCountsQueries:
         """
         Construct SQL to get value counts for a given node.
 
@@ -1010,52 +1033,51 @@ class PreviewMixin(BaseGraphInterpreter):
         ----------
         node_name : str
             Query graph node name
+        column_names : list[str]
+            Column names to get value counts for
         num_rows : int
             Number of rows to include when calculating the counts
         num_categories_limit : int
             Maximum number of categories to include in the result. If there are more categories in
             the data, the result will include the most frequent categories up to this number.
-        convert_keys_to_string: bool
-            Whether to convert keys to string
         seed: int
             Random seed to use for sampling
 
         Returns
         -------
-        str
+        ValueCountsQueries
         """
         sql_tree, _ = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
             seed=seed,
         )
-        cte_statements: List[CteStatement] = [
-            (quoted_identifier("data"), sql_tree),
-        ]
-        if convert_keys_to_string:
-            cte_statements.append(
-                self._get_cte_with_casted_data(sql_tree, "data"),
+        sample_table_name = f"__TEMP_VALUE_COUNTS_SAMPLED_DATA_{ObjectId()}".upper()
+
+        queries = []
+        for col_name in column_names:
+            cat_counts = self._get_cat_counts(
+                quoted_identifier(col_name),
+                num_categories_limit=num_categories_limit,
+                use_casted_data=False,
+                input_table_name=sample_table_name,
             )
-        # It's expected that this function is called on a node that is associated with a column and
-        # not a frame, so here we simply take the first column.
-        col_expr = sql_tree.expressions[0]
-        col_name = col_expr.alias_or_name
-        cat_counts = self._get_cat_counts(
-            quoted_identifier(col_name),
-            num_categories_limit=num_categories_limit,
-            use_casted_data=convert_keys_to_string,
-        )
-        output_expr = (
-            construct_cte_sql(cte_statements)
-            .select(
+            output_expr = expressions.select(
                 expressions.alias_(quoted_identifier(col_name), "key", quoted=True),
                 expressions.alias_(
                     quoted_identifier(CATEGORY_COUNT_COLUMN_NAME), "count", quoted=True
                 ),
+            ).from_(cat_counts.subquery())
+            value_counts_query = ValueCountsQuery(
+                sql=sql_to_string(output_expr, source_type=self.source_type),
+                column_name=col_name,
             )
-            .from_(cat_counts.subquery())
+            queries.append(value_counts_query)
+
+        return ValueCountsQueries(
+            data=DataQuery(expr=sql_tree, output_table_name=sample_table_name),
+            queries=queries,
         )
-        return sql_to_string(output_expr, source_type=self.source_type)
 
     def construct_row_count_sql(
         self,
