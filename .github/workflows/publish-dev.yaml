@@ -4,6 +4,7 @@ name: publish
   push:
     branches:
       - main
+      - post-release/1.1.4
 permissions:
   contents: write
 env:
@@ -12,6 +13,7 @@ env:
   GCR_PYPI_REPO: featurebyte-pypi
   GCR_PYPI_LOCATION: us-central1
   SERVER_IMAGE_REPO: us-central1-docker.pkg.dev/vpc-host-nonprod-xa739-xz970/docker/featurebyte-server
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
 concurrency:
   cancel-in-progress: false
   group: ${{ github.workflow }}
@@ -58,14 +60,19 @@ jobs:
         run: |
           export PACKAGE=$(poetry version --no-ansi | cut -d ' ' -f1)
           export VERSION=$(poetry version --no-ansi --short | grep -oP '\d+[.]\d+[.]\d+')
+          if [ "$BRANCH_NAME" = "main" ]; then
+            export SUFFIX="dev"
+          else
+            export SUFFIX="post"
+          fi
           export DEV_VERSION=$(gcloud artifacts versions list --project ${GCR_PYPI_PROJECT_ID} --repository=${GCR_PYPI_REPO} --location=${GCR_PYPI_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
             sort --version-sort -r | \
-            grep -P "${VERSION}.dev" | \
+            grep -P "${VERSION}.{SUFFIX}" | \
             head -n 1 | \
             grep -oP "\d+$"
           )
-          export DEV_VERSION=${DEV_VERSION:-0}  # Set .dev to 0 if not exist
-          export DEV_VERSION="$(poetry version -s).dev$((DEV_VERSION+=1))"
+          export DEV_VERSION=${DEV_VERSION:-0}  # Set dev version to 0 if not exist
+          export DEV_VERSION="$(poetry version -s).{SUFFIX}$((DEV_VERSION+=1))"
           echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_ENV
           echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_OUTPUT
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
