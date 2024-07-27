@@ -1723,7 +1723,7 @@ def feature_group_per_category_fixture(event_view):
 
 
 @pytest.fixture(name="count_distinct_feature_group")
-def count_distinct_feature_group_fixture(item_table, dimension_table):
+def count_distinct_feature_group_fixture(event_table, item_table, dimension_table):
     """
     Count distinct feature group fixture
     """
@@ -1740,17 +1740,17 @@ def count_distinct_feature_group_fixture(item_table, dimension_table):
     cust_avg_count_of_items_per_type = item_count_by_cust / item_count_distinct_by_cust
     cust_avg_count_of_items_per_type.name = "cust_avg_count_of_items_per_type_1w"
 
-    # add dimension view to compute item type consistency feature
+    # add item type consistency feature (to trigger duplicated column name in request table issue)
     joined_item_view = item_view.join(dimension_table.get_view(), rprefix="dim_")
-    item_type_distinct_count_by_cust_features = joined_item_view.groupby("CUST_ID").aggregate_over(
+    item_type_count_distinct_by_cust_features = joined_item_view.groupby("CUST_ID").aggregate_over(
         value_column="dim_item_type",
         method="count_distinct",
         feature_names=["cust_count_distinct_item_types_1w", "cust_count_distinct_item_types_2w"],
         windows=["1w", "2w"],
     )
     cust_consistency_of_item_type = (
-        item_type_distinct_count_by_cust_features["cust_count_distinct_item_types_1w"]
-        / item_type_distinct_count_by_cust_features["cust_count_distinct_item_types_2w"]
+        item_type_count_distinct_by_cust_features["cust_count_distinct_item_types_1w"]
+        / item_type_count_distinct_by_cust_features["cust_count_distinct_item_types_2w"]
     )
     cust_consistency_of_item_type.name = "cust_consistency_of_item_type_1w"
 
@@ -1759,7 +1759,7 @@ def count_distinct_feature_group_fixture(item_table, dimension_table):
             item_count_by_cust,
             item_count_distinct_by_cust,
             cust_avg_count_of_items_per_type,
-            item_type_distinct_count_by_cust_features,
+            item_type_count_distinct_by_cust_features,
             cust_consistency_of_item_type,
         ]
     )
