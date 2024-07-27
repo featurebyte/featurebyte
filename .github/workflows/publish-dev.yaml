@@ -72,7 +72,7 @@ jobs:
             grep -oP "\d+$"
           )
           export DEV_VERSION=${DEV_VERSION:-0}  # Set dev version to 0 if not exist
-          export DEV_VERSION="$(poetry version -s).{SUFFIX}$((DEV_VERSION+=1))"
+          export DEV_VERSION="$(poetry version -s).${SUFFIX}$((DEV_VERSION+=1))"
           echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_ENV
           echo "DEV_VERSION=${DEV_VERSION}" >> $GITHUB_OUTPUT
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
