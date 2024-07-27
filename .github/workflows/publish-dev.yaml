@@ -158,7 +158,7 @@ jobs:
           channel-id: ${{ env.CHANNEL_ID }}
           payload: |-
             {
-                "text": "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.PUBLISH_RESULT }}]",
+                "text": "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.PUBLISH_RESULT }} - ${{ needs.publish.outputs.DEV_VERSION }}]",
                 "blocks": [
                     {
                         "type": "section",
@@ -171,7 +171,7 @@ jobs:
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "```publish: [${{ env.PUBLISH_RESULT }}]```"
+                            "text": "```publish: [${{ env.PUBLISH_RESULT }} - ${{ needs.publish.outputs.DEV_VERSION }}]```"
                         }
                     }
                 ]
