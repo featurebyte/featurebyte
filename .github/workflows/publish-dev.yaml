@@ -67,7 +67,7 @@ jobs:
           fi
           export DEV_VERSION=$(gcloud artifacts versions list --project ${GCR_PYPI_PROJECT_ID} --repository=${GCR_PYPI_REPO} --location=${GCR_PYPI_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
             sort --version-sort -r | \
-            grep -P "${VERSION}.{SUFFIX}" | \
+            grep -P "${VERSION}.${SUFFIX}" | \
             head -n 1 | \
             grep -oP "\d+$"
           )
