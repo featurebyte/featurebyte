@@ -78,7 +78,7 @@ def haversine(
     --------
     >>> event_view = catalog.get_view("EVENT_VIEW")  # doctest: +SKIP
     >>> event_view["HAVERSINE_DIST"] = fb.haversine(  # doctest: +SKIP
-    ...   event_view["LAT_1"], event_view["LON_2"], event_view["LAT_2"], event_view["LON_2"]
+    ...     event_view["LAT_1"], event_view["LON_2"], event_view["LAT_2"], event_view["LON_2"]
     ... )
     """
     _validate_series([lat_series_1, lon_series_1, lat_series_2, lon_series_2])

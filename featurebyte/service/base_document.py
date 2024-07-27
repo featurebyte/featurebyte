@@ -2,15 +2,13 @@
 BaseService class
 """
 
-# pylint: disable=too-many-lines
 from __future__ import annotations
-
-from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
 
 import copy
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -109,8 +107,6 @@ class BaseDocumentService(
     collection. It will perform model level validation before writing to persistent and after
     reading from the persistent.
     """
-
-    # pylint: disable=too-many-public-methods
 
     document_class: Type[Document]
     _remote_attribute_cache: Any = LRUCache(maxsize=1024)
@@ -533,11 +529,7 @@ class BaseDocumentService(
         return int(num_of_records_deleted)
 
     async def _delete_remote_attributes_in_storage(self, document_dict: Dict[str, Any]) -> None:
-        for (
-            remote_path
-        ) in self.document_class._get_remote_attribute_paths(  # pylint: disable=protected-access
-            document_dict
-        ):
+        for remote_path in self.document_class._get_remote_attribute_paths(document_dict):
             await self.storage.try_delete_if_exists(remote_path)
 
     async def soft_delete_document(self, document_id: ObjectId) -> None:
@@ -1127,9 +1119,10 @@ class BaseDocumentService(
             self._check_document_modifiable(document=document.model_dump(by_alias=True))
 
         # check any conflict with existing documents
-        updated_document = self.document_class(
-            **{**document.model_dump(by_alias=True), **copy.deepcopy(update_dict)}
-        )
+        updated_document = self.document_class(**{
+            **document.model_dump(by_alias=True),
+            **copy.deepcopy(update_dict),
+        })
         await self._check_document_unique_constraints(
             document=updated_document,
             document_class=update_document_class,
@@ -1208,9 +1201,9 @@ class BaseDocumentService(
 
     @retry(
         retry=retry_if_exception_type(OperationFailure),
-        wait=wait_chain(
-            *[wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)]
-        ),
+        wait=wait_chain(*[
+            wait_random(max=RETRY_MAX_WAIT_IN_SEC) for _ in range(RETRY_MAX_ATTEMPT_NUM)
+        ]),
     )
     async def update_documents(
         self,

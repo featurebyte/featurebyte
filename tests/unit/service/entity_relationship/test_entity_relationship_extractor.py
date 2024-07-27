@@ -2,7 +2,6 @@
 Test entity relationship extractor
 """
 
-# pylint: disable=too-many-arguments,anomalous-backslash-in-string
 import pytest
 
 from featurebyte.service.entity_relationship_extractor import ServingEntityEnumeration

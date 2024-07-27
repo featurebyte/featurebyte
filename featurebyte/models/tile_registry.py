@@ -4,9 +4,8 @@ TileModel document model
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 from datetime import datetime
+from typing import Any, List, Optional
 
 import pymongo
 from pydantic import BaseModel, Field, StrictStr, model_validator

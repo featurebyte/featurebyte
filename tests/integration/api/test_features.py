@@ -21,11 +21,9 @@ def test_features_without_entity(event_table):
         windows=["2h", "24h"],
         feature_names=["ALL_COUNT_2h", "ALL_COUNT_24h"],
     )
-    df = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.date_range("2001-01-01", periods=5, freq="d"),
-        }
-    )
+    df = pd.DataFrame({
+        "POINT_IN_TIME": pd.date_range("2001-01-01", periods=5, freq="d"),
+    })
 
     feature_list_1 = FeatureList([feature_group["ALL_COUNT_2h"]], name="all_count_2h_list")
     feature_list_2 = FeatureList([feature_group["ALL_COUNT_24h"]], name="all_count_24h_list")
@@ -93,12 +91,10 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table,
 
     feature = window_feature + item_feature
     feature.name = "combined_feature"
-    df_observation = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"]),
-            "order_id": ["T1"],
-        }
-    )
+    df_observation = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"]),
+        "order_id": ["T1"],
+    })
     df_preview = feature.preview(df_observation)
     tz_localize_if_needed(df_preview, source_type)
     expected = [
@@ -112,7 +108,7 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table,
 
     # preview using observation table
     observation_table = item_view.create_observation_table(
-        f"OBSERVATION_TABLE_FROM_ITEM_VIEW_FOR_PREVIEW",
+        "OBSERVATION_TABLE_FROM_ITEM_VIEW_FOR_PREVIEW",
         sample_rows=5,
         columns=[event_view.timestamp_column, "order_id"],
         columns_rename_mapping={event_view.timestamp_column: "POINT_IN_TIME"},
@@ -133,13 +129,11 @@ def test_preview_with_numpy_array(item_table, source_type):
     item_feature = item_view.groupby("order_id").aggregate(
         value_column=None, method="count", feature_name="my_item_feature"
     )
-    df_observation = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"]),
-            "order_id": ["T1"],
-            "array_field": [np.array([0.0, 1.0])],
-        }
-    )
+    df_observation = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-11-15 10:00:00"]),
+        "order_id": ["T1"],
+        "array_field": [np.array([0.0, 1.0])],
+    })
     df_preview = item_feature.preview(df_observation)
     tz_localize_if_needed(df_preview, source_type)
 
@@ -221,15 +215,13 @@ def test_relative_frequency_with_non_string_keys(event_table, scd_table):
     }
     observations_set = pd.DataFrame([preview_param])
     df = feature_list.compute_historical_features(observations_set)
-    expected = pd.DataFrame(
-        [
-            {
-                "POINT_IN_TIME": pd.Timestamp("2002-01-02 10:00:00"),
-                "üser id": 1,
-                "dict_feature": {"0": 3, "1": 2, "2": 2, "3": 1, "4": 1, "5": 2},
-                "non_string_key_feature": 1,
-                "final_feature": 0.181818,
-            }
-        ]
-    )
+    expected = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2002-01-02 10:00:00"),
+            "üser id": 1,
+            "dict_feature": {"0": 3, "1": 2, "2": 2, "3": 1, "4": 1, "5": 2},
+            "non_string_key_feature": 1,
+            "final_feature": 0.181818,
+        }
+    ])
     fb_assert_frame_equal(df, expected, dict_like_columns=["dict_feature"])

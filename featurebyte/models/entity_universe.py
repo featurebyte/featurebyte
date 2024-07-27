@@ -4,11 +4,10 @@ This module contains the logic to construct the entity universe for a given node
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, cast
-
 from abc import abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
+from typing import List, Optional, Sequence, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, Subqueryable, select
@@ -68,15 +67,13 @@ def columns_not_null(columns: Sequence[str]) -> Expression:
     -------
     Expression
     """
-    return expressions.and_(
-        *[
-            expressions.Is(
-                this=quoted_identifier(column),
-                expression=expressions.Not(this=expressions.Null()),
-            )
-            for column in columns
-        ]
-    )
+    return expressions.and_(*[
+        expressions.Is(
+            this=quoted_identifier(column),
+            expression=expressions.Not(this=expressions.Null()),
+        )
+        for column in columns
+    ])
 
 
 def get_dummy_entity_universe() -> Select:
@@ -159,7 +156,7 @@ class BaseEntityUniverseConstructor:
         """
 
     @classmethod
-    def get_event_table_timestamp_filter(  # pylint: disable=useless-return
+    def get_event_table_timestamp_filter(
         cls, graph: QueryGraphModel, node: Node
     ) -> Optional[EventTableTimestampFilter]:
         """
@@ -290,14 +287,10 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
             )
         )
         universe_expr = (
-            select(
-                *[
-                    expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
-                    for key, serving_name in zip(
-                        node.parameters.keys, node.parameters.serving_names
-                    )
-                ]
-            )
+            select(*[
+                expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
+                for key, serving_name in zip(node.parameters.keys, node.parameters.serving_names)
+            ])
             .distinct()
             .from_(filtered_aggregate_input_expr.subquery())
             .where(columns_not_null(node.parameters.keys))
@@ -353,14 +346,10 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     def get_entity_universe_template(self) -> List[Expression]:
         node = cast(ItemGroupbyNode, self.node)
         universe_expr = (
-            select(
-                *[
-                    expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
-                    for key, serving_name in zip(
-                        node.parameters.keys, node.parameters.serving_names
-                    )
-                ]
-            )
+            select(*[
+                expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
+                for key, serving_name in zip(node.parameters.keys, node.parameters.serving_names)
+            ])
             .distinct()
             .from_(self.aggregate_input_expr.subquery())
             .where(columns_not_null(node.parameters.keys))
@@ -411,17 +400,15 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
             expression=make_literal_value(agg_spec.agg_result_name),
         )
         universe_expr = (
-            select(
-                *[
-                    self.get_entity_column(
-                        serving_name,
-                        entity_column_to_get_dtype=entity_column,
-                    )
-                    for entity_column, serving_name in zip(
-                        node.parameters.keys, node.parameters.serving_names
-                    )
-                ]
-            )
+            select(*[
+                self.get_entity_column(
+                    serving_name,
+                    entity_column_to_get_dtype=entity_column,
+                )
+                for entity_column, serving_name in zip(
+                    node.parameters.keys, node.parameters.serving_names
+                )
+            ])
             .distinct()
             .from_(expressions.Table(this=online_store_table_name))
             .where(
@@ -464,14 +451,10 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
             )
         )
         universe_expr = (
-            select(
-                *[
-                    expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
-                    for key, serving_name in zip(
-                        node.parameters.keys, node.parameters.serving_names
-                    )
-                ]
-            )
+            select(*[
+                expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
+                for key, serving_name in zip(node.parameters.keys, node.parameters.serving_names)
+            ])
             .distinct()
             .from_(filtered_aggregate_input_expr.subquery())
             .where(columns_not_null(node.parameters.keys))
@@ -532,14 +515,10 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
             )
         )
         universe_expr = (
-            select(
-                *[
-                    expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
-                    for key, serving_name in zip(
-                        node.parameters.keys, node.parameters.serving_names
-                    )
-                ]
-            )
+            select(*[
+                expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
+                for key, serving_name in zip(node.parameters.keys, node.parameters.serving_names)
+            ])
             .distinct()
             .from_(filtered_aggregate_input_expr.subquery())
             .where(columns_not_null(node.parameters.keys))

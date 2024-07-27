@@ -4,9 +4,8 @@ Feature API payload schema
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
-
 from datetime import datetime
+from typing import Any, List, Optional
 
 from bson import ObjectId
 from pydantic import Field, RootModel, field_validator

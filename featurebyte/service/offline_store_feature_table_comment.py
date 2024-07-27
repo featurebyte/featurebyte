@@ -4,9 +4,8 @@ OfflineStoreFeatureTableCommentService
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
-
 from dataclasses import dataclass
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
 
 from featurebyte.logging import get_logger
 from featurebyte.models.entity import EntityModel
@@ -82,7 +81,7 @@ class OfflineStoreFeatureTableCommentService:
                     await session.comment_table(entry.table_name, entry.comment)
                 else:
                     await session.comment_column(entry.table_name, entry.column_name, entry.comment)
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 if isinstance(entry, TableComment):
                     extra = {"table_name": entry.table_name}
                 else:

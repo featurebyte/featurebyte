@@ -29,7 +29,7 @@ def features_fixture(event_table, source_type):
     Fixture for feature
     """
     event_view = event_table.get_view()
-    event_view["ÀMOUNT"].fillna(0)  # pylint: disable=no-member
+    event_view["ÀMOUNT"].fillna(0)
     feature_group = event_view.groupby("ÜSER ID").aggregate_over(
         "ÀMOUNT",
         method="sum",
@@ -112,7 +112,6 @@ async def test_online_serving_sql(
     """
     Test executing feature compute sql and feature retrieval SQL for online store
     """
-    # pylint: disable=too-many-locals
 
     # Simulate enabling the deployment at 2001-01-02 13:15:00. Based on the feature job settings
     # (frequency 1h, time modulo frequency 30m), the backfill process would compute online features
@@ -135,12 +134,10 @@ async def test_online_serving_sql(
     # We can compute the historical features using the expected previous job time as point in time.
     # The historical feature values should match with the online feature values.
     user_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -999]
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime([point_in_time] * len(user_ids)),
-            "üser id": user_ids,
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime([point_in_time] * len(user_ids)),
+        "üser id": user_ids,
+    })
     df_historical = feature_list.compute_historical_features(df_training_events)
 
     try:
@@ -319,7 +316,7 @@ async def check_concurrent_online_store_table_updates(
         )
         try:
             await online_store_job.execute()
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except Exception as e:
             out.put(e)
 
     out = Queue()

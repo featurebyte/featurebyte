@@ -4,11 +4,10 @@ Module containing base classes and functions for building syntax tree
 
 from __future__ import annotations
 
-from typing import Optional, Type, TypeVar, cast
-
 from abc import ABC, abstractmethod
 from copy import copy
 from dataclasses import dataclass, field
+from typing import Optional, Type, TypeVar, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
@@ -26,7 +25,7 @@ TableNodeT = TypeVar("TableNodeT", bound="TableNode")
 
 
 @dataclass
-class SQLNodeContext:  # pylint: disable=too-many-instance-attributes
+class SQLNodeContext:
     """
     Context containing information required when constructing instances of SQLNode
 
@@ -99,9 +98,7 @@ class SQLNode(ABC):
         """
 
     @classmethod
-    def build(  # pylint: disable=useless-return
-        cls: Type[SQLNodeT], context: SQLNodeContext
-    ) -> Optional[SQLNodeT]:
+    def build(cls: Type[SQLNodeT], context: SQLNodeContext) -> Optional[SQLNodeT]:
         """Create an instance of SQLNode given a context if applicable
 
         Parameters

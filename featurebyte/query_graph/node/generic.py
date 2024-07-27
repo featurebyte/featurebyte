@@ -2,12 +2,11 @@
 This module contains SQL operation related node classes
 """
 
-# pylint: disable=too-many-lines
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union, cast
-from typing_extensions import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+from typing_extensions import Literal
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
@@ -776,7 +775,8 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
             required_columns = set().union(
                 *(
                     node.get_required_input_columns(
-                        input_index=input_order, available_column_names=self.parameters.names  # type: ignore
+                        input_index=input_order,
+                        available_column_names=self.parameters.names,  # type: ignore
                     )
                     for node, input_order in target_node_input_order_pairs
                 )
@@ -2045,9 +2045,10 @@ class AliasNode(BaseNode):
             to_associate_with_node_name=True,
         )
         statements.extend(var_statements)
-        statements.append(
-            (VariableNameStr(f"{output_var_name}.name"), ValueStr.create(self.parameters.name))
-        )
+        statements.append((
+            VariableNameStr(f"{output_var_name}.name"),
+            ValueStr.create(self.parameters.name),
+        ))
         return statements, output_var_name
 
     def _derive_on_demand_view_code(

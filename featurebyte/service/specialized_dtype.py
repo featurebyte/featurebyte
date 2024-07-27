@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import json
 from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -87,7 +86,7 @@ class SpecializedDtypeDetectionService:
                 seed=RANDOM_SEED,
             )
         )
-        if sample.shape[0] > 0:  # pylint: disable=no-member
+        if sample.shape[0] > 0:
             for detector in self.detectors:
                 await detector.detect(table.columns_info, sample)
 

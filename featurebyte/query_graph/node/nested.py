@@ -3,6 +3,7 @@ This module contains nested graph related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
+from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -16,11 +17,9 @@ from typing import (
     Union,
     cast,
 )
-from typing_extensions import Annotated, Literal
-
-from abc import ABC, abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import Field
+from typing_extensions import Annotated, Literal
 
 from featurebyte.enum import DBVarType, SpecialColumnName, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -106,7 +105,7 @@ class ProxyInputNode(BaseNode):
 class BaseGraphNodeParameters(FeatureByteBaseModel):
     """Graph node parameters"""
 
-    graph: "QueryGraphModel"  # type: ignore[name-defined]
+    graph: "QueryGraphModel"  # type: ignore[name-defined] # noqa: F821
     output_node_name: str
     type: GraphNodeType
 
@@ -238,14 +237,12 @@ class ViewMetadata(FeatureByteBaseModel):
         -------
         ViewMetadataT
         """
-        return type(self)(
-            **{
-                **self.model_dump(by_alias=True),
-                "view_mode": view_mode,
-                "column_cleaning_operations": column_cleaning_operations,
-                **kwargs,
-            }
-        )
+        return type(self)(**{
+            **self.model_dump(by_alias=True),
+            "view_mode": view_mode,
+            "column_cleaning_operations": column_cleaning_operations,
+            **kwargs,
+        })
 
 
 class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
@@ -673,20 +670,18 @@ class BaseGraphNode(BasePrunableNode):
                 )
 
             # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
-            statements.append(
-                (
-                    var_name_map["request_time"],
-                    self._to_datetime_expr(
-                        ExpressionStr(
-                            subset_frame_column_expr(
-                                VariableNameStr(input_df_name),
-                                SpecialColumnName.POINT_IN_TIME.value,
-                            )
-                        ),
-                        to_handle_none=is_databricks_udf,
+            statements.append((
+                var_name_map["request_time"],
+                self._to_datetime_expr(
+                    ExpressionStr(
+                        subset_frame_column_expr(
+                            VariableNameStr(input_df_name),
+                            SpecialColumnName.POINT_IN_TIME.value,
+                        )
                     ),
-                )
-            )
+                    to_handle_none=is_databricks_udf,
+                ),
+            ))
             statements.append(  # cutoff = request_time - pd.Timedelta(seconds=ttl_seconds)
                 (
                     var_name_map["cutoff"],
@@ -724,12 +719,10 @@ class BaseGraphNode(BasePrunableNode):
 
         if node_params.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
-            statements.append(
-                (
-                    var_name,
-                    self._to_datetime_expr(input_var_name_expr, to_handle_none=is_databricks_udf),
-                )
-            )
+            statements.append((
+                var_name,
+                self._to_datetime_expr(input_var_name_expr, to_handle_none=is_databricks_udf),
+            ))
             return statements, var_name
 
         if node_params.output_dtype in DBVarType.json_conversion_types():

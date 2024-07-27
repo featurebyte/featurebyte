@@ -1,17 +1,14 @@
-# pylint: disable=too-many-lines
 """
 Preview mixin for Graph Interpreter
 """
 
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional
-from typing import OrderedDict as OrderedDictT
-from typing import Set, Tuple, cast
-
 from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Callable, List, Optional, Set, Tuple, cast
+from typing import OrderedDict as OrderedDictT
 
 from bson import ObjectId
 from sqlglot import expressions, parse_one
@@ -719,7 +716,7 @@ class PreviewMixin(BaseGraphInterpreter):
         )
         return clipped_col_expr
 
-    def _construct_stats_sql(  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    def _construct_stats_sql(
         self,
         input_table_name: str,
         sql_tree: expressions.Select,

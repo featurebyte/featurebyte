@@ -2,9 +2,8 @@
 Tests functions/methods in routes/common directory
 """
 
-from typing import List
-
 from datetime import datetime
+from typing import List
 from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
@@ -46,8 +45,6 @@ class Document(FeatureByteBaseDocumentModel):
 class DocumentService(BaseDocumentService):
     """DocumentService class for testing"""
 
-    # pylint: disable=abstract-method
-
     document_class = Document
 
 
@@ -64,8 +61,6 @@ class NonAuditableDocument(FeatureByteBaseDocumentModel):
 
 class NonAuditableDocumentService(BaseDocumentService):
     """NonAuditableDocumentService class for testing"""
-
-    # pylint: disable=abstract-method
 
     document_class = NonAuditableDocument
 

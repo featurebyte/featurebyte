@@ -2,13 +2,12 @@
 This module contains specialized table related models.
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
-from typing_extensions import Annotated, Literal
-
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from bson import ObjectId
 from pydantic import Field, StrictStr
+from typing_extensions import Annotated, Literal
 
 from featurebyte.common.join_utils import (
     apply_column_name_modifiers,
@@ -310,7 +309,7 @@ class ItemTableData(BaseTableData):
             drop_column_names=drop_column_names,
             metadata=metadata,
         )
-        (  # pylint: disable=unbalanced-tuple-unpacking
+        (
             proxy_item_table_node,
             proxy_event_view_node,
         ) = proxy_input_nodes
@@ -548,15 +547,17 @@ class SCDTableData(BaseTableData):
         assert natural_key_col_info, f"{self.natural_key_column} is not in columns_info"
         return [
             natural_key_col_info,
-            ColumnInfo(
-                **{**time_col_info.model_dump(), "name": column_names.new_valid_from_column_name}
-            ),
+            ColumnInfo(**{
+                **time_col_info.model_dump(),
+                "name": column_names.new_valid_from_column_name,
+            }),
             ColumnInfo(
                 name=column_names.previous_valid_from_column_name, dtype=time_col_info.dtype
             ),
-            ColumnInfo(
-                **{**track_col_info.model_dump(), "name": column_names.new_tracked_column_name}
-            ),
+            ColumnInfo(**{
+                **track_col_info.model_dump(),
+                "name": column_names.new_tracked_column_name,
+            }),
             ColumnInfo(name=column_names.previous_tracked_column_name, dtype=track_col_info.dtype),
         ]
 
@@ -616,7 +617,7 @@ if TYPE_CHECKING:
     AllTableDataT = BaseTableData
     SpecificTableDataT = BaseTableData
 else:
-    AllTableDataT = Union[tuple(DATA_TABLES)]  # pylint: disable=invalid-name
+    AllTableDataT = Union[tuple(DATA_TABLES)]
     SpecificTableDataT = Annotated[Union[tuple(SPECIFIC_DATA_TABLES)], Field(discriminator="type")]
 
 
@@ -628,7 +629,7 @@ construct_specific_data_table = construct_serialize_function(
 )
 
 
-class SpecificTableData(BaseTableData):  # pylint: disable=abstract-method
+class SpecificTableData(BaseTableData):
     """
     Pseudo TableData class to support multiple table types.
     This class basically parses the dictionary into proper type based on its type parameter value.

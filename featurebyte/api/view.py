@@ -2,9 +2,10 @@
 View class
 """
 
-# pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -18,14 +19,11 @@ from typing import (
     Union,
     cast,
 )
-from typing_extensions import Literal
-
-from abc import ABC, abstractmethod
-from datetime import datetime
 
 import pandas as pd
 from pydantic import PrivateAttr
 from typeguard import typechecked
+from typing_extensions import Literal
 
 from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.entity import Entity
@@ -120,9 +118,9 @@ class ViewColumn(Series, SampleMixin):
 
         >>> event_table = catalog.get_table("GROCERYINVOICE")
         >>> event_table["Amount"].update_critical_data_info(
-        ...    cleaning_operations=[
-        ...        fb.MissingValueImputation(imputed_value=0),
-        ...    ]
+        ...     cleaning_operations=[
+        ...         fb.MissingValueImputation(imputed_value=0),
+        ...     ]
         ... )
         >>> view = catalog.get_view("GROCERYINVOICE")
         >>> view["Amount"].cleaning_operations
@@ -185,10 +183,7 @@ class ViewColumn(Series, SampleMixin):
 
         Sample 3 rows of a column with timestamp.
         >>> catalog.get_view("GROCERYINVOICE")["Amount"].sample(  # doctest: +SKIP
-        ...   size=3,
-        ...   seed=123,
-        ...   from_timestamp="2020-01-01",
-        ...   to_timestamp="2023-01-31"
+        ...     size=3, seed=123, from_timestamp="2020-01-01", to_timestamp="2023-01-31"
         ... )
 
         See Also
@@ -276,8 +271,7 @@ class ViewColumn(Series, SampleMixin):
 
         Get summary of a column with timestamp.
         >>> catalog.get_view("GROCERYINVOICE")["Amount"].describe(  # doctest: +SKIP
-        ...   from_timestamp="2020-01-01",
-        ...   to_timestamp="2023-01-31"
+        ...     from_timestamp="2020-01-01", to_timestamp="2023-01-31"
         ... )
         """
         return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
@@ -335,7 +329,9 @@ class ViewColumn(Series, SampleMixin):
         --------
         >>> customer_view = catalog.get_view("GROCERYCUSTOMER")
         >>> # Extract operating system from BrowserUserAgent column
-        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains("Windows")
+        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains(
+        ...     "Windows"
+        ... )
         >>> # Create a target from the OperatingSystemIsWindows column
         >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target("UsesWindows")
 
@@ -345,7 +341,7 @@ class ViewColumn(Series, SampleMixin):
         an offset.
 
         >>> uses_windows_next_12w = customer_view.OperatingSystemIsWindows.as_target(
-        ...   "UsesWindows_next_12w", offset="12w"
+        ...     "UsesWindows_next_12w", offset="12w"
         ... )
         """
         view, input_column_name = self._get_view_and_input_col_for_lookup("as_target")
@@ -393,7 +389,9 @@ class ViewColumn(Series, SampleMixin):
         --------
         >>> customer_view = catalog.get_view("GROCERYCUSTOMER")
         >>> # Extract operating system from BrowserUserAgent column
-        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains("Windows")
+        >>> customer_view["OperatingSystemIsWindows"] = customer_view.BrowserUserAgent.str.contains(
+        ...     "Windows"
+        ... )
         >>> # Create a feature from the OperatingSystemIsWindows column
         >>> uses_windows = customer_view.OperatingSystemIsWindows.as_feature("UsesWindows")
 
@@ -403,7 +401,7 @@ class ViewColumn(Series, SampleMixin):
         an offset.
 
         >>> uses_windows_12w_ago = customer_view.OperatingSystemIsWindows.as_feature(
-        ...   "UsesWindows_12w_ago", offset="12w"
+        ...     "UsesWindows_12w_ago", offset="12w"
         ... )
         """
         view, input_column_name = self._get_view_and_input_col_for_lookup("as_feature")
@@ -590,11 +588,11 @@ class GroupByMixin:
         >>> items_by_customer = items_view.groupby("GroceryCustomerGuid")  # doctest: +SKIP
         >>> # Declare features that measure the discount received by customer
         >>> customer_discounts = items_by_customer.aggregate_over(  # doctest: +SKIP
-        ...   "Discount",
-        ...   method=fb.AggFunc.SUM,
-        ...   feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
-        ...   fill_value=0,
-        ...   windows=['7d', '28d']
+        ...     "Discount",
+        ...     method=fb.AggFunc.SUM,
+        ...     feature_names=["CustomerDiscounts_7d", "CustomerDiscounts_28d"],
+        ...     fill_value=0,
+        ...     windows=["7d", "28d"],
         ... )
 
 
@@ -606,17 +604,19 @@ class GroupByMixin:
         >>> # Group items by the column GroceryCustomerGuid that references the customer entity
         >>> # And use ProductGroup as the column to perform operations across
         >>> items_by_customer_across_product_group = items_view.groupby(  # doctest: +SKIP
-        ...   by_keys="GroceryCustomerGuid", category="ProductGroup"
+        ...     by_keys="GroceryCustomerGuid", category="ProductGroup"
         ... )
         >>> # Cross Aggregate feature of the customer purchases across product group over the past 4 weeks
-        >>> customer_inventory_28d = items_by_customer_across_product_group.aggregate_over(  # doctest: +SKIP
-        ...   "TotalCost",
-        ...   method=fb.AggFunc.SUM,
-        ...   feature_names=["CustomerInventory_28d"],
-        ...   windows=['28d']
+        >>> customer_inventory_28d = (
+        ...     items_by_customer_across_product_group.aggregate_over(  # doctest: +SKIP
+        ...         "TotalCost",
+        ...         method=fb.AggFunc.SUM,
+        ...         feature_names=["CustomerInventory_28d"],
+        ...         windows=["28d"],
+        ...     )
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.groupby import GroupBy
 
         return GroupBy(obj=self, keys=by_keys, category=category)  # type: ignore
@@ -667,7 +667,7 @@ class RawMixin(QueryObject, ABC):
         Examples
         --------
         >>> items_view = catalog.get_view("INVOICEITEMS")
-        >>> items_view['Discount_missing'] = items_view.raw['Discount'].isnull()
+        >>> items_view["Discount_missing"] = items_view.raw["Discount"].isnull()
 
         Returns
         -------
@@ -831,8 +831,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
 
         Get summary of a view with timestamp.
         >>> catalog.get_view("GROCERYINVOICE").describe(  # doctest: +SKIP
-        ...   from_timestamp=datetime(2019, 1, 1),
-        ...   to_timestamp=datetime(2019, 1, 31),
+        ...     from_timestamp=datetime(2019, 1, 1),
+        ...     to_timestamp=datetime(2019, 1, 31),
         ... )
         """
         return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
@@ -909,9 +909,9 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
 
         Sample rows of a view with timestamp.
         >>> catalog.get_view("GROCERYINVOICE").sample(  # doctest: +SKIP
-        ...   size=3,
-        ...   from_timestamp=datetime(2019, 1, 1),
-        ...   to_timestamp=datetime(2019, 1, 31),
+        ...     size=3,
+        ...     from_timestamp=datetime(2019, 1, 1),
+        ...     to_timestamp=datetime(2019, 1, 31),
         ... )
 
         See Also
@@ -1193,7 +1193,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         self,
         other_view: View,
         rsuffix: str = "",
-        on: Optional[str] = None,  # pylint: disable=invalid-name
+        on: Optional[str] = None,
         rprefix: str = "",
     ) -> None:
         """
@@ -1282,10 +1282,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         return []
 
     @typechecked
-    def join(  # pylint: disable=too-many-locals
+    def join(
         self: ViewT,
         other_view: View,
-        on: Optional[str] = None,  # pylint: disable=invalid-name
+        on: Optional[str] = None,
         how: Literal["left", "inner"] = "left",
         rsuffix: str = "",
         rprefix: str = "",
@@ -1350,9 +1350,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
 
         >>> items_view = catalog.get_view("INVOICEITEMS")
         >>> product_view = catalog.get_view("GROCERYPRODUCT")
-        >>> items_view_with_product_group = items_view.join(
-        ...   product_view, on="GroceryProductGuid"
-        ... )
+        >>> items_view_with_product_group = items_view.join(product_view, on="GroceryProductGuid")
 
 
         Use an inner join if you want the returned view to be filtered and contain only the rows that have matching
@@ -1361,7 +1359,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         >>> items_view = catalog.get_view("INVOICEITEMS")
         >>> product_view = catalog.get_view("GROCERYPRODUCT")
         >>> items_view_with_non_missing_product_group = items_view.join(
-        ...   product_view, on="GroceryProductGuid", how="inner"
+        ...     product_view, on="GroceryProductGuid", how="inner"
         ... )
         """
         self._validate_join(other_view, rsuffix, on=on, rprefix=rprefix)
@@ -1387,9 +1385,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             "join_type": how,
             "metadata": JoinMetadata(rsuffix=rsuffix, rprefix=rprefix),
         }
-        node_params.update(
-            other_view._get_join_parameters(self)  # pylint: disable=protected-access
-        )
+        node_params.update(other_view._get_join_parameters(self))
 
         node = self.graph.add_operation(
             node_type=NodeType.JOIN,
@@ -1628,8 +1624,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         Examples
         --------
         >>> features = dimension_view.as_features(  # doctest: +SKIP
-        ...    column_names=["column_a", "column_b"],
-        ...    feature_names=["Feature A", "Feature B"],
+        ...     column_names=["column_a", "column_b"],
+        ...     feature_names=["Feature A", "Feature B"],
         ... )
         >>> features.feature_names  # doctest: +SKIP
         ['Feature A', 'Feature B']
@@ -1717,14 +1713,14 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         Examples
         --------
         >>> observation_table = view.create_observation_table(  # doctest: +SKIP
-        ...   name="<observation_table_name>",
-        ...   sample_rows=10000,
-        ...   columns=["timestamp", "<entity_serving_name>"],
-        ...   columns_rename_mapping={"timestamp": "POINT_IN_TIME"},
-        ...   context_id=context_id,
+        ...     name="<observation_table_name>",
+        ...     sample_rows=10000,
+        ...     columns=["timestamp", "<entity_serving_name>"],
+        ...     columns_rename_mapping={"timestamp": "POINT_IN_TIME"},
+        ...     context_id=context_id,
         ... )
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.context import Context
 
         context_id = Context.get(context_name).id if context_name else None
@@ -1866,8 +1862,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         Examples
         --------
         >>> static_source_table = view.create_static_source_table(  # doctest: +SKIP
-        ...   name="<static_source_table_name>",
-        ...   sample_rows=10000,
+        ...     name="<static_source_table_name>",
+        ...     sample_rows=10000,
         ... )
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()

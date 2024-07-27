@@ -4,10 +4,9 @@ Base class for feature or target computer
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Generic, List, Optional, Tuple, TypeVar, Union
-
 from abc import abstractmethod
 from dataclasses import dataclass
+from typing import Any, Callable, Coroutine, Generic, List, Optional, TypeVar, Union
 
 import pandas as pd
 

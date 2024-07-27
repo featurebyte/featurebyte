@@ -2,17 +2,15 @@
 Series class
 """
 
-# pylint: disable=too-many-lines,too-many-public-methods
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, Optional, Type, TypeVar, Union
-from typing_extensions import Literal
-
 from functools import wraps
+from typing import Any, Callable, ClassVar, Optional, Type, TypeVar, Union
 
 import pandas as pd
 from pydantic import Field, StrictStr
 from typeguard import typechecked
+from typing_extensions import Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.accessor.datetime import DtAccessorMixin

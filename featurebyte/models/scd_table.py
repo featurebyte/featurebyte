@@ -93,7 +93,7 @@ class SCDTableModel(SCDTableData, TableModel):
             column_cleaning_operations=metadata.column_cleaning_operations,
         )
         if isinstance(metadata, ChangeViewMetadata):
-            return table_data.construct_change_view_graph_node(  # pylint: disable=no-member
+            return table_data.construct_change_view_graph_node(
                 scd_table_node=input_node,
                 track_changes_column=metadata.track_changes_column,
                 prefixes=metadata.prefixes,
@@ -101,7 +101,7 @@ class SCDTableModel(SCDTableData, TableModel):
                 metadata=metadata,
             )
 
-        return table_data.construct_scd_view_graph_node(  # pylint: disable=no-member
+        return table_data.construct_scd_view_graph_node(
             scd_table_node=input_node,
             drop_column_names=metadata.drop_column_names,
             metadata=metadata,

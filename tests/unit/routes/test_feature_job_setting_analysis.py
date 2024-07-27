@@ -115,13 +115,11 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         """
         return (
             BacktestResult(
-                results=pd.DataFrame(
-                    {
-                        "count_on_time": [1, 2, 3],
-                        "total_count": [3, 5, 6],
-                        "pct_late_data": [0.33, 0.4, 0.5],
-                    }
-                ),
+                results=pd.DataFrame({
+                    "count_on_time": [1, 2, 3],
+                    "total_count": [3, 5, 6],
+                    "pct_late_data": [0.33, 0.4, 0.5],
+                }),
                 plot=None,
                 job_with_issues_count=0,
                 warnings=[],

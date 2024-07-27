@@ -139,9 +139,10 @@ async def test_assert_no_other_production_ready_feature__exists(
 
     """
     with pytest.raises(DocumentUpdateError) as exc:
-        another_feature = FeatureModel(
-            **{**production_ready_feature.model_dump(), "_id": ObjectId()}
-        )
+        another_feature = FeatureModel(**{
+            **production_ready_feature.model_dump(),
+            "_id": ObjectId(),
+        })
         await production_ready_validator._assert_no_other_production_ready_feature(another_feature)
 
     expected_msg = (

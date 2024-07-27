@@ -2,10 +2,9 @@
 Utility functions for docstring templating
 """
 
-from typing import Any, Dict, Optional
-
 import textwrap
 from functools import wraps
+from typing import Any, Dict, Optional
 
 from featurebyte.typing import Func
 

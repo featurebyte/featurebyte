@@ -4,9 +4,8 @@ FeatureMaterializeRunModel class
 
 from __future__ import annotations
 
-from typing import List, Literal, Optional
-
 from datetime import datetime
+from typing import List, Literal, Optional
 
 from pydantic import Field
 from pymongo import IndexModel

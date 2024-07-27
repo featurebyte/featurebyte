@@ -4,9 +4,8 @@ This module contains base aggregator related class
 
 from __future__ import annotations
 
-from typing import List, Optional, Type, Union
-
 from abc import ABC, abstractmethod
+from typing import List, Optional, Type, Union
 
 from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.feature import Feature
@@ -39,9 +38,9 @@ class BaseAggregator(ABC):
         self.keys = keys
         self.serving_names = serving_names
         if not isinstance(self.view, tuple(self.supported_views)):
-            supported_views_formatted = ", ".join(
-                [view_cls.__name__ for view_cls in self.supported_views]
-            )
+            supported_views_formatted = ", ".join([
+                view_cls.__name__ for view_cls in self.supported_views
+            ])
             raise AggregationNotSupportedForViewError(
                 f"{self.aggregation_method_name}() is only available for {supported_views_formatted}"
             )

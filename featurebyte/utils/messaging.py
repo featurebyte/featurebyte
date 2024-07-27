@@ -2,10 +2,9 @@
 Support for asynchronous messaging via Redis and web sockets
 """
 
-from typing import Any, Dict, Optional, cast
-
 import json
 import os
+from typing import Any, Dict, Optional, cast
 from uuid import UUID
 
 import redis

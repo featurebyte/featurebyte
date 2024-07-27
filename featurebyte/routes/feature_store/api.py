@@ -4,9 +4,8 @@ FeatureStore API routes
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
 from http import HTTPStatus
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from fastapi import Query, Request
@@ -48,8 +47,6 @@ class FeatureStoreRouter(
     """
     Feature Store API router
     """
-
-    # pylint: disable=arguments-renamed
 
     object_model = FeatureStoreModel
     list_object_model = FeatureStoreList

@@ -1,8 +1,7 @@
 """
 Tests for FeatureJobHistoryService
 """
-
-# pylint: disable=wildcard-import,unused-wildcard-import
+# ruff: noqa: F405
 
 from featurebyte.schema.deployment import (
     DeploymentJobHistory,
@@ -10,7 +9,7 @@ from featurebyte.schema.deployment import (
     FeatureTableJobRuns,
 )
 from featurebyte.service.feature_job_history_service import FeatureJobHistoryService
-from tests.unit.service.fixtures_feature_materialize_runs import *
+from tests.unit.service.fixtures_feature_materialize_runs import *  # noqa
 
 
 @pytest.fixture

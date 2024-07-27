@@ -2,12 +2,11 @@
 Aggregation method model
 """
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
-from typing_extensions import Annotated, Literal
-
-from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 from pydantic import Field
+from typing_extensions import Annotated, Literal
 
 from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.enum import AggFunc, DBVarType

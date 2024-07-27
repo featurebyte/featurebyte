@@ -4,10 +4,9 @@ Celery worker
 
 from __future__ import annotations
 
-from typing import Any
-
 import asyncio
 from threading import Thread
+from typing import Any
 
 from bson.errors import InvalidDocument
 from celery import Celery
@@ -125,7 +124,7 @@ def initialize_asyncio_event_loop() -> None:
     Initialize asyncio event loop
     """
     logger.debug("Initializing asyncio event loop")
-    global ASYNCIO_LOOP  # pylint: disable=global-statement
+    global ASYNCIO_LOOP
     ASYNCIO_LOOP = asyncio.new_event_loop()
     thread = Thread(target=start_background_loop, args=(ASYNCIO_LOOP,), daemon=True)
     thread.start()

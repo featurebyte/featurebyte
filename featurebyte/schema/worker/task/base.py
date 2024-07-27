@@ -4,10 +4,9 @@ BaseTaskPayload schema
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional
-
 import json
 from enum import IntEnum
+from typing import Any, ClassVar, Optional
 
 from bson import ObjectId
 from pydantic import ConfigDict, Field
@@ -116,11 +115,9 @@ class BaseTaskPayload(FeatureByteBaseModel):
         json_dict = json.loads(json_string)
 
         # include class variables
-        json_dict.update(
-            {
-                "command": self.command,
-                "output_collection_name": self.output_collection_name,
-                "is_revocable": self.is_revocable,
-            }
-        )
+        json_dict.update({
+            "command": self.command,
+            "output_collection_name": self.output_collection_name,
+            "is_revocable": self.is_revocable,
+        })
         return json.dumps(json_dict)

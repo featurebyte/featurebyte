@@ -17,12 +17,10 @@ async def registered_table(session):
     Fixture for a registered table
     """
     table_name = f"test_table_for_comment_{str(ObjectId())}"
-    df = pd.DataFrame(
-        {
-            "a": [1, 2, 3],
-            "b": [4, 5, 6],
-        }
-    )
+    df = pd.DataFrame({
+        "a": [1, 2, 3],
+        "b": [4, 5, 6],
+    })
     await session.register_table(table_name, df)
     yield table_name
     await session.drop_table(

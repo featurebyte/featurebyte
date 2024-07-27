@@ -4,9 +4,8 @@ FeatureMaterializePrerequisiteModel
 
 from __future__ import annotations
 
-from typing import List, Literal
-
 from datetime import datetime
+from typing import List, Literal
 
 from pydantic import Field
 from pymongo import IndexModel

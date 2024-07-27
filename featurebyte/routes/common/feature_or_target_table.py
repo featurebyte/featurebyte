@@ -4,11 +4,10 @@ Feature or target table controller
 
 from __future__ import annotations
 
-from typing import Any, Generic, List, Optional, TypeVar
-
 from abc import abstractmethod
 from dataclasses import dataclass
 from http import HTTPStatus
+from typing import Any, Generic, List, Optional, TypeVar
 
 import pandas as pd
 from bson import ObjectId

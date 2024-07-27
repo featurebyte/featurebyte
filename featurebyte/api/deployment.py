@@ -4,14 +4,13 @@ Deployment module
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Union
-from typing_extensions import Literal
-
 from http import HTTPStatus
+from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import pandas as pd
 from bson import ObjectId
 from typeguard import typechecked
+from typing_extensions import Literal
 
 from featurebyte.api.accessor.databricks import DataBricksAccessor
 from featurebyte.api.api_object_util import ForeignKeyMapping
@@ -396,7 +395,8 @@ class Deployment(DeletableApiObject):
 
     @classmethod
     def get_by_id(
-        cls, id: ObjectId  # pylint: disable=redefined-builtin,invalid-name
+        cls,
+        id: ObjectId,
     ) -> Deployment:
         """
         Returns a Deployment object by its unique identifier (ID).

@@ -401,7 +401,7 @@ def test_join_parameters_columns__should_not_trigger_graph_inconsistency(
 
     # create a feature without using the assigned column so that the assign operation is going to be pruned
     joined_view = snowflake_event_view_with_entity.join(snowflake_scd_view, rsuffix="_scd")
-    filtered_joined_view = joined_view[joined_view["col_boolean_scd"] == True]
+    filtered_joined_view = joined_view[joined_view["col_boolean_scd"]]
     feature = filtered_joined_view.groupby("cust_id").aggregate_over(
         value_column="col_int",
         method="max",

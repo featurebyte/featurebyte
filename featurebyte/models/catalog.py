@@ -4,9 +4,8 @@ This module contains Catalog related models
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from datetime import datetime
+from typing import List, Optional
 
 import pymongo
 from pydantic import Field, StrictStr, field_validator

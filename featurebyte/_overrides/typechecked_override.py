@@ -5,10 +5,9 @@ type checking behavior based on the module where the function is defined.
 
 from __future__ import annotations
 
-from typing import Any
-
 import functools
 import inspect
+from typing import Any
 
 import typeguard
 from typeguard import CollectionCheckStrategy, ForwardRefPolicy, TypeCheckFailCallback, Unset

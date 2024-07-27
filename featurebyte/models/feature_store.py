@@ -4,9 +4,8 @@ This module contains DatabaseSource related models
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
-
 from abc import ABC, abstractmethod
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
 import pymongo
 from pydantic import Field, StrictStr
@@ -121,9 +120,7 @@ class ConstructGraphMixin:
             graph = QueryGraph()
 
         table_data = cls._table_data_class(**table_data_dict)
-        input_node = table_data.construct_input_node(  # pylint: disable=no-member
-            feature_store_details=feature_store_details
-        )
+        input_node = table_data.construct_input_node(feature_store_details=feature_store_details)
         inserted_input_node = graph.add_node(node=input_node, input_nodes=[])
         return graph, inserted_input_node
 

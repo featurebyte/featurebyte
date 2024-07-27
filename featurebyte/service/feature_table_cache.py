@@ -200,15 +200,13 @@ class FeatureTableCacheService:
             if definition_hash in cached_hashes or definition_hash in added_hashes:
                 continue
             added_hashes.add(definition_hash)
-            non_cached_nodes.append(
-                (
-                    node,
-                    CachedFeatureDefinition(definition_hash=definition_hash),
-                )
-            )
+            non_cached_nodes.append((
+                node,
+                CachedFeatureDefinition(definition_hash=definition_hash),
+            ))
         return non_cached_nodes
 
-    async def _populate_intermediate_table(  # pylint: disable=too-many-arguments
+    async def _populate_intermediate_table(
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
@@ -263,7 +261,7 @@ class FeatureTableCacheService:
                 progress_callback=progress_callback,
             )
 
-    async def _create_table(  # pylint: disable=too-many-arguments
+    async def _create_table(
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
@@ -324,7 +322,7 @@ class FeatureTableCacheService:
                 if_exists=True,
             )
 
-    async def _update_table(  # pylint: disable=too-many-arguments
+    async def _update_table(
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
@@ -449,7 +447,7 @@ class FeatureTableCacheService:
             )
             _ = await session.execute_query_long_running(query)
             return True
-        except session._no_schema_error:  # pylint: disable=protected-access
+        except session._no_schema_error:
             return False
 
     async def create_or_update_feature_table_cache(
@@ -618,13 +616,11 @@ class FeatureTableCacheService:
             )
             .select(*columns_expr)
             .from_(
-                get_fully_qualified_table_name(
-                    {
-                        "database_name": db_session.database_name,
-                        "schema_name": db_session.schema_name,
-                        "table_name": cache_metadata.table_name,
-                    }
-                )
+                get_fully_qualified_table_name({
+                    "database_name": db_session.database_name,
+                    "schema_name": db_session.schema_name,
+                    "table_name": cache_metadata.table_name,
+                })
             )
         )
         sql = sql_to_string(select_expr, source_type=db_session.source_type)
@@ -709,13 +705,11 @@ class FeatureTableCacheService:
             .select(*request_columns)
             .select(*columns_expr)
             .from_(
-                get_fully_qualified_table_name(
-                    {
-                        "database_name": db_session.database_name,
-                        "schema_name": db_session.schema_name,
-                        "table_name": cache_metadata.table_name,
-                    }
-                )
+                get_fully_qualified_table_name({
+                    "database_name": db_session.database_name,
+                    "schema_name": db_session.schema_name,
+                    "table_name": cache_metadata.table_name,
+                })
             )
         )
         try:
@@ -725,7 +719,7 @@ class FeatureTableCacheService:
                 kind="VIEW",
             )
             return True
-        except:  # pylint: disable=bare-except
+        except BaseException as _:
             logger.info(
                 "Failed to create view. Trying to create a table instead",
                 extra={"observation_table_id": observation_table.id},

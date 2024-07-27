@@ -32,8 +32,6 @@ class EntityController(BaseDocumentController[EntityModel, EntityService, Entity
     Entity Controller
     """
 
-    # pylint: disable=too-many-arguments, too-many-instance-attributes
-
     paginated_document_class = EntityList
 
     def __init__(

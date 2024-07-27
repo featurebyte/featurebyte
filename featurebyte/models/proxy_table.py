@@ -5,9 +5,9 @@ This module contains ProxyTable pseudo models.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Union
-from typing_extensions import Annotated
 
 from pydantic import Field
+from typing_extensions import Annotated
 
 from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.models.dimension_table import DimensionTableModel
@@ -23,7 +23,7 @@ else:
     TableModel = Annotated[Union[tuple(TABLE_TYPES)], Field(discriminator="type")]
 
 
-class ProxyTableModel(BaseTableModel):  # pylint: disable=abstract-method
+class ProxyTableModel(BaseTableModel):
     """
     Pseudo Data class to support multiple table types.
     This class basically parses the persistent table model record & deserialized it into proper type.

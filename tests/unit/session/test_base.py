@@ -4,16 +4,14 @@ Unit test for base snowflake session.
 
 from __future__ import annotations
 
-from typing import Any, OrderedDict
-
 import collections
 import time
 from asyncio.exceptions import TimeoutError as AsyncIOTimeoutError
+from typing import Any, OrderedDict
 from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
-from pydantic import Field
 from snowflake.connector.errors import ProgrammingError
 
 from featurebyte.enum import SourceType
@@ -156,12 +154,10 @@ async def test_get_working_schema_version__with_version_set(base_session_test):
         self, query, to_log_error=True
     ) -> pd.DataFrame | None:
         _ = self, query, to_log_error
-        return pd.DataFrame(
-            {
-                "WORKING_SCHEMA_VERSION": [schema_version],
-                "FEATURE_STORE_ID": "test_store_id",
-            }
-        )
+        return pd.DataFrame({
+            "WORKING_SCHEMA_VERSION": [schema_version],
+            "FEATURE_STORE_ID": "test_store_id",
+        })
 
     with patch.object(BaseSession, "execute_query", mocked_execute_query_with_version):
         metadata = await base_session_test().get_working_schema_metadata()

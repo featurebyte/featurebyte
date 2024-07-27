@@ -4,9 +4,8 @@ RequestInput is the base class for all request input types.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, cast
-
 from abc import abstractmethod
+from typing import Any, Dict, List, Literal, Optional, cast
 
 from pydantic import Field, PrivateAttr, StrictStr
 from sqlglot import expressions
@@ -205,9 +204,7 @@ class ViewRequestInput(BaseRequestInput):
         # TODO: make this a cached_property for pydantic v2
         if self._graph is None:
             if isinstance(self.internal_graph, dict):
-                self._graph = QueryGraphModel(
-                    **self.internal_graph  # pylint: disable=not-a-mapping
-                )
+                self._graph = QueryGraphModel(**self.internal_graph)
             else:
                 self._graph = self.internal_graph
         return self._graph

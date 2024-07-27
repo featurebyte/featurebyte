@@ -25,7 +25,7 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
 
     payload_class = ObservationTableTaskPayload
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,

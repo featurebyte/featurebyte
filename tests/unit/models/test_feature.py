@@ -53,7 +53,7 @@ def feature_model_dict_feature(test_dir):
 
 def test_feature_model(feature_model_dict, api_object_to_id):
     """Test feature model serialize & deserialize"""
-    # pylint: disable=duplicate-code
+
     feature = FeatureModel(**feature_model_dict)
     feature_json = feature.model_dump_json(by_alias=True)
     loaded_feature = FeatureModel.parse_raw(feature_json)

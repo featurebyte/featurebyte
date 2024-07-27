@@ -2,9 +2,8 @@
 Database Migration
 """
 
-from typing import Any, Awaitable, Callable, TypeVar, cast
-
 import functools
+from typing import Any, Awaitable, Callable, TypeVar, cast
 
 from pydantic import BaseModel
 
@@ -20,7 +19,6 @@ class MigrationInfo(BaseModel):
     description: str
 
     def _decorate_migrate(self, function: AwaitableMigrateFunction) -> AwaitableMigrateFunction:
-        # pylint: disable=protected-access,unused-private-member
         @functools.wraps(function)
         async def _wrap_migrate(*args: Any, **kwargs: Any) -> Any:
             return await function(*args, **kwargs)

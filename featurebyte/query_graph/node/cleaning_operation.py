@@ -3,13 +3,12 @@ This module contains cleaning operation related classes.
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Sequence, Set, Union
-from typing_extensions import Annotated, Literal
-
-from abc import abstractmethod  # pylint: disable=wrong-import-order
 
 import pandas as pd
 from pydantic import Field, field_validator
+from typing_extensions import Annotated, Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import construct_serialize_function
@@ -88,9 +87,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
         return graph_node.output_node
 
     @staticmethod
-    def _cast_scalar_parameter_to_dtype(  # pylint: disable=too-many-return-statements
-        value: Any, dtype: DBVarType
-    ) -> Any:
+    def _cast_scalar_parameter_to_dtype(value: Any, dtype: DBVarType) -> Any:
         if value is not None:
             if dtype in {DBVarType.CHAR, DBVarType.VARCHAR}:
                 return str(value)
@@ -190,7 +187,7 @@ class MissingValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace missing value with 0
 
-    >>> fb.MissingValueImputation(imputed_value=0) # doctest: +SKIP
+    >>> fb.MissingValueImputation(imputed_value=0)  # doctest: +SKIP
     """
 
     # class variables
@@ -232,7 +229,9 @@ class DisguisedValueImputation(BaseCleaningOperation):
 
     Create an imputation rule to treat -1 and -96 as missing
 
-    >>> fb.DisguisedValueImputation(disguised_values=[-1, -96], imputed_value=None)  # doctest: +SKIP
+    >>> fb.DisguisedValueImputation(
+    ...     disguised_values=[-1, -96], imputed_value=None
+    ... )  # doctest: +SKIP
     """
 
     # class variables
@@ -290,7 +289,9 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace value other than "buy" or "sell" to "missing"
 
-    >>> fb.UnexpectedValueImputation(expected_values=["buy", "sell"], imputed_value="missing") # doctest: +SKIP
+    >>> fb.UnexpectedValueImputation(
+    ...     expected_values=["buy", "sell"], imputed_value="missing"
+    ... )  # doctest: +SKIP
     """
 
     # class variables
@@ -354,14 +355,14 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace value less than 0 to 0.
 
-    >>> fb.ValueBeyondEndpointImputation(type="less_than", end_point=0, imputed_value=0) # doctest: +SKIP
+    >>> fb.ValueBeyondEndpointImputation(
+    ...     type="less_than", end_point=0, imputed_value=0
+    ... )  # doctest: +SKIP
 
 
     Create an imputation rule to ignore value higher than 1M.
 
-    >>> fb.ValueBeyondEndpointImputation(
-    ...   type="less_than", end_point=1e6, imputed_value=None
-    ... )
+    >>> fb.ValueBeyondEndpointImputation(type="less_than", end_point=1e6, imputed_value=None)
     ValueBeyondEndpointImputation(imputed_value=None, type=less_than, end_point=1000000.0)
     """
 
@@ -449,7 +450,7 @@ class StringValueImputation(BaseCleaningOperation):
     --------
     Create an imputation rule to replace string value with 0
 
-    >>> fb.StringValueImputation(imputed_value=0) # doctest: +SKIP
+    >>> fb.StringValueImputation(imputed_value=0)  # doctest: +SKIP
     """
 
     # class variables
@@ -517,17 +518,17 @@ class ColumnCleaningOperation(FeatureByteBaseModel):
     Create a new version of a feature with different table cleaning operations:
 
     >>> new_feature = feature.create_new_version(  # doctest: +SKIP
-    ...   table_cleaning_operations=[
-    ...     fb.TableCleaningOperation(
-    ...       table_name="GROCERYINVOICE",
-    ...       column_cleaning_operations=[
-    ...         fb.ColumnCleaningOperation(
-    ...           column_name="Amount",
-    ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+    ...     table_cleaning_operations=[
+    ...         fb.TableCleaningOperation(
+    ...             table_name="GROCERYINVOICE",
+    ...             column_cleaning_operations=[
+    ...                 fb.ColumnCleaningOperation(
+    ...                     column_name="Amount",
+    ...                     cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+    ...                 )
+    ...             ],
     ...         )
-    ...       ],
-    ...     )
-    ...   ]
+    ...     ]
     ... )
     """
 
@@ -569,17 +570,17 @@ class TableCleaningOperation(FeatureByteBaseModel):
     Create a new version of a feature with different table cleaning operations:
 
     >>> new_feature = feature.create_new_version(
-    ...   table_cleaning_operations=[
-    ...     fb.TableCleaningOperation(
-    ...       table_name="GROCERYINVOICE",
-    ...       column_cleaning_operations=[
-    ...         fb.ColumnCleaningOperation(
-    ...           column_name="Amount",
-    ...           cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+    ...     table_cleaning_operations=[
+    ...         fb.TableCleaningOperation(
+    ...             table_name="GROCERYINVOICE",
+    ...             column_cleaning_operations=[
+    ...                 fb.ColumnCleaningOperation(
+    ...                     column_name="Amount",
+    ...                     cleaning_operations=[fb.MissingValueImputation(imputed_value=0.0)],
+    ...                 )
+    ...             ],
     ...         )
-    ...       ],
-    ...     )
-    ...   ]
+    ...     ]
     ... )
     """
 

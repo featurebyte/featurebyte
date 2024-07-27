@@ -4,9 +4,8 @@ FeatureService class
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from redis import Redis
@@ -48,7 +47,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
 
     document_class = FeatureModel
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         user: Any,
         persistent: Persistent,
@@ -144,10 +143,10 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             entity_id: entity.serving_names[0]
             for entity_id, entity in derived_data.entity_id_to_entity.items()
         }
-        feature_dict["entity_join_steps"] = (
-            await store_info_service.get_entity_join_steps_for_feature_table(
-                feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
-            )
+        feature_dict[
+            "entity_join_steps"
+        ] = await store_info_service.get_entity_join_steps_for_feature_table(
+            feature=feature, entity_id_to_serving_name=entity_id_to_serving_name
         )
         return FeatureModel(**feature_dict)
 
@@ -375,7 +374,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             },
         )
 
-    async def get_sample_entity_serving_names(  # pylint: disable=too-many-locals
+    async def get_sample_entity_serving_names(
         self, feature_id: ObjectId, count: int
     ) -> List[Dict[str, str]]:
         """

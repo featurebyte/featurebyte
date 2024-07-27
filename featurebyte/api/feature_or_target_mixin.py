@@ -2,11 +2,10 @@
 Mixin class containing common methods for feature or target classes
 """
 
-from typing import Any, Sequence, Union, cast
-
 import time
 from abc import ABC
 from http import HTTPStatus
+from typing import Any, Sequence, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -47,32 +46,32 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
 
     def _get_version(self) -> str:
         # helper function to get version
-        return self._cast_cached_model.version.to_str()  # pylint: disable=no-member
+        return self._cast_cached_model.version.to_str()
 
     def _get_catalog_id(self) -> ObjectId:
         # helper function to get catalog id
         try:
-            return self._cast_cached_model.catalog_id  # pylint: disable=no-member
+            return self._cast_cached_model.catalog_id
         except RecordRetrievalException:
             return self.internal_catalog_id
 
     def _get_entity_ids(self) -> Sequence[ObjectId]:
         # helper function to get entity ids
         try:
-            return self._cast_cached_model.entity_ids  # pylint: disable=no-member
+            return self._cast_cached_model.entity_ids
         except RecordRetrievalException:
             return self.graph.get_entity_ids(node_name=self.node_name)
 
     def _get_table_ids(self) -> Sequence[ObjectId]:
         try:
-            return self._cast_cached_model.table_ids  # pylint: disable=no-member
+            return self._cast_cached_model.table_ids
         except RecordRetrievalException:
             return self.graph.get_table_ids(node_name=self.node_name)
 
     def _generate_definition(self) -> str:
         # helper function to generate definition
         try:
-            definition = self._cast_cached_model.definition  # pylint: disable=no-member
+            definition = self._cast_cached_model.definition
             object_type = type(self).__name__.lower()
             assert definition is not None, f"Saved {object_type}'s definition should not be None."
         except RecordRetrievalException:
@@ -107,7 +106,7 @@ class FeatureOrTargetMixin(QueryObject, PrimaryEntityMixin, ABC):
 
         elapsed = time.time() - tic
         logger.debug(f"Preview took {elapsed:.2f}s")
-        return dataframe_from_json(result)  # pylint: disable=no-member
+        return dataframe_from_json(result)
 
     @typechecked
     def __setattr__(self, key: str, value: Any) -> Any:

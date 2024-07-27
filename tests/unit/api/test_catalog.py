@@ -4,12 +4,11 @@ Unit test for Catalog class
 
 from __future__ import annotations
 
-from typing import Any
-
 import re
 from dataclasses import dataclass
 from datetime import datetime
 from inspect import signature
+from typing import Any
 from unittest import mock
 from unittest.mock import patch
 
@@ -586,29 +585,27 @@ def test_get_catalog(catalog):
     default_catalog = Catalog.activate(catalog.name)
     # test list catalog names
     catalog_list = Catalog.list()
-    expected_catalog_list = pd.DataFrame(
-        {
-            "id": [
-                str(healthcare_catalog.id),
-                str(creditcard_catalog.id),
-                str(grocery_catalog.id),
-                str(default_catalog.id),
-            ],
-            "name": [
-                healthcare_catalog.name,
-                creditcard_catalog.name,
-                grocery_catalog.name,
-                default_catalog.name,
-            ],
-            "created_at": [
-                healthcare_catalog.created_at.isoformat(),
-                creditcard_catalog.created_at.isoformat(),
-                grocery_catalog.created_at.isoformat(),
-                default_catalog.created_at.isoformat(),
-            ],
-            "active": [False, False, False, True],
-        }
-    )
+    expected_catalog_list = pd.DataFrame({
+        "id": [
+            str(healthcare_catalog.id),
+            str(creditcard_catalog.id),
+            str(grocery_catalog.id),
+            str(default_catalog.id),
+        ],
+        "name": [
+            healthcare_catalog.name,
+            creditcard_catalog.name,
+            grocery_catalog.name,
+            default_catalog.name,
+        ],
+        "created_at": [
+            healthcare_catalog.created_at.isoformat(),
+            creditcard_catalog.created_at.isoformat(),
+            grocery_catalog.created_at.isoformat(),
+            default_catalog.created_at.isoformat(),
+        ],
+        "active": [False, False, False, True],
+    })
     assert_frame_equal(catalog_list, expected_catalog_list)
 
     # test list with include_id=True

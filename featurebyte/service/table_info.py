@@ -57,14 +57,12 @@ class TableInfoService:
                 ObjectId(semantic["_id"]): semantic["name"] for semantic in semantics["data"]
             }
             for column_info in data_document.columns_info:
-                columns_info.append(
-                    {
-                        **column_info.model_dump(),
-                        "entity": entity_map.get(column_info.entity_id),  # type: ignore[arg-type]
-                        "semantic": semantic_map.get(column_info.semantic_id),  # type: ignore[arg-type]
-                        "critical_data_info": column_info.critical_data_info,
-                    }
-                )
+                columns_info.append({
+                    **column_info.model_dump(),
+                    "entity": entity_map.get(column_info.entity_id),  # type: ignore[arg-type]
+                    "semantic": semantic_map.get(column_info.semantic_id),  # type: ignore[arg-type]
+                    "critical_data_info": column_info.critical_data_info,
+                })
 
         # get catalog info
         catalog_name, updated_docs = await self.catalog_name_injector.add_name(

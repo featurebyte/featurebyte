@@ -4,9 +4,8 @@ Feature API route controller
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Union
-
 from http import HTTPStatus
+from typing import Any, Dict, Optional, Union
 
 from bson import ObjectId
 from fastapi.exceptions import HTTPException
@@ -47,7 +46,6 @@ from featurebyte.service.table import TableService
 from featurebyte.service.tile_job_log import TileJobLogService
 
 
-# pylint: disable=too-many-instance-attributes
 class FeatureController(
     BaseDocumentController[FeatureModelResponse, FeatureService, FeaturePaginatedList]
 ):
@@ -71,7 +69,6 @@ class FeatureController(
         feature_or_target_metadata_extractor: FeatureOrTargetMetadataExtractor,
         tile_job_log_service: TileJobLogService,
     ):
-        # pylint: disable=too-many-arguments
         super().__init__(feature_service)
         self.feature_facade_service = feature_facade_service
         self.feature_namespace_service = feature_namespace_service
@@ -101,13 +98,11 @@ class FeatureController(
         # as there is no direct way to get the conflict resolved feature id for batch feature creation task,
         # the conflict resolution should only support "raise" for public API. Therefore, we should not include
         # the conflict resolution in the API payload schema (BatchFeatureCreate).
-        payload = BatchFeatureCreateTaskPayload(
-            **{
-                **data.model_dump(by_alias=True),
-                "user_id": self.service.user.id,
-                "catalog_id": self.service.catalog_id,
-            }
-        )
+        payload = BatchFeatureCreateTaskPayload(**{
+            **data.model_dump(by_alias=True),
+            "user_id": self.service.user.id,
+            "catalog_id": self.service.catalog_id,
+        })
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.task_manager.get_task(task_id=str(task_id))
 
@@ -227,7 +222,7 @@ class FeatureController(
         FeaturePaginatedList
             List of documents fulfilled the filtering condition
         """
-        # pylint: disable=too-many-locals
+
         params: Dict[str, Any] = {"search": search, "name": name}
         if version:
             params["version"] = VersionIdentifier.from_str(version).model_dump()

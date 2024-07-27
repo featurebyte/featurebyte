@@ -2,10 +2,9 @@
 Common fixture for both unit and integration tests
 """
 
-from typing import AsyncIterator, Tuple
-
 import os
 from contextlib import asynccontextmanager
+from typing import AsyncIterator, Tuple
 from unittest.mock import patch
 
 import pytest

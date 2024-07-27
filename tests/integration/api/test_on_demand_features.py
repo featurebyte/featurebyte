@@ -27,26 +27,22 @@ def test_on_demand_feature_with_point_in_time(event_table):
 
     feature_group = FeatureGroup([latest_timestamp, feature])
 
-    preview_param = pd.DataFrame(
-        [
-            {
-                "POINT_IN_TIME": "2001-01-02 10:00:00",
-                "üser id": 1,
-            }
-        ]
-    )
+    preview_param = pd.DataFrame([
+        {
+            "POINT_IN_TIME": "2001-01-02 10:00:00",
+            "üser id": 1,
+        }
+    ])
     df = feature_group.preview(preview_param)
     if df["latest_event_timestamp_90d"].dt.tz is not None:
         df["latest_event_timestamp_90d"] = df["latest_event_timestamp_90d"].dt.tz_localize(None)
 
-    expected = pd.DataFrame(
-        [
-            {
-                "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
-                "üser id": 1,
-                "latest_event_timestamp_90d": pd.Timestamp("2001-01-02 08:42:19.000673"),
-                "num_hour_since_last_event": 1.294722,
-            }
-        ]
-    )
+    expected = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "üser id": 1,
+            "latest_event_timestamp_90d": pd.Timestamp("2001-01-02 08:42:19.000673"),
+            "num_hour_since_last_event": 1.294722,
+        }
+    ])
     fb_assert_frame_equal(df, expected)

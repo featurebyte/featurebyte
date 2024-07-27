@@ -4,10 +4,9 @@ HistoricalFeatureTable API routes
 
 from __future__ import annotations
 
-from typing import Optional
-
 import json
 from http import HTTPStatus
+from typing import Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Form, Request, UploadFile

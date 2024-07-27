@@ -2,9 +2,8 @@
 Base class for materialized table routes
 """
 
-from typing import Any, AsyncGenerator, Optional, TypeVar
-
 from io import BytesIO
+from typing import Any, AsyncGenerator, Optional, TypeVar
 
 import pyarrow as pa
 from bson import ObjectId

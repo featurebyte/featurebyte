@@ -4,9 +4,8 @@ PreviewService class
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, Type
-
 import warnings
+from typing import Any, Optional, Tuple, Type
 
 import pandas as pd
 from bson import ObjectId
@@ -81,9 +80,7 @@ class PreviewService:
                     "details": feature_store_dict["details"],
                 }
             )
-            feature_store = (
-                await feature_stores.__anext__()  # pylint: disable=unnecessary-dunder-call
-            )
+            feature_store = await feature_stores.__anext__()
             assert feature_store
 
         session = await self.session_manager_service.get_feature_store_session(

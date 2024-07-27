@@ -5,9 +5,9 @@ Feature list creation creation schema
 from __future__ import annotations
 
 from typing import Any, ClassVar, List, Literal, Union
-from typing_extensions import Annotated
 
 from pydantic import Discriminator, Field, Tag
+from typing_extensions import Annotated
 
 from featurebyte.enum import ConflictResolution, WorkerCommand
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId

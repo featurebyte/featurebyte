@@ -4,11 +4,10 @@ Mixin classes used by core objects
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Protocol
-
 import time
 from abc import abstractmethod
 from functools import wraps
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Protocol
 
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr, StrictStr

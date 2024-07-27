@@ -108,7 +108,7 @@ class Relationship(ApiObject):
         --------
         - [Catalog](/reference/featurebyte.api.catalog.Catalog)
         """
-        return self.cached_model.catalog_id  # pylint: disable=no-member
+        return self.cached_model.catalog_id
 
     @classmethod
     @typechecked
@@ -147,11 +147,13 @@ class Relationship(ApiObject):
         --------
         List all relationships
 
-        >>> fb.Relationship.list()[[
-        ...     "relationship_type",
-        ...     "entity",
-        ...     "related_entity",
-        ... ]]
+        >>> fb.Relationship.list()[
+        ...     [
+        ...         "relationship_type",
+        ...         "entity",
+        ...         "related_entity",
+        ...     ]
+        ... ]
           relationship_type           entity   related_entity
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate
@@ -159,11 +161,13 @@ class Relationship(ApiObject):
 
         List all child-parent relationships
 
-        >>> fb.Relationship.list(relationship_type="child_parent")[[
-        ...     "relationship_type",
-        ...     "entity",
-        ...     "related_entity",
-        ... ]]
+        >>> fb.Relationship.list(relationship_type="child_parent")[
+        ...     [
+        ...         "relationship_type",
+        ...         "entity",
+        ...         "related_entity",
+        ...     ]
+        ... ]
           relationship_type           entity   related_entity
         0      child_parent   groceryinvoice  grocerycustomer
         1      child_parent  grocerycustomer      frenchstate

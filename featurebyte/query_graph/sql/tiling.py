@@ -4,10 +4,9 @@ This module contains helpers related to tiling-based aggregation functions
 
 from __future__ import annotations
 
-from typing import Optional
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Anonymous, Expression

@@ -4,9 +4,8 @@ Module for tile related sql generation
 
 from __future__ import annotations
 
-from typing import cast
-
 from dataclasses import dataclass
+from typing import cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -32,7 +31,7 @@ from featurebyte.query_graph.sql.tiling import InputColumn, TileSpec, get_aggreg
 
 
 @dataclass
-class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
+class BuildTileNode(TableNode):
     """Tile builder node
 
     This node is responsible for generating the tile building SQL for a groupby operation.

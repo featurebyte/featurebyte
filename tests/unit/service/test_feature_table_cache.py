@@ -66,16 +66,14 @@ def mock_get_target_fixture():
 async def observation_table_fixture(event_table, user, observation_table_service):
     """Observation table fixture"""
     request_input = SourceTableRequestInput(source=event_table.tabular_source)
-    location = TabularSource(
-        **{
-            "feature_store_id": event_table.tabular_source.feature_store_id,
-            "table_details": {
-                "database_name": "fb_database",
-                "schema_name": "fb_schema",
-                "table_name": "fb_materialized_table",
-            },
-        }
-    )
+    location = TabularSource(**{
+        "feature_store_id": event_table.tabular_source.feature_store_id,
+        "table_details": {
+            "database_name": "fb_database",
+            "schema_name": "fb_schema",
+            "table_name": "fb_materialized_table",
+        },
+    })
     observation_table = ObservationTableModel(
         name="observation_table_from_source_table",
         location=location,

@@ -4,10 +4,9 @@ Common helpers and data structures for feature SQL generation
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Sequence, Tuple, Union
-
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, Optional, Sequence, Tuple, Union
 
 from bson import ObjectId
 from sqlglot import expressions

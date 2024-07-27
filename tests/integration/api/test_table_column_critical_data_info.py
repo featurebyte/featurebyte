@@ -123,9 +123,10 @@ def test_event_table_update_critical_data_info(event_table):
     assert feat_preview_df.COUNT_24h.iloc[0] == 1
 
     # check historical request
-    df_training_events = pd.DataFrame(
-        {"POINT_IN_TIME": pd.to_datetime(["2001-01-14 00:00:00"]), "cust_id": [938]}
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-14 00:00:00"]),
+        "cust_id": [938],
+    })
     hist_feat = FeatureList([feature_group], name="feature_list").compute_historical_features(
         df_training_events
     )
@@ -174,13 +175,11 @@ def test_item_table_update_critical_data_info(item_table):
     assert preview_df["order_size"].iloc[0] == 6
 
     # check historical request
-    df_training_events = pd.DataFrame(
-        {
-            "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"]),
-            "üser id": [1, 1],
-            "order_id": ["T236", "T236"],
-        }
-    )
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00", "2001-01-02 12:00:00"]),
+        "üser id": [1, 1],
+        "order_id": ["T236", "T236"],
+    })
     hist_feat = FeatureList(
         [feature, window_feature], name="feature_list"
     ).compute_historical_features(df_training_events)

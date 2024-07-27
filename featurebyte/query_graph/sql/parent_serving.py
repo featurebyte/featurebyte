@@ -4,9 +4,8 @@ SQL generation for looking up parent entities
 
 from __future__ import annotations
 
-from typing import List
-
 from dataclasses import dataclass
+from typing import List
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
@@ -69,9 +68,9 @@ def construct_request_table_with_parent_entities(
     -------
     ParentEntityLookupResult
     """
-    table_expr = select(
-        *[get_qualified_column_identifier(col, "REQ") for col in request_table_columns]
-    ).from_(expressions.alias_(request_table_name, "REQ"))
+    table_expr = select(*[
+        get_qualified_column_identifier(col, "REQ") for col in request_table_columns
+    ]).from_(expressions.alias_(request_table_name, "REQ"))
 
     current_columns = request_table_columns[:]
     new_columns = []

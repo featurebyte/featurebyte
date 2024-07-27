@@ -2,9 +2,8 @@
 Feature Facade Service which is responsible for handling high level feature operations
 """
 
-from typing import Optional
-
 from pprint import pformat
+from typing import Optional
 
 from bson import ObjectId
 
@@ -249,13 +248,11 @@ class FeatureFacadeService:
                 query_filter={"_id": {"$in": feature.feature_list_ids}},
                 projection={"_id": 1, "name": 1, "version": 1},
             ):
-                feature_list_info.append(
-                    {
-                        "id": str(feature_list["_id"]),
-                        "name": feature_list["name"],
-                        "version": VersionIdentifier(**feature_list["version"]).to_str(),
-                    }
-                )
+                feature_list_info.append({
+                    "id": str(feature_list["_id"]),
+                    "name": feature_list["name"],
+                    "version": VersionIdentifier(**feature_list["version"]).to_str(),
+                })
 
             raise DocumentDeletionError(
                 f"Feature is still in use by feature list(s). Please remove the following feature list(s) first:\n"

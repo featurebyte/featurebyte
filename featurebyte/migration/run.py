@@ -4,11 +4,10 @@ Migration script
 
 from __future__ import annotations
 
-from typing import Any, AsyncGenerator, Callable, Iterator, Optional, Set, cast
-
 import asyncio
 import importlib
 import inspect
+from typing import Any, AsyncGenerator, Callable, Iterator, Optional, Set, cast
 
 from celery import Celery
 from redis import Redis
@@ -249,7 +248,7 @@ def get_migration_methods_to_apply(current_metadata_version: int) -> list[Any]:
     return migration_methods_to_apply
 
 
-async def migrate_method_generator(  # pylint: disable=too-many-locals
+async def migrate_method_generator(
     user: Any,
     persistent: Persistent,
     get_credential: Any,

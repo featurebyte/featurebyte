@@ -2,9 +2,8 @@
 This module contains graph reconstruction (by replacing certain nodes) related classes.
 """
 
-from typing import Any, Dict, Optional, Type, TypeVar, cast
-
 from abc import abstractmethod
+from typing import Any, Dict, Optional, Type, TypeVar, cast
 
 from pydantic import Field
 

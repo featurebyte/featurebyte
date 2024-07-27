@@ -4,10 +4,9 @@ SQL generation for lookup features
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
-
 from abc import abstractmethod
 from dataclasses import dataclass
+from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
 
 import pandas as pd
 from sqlglot import expressions
@@ -145,9 +144,7 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
             if not is_scd and not requires_scd_join:
                 yield specs
 
-    def get_forward_point_in_time_offset(  # pylint: disable=useless-return
-        self, base_lookup_spec: LookupSpecT
-    ) -> Optional[str]:
+    def get_forward_point_in_time_offset(self, base_lookup_spec: LookupSpecT) -> Optional[str]:
         """
         Get the forward point in time offset for the lookup if it is provided.
 

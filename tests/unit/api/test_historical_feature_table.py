@@ -3,7 +3,6 @@ Unit tests for HistoricalFeatureTable class
 """
 
 from typing import Any, Dict
-
 from unittest import mock
 
 import pytest

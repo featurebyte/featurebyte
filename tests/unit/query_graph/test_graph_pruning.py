@@ -519,7 +519,7 @@ def test_generic_function__pruning(query_graph_and_assign_node):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a],
     )
-    pruned_graph, node_name_map = graph.prune(target_node=gfunc_2)
+    pruned_graph, node_name_map = graph.prune(target_node=gfunc_2)  # noqa
     assert pruned_graph.edges_map == {
         "input_1": ["project_1"],
         "project_1": ["generic_function_1"],

@@ -2,9 +2,8 @@
 FeatureStore API payload schema
 """
 
-from typing import List, Optional
-
 from datetime import datetime
+from typing import List, Optional
 
 from bson import ObjectId
 from pydantic import Field, model_validator

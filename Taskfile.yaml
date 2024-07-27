@@ -3,6 +3,9 @@ version: '3'
 env:
   FEAST_USAGE: False
 
+includes:
+  lint: Taskfile.lint.yaml
+
 tasks:
   init:
     desc: "Initialize the project for development"
@@ -47,39 +50,6 @@ tasks:
       - poetry check
       - poetry lock --check
 
-  lint-java:
-    desc: "Run linter for java"
-    sources:
-      - hive-udf/gradle/**/*
-      - hive-udf/lib/src/**/*
-      - hive-udf/lib/build.gradle
-    generates:
-      - featurebyte/sql/spark/*.jar
-    cmds:
-        - cd hive-udf && ./gradlew spotlessCheck
-
-  format-java:
-    desc: "Format the java code"
-    sources:
-      - hive-udf/gradle/**/*
-      - hive-udf/lib/src/**/*
-      - hive-udf/lib/build.gradle
-    generates:
-      - featurebyte/sql/spark/*.jar
-    cmds:
-      - cd hive-udf && ./gradlew spotlessApply
-
-  test-java:
-    desc: "Run the java tests"
-    sources:
-      - hive-udf/gradle/**/*
-      - hive-udf/lib/src/**/*
-      - hive-udf/lib/build.gradle
-    generates:
-      - featurebyte/sql/spark/*.jar
-    cmds:
-      - cd hive-udf && ./gradlew test
-
   build-jar:
     desc: "Compile the hive jar files"
     run: once
@@ -89,149 +59,14 @@ tasks:
       - hive-udf/lib/build.gradle
     generates:
       - featurebyte/sql/spark/*.jar
-    deps:
-      - task: format-java
-      - task: lint-java
     cmds:
+      - cd hive-udf && ./gradlew spotlessApply  # format-java
+      - cd hive-udf && ./gradlew spotlessCheck  # lint-java
       - rm -f hive-udf/lib/build/libs/*.jar
       - cd hive-udf && ./gradlew shadowJar
-      - task: test-java
+      - cd hive-udf && ./gradlew test  # test-java
       - rm -f featurebyte/sql/spark/*.jar
       - cp hive-udf/lib/build/libs/*.jar featurebyte/sql/spark/
-
-  format:
-    desc: "Format the code"
-    sources:
-      - featurebyte/**/*
-      - tests/**/*
-      - poetry.lock
-      - pyproject.toml
-    deps:
-      - task: install
-    cmds:
-      - poetry run isort .
-      - poetry run black .
-      - poetry run toml-sort --all --in-place pyproject.toml poetry.lock
-
-  lint-pr:
-    desc: "Run the linter, but without the safety check. This is run on every PR. Safety check will be run on deploy."
-    deps:
-      - task: install
-    cmds:
-      - task: lint-style
-      - task: lint-type
-      - task: lint-bandit
-
-  lint:
-    desc: "Run ALL the linter checks."
-    deps:
-      - task: install
-    cmds:
-      - task: check-import-rules
-      - task: lint-pr
-      - task: lint-safety
-
-  lint-style:
-    desc: "Run the linter[style]"
-    sources:
-      - poetry.lock
-      - pyproject.toml
-      - featurebyte/**/*
-      - tests/**/*
-    deps:
-      - task: lint-style-pylint
-      - task: lint-style-darglint
-    cmds:
-      - poetry run toml-sort --check poetry.lock pyproject.toml    # Check if user been using pre-commit hook
-      - poetry run isort --diff --check-only --settings-path pyproject.toml .
-      - poetry run black --diff --check .
-
-  lint-style-pylint:
-    desc: "Run the linter[style] with only pylint"
-    vars:
-      PYLINT_DISABLE_FOR_SRCS: 'too-few-public-methods,logging-fstring-interpolation,useless-parent-delegation'
-      PYLINT_DISABLE_FOR_TESTS: 'redefined-outer-name,invalid-name,protected-access,too-few-public-methods,unspecified-encoding,duplicate-code'
-      PYLINT_PLUGINS: 'pylint_pydantic'
-    sources:
-      - featurebyte/**/*
-      - tests/**/*
-    cmds:
-      - poetry run pylint --load-plugins {{ .PYLINT_PLUGINS }} --disable={{ .PYLINT_DISABLE_FOR_SRCS }} --rcfile pyproject.toml featurebyte
-      - poetry run pylint --load-plugins {{ .PYLINT_PLUGINS }} --disable={{ .PYLINT_DISABLE_FOR_TESTS }} --rcfile pyproject.toml tests
-
-  lint-style-darglint:
-    desc: "Run the linter[style] with only darglint"
-    vars:
-      CPU_CORES:
-        sh: python -c 'import multiprocessing as mp; print(mp.cpu_count())'
-    env:
-      DARG_SOURCES:
-        sh: |
-          echo "$(find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" ! -path "featurebyte/__main__.py" ! -path "featurebyte/datasets/*" ! -path "featurebyte/conftest.py" | xargs)" "$(find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs)"
-    sources:
-      - featurebyte/**/*
-      - tests/**/*
-    cmds:
-      - echo "${DARG_SOURCES}" | xargs -n16 -P {{ .CPU_CORES }} poetry run darglint
-
-  lint-type:
-    desc: "Run the linter[type]"
-    sources:
-      - poetry.lock
-      - pyproject.toml
-      - featurebyte/**/*
-      - tests/**/*
-    cmds:
-      - cmd: if [ ! -d .mypy_cache ]; then mkdir .mypy_cache; fi
-        silent: true
-      - poetry run mypy --install-types --non-interactive --config-file pyproject.toml --exclude '(featurebyte/conftest.py|site)' .
-
-  lint-safety:
-    desc: "Run the linter[safety]"
-    vars:
-      PERMISSIVE_LICENSES: >
-        Apache License 2.0;
-        Apache License, Version 2.0;
-        Apache Software License;
-        BSD;
-        BSD License;
-        Historical Permission Notice and Disclaimer (HPND);
-        GNU General Public License v2 (GPLv2);
-        ISC License (ISCL);
-        ISC;
-        MIT License;
-        MIT;
-        MPL-2.0;
-        Mozilla Public License 2.0 (MPL 2.0);
-        Public Domain;
-        Python Software Foundation License;
-        The Unlicense (Unlicense)
-      PACKAGES:
-        sh: poetry export --without-hashes --without-urls --extras server | cut -d '=' -f1 | xargs
-    sources:
-      - poetry.lock
-      - pyproject.toml
-      - featurebyte/**/*
-    cmds:
-      - poetry run pip-licenses --packages '{{ .PACKAGES }}' --allow-only='{{ .PERMISSIVE_LICENSES }}'
-      - poetry run pip-audit
-
-  lint-bandit:
-    desc: "Run the linter[bandit]"
-    sources:
-      - poetry.lock
-      - pyproject.toml
-      - featurebyte/**/*
-    cmds:
-      - poetry run bandit -c pyproject.toml -ll --recursive featurebyte
-
-  check-import-rules:
-    desc: Check for import rule violations
-    sources:
-      - featurebyte/**/*
-      - scripts/enforce_import_rules.py
-    cmds:
-      - python scripts/enforce_import_rules.py
 
   test:
     desc: Runs full test-suite
@@ -283,6 +118,12 @@ tasks:
     desc: Runs integration tests against Snowflake
     deps:
       - task: install
+    vars:
+      # Default to 1 split 1 group
+      PYTEST_GROUP:
+        sh: printenv PYTEST_GROUP || echo "1"
+      PYTEST_SPLITS:
+        sh: printenv PYTEST_SPLITS || echo "1"
     cmds:
       - task: test-setup
       - poetry run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1 --cov=featurebyte tests/integration --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}

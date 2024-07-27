@@ -277,7 +277,6 @@ async def test_describe_drop_all_null_stats(
     Test describe
     """
 
-    # pylint: disable=no-member
     mock_snowflake_session.execute_query.side_effect = mock_execute_query
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     result = dataframe_from_json(
@@ -303,12 +302,10 @@ async def test_value_counts(
     """
     Test value counts
     """
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
-        {
-            "key": ["1", "2", None],
-            "count": [100, 50, 3],
-        }
-    )
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame({
+        "key": ["1", "2", None],
+        "count": [100, 50, 3],
+    })
     result = await preview_service.value_counts(
         feature_store_preview,
         num_rows=100000,
@@ -349,12 +346,10 @@ async def test_value_counts_not_convert_keys_to_string(
     """
     Test value counts
     """
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
-        {
-            "key": keys,
-            "count": [100, 50, 3],
-        }
-    )
+    mock_snowflake_session.execute_query.return_value = pd.DataFrame({
+        "key": keys,
+        "count": [100, 50, 3],
+    })
     result = await preview_service.value_counts(
         feature_store_preview_project_column,
         num_rows=100000,

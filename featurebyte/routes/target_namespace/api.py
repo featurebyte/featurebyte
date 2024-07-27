@@ -4,9 +4,8 @@ TargetNamespace API routes
 
 from __future__ import annotations
 
-from typing import Optional, cast
-
 from http import HTTPStatus
+from typing import Optional, cast
 
 from fastapi import APIRouter, Request
 

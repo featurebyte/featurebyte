@@ -4,11 +4,10 @@ BaseSparkSession class
 
 from __future__ import annotations
 
-from typing import Any, Optional, OrderedDict, cast
-
 import collections
 import os
 from abc import ABC, abstractmethod
+from typing import Any, Optional, OrderedDict, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -184,7 +183,7 @@ class BaseSparkSession(BaseSession, ABC):
         return pyarrow_type
 
     @staticmethod
-    def _convert_to_internal_variable_type(  # pylint: disable=too-many-return-statements
+    def _convert_to_internal_variable_type(
         spark_type: str,
     ) -> DBVarType:
         if spark_type.endswith("INT"):
@@ -241,7 +240,7 @@ class BaseSparkSession(BaseSession, ABC):
             # clean up staging file
             try:
                 self.delete_path_from_storage(remote_path=temp_filename)
-            except Exception as exc:  # pylint: disable=broad-exception-caught
+            except Exception as exc:
                 logger.error(f"Exception while deleting temp file {temp_filename}: {exc}")
 
     async def list_databases(self) -> list[str]:
@@ -260,7 +259,7 @@ class BaseSparkSession(BaseSession, ABC):
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         try:
             schemas = await self.execute_query_interactive(f"SHOW SCHEMAS IN `{database_name}`")
-        except self._no_schema_error as exc:  # pylint: disable=broad-exception-caught
+        except self._no_schema_error as exc:
             if "ParseException" in str(exc):
                 # Spark 3.2 and prior don't support SHOW SCHEMAS with the IN clause
                 schemas = await self.execute_query_interactive("SHOW SCHEMAS")
@@ -340,9 +339,11 @@ class BaseSparkSession(BaseSession, ABC):
                         break
                     details[column_name] = var_info
 
-        fully_qualified_table_name = get_fully_qualified_table_name(
-            {"table_name": table_name, "schema_name": schema_name, "database_name": database_name}
-        )
+        fully_qualified_table_name = get_fully_qualified_table_name({
+            "table_name": table_name,
+            "schema_name": schema_name,
+            "database_name": database_name,
+        })
         return TableDetails(
             details=details,
             fully_qualified_name=sql_to_string(
@@ -381,7 +382,7 @@ class BaseSparkMetadataSchemaInitializer(MetadataSchemaInitializer):
         """
         try:
             await self.session.execute_query("SELECT * FROM METADATA_SCHEMA")
-        except self.session._no_schema_error:  # pylint: disable=protected-access
+        except self.session._no_schema_error:
             return False
         return True
 
@@ -502,13 +503,11 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         df_result = await self.list_objects("USER FUNCTIONS")
         out = []
         if df_result is not None:
-            out.extend(
-                [
-                    function_name
-                    for function_name in df_result["function"].apply(_function_name_to_identifier)
-                    if function_name is not None
-                ]
-            )
+            out.extend([
+                function_name
+                for function_name in df_result["function"].apply(_function_name_to_identifier)
+                if function_name is not None
+            ])
         return out
 
     def register_jar(self) -> None:

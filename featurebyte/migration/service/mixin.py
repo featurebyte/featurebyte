@@ -4,9 +4,8 @@ MigrationServiceMixin class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
-
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from celery import Celery
 
@@ -274,7 +273,7 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
         except CredentialsError:
             logger.warning(f"Got CredentialsError, skipping migration for {feature_store.name}")
             return
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             logger.exception(
                 f"Got unexpected error when creating session, skipping migration for {feature_store.name}"
             )

@@ -63,7 +63,7 @@ def test_describe_specify_stats_names(simple_graph, update_fixtures):
         "b",
         "a_copy",
     ]
-    expected_filename = f"tests/fixtures/query_graph/expected_describe_stats_names.sql"
+    expected_filename = "tests/fixtures/query_graph/expected_describe_stats_names.sql"
     assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
 
 
@@ -85,7 +85,7 @@ def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures):
         "b",
         "a_copy",
     ]
-    expected_filename = f"tests/fixtures/query_graph/expected_describe_count_based_stats_only.sql"
+    expected_filename = "tests/fixtures/query_graph/expected_describe_count_based_stats_only.sql"
     assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
 
 
@@ -107,7 +107,7 @@ def test_describe_specify_empty_stats(simple_graph, update_fixtures):
         "b",
         "a_copy",
     ]
-    expected_filename = f"tests/fixtures/query_graph/expected_describe_empty_stats.sql"
+    expected_filename = "tests/fixtures/query_graph/expected_describe_empty_stats.sql"
     assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
 
 
@@ -132,7 +132,7 @@ def test_describe_in_batches(simple_graph, update_fixtures):
         "cust_id",
         "a",
     ]
-    expected_filename = f"tests/fixtures/query_graph/expected_describe_batches_0.sql"
+    expected_filename = "tests/fixtures/query_graph/expected_describe_batches_0.sql"
     assert_equal_with_expected_fixture(query.sql, expected_filename, update_fixtures)
 
     query = describe_queries.queries[1]
@@ -141,7 +141,7 @@ def test_describe_in_batches(simple_graph, update_fixtures):
         "b",
         "a_copy",
     ]
-    expected_filename = f"tests/fixtures/query_graph/expected_describe_batches_1.sql"
+    expected_filename = "tests/fixtures/query_graph/expected_describe_batches_1.sql"
     assert_equal_with_expected_fixture(query.sql, expected_filename, update_fixtures)
 
 
@@ -167,7 +167,7 @@ def test_describe_no_batches(simple_graph, update_fixtures):
         "b",
         "a_copy",
     ]
-    expected_filename = f"tests/fixtures/query_graph/expected_describe_count_based_stats_only.sql"
+    expected_filename = "tests/fixtures/query_graph/expected_describe_count_based_stats_only.sql"
     assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
 
 
@@ -193,7 +193,7 @@ def test_describe_with_date_range_and_size(simple_graph, update_fixtures):
         "b",
         "a_copy",
     ]
-    expected_filename = f"tests/fixtures/query_graph/expected_describe_date_range_and_size.sql"
+    expected_filename = "tests/fixtures/query_graph/expected_describe_date_range_and_size.sql"
     assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
 
 
@@ -206,7 +206,7 @@ def test_value_counts_sql(project_from_simple_graph, update_fixtures):
         num_rows=50000,
         num_categories_limit=1000,
     )
-    expected_filename = f"tests/fixtures/query_graph/expected_value_counts.sql"
+    expected_filename = "tests/fixtures/query_graph/expected_value_counts.sql"
     assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
 
 
@@ -220,5 +220,5 @@ def test_value_counts_sql_no_casting(project_from_simple_graph, update_fixtures)
         num_categories_limit=1000,
         convert_keys_to_string=False,
     )
-    expected_filename = f"tests/fixtures/query_graph/expected_value_counts_no_casting.sql"
+    expected_filename = "tests/fixtures/query_graph/expected_value_counts_no_casting.sql"
     assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)

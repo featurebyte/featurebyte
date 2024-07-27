@@ -278,12 +278,10 @@ def test_extract_operation__groupby(query_graph_with_groupby, keep_all_source_co
     expected_columns = []
     if keep_all_source_columns:
         # keep all source columns include also event_timestamp and group by columns
-        expected_columns.extend(
-            [
-                {"name": col_name, "dtype": var_type, **common_column_params}
-                for col_name, var_type in [("ts", "TIMESTAMP"), ("cust_id", "INT")]
-            ]
-        )
+        expected_columns.extend([
+            {"name": col_name, "dtype": var_type, **common_column_params}
+            for col_name, var_type in [("ts", "TIMESTAMP"), ("cust_id", "INT")]
+        ])
     expected_columns.append({"name": "a", "dtype": "FLOAT", **common_column_params})
     expected_aggregations = [
         {"name": "a_2h_average", "dtype": "FLOAT", "window": "2h", **common_aggregation_params},
@@ -567,12 +565,10 @@ def test_extract_operation__join_double_aggregations(
     ]
     expected_columns = []
     if keep_all_source_columns:
-        expected_columns.extend(
-            [
-                {"name": "ts", "dtype": "TIMESTAMP", **common_event_table_column_params},
-                {"name": "cust_id", "dtype": "INT", **common_event_table_column_params},
-            ]
-        )
+        expected_columns.extend([
+            {"name": "ts", "dtype": "TIMESTAMP", **common_event_table_column_params},
+            {"name": "cust_id", "dtype": "INT", **common_event_table_column_params},
+        ])
 
     assert to_dict(op_struct.columns) == expected_columns + [order_size_column]
     assert to_dict(op_struct.aggregations) == expected_aggregations
@@ -777,9 +773,11 @@ def test_extract_operation__aggregate_asat_feature(
         {"name": "cust_id", "dtype": "INT", **common_data_params},
     ]
     if keep_all_source_columns:
-        expected_columns.append(
-            {"name": "membership_status", "dtype": "VARCHAR", **common_data_params}
-        )
+        expected_columns.append({
+            "name": "membership_status",
+            "dtype": "VARCHAR",
+            **common_data_params,
+        })
 
     expected_aggregations = [
         {

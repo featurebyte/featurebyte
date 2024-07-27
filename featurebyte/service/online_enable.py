@@ -40,7 +40,6 @@ class OnlineEnableService:
         feature_list_service: FeatureListService,
         feature_manager_service: FeatureManagerService,
     ):
-        # pylint: disable=too-many-arguments
         self.persistent = persistent
         self.feature_service = feature_service
         self.session_manager_service = session_manager_service

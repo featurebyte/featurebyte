@@ -4,9 +4,8 @@ HistoricalFeatureTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, TypeVar, Union
-
 from pathlib import Path
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, TypeVar, Union
 
 import pandas as pd
 from typeguard import typechecked
@@ -79,7 +78,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         FeatureList
             FeatureList object
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.feature_list import FeatureList
 
         feature_list_id = self.cached_model.feature_list_id
@@ -112,7 +111,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         # Add mlflow tracking in get_historical_tables
         try:
-            import mlflow  # pylint: disable=import-outside-toplevel
+            import mlflow
         except ImportError:
             mlflow = None
 
@@ -130,7 +129,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
                         "primary_entity": [entity.name for entity in feature_list.primary_entity],
                     },
                 )
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.warning(
                     f"Failed to log featurebyte training data information to mlflow: {exc}"
                 )
@@ -148,10 +147,12 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.list_deployments()  # doctest: +SKIP
         """
-        # pylint: disable=import-outside-toplevel
+
         from featurebyte.api.deployment import Deployment
 
         return Deployment.list(feature_list_id=self.cached_model.feature_list_id)
@@ -172,7 +173,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.preview()  # doctest: +SKIP
         """
         return super().preview(limit=limit)
@@ -196,7 +199,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.sample()  # doctest: +SKIP
         """
         return super().sample(size=size, seed=seed)
@@ -219,7 +224,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.describe()  # doctest: +SKIP
         """
         return super().describe(size=size, seed=seed)
@@ -246,8 +253,12 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
-        >>> downloaded_path = historical_feature_table.download(output_path="path/to/download")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
+        >>> downloaded_path = historical_feature_table.download(
+        ...     output_path="path/to/download"
+        ... )  # doctest: +SKIP
 
         # noqa: DAR402
         """
@@ -264,7 +275,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.delete()  # doctest: +SKIP
 
         # noqa: DAR402
@@ -283,7 +296,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         Examples
         --------
-        >>> historical_feature_table = catalog.get_historical_feature_table("historical_feature_table_name")  # doctest: +SKIP
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
         >>> historical_feature_table.update_description(description)  # doctest: +SKIP
         """
         super().update_description(description)
