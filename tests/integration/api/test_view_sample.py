@@ -327,3 +327,28 @@ async def test_sample_invalid_dates(session, source_table_with_invalid_dates):
     )
     sample_df = sample_df.sort_values("id").reset_index(drop=True)
     pd.testing.assert_frame_equal(sample_df, expected)
+
+
+@pytest.mark.asyncio
+async def test_preview_invalid_dates(session, source_table_with_invalid_dates):
+    """
+    Test preview with invalid dates
+    """
+    preview_df = source_table_with_invalid_dates.preview()
+    expected = pd.DataFrame(
+        {
+            "id": [1, 2, 3, 4, 5, 6],
+            "date_col": pd.to_datetime(
+                [
+                    "2021-01-01 10:00:00",
+                    None,
+                    None,
+                    None,
+                    None,
+                    "2023-01-01 10:00:00",
+                ]
+            ),
+        }
+    )
+    preview_df = preview_df.sort_values("id").reset_index(drop=True)
+    pd.testing.assert_frame_equal(preview_df, expected)
