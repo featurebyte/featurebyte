@@ -474,18 +474,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
                   "col_text",
                   "col_binary",
                   "col_boolean",
-                  IFF(
-                    "event_timestamp" < CAST('1900-01-01' AS TIMESTAMPNTZ)
-                    OR "event_timestamp" > CAST('2200-01-01' AS TIMESTAMPNTZ),
-                    NULL,
-                    "event_timestamp"
-                  ) AS "event_timestamp",
-                  IFF(
-                    "created_at" < CAST('1900-01-01' AS TIMESTAMPNTZ)
-                    OR "created_at" > CAST('2200-01-01' AS TIMESTAMPNTZ),
-                    NULL,
-                    "created_at"
-                  ) AS "created_at",
+                  "event_timestamp",
+                  "created_at",
                   "cust_id"
                 FROM (
                   SELECT
@@ -507,8 +497,18 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
                       "col_text" AS "col_text",
                       "col_binary" AS "col_binary",
                       "col_boolean" AS "col_boolean",
-                      "event_timestamp" AS "event_timestamp",
-                      "created_at" AS "created_at",
+                      IFF(
+                        "event_timestamp" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+                        OR "event_timestamp" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+                        NULL,
+                        "event_timestamp"
+                      ) AS "event_timestamp",
+                      IFF(
+                        "created_at" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+                        OR "created_at" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+                        NULL,
+                        "created_at"
+                      ) AS "created_at",
                       "cust_id" AS "cust_id"
                     FROM "sf_database"."sf_schema"."sf_table"
                     WHERE
