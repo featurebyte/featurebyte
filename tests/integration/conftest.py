@@ -1732,9 +1732,11 @@ def count_distinct_feature_group_fixture(item_table):
     )["cust_count_distinct_items_1w"]
     cust_avg_count_of_items_per_type = item_count_by_cust / item_count_distinct_by_cust
     cust_avg_count_of_items_per_type.name = "cust_avg_count_of_items_per_type_1w"
-    return FeatureGroup(
-        [item_count_by_cust, item_count_distinct_by_cust, cust_avg_count_of_items_per_type]
-    )
+    return FeatureGroup([
+        item_count_by_cust,
+        item_count_distinct_by_cust,
+        cust_avg_count_of_items_per_type,
+    ])
 
 
 @pytest.fixture(name="mock_graph_clear_period", autouse=True)
