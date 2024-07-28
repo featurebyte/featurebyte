@@ -155,7 +155,9 @@ class PreviewService:
         )
         preview_sql, type_conversions = GraphInterpreter(
             preview.graph, source_type=feature_store.type
-        ).construct_preview_sql(node_name=preview.node_name, num_rows=limit)
+        ).construct_preview_sql(
+            node_name=preview.node_name, num_rows=limit, clip_timestamp_columns=True
+        )
         result = await session.execute_query(preview_sql)
         return dataframe_to_json(result, type_conversions)
 

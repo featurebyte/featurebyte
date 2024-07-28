@@ -247,7 +247,7 @@ class PreviewMixin(BaseGraphInterpreter):
         return sql_tree, type_conversions
 
     def construct_preview_sql(
-        self, node_name: str, num_rows: int = 10
+        self, node_name: str, num_rows: int = 10, clip_timestamp_columns: bool = False
     ) -> Tuple[str, dict[Optional[str], DBVarType]]:
         """Construct SQL to preview data from a given node
 
@@ -257,6 +257,8 @@ class PreviewMixin(BaseGraphInterpreter):
             Query graph node name
         num_rows : int
             Number of rows to include in the preview
+        clip_timestamp_columns: bool
+            Whether to apply clipping to all the timestamp columns
 
         Returns
         -------
@@ -264,7 +266,7 @@ class PreviewMixin(BaseGraphInterpreter):
             SQL code for preview and type conversions to apply on results
         """
         sql_tree, type_conversions = self._construct_sample_sql(
-            node_name=node_name, num_rows=0, clip_timestamp_columns=True
+            node_name=node_name, num_rows=0, clip_timestamp_columns=clip_timestamp_columns
         )
         return (
             sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type),
