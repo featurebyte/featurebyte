@@ -5,7 +5,7 @@ PreviewService class
 from __future__ import annotations
 
 import warnings
-from typing import Any, Optional, Tuple, Type
+from typing import Any, Callable, Coroutine, Optional, Tuple, Type
 
 import pandas as pd
 from bson import ObjectId
@@ -16,6 +16,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.interpreter.preview import ValueCountsQuery
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
@@ -24,6 +25,7 @@ from featurebyte.schema.feature_store import (
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
+from featurebyte.session.session_helper import run_coroutines
 from featurebyte.warning import QueryNoLimitWarning
 
 DEFAULT_COLUMNS_BATCH_SIZE = 50
@@ -302,11 +304,12 @@ class PreviewService:
     async def value_counts(
         self,
         preview: FeatureStorePreview,
+        column_names: list[str],
         num_rows: int,
         num_categories_limit: int,
-        convert_keys_to_string: bool = True,
         seed: int = 1234,
-    ) -> dict[Any, int]:
+        completion_callback: Optional[Callable[[int], Coroutine[Any, Any, None]]] = None,
+    ) -> dict[str, dict[Any, int]]:
         """
         Get value counts for a column
 
@@ -314,19 +317,22 @@ class PreviewService:
         ----------
         preview: FeatureStorePreview
             FeatureStorePreview object
+        column_names: list[str]
+            Column names to get value counts for
         num_rows : int
             Number of rows to include when calculating the counts
         num_categories_limit : int
             Maximum number of categories to include in the result. If there are more categories in
             the data, the result will include the most frequent categories up to this number.
-        convert_keys_to_string : bool
-            Whether to convert keys to string
         seed: int
             Random seed to use for sampling
+        completion_callback: Optional[Callable[int], None]
+            Callback to call when a column is processed. The callback will be called with the number
+            of columns processed so far.
 
         Returns
         -------
-        dict[Any, int]
+        dict[str, dict[Any, int]]
         """
         feature_store, session = await self._get_feature_store_session(
             graph=preview.graph,
@@ -334,26 +340,63 @@ class PreviewService:
             feature_store_id=preview.feature_store_id,
         )
         interpreter = GraphInterpreter(preview.graph, source_type=feature_store.type)
-        value_counts_sql = interpreter.construct_value_counts_sql(
+        op_struct = interpreter.extract_operation_structure_for_node(preview.node_name)
+        column_dtype_mapping = {col.name: col.dtype for col in op_struct.columns}
+
+        value_counts_queries = interpreter.construct_value_counts_sql(
             node_name=preview.node_name,
+            column_names=column_names,
             num_rows=num_rows,
             num_categories_limit=num_categories_limit,
-            convert_keys_to_string=convert_keys_to_string,
             seed=seed,
         )
+        await session.create_table_as(
+            table_details=value_counts_queries.data.output_table_name,
+            select_expr=value_counts_queries.data.expr,
+        )
+        try:
+            processed = 0
 
-        df_result = await session.execute_query(value_counts_sql)
+            async def _callback() -> None:
+                nonlocal processed
+                processed += 1
+                if completion_callback:
+                    await completion_callback(processed)
+
+            coroutines = []
+            for query in value_counts_queries.queries:
+                column_dtype = column_dtype_mapping[query.column_name]
+                coroutines.append(
+                    self._process_value_counts_column(
+                        session=session,
+                        value_counts_query=query,
+                        column_dtype=column_dtype,
+                        done_callback=_callback,
+                    )
+                )
+            results = await run_coroutines(coroutines)
+        finally:
+            await session.drop_table(
+                table_name=value_counts_queries.data.output_table_name,
+                schema_name=session.schema_name,
+                database_name=session.database_name,
+            )
+        return dict(results)
+
+    @staticmethod
+    async def _process_value_counts_column(
+        session: BaseSession,
+        value_counts_query: ValueCountsQuery,
+        column_dtype: DBVarType,
+        done_callback: Callable[[], Coroutine[Any, Any, None]],
+    ) -> Tuple[str, dict[Any, int]]:
+        session = await session.clone_if_not_threadsafe()
+        df_result = await session.execute_query(value_counts_query.sql)
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
         df_result.loc[df_result["key"].isnull(), "key"] = None  # type: ignore
         output = df_result.set_index("key")["count"].to_dict()  # type: ignore
 
-        if convert_keys_to_string:
-            return output  # type: ignore
-
         # Cast int and float to native types
-        column_dtype = (
-            interpreter.extract_operation_structure_for_node(preview.node_name).columns[0].dtype
-        )
         cast_type: Optional[Type[int] | Type[float]]
         if column_dtype == DBVarType.INT:
             cast_type = int
@@ -370,7 +413,8 @@ class PreviewService:
             return key
 
         output = {_cast_key(key): value for (key, value) in output.items()}
-        return output  # type: ignore
+        await done_callback()
+        return value_counts_query.column_name, output
 
     @staticmethod
     async def _get_row_count(session: BaseSession, sample: FeatureStoreSample) -> int:
