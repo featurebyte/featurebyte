@@ -151,7 +151,8 @@ class PreviewMixin(BaseGraphInterpreter):
         timestamp_column: Optional[str] = None,
         skip_conversion: bool = False,
         total_num_rows: Optional[int] = None,
-    ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType], OperationStructure]:
+        clip_timestamp_columns: bool = False,
+    ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
         Parameters
@@ -172,10 +173,12 @@ class PreviewMixin(BaseGraphInterpreter):
             Whether to skip data conversion
         total_num_rows: Optional[int]
             Total number of rows before sampling
+        clip_timestamp_columns: bool
+            Whether to apply clipping to all the timestamp columns
 
         Returns
         -------
-        Tuple[expressions.Select, dict[Optional[str], DBVarType], OperationStructure]
+        Tuple[expressions.Select, dict[Optional[str], DBVarType]]
             SQL expression for data sample, column to apply conversion on resulting dataframe
         """
         flat_node = self.get_flattened_node(node_name)
@@ -192,8 +195,12 @@ class PreviewMixin(BaseGraphInterpreter):
 
         assert isinstance(sql_tree, expressions.Select)
 
-        # apply type conversions
         operation_structure = self.extract_operation_structure_for_node(node_name)
+
+        if clip_timestamp_columns:
+            self._clip_timestamp_columns(sql_tree, operation_structure)
+
+        # apply type conversions
         if skip_conversion:
             type_conversions: dict[Optional[str], DBVarType] = {}
         else:
@@ -237,7 +244,7 @@ class PreviewMixin(BaseGraphInterpreter):
                     sql_tree, desired_row_count=num_rows, total_row_count=total_num_rows, seed=seed
                 )
 
-        return sql_tree, type_conversions, operation_structure
+        return sql_tree, type_conversions
 
     def construct_preview_sql(
         self, node_name: str, num_rows: int = 10
@@ -256,10 +263,9 @@ class PreviewMixin(BaseGraphInterpreter):
         Tuple[str, dict[Optional[str], DBVarType]]:
             SQL code for preview and type conversions to apply on results
         """
-        sql_tree, type_conversions, operation_structure = self._construct_sample_sql(
-            node_name=node_name, num_rows=0
+        sql_tree, type_conversions = self._construct_sample_sql(
+            node_name=node_name, num_rows=0, clip_timestamp_columns=True
         )
-        self._clip_timestamp_columns(sql_tree, operation_structure)
         return (
             sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type),
             type_conversions,
@@ -300,7 +306,7 @@ class PreviewMixin(BaseGraphInterpreter):
             SQL code for sample and type conversions to apply on results
         """
 
-        sql_tree, type_conversions, operation_structure = self._construct_sample_sql(
+        sql_tree, type_conversions = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
             seed=seed,
@@ -308,13 +314,13 @@ class PreviewMixin(BaseGraphInterpreter):
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
             total_num_rows=total_num_rows,
+            clip_timestamp_columns=True,
         )
-        self._clip_timestamp_columns(sql_tree, operation_structure)
         return sql_to_string(sql_tree, source_type=self.source_type), type_conversions
 
     def _clip_timestamp_columns(
         self, sql_tree: expressions.Select, operation_structure: OperationStructure
-    ):
+    ) -> None:
         """
         Clip timestamp columns to valid range
 
@@ -1014,7 +1020,7 @@ class PreviewMixin(BaseGraphInterpreter):
         """
         operation_structure = self.extract_operation_structure_for_node(node_name)
 
-        sample_sql_tree, type_conversions, _ = self._construct_sample_sql(
+        sample_sql_tree, type_conversions = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
             seed=seed,
