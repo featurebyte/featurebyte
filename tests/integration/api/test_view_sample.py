@@ -263,3 +263,37 @@ def test_dimension_view_sample_with_date_range(dimension_table):
             size=15, seed=1234, from_timestamp="2001-10-10", to_timestamp="2001-10-14"
         )
         assert "timestamp_column must be specified." in str(exc)
+
+
+@pytest.mark.asyncio
+async def test_sample_invalid_dates(session, feature_store, catalog):
+    """
+    Test sample with invalid dates
+    """
+    _ = catalog
+
+    # TODO: make a fixture and reuse
+    await session.execute_query(
+        """
+        CREATE TABLE TABLE_INVALID_DATES AS
+        SELECT CAST('2021-01-01 10:00:00' AS TIMESTAMP) AS date_col
+        UNION ALL
+        SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
+        UNION ALL
+        SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
+        UNION ALL
+        SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
+        UNION ALL
+        SELECT CAST('9019-01-01 10:00:00' AS TIMESTAMP) AS date_col
+        UNION ALL
+        SELECT CAST('2023-01-01 10:00:00' AS TIMESTAMP) AS date_col
+        """
+    )
+    ds = feature_store.get_data_source()
+    source_table = ds.get_source_table(
+        table_name="TABLE_INVALID_DATES",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    sample_df = source_table.sample()
+    assert sample_df.shape[0] > 0
