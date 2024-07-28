@@ -27,6 +27,7 @@ from featurebyte.query_graph.sql.common import (
     CteStatement,
     SQLType,
     construct_cte_sql,
+    get_column_expr_and_name,
     quoted_identifier,
     sql_to_string,
 )
@@ -258,7 +259,7 @@ class PreviewMixin(BaseGraphInterpreter):
         sql_tree, type_conversions, operation_structure = self._construct_sample_sql(
             node_name=node_name, num_rows=0
         )
-        sql_tree = self._clip_timestamp_columns(sql_tree, operation_structure)
+        self._clip_timestamp_columns(sql_tree, operation_structure)
         return (
             sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type),
             type_conversions,
@@ -308,12 +309,12 @@ class PreviewMixin(BaseGraphInterpreter):
             timestamp_column=timestamp_column,
             total_num_rows=total_num_rows,
         )
-        sql_tree = self._clip_timestamp_columns(sql_tree, operation_structure)
+        self._clip_timestamp_columns(sql_tree, operation_structure)
         return sql_to_string(sql_tree, source_type=self.source_type), type_conversions
 
     def _clip_timestamp_columns(
         self, sql_tree: expressions.Select, operation_structure: OperationStructure
-    ) -> expressions.Select:
+    ):
         """
         Clip timestamp columns to valid range
 
@@ -323,24 +324,15 @@ class PreviewMixin(BaseGraphInterpreter):
             SQL Expression to describe
         operation_structure: OperationStructure
             Operation structure for node
-
-        Returns
-        -------
-        expressions.Select
         """
         column_dtype_mapping = {col.name: col.dtype for col in operation_structure.columns}
-        select_exprs = []
-        for expr_idx, col_expr in enumerate(sql_tree.expressions):
-            col_name = col_expr.alias_or_name
-            if column_dtype_mapping.get(col_name) in DBVarType.supported_timestamp_types():
-                select_exprs.append(
-                    expressions.alias_(
-                        self._clip_timestamp_column(col_expr), alias=col_name, quoted=True
-                    )
+        for expr_idx, column in enumerate(sql_tree.expressions):
+            expr, name = get_column_expr_and_name(column)
+            if column_dtype_mapping.get(name) in DBVarType.supported_timestamp_types():
+                updated_col_expr = expressions.alias_(
+                    self._clip_timestamp_column(expr), alias=name, quoted=True
                 )
-            else:
-                select_exprs.append(quoted_identifier(col_name))
-        return expressions.select(*select_exprs).from_(sql_tree.subquery())
+                sql_tree.expressions[expr_idx] = updated_col_expr
 
     def construct_unique_values_sql(
         self, node_name: str, column_name: str, num_rows: int = 10
