@@ -1532,6 +1532,9 @@ def test_count_distinct_features(count_distinct_feature_group):
                 "cust_count_of_items_1w": 10,
                 "cust_count_distinct_items_1w": 10,
                 "cust_avg_count_of_items_per_type_1w": 1.0,
+                "cust_count_distinct_item_types_1w": 10,
+                "cust_count_distinct_item_types_2w": 10,
+                "cust_consistency_of_item_type_1w": 1.0,
             }
         ]
     )

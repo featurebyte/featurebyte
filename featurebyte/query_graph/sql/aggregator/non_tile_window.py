@@ -259,8 +259,10 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
         current_query_index: int,
     ) -> AggregationResult:
         queries = []
+        existing_columns: set[str] = set()
         for specs in self.grouped_specs.values():
-            query = self._get_aggregation_subquery(specs)
+            query = self._get_aggregation_subquery(specs, existing_columns)
+            existing_columns.update(query.column_names)
             queries.append(query)
 
         return self._update_with_left_joins(
@@ -268,7 +270,7 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
         )
 
     def _get_aggregation_subquery(
-        self, specs: list[NonTileWindowAggregateSpec]
+        self, specs: list[NonTileWindowAggregateSpec], existing_columns: set[str]
     ) -> LeftJoinableSubquery:
         spec = specs[0]
 
@@ -285,17 +287,19 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
 
         # Right table: source view
         source_view_table_name = self.get_source_view_table_name(spec)
+        right_columns = set(
+            agg_spec.parameters.parent
+            for agg_spec in specs
+            if agg_spec.parameters.parent is not None
+        )
+        if spec.parameters.value_by is not None:
+            right_columns.add(spec.parameters.value_by)
         right_table = RightTable(
             name=quoted_identifier(source_view_table_name),
             alias="VIEW",
             join_keys=spec.parameters.keys[:],
             range_column=InternalName.VIEW_TIMESTAMP_EPOCH,
-            columns=[
-                agg_spec.parameters.parent
-                for agg_spec in specs
-                if agg_spec.parameters.parent is not None
-            ]
-            + ([spec.parameters.value_by] if spec.parameters.value_by is not None else []),
+            columns=list(right_columns),
         )
         groupby_input_expr = range_join_tables(
             left_table=left_table,
@@ -345,9 +349,16 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
             value_by=value_by,
             adapter=self.adapter,
         )
+
+        # remove existing columns from the new columns
+        column_names = set()
+        for _spec in specs:
+            if _spec.agg_result_name not in existing_columns:
+                column_names.add(_spec.agg_result_name)
+
         return LeftJoinableSubquery(
             expr=aggregated_expr,
-            column_names=[s.agg_result_name for s in specs],
+            column_names=list(column_names),
             join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
         )
 
