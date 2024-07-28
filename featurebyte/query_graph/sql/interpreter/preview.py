@@ -150,7 +150,7 @@ class PreviewMixin(BaseGraphInterpreter):
         timestamp_column: Optional[str] = None,
         skip_conversion: bool = False,
         total_num_rows: Optional[int] = None,
-    ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
+    ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType], OperationStructure]:
         """Construct SQL to sample data from a given node
 
         Parameters
@@ -174,7 +174,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
         Returns
         -------
-        Tuple[expressions.Select, dict[Optional[str], DBVarType]]
+        Tuple[expressions.Select, dict[Optional[str], DBVarType], OperationStructure]
             SQL expression for data sample, column to apply conversion on resulting dataframe
         """
         flat_node = self.get_flattened_node(node_name)
@@ -236,7 +236,7 @@ class PreviewMixin(BaseGraphInterpreter):
                     sql_tree, desired_row_count=num_rows, total_row_count=total_num_rows, seed=seed
                 )
 
-        return sql_tree, type_conversions
+        return sql_tree, type_conversions, operation_structure
 
     def construct_preview_sql(
         self, node_name: str, num_rows: int = 10
@@ -255,7 +255,7 @@ class PreviewMixin(BaseGraphInterpreter):
         Tuple[str, dict[Optional[str], DBVarType]]:
             SQL code for preview and type conversions to apply on results
         """
-        sql_tree, type_conversions = self._construct_sample_sql(node_name=node_name, num_rows=0)
+        sql_tree, type_conversions, _ = self._construct_sample_sql(node_name=node_name, num_rows=0)
         return (
             sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type),
             type_conversions,
@@ -296,7 +296,7 @@ class PreviewMixin(BaseGraphInterpreter):
             SQL code for sample and type conversions to apply on results
         """
 
-        sql_tree, type_conversions = self._construct_sample_sql(
+        sql_tree, type_conversions, operation_structure = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
             seed=seed,
@@ -305,6 +305,19 @@ class PreviewMixin(BaseGraphInterpreter):
             timestamp_column=timestamp_column,
             total_num_rows=total_num_rows,
         )
+        column_dtype_mapping = {col.name: col.dtype for col in operation_structure.columns}
+        select_exprs = []
+        for expr_idx, col_expr in enumerate(sql_tree.expressions):
+            col_name = col_expr.alias_or_name
+            if column_dtype_mapping.get(col_name) in DBVarType.supported_timestamp_types():
+                select_exprs.append(
+                    expressions.alias_(
+                        self._clip_timestamp_column(col_expr), alias=col_name, quoted=True
+                    )
+                )
+            else:
+                select_exprs.append(quoted_identifier(col_name))
+        sql_tree = expressions.select(*select_exprs).from_(sql_tree.subquery())
         return sql_to_string(sql_tree, source_type=self.source_type), type_conversions
 
     def construct_unique_values_sql(
@@ -326,7 +339,7 @@ class PreviewMixin(BaseGraphInterpreter):
         str
             SQL code for getting unique column values and type conversions to apply on results
         """
-        sql_tree, _ = self._construct_sample_sql(node_name=node_name, num_rows=0)
+        sql_tree = self._construct_sample_sql(node_name=node_name, num_rows=0)[0]
         output_expr = (
             construct_cte_sql([("data", sql_tree)])
             .select(
@@ -715,8 +728,9 @@ class PreviewMixin(BaseGraphInterpreter):
         sql_tree = expressions.select(*casted_columns).from_(quoted_identifier(input_table_name))
         return quoted_identifier(CASTED_DATA_TABLE_NAME), sql_tree
 
-    @staticmethod
+    @classmethod
     def _clip_column_before_stats_func(
+        cls,
         col_expr: expressions.Expression,
         col_dtype: DBVarType,
         stats_name: str,
@@ -727,6 +741,10 @@ class PreviewMixin(BaseGraphInterpreter):
         if stats_name not in {"min", "max"}:
             return col_expr
 
+        return cls._clip_timestamp_column(col_expr)
+
+    @classmethod
+    def _clip_timestamp_column(cls, col_expr: expressions.Expression) -> expressions.Expression:
         invalid_mask = expressions.or_(
             expressions.LT(
                 this=col_expr,
@@ -982,7 +1000,7 @@ class PreviewMixin(BaseGraphInterpreter):
         """
         operation_structure = self.extract_operation_structure_for_node(node_name)
 
-        sample_sql_tree, type_conversions = self._construct_sample_sql(
+        sample_sql_tree, type_conversions, _ = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
             seed=seed,
@@ -1047,11 +1065,11 @@ class PreviewMixin(BaseGraphInterpreter):
         -------
         ValueCountsQueries
         """
-        sql_tree, _ = self._construct_sample_sql(
+        sql_tree = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
             seed=seed,
-        )
+        )[0]
         sample_table_name = f"__TEMP_VALUE_COUNTS_SAMPLED_DATA_{ObjectId()}".upper()
 
         queries = []

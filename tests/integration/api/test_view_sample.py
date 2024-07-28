@@ -6,8 +6,12 @@ from typing import Any
 
 import pandas as pd
 import pytest
+import pytest_asyncio
 from pandas.testing import assert_series_equal
 from pydantic.error_wrappers import ValidationError
+from sqlglot import parse_one
+
+from featurebyte.query_graph.sql.common import sql_to_string
 
 
 def maybe_tz_convert(ts: Any):
@@ -265,35 +269,61 @@ def test_dimension_view_sample_with_date_range(dimension_table):
         assert "timestamp_column must be specified." in str(exc)
 
 
-@pytest.mark.asyncio
-async def test_sample_invalid_dates(session, feature_store, catalog):
+@pytest_asyncio.fixture(name="source_table_with_invalid_dates")
+async def source_table_with_invalid_dates_fixture(session, feature_store, catalog):
     """
-    Test sample with invalid dates
+    Fixture for a source table with invalid dates
     """
     _ = catalog
-
-    # TODO: make a fixture and reuse
-    await session.execute_query(
-        """
-        CREATE TABLE TABLE_INVALID_DATES AS
-        SELECT CAST('2021-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        UNION ALL
-        SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        UNION ALL
-        SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        UNION ALL
-        SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        UNION ALL
-        SELECT CAST('9019-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        UNION ALL
-        SELECT CAST('2023-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        """
+    query = sql_to_string(
+        parse_one(
+            """
+            CREATE TABLE TABLE_INVALID_DATES AS
+            SELECT 1 AS "id", CAST('2021-01-01 10:00:00' AS TIMESTAMP) AS "date_col"
+            UNION ALL
+            SELECT 2 AS "id", CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS "date_col"
+            UNION ALL
+            SELECT 3 AS "id", CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS "date_col"
+            UNION ALL
+            SELECT 4 AS "id", CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS "date_col"
+            UNION ALL
+            SELECT 5 AS "id", CAST('9019-01-01 10:00:00' AS TIMESTAMP) AS "date_col"
+            UNION ALL
+            SELECT 6 AS "id", CAST('2023-01-01 10:00:00' AS TIMESTAMP) AS "date_col"
+            """,
+            read="snowflake",
+        ),
+        source_type=session.source_type,
     )
+    await session.execute_query(query)
     ds = feature_store.get_data_source()
-    source_table = ds.get_source_table(
+    return ds.get_source_table(
         table_name="TABLE_INVALID_DATES",
         database_name=session.database_name,
         schema_name=session.schema_name,
     )
-    sample_df = source_table.sample()
-    assert sample_df.shape[0] > 0
+
+
+@pytest.mark.asyncio
+async def test_sample_invalid_dates(session, source_table_with_invalid_dates):
+    """
+    Test sample with invalid dates
+    """
+    sample_df = source_table_with_invalid_dates.sample()
+    expected = pd.DataFrame(
+        {
+            "id": [1, 2, 3, 4, 5, 6],
+            "date_col": pd.to_datetime(
+                [
+                    "2021-01-01 10:00:00",
+                    None,
+                    None,
+                    None,
+                    None,
+                    "2023-01-01 10:00:00",
+                ]
+            ),
+        }
+    )
+    sample_df = sample_df.sort_values("id").reset_index(drop=True)
+    pd.testing.assert_frame_equal(sample_df, expected)
