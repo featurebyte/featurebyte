@@ -1056,7 +1056,12 @@ def test_graph_interpreter_sample(simple_graph):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts" AS "ts",
+          IFF(
+            "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+            OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+            NULL,
+            "ts"
+          ) AS "ts",
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b",
@@ -1086,7 +1091,12 @@ def test_graph_interpreter_sample_date_range(simple_graph):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts" AS "ts",
+          IFF(
+            "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+            OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+            NULL,
+            "ts"
+          ) AS "ts",
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b",
@@ -1119,7 +1129,12 @@ def test_graph_interpreter_sample_date_range_no_timestamp_column(simple_graph):
     expected = textwrap.dedent(
         """
         SELECT
-          "ts" AS "ts",
+          IFF(
+            "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
+            OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+            NULL,
+            "ts"
+          ) AS "ts",
           "cust_id" AS "cust_id",
           "a" AS "a",
           "b" AS "b",
