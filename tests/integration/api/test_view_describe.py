@@ -302,20 +302,18 @@ async def test_describe_invalid_dates(source_table_with_invalid_dates):
     describe_df = source_table_with_invalid_dates.describe()
     assert describe_df.shape[0] > 0
     result = describe_df.iloc[:, 1]
-    expected = pd.Series(
-        {
-            "dtype": "TIMESTAMP",
-            "unique": 4,
-            "%missing": 0.0,
-            "top": np.nan,
-            "freq": np.nan,
-            "mean": np.nan,
-            "std": np.nan,
-            "min": "2021-01-01T10:00:00.000000000",
-            "25%": np.nan,
-            "50%": np.nan,
-            "75%": np.nan,
-            "max": "2023-01-01T10:00:00.000000000",
-        }
-    )
+    expected = pd.Series({
+        "dtype": "TIMESTAMP",
+        "unique": 4,
+        "%missing": 0.0,
+        "top": np.nan,
+        "freq": np.nan,
+        "mean": np.nan,
+        "std": np.nan,
+        "min": "2021-01-01T10:00:00.000000000",
+        "25%": np.nan,
+        "50%": np.nan,
+        "75%": np.nan,
+        "max": "2023-01-01T10:00:00.000000000",
+    })
     pd.testing.assert_series_equal(result, expected, check_names=False)
