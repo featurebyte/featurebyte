@@ -4,6 +4,7 @@ Test API View objects describe function
 
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
@@ -294,41 +295,25 @@ def test_describe_empty_view(event_table):
 
 
 @pytest.mark.asyncio
-async def test_describe_invalid_dates(session, feature_store, catalog):
+async def test_describe_invalid_dates(source_table_with_invalid_dates):
     """
     Test describe with invalid dates
     """
-    _ = catalog
-
-    await session.execute_query(
-        """
-        CREATE TABLE TABLE_INVALID_DATES AS
-        SELECT CAST('2021-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        UNION ALL
-        SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        UNION ALL
-        SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        UNION ALL
-        SELECT CAST('0019-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        UNION ALL
-        SELECT CAST('9019-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        UNION ALL
-        SELECT CAST('2023-01-01 10:00:00' AS TIMESTAMP) AS date_col
-        """
-    )
-    ds = feature_store.get_data_source()
-    source_table = ds.get_source_table(
-        table_name="TABLE_INVALID_DATES",
-        database_name=session.database_name,
-        schema_name=session.schema_name,
-    )
-    describe_df = source_table.describe()
+    describe_df = source_table_with_invalid_dates.describe()
     assert describe_df.shape[0] > 0
-    result_dict = describe_df.iloc[:, 0].to_dict()
-    assert result_dict == {
+    result = describe_df.iloc[:, 1]
+    expected = pd.Series({
         "dtype": "TIMESTAMP",
         "unique": 4,
         "%missing": 0.0,
+        "top": np.nan,
+        "freq": np.nan,
+        "mean": np.nan,
+        "std": np.nan,
         "min": "2021-01-01T10:00:00.000000000",
+        "25%": np.nan,
+        "50%": np.nan,
+        "75%": np.nan,
         "max": "2023-01-01T10:00:00.000000000",
-    }
+    })
+    pd.testing.assert_series_equal(result, expected, check_names=False)

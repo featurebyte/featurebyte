@@ -263,3 +263,24 @@ def test_dimension_view_sample_with_date_range(dimension_table):
             size=15, seed=1234, from_timestamp="2001-10-10", to_timestamp="2001-10-14"
         )
         assert "timestamp_column must be specified." in str(exc)
+
+
+@pytest.mark.asyncio
+async def test_sample_invalid_dates(session, source_table_with_invalid_dates):
+    """
+    Test sample with invalid dates
+    """
+    sample_df = source_table_with_invalid_dates.sample()
+    expected = pd.DataFrame({
+        "id": [1, 2, 3, 4, 5, 6],
+        "date_col": pd.to_datetime([
+            "2021-01-01 10:00:00",
+            None,
+            None,
+            None,
+            None,
+            "2023-01-01 10:00:00",
+        ]),
+    })
+    sample_df = sample_df.sort_values("id").reset_index(drop=True)
+    pd.testing.assert_frame_equal(sample_df, expected)

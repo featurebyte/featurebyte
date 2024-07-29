@@ -122,6 +122,32 @@ def get_fully_qualified_table_name(
     )
 
 
+def get_column_expr_and_name(
+    col_expr: expressions.Column,
+) -> Tuple[expressions.Expression, Optional[str]]:
+    """
+    Get the inner expression and name given a Column expression. Typically used when rewriting a
+    select statement.
+
+    Parameters
+    ----------
+    col_expr: expressions.Column
+        Column expression
+
+    Returns
+    -------
+    Tuple[expressions.Expression, Optional[str]]
+    """
+    if isinstance(col_expr, expressions.Alias):
+        name = col_expr.alias
+        col_expr = col_expr.this
+    elif col_expr.name:
+        name = col_expr.name
+    else:
+        name = None
+    return col_expr, name
+
+
 def get_dialect_from_source_type(source_type: SourceType) -> str:
     """
     Get the dialect name given SourceType
