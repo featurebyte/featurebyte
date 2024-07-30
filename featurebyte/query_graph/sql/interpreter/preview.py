@@ -1065,6 +1065,7 @@ class PreviewMixin(BaseGraphInterpreter):
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
+        total_num_rows: Optional[int] = None,
     ) -> ValueCountsQueries:
         """
         Construct SQL to get value counts for a given node.
@@ -1082,6 +1083,8 @@ class PreviewMixin(BaseGraphInterpreter):
             the data, the result will include the most frequent categories up to this number.
         seed: int
             Random seed to use for sampling
+        total_num_rows: Optional[int]
+            Total number of rows before sampling
 
         Returns
         -------
@@ -1091,6 +1094,7 @@ class PreviewMixin(BaseGraphInterpreter):
             node_name=node_name,
             num_rows=num_rows,
             seed=seed,
+            total_num_rows=total_num_rows,
         )[0]
         sample_table_name = f"__TEMP_VALUE_COUNTS_SAMPLED_DATA_{ObjectId()}".upper()
 

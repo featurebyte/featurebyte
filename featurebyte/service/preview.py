@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, Optional, Tuple, Type
 
+from datetime import datetime
+
 import pandas as pd
 from bson import ObjectId
 
@@ -212,7 +214,13 @@ class PreviewService:
         )
         if size > 0:
             total_num_rows = await self._get_row_count(
-                session, sample, allow_long_running=allow_long_running
+                session,
+                graph=sample.graph,
+                node_name=sample.node_name,
+                from_timestamp=sample.from_timestamp,
+                to_timestamp=sample.to_timestamp,
+                timestamp_column=sample.timestamp_column,
+                allow_long_running=allow_long_running,
             )
         else:
             total_num_rows = None
@@ -274,7 +282,15 @@ class PreviewService:
         )
 
         if size > 0:
-            total_num_rows = await self._get_row_count(session, sample, allow_long_running)
+            total_num_rows = await self._get_row_count(
+                session,
+                graph=sample.graph,
+                node_name=sample.node_name,
+                from_timestamp=sample.from_timestamp,
+                to_timestamp=sample.to_timestamp,
+                timestamp_column=sample.timestamp_column,
+                allow_long_running=allow_long_running,
+            )
         else:
             total_num_rows = None
 
@@ -361,12 +377,22 @@ class PreviewService:
         op_struct = interpreter.extract_operation_structure_for_node(preview.node_name)
         column_dtype_mapping = {col.name: col.dtype for col in op_struct.columns}
 
+        if num_rows > 0:
+            total_num_rows = await self._get_row_count(
+                session,
+                graph=preview.graph,
+                node_name=preview.node_name,
+            )
+        else:
+            total_num_rows = None
+
         value_counts_queries = interpreter.construct_value_counts_sql(
             node_name=preview.node_name,
             column_names=column_names,
             num_rows=num_rows,
             num_categories_limit=num_categories_limit,
             seed=seed,
+            total_num_rows=total_num_rows,
         )
         await session.create_table_as(
             table_details=value_counts_queries.data.output_table_name,
@@ -436,15 +462,20 @@ class PreviewService:
 
     @classmethod
     async def _get_row_count(
-        cls, session: BaseSession, sample: FeatureStoreSample, allow_long_running: bool
+        cls,
+        session: BaseSession,
+        graph: QueryGraph,
+        node_name: str,
+        from_timestamp: Optional[datetime] = None,
+        to_timestamp: Optional[datetime] = None,
+        timestamp_column: Optional[str] = None,
+        allow_long_running: bool = True,
     ) -> int:
-        query = GraphInterpreter(
-            sample.graph, source_type=session.source_type
-        ).construct_row_count_sql(
-            node_name=sample.node_name,
-            from_timestamp=sample.from_timestamp,
-            to_timestamp=sample.to_timestamp,
-            timestamp_column=sample.timestamp_column,
+        query = GraphInterpreter(graph, source_type=session.source_type).construct_row_count_sql(
+            node_name=node_name,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            timestamp_column=timestamp_column,
         )
         df_result = await cls._execute_query(session, query, allow_long_running)
         return df_result.iloc[0]["count"]  # type: ignore
