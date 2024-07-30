@@ -90,7 +90,19 @@ class PreviewService:
         )
         return feature_store, session
 
-    async def shape(self, preview: FeatureStorePreview) -> FeatureStoreShape:
+    @classmethod
+    async def _execute_query(
+        cls, session: BaseSession, query: str, allow_long_running: bool
+    ) -> Optional[pd.DataFrame]:
+        if allow_long_running:
+            result = await session.execute_query_long_running(query)
+        else:
+            result = await session.execute_query(query)
+        return result
+
+    async def shape(
+        self, preview: FeatureStorePreview, allow_long_running: bool = True
+    ) -> FeatureStoreShape:
         """
         Get the shape of a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -98,6 +110,8 @@ class PreviewService:
         ----------
         preview: FeatureStorePreview
             FeatureStorePreview object
+        allow_long_running: bool
+            Whether to allow a longer timeout for non-interactive queries
 
         Returns
         -------
@@ -124,7 +138,7 @@ class PreviewService:
         with timer(
             "PreviewService.shape: Execute shape SQL", logger, extra={"shape_sql": shape_sql}
         ):
-            result = await session.execute_query(shape_sql)
+            result = await self._execute_query(session, shape_sql, allow_long_running)
 
         assert result is not None
         return FeatureStoreShape(
@@ -132,7 +146,9 @@ class PreviewService:
             num_cols=num_cols,
         )
 
-    async def preview(self, preview: FeatureStorePreview, limit: int) -> dict[str, Any]:
+    async def preview(
+        self, preview: FeatureStorePreview, limit: int, allow_long_running: bool = True
+    ) -> dict[str, Any]:
         """
         Preview a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -142,6 +158,8 @@ class PreviewService:
             FeatureStorePreview object
         limit: int
             Row limit on preview results
+        allow_long_running: bool
+            Whether to allow a longer timeout for non-interactive queries
 
         Returns
         -------
@@ -158,10 +176,16 @@ class PreviewService:
         ).construct_preview_sql(
             node_name=preview.node_name, num_rows=limit, clip_timestamp_columns=True
         )
-        result = await session.execute_query(preview_sql)
+        result = await self._execute_query(session, preview_sql, allow_long_running)
         return dataframe_to_json(result, type_conversions)
 
-    async def sample(self, sample: FeatureStoreSample, size: int, seed: int) -> dict[str, Any]:
+    async def sample(
+        self,
+        sample: FeatureStoreSample,
+        size: int,
+        seed: int,
+        allow_long_running: bool = True,
+    ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
 
@@ -173,6 +197,8 @@ class PreviewService:
             Maximum rows to sample
         seed: int
             Random seed to use for sampling
+        allow_long_running: bool
+            Whether to allow a longer timeout for non-interactive queries
 
         Returns
         -------
@@ -185,7 +211,9 @@ class PreviewService:
             feature_store_id=sample.feature_store_id,
         )
         if size > 0:
-            total_num_rows = await self._get_row_count(session, sample)
+            total_num_rows = await self._get_row_count(
+                session, sample, allow_long_running=allow_long_running
+            )
         else:
             total_num_rows = None
         sample_sql, type_conversions = GraphInterpreter(
@@ -199,7 +227,7 @@ class PreviewService:
             timestamp_column=sample.timestamp_column,
             total_num_rows=total_num_rows,
         )
-        result = await session.execute_query(sample_sql)
+        result = await self._execute_query(session, sample_sql, allow_long_running)
         return dataframe_to_json(result, type_conversions)
 
     async def describe(
@@ -209,6 +237,7 @@ class PreviewService:
         seed: int,
         columns_batch_size: Optional[int] = None,
         drop_all_null_stats: bool = True,
+        allow_long_running: bool = True,
     ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
@@ -227,6 +256,8 @@ class PreviewService:
             will be disabled.
         drop_all_null_stats: bool
             Whether to drop the result of a statistics if all values across all columns are null
+        allow_long_running: bool
+            Whether to allow a longer timeout for non-interactive queries
 
         Returns
         -------
@@ -243,7 +274,7 @@ class PreviewService:
         )
 
         if size > 0:
-            total_num_rows = await self._get_row_count(session, sample)
+            total_num_rows = await self._get_row_count(session, sample, allow_long_running)
         else:
             total_num_rows = None
 
@@ -268,7 +299,7 @@ class PreviewService:
             df_queries = []
             for describe_query in describe_queries.queries:
                 logger.debug("Execute describe SQL", extra={"describe_sql": describe_query.sql})
-                result = await session.execute_query_long_running(describe_query.sql)
+                result = await self._execute_query(session, describe_query.sql, allow_long_running)
                 columns = describe_query.columns
                 assert result is not None
                 df_query = pd.DataFrame(
@@ -378,7 +409,7 @@ class PreviewService:
         done_callback: Callable[[], Coroutine[Any, Any, None]],
     ) -> Tuple[str, dict[Any, int]]:
         session = await session.clone_if_not_threadsafe()
-        df_result = await session.execute_query(value_counts_query.sql)
+        df_result = await session.execute_query_long_running(value_counts_query.sql)
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
         df_result.loc[df_result["key"].isnull(), "key"] = None  # type: ignore
         output = df_result.set_index("key")["count"].to_dict()  # type: ignore
@@ -403,8 +434,10 @@ class PreviewService:
         await done_callback()
         return value_counts_query.column_name, output
 
-    @staticmethod
-    async def _get_row_count(session: BaseSession, sample: FeatureStoreSample) -> int:
+    @classmethod
+    async def _get_row_count(
+        cls, session: BaseSession, sample: FeatureStoreSample, allow_long_running: bool
+    ) -> int:
         query = GraphInterpreter(
             sample.graph, source_type=session.source_type
         ).construct_row_count_sql(
@@ -413,5 +446,5 @@ class PreviewService:
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
         )
-        df_result = await session.execute_query(query)
+        df_result = await cls._execute_query(session, query, allow_long_running)
         return df_result.iloc[0]["count"]  # type: ignore
