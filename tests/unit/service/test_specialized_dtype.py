@@ -160,7 +160,7 @@ async def test_add_columns_attributes(
     """Test adding columns attributes"""
     _ = feature_store
 
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame(
         {
             "event_id_col": ["a", "b", "c"],
             "event_timestamp_col": [
@@ -256,7 +256,7 @@ async def test_not_embeddding_column(
     """Test array is not embedding"""
     _ = feature_store
 
-    mock_snowflake_session.execute_query.return_value = sample
+    mock_snowflake_session.execute_query_long_running.return_value = sample
 
     svc = SpecializedDtypeDetectionService(preview_service, feature_store_service)
     await svc.detect_and_update_column_dtypes(table)
@@ -279,7 +279,7 @@ async def test_nested_dict_column(
     """Test dict is not flat"""
     _ = feature_store
 
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame(
         {
             "event_id_col": ["a", "b", "c"],
             "event_timestamp_col": [

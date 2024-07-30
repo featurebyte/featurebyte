@@ -302,7 +302,7 @@ async def test_value_counts(
     """
     Test value counts
     """
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame(
         {
             "key": ["1", "2", None],
             "count": [100, 50, 3],
@@ -361,7 +361,7 @@ async def test_value_counts_not_convert_keys_to_string(
     """
     Test value counts
     """
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame(
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame(
         {
             "key": keys,
             "count": [100, 50, 3],
