@@ -214,7 +214,13 @@ class PreviewService:
         )
         if size > 0:
             total_num_rows = await self._get_row_count(
-                session, sample, allow_long_running=allow_long_running
+                session,
+                graph=sample.graph,
+                node_name=sample.node_name,
+                from_timestamp=sample.from_timestamp,
+                to_timestamp=sample.to_timestamp,
+                timestamp_column=sample.timestamp_column,
+                allow_long_running=allow_long_running,
             )
         else:
             total_num_rows = None
