@@ -296,7 +296,7 @@ class FeatureStoreController(
         FeatureStoreShape
             FeatureStoreShape object
         """
-        return await self.preview_service.shape(preview=preview)
+        return await self.preview_service.shape(preview=preview, allow_long_running=False)
 
     async def table_shape(self, location: TabularSource) -> FeatureStoreShape:
         """
@@ -330,7 +330,9 @@ class FeatureStoreController(
         dict[str, Any]
             Dataframe converted to json string
         """
-        return await self.preview_service.preview(preview=preview, limit=limit)
+        return await self.preview_service.preview(
+            preview=preview, limit=limit, allow_long_running=False
+        )
 
     async def table_preview(self, location: TabularSource, limit: int) -> dict[str, Any]:
         """
@@ -370,7 +372,9 @@ class FeatureStoreController(
         dict[str, Any]
             Dataframe converted to json string
         """
-        return await self.preview_service.sample(sample=sample, size=size, seed=seed)
+        return await self.preview_service.sample(
+            sample=sample, size=size, seed=seed, allow_long_running=False
+        )
 
     async def describe(self, sample: FeatureStoreSample, size: int, seed: int) -> dict[str, Any]:
         """
@@ -390,7 +394,9 @@ class FeatureStoreController(
         dict[str, Any]
             Dataframe converted to json string
         """
-        return await self.preview_service.describe(sample=sample, size=size, seed=seed)
+        return await self.preview_service.describe(
+            sample=sample, size=size, seed=seed, allow_long_running=False
+        )
 
     async def create_data_description(
         self, sample: FeatureStoreSample, size: int, seed: int, catalog_id: ObjectId
