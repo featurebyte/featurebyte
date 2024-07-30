@@ -481,7 +481,7 @@ class TileCache:
                     out[TileInfoKey.from_tile_info(info)] = info
             if i % 10 == 0 and progress_callback is not None:
                 await progress_callback(
-                    int(i + 1 / len(nodes) * 100), "Checking tile cache availability"
+                    int((i + 1) / len(nodes) * 100), "Checking tile cache availability"
                 )
         if progress_callback is not None:
             await progress_callback(100, "Checking tile cache availability")
