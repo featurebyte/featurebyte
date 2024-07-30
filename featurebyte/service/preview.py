@@ -4,26 +4,29 @@ PreviewService class
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Optional, Tuple, Type
+from typing import Any, Callable, Coroutine, Optional, Tuple, Type, cast
 
 from datetime import datetime
 
 import pandas as pd
 from bson import ObjectId
+from sqlglot.expressions import Select
 
 from featurebyte.common.utils import dataframe_to_json, timer
-from featurebyte.enum import DBVarType
-from featurebyte.logging import get_logger
+from featurebyte.enum import DBVarType, InternalName
+from featurebyte.logging import get_logger, truncate_query
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.sql.interpreter.preview import ValueCountsQuery
+from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
     FeatureStoreShape,
 )
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.query_cache_manager import QueryCacheManagerService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
 from featurebyte.session.session_helper import run_coroutines
@@ -43,9 +46,11 @@ class PreviewService:
         self,
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
+        query_cache_manager_service: QueryCacheManagerService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
+        self.query_cache_manager_service = query_cache_manager_service
 
     async def _get_feature_store_session(
         self, graph: QueryGraph, node_name: str, feature_store_id: Optional[ObjectId]
@@ -102,6 +107,40 @@ class PreviewService:
             result = await session.execute_query(query)
         return result
 
+    async def _get_or_cache_table(
+        self,
+        session: BaseSession,
+        feature_store_id: Optional[ObjectId],
+        table_expr: Select,
+    ) -> str:
+        if feature_store_id is None:
+            # No caching possible without feature_store_id
+            table_name = f"__FB_TEMPORARY_TABLE_{ObjectId()}".upper()
+            await session.create_table_as(table_details=table_name, select_expr=table_expr)
+            return table_name
+
+        return await self.query_cache_manager_service.get_or_cache_table(
+            session=session,
+            feature_store_id=feature_store_id,
+            table_expr=table_expr,
+        )
+
+    async def _get_or_cache_dataframe(
+        self,
+        session: BaseSession,
+        feature_store_id: Optional[ObjectId],
+        query: str,
+        allow_long_running: bool,
+    ) -> Optional[pd.DataFrame]:
+
+        # No caching possible without feature_store_id
+        if feature_store_id is None:
+            return await self._execute_query(session, query, allow_long_running)
+
+        return await self.query_cache_manager_service.get_or_cache_dataframe(
+            session=session, feature_store_id=feature_store_id, query=query
+        )
+
     async def shape(
         self, preview: FeatureStorePreview, allow_long_running: bool = True
     ) -> FeatureStoreShape:
@@ -138,7 +177,9 @@ class PreviewService:
             ).construct_shape_sql(node_name=preview.node_name)
 
         with timer(
-            "PreviewService.shape: Execute shape SQL", logger, extra={"shape_sql": shape_sql}
+            "PreviewService.shape: Execute shape SQL",
+            logger,
+            extra={"shape_sql": truncate_query(shape_sql)},
         ):
             result = await self._execute_query(session, shape_sql, allow_long_running)
 
@@ -217,6 +258,7 @@ class PreviewService:
                 session,
                 graph=sample.graph,
                 node_name=sample.node_name,
+                feature_store_id=sample.feature_store_id,
                 from_timestamp=sample.from_timestamp,
                 to_timestamp=sample.to_timestamp,
                 timestamp_column=sample.timestamp_column,
@@ -286,6 +328,7 @@ class PreviewService:
                 session,
                 graph=sample.graph,
                 node_name=sample.node_name,
+                feature_store_id=sample.feature_store_id,
                 from_timestamp=sample.from_timestamp,
                 to_timestamp=sample.to_timestamp,
                 timestamp_column=sample.timestamp_column,
@@ -307,15 +350,33 @@ class PreviewService:
             columns_batch_size=columns_batch_size,
             total_num_rows=total_num_rows,
         )
-        await session.create_table_as(
-            table_details=describe_queries.data.output_table_name,
-            select_expr=describe_queries.data.expr,
+        feature_store_id = sample.feature_store_id
+        input_table_name = await self._get_or_cache_table(
+            session=session,
+            feature_store_id=feature_store_id,
+            table_expr=describe_queries.data.expr,
         )
+
         try:
             df_queries = []
             for describe_query in describe_queries.queries:
-                logger.debug("Execute describe SQL", extra={"describe_sql": describe_query.sql})
-                result = await self._execute_query(session, describe_query.sql, allow_long_running)
+                query = cast(
+                    str,
+                    SqlExpressionTemplate(
+                        describe_query.expr, source_type=session.source_type
+                    ).render(
+                        data={
+                            InternalName.INPUT_TABLE_SQL_PLACEHOLDER: quoted_identifier(
+                                input_table_name
+                            )
+                        },
+                        as_str=True,
+                    ),
+                )
+                logger.debug("Execute describe SQL", extra={"describe_sql": query})
+                result = await self._get_or_cache_dataframe(
+                    session, feature_store_id, query, allow_long_running
+                )
                 columns = describe_query.columns
                 assert result is not None
                 df_query = pd.DataFrame(
@@ -324,18 +385,22 @@ class PreviewService:
                     columns=[str(column.name) for column in columns],
                 )
                 df_queries.append(df_query)
-            results = pd.concat(df_queries, axis=1)
-            if drop_all_null_stats:
-                results = results.dropna(axis=0, how="all")
         finally:
-            await session.drop_table(
-                table_name=describe_queries.data.output_table_name,
-                schema_name=session.schema_name,
-                database_name=session.database_name,
-            )
+            if not feature_store_id:
+                # Need to cleanup as the table is not managed by query cache
+                await session.drop_table(
+                    table_name=input_table_name,
+                    schema_name=session.schema_name,
+                    database_name=session.database_name,
+                )
+
+        results = pd.concat(df_queries, axis=1)
+        if drop_all_null_stats:
+            results = results.dropna(axis=0, how="all")
+
         return dataframe_to_json(results, describe_queries.type_conversions, skip_prepare=True)
 
-    async def value_counts(
+    async def value_counts(  # pylint: disable=too-many-locals
         self,
         preview: FeatureStorePreview,
         column_names: list[str],
@@ -382,6 +447,7 @@ class PreviewService:
                 session,
                 graph=preview.graph,
                 node_name=preview.node_name,
+                feature_store_id=preview.feature_store_id,
             )
         else:
             total_num_rows = None
@@ -394,9 +460,10 @@ class PreviewService:
             seed=seed,
             total_num_rows=total_num_rows,
         )
-        await session.create_table_as(
-            table_details=value_counts_queries.data.output_table_name,
-            select_expr=value_counts_queries.data.expr,
+        input_table_name = await self._get_or_cache_table(
+            session=session,
+            feature_store_id=preview.feature_store_id,
+            table_expr=value_counts_queries.data.expr,
         )
         try:
             processed = 0
@@ -408,34 +475,55 @@ class PreviewService:
                     await completion_callback(processed)
 
             coroutines = []
-            for query in value_counts_queries.queries:
-                column_dtype = column_dtype_mapping[query.column_name]
+            for column_query in value_counts_queries.queries:
+                column_dtype = column_dtype_mapping[column_query.column_name]
+                query = cast(
+                    str,
+                    SqlExpressionTemplate(
+                        column_query.expr, source_type=session.source_type
+                    ).render(
+                        data={
+                            InternalName.INPUT_TABLE_SQL_PLACEHOLDER: quoted_identifier(
+                                input_table_name
+                            )
+                        },
+                        as_str=True,
+                    ),
+                )
                 coroutines.append(
                     self._process_value_counts_column(
                         session=session,
-                        value_counts_query=query,
+                        feature_store_id=preview.feature_store_id,
+                        query=query,
+                        column_name=column_query.column_name,
                         column_dtype=column_dtype,
                         done_callback=_callback,
                     )
                 )
             results = await run_coroutines(coroutines)
         finally:
-            await session.drop_table(
-                table_name=value_counts_queries.data.output_table_name,
-                schema_name=session.schema_name,
-                database_name=session.database_name,
-            )
+            if not preview.feature_store_id:
+                # Need to cleanup as the table is not managed by query cache
+                await session.drop_table(
+                    table_name=input_table_name,
+                    schema_name=session.schema_name,
+                    database_name=session.database_name,
+                )
         return dict(results)
 
-    @staticmethod
     async def _process_value_counts_column(
+        self,
         session: BaseSession,
-        value_counts_query: ValueCountsQuery,
+        query: str,
+        column_name: str,
         column_dtype: DBVarType,
+        feature_store_id: Optional[ObjectId],
         done_callback: Callable[[], Coroutine[Any, Any, None]],
     ) -> Tuple[str, dict[Any, int]]:
         session = await session.clone_if_not_threadsafe()
-        df_result = await session.execute_query_long_running(value_counts_query.sql)
+        df_result = await self._get_or_cache_dataframe(
+            session, feature_store_id, query, allow_long_running=True
+        )
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
         df_result.loc[df_result["key"].isnull(), "key"] = None  # type: ignore
         output = df_result.set_index("key")["count"].to_dict()  # type: ignore
@@ -458,14 +546,14 @@ class PreviewService:
 
         output = {_cast_key(key): value for (key, value) in output.items()}
         await done_callback()
-        return value_counts_query.column_name, output
+        return column_name, output
 
-    @classmethod
     async def _get_row_count(
-        cls,
+        self,
         session: BaseSession,
         graph: QueryGraph,
         node_name: str,
+        feature_store_id: Optional[ObjectId],
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
@@ -477,5 +565,7 @@ class PreviewService:
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
         )
-        df_result = await cls._execute_query(session, query, allow_long_running)
+        df_result = await self._get_or_cache_dataframe(
+            session, feature_store_id, query, allow_long_running
+        )
         return df_result.iloc[0]["count"]  # type: ignore
