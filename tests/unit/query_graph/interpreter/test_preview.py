@@ -205,6 +205,7 @@ def test_value_counts_sql_no_casting(graph, node_input, update_fixtures):
         column_names=["a", "b"],
         num_rows=50000,
         num_categories_limit=1000,
+        total_num_rows=100000,
     )
     assert len(value_counts_queries.queries) == 2
     for query in value_counts_queries.queries:
