@@ -5,9 +5,8 @@ PreviewService class
 from __future__ import annotations
 
 import warnings
-from typing import Any, Callable, Coroutine, Optional, Tuple, Type
-
 from datetime import datetime
+from typing import Any, Callable, Coroutine, Optional, Tuple, Type
 
 import pandas as pd
 from bson import ObjectId
