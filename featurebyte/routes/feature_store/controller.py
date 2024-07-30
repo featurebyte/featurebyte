@@ -366,8 +366,6 @@ class FeatureStoreController(
             Maximum rows to sample
         seed: int
             Random seed to use for sampling
-        allow_long_running: bool
-            Whether to allow a longer timeout for query
 
         Returns
         -------
