@@ -20,7 +20,7 @@ WITH stats AS (
     NULL AS "max__1",
     MIN("a") AS "min__2",
     MAX("a") AS "max__2"
-  FROM "__TEMP_SAMPLED_DATA_000000000000000000000000"
+  FROM "__FB_INPUT_TABLE_SQL_PLACEHOLDER"
 ), joined_tables_0 AS (
   SELECT
     *
