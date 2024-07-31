@@ -671,7 +671,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):  # pylint: disable=too-many-public-
         sample_payload = copy.deepcopy(data_sample_payload)
         sample_payload["graph"]["nodes"][1]["parameters"]["columns"] = ["col_float", "col_text"]
         with patch(
-            "featurebyte.query_graph.sql.interpreter.preview.ObjectId",
+            "featurebyte.service.preview.ObjectId",
             return_value=ObjectId("0" * 24),
         ):
             response = test_api_client.post("/feature_store/description", json=sample_payload)

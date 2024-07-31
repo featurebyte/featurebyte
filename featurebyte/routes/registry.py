@@ -142,6 +142,10 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.service.periodic_task import PeriodicTaskService
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.query_cache import QueryCacheDocumentService
+from featurebyte.service.query_cache_cleanup import QueryCacheCleanupService
+from featurebyte.service.query_cache_cleanup_scheduler import QueryCacheCleanupSchedulerService
+from featurebyte.service.query_cache_manager import QueryCacheManagerService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
@@ -205,6 +209,7 @@ from featurebyte.worker.task.materialized_table_delete import MaterializedTableD
 from featurebyte.worker.task.observation_table import ObservationTableTask
 from featurebyte.worker.task.observation_table_upload import ObservationTableUploadTask
 from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
+from featurebyte.worker.task.query_cache_cleanup import QueryCacheCleanupTask
 from featurebyte.worker.task.scheduled_feature_materialize import ScheduledFeatureMaterializeTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.target_table import TargetTableTask
@@ -325,6 +330,10 @@ app_container_config.register_class(
 app_container_config.register_class(PeriodicTaskService)
 app_container_config.register_class(PreviewService)
 app_container_config.register_class(ProductionReadyValidator)
+app_container_config.register_class(QueryCacheDocumentService)
+app_container_config.register_class(QueryCacheManagerService)
+app_container_config.register_class(QueryCacheCleanupService)
+app_container_config.register_class(QueryCacheCleanupSchedulerService)
 app_container_config.register_class(RelationshipInfoController)
 app_container_config.register_class(RelationshipInfoService)
 app_container_config.register_class(
@@ -403,6 +412,7 @@ app_container_config.register_class(FeatureListCreateWithBatchFeatureCreationTas
 app_container_config.register_class(StaticSourceTableTask)
 app_container_config.register_class(TileTask)
 app_container_config.register_class(OnlineStoreCleanupTask)
+app_container_config.register_class(QueryCacheCleanupTask)
 app_container_config.register_class(LongRunningTask)
 app_container_config.register_class(TestTask)
 app_container_config.register_class(DataDescriptionTask)
