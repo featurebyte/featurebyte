@@ -1,5 +1,22 @@
 # Changelog
 
+## v2.0.0 (2024-07-31)
+
+### 💡 Enhancements
+
++ `service` Remove default values for mandatory arguments in aggregation methods
++ `linting` Using ruff as the linter for the project
++ `package` Upgrade Pydantic to V2
+
+### ⚠️  Deprecations
+
++ `dependencies` Deprecation of `sasl` library to support python 3.11
+
+### 🐛 Bug Fixes
+
++ `service` Fix feature metadata extraction throwing KeyError during feature info retrieval
++ `session` Handle schema and table listing for catalogs without information schema in DataBricks Unity.
+
 ## v1.1.4 (2024-07-09)
 
 ### 💡 Enhancements
