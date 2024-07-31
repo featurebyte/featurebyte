@@ -2,6 +2,8 @@
 Test preview service module
 """
 
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -16,6 +18,7 @@ from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.schema.feature_list import FeatureListPreview
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.schema.preview import FeatureOrTargetPreview
+from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
 @pytest.fixture(name="empty_graph")
@@ -374,3 +377,43 @@ async def test_value_counts_not_convert_keys_to_string(
         num_categories_limit=500,
     )
     assert result == {project_column: expected}
+
+
+@pytest.mark.asyncio
+async def test_sample_limit(
+    preview_service,
+    feature_store_sample,
+    mock_snowflake_session,
+    update_fixtures,
+):
+    """
+    Test sample_limit
+    """
+
+    def _mock_execute_query(query):
+        if "COUNT(*)" in query:
+            return pd.DataFrame({"count": [1000000]})
+        return pd.DataFrame(
+            {
+                "a": [1, 2, 3, 4, 5],
+            }
+        )
+
+    mock_snowflake_session.execute_query_long_running.side_effect = _mock_execute_query
+    with patch("featurebyte.service.query_cache_manager.ObjectId", return_value=ObjectId("0" * 24)):
+        result = await preview_service.sample_limit(
+            feature_store_sample,
+            size=50000,
+            seed=1234,
+            limit=5,
+        )
+
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/expected_sample_limit.sql",
+        update_fixture=update_fixtures,
+    )
+
+    df_result = dataframe_from_json(result)
+    pd.testing.assert_frame_equal(pd.DataFrame({"a": [1, 2, 3, 4, 5]}), df_result)

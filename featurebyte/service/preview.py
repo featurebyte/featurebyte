@@ -10,6 +10,7 @@ from datetime import datetime
 
 import pandas as pd
 from bson import ObjectId
+from sqlglot import expressions
 from sqlglot.expressions import Select
 
 from featurebyte.common.utils import dataframe_to_json, timer
@@ -17,7 +18,7 @@ from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger, truncate_query
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.schema.feature_store import (
@@ -278,6 +279,83 @@ class PreviewService:
             total_num_rows=total_num_rows,
         )
         result = await self._execute_query(session, sample_sql, allow_long_running)
+        return dataframe_to_json(result, type_conversions)
+
+    async def sample_limit(
+        self,
+        sample: FeatureStoreSample,
+        size: int,
+        seed: int,
+        limit: int,
+    ) -> dict[str, Any]:
+        """
+        Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc) by
+        oversampling and then limit the output. This is used internally in cases where it promotes
+        query cache reuse.
+
+        Parameters
+        ----------
+        sample: FeatureStoreSample
+            FeatureStoreSample object
+        size: int
+            Maximum rows to sample
+        seed: int
+            Random seed to use for sampling
+        limit: int
+            Limit on the number of rows on the sampled output. Typically set at a lower number than
+            num_rows to allow using the same sampling parameters for cache reuse.
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        feature_store, session = await self._get_feature_store_session(
+            graph=sample.graph,
+            node_name=sample.node_name,
+            feature_store_id=sample.feature_store_id,
+        )
+        if size > 0:
+            total_num_rows = await self._get_row_count(
+                session,
+                graph=sample.graph,
+                node_name=sample.node_name,
+                feature_store_id=sample.feature_store_id,
+                from_timestamp=sample.from_timestamp,
+                to_timestamp=sample.to_timestamp,
+                timestamp_column=sample.timestamp_column,
+            )
+        else:
+            total_num_rows = None
+        sample_expr, type_conversions = GraphInterpreter(  # pylint: disable=protected-access
+            sample.graph, source_type=feature_store.type
+        )._construct_sample_sql(
+            node_name=sample.node_name,
+            num_rows=size,
+            seed=seed,
+            from_timestamp=sample.from_timestamp,
+            to_timestamp=sample.to_timestamp,
+            timestamp_column=sample.timestamp_column,
+            total_num_rows=total_num_rows,
+            clip_timestamp_columns=True,
+        )
+        sampled_table_name = await self._get_or_cache_table(
+            session=session,
+            feature_store_id=feature_store.id,
+            table_expr=sample_expr,
+        )
+        limit_query = sql_to_string(
+            expressions.select(expressions.Star())
+            .from_(quoted_identifier(sampled_table_name))
+            .limit(limit),
+            session.source_type,
+        )
+        result = await self._get_or_cache_dataframe(
+            session=session,
+            feature_store_id=feature_store.id,
+            query=limit_query,
+            allow_long_running=True,
+        )
         return dataframe_to_json(result, type_conversions)
 
     async def describe(
