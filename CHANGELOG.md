@@ -2,9 +2,13 @@
 
 ## v2.0.0 (2024-07-31)
 
+### 🛑 Breaking Changes
+
++ `service` Remove default values for mandatory arguments in aggregation methods such as aggregate_over.
+    The value_column parameter must now be provided.
+
 ### 💡 Enhancements
 
-+ `service` Remove default values for mandatory arguments in aggregation methods
 + `linting` Using ruff as the linter for the project
 + `package` Upgrade Pydantic to V2
 
