@@ -4,7 +4,7 @@ SQL generation for looking up parent entities
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 from dataclasses import dataclass
 
@@ -15,10 +15,14 @@ from featurebyte.enum import SpecialColumnName, TableDataType
 from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
-from featurebyte.query_graph.node.schema import FeatureStoreDetails
+from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
-from featurebyte.query_graph.sql.common import SQLType, get_qualified_column_identifier
+from featurebyte.query_graph.sql.common import (
+    SQLType,
+    get_fully_qualified_table_name,
+    get_qualified_column_identifier,
+)
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 from featurebyte.query_graph.sql.specs import AggregationSource
 
@@ -45,10 +49,11 @@ class ParentEntityLookupResult:
 
 
 def construct_request_table_with_parent_entities(
-    request_table_name: str,
+    request_table_name: Optional[str],
     request_table_columns: list[str],
     join_steps: list[EntityLookupStep],
     feature_store_details: FeatureStoreDetails,
+    request_table_details: Optional[TableDetails] = None,
 ) -> ParentEntityLookupResult:
     """
     Construct a query to join parent entities into the request table
@@ -64,6 +69,8 @@ def construct_request_table_with_parent_entities(
         table. Subsequent joins can use the newly joined columns as the join key.
     feature_store_details: FeatureStoreDetails
         Information about the feature store
+    request_table_details: Optional[TableDetails]
+        Location of the request table if it is a table in the warehouse
 
     Returns
     -------
@@ -71,7 +78,14 @@ def construct_request_table_with_parent_entities(
     """
     table_expr = select(
         *[get_qualified_column_identifier(col, "REQ") for col in request_table_columns]
-    ).from_(expressions.alias_(request_table_name, "REQ"))
+    )
+    if request_table_name is not None:
+        table_expr = table_expr.from_(expressions.alias_(request_table_name, "REQ"))
+    else:
+        assert request_table_details is not None
+        table_expr = table_expr.from_(
+            get_fully_qualified_table_name(request_table_details.dict(), alias="REQ"),
+        )
 
     current_columns = request_table_columns[:]
     new_columns = []
@@ -88,7 +102,9 @@ def construct_request_table_with_parent_entities(
     return ParentEntityLookupResult(
         table_expr=table_expr,
         parent_entity_columns=new_columns,
-        new_request_table_name="JOINED_PARENTS_" + request_table_name,
+        new_request_table_name=(
+            "JOINED_PARENTS_" + request_table_name if request_table_name else "JOINED_PARENTS"
+        ),
         new_request_table_columns=current_columns,
     )
 
