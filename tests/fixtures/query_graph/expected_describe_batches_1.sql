@@ -4,7 +4,7 @@ WITH stats AS (
     MAX("b") AS "max__3",
     MIN("a_copy") AS "min__4",
     MAX("a_copy") AS "max__4"
-  FROM "__TEMP_SAMPLED_DATA_000000000000000000000000"
+  FROM "__FB_INPUT_TABLE_SQL_PLACEHOLDER"
 ), joined_tables_0 AS (
   SELECT
     *

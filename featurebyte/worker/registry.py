@@ -30,6 +30,7 @@ from featurebyte.worker.task.materialized_table_delete import MaterializedTableD
 from featurebyte.worker.task.observation_table import ObservationTableTask
 from featurebyte.worker.task.observation_table_upload import ObservationTableUploadTask
 from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
+from featurebyte.worker.task.query_cache_cleanup import QueryCacheCleanupTask
 from featurebyte.worker.task.scheduled_feature_materialize import ScheduledFeatureMaterializeTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.target_table import TargetTableTask
@@ -54,6 +55,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.TARGET_TABLE_CREATE: TargetTableTask,
     WorkerCommand.TILE_COMPUTE: TileTask,
     WorkerCommand.ONLINE_STORE_TABLE_CLEANUP: OnlineStoreCleanupTask,
+    WorkerCommand.QUERY_CACHE_CLEANUP: QueryCacheCleanupTask,
     WorkerCommand.SCHEDULED_FEATURE_MATERIALIZE: ScheduledFeatureMaterializeTask,
     WorkerCommand.FEATURE_MATERIALIZE_SYNC: FeatureMaterializeSyncTask,
     WorkerCommand.CATALOG_ONLINE_STORE_UPDATE: CatalogOnlineStoreUpdateTask,

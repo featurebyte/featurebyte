@@ -163,4 +163,25 @@ def configure_featurebyte_logger(configurations: Configurations | None = None) -
     set_logger_level(logger, configurations.logging.level)
 
 
+def truncate_query(query: str, max_length: int = 50) -> str:
+    """
+    Truncate query if it exceeds max length
+
+    Parameters
+    ----------
+    query: str
+        Query to truncate
+    max_length: int
+        Maximum length of query
+
+    Returns
+    -------
+    str
+    """
+    query = query.replace("\n", " ")
+    if len(query) > max_length:
+        return query[:max_length] + "..."
+    return query
+
+
 __all__ = ["get_logger", "configure_featurebyte_logger"]
