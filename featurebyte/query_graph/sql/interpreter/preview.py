@@ -13,7 +13,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlglot import expressions, parse_one
+from sqlglot import expressions
 
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.graph import QueryGraph
@@ -132,7 +132,9 @@ class PreviewMixin(BaseGraphInterpreter):
                         alias = col_expr.name
                     else:
                         alias = None
-                    casted_col_expr = expressions.Cast(this=col_expr, to=parse_one("STRING"))
+                    casted_col_expr = expressions.Cast(
+                        this=col_expr, to=expressions.DataType.build("VARCHAR")
+                    )
                     if alias:
                         casted_col_expr = expressions.alias_(casted_col_expr, alias, quoted=True)
                     sql_tree.expressions[idx] = casted_col_expr
@@ -194,9 +196,12 @@ class PreviewMixin(BaseGraphInterpreter):
         assert isinstance(sql_tree, expressions.Select)
 
         operation_structure = self.extract_operation_structure_for_node(node_name)
+        column_dtype_mapping = {col.name: col.dtype for col in operation_structure.columns}
+
+        self._cast_string_columns(sql_tree, column_dtype_mapping)
 
         if clip_timestamp_columns:
-            self._clip_timestamp_columns(sql_tree, operation_structure)
+            self._clip_timestamp_columns(sql_tree, column_dtype_mapping)
 
         # apply type conversions
         if skip_conversion:
@@ -318,8 +323,9 @@ class PreviewMixin(BaseGraphInterpreter):
         )
         return sql_to_string(sql_tree, source_type=self.source_type), type_conversions
 
+    @classmethod
     def _clip_timestamp_columns(
-        self, sql_tree: expressions.Select, operation_structure: OperationStructure
+        cls, sql_tree: expressions.Select, column_dtype_mapping: dict[str, DBVarType]
     ) -> None:
         """
         Clip timestamp columns to valid range
@@ -328,15 +334,38 @@ class PreviewMixin(BaseGraphInterpreter):
         ----------
         sql_tree: expressions.Select
             SQL Expression to describe
-        operation_structure: OperationStructure
-            Operation structure for node
+        column_dtype_mapping: dict[str, DBVarType]
+            Mapping of column names to DBVarType
         """
-        column_dtype_mapping = {col.name: col.dtype for col in operation_structure.columns}
         for expr_idx, column in enumerate(sql_tree.expressions):
             expr, name = get_column_expr_and_name(column)
             if column_dtype_mapping.get(name) in DBVarType.supported_timestamp_types():
                 updated_col_expr = expressions.alias_(
-                    self._clip_timestamp_column(expr), alias=name, quoted=True
+                    cls._clip_timestamp_column(expr), alias=name, quoted=True
+                )
+                sql_tree.expressions[expr_idx] = updated_col_expr
+
+    @classmethod
+    def _cast_string_columns(
+        cls, sql_tree: expressions.Select, column_dtype_mapping: dict[str, DBVarType]
+    ) -> None:
+        """
+        Cast string columns to string type that has no length constraints
+
+        Parameters
+        ----------
+        sql_tree: expressions.Select
+            SQL Expression to describe
+        column_dtype_mapping: dict[str, DBVarType]
+            Mapping of column names to DBVarType
+        """
+        for expr_idx, column in enumerate(sql_tree.expressions):
+            expr, name = get_column_expr_and_name(column)
+            if column_dtype_mapping.get(name) == DBVarType.VARCHAR:
+                updated_col_expr = expressions.alias_(
+                    expressions.Cast(this=expr, to=expressions.DataType.build("VARCHAR")),
+                    alias=name,
+                    quoted=True,
                 )
                 sql_tree.expressions[expr_idx] = updated_col_expr
 
@@ -740,7 +769,9 @@ class PreviewMixin(BaseGraphInterpreter):
             # add casted columns
             casted_columns.append(
                 expressions.alias_(
-                    expressions.Cast(this=quoted_identifier(col_name), to=parse_one("STRING")),
+                    expressions.Cast(
+                        this=quoted_identifier(col_name), to=expressions.DataType.build("VARCHAR")
+                    ),
                     col_name,
                     quoted=True,
                 )
