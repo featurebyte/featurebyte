@@ -319,3 +319,31 @@ async def test_describe_invalid_dates(source_table_with_invalid_dates):
         }
     )
     pd.testing.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_databricks_varchar_exceed_limit_column(session, feature_store, catalog):
+    """
+    Test describe on tables with invalid varchar columns
+    """
+    _ = catalog
+
+    await session.execute_query("CREATE TABLE TABLE_INVALID_VARCHAR (COL_A VARCHAR(100))")
+    await session.execute_query(
+        f"""
+        INSERT INTO TABLE_INVALID_VARCHAR (COL_A)
+        VALUES
+            ('VERY LONG TEXT THAT EXCEEDS THE LIMIT OF 100 CHARACTERS: {"0" * 100}'),
+            ('Second row text'),
+            ('Third row text');
+        """
+    )
+    ds = feature_store.get_data_source()
+    source_table = ds.get_source_table(
+        table_name="TABLE_INVALID_VARCHAR",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    result = source_table.describe()
+    assert result.shape[0] > 0
