@@ -1,10 +1,10 @@
 WITH "casted_data" AS (
   SELECT
-    CAST("ts" AS STRING) AS "ts",
-    CAST("cust_id" AS STRING) AS "cust_id",
-    CAST("a" AS STRING) AS "a",
-    CAST("b" AS STRING) AS "b",
-    CAST("a_copy" AS STRING) AS "a_copy"
+    CAST("ts" AS VARCHAR) AS "ts",
+    CAST("cust_id" AS VARCHAR) AS "cust_id",
+    CAST("a" AS VARCHAR) AS "a",
+    CAST("b" AS VARCHAR) AS "b",
+    CAST("a_copy" AS VARCHAR) AS "a_copy"
   FROM "__TEMP_SAMPLED_DATA_000000000000000000000000"
 ), counts__1 AS (
   SELECT

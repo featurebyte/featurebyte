@@ -24,13 +24,13 @@ class TestSCDView(BaseViewTestSuite):
     SELECT
       "col_int" AS "col_int",
       "col_float" AS "col_float",
-      "col_text" AS "col_text",
+      CAST("col_text" AS VARCHAR) AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("effective_timestamp" AS STRING) AS "effective_timestamp",
-      CAST("end_timestamp" AS STRING) AS "end_timestamp",
+      CAST("effective_timestamp" AS VARCHAR) AS "effective_timestamp",
+      CAST("end_timestamp" AS VARCHAR) AS "end_timestamp",
       "date_of_birth" AS "date_of_birth",
-      CAST("created_at" AS STRING) AS "created_at",
+      CAST("created_at" AS VARCHAR) AS "created_at",
       "cust_id" AS "cust_id",
       (
         "cust_id" + 1
