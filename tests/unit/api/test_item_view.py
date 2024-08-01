@@ -41,12 +41,12 @@ class TestItemView(BaseViewTestSuite):
     expected_view_with_raw_accessor_sql = """
     SELECT
       L."event_id_col" AS "event_id_col",
-      L."item_id_col" AS "item_id_col",
-      L."item_type" AS "item_type",
+      CAST(L."item_id_col" AS VARCHAR) AS "item_id_col",
+      CAST(L."item_type" AS VARCHAR) AS "item_type",
       L."item_amount" AS "item_amount",
-      CAST(L."created_at" AS STRING) AS "created_at",
-      CAST(L."event_timestamp" AS STRING) AS "event_timestamp",
-      CAST(R."event_timestamp" AS STRING) AS "event_timestamp_event_table",
+      CAST(L."created_at" AS VARCHAR) AS "created_at",
+      CAST(L."event_timestamp" AS VARCHAR) AS "event_timestamp",
+      CAST(R."event_timestamp" AS VARCHAR) AS "event_timestamp_event_table",
       R."cust_id" AS "cust_id_event_table",
       (
         "item_amount" + 1
@@ -239,12 +239,12 @@ def test_get_view__auto_join_columns(
         """
         SELECT
           L."event_id_col" AS "event_id_col",
-          L."item_id_col" AS "item_id_col",
-          L."item_type" AS "item_type",
+          CAST(L."item_id_col" AS VARCHAR) AS "item_id_col",
+          CAST(L."item_type" AS VARCHAR) AS "item_type",
           L."item_amount" AS "item_amount",
-          CAST(L."created_at" AS STRING) AS "created_at",
-          CAST(L."event_timestamp" AS STRING) AS "event_timestamp",
-          CAST(R."event_timestamp" AS STRING) AS "event_timestamp_event_table",
+          CAST(L."created_at" AS VARCHAR) AS "created_at",
+          CAST(L."event_timestamp" AS VARCHAR) AS "event_timestamp",
+          CAST(R."event_timestamp" AS VARCHAR) AS "event_timestamp_event_table",
           R."cust_id" AS "cust_id_event_table"
         FROM (
           SELECT
@@ -394,12 +394,12 @@ def test_join_event_table_attributes__more_columns(
         """
         SELECT
           L."event_id_col" AS "event_id_col",
-          L."item_id_col" AS "item_id_col",
-          L."item_type" AS "item_type",
+          CAST(L."item_id_col" AS VARCHAR) AS "item_id_col",
+          CAST(L."item_type" AS VARCHAR) AS "item_type",
           L."item_amount" AS "item_amount",
-          CAST(L."created_at" AS STRING) AS "created_at",
-          CAST(L."event_timestamp" AS STRING) AS "event_timestamp",
-          CAST(L."event_timestamp_event_table" AS STRING) AS "event_timestamp_event_table",
+          CAST(L."created_at" AS VARCHAR) AS "created_at",
+          CAST(L."event_timestamp" AS VARCHAR) AS "event_timestamp",
+          CAST(L."event_timestamp_event_table" AS VARCHAR) AS "event_timestamp_event_table",
           L."cust_id_event_table" AS "cust_id_event_table",
           R."col_float" AS "col_float"
         FROM (

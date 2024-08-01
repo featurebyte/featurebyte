@@ -558,7 +558,7 @@ def test_datediff_resolves_correctly(dataframe):
         """
         SELECT
           "CUST_ID" AS "CUST_ID",
-          "PRODUCT_ACTION" AS "PRODUCT_ACTION",
+          CAST("PRODUCT_ACTION" AS VARCHAR) AS "PRODUCT_ACTION",
           "VALUE" AS "VALUE",
           "MASK" AS "MASK",
           "TIMESTAMP_VALUE" AS "TIMESTAMP_VALUE",

@@ -60,7 +60,7 @@ def test_datetime_property_extraction__event_timestamp(
           "event_timestamp" AS "event_timestamp",
           "col_int" AS "col_int",
           "cust_id" AS "cust_id",
-          "tz_offset" AS "tz_offset",
+          CAST("tz_offset" AS VARCHAR) AS "tz_offset",
           EXTRACT(hour FROM DATEADD(second, F_TIMEZONE_OFFSET_TO_SECOND('-05:30'), "event_timestamp")) AS "event_timestamp_hour"
         FROM "sf_database"."sf_schema"."sf_table_no_tz"
         LIMIT 10
@@ -103,8 +103,8 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
           L."event_timestamp" AS "event_timestamp",
           L."col_int" AS "col_int",
           L."cust_id" AS "cust_id",
-          L."tz_offset" AS "tz_offset",
-          R."col_text" AS "col_text",
+          CAST(L."tz_offset" AS VARCHAR) AS "tz_offset",
+          CAST(R."col_text" AS VARCHAR) AS "col_text",
           EXTRACT(hour FROM DATEADD(second, F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset"), L."event_timestamp")) AS "event_timestamp_hour"
         FROM (
           SELECT
@@ -214,14 +214,14 @@ def test_datetime_property_extraction__event_timestamp_in_item_view(
         """
         SELECT
           L."event_id_col" AS "event_id_col",
-          L."item_id_col" AS "item_id_col",
-          L."item_type" AS "item_type",
+          CAST(L."item_id_col" AS VARCHAR) AS "item_id_col",
+          CAST(L."item_type" AS VARCHAR) AS "item_type",
           L."item_amount" AS "item_amount",
-          CAST(L."created_at" AS STRING) AS "created_at",
-          CAST(L."event_timestamp" AS STRING) AS "event_timestamp",
+          CAST(L."created_at" AS VARCHAR) AS "created_at",
+          CAST(L."event_timestamp" AS VARCHAR) AS "event_timestamp",
           R."event_timestamp" AS "event_timestamp_event_table",
           R."cust_id" AS "cust_id_event_table",
-          R."tz_offset" AS "tz_offset_event_table",
+          CAST(R."tz_offset" AS VARCHAR) AS "tz_offset_event_table",
           EXTRACT(hour FROM DATEADD(second, F_TIMEZONE_OFFSET_TO_SECOND(R."tz_offset"), R."event_timestamp")) AS "timestamp_hour"
         FROM (
           SELECT

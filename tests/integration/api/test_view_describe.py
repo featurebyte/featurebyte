@@ -319,3 +319,43 @@ async def test_describe_invalid_dates(source_table_with_invalid_dates):
         }
     )
     pd.testing.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.parametrize("source_type", ["spark", "databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_databricks_varchar_with_max_length(session, feature_store, catalog):
+    """
+    Test describe on tables with varchar columns with maximum length
+    """
+    _ = catalog
+
+    await session.execute_query("CREATE TABLE TABLE_VARCHAR_VALID (COL_A VARCHAR(10))")
+    await session.execute_query(
+        f"""
+        INSERT INTO TABLE_VARCHAR_VALID (COL_A)
+        VALUES
+            ('First'),
+            ('Second'),
+            ('Third');
+        """
+    )
+    ds = feature_store.get_data_source()
+    source_table = ds.get_source_table(
+        table_name="TABLE_VARCHAR_VALID",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    result = source_table.describe()
+    assert result.index.tolist() == [
+        "dtype",
+        "unique",
+        "%missing",
+        "%empty",
+        "entropy",
+        "top",
+        "freq",
+    ]
+    assert result.loc["dtype"][0] == "VARCHAR"
+
+    result = source_table.sample()
+    assert result.shape[0] > 0

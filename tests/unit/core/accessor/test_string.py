@@ -96,19 +96,19 @@ def test_replace_expression(
         (
             lambda s: s.str.pad(width=10, side="left", fillchar="-"),
             """
-            IFF(LENGTH("PRODUCT_ACTION") >= 10, "PRODUCT_ACTION", LPAD("PRODUCT_ACTION", 10, '-'))
+            CAST(IFF(LENGTH("PRODUCT_ACTION") >= 10, "PRODUCT_ACTION", LPAD("PRODUCT_ACTION", 10, '-')) AS VARCHAR)
             """,
         ),
         (
             lambda s: s.str.pad(width=9, side="right", fillchar="-"),
             """
-            IFF(LENGTH("PRODUCT_ACTION") >= 9, "PRODUCT_ACTION", RPAD(\"PRODUCT_ACTION\", 9, '-'))
+            CAST(IFF(LENGTH("PRODUCT_ACTION") >= 9, "PRODUCT_ACTION", RPAD(\"PRODUCT_ACTION\", 9, '-')) AS VARCHAR)
             """,
         ),
         (
             lambda s: s.str.pad(width=8, side="both", fillchar="-"),
             """
-            IFF(
+            CAST(IFF(
               LENGTH("PRODUCT_ACTION") >= 8,
               "PRODUCT_ACTION",
               RPAD(
@@ -118,7 +118,7 @@ def test_replace_expression(
                 8,
                 '-'
               )
-            )
+            ) AS VARCHAR)
             """,
         ),
     ],
