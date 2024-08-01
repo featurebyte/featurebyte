@@ -36,7 +36,7 @@ def session_manager_fixture(config, credentials, snowflake_connector):
     Session manager fixture
     """
 
-    _ = snowflake_connector
+    _ = config, snowflake_connector
     session_cache.clear()
     yield SessionManager(credentials=credentials)
 
@@ -46,6 +46,7 @@ def sqlite_feature_store_fixture(config):
     """
     SQLite database source fixture
     """
+    _ = config
     return FeatureStore(
         name="sq_featurestore",
         type="sqlite",
@@ -211,3 +212,9 @@ async def test_session_manager__invalidate_cache_when_execute_query_blocking_fai
 
     # check the session is invalidated
     assert session_cache_key not in session_cache
+
+
+def test_construct_session_manager_with_empty_credentials():
+    """Test constructing session manager with empty credentials"""
+    session_manager = SessionManager(credentials={"store_name": None})
+    assert session_manager.credentials == {"store_name": None}

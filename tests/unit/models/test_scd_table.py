@@ -169,3 +169,17 @@ def test_incorrect_scd_table_id_type_errors(expected_scd_table_model):
     assert len(errors) == 1
     assert errors[0]["msg"] == "Input should be a valid string"
     assert errors[0]["type"] == "string_type"
+
+
+def test_column_cleaning_operation_with_missing_imputed_value(scd_table_model):
+    """Test column cleaning operation with missing imputed value"""
+    data_dict = scd_table_model.model_dump(by_alias=True)
+    data_dict["columns_info"][0]["critical_data_info"] = {
+        "cleaning_operations": [{"type": "disguised", "disguised_values": [9999]}]
+    }
+
+    # deserialize and check the cleaning operation
+    scd_table_loaded = SCDTableModel(**data_dict)
+    cleaning_operation = scd_table_loaded.columns_info[0].critical_data_info.cleaning_operations[0]
+    assert cleaning_operation.disguised_values == [9999]
+    assert cleaning_operation.imputed_value is None

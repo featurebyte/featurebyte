@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import time
 from asyncio.exceptions import TimeoutError as AsyncioTimeoutError
-from typing import Any, Dict, Hashable
+from typing import Any, Dict, Hashable, Optional
 
 from asyncache import cached
 from cachetools import keys
@@ -147,7 +147,7 @@ class SessionManager(BaseModel):
     """
 
     parameters: Dict[str, Any] = Field(default_factory=dict)
-    credentials: Dict[str, CredentialModel]
+    credentials: Dict[str, Optional[CredentialModel]]
 
     async def get_session_with_params(
         self,
