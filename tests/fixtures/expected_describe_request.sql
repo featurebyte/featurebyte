@@ -1,7 +1,7 @@
 WITH "casted_data" AS (
   SELECT
-    CAST("col_float" AS STRING) AS "col_float",
-    CAST("col_text" AS STRING) AS "col_text"
+    CAST("col_float" AS VARCHAR) AS "col_float",
+    CAST("col_text" AS VARCHAR) AS "col_text"
   FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__1 AS (
   SELECT

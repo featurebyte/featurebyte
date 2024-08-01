@@ -270,11 +270,11 @@ class TestEventTableTestSuite(BaseTableTestSuite):
       "col_int" AS "col_int",
       "col_float" AS "col_float",
       "col_char" AS "col_char",
-      "col_text" AS "col_text",
+      CAST("col_text" AS VARCHAR) AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("event_timestamp" AS STRING) AS "event_timestamp",
-      CAST("created_at" AS STRING) AS "created_at",
+      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+      CAST("created_at" AS VARCHAR) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."sf_table"
     LIMIT 10
@@ -292,11 +292,11 @@ class TestEventTableTestSuite(BaseTableTestSuite):
       ) THEN 0 ELSE "col_int" END AS BIGINT) AS "col_int",
       "col_float" AS "col_float",
       "col_char" AS "col_char",
-      "col_text" AS "col_text",
+      CAST("col_text" AS VARCHAR) AS "col_text",
       "col_binary" AS "col_binary",
       "col_boolean" AS "col_boolean",
-      CAST("event_timestamp" AS STRING) AS "event_timestamp",
-      CAST("created_at" AS STRING) AS "created_at",
+      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+      CAST("created_at" AS VARCHAR) AS "created_at",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."sf_table"
     LIMIT 10

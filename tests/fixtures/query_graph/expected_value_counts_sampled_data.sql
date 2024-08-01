@@ -13,7 +13,7 @@ FROM (
   FROM (
     SELECT
       "ts" AS "ts",
-      "cust_id" AS "cust_id",
+      CAST("cust_id" AS VARCHAR) AS "cust_id",
       "a" AS "a",
       "b" AS "b"
     FROM "db"."public"."event_table"

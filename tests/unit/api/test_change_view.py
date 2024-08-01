@@ -470,11 +470,11 @@ def test_get_change_view__keep_record_creation_timestamp_column(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          "col_text" AS "col_text",
-          CAST("new_effective_timestamp" AS STRING) AS "new_effective_timestamp",
-          CAST("past_effective_timestamp" AS STRING) AS "past_effective_timestamp",
-          CAST("new_created_at" AS STRING) AS "new_created_at",
-          CAST("past_created_at" AS STRING) AS "past_created_at"
+          CAST("col_text" AS VARCHAR) AS "col_text",
+          CAST("new_effective_timestamp" AS VARCHAR) AS "new_effective_timestamp",
+          CAST("past_effective_timestamp" AS VARCHAR) AS "past_effective_timestamp",
+          CAST("new_created_at" AS VARCHAR) AS "new_created_at",
+          CAST("past_created_at" AS VARCHAR) AS "past_created_at"
         FROM (
           SELECT
             "col_text",
@@ -530,11 +530,11 @@ def test_get_change_view__keep_record_creation_timestamp_column(
     expected_sql = textwrap.dedent(
         """
         SELECT
-          "col_text" AS "col_text",
-          CAST("new_effective_timestamp" AS STRING) AS "new_effective_timestamp",
-          CAST("past_effective_timestamp" AS STRING) AS "past_effective_timestamp",
-          CAST("new_created_at" AS STRING) AS "new_created_at",
-          CAST("past_created_at" AS STRING) AS "past_created_at"
+          CAST("col_text" AS VARCHAR) AS "col_text",
+          CAST("new_effective_timestamp" AS VARCHAR) AS "new_effective_timestamp",
+          CAST("past_effective_timestamp" AS VARCHAR) AS "past_effective_timestamp",
+          CAST("new_created_at" AS VARCHAR) AS "new_created_at",
+          CAST("past_created_at" AS VARCHAR) AS "past_created_at"
         FROM (
           SELECT
             "col_text",
@@ -645,9 +645,9 @@ def test_filtered_view_output(saved_scd_table, cust_id_entity):
     output_sql = filtered_view.preview_sql()
     expected_sql = """
     SELECT
-      "col_text" AS "col_text",
-      CAST("new_effective_timestamp" AS STRING) AS "new_effective_timestamp",
-      CAST("past_effective_timestamp" AS STRING) AS "past_effective_timestamp",
+      CAST("col_text" AS VARCHAR) AS "col_text",
+      CAST("new_effective_timestamp" AS VARCHAR) AS "new_effective_timestamp",
+      CAST("past_effective_timestamp" AS VARCHAR) AS "past_effective_timestamp",
       "new_col_int" AS "new_col_int",
       "past_col_int" AS "past_col_int"
     FROM (
@@ -701,14 +701,14 @@ def test_change_view_column_lag(snowflake_change_view):
     expected = textwrap.dedent(
         """
         SELECT
-          "col_text" AS "col_text",
-          CAST("new_effective_timestamp" AS STRING) AS "new_effective_timestamp",
-          CAST("past_effective_timestamp" AS STRING) AS "past_effective_timestamp",
+          CAST("col_text" AS VARCHAR) AS "col_text",
+          CAST("new_effective_timestamp" AS VARCHAR) AS "new_effective_timestamp",
+          CAST("past_effective_timestamp" AS VARCHAR) AS "past_effective_timestamp",
           "new_col_int" AS "new_col_int",
           "past_col_int" AS "past_col_int",
-          LAG("col_text", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "lag_col_text",
-          CAST(LAG("new_effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS STRING) AS "lag_new_effective_timestamp",
-          CAST(LAG("past_effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS STRING) AS "lag_past_effective_timestamp",
+          CAST(LAG("col_text", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS VARCHAR) AS "lag_col_text",
+          CAST(LAG("new_effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS VARCHAR) AS "lag_new_effective_timestamp",
+          CAST(LAG("past_effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS VARCHAR) AS "lag_past_effective_timestamp",
           LAG("new_col_int", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "lag_new_col_int",
           LAG("past_col_int", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "lag_past_col_int"
         FROM (
