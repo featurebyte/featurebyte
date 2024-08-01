@@ -325,7 +325,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
     @classmethod
     def _clip_timestamp_columns(
-        cls, sql_tree: expressions.Select, column_dtype_mapping: dict[str, DBVarType]
+        cls, sql_tree: expressions.Select, column_dtype_mapping: dict[Optional[str], DBVarType]
     ) -> None:
         """
         Clip timestamp columns to valid range
@@ -334,12 +334,13 @@ class PreviewMixin(BaseGraphInterpreter):
         ----------
         sql_tree: expressions.Select
             SQL Expression to describe
-        column_dtype_mapping: dict[str, DBVarType]
+        column_dtype_mapping: dict[Optional[str], DBVarType]
             Mapping of column names to DBVarType
         """
         for expr_idx, column in enumerate(sql_tree.expressions):
             expr, name = get_column_expr_and_name(column)
-            if column_dtype_mapping.get(name) in DBVarType.supported_timestamp_types():
+            col_dtype = column_dtype_mapping.get(name)
+            if col_dtype is not None and col_dtype in DBVarType.supported_timestamp_types():
                 updated_col_expr = expressions.alias_(
                     cls._clip_timestamp_column(expr), alias=name, quoted=True
                 )
@@ -347,7 +348,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
     @classmethod
     def _cast_string_columns(
-        cls, sql_tree: expressions.Select, column_dtype_mapping: dict[str, DBVarType]
+        cls, sql_tree: expressions.Select, column_dtype_mapping: dict[Optional[str], DBVarType]
     ) -> None:
         """
         Cast string columns to string type that has no length constraints
@@ -356,7 +357,7 @@ class PreviewMixin(BaseGraphInterpreter):
         ----------
         sql_tree: expressions.Select
             SQL Expression to describe
-        column_dtype_mapping: dict[str, DBVarType]
+        column_dtype_mapping: dict[Optional[str], DBVarType]
             Mapping of column names to DBVarType
         """
         for expr_idx, column in enumerate(sql_tree.expressions):
