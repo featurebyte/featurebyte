@@ -241,8 +241,10 @@ class QueryCacheManagerService:
         await self.query_cache_cleanup_scheduler_service.start_job_if_not_exist(feature_store_id)
 
     async def _get_document_by_key(self, key: str) -> Optional[QueryCacheModel]:
+        query_filter = {"cache_key": key}
+        query_filter.update(self.query_cache_document_service.get_cache_validity_filter())
         async for doc in self.query_cache_document_service.list_documents_iterator(
-            query_filter={"cache_key": key}
+            query_filter=query_filter
         ):
             return doc
         return None
