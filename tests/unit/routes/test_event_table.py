@@ -483,3 +483,86 @@ class TestEventTableApi(BaseTableApiTestSuite):
         response = test_api_client.delete(f"/semantic/{semantic_id}", headers=headers)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "Semantic is referenced by Table: sf_event_table"
+
+    @pytest_asyncio.fixture()
+    async def table_with_semantic_id_not_found_in_persistent(
+        self, test_api_client_persistent, create_success_response, user_id
+    ):
+        """Table with semantic id not found in persistent"""
+        test_api_client, persistent = test_api_client_persistent
+
+        response_dict = create_success_response.json()
+        table_id = ObjectId(response_dict["_id"])
+
+        # update a column with non-existent semantic id
+        col_idx = None
+        for idx, (col_info1, col_info2) in enumerate(
+            zip(self.payload["columns_info"], response_dict["columns_info"])
+        ):
+            if col_info1.get("entity_id") and not col_info2.get("semantic_id"):
+                col_idx = idx
+                break
+
+        assert col_idx is not None
+        column_info = response_dict["columns_info"][col_idx]
+        assert column_info["semantic_id"] is None
+
+        unknown_semantic_id = str(ObjectId())
+        await persistent.update_one(
+            collection_name="table",
+            query_filter={"_id": table_id},
+            update={"$set": {f"columns_info.{col_idx}.semantic_id": unknown_semantic_id}},
+            user_id=user_id,
+        )
+
+        # check if the semantic id is updated
+        response = test_api_client.get(f"{self.base_route}/{table_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict["columns_info"][col_idx]["semantic_id"] == unknown_semantic_id
+        return response_dict, col_idx, unknown_semantic_id
+
+    def test_update_column_info_with_unknown_semantic_id(
+        self, test_api_client_persistent, table_with_semantic_id_not_found_in_persistent
+    ):
+        """Test update entity"""
+        test_api_client, _ = test_api_client_persistent
+        table_dict, col_idx, semantic_id = table_with_semantic_id_not_found_in_persistent
+
+        # take entity
+        self.tag_table_entity(test_api_client, self.base_route.strip("/"), self.payload)
+
+        # check updated table
+        response = test_api_client.get(f"{self.base_route}/{table_dict['_id']}")
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        assert response_dict["columns_info"][col_idx]["semantic_id"] == semantic_id
+        for col1_info, col2_info in zip(
+            response_dict["columns_info"], self.payload["columns_info"]
+        ):
+            assert col1_info["entity_id"] == col2_info["entity_id"]
+
+        # check update critical data info
+        response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}/column_critical_data_info",
+            json={
+                "column_name": "col_int",
+                "critical_data_info": {
+                    "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+                },
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        assert response_dict["columns_info"][0]["critical_data_info"] == {
+            "cleaning_operations": [{"type": "missing", "imputed_value": 0}]
+        }
+
+        # check update column description
+        response = test_api_client.patch(
+            f"{self.base_route}/{response_dict['_id']}/column_description",
+            json={"column_name": "col_int", "description": "Integer column"},
+        )
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        assert response_dict["columns_info"][0]["description"] == "Integer column"

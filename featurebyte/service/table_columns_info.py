@@ -98,6 +98,7 @@ class TableColumnsInfoService(OpsServiceMixin):
         service: TableDocumentService,
         document_id: ObjectId,
         columns_info: List[ColumnInfo],
+        skip_semantic_check: bool = False,
         skip_block_modification_check: bool = False,
     ) -> None:
         """
@@ -111,6 +112,8 @@ class TableColumnsInfoService(OpsServiceMixin):
             Document ID
         columns_info: List[ColumnInfo]
             Columns info
+        skip_semantic_check: bool
+            Flag to skip semantic check
         skip_block_modification_check: bool
             Flag to skip block modification check (used only when updating table column description)
         """
@@ -124,12 +127,13 @@ class TableColumnsInfoService(OpsServiceMixin):
                 service=self.entity_service,
                 field_class_name="Entity",
             )
-            await self._validate_column_info_id_field_values(
-                columns_info=columns_info,
-                field_name="semantic_id",
-                service=self.semantic_service,
-                field_class_name="Semantic",
-            )
+            if not skip_semantic_check:
+                await self._validate_column_info_id_field_values(
+                    columns_info=columns_info,
+                    field_name="semantic_id",
+                    service=self.semantic_service,
+                    field_class_name="Semantic",
+                )
 
             async with self.persistent.start_transaction():
                 # update columns info

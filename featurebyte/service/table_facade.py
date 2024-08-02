@@ -72,6 +72,7 @@ class TableFacadeService:
         table_id: ObjectId,
         columns_info: List[ColumnInfo],
         service: Optional[TableDocumentService] = None,
+        skip_semantic_check: bool = False,
         skip_block_modification_check: bool = False,
     ) -> None:
         """
@@ -85,6 +86,8 @@ class TableFacadeService:
             Columns info
         service: Optional[TableDocumentService]
             Table document service
+        skip_semantic_check: bool
+            Flag to skip semantic check
         skip_block_modification_check: bool
             Flag to skip block modification check (used only when updating table column description)
         """
@@ -95,6 +98,7 @@ class TableFacadeService:
             service=service,
             document_id=table_id,
             columns_info=columns_info,
+            skip_semantic_check=skip_semantic_check,
             skip_block_modification_check=skip_block_modification_check,
         )
 
