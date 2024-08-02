@@ -2,6 +2,7 @@
 Unit tests for QueryCacheManagerService
 """
 
+from datetime import datetime, timedelta
 from unittest.mock import call, patch
 
 import pandas as pd
@@ -112,6 +113,11 @@ async def test_cache_and_get_table(service, periodic_task_service, feature_store
     result = await service.get_cached_table(feature_store_id, query)
     assert result == "created_table_1"
 
+    # Check retrieval on a later date after cache should be state (even without cleanup)
+    with freeze_time(datetime.utcnow() + timedelta(days=100)):
+        result = await service.get_cached_table(feature_store_id, query)
+        assert result is None
+
 
 @pytest.mark.asyncio
 async def test_cache_and_get_dataframe(service, periodic_task_service, feature_store_id):
@@ -135,6 +141,11 @@ async def test_cache_and_get_dataframe(service, periodic_task_service, feature_s
     # Check retrieval
     result = await service.get_cached_dataframe(feature_store_id, query)
     pd.testing.assert_frame_equal(result, dataframe)
+
+    # Check retrieval on a later date after cache should be state (even without cleanup)
+    with freeze_time(datetime.utcnow() + timedelta(days=100)):
+        result = await service.get_cached_dataframe(feature_store_id, query)
+        assert result is None
 
 
 @pytest.mark.asyncio
@@ -172,20 +183,30 @@ async def test_cleanup_service(
         await service.cache_table(feature_store_id, query, "created_table_1")
         tasks = await get_all_periodic_tasks(periodic_task_service)
         assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == []
 
     with freeze_time("2024-01-02"):
         await service.cache_table(feature_store_id, query, "created_table_2")
         tasks = await get_all_periodic_tasks(periodic_task_service)
         assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == []
 
     # Cleanup before stale
     with freeze_time("2024-01-03"):
         await cleanup_service.run_cleanup(feature_store_id)
         tasks = await get_all_periodic_tasks(periodic_task_service)
         assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == []
 
-    # Cleanup after one query was stale
-    with freeze_time("2024-01-09"):
+    # Cleanup before stale (first document already not retrievable but not yet ready for cleanup)
+    with freeze_time("2024-01-08 03:00:00"):
+        await cleanup_service.run_cleanup(feature_store_id)
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == []
+
+    # Cleanup after the first query was stale and ready for cleanup
+    with freeze_time("2024-01-08 03:00:01"):
         await cleanup_service.run_cleanup(feature_store_id)
         tasks = await get_all_periodic_tasks(periodic_task_service)
         assert len(tasks) == 1

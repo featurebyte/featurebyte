@@ -15,6 +15,7 @@ from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 from featurebyte.service.base_document import BaseDocumentService
 
 STALE_THRESHOLD_SECONDS = 86400 * 7
+STALE_CLEANUP_BUFFER_SECONDS = 3600 * 3
 
 
 class QueryCacheDocumentService(
@@ -42,10 +43,27 @@ class QueryCacheDocumentService(
         AsyncIterator[Dict[str, Any]]
             iterator of stale documents
         """
-        stale_timestamp = datetime.utcnow() - timedelta(seconds=STALE_THRESHOLD_SECONDS)
+        # Clean up stale documents with a buffer to ensure that cached table is not being used
+        # during cleanup
+        stale_timestamp = datetime.utcnow() - timedelta(
+            seconds=(STALE_THRESHOLD_SECONDS + STALE_CLEANUP_BUFFER_SECONDS)
+        )
         query_filter = {
             "feature_store_id": ObjectId(feature_store_id),
             "created_at": {"$lt": stale_timestamp},
         }
         async for doc in self.list_documents_as_dict_iterator(query_filter=query_filter):
             yield doc
+
+    @classmethod
+    def get_cache_validity_filter(cls) -> Dict[str, Any]:
+        """
+        Get cache validity filter
+
+        Returns
+        -------
+        Dict[str, Any]
+            cache validity filter
+        """
+        earliest_valid_timestamp = datetime.utcnow() - timedelta(seconds=STALE_THRESHOLD_SECONDS)
+        return {"created_at": {"$gte": earliest_valid_timestamp}}
