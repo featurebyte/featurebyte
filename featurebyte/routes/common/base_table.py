@@ -262,7 +262,9 @@ class BaseTableDocumentController(
         data: Any
             Data to update
         skip_semantic_check: bool
-            Flag to skip semantic check
+            Flag to skip semantic check. When updating column info that is not semantic related,
+            set this to True. Currently, this is used when updating column description, entity_id,
+            and critical_data_info.
         skip_block_modification_check: bool
             Flag to skip block modification check (used only when updating table column description)
 
