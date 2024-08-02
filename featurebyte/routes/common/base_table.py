@@ -245,6 +245,7 @@ class BaseTableDocumentController(
         column_name: str,
         field: str,
         data: Any,
+        skip_semantic_check: bool = False,
         skip_block_modification_check: bool = False,
     ) -> TableDocumentT:
         """
@@ -260,6 +261,10 @@ class BaseTableDocumentController(
             Field to update
         data: Any
             Data to update
+        skip_semantic_check: bool
+            Flag to skip semantic check. When updating column info that is not semantic related,
+            set this to True. Currently, this is used when updating column description, entity_id,
+            and critical_data_info.
         skip_block_modification_check: bool
             Flag to skip block modification check (used only when updating table column description)
 
@@ -286,6 +291,7 @@ class BaseTableDocumentController(
             table_id=document_id,
             columns_info=columns_info,
             service=self.service,
+            skip_semantic_check=skip_semantic_check,
             skip_block_modification_check=skip_block_modification_check,
         )
         return await self.get(document_id=document_id)
@@ -314,8 +320,10 @@ class BaseTableDocumentController(
 
         col_info = [col for col in document.columns_info if col.name == column_name]
         if col_info and col_info[0].semantic_id:
-            semantic = await self.semantic_service.get_document(document_id=col_info[0].semantic_id)
-            if semantic and semantic.name == SemanticType.SCD_SURROGATE_KEY_ID.value:
+            data = await self.semantic_service.list_documents_as_dict(
+                query_filter={"_id": col_info[0].semantic_id}
+            )
+            if data["total"] and data["data"][0]["name"] == SemanticType.SCD_SURROGATE_KEY_ID.value:
                 raise EntityTaggingIsNotAllowedError(
                     f"Surrogate key column {column_name} cannot be tagged as entity"
                 )
@@ -325,6 +333,7 @@ class BaseTableDocumentController(
             column_name=column_name,
             field="entity_id",
             data=entity_id,
+            skip_semantic_check=True,
         )
 
     async def update_column_critical_data_info(
@@ -352,6 +361,7 @@ class BaseTableDocumentController(
             column_name=column_name,
             field="critical_data_info",
             data=critical_data_info,
+            skip_semantic_check=True,
         )
 
     async def update_column_description(
@@ -380,6 +390,7 @@ class BaseTableDocumentController(
             field="description",
             data=description,
             skip_block_modification_check=True,
+            skip_semantic_check=True,
         )
 
     async def service_and_query_pairs_for_checking_reference(
