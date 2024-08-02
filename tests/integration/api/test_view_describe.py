@@ -329,7 +329,7 @@ async def test_databricks_varchar_with_max_length(session, feature_store, catalo
 
     await session.execute_query("CREATE TABLE TABLE_VARCHAR_VALID (COL_A VARCHAR(10))")
     await session.execute_query(
-        f"""
+        """
         INSERT INTO TABLE_VARCHAR_VALID (COL_A)
         VALUES
             ('First'),
