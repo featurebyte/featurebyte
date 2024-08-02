@@ -269,18 +269,31 @@ def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node):
           ) AS L
           INNER JOIN (
             SELECT
-              "col_int" AS "col_int",
-              "col_float" AS "col_float",
-              "col_char" AS "col_char",
-              "col_text" AS "col_text",
-              "col_binary" AS "col_binary",
-              "col_boolean" AS "col_boolean",
-              "event_timestamp" AS "event_timestamp",
-              "cust_id" AS "cust_id"
-            FROM "sf_database"."sf_schema"."sf_table"
-            WHERE
-              "event_timestamp" >= __fb_last_materialized_timestamp
-              AND "event_timestamp" < __fb_current_feature_timestamp
+              "col_int",
+              ANY_VALUE("col_float") AS "col_float",
+              ANY_VALUE("col_char") AS "col_char",
+              ANY_VALUE("col_text") AS "col_text",
+              ANY_VALUE("col_binary") AS "col_binary",
+              ANY_VALUE("col_boolean") AS "col_boolean",
+              ANY_VALUE("event_timestamp") AS "event_timestamp",
+              ANY_VALUE("cust_id") AS "cust_id"
+            FROM (
+              SELECT
+                "col_int" AS "col_int",
+                "col_float" AS "col_float",
+                "col_char" AS "col_char",
+                "col_text" AS "col_text",
+                "col_binary" AS "col_binary",
+                "col_boolean" AS "col_boolean",
+                "event_timestamp" AS "event_timestamp",
+                "cust_id" AS "cust_id"
+              FROM "sf_database"."sf_schema"."sf_table"
+              WHERE
+                "event_timestamp" >= __fb_last_materialized_timestamp
+                AND "event_timestamp" < __fb_current_feature_timestamp
+            )
+            GROUP BY
+              "col_int"
           ) AS R
             ON L."event_id_col" = R."col_int"
           WHERE
