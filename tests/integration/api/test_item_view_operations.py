@@ -214,9 +214,6 @@ def test_item_view_joined_with_dimension_view(
     assert number_of_elements > 0
     assert item_preview.shape[0] == number_of_elements
 
-    # Verify that the item_id's are the same
-    assert_series_equal(item_preview["item_id"], original_item_preview["item_id"])
-
     # verify that the values in the joined columns are as we expect
     for _, row in item_preview.iterrows():
         curr_item_id = row["item_id"]

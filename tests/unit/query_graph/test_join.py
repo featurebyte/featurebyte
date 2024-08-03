@@ -90,11 +90,20 @@ def test_item_table_join_event_table_attributes(global_graph, item_table_join_ev
         ) AS L
         INNER JOIN (
           SELECT
-            "order_id" AS "order_id",
-            "item_id" AS "item_id",
-            "item_name" AS "item_name",
-            "item_type" AS "item_type"
-          FROM "db"."public"."item_table"
+            "order_id",
+            ANY_VALUE("item_id") AS "item_id",
+            ANY_VALUE("item_name") AS "item_name",
+            ANY_VALUE("item_type") AS "item_type"
+          FROM (
+            SELECT
+              "order_id" AS "order_id",
+              "item_id" AS "item_id",
+              "item_name" AS "item_name",
+              "item_type" AS "item_type"
+            FROM "db"."public"."item_table"
+          )
+          GROUP BY
+            "order_id"
         ) AS R
           ON L."order_id" = R."order_id"
         """
@@ -130,11 +139,20 @@ def test_item_table_join_event_table_attributes_with_filter(
         ) AS L
         INNER JOIN (
           SELECT
-            "order_id" AS "order_id",
-            "item_id" AS "item_id",
-            "item_name" AS "item_name",
-            "item_type" AS "item_type"
-          FROM "db"."public"."item_table"
+            "order_id",
+            ANY_VALUE("item_id") AS "item_id",
+            ANY_VALUE("item_name") AS "item_name",
+            ANY_VALUE("item_type") AS "item_type"
+          FROM (
+            SELECT
+              "order_id" AS "order_id",
+              "item_id" AS "item_id",
+              "item_name" AS "item_name",
+              "item_type" AS "item_type"
+            FROM "db"."public"."item_table"
+          )
+          GROUP BY
+            "order_id"
         ) AS R
           ON L."order_id" = R."order_id"
         WHERE
@@ -194,11 +212,20 @@ def test_item_table_join_event_table_attributes_on_demand_tile_gen(
               ) AS L
               INNER JOIN (
                 SELECT
-                  "order_id" AS "order_id",
-                  "item_id" AS "item_id",
-                  "item_name" AS "item_name",
-                  "item_type" AS "item_type"
-                FROM "db"."public"."item_table"
+                  "order_id",
+                  ANY_VALUE("item_id") AS "item_id",
+                  ANY_VALUE("item_name") AS "item_name",
+                  ANY_VALUE("item_type") AS "item_type"
+                FROM (
+                  SELECT
+                    "order_id" AS "order_id",
+                    "item_id" AS "item_id",
+                    "item_name" AS "item_name",
+                    "item_type" AS "item_type"
+                  FROM "db"."public"."item_table"
+                )
+                GROUP BY
+                  "order_id"
               ) AS R
                 ON L."order_id" = R."order_id"
             ) AS R
@@ -295,11 +322,20 @@ def test_derived_expression_from_join_node(global_graph, derived_expression_from
         ) AS L
         INNER JOIN (
           SELECT
-            "order_id" AS "order_id",
-            "item_id" AS "item_id",
-            "item_name" AS "item_name",
-            "item_type" AS "item_type"
-          FROM "db"."public"."item_table"
+            "order_id",
+            ANY_VALUE("item_id") AS "item_id",
+            ANY_VALUE("item_name") AS "item_name",
+            ANY_VALUE("item_type") AS "item_type"
+          FROM (
+            SELECT
+              "order_id" AS "order_id",
+              "item_id" AS "item_id",
+              "item_name" AS "item_name",
+              "item_type" AS "item_type"
+            FROM "db"."public"."item_table"
+          )
+          GROUP BY
+            "order_id"
         ) AS R
           ON L."order_id" = R."order_id"
         """

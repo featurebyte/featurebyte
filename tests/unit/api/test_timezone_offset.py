@@ -119,9 +119,16 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
         ) AS L
         LEFT JOIN (
           SELECT
-            "col_int" AS "col_int",
-            "col_text" AS "col_text"
-          FROM "sf_database"."sf_schema"."dimension_table"
+            "col_int",
+            ANY_VALUE("col_text") AS "col_text"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_text" AS "col_text"
+            FROM "sf_database"."sf_schema"."dimension_table"
+          )
+          GROUP BY
+            "col_int"
         ) AS R
           ON L."col_int" = R."col_int"
         LIMIT 10
@@ -244,11 +251,20 @@ def test_datetime_property_extraction__event_timestamp_in_item_view(
         ) AS L
         INNER JOIN (
           SELECT
-            "event_timestamp" AS "event_timestamp",
-            "col_int" AS "col_int",
-            "cust_id" AS "cust_id",
-            "tz_offset" AS "tz_offset"
-          FROM "sf_database"."sf_schema"."sf_table_no_tz"
+            ANY_VALUE("event_timestamp") AS "event_timestamp",
+            "col_int",
+            ANY_VALUE("cust_id") AS "cust_id",
+            ANY_VALUE("tz_offset") AS "tz_offset"
+          FROM (
+            SELECT
+              "event_timestamp" AS "event_timestamp",
+              "col_int" AS "col_int",
+              "cust_id" AS "cust_id",
+              "tz_offset" AS "tz_offset"
+            FROM "sf_database"."sf_schema"."sf_table_no_tz"
+          )
+          GROUP BY
+            "col_int"
         ) AS R
           ON L."event_id_col" = R."col_int"
         LIMIT 10

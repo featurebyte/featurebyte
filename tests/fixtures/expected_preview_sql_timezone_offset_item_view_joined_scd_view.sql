@@ -104,11 +104,20 @@ FROM (
         ) AS L
         INNER JOIN (
           SELECT
-            "event_timestamp" AS "event_timestamp",
-            "col_int" AS "col_int",
-            "cust_id" AS "cust_id",
-            "tz_offset" AS "tz_offset"
-          FROM "sf_database"."sf_schema"."sf_table_no_tz"
+            ANY_VALUE("event_timestamp") AS "event_timestamp",
+            "col_int",
+            ANY_VALUE("cust_id") AS "cust_id",
+            ANY_VALUE("tz_offset") AS "tz_offset"
+          FROM (
+            SELECT
+              "event_timestamp" AS "event_timestamp",
+              "col_int" AS "col_int",
+              "cust_id" AS "cust_id",
+              "tz_offset" AS "tz_offset"
+            FROM "sf_database"."sf_schema"."sf_table_no_tz"
+          )
+          GROUP BY
+            "col_int"
         ) AS R
           ON L."event_id_col" = R."col_int"
       )
