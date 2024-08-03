@@ -500,7 +500,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                       "col_int" AS "col_int",
                       "col_float" AS "col_float",
                       "col_char" AS "col_char",
-                      "col_text" AS "col_text",
+                      CAST("col_text" AS VARCHAR) AS "col_text",
                       "col_binary" AS "col_binary",
                       "col_boolean" AS "col_boolean",
                       IFF(
@@ -515,7 +515,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                         NULL,
                         "created_at"
                       ) AS "created_at",
-                      "cust_id" AS "cust_id"
+                      CAST("cust_id" AS VARCHAR) AS "cust_id"
                     FROM "sf_database"."sf_schema"."sf_table"
                     WHERE
                       "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMPNTZ)

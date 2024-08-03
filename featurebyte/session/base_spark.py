@@ -202,6 +202,8 @@ class BaseSparkSession(BaseSession, ABC):
             return DBVarType.DICT
         if spark_type.startswith("MAP"):
             return DBVarType.DICT
+        if spark_type.startswith("VARCHAR"):
+            return DBVarType.VARCHAR
         db_vartype = db_vartype_mapping.get(spark_type, DBVarType.UNKNOWN)
         if db_vartype == DBVarType.UNKNOWN:
             logger.warning(f"Spark: Not supported data type '{spark_type}'")

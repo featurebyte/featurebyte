@@ -954,9 +954,9 @@ def test_varchar_series_concat(varchar_series, scalar_input, expected_literal):
         == textwrap.dedent(
             f"""
         SELECT
-          (
+          CAST((
             CONCAT("PRODUCT_ACTION", {expected_literal})
-          )
+          ) AS VARCHAR)
         FROM "db"."public"."transaction"
         LIMIT 10
         """

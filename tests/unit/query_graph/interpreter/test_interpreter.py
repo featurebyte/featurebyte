@@ -601,7 +601,7 @@ def test_graph_interpreter_preview(graph, node_input):
         """
         SELECT
           "ts" AS "ts",
-          "cust_id" AS "cust_id",
+          CAST("cust_id" AS VARCHAR) AS "cust_id",
           "a" AS "a",
           "b" AS "b",
           (
@@ -668,7 +668,7 @@ def test_filter_node(graph, node_input):
         """
         SELECT
           "ts" AS "ts",
-          "cust_id" AS "cust_id",
+          CAST("cust_id" AS VARCHAR) AS "cust_id",
           "a" AS "a",
           "b" AS "b"
         FROM "db"."public"."event_table"
@@ -736,7 +736,7 @@ def test_multiple_filters(graph, node_input):
         """
         SELECT
           "ts" AS "ts",
-          "cust_id" AS "cust_id",
+          CAST("cust_id" AS VARCHAR) AS "cust_id",
           "a" AS "a",
           "b" AS "b"
         FROM "db"."public"."event_table"
@@ -892,7 +892,7 @@ def test_conditional_assign__project_named(graph, node_input):
         """
         SELECT
           "ts" AS "ts",
-          "cust_id" AS "cust_id",
+          CAST("cust_id" AS VARCHAR) AS "cust_id",
           CASE WHEN (
             "a" = -999
           ) THEN 0 ELSE "a" END AS "a",
@@ -1062,7 +1062,7 @@ def test_graph_interpreter_sample(simple_graph):
             NULL,
             "ts"
           ) AS "ts",
-          "cust_id" AS "cust_id",
+          CAST("cust_id" AS VARCHAR) AS "cust_id",
           "a" AS "a",
           "b" AS "b",
           "a" AS "a_copy"
@@ -1097,7 +1097,7 @@ def test_graph_interpreter_sample_date_range(simple_graph):
             NULL,
             "ts"
           ) AS "ts",
-          "cust_id" AS "cust_id",
+          CAST("cust_id" AS VARCHAR) AS "cust_id",
           "a" AS "a",
           "b" AS "b",
           "a" AS "a_copy"
@@ -1135,7 +1135,7 @@ def test_graph_interpreter_sample_date_range_no_timestamp_column(simple_graph):
             NULL,
             "ts"
           ) AS "ts",
-          "cust_id" AS "cust_id",
+          CAST("cust_id" AS VARCHAR) AS "cust_id",
           "a" AS "a",
           "b" AS "b",
           "a" AS "a_copy"
