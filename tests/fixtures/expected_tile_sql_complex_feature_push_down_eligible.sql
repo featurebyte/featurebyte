@@ -209,18 +209,31 @@ FROM (
             ) AS L
             INNER JOIN (
               SELECT
-                "col_int" AS "col_int",
-                "col_float" AS "col_float",
-                "col_char" AS "col_char",
-                "col_text" AS "col_text",
-                "col_binary" AS "col_binary",
-                "col_boolean" AS "col_boolean",
-                "event_timestamp" AS "event_timestamp",
-                "cust_id" AS "cust_id"
-              FROM "sf_database"."sf_schema"."sf_table"
-              WHERE
-                "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-                AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+                "col_int",
+                ANY_VALUE("col_float") AS "col_float",
+                ANY_VALUE("col_char") AS "col_char",
+                ANY_VALUE("col_text") AS "col_text",
+                ANY_VALUE("col_binary") AS "col_binary",
+                ANY_VALUE("col_boolean") AS "col_boolean",
+                ANY_VALUE("event_timestamp") AS "event_timestamp",
+                ANY_VALUE("cust_id") AS "cust_id"
+              FROM (
+                SELECT
+                  "col_int" AS "col_int",
+                  "col_float" AS "col_float",
+                  "col_char" AS "col_char",
+                  "col_text" AS "col_text",
+                  "col_binary" AS "col_binary",
+                  "col_boolean" AS "col_boolean",
+                  "event_timestamp" AS "event_timestamp",
+                  "cust_id" AS "cust_id"
+                FROM "sf_database"."sf_schema"."sf_table"
+                WHERE
+                  "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
+                  AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+              )
+              GROUP BY
+                "col_int"
             ) AS R
               ON L."event_id_col" = R."col_int"
           ) AS ITEM
