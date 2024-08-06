@@ -13,6 +13,7 @@ def get_ranged_progress_callback(
     progress_callback: Callable[..., Coroutine[Any, Any, None]],
     from_percent: int | float,
     to_percent: int | float,
+    clip_start_threshold: int | None = None,
 ) -> ProgressCallbackType:
     """
     Returns a new progress callback that maps the progress range from [0, 100] to [from_percent,
@@ -26,6 +27,15 @@ def get_ranged_progress_callback(
         Lower bound of the new progress range
     to_percent: int | float
         Upper bound of the new progress range
+    clip_start_threshold: int | None
+        Clip the start value of the progress callback if it is below this threshold.
+        This is used to avoid noisy estimated total runtime time at the beginning of the progress.
+        For example, it takes 10 minutes at 1%, 11 minutes at 3%, 12 minutes at 5%, 15 minutes at 10%.
+        If we estimate the total runtime at 1%, it will be 1500 minutes, at 3% it will be 550 minutes,
+        at 5% it will be 240 minutes, at 10% it will be 150 minutes. If we clip the start value at 5%,
+        the estimated total runtime will be 240 minutes at 5%, 150 minutes at 10%. There is no estimation
+        at 1% and 3% because the progress is clipped to 5% and the estimated total runtime is not updated.
+        This gives a more stable and accurate estimate of the total runtime.
 
     Returns
     -------
@@ -36,7 +46,10 @@ def get_ranged_progress_callback(
 
     async def wrapped(percent: int, message: str | None, **kwargs: Any) -> None:
         effective_percent = percent / 100 * (to_percent - from_percent)
-        await progress_callback(int(effective_percent + from_percent), message, **kwargs)
+        update_value = int(effective_percent + from_percent)
+        if clip_start_threshold is not None and update_value < clip_start_threshold:
+            update_value = int(from_percent)
+        await progress_callback(update_value, message, **kwargs)
 
     return wrapped
 
