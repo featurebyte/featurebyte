@@ -83,7 +83,7 @@ def construct_request_table_with_parent_entities(
     else:
         assert request_table_details is not None
         table_expr = table_expr.from_(
-            get_fully_qualified_table_name(request_table_details.dict(), alias="REQ"),
+            get_fully_qualified_table_name(request_table_details.model_dump(), alias="REQ"),
         )
 
     current_columns = request_table_columns[:]
