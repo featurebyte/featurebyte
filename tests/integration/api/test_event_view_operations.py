@@ -997,6 +997,7 @@ def test_datetime_operations(event_view, source_type):
         "year",
         "quarter",
         "month",
+        "week",
         "day",
         "day_of_week",
         "hour",
