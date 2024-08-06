@@ -33,6 +33,22 @@ async def test_get_ranged_progress_callback(progress_callback):
 
 
 @pytest.mark.asyncio
+async def test_get_ranged_progress_callback__clip_start_threshold(progress_callback):
+    """
+    Test that get_ranged_progress_callback works as expected
+    """
+    new_callback = get_ranged_progress_callback(progress_callback, 0, 10, clip_start_threshold=5)
+    for i in [5, 10, 50, 100]:
+        await new_callback(i, "Doing a subtask")
+    assert progress_callback.call_args_list == [
+        call(0, "Doing a subtask"),  # effective: 5 * (10 - 0) / 100 + 0 = 0.5 %, clipped to 0 %
+        call(0, "Doing a subtask"),  # effective: 10 * (10 - 0) / 100 + 0 = 1 %, clipped to 0 %
+        call(5, "Doing a subtask"),  # effective: 50 * (10 - 0) / 100 + 0 = 5 %, not clipped
+        call(10, "Doing a subtask"),  # effective: 100 * (10 - 0) / 100 + 0 = 10 %, not clipped
+    ]
+
+
+@pytest.mark.asyncio
 async def test_get_ranged_progress_callback_nested(progress_callback):
     """
     Test that nested get_ranged_progress_callback calls work as expected
