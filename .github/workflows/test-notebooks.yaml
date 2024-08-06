@@ -20,6 +20,10 @@ jobs:
   test-deep-dive-notebooks:
     runs-on:
       group: Public Runners
+    strategy:
+      matrix:
+        python-version:
+          - 3.10.14
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,6 +65,10 @@ jobs:
   test-quick-start-notebooks:
     runs-on:
       group: Public Runners
+    strategy:
+      matrix:
+        python-version:
+          - 3.10.14
     steps:
       - uses: actions/checkout@v4
         with:
@@ -102,6 +110,10 @@ jobs:
   test-playground-notebooks:
     runs-on:
       group: Public Runners
+    strategy:
+      matrix:
+        python-version:
+          - 3.10.14
     steps:
       - uses: actions/checkout@v4
         with:

@@ -243,7 +243,7 @@ def add_inter_events_derived_columns(df, event_view):
 
     # Time since previous event
     col = f"TIME_SINCE_PREVIOUS_EVENT_BY_{by_column}"
-    df[col] = (
+    df[col] = pd.to_timedelta(
         df["ËVENT_TIMESTAMP"]
         - get_lagged_series_pandas(df, "ËVENT_TIMESTAMP", "ËVENT_TIMESTAMP", by_column)
     ).dt.total_seconds()
