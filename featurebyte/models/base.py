@@ -35,7 +35,15 @@ ACTIVE_CATALOG_ID: Optional[ObjectId] = None
 CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0-9])[A-Z])")
 
 
-NameStr = Annotated[str, StringConstraints(min_length=0, max_length=255)]
+# SQL object name is limited to 255 characters:
+# - Snowflake: https://docs.snowflake.com/en/sql-reference/identifiers
+# - DataBricks: https://docs.databricks.com/en/sql/language-manual/sql-ref-names.html
+# Give 255 characters as the maximum length for the name, we preserve 25 characters
+# for featurebyte internal use, like
+# - version name: _VYYMMDD_{suffix}
+# - component name: _part{suffix}
+# - catalog prefix: cat{suffix}_
+NameStr = Annotated[str, StringConstraints(min_length=0, max_length=230)]
 
 
 def get_active_catalog_id() -> Optional[ObjectId]:

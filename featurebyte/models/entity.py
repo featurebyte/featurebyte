@@ -14,6 +14,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
+    NameStr,
     PydanticObjectId,
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
@@ -82,7 +83,7 @@ class EntityModel(EntityRelationship):
         ID of table with primary key columns associated to the entity
     """
 
-    serving_names: List[StrictStr] = Field(frozen=True)
+    serving_names: List[NameStr] = Field(frozen=True)
     table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
 
