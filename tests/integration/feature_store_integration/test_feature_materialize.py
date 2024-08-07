@@ -525,9 +525,7 @@ async def deployed_features_list_composite_entities_order_use_case_fixture(
         deployment = feature_list.deploy(
             "deployment order use case", use_case_name=order_use_case.name
         )
-        with patch(
-            "featurebyte.service.feature_materialize.datetime", autospec=True
-        ) as mock_datetime:
+        with patch("featurebyte.service.feature_materialize.datetime") as mock_datetime:
             mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
             await deploy_service.update_deployment(
                 deployment_id=deployment.id,

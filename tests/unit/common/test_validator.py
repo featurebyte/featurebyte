@@ -15,7 +15,7 @@ from featurebyte.common.validator import duration_string_validator
         ("1h", True),
         ("1d", True),
         ("1w", True),
-        ("1y", True),
+        ("1y", False),  # Deprecated unit
         ("random", False),
     ],
 )
