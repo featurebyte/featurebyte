@@ -1050,7 +1050,10 @@ def test_datetime_operations(event_view, source_type):
     )
 
     for prop in properties:
-        series_prop = getattr(event_timestamp_localized.dt, prop)
+        if prop == "week":
+            series_prop = event_timestamp_localized.dt.isocalendar().week
+        else:
+            series_prop = getattr(event_timestamp_localized.dt, prop)
         pd.testing.assert_series_equal(
             dt_df[f"dt_{prop}"],
             series_prop,
