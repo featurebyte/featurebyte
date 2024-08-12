@@ -16,7 +16,9 @@ from datetime import datetime
 from sqlglot import expressions
 
 from featurebyte.enum import DBVarType, InternalName
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node.input import SampleParameters
 from featurebyte.query_graph.node.metadata.operation import OperationStructure, ViewDataColumn
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -141,7 +143,60 @@ class PreviewMixin(BaseGraphInterpreter):
 
         return sql_tree, type_conversions
 
-    def _construct_sample_sql(
+    def _get_query_graph_with_sample_on_primary_input_nodes(
+        self,
+        sample_on_primary_table: bool,
+        target_node_name: str,
+        seed: int,
+        sample_row_num: Optional[int] = None,
+        total_num_rows: Optional[int] = None,
+    ) -> tuple[QueryGraph, bool]:
+        """
+        Get query graph with sample row number set on primary input nodes
+
+        Parameters
+        ----------
+        sample_on_primary_table: bool
+            Whether to sample on primary table
+        target_node_name: str
+            Target node name
+        seed: int
+            Random seed
+        sample_row_num: Optional[int]
+            Number of rows to sample
+        total_num_rows: Optional[int]
+            Total number of rows before sampling
+
+        Returns
+        -------
+        Tuple[QueryGraph, bool]
+            Query graph with sample row number set on primary input nodes, whether input node is sampled
+        """
+        query_graph = QueryGraph(**self.query_graph.dict())
+        input_node_sampled = False
+        if not sample_on_primary_table:
+            return query_graph, input_node_sampled
+
+        has_join_node = False
+        for _ in query_graph.iterate_nodes(
+            target_node=query_graph.get_node_by_name(node_name=target_node_name),
+            node_type=NodeType.JOIN,
+        ):
+            has_join_node = True
+
+        if has_join_node and sample_row_num is not None and total_num_rows is not None:
+            sample_parameters = SampleParameters(
+                seed=seed, total_num_rows=total_num_rows, num_rows=sample_row_num
+            )
+
+            # get_input_node is always traversing the graph from the target node to the left most input node
+            # which is the primary table input node (we only have left joins & inner joins, see JoinNode's join_type)
+            input_node = query_graph.get_input_node(node_name=target_node_name)
+            input_node.parameters.sample_parameters = sample_parameters
+            input_node_sampled = True
+        return query_graph, input_node_sampled
+
+    def _construct_sample_sql(  # pylint: disable=too-many-arguments,too-many-locals
         self,
         node_name: str,
         num_rows: int = 10,
@@ -152,6 +207,7 @@ class PreviewMixin(BaseGraphInterpreter):
         skip_conversion: bool = False,
         total_num_rows: Optional[int] = None,
         clip_timestamp_columns: bool = False,
+        sample_on_primary_table: bool = False,
     ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
@@ -175,6 +231,8 @@ class PreviewMixin(BaseGraphInterpreter):
             Total number of rows before sampling
         clip_timestamp_columns: bool
             Whether to apply clipping to all the timestamp columns
+        sample_on_primary_table: bool
+            Whether to sample on primary table
 
         Returns
         -------
@@ -182,8 +240,17 @@ class PreviewMixin(BaseGraphInterpreter):
             SQL expression for data sample, column to apply conversion on resulting dataframe
         """
         flat_node = self.get_flattened_node(node_name)
+        query_graph, input_node_sampled = self._get_query_graph_with_sample_on_primary_input_nodes(
+            sample_on_primary_table=sample_on_primary_table,
+            target_node_name=flat_node.name,
+            seed=seed,
+            sample_row_num=num_rows,
+            total_num_rows=total_num_rows,
+        )
         sql_graph = SQLOperationGraph(
-            self.query_graph, sql_type=SQLType.MATERIALIZE, source_type=self.source_type
+            query_graph=query_graph,
+            sql_type=SQLType.MATERIALIZE,
+            source_type=self.source_type,
         )
         sql_node = sql_graph.build(flat_node)
 
@@ -235,7 +302,7 @@ class PreviewMixin(BaseGraphInterpreter):
             if filter_conditions:
                 sql_tree = sql_tree.where(expressions.and_(*filter_conditions))
 
-        if num_rows > 0:
+        if num_rows > 0 and not input_node_sampled:
             if total_num_rows is None:
                 # apply random sampling
                 sql_tree = sql_tree.order_by(
@@ -1009,7 +1076,7 @@ class PreviewMixin(BaseGraphInterpreter):
         )
         return operation_structure
 
-    def construct_describe_queries(
+    def construct_describe_queries(  # pylint: disable=too-many-arguments
         self,
         node_name: str,
         num_rows: int = 10,
@@ -1020,6 +1087,7 @@ class PreviewMixin(BaseGraphInterpreter):
         stats_names: Optional[List[str]] = None,
         columns_batch_size: Optional[int] = None,
         total_num_rows: Optional[int] = None,
+        sample_on_primary_table: bool = False,
     ) -> DescribeQueries:
         """Construct SQL to describe data from a given node
 
@@ -1044,6 +1112,8 @@ class PreviewMixin(BaseGraphInterpreter):
             single query.
         total_num_rows: int
             Total number of rows before sampling
+        sample_on_primary_table: bool
+            Whether to sample on primary table
 
         Returns
         -------
@@ -1061,6 +1131,7 @@ class PreviewMixin(BaseGraphInterpreter):
             timestamp_column=timestamp_column,
             skip_conversion=True,
             total_num_rows=total_num_rows,
+            sample_on_primary_table=sample_on_primary_table,
         )
 
         if not columns_batch_size:

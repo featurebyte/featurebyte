@@ -13,6 +13,7 @@ from sqlglot.expressions import Expression, Select
 
 from featurebyte.enum import InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.input import SampleParameters
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 
@@ -24,6 +25,7 @@ class InputNode(TableNode):
     dbtable: dict[str, str]
     feature_store: dict[str, Any]
     query_node_type = NodeType.INPUT
+    sample_parameters: SampleParameters | None = None
 
     def from_query_impl(self, select_expr: Select) -> Select:
         dbtable = get_fully_qualified_table_name(self.dbtable)
@@ -82,6 +84,14 @@ class InputNode(TableNode):
                 )
             )
 
+        if isinstance(self.sample_parameters, SampleParameters):
+            select_expr = self.context.adapter.random_sample(
+                select_expr,
+                desired_row_count=self.sample_parameters.num_rows,
+                total_row_count=self.sample_parameters.total_num_rows,
+                seed=self.sample_parameters.seed,
+            )
+
         return select_expr
 
     @classmethod
@@ -93,6 +103,7 @@ class InputNode(TableNode):
             columns_map=columns_map,
             dbtable=context.parameters["table_details"],
             feature_store=feature_store,
+            sample_parameters=context.query_node.parameters.sample_parameters,  # type: ignore
         )
         return sql_node
 
