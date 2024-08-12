@@ -15,6 +15,7 @@ from featurebyte.models.credential import (
     CredentialModel,
     DatabaseCredentialType,
     GCSStorageCredential,
+    GoogleCredential,
     KerberosKeytabCredential,
     S3StorageCredential,
     StorageCredentialType,
@@ -72,6 +73,13 @@ def database_credential_fixture(request):
         credential = KerberosKeytabCredential.from_file(
             keytab_filepath="tests/fixtures/hive.service.keytab",
             principal="principal@REALM",
+        )
+    elif request.param == DatabaseCredentialType.GOOGLE:
+        credential = GoogleCredential(
+            service_account_info={
+                "type": "service_account",
+                "private_key": "private_key",
+            }
         )
     else:
         raise ValueError("Invalid credential type")
@@ -135,8 +143,8 @@ def test_kerberos_keytab_credential_from_file():
     assert credential.principal == "principal@REALM"
     assert credential.type == DatabaseCredentialType.KERBEROS_KEYTAB
 
-    with open("tests/fixtures/hive.service.keytab", "rb") as f:
-        assert credential.keytab == f.read()
+    with open("tests/fixtures/hive.service.keytab", "rb") as file_obj:
+        assert credential.keytab == file_obj.read()
 
 
 def test_gcs_storage_credential_service_account_info():

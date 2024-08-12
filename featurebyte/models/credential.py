@@ -120,6 +120,7 @@ class DatabaseCredentialType(StrEnum):
     USERNAME_PASSWORD = "USERNAME_PASSWORD"
     ACCESS_TOKEN = "ACCESS_TOKEN"
     KERBEROS_KEYTAB = "KERBEROS_KEYTAB"
+    GOOGLE = "GOOGLE"
 
 
 class BaseDatabaseCredential(BaseCredential):
@@ -227,8 +228,52 @@ class KerberosKeytabCredential(BaseDatabaseCredential):
         )
 
 
+class ServiceAccountCredentialMixin(FeatureByteBaseModel):
+    """
+    Mixin for google credential.
+    """
+
+    service_account_info: Union[Dict[str, str], StrictStr] = Field(
+        description="Service account information used for connecting to your GCS store."
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _validate_service_account_info(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.model_dump(by_alias=True)
+
+        service_account_info = values.get("service_account_info")
+        if isinstance(service_account_info, str):
+            values["service_account_info"] = json.loads(service_account_info)
+        return values
+
+
+class GoogleCredential(BaseDatabaseCredential, ServiceAccountCredentialMixin):
+    """
+    Data class for an google credential.
+
+    Examples
+    --------
+    >>> google_credential = GoogleCredential(
+    ...     service_account_info={"type": "service_account", "private_key": "private_key"}
+    ... )
+    """
+
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.GoogleCredential")
+
+    # instance variables
+    type: Literal[DatabaseCredentialType.GOOGLE] = DatabaseCredentialType.GOOGLE
+
+
 DatabaseCredential = Annotated[
-    Union[UsernamePasswordCredential, AccessTokenCredential, KerberosKeytabCredential],
+    Union[
+        UsernamePasswordCredential,
+        AccessTokenCredential,
+        KerberosKeytabCredential,
+        GoogleCredential,
+    ],
     Field(discriminator="type"),
 ]
 
@@ -277,7 +322,7 @@ class S3StorageCredential(BaseStorageCredential):
     )
 
 
-class GCSStorageCredential(BaseStorageCredential):
+class GCSStorageCredential(BaseStorageCredential, ServiceAccountCredentialMixin):
     """
     Data class for a GCS storage credential.
 
@@ -296,17 +341,6 @@ class GCSStorageCredential(BaseStorageCredential):
     service_account_info: Union[Dict[str, str], StrictStr] = Field(
         description="Service account information used for connecting to your GCS store."
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def _validate_service_account_info(cls, values: Any) -> Any:
-        if isinstance(values, BaseModel):
-            values = values.model_dump(by_alias=True)
-
-        service_account_info = values.get("service_account_info")
-        if isinstance(service_account_info, str):
-            values["service_account_info"] = json.loads(service_account_info)
-        return values
 
 
 class AzureBlobStorageCredential(BaseStorageCredential):

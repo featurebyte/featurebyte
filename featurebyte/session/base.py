@@ -132,6 +132,23 @@ class BaseSession(BaseModel):
         if self._connection is not None:
             self._connection.close()
 
+    @property
+    def metadata_schema(self) -> str:
+        """
+        Metadata schema name
+
+        Returns
+        -------
+        str
+        """
+
+        fully_qualified_table_name = get_fully_qualified_table_name({
+            "table_name": "METADATA_SCHEMA",
+            "schema_name": self.schema_name,
+            "database_name": self.database_name,
+        })
+        return sql_to_string(fully_qualified_table_name, source_type=self.source_type)
+
     def set_cache_key(self, key: Any) -> None:
         """
         Set hash key used to cache session object
@@ -482,7 +499,7 @@ class BaseSession(BaseModel):
         to callers that we probably want to initialize the working schema.
         """
 
-        query = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
+        query = f"SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM {self.metadata_schema}"
         try:
             results = await self.execute_query(query, to_log_error=False)
         except self._no_schema_error:
@@ -1245,7 +1262,7 @@ class MetadataSchemaInitializer:
             Current migration version
         """
         await self.session.execute_query(
-            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
+            f"CREATE TABLE IF NOT EXISTS {self.session.metadata_schema} ( "
             "WORKING_SCHEMA_VERSION INT, "
             f"{InternalName.MIGRATION_VERSION} INT, "
             "FEATURE_STORE_ID VARCHAR, "
@@ -1265,9 +1282,7 @@ class MetadataSchemaInitializer:
         new_version : int
             New version to update the working schema to
         """
-        update_version_query = (
-            f"""UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = {new_version}"""
-        )
+        update_version_query = f"""UPDATE {self.session.metadata_schema} SET WORKING_SCHEMA_VERSION = {new_version} WHERE 1=1"""
         await self.session.execute_query(update_version_query)
 
     async def create_metadata_table(self) -> None:
@@ -1292,8 +1307,6 @@ class MetadataSchemaInitializer:
         new_feature_store_id : str
             New feature_store_id to update the working schema to
         """
-        update_feature_store_id_query = (
-            f"""UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = '{new_feature_store_id}'"""
-        )
+        update_feature_store_id_query = f"""UPDATE {self.session.metadata_schema} SET FEATURE_STORE_ID = '{new_feature_store_id}' WHERE 1=1"""
         await self.session.execute_query(update_feature_store_id_query)
         logger.debug(f"Updated feature store ID to {new_feature_store_id}")

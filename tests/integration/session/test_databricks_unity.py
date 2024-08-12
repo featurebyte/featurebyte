@@ -78,6 +78,6 @@ async def test_list_tables(config, feature_store, credentials_mapping):
         {"description": None, "name": "__grocerycustomer"},
         {
             "name": "grocerycustomer",
-            "description": "Customer details, including their name, address, and date of " "birth.",
+            "description": "Customer details, including their name, address, and date of birth.",
         },
     ]
