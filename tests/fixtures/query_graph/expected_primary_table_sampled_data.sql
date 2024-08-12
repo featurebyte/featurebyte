@@ -33,15 +33,30 @@ FROM (
         "Amount" AS "Amount"
       FROM (
         SELECT
+          "GroceryInvoiceGuid",
+          "GroceryCustomerGuid",
+          "Timestamp",
+          "record_available_at",
+          "Amount",
           "GroceryInvoiceGuid" AS "GroceryInvoiceGuid",
           "GroceryCustomerGuid" AS "GroceryCustomerGuid",
           "Timestamp" AS "Timestamp",
           "Amount" AS "Amount"
         FROM (
           SELECT
-            RANDOM(1234) AS "prob"
+            RANDOM(1234) AS "prob",
+            "GroceryInvoiceGuid",
+            "GroceryCustomerGuid",
+            "Timestamp",
+            "record_available_at",
+            "Amount"
           FROM (
             SELECT
+              "GroceryInvoiceGuid",
+              "GroceryCustomerGuid",
+              "Timestamp",
+              "record_available_at",
+              "Amount"
             FROM "FEATUREBYTE_TESTING"."GROCERY"."GROCERYINVOICE"
           )
         )
