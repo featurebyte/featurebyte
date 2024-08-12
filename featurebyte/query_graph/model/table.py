@@ -655,14 +655,4 @@ class TableDetails(FeatureByteBaseModel):
 
     details: Dict[str, Any] = Field(default_factory=dict)
     fully_qualified_name: str
-
-    @property
-    def description(self) -> Optional[str]:
-        """
-        Get the description of the table
-
-        Returns
-        -------
-        str
-        """
-        return self.details.get("COMMENT", self.details.get("Comment", None))
+    description: Optional[str] = Field(default=None)

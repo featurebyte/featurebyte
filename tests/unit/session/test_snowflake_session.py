@@ -245,7 +245,7 @@ EXPECTED_TABLES = [
     "TILE_MONITOR_SUMMARY",
 ]
 
-METADATA_QUERY = "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA"
+METADATA_QUERY = 'SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM "sf_database"."FEATUREBYTE"."METADATA_SCHEMA"'
 
 
 @pytest.fixture(name="patched_snowflake_session_cls")
@@ -313,6 +313,7 @@ def patched_snowflake_session_cls_fixture(
         mock_session_obj.get_working_schema_metadata.side_effect = mock_get_working_schema_metadata
         mock_session_obj.database_name = snowflake_session_dict_without_credentials["database_name"]
         mock_session_obj.schema_name = snowflake_session_dict_without_credentials["schema_name"]
+        mock_session_obj.metadata_schema = '"sf_database"."FEATUREBYTE"."METADATA_SCHEMA"'
         yield patched_class
 
 
@@ -467,7 +468,7 @@ async def test_schema_initializer__dont_reinitialize(
     assert session.list_schemas.call_args_list == [call(database_name="sf_database")]
     assert session.execute_query.call_args_list[:1] == [
         call(
-            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA "
+            'CREATE TABLE IF NOT EXISTS "sf_database"."FEATUREBYTE"."METADATA_SCHEMA" '
             "( WORKING_SCHEMA_VERSION INT, MIGRATION_VERSION INT, FEATURE_STORE_ID VARCHAR, "
             "CREATED_AT TIMESTAMP DEFAULT SYSDATE() ) AS "
             "SELECT 0 AS WORKING_SCHEMA_VERSION, 3 AS MIGRATION_VERSION, NULL AS FEATURE_STORE_ID, "
@@ -476,7 +477,9 @@ async def test_schema_initializer__dont_reinitialize(
     ]
     working_schema_version = snowflake_initializer.current_working_schema_version
     assert session.execute_query.call_args_list[-1:] == [
-        call(f"UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = {working_schema_version}"),
+        call(
+            f'UPDATE "sf_database"."FEATUREBYTE"."METADATA_SCHEMA" SET WORKING_SCHEMA_VERSION = {working_schema_version} WHERE 1=1'
+        ),
     ]
     counts = check_create_commands(session)
     assert counts == {
@@ -743,7 +746,7 @@ async def test_create_metadata_table(
     await initializer.create_metadata_table()
     assert session.execute_query.call_args_list == [
         call(
-            "CREATE TABLE IF NOT EXISTS METADATA_SCHEMA ( "
+            'CREATE TABLE IF NOT EXISTS "sf_database"."FEATUREBYTE"."METADATA_SCHEMA" ( '
             "WORKING_SCHEMA_VERSION INT, "
             "MIGRATION_VERSION INT, "
             "FEATURE_STORE_ID VARCHAR, "
@@ -774,7 +777,9 @@ async def test_update_metadata_schema_version(
     version_number = 3
     await initializer.update_metadata_schema_version(version_number)
     assert session.execute_query.call_args_list == [
-        call(f"UPDATE METADATA_SCHEMA SET WORKING_SCHEMA_VERSION = {version_number}"),
+        call(
+            f'UPDATE "sf_database"."FEATUREBYTE"."METADATA_SCHEMA" SET WORKING_SCHEMA_VERSION = {version_number} WHERE 1=1'
+        ),
     ]
 
 
@@ -794,7 +799,9 @@ async def test_update_feature_store_id(
     initializer = MetadataSchemaInitializer(session)
     await initializer.update_feature_store_id("feature_store_id")
     assert session.execute_query.call_args_list == [
-        call("UPDATE METADATA_SCHEMA SET FEATURE_STORE_ID = 'feature_store_id'"),
+        call(
+            'UPDATE "sf_database"."FEATUREBYTE"."METADATA_SCHEMA" SET FEATURE_STORE_ID = \'feature_store_id\' WHERE 1=1'
+        ),
     ]
 
 

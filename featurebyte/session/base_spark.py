@@ -351,6 +351,7 @@ class BaseSparkSession(BaseSession, ABC):
             fully_qualified_name=sql_to_string(
                 fully_qualified_table_name, source_type=self.source_type
             ),
+            description=details.get("Comment"),
         )
 
     def _format_comment(self, comment: str) -> str:

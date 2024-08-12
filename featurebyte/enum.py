@@ -311,6 +311,7 @@ class SourceType(StrEnum):
     DATABRICKS = "databricks", "DataBricks connection details."
     DATABRICKS_UNITY = "databricks_unity", "DataBricks Unity Catalog connection details."
     SPARK = "spark", "Spark connection details."
+    BIGQUERY = "bigquery", "BigQuery connection details."
 
     # TEST source type should only be used for mocking in unit tests.
     TEST = "test", "For testing only."

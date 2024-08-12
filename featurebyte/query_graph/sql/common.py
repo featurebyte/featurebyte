@@ -163,6 +163,8 @@ def get_dialect_from_source_type(source_type: SourceType) -> str:
     """
     if source_type in [SourceType.DATABRICKS_UNITY, SourceType.DATABRICKS, SourceType.SPARK]:
         dialect = "spark"
+    elif source_type == SourceType.BIGQUERY:
+        dialect = "bigquery"
     else:
         assert source_type == SourceType.SNOWFLAKE
         dialect = "snowflake"

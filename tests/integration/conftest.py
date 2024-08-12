@@ -50,12 +50,18 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
+    GoogleCredential,
     UsernamePasswordCredential,
 )
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.query_graph.node.schema import DatabricksUnityDetails, SparkDetails, SQLiteDetails
+from featurebyte.query_graph.node.schema import (
+    BigQueryDetails,
+    DatabricksUnityDetails,
+    SparkDetails,
+    SQLiteDetails,
+)
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
@@ -67,7 +73,7 @@ from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
 
 MONGO_CONNECTION = "mongodb://localhost:37017/?replicaSet=rs0"
 TEST_REDIS_URI = "redis://localhost:36379"
@@ -185,6 +191,13 @@ def credentials_mapping_fixture():
         "spark_featurestore": CredentialModel(
             name="spark_featurestore",
             feature_store_id=ObjectId(),
+        ),
+        "bigquery_featurestore": CredentialModel(
+            name="bigquery_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=GoogleCredential(
+                service_account_info=json.loads(os.getenv("BIGQUERY_SERVICE_ACCOUNT_INFO", "{}")),
+            ),
         ),
     }
 
@@ -339,7 +352,9 @@ def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
         yield
 
 
-@pytest.fixture(name="source_type", scope="session", params=SNOWFLAKE_SPARK_DATABRICKS_UNITY)
+@pytest.fixture(
+    name="source_type", scope="session", params=SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
+)
 def source_type_fixture(request):
     """
     Fixture for the source_type parameter used to create all the other fixtures
@@ -369,7 +384,7 @@ def source_type_fixture(request):
 
 
 @pytest.fixture(name="feature_store_details", scope="session")
-def feature_store_details_fixture(source_type, sqlite_filename):
+def feature_store_details_fixture(source_type, sqlite_filename):  # pylint: disable=too-many-return-statements
     """
     Fixture for a BaseDatabaseDetails specific to source_type
     """
@@ -418,6 +433,14 @@ def feature_store_details_fixture(source_type, sqlite_filename):
             storage_path=f"file:///opt/spark/data/derby/staging/{temp_schema_name}",
             catalog_name="spark_catalog",
             schema_name=temp_schema_name,
+        )
+
+    if source_type == "bigquery":
+        schema_name = "featurebyte"
+        temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+        return BigQueryDetails(
+            project_name=os.getenv("BIGQUERY_PROJECT"),
+            dataset_name=temp_schema_name,
         )
 
     if source_type == "sqlite":
@@ -888,30 +911,44 @@ async def datasets_registration_helper_fixture(
     yield helper
 
 
-@pytest_asyncio.fixture(name="session", scope="session")
-async def session_fixture(source_type, session_manager, dataset_registration_helper, feature_store):
+@pytest_asyncio.fixture(name="session_without_datasets", scope="session")
+async def session_without_datasets_fixture(source_type, session_manager, feature_store):
     """
     Fixture for a BaseSession based on source_type
     """
     session = await session_manager.get_session(feature_store)
-
-    await dataset_registration_helper.register_datasets(session)
 
     yield session
 
     if source_type == "snowflake":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name}")
 
-    if source_type == "databricks":
+    elif source_type == "databricks":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
         session._dbfs_client.delete(path=session._storage_base_path, recursive=True)
-    if source_type == "databricks_unity":
+
+    elif source_type == "databricks_unity":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
 
-    if source_type == "spark":
+    elif source_type == "spark":
         await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
         # clean up storage
         shutil.rmtree(Path(feature_store.details.storage_url).expanduser())
+
+    elif source_type == "bigquery":
+        await session.execute_query(
+            f"DROP SCHEMA IF EXISTS `{session.database_name}`.`{session.schema_name}` CASCADE"
+        )
+
+
+@pytest_asyncio.fixture(name="session", scope="session")
+async def session_fixture(session_without_datasets, dataset_registration_helper):
+    """
+    Fixture for a BaseSession based on source_type
+    """
+    session = session_without_datasets
+    await dataset_registration_helper.register_datasets(session)
+    yield session
 
 
 def create_generic_tile_spec():
