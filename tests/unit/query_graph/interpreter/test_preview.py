@@ -6,8 +6,11 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
+from bson import ObjectId
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
@@ -35,6 +38,17 @@ def test_graph_interpreter_describe(simple_graph, source_type, update_fixtures):
     )
     expected_filename = f"tests/fixtures/query_graph/expected_describe_{source_type.lower()}.sql"
     assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
+
+    # test it again when sample_on_primary_table is true
+    sql_code = sql_to_string(
+        interpreter.construct_describe_queries(
+            node.name, num_rows=10, seed=1234, sample_on_primary_table=True
+        )
+        .queries[0]
+        .expr,
+        source_type,
+    )
+    assert_equal_with_expected_fixture(sql_code, expected_filename, False)
 
 
 def test_describe_specify_stats_names(simple_graph, update_fixtures):
@@ -222,4 +236,182 @@ def test_value_counts_sql_no_casting(graph, node_input, update_fixtures):
     expected_filename = f"tests/fixtures/query_graph/expected_value_counts_sampled_data.sql"
     assert_equal_with_expected_fixture(
         value_counts_queries.data.expr.sql(pretty=True), expected_filename, update_fixtures
+    )
+
+
+def test_graph_interpreter_describe_event_join_scd_view(update_fixtures):
+    """Test graph sample"""
+    table_details = {"database_name": "FEATUREBYTE_TESTING", "schema_name": "GROCERY"}
+    event_table_id, scd_table_id = ObjectId(), ObjectId()
+
+    query_graph = QueryGraphModel()
+    input_event_node = query_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "columns": [
+                {"dtype": "VARCHAR", "name": "GroceryInvoiceGuid"},
+                {"dtype": "VARCHAR", "name": "GroceryCustomerGuid"},
+                {"dtype": "TIMESTAMP", "name": "Timestamp"},
+                {"dtype": "TIMESTAMP", "name": "record_available_at"},
+                {"dtype": "FLOAT", "name": "Amount"},
+            ],
+            "event_timestamp_timezone_offset": None,
+            "event_timestamp_timezone_offset_column": None,
+            "feature_store_details": {"details": None, "type": "snowflake"},
+            "id": event_table_id,
+            "id_column": "GroceryInvoiceGuid",
+            "table_details": {**table_details, "table_name": "GROCERYINVOICE"},
+            "timestamp_column": "Timestamp",
+            "type": "event_table",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    input_scd_node = query_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params={
+            "columns": [
+                {"dtype": "VARCHAR", "name": "RowID"},
+                {"dtype": "VARCHAR", "name": "GroceryCustomerGuid"},
+                {"dtype": "TIMESTAMP", "name": "ValidFrom"},
+                {"dtype": "VARCHAR", "name": "Gender"},
+                {"dtype": "TIMESTAMP", "name": "record_available_at"},
+                {"dtype": "BOOL", "name": "CurrentRecord"},
+            ],
+            "current_flag_column": "CurrentRecord",
+            "effective_timestamp_column": "ValidFrom",
+            "end_timestamp_column": None,
+            "feature_store_details": {"details": None, "type": "snowflake"},
+            "id": scd_table_id,
+            "natural_key_column": "GroceryCustomerGuid",
+            "surrogate_key_column": "RowID",
+            "table_details": {**table_details, "table_name": "GROCERYUSER"},
+            "type": "scd_table",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    event_graph_node = query_graph.add_operation(
+        node_type=NodeType.GRAPH,
+        node_params={
+            "graph": {
+                "edges": [{"source": "proxy_input_1", "target": "project_1"}],
+                "nodes": [
+                    {
+                        "name": "proxy_input_1",
+                        "output_type": "frame",
+                        "parameters": {"input_order": 0},
+                        "type": "proxy_input",
+                    },
+                    {
+                        "name": "project_1",
+                        "output_type": "frame",
+                        "parameters": {
+                            "columns": [
+                                "GroceryInvoiceGuid",
+                                "GroceryCustomerGuid",
+                                "Timestamp",
+                                "Amount",
+                            ]
+                        },
+                        "type": "project",
+                    },
+                ],
+            },
+            "metadata": {
+                "column_cleaning_operations": [],
+                "drop_column_names": ["record_available_at"],
+                "table_id": event_table_id,
+                "view_mode": "auto",
+            },
+            "output_node_name": "project_1",
+            "type": "event_view",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[input_event_node],
+    )
+    scd_graph_node = query_graph.add_operation(
+        node_type=NodeType.GRAPH,
+        node_params={
+            "graph": {
+                "edges": [{"source": "proxy_input_1", "target": "project_1"}],
+                "nodes": [
+                    {
+                        "name": "proxy_input_1",
+                        "output_type": "frame",
+                        "parameters": {"input_order": 0},
+                        "type": "proxy_input",
+                    },
+                    {
+                        "name": "project_1",
+                        "output_type": "frame",
+                        "parameters": {
+                            "columns": [
+                                "RowID",
+                                "GroceryCustomerGuid",
+                                "ValidFrom",
+                                "Gender",
+                            ]
+                        },
+                        "type": "project",
+                    },
+                ],
+            },
+            "metadata": {
+                "column_cleaning_operations": [],
+                "drop_column_names": ["record_available_at", "CurrentRecord"],
+                "table_id": scd_table_id,
+                "view_mode": "auto",
+            },
+            "output_node_name": "project_1",
+            "type": "scd_view",
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[input_scd_node],
+    )
+    join_node = query_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params={
+            "join_type": "left",
+            "left_input_columns": [
+                "GroceryInvoiceGuid",
+                "GroceryCustomerGuid",
+                "Timestamp",
+                "Amount",
+            ],
+            "left_on": "GroceryCustomerGuid",
+            "left_output_columns": [
+                "GroceryInvoiceGuid",
+                "GroceryCustomerGuid",
+                "Timestamp",
+                "Amount",
+            ],
+            "metadata": {"rprefix": "", "rsuffix": "", "type": "join"},
+            "right_input_columns": [
+                "Gender",
+            ],
+            "right_on": "GroceryCustomerGuid",
+            "right_output_columns": [
+                "Gender",
+            ],
+            "scd_parameters": {
+                "current_flag_column": "CurrentRecord",
+                "effective_timestamp_column": "ValidFrom",
+                "end_timestamp_column": None,
+                "left_timestamp_column": "Timestamp",
+                "natural_key_column": "GroceryCustomerGuid",
+            },
+        },
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_graph_node, scd_graph_node],
+    )
+
+    interpreter = GraphInterpreter(query_graph, SourceType.SNOWFLAKE)
+    describe_query = interpreter.construct_describe_queries(
+        join_node.name, num_rows=10, seed=1234, total_num_rows=1000, sample_on_primary_table=True
+    )
+
+    expected_filename = f"tests/fixtures/query_graph/expected_primary_table_sampled_data.sql"
+    assert_equal_with_expected_fixture(
+        describe_query.data.expr.sql(pretty=True), expected_filename, update_fixtures
     )

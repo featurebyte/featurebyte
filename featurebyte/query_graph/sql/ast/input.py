@@ -13,6 +13,7 @@ from sqlglot.expressions import Expression, Select
 
 from featurebyte.enum import InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.input import SampleParameters
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 
@@ -24,10 +25,24 @@ class InputNode(TableNode):
     dbtable: dict[str, str]
     feature_store: dict[str, Any]
     query_node_type = NodeType.INPUT
+    sample_parameters: SampleParameters | None = None
 
     def from_query_impl(self, select_expr: Select) -> Select:
         dbtable = get_fully_qualified_table_name(self.dbtable)
-        select_expr = select_expr.from_(dbtable)
+        if isinstance(self.sample_parameters, SampleParameters):
+            original_cols = [
+                quoted_identifier(col_info["name"])
+                for col_info in self.context.parameters["columns"]
+            ]
+            sample_expr = self.context.adapter.random_sample(
+                select_expr.from_(dbtable).select(*original_cols),
+                desired_row_count=self.sample_parameters.num_rows,
+                total_row_count=self.sample_parameters.total_num_rows,
+                seed=self.sample_parameters.seed,
+            )
+            select_expr = select_expr.from_(sample_expr.subquery())
+        else:
+            select_expr = select_expr.from_(dbtable)
 
         # Optionally, filter SCD table to only include current records. This is done only for
         # certain aggregations during online serving.
@@ -93,6 +108,7 @@ class InputNode(TableNode):
             columns_map=columns_map,
             dbtable=context.parameters["table_details"],
             feature_store=feature_store,
+            sample_parameters=context.query_node.parameters.sample_parameters,  # type: ignore
         )
         return sql_node
 
