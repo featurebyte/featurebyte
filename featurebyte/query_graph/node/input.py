@@ -39,12 +39,23 @@ from featurebyte.query_graph.node.schema import (
 )
 
 
+class SampleParameters(FeatureByteBaseModel):
+    """
+    SampleParameters
+    """
+
+    seed: int
+    total_num_rows: int
+    num_rows: int
+
+
 class BaseInputNodeParameters(FeatureByteBaseModel):
     """BaseInputNodeParameters"""
 
     columns: List[ColumnSpec]
     table_details: TableDetails
     feature_store_details: InputNodeFeatureStoreDetails
+    sample_parameters: Optional[SampleParameters] = Field(default=None, exclude=True)
 
     # class variable
     _source_type_to_import: ClassVar[Dict[SourceType, ClassEnum]] = {
