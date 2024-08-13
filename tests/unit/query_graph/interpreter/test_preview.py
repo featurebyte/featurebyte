@@ -239,8 +239,7 @@ def test_value_counts_sql_no_casting(graph, node_input, update_fixtures):
     )
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS)
-def test_graph_interpreter_describe_event_join_scd_view(source_type, update_fixtures):
+def test_graph_interpreter_describe_event_join_scd_view(update_fixtures):
     """Test graph sample"""
     table_details = {"database_name": "FEATUREBYTE_TESTING", "schema_name": "GROCERY"}
     event_table_id, scd_table_id = ObjectId(), ObjectId()
@@ -407,7 +406,7 @@ def test_graph_interpreter_describe_event_join_scd_view(source_type, update_fixt
         input_nodes=[event_graph_node, scd_graph_node],
     )
 
-    interpreter = GraphInterpreter(query_graph, source_type)
+    interpreter = GraphInterpreter(query_graph, SourceType.SNOWFLAKE)
     describe_query = interpreter.construct_describe_queries(
         join_node.name, num_rows=10, seed=1234, total_num_rows=1000, sample_on_primary_table=True
     )

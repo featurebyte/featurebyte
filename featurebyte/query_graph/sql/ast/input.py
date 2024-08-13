@@ -29,19 +29,20 @@ class InputNode(TableNode):
 
     def from_query_impl(self, select_expr: Select) -> Select:
         dbtable = get_fully_qualified_table_name(self.dbtable)
-        select_expr = select_expr.from_(dbtable)
-
         if isinstance(self.sample_parameters, SampleParameters):
             original_cols = [
                 quoted_identifier(col_info["name"])
                 for col_info in self.context.parameters["columns"]
             ]
-            select_expr = self.context.adapter.random_sample(
-                select_expr.select(*original_cols),
+            sample_expr = self.context.adapter.random_sample(
+                select_expr.from_(dbtable).select(*original_cols),
                 desired_row_count=self.sample_parameters.num_rows,
                 total_row_count=self.sample_parameters.total_num_rows,
                 seed=self.sample_parameters.seed,
             )
+            select_expr = select_expr.from_(sample_expr.subquery())
+        else:
+            select_expr = select_expr.from_(dbtable)
 
         # Optionally, filter SCD table to only include current records. This is done only for
         # certain aggregations during online serving.
