@@ -9,7 +9,7 @@ import pytest
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
-from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.enum import AggFunc, DBVarType, TableDataType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -1172,3 +1172,11 @@ def test_get_view__auto_resolve_column_conflict(
         "event_timestamp",
         "cust_id",
     ]
+
+
+def test_item_view_sample_table_node(snowflake_item_table):
+    """Test ItemView sample table node"""
+    view = snowflake_item_table.get_view(event_suffix="_event_table")
+    sample_table_node = view.graph.get_sample_table_node(view.node_name)
+    assert sample_table_node.parameters.type == TableDataType.EVENT_TABLE
+    assert sample_table_node.parameters.id == view.event_table_id
