@@ -389,10 +389,10 @@ class QueryGraphModel(FeatureByteBaseModel):
             table_params = cast(ItemTableInputNodeParameters, input_node.parameters)
             # use the event table of the item table as the sample table
             target_node = self.get_node_by_name(node_name)
-            for input_node in self.iterate_nodes(target_node=target_node, node_type=NodeType.INPUT):
-                node = cast(InputNode, input_node)
-                if node.parameters.id == table_params.event_table_id:
-                    return node
+            for node in self.iterate_nodes(target_node=target_node, node_type=NodeType.INPUT):
+                in_node = cast(InputNode, node)
+                if in_node.parameters.id == table_params.event_table_id:
+                    return in_node
         return input_node
 
     def get_input_node_names(self, node: Node) -> List[str]:
