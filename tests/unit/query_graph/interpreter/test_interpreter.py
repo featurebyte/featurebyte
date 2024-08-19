@@ -16,6 +16,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 def test_graph_interpreter_super_simple(simple_graph):
@@ -554,6 +555,26 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         """
     ).strip()
     assert sql == expected
+
+
+def test_on_demand_tile_gen_on_joined_view(
+    global_graph, window_aggregate_on_view_with_scd_join_feature_node, update_fixtures
+):
+    """Test tile building SQL with on-demand tile generation on a joined view
+
+    Input tables should be filtered using a join with the entity table before performing the more
+    expensive SCD join.
+    """
+    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(
+        window_aggregate_on_view_with_scd_join_feature_node, is_on_demand=True
+    )
+    assert len(tile_gen_sqls) == 1
+    assert_equal_with_expected_fixture(
+        tile_gen_sqls[0].sql,
+        "tests/fixtures/expected_tile_sql_on_demand.sql",
+        update_fixtures,
+    )
 
 
 def test_graph_interpreter_preview(graph, node_input):

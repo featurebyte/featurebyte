@@ -925,17 +925,17 @@ def scd_join_node_fixture(
     scd_table_input_node,
 ):
     """
-    Fixture of a join node that performs an SCD join between EventTable and DimensionTable
+    Fixture of a join node that performs an SCD join between EventTable and SCDTable
     """
     node_params = {
         "left_on": "cust_id",
         "right_on": "cust_id",
-        "left_input_columns": ["event_timestamp", "cust_id", "event_column_1", "event_column_2"],
+        "left_input_columns": ["ts", "cust_id", "order_id", "order_method"],
         "left_output_columns": [
-            "event_timestamp",
+            "ts",
             "cust_id",
-            "event_column_1_out",
-            "event_column_2_out",
+            "order_id",
+            "order_method",
         ],
         "right_input_columns": ["membership_status"],
         "right_output_columns": ["latest_membership_status"],
@@ -1137,6 +1137,37 @@ def scd_offset_lookup_feature_node_fixture(global_graph, scd_offset_lookup_node)
         node_params={"columns": ["Current Membership Status"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[global_graph.get_node_by_name(scd_offset_lookup_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="window_aggregate_on_view_with_scd_join_feature_node")
+def window_aggregate_on_view_with_scd_join_feature_node_fixture(global_graph, scd_join_node):
+    """
+    Fixture of a window aggregate feature on a view with SCD join
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "latest_membership_status",
+        "agg_func": "na_count",
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "3600s",  # 1h
+            "blind_spot": "900s",  # 15m
+        },
+        "timestamp": "ts",
+        "names": ["latest_membership_status_na_count_90d"],
+        "windows": ["90d"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, scd_join_node)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["latest_membership_status_na_count_90d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
     )
     return feature_node
 
