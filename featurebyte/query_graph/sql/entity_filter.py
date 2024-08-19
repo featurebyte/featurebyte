@@ -4,7 +4,7 @@ Helpers to filter a table by entity
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
@@ -94,4 +94,4 @@ def get_table_filtered_by_entity(
             copy=False,
         )
     )
-    return select_expr
+    return cast(Select, select_expr)

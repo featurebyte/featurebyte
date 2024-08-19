@@ -17,11 +17,7 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import (
-    SQLType,
-    get_qualified_column_identifier,
-    quoted_identifier,
-)
+from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
 from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
 from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyColumn,
