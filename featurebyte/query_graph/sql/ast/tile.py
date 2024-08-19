@@ -22,6 +22,7 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
+from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
 from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyColumn,
     GroupbyKey,
@@ -118,61 +119,16 @@ class BuildTileNode(TableNode):  # pylint: disable=too-many-instance-attributes
         """
         Construct sql to filter the data used when building tiles for selected entities only
 
-        The selected entities are expected to be available in an "entity table". It can be injected
-        as a subquery by replacing the placeholder InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.
-
-        Entity table is expected to have these columns:
-        * entity column(s)
-        * InternalName.ENTITY_TABLE_START_DATE
-        * InternalName.ENTITY_TABLE_END_DATE
-
         Returns
         -------
         Select
         """
-        entity_table = InternalName.ENTITY_TABLE_NAME.value
-        start_date = InternalName.ENTITY_TABLE_START_DATE.value
-        end_date = InternalName.ENTITY_TABLE_END_DATE.value
-
-        join_conditions: list[Expression] = []
-        for col in self.keys:
-            condition = expressions.EQ(
-                this=get_qualified_column_identifier(col, "R"),
-                expression=get_qualified_column_identifier(col, entity_table),
-            )
-            join_conditions.append(condition)
-        join_conditions.append(
-            expressions.GTE(
-                this=get_qualified_column_identifier(self.timestamp, "R"),
-                expression=get_qualified_column_identifier(
-                    start_date, entity_table, quote_column=False
-                ),
-            )
+        return get_table_filtered_by_entity(
+            input_expr=cast(Select, self.input_node.sql),
+            entity_column_names=self.keys,
+            timestamp_column=self.timestamp,
+            inject_entity_table_placeholder=True,
         )
-        join_conditions.append(
-            expressions.LT(
-                this=get_qualified_column_identifier(self.timestamp, "R"),
-                expression=get_qualified_column_identifier(
-                    end_date, entity_table, quote_column=False
-                ),
-            )
-        )
-        join_conditions_expr = expressions.and_(*join_conditions)
-
-        select_expr = (
-            select()
-            .with_(entity_table, as_=InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value)
-            .select("R.*")
-            .from_(entity_table)
-            .join(
-                self.input_node.sql,
-                join_alias="R",
-                join_type="inner",
-                on=join_conditions_expr,
-                copy=False,
-            )
-        )
-        return cast(Select, select_expr)
 
     @staticmethod
     def _get_db_var_type_from_col_type(col_type: str) -> DBVarType:

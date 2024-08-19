@@ -17,10 +17,18 @@ def get_table_filtered_by_entity(
     input_expr: Select,
     entity_column_names: list[str],
     timestamp_column: Optional[str] = None,
+    inject_entity_table_placeholder: bool = False,
 ) -> Select:
     """
-    Construct sql to filter the data used when building tiles for selected entities only, which are
-    available in the entity table
+    Construct sql to filter the data used when building tiles for selected entities only
+
+    The selected entities are expected to be available in an "entity table". It can be injected
+    as a subquery by replacing the placeholder InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.
+
+    Entity table is expected to have these columns:
+    * entity column(s)
+    * InternalName.ENTITY_TABLE_START_DATE
+    * InternalName.ENTITY_TABLE_END_DATE
 
     Parameters
     ----------
@@ -31,6 +39,8 @@ def get_table_filtered_by_entity(
     timestamp_column: Optional[str]
         If specified, additionally filter using the timestamp column based on the start and end date
         specified in the entity table
+    inject_entity_table_placeholder: bool
+        If set, define the entity table placeholder as a CTE in the generated select statement
 
     Returns
     -------
@@ -67,8 +77,14 @@ def get_table_filtered_by_entity(
         )
 
     join_conditions_expr = expressions.and_(*join_conditions)
+    if inject_entity_table_placeholder:
+        select_expr = select().with_(
+            entity_table, as_=InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value
+        )
+    else:
+        select_expr = select()
     select_expr = (
-        select("R.*")
+        select_expr.select("R.*")
         .from_(entity_table)
         .join(
             input_expr.subquery(),
