@@ -14,9 +14,13 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import GroupByNode
-from featurebyte.query_graph.node.metadata.operation import SourceDataColumn
+from featurebyte.query_graph.node.metadata.operation import OperationStructure, SourceDataColumn
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
-from featurebyte.query_graph.sql.common import EventTableTimestampFilter, SQLType
+from featurebyte.query_graph.sql.common import (
+    EventTableTimestampFilter,
+    OnDemandEntityFilters,
+    SQLType,
+)
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -116,17 +120,21 @@ class TileSQLGenerator:
 
             if self.is_on_demand:
                 event_table_timestamp_filter = None
+                on_demand_entity_filters = self._get_on_demand_entity_filters(groupby_node)
             else:
                 event_table_timestamp_filter = self._get_event_table_timestamp_filter(groupby_node)
+                on_demand_entity_filters = None
 
-            info = self.make_one_tile_sql(groupby_node, event_table_timestamp_filter)
+            info = self.make_one_tile_sql(
+                groupby_node, event_table_timestamp_filter, on_demand_entity_filters
+            )
             sqls.append(info)
 
         return sqls
 
-    def _get_event_table_timestamp_filter(
+    def _get_input_operation_structure_if_no_lag(
         self, groupby_node: GroupByNode
-    ) -> Optional[EventTableTimestampFilter]:
+    ) -> Optional[OperationStructure]:
         pruned_graph, node_name_map, _ = prune_query_graph(
             graph=self.query_graph, node=groupby_node
         )
@@ -144,6 +152,14 @@ class TileSQLGenerator:
         )
         op_struct_info = OperationStructureExtractor(graph=pruned_graph).extract(groupby_input_node)
         op_struct = op_struct_info.operation_structure_map[groupby_input_node.name]
+        return op_struct
+
+    def _get_event_table_timestamp_filter(
+        self, groupby_node: GroupByNode
+    ) -> Optional[EventTableTimestampFilter]:
+        op_struct = self._get_input_operation_structure_if_no_lag(groupby_node)
+        if op_struct is None:
+            return None
         for column in op_struct.columns:
             if (
                 column.name == groupby_node.parameters.timestamp
@@ -158,10 +174,29 @@ class TileSQLGenerator:
 
         return None
 
+    def _get_on_demand_entity_filters(
+        self, groupby_node: GroupByNode
+    ) -> Optional[OnDemandEntityFilters]:
+        op_struct = self._get_input_operation_structure_if_no_lag(groupby_node)
+        if op_struct is None:
+            return None
+        entity_columns = set(groupby_node.parameters.keys)
+        on_demand_entity_filters = OnDemandEntityFilters()
+        for column in op_struct.columns:
+            if (
+                column.name in entity_columns
+                and isinstance(column, SourceDataColumn)
+                and column.table_id is not None
+            ):
+                assert isinstance(column, SourceDataColumn), "SourceDataColumn expected"
+                on_demand_entity_filters.add_entity_column(column.table_id, column.name)
+        return on_demand_entity_filters
+
     def make_one_tile_sql(
         self,
         groupby_node: GroupByNode,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter],
+        on_demand_entity_filters: Optional[OnDemandEntityFilters],
     ) -> TileGenSql:
         """Construct tile building SQL for a specific groupby query graph node
 
@@ -171,6 +206,8 @@ class TileSQLGenerator:
             Groupby query graph node
         event_table_timestamp_filter: Optional[EventTableTimestampFilter]
             Event table timestamp filter to apply if applicable
+        on_demand_entity_filters: Optional[OnDemandEntityFilters]
+            On demand entity filters to apply if applicable
 
         Returns
         -------
@@ -185,6 +222,7 @@ class TileSQLGenerator:
             sql_type=sql_type,
             source_type=self.source_type,
             event_table_timestamp_filter=event_table_timestamp_filter,
+            on_demand_entity_filters=on_demand_entity_filters,
         ).build(groupby_node)
         sql = groupby_sql_node.sql
         tile_table_id = groupby_node.parameters.tile_id

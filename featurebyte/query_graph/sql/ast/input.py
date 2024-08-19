@@ -16,6 +16,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.input import SampleParameters
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
+from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
 
 
 @dataclass
@@ -42,7 +43,7 @@ class InputNode(TableNode):
             )
             select_expr = select_expr.from_(sample_expr.subquery())
         else:
-            select_expr = select_expr.from_(dbtable)
+            select_expr = self._select_from_dbtable(select_expr, dbtable)
 
         # Optionally, filter SCD table to only include current records. This is done only for
         # certain aggregations during online serving.
@@ -96,6 +97,27 @@ class InputNode(TableNode):
                     ),
                 )
             )
+
+        return select_expr
+
+    def _select_from_dbtable(self, select_expr: Select, dbtable: Expression) -> Select:
+        on_demand_entity_filters = self.context.on_demand_entity_filters
+        if (
+            on_demand_entity_filters is not None
+            and self.context.parameters["id"] in on_demand_entity_filters.mapping
+        ):
+            original_cols = [
+                quoted_identifier(col_info["name"])
+                for col_info in self.context.parameters["columns"]
+            ]
+            select_expr = expressions.select().from_(
+                get_table_filtered_by_entity(
+                    select_expr.select(*original_cols).from_(dbtable),
+                    on_demand_entity_filters.mapping[self.context.parameters["id"]].entity_columns,
+                ).subquery()
+            )
+        else:
+            select_expr = select_expr.from_(dbtable)
 
         return select_expr
 

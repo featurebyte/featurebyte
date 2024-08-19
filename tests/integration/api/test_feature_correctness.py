@@ -271,7 +271,10 @@ def check_feature_preview(feature_list, df_expected, dict_like_columns, n_points
     output = feature_list[feature_list.feature_names].preview(
         sampled_points[["POINT_IN_TIME", "üser id"]]
     )
-    fb_assert_frame_equal(output, sampled_points, dict_like_columns)
+    try:
+        fb_assert_frame_equal(output, sampled_points, dict_like_columns)
+    except:
+        raise ValueError("here")
     elapsed = time.time() - tic
     print(f"elapsed check_feature_preview: {elapsed:.2f}s")
 

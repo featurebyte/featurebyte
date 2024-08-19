@@ -18,7 +18,11 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
-from featurebyte.query_graph.sql.common import EventTableTimestampFilter, SQLType
+from featurebyte.query_graph.sql.common import (
+    EventTableTimestampFilter,
+    OnDemandEntityFilters,
+    SQLType,
+)
 from featurebyte.query_graph.sql.specs import AggregationSpec
 
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
@@ -52,6 +56,7 @@ class SQLNodeContext:  # pylint: disable=too-many-instance-attributes
     to_filter_scd_by_current_flag: Optional[bool]
     event_table_timestamp_filter: Optional[EventTableTimestampFilter]
     aggregation_specs: Optional[dict[str, list[AggregationSpec]]]
+    on_demand_entity_filters: Optional[OnDemandEntityFilters]
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.dict()

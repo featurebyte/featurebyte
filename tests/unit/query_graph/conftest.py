@@ -237,9 +237,9 @@ def dimension_table_input_node_fixture(global_graph, dimension_table_input_detai
     return node_input
 
 
-@pytest.fixture(name="event_table_input_node")
-def event_table_input_node_fixture(global_graph, input_details):
-    """Fixture of an EventTable input node"""
+@pytest.fixture(name="event_table_input_node_parameters")
+def event_table_input_node_parameters_fixture(global_graph, input_details):
+    """Fixture for EventTable input node parameters"""
     # pylint: disable=duplicate-code
     node_params = {
         "type": "event_table",
@@ -252,9 +252,36 @@ def event_table_input_node_fixture(global_graph, input_details):
         "timestamp": "ts",  # DEV-556: this should be timestamp_column
     }
     node_params.update(input_details)
+    return node_params
+
+
+@pytest.fixture(name="event_table_input_node")
+def event_table_input_node_fixture(global_graph, event_table_input_node_parameters):
+    """Fixture of an EventTable input node"""
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
-        node_params=node_params,
+        node_params=event_table_input_node_parameters,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    return node_input
+
+
+@pytest.fixture(name="event_table_id")
+def event_table_id_fixture():
+    """Fixture for EventTable id"""
+    return ObjectId("66c335fd9da9ad8e66c1eec5")
+
+
+@pytest.fixture(name="event_table_input_node_with_id")
+def event_table_input_node_with_id_fixture(
+    global_graph, event_table_input_node_parameters, event_table_id
+):
+    """Fixture of an EventTable input node with id"""
+    event_table_input_node_parameters["id"] = event_table_id
+    node_input = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=event_table_input_node_parameters,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
@@ -921,7 +948,7 @@ def mixed_point_in_time_and_item_aggregations_features_fixture(
 @pytest.fixture(name="scd_join_node")
 def scd_join_node_fixture(
     global_graph,
-    event_table_input_node,
+    event_table_input_node_with_id,
     scd_table_input_node,
 ):
     """
@@ -949,7 +976,7 @@ def scd_join_node_fixture(
         node_type=NodeType.JOIN,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_table_input_node, scd_table_input_node],
+        input_nodes=[event_table_input_node_with_id, scd_table_input_node],
     )
     return node
 

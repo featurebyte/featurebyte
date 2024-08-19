@@ -1,7 +1,7 @@
 SELECT
   index,
   "cust_id",
-  SUM(CAST("latest_membership_status" IS NULL AS INTEGER)) AS value_na_count_f8628aa072d8cf7c6746201e41a74890b1a9b8a8
+  SUM(CAST("latest_membership_status" IS NULL AS INTEGER)) AS value_na_count_d000a54725c3d2ff6a5651680754ba29e682ca3d
 FROM (
   SELECT
     *,
@@ -53,7 +53,20 @@ FROM (
                 "cust_id" AS "cust_id",
                 "order_id" AS "order_id",
                 "order_method" AS "order_method"
-              FROM "db"."public"."event_table"
+              FROM (
+                SELECT
+                  R.*
+                FROM __FB_ENTITY_TABLE_NAME
+                INNER JOIN (
+                  SELECT
+                    "ts",
+                    "cust_id",
+                    "order_id",
+                    "order_method"
+                  FROM "db"."public"."event_table"
+                ) AS R
+                  ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+              )
             )
             UNION ALL
             SELECT
