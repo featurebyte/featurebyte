@@ -303,13 +303,18 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
         feature_names=["count_7d"],
     )["count_7d"]
 
-    df = feature.preview(pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}]))
+    observation_set = pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}])
+    df = feature.preview(observation_set)
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
         "üser id": 1,
         "count_7d": '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}',
     }
     assert_preview_result_equal(df, expected, dict_like_columns=["count_7d"])
+
+    feature_list = FeatureList([feature], name="my_scd_feature_list")
+    df = feature_list.compute_historical_features(observation_set)
+    fb_assert_frame_equal(df, pd.DataFrame([expected]), dict_like_columns=["count_7d"])
 
 
 def test_scd_lookup_feature(

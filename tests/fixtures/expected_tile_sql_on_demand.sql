@@ -1,7 +1,7 @@
 SELECT
   index,
   "cust_id",
-  SUM(CAST("latest_membership_status" IS NULL AS INTEGER)) AS value_na_count_d000a54725c3d2ff6a5651680754ba29e682ca3d
+  SUM(CAST("latest_membership_status" IS NULL AS INTEGER)) AS value_na_count_5ef528c2ac76091ed296593418b125a615eb56e7
 FROM (
   SELECT
     *,
@@ -83,7 +83,19 @@ FROM (
                 "effective_ts" AS "effective_ts",
                 "cust_id" AS "cust_id",
                 "membership_status" AS "membership_status"
-              FROM "db"."public"."customer_profile_table"
+              FROM (
+                SELECT
+                  R.*
+                FROM __FB_ENTITY_TABLE_NAME
+                INNER JOIN (
+                  SELECT
+                    "effective_ts",
+                    "cust_id",
+                    "membership_status"
+                  FROM "db"."public"."customer_profile_table"
+                ) AS R
+                  ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+              )
               WHERE
                 "effective_timestamp" IS NOT NULL
             )
@@ -102,7 +114,19 @@ FROM (
             "effective_ts" AS "effective_ts",
             "cust_id" AS "cust_id",
             "membership_status" AS "membership_status"
-          FROM "db"."public"."customer_profile_table"
+          FROM (
+            SELECT
+              R.*
+            FROM __FB_ENTITY_TABLE_NAME
+            INNER JOIN (
+              SELECT
+                "effective_ts",
+                "cust_id",
+                "membership_status"
+              FROM "db"."public"."customer_profile_table"
+            ) AS R
+              ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+          )
           WHERE
             "effective_timestamp" IS NOT NULL
         )

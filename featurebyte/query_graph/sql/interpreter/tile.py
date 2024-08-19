@@ -4,16 +4,19 @@ This module contains the Query Graph Interpreter
 
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional, Tuple, cast
 
+from collections import defaultdict
 from dataclasses import dataclass
+
+from bson import ObjectId
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupByNode
+from featurebyte.query_graph.node.generic import GroupByNode, JoinNodeParameters
 from featurebyte.query_graph.node.metadata.operation import OperationStructure, SourceDataColumn
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
@@ -84,6 +87,66 @@ class TileGenSql:
         return cast(str, self.sql_template.render())
 
 
+JoinKeysLineageKey = Tuple[ObjectId, str]
+
+
+class JoinKeysLineage:
+    """Helper to keep track of join keys lineage"""
+
+    def __init__(self) -> None:
+        self.edges: dict[JoinKeysLineageKey, list[JoinKeysLineageKey]] = defaultdict(list)
+
+    def add_join_key(
+        self,
+        left_table_id: ObjectId,
+        left_column_name: str,
+        right_table_id: ObjectId,
+        right_column_name: str,
+    ) -> None:
+        """
+        Add a join key corresponding to a join node
+
+        Parameters
+        ----------
+        left_table_id: ObjectId
+            Id of the left table
+        left_column_name: str
+            Join key of the left table
+        right_table_id: ObjectId
+            Id of the right table
+        right_column_name: str
+            Join key of the right table
+        """
+        self.edges[(left_table_id, left_column_name)].append((right_table_id, right_column_name))
+
+    def get_other_columns(self, table_id: ObjectId, column_name: str) -> list[JoinKeysLineageKey]:
+        """
+        Get other columns that have been joined with the provided join key
+
+        Parameters
+        ----------
+        table_id: ObjectId
+            Table id of the join key
+        column_name: str
+            Join key column
+
+        Returns
+        -------
+        list[JoinKeysLineageKey]
+        """
+
+        def _traverse(cur_table_id: ObjectId, cur_column_name: str) -> list[JoinKeysLineageKey]:
+            key = (cur_table_id, cur_column_name)
+            if key not in self.edges:
+                return []
+            out = self.edges[key][:]
+            for next_table_id, next_column_name in self.edges[key]:
+                out.extend(_traverse(next_table_id, next_column_name))
+            return out
+
+        return _traverse(table_id, column_name)
+
+
 class TileSQLGenerator:
     """Generator for Tile-building SQL
 
@@ -134,7 +197,7 @@ class TileSQLGenerator:
 
     def _get_input_operation_structure_if_no_lag(
         self, groupby_node: GroupByNode
-    ) -> Optional[OperationStructure]:
+    ) -> Optional[Tuple[OperationStructure, JoinKeysLineage]]:
         pruned_graph, node_name_map, _ = prune_query_graph(
             graph=self.query_graph, node=groupby_node
         )
@@ -152,15 +215,48 @@ class TileSQLGenerator:
         )
         op_struct_info = OperationStructureExtractor(graph=pruned_graph).extract(groupby_input_node)
         op_struct = op_struct_info.operation_structure_map[groupby_input_node.name]
-        return op_struct
+
+        # Identify join keys lineage to propagate filtering to applicable tables
+        def _get_join_key_from_op_struct(
+            op_struct_obj: OperationStructure, column_name: str
+        ) -> Optional[SourceDataColumn]:
+            for column in op_struct_obj.columns:
+                if (
+                    column.name == column_name
+                    and isinstance(column, SourceDataColumn)
+                    and column.table_id is not None
+                ):
+                    return column  # type: ignore[return-value]
+            return None
+
+        join_keys_lineage = JoinKeysLineage()
+        for join_node in pruned_graph.iterate_nodes(pruned_node, NodeType.JOIN):
+            input_nodes = pruned_graph.get_input_node_names(join_node)
+            assert len(input_nodes) == 2
+            params = cast(JoinNodeParameters, join_node.parameters)
+            join_key_left = _get_join_key_from_op_struct(
+                op_struct_info.operation_structure_map[input_nodes[0]], params.left_on
+            )
+            join_key_right = _get_join_key_from_op_struct(
+                op_struct_info.operation_structure_map[input_nodes[1]], params.right_on
+            )
+            if join_key_left is not None and join_key_right is not None:
+                join_keys_lineage.add_join_key(
+                    left_table_id=cast(ObjectId, join_key_left.table_id),
+                    left_column_name=params.left_on,
+                    right_table_id=cast(ObjectId, join_key_right.table_id),
+                    right_column_name=params.right_on,
+                )
+
+        return op_struct, join_keys_lineage
 
     def _get_event_table_timestamp_filter(
         self, groupby_node: GroupByNode
     ) -> Optional[EventTableTimestampFilter]:
-        op_struct = self._get_input_operation_structure_if_no_lag(groupby_node)
-        if op_struct is None:
+        op_struct_related_info = self._get_input_operation_structure_if_no_lag(groupby_node)
+        if op_struct_related_info is None:
             return None
-        for column in op_struct.columns:
+        for column in op_struct_related_info[0].columns:
             if (
                 column.name == groupby_node.parameters.timestamp
                 and isinstance(column, SourceDataColumn)
@@ -177,9 +273,10 @@ class TileSQLGenerator:
     def _get_on_demand_entity_filters(
         self, groupby_node: GroupByNode
     ) -> Optional[OnDemandEntityFilters]:
-        op_struct = self._get_input_operation_structure_if_no_lag(groupby_node)
-        if op_struct is None:
+        op_struct_related_info = self._get_input_operation_structure_if_no_lag(groupby_node)
+        if op_struct_related_info is None:
             return None
+        op_struct, join_keys_lineage = op_struct_related_info
         entity_columns = set(groupby_node.parameters.keys)
         on_demand_entity_filters = OnDemandEntityFilters()
         for column in op_struct.columns:
@@ -189,7 +286,19 @@ class TileSQLGenerator:
                 and column.table_id is not None
             ):
                 assert isinstance(column, SourceDataColumn), "SourceDataColumn expected"
-                on_demand_entity_filters.add_entity_column(column.table_id, column.name)
+                on_demand_entity_filters.add_entity_column(
+                    table_id=column.table_id,
+                    entity_column_name=column.name,
+                    table_column_name=column.name,
+                )
+                for other_column in join_keys_lineage.get_other_columns(
+                    column.table_id, column.name
+                ):
+                    on_demand_entity_filters.add_entity_column(
+                        table_id=other_column[0],
+                        entity_column_name=column.name,
+                        table_column_name=other_column[1],
+                    )
         return on_demand_entity_filters
 
     def make_one_tile_sql(

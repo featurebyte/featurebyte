@@ -110,10 +110,12 @@ class InputNode(TableNode):
                 quoted_identifier(col_info["name"])
                 for col_info in self.context.parameters["columns"]
             ]
+            entity_filter = on_demand_entity_filters.mapping[self.context.parameters["id"]]
             select_expr = expressions.select().from_(
                 get_table_filtered_by_entity(
-                    select_expr.select(*original_cols).from_(dbtable),
-                    on_demand_entity_filters.mapping[self.context.parameters["id"]].entity_columns,
+                    input_expr=select_expr.select(*original_cols).from_(dbtable),
+                    entity_column_names=entity_filter.entity_columns,
+                    table_column_names=entity_filter.table_columns,
                 ).subquery()
             )
         else:

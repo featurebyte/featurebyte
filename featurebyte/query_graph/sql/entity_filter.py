@@ -16,6 +16,7 @@ from featurebyte.query_graph.sql.common import get_qualified_column_identifier
 def get_table_filtered_by_entity(
     input_expr: Select,
     entity_column_names: list[str],
+    table_column_names: Optional[list[str]] = None,
     timestamp_column: Optional[str] = None,
     inject_entity_table_placeholder: bool = False,
 ) -> Select:
@@ -36,6 +37,8 @@ def get_table_filtered_by_entity(
         Input table to be filtered
     entity_column_names: list[str]
         Entity column name(s) that the filter will be based on
+    table_column_names: list[str]
+        Column names in the table that correspond to entity_column_names if they are not the same
     timestamp_column: Optional[str]
         If specified, additionally filter using the timestamp column based on the start and end date
         specified in the entity table
@@ -50,11 +53,14 @@ def get_table_filtered_by_entity(
     start_date = InternalName.ENTITY_TABLE_START_DATE.value
     end_date = InternalName.ENTITY_TABLE_END_DATE.value
 
+    if table_column_names is None:
+        table_column_names = entity_column_names
+
     join_conditions: list[Expression] = []
-    for col in entity_column_names:
+    for entity_col, table_col in zip(entity_column_names, table_column_names):
         condition = expressions.EQ(
-            this=get_qualified_column_identifier(col, "R"),
-            expression=get_qualified_column_identifier(col, entity_table),
+            this=get_qualified_column_identifier(table_col, "R"),
+            expression=get_qualified_column_identifier(entity_col, entity_table),
         )
         join_conditions.append(condition)
 

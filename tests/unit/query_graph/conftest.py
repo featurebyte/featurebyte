@@ -197,6 +197,7 @@ def scd_table_input_node_fixture(global_graph, scd_table_input_details):
         ],
         "effective_timestamp_column": "effective_ts",
         "current_flag_column": "is_record_current",
+        "id": ObjectId("66c372f39da9ad8e66c1eec6"),
     }
     node_params.update(scd_table_input_details)
     node_input = global_graph.add_operation(

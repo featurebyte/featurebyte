@@ -253,6 +253,7 @@ class OnDemandEntityFilter:
 
     table_id: ObjectId
     entity_columns: list[str]
+    table_columns: list[str]
 
 
 @dataclass
@@ -263,7 +264,9 @@ class OnDemandEntityFilters:
 
     mapping: dict[ObjectId, OnDemandEntityFilter] = field(default_factory=dict)
 
-    def add_entity_column(self, table_id: ObjectId, entity_column_name: str) -> None:
+    def add_entity_column(
+        self, table_id: ObjectId, entity_column_name: str, table_column_name: str
+    ) -> None:
         """
         Add an entity column to the collection
 
@@ -272,8 +275,14 @@ class OnDemandEntityFilters:
         table_id: ObjectId
             Table id
         entity_column_name: str
-            Entity column name
+            Entity column name in the entity table
+        table_column_name: str
+            Column name in the source table that corresponds to the entity
         """
         if table_id not in self.mapping:
-            self.mapping[table_id] = OnDemandEntityFilter(table_id, entity_columns=[])
-        self.mapping[table_id].entity_columns.append(entity_column_name)
+            self.mapping[table_id] = OnDemandEntityFilter(
+                table_id, entity_columns=[], table_columns=[]
+            )
+        entity_filter = self.mapping[table_id]
+        entity_filter.entity_columns.append(entity_column_name)
+        entity_filter.table_columns.append(table_column_name)
