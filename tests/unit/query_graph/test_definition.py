@@ -831,18 +831,18 @@ def test_extract_definition__scd_join(global_graph, event_table_input_node, scd_
             "left_input_columns": ["column_e007333d31736e39a0c148e730a98bbc4cc6f823", "cust_id"],
             "left_on": "cust_id",
             "left_output_columns": [
-                "left_12df77dffe89c83f748c1f45ab846022d67d6ddd_column_e007333d31736e39a0c148e730a98bbc4cc6f823",
-                "left_12df77dffe89c83f748c1f45ab846022d67d6ddd_cust_id",
+                "left_c3e5bd7cfcfffa7b211527ab173e8e346091f3cb_column_e007333d31736e39a0c148e730a98bbc4cc6f823",
+                "left_c3e5bd7cfcfffa7b211527ab173e8e346091f3cb_cust_id",
             ],
             "metadata": None,
             "right_input_columns": ["membership_status"],
             "right_on": "cust_id",
             "right_output_columns": [
-                "right_12df77dffe89c83f748c1f45ab846022d67d6ddd_membership_status"
+                "right_c3e5bd7cfcfffa7b211527ab173e8e346091f3cb_membership_status"
             ],
             "scd_parameters": {
                 "current_flag_column": None,
-                "effective_timestamp_column": "column_c4a188cb2f30f0873108841002ec39afe2a4c875",
+                "effective_timestamp_column": "column_9a6d0e6c2e504d026e3b3001c9480e7a992cb2bb",
                 "end_timestamp_column": None,
                 "left_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
                 "natural_key_column": None,
@@ -878,11 +878,11 @@ def test_extract_definition__scd_lookup(
             "entity_column": "cust_id",
             "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
             "event_parameters": None,
-            "feature_names": ["feat_28263b6bf3bd8a82f76fbbc4d5ee43c3d05833dc_membership_status"],
+            "feature_names": ["feat_7508cdc215a29f57609fdb31d6221be00462fdcd_membership_status"],
             "input_column_names": ["membership_status"],
             "scd_parameters": {
                 "current_flag_column": "is_record_current",
-                "effective_timestamp_column": "column_c4a188cb2f30f0873108841002ec39afe2a4c875",
+                "effective_timestamp_column": "column_9a6d0e6c2e504d026e3b3001c9480e7a992cb2bb",
                 "end_timestamp_column": None,
                 "natural_key_column": "cust_id",
                 "offset": None,
