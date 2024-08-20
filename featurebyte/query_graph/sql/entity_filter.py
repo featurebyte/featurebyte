@@ -10,7 +10,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
 from featurebyte.enum import InternalName
-from featurebyte.query_graph.sql.common import get_qualified_column_identifier
+from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 
 
 def get_table_filtered_by_entity(
@@ -19,6 +19,7 @@ def get_table_filtered_by_entity(
     table_column_names: Optional[list[str]] = None,
     timestamp_column: Optional[str] = None,
     inject_entity_table_placeholder: bool = False,
+    distinct: bool = False,
 ) -> Select:
     """
     Construct sql to filter the data used when building tiles for selected entities only
@@ -44,6 +45,9 @@ def get_table_filtered_by_entity(
         specified in the entity table
     inject_entity_table_placeholder: bool
         If set, define the entity table placeholder as a CTE in the generated select statement
+    distinct: bool
+        If set, select distinct entity values from the entity table. Applicable for entity tables
+        with composite keys.
 
     Returns
     -------
@@ -83,21 +87,30 @@ def get_table_filtered_by_entity(
         )
 
     join_conditions_expr = expressions.and_(*join_conditions)
+
     if inject_entity_table_placeholder:
         select_expr = select().with_(
             entity_table, as_=InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value
         )
     else:
         select_expr = select()
-    select_expr = (
-        select_expr.select("R.*")
-        .from_(entity_table)
-        .join(
-            input_expr.subquery(),
-            join_alias="R",
-            join_type="inner",
-            on=join_conditions_expr,
-            copy=False,
-        )
+
+    select_expr = select_expr.select("R.*").join(
+        input_expr.subquery(),
+        join_alias="R",
+        join_type="inner",
+        on=join_conditions_expr,
+        copy=False,
     )
+
+    if distinct:
+        select_expr = select_expr.from_(
+            select(*[quoted_identifier(entity_col) for entity_col in entity_column_names])
+            .distinct()
+            .from_(entity_table)
+            .subquery(alias=expressions.Identifier(this=entity_table))
+        )
+    else:
+        select_expr = select_expr.from_(entity_table)
+
     return cast(Select, select_expr)

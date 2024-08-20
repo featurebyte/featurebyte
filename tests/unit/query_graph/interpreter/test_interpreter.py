@@ -577,6 +577,26 @@ def test_on_demand_tile_gen_on_joined_view(
     )
 
 
+def test_on_demand_tile_gen_on_joined_view_complex_composite_keys(
+    global_graph,
+    complex_composite_window_aggregate_on_view_with_scd_join_feature_node,
+    update_fixtures,
+):
+    """Test tile building SQL with on-demand tile generation on a joined view using composite keys
+    from different tables. For now, filter is only supported on the non-derived entity column.
+    """
+    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+    tile_gen_sqls = interpreter.construct_tile_gen_sql(
+        complex_composite_window_aggregate_on_view_with_scd_join_feature_node, is_on_demand=True
+    )
+    assert len(tile_gen_sqls) == 1
+    assert_equal_with_expected_fixture(
+        tile_gen_sqls[0].sql,
+        "tests/fixtures/expected_tile_sql_on_demand_complex_composite.sql",
+        update_fixtures,
+    )
+
+
 def test_graph_interpreter_preview(graph, node_input):
     """Test graph preview"""
     proj_a = graph.add_operation(

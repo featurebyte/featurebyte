@@ -262,6 +262,7 @@ class OnDemandEntityFilters:
     Collection of on demand entity filters
     """
 
+    entity_columns: list[str]
     mapping: dict[ObjectId, OnDemandEntityFilter] = field(default_factory=dict)
 
     def add_entity_column(

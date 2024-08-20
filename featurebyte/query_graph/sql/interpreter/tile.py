@@ -278,7 +278,7 @@ class TileSQLGenerator:
             return None
         op_struct, join_keys_lineage = op_struct_related_info
         entity_columns = set(groupby_node.parameters.keys)
-        on_demand_entity_filters = OnDemandEntityFilters()
+        on_demand_entity_filters = OnDemandEntityFilters(entity_columns=list(entity_columns))
         for column in op_struct.columns:
             if (
                 column.name in entity_columns

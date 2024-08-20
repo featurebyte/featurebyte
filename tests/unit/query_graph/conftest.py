@@ -1200,6 +1200,39 @@ def window_aggregate_on_view_with_scd_join_feature_node_fixture(global_graph, sc
     return feature_node
 
 
+@pytest.fixture(name="complex_composite_window_aggregate_on_view_with_scd_join_feature_node")
+def complex_composite_window_aggregate_on_view_with_scd_join_feature_node_fixture(
+    global_graph, scd_join_node
+):
+    """
+    Fixture of a window aggregate feature on a view with SCD join with composite groupby keys
+    """
+    node_params = {
+        "keys": ["cust_id", "latest_membership_status"],
+        "serving_names": ["CUSTOMER_ID", "MEMBERSHIP_STATUS"],
+        "value_by": None,
+        "parent": "latest_membership_status",
+        "agg_func": "na_count",
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "3600s",  # 1h
+            "blind_spot": "900s",  # 15m
+        },
+        "timestamp": "ts",
+        "names": ["latest_membership_status_na_count_90d"],
+        "windows": ["90d"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db"), ObjectId("66c40c289da9ad8e66c1eec7")],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, scd_join_node)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["latest_membership_status_na_count_90d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="latest_value_aggregation_feature_node")
 def latest_value_aggregation_feature_node_fixture(global_graph, input_node):
     node_params = {

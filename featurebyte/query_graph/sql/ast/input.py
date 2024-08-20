@@ -111,11 +111,17 @@ class InputNode(TableNode):
                 for col_info in self.context.parameters["columns"]
             ]
             entity_filter = on_demand_entity_filters.mapping[self.context.parameters["id"]]
+            # Need to deduplicate entity table if entity_filter only uses a subset of the entity
+            # columns
+            need_distinct = len(entity_filter.entity_columns) != len(
+                on_demand_entity_filters.entity_columns
+            )
             select_expr = expressions.select().from_(
                 get_table_filtered_by_entity(
                     input_expr=select_expr.select(*original_cols).from_(dbtable),
                     entity_column_names=entity_filter.entity_columns,
                     table_column_names=entity_filter.table_columns,
+                    distinct=need_distinct,
                 ).subquery()
             )
         else:
