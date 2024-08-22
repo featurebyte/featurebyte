@@ -275,6 +275,7 @@ class ItemTableData(BaseTableData):
         event_suffix: Optional[str],
         drop_column_names: List[str],
         metadata: ItemViewMetadata,
+        to_auto_resolve_column_conflict: bool = False,
     ) -> Tuple[GraphNode, List[ColumnInfo]]:
         """
         Construct ItemView graph node
@@ -297,11 +298,22 @@ class ItemTableData(BaseTableData):
             List of columns to drop from the item table
         metadata: ItemViewMetadata
             Metadata to add to the graph node
+        to_auto_resolve_column_conflict: bool
+            Flag to auto resolve column conflicts
 
         Returns
         -------
         Tuple[GraphNode, List[ColumnInfo]]
         """
+        if to_auto_resolve_column_conflict:
+            item_table_columns = set(col.name for col in item_table_node.parameters.columns)
+            has_conflict = item_table_columns.intersection(metadata.event_join_column_names)
+            if has_conflict:
+                columns_to_join = [
+                    col for col in metadata.event_join_column_names if col not in item_table_columns
+                ]
+                metadata.event_join_column_names = columns_to_join
+
         view_graph_node, proxy_input_nodes = self.construct_view_graph_node(
             graph_node_type=GraphNodeType.ITEM_VIEW,
             data_node=item_table_node,

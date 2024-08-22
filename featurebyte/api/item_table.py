@@ -144,6 +144,10 @@ class ItemTable(TableApiObject):
         The event timestamp and event attributes representing entities in the related Event table are also
         automatically added to the ItemView.
 
+        If there are column name conflicts between the EventTable and the ItemTable, and all the parameters are
+        default, the column names from the EventTable that conflict with the ItemTable columns will be automatically
+        removed from the ItemView.
+
         In manual mode, the default cleaning operations are not applied, and you have the flexibility to define your
         own cleaning operations.
 
@@ -220,6 +224,17 @@ class ItemTable(TableApiObject):
             event_join_column_names=event_join_column_names,
         )
 
+        # auto resolve conflict columns only if all the parameters are default
+        to_auto_resolve_column_conflict = (
+            event_suffix is None
+            and view_mode == ViewMode.AUTO
+            and drop_column_names is None
+            and column_cleaning_operations is None
+            and event_drop_column_names is None
+            and event_column_cleaning_operations is None
+            and event_join_column_names is None
+        )
+
         event_table = EventTable.get_by_id(self.event_table_id)
         event_view = event_table.get_view(
             drop_column_names=event_drop_column_names,
@@ -286,6 +301,7 @@ class ItemTable(TableApiObject):
                 event_join_column_names=event_join_column_names,
                 event_table_id=event_table.id,
             ),
+            to_auto_resolve_column_conflict=to_auto_resolve_column_conflict,
         )
         timestamp_column = apply_column_name_modifiers(
             [event_view.timestamp_column], rsuffix=event_suffix, rprefix=None
