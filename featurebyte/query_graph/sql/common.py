@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional, Sequence, Tuple, Union
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from bson import ObjectId
@@ -236,3 +236,54 @@ class EventTableTimestampFilter:
     start_timestamp_placeholder_name: Optional[str] = None
     end_timestamp_placeholder_name: Optional[str] = None
     to_cast_placeholders: Optional[bool] = True
+
+
+@dataclass
+class OnDemandEntityFilter:
+    """
+    Information about the filter that can be applied to InputTable based on the entity values that
+    appear in the observation table. Only applies for on-demand tile generation for historical
+    features.
+
+    table_id: ObjectId
+        Id of the table to be filtered
+    entity_columns: list[str]
+        Entity column names
+    """
+
+    table_id: ObjectId
+    entity_columns: list[str]
+    table_columns: list[str]
+
+
+@dataclass
+class OnDemandEntityFilters:
+    """
+    Collection of on demand entity filters
+    """
+
+    entity_columns: list[str]
+    mapping: dict[ObjectId, OnDemandEntityFilter] = field(default_factory=dict)
+
+    def add_entity_column(
+        self, table_id: ObjectId, entity_column_name: str, table_column_name: str
+    ) -> None:
+        """
+        Add an entity column to the collection
+
+        Parameters
+        ----------
+        table_id: ObjectId
+            Table id
+        entity_column_name: str
+            Entity column name in the entity table
+        table_column_name: str
+            Column name in the source table that corresponds to the entity
+        """
+        if table_id not in self.mapping:
+            self.mapping[table_id] = OnDemandEntityFilter(
+                table_id, entity_columns=[], table_columns=[]
+            )
+        entity_filter = self.mapping[table_id]
+        entity_filter.entity_columns.append(entity_column_name)
+        entity_filter.table_columns.append(table_column_name)

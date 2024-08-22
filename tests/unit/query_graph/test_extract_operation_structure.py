@@ -1158,7 +1158,7 @@ def test_track_changes_operation_structure(global_graph, scd_table_input_node):
         "filter": False,
         "node_name": "input_1",
         "node_names": {"input_1"},
-        "table_id": None,
+        "table_id": scd_table_input_node.parameters.id,
         "table_type": "scd_table",
         "type": "source",
     }
