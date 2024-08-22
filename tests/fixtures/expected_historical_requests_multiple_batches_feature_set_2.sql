@@ -36,7 +36,7 @@ WITH "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS (
     REQ."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
-    REQ."_fb_internal_CUSTOMER_ID_lookup_membership_status_input_3" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_3",
+    REQ."_fb_internal_CUSTOMER_ID_lookup_membership_status_input_4" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_4",
     "T0"."_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
     "T1"."_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35"
   FROM (
@@ -44,7 +44,7 @@ WITH "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS (
       L."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       L."CUSTOMER_ID" AS "CUSTOMER_ID",
-      R."membership_status" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_3"
+      R."membership_status" AS "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_4"
     FROM (
       SELECT
         "__FB_KEY_COL_0",
@@ -198,7 +198,7 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_3" AS "Current Membership Status",
+  "_fb_internal_CUSTOMER_ID_lookup_membership_status_input_4" AS "Current Membership Status",
   CAST("_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS DOUBLE) AS "a_2h_average",
   CAST("_fb_internal_CUSTOMER_ID_window_w172800_avg_f37862722c21105449ad882409cf62a1ff7f5b35" AS DOUBLE) AS "a_48h_average"
 FROM _FB_AGGREGATED AS AGG
