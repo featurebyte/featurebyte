@@ -460,7 +460,7 @@ def test_join_event_table_attributes__missing_required_event_suffix(snowflake_it
     Test when event_suffix is required but not provided
     """
     with pytest.raises(RepeatedColumnNamesError) as exc:
-        snowflake_item_table.get_view()
+        snowflake_item_table.get_view(drop_column_names=[])
     assert "Duplicate column names ['event_timestamp'] found" in str(exc.value)
 
 
@@ -480,7 +480,7 @@ def test_item_view__item_table_same_event_id_column_as_event_table(
     Test creating ItemView when ItemTable has the same event_id_column as EventTable
     """
     # No need to specify event_suffix
-    item_view = snowflake_item_table_same_event_id.get_view()
+    item_view = snowflake_item_table_same_event_id.get_view(drop_column_names=[])
     assert item_view.timestamp_column == "event_timestamp"
 
     view_dict = item_view.model_dump()
@@ -1136,3 +1136,39 @@ def test_item_view_aggregate_metadata(snowflake_item_table, transaction_entity):
         },
         "post_aggregation": None,
     }
+
+
+def test_get_view__auto_resolve_column_conflict(
+    snowflake_item_table,
+    snowflake_event_table_id,
+    snowflake_item_table_id,
+):
+    """
+    Test ItemView automatically joins timestamp column and entity columns from related EventTable
+    """
+    timestamp_col = "event_timestamp"
+    view = snowflake_item_table.get_view()
+    assert view.timestamp_column_name == timestamp_col
+
+    assert view.event_view.columns == [
+        "col_int",
+        "col_float",
+        "col_char",
+        "col_text",
+        "col_binary",
+        "col_boolean",
+        "event_timestamp",
+        "cust_id",
+    ]
+
+    metadata = view.node.parameters.metadata
+    assert metadata.event_join_column_names == ["cust_id"]
+    assert view.columns == [
+        "event_id_col",
+        "item_id_col",
+        "item_type",
+        "item_amount",
+        "created_at",
+        "event_timestamp",
+        "cust_id",
+    ]
