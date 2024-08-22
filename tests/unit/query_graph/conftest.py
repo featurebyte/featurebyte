@@ -1169,6 +1169,39 @@ def scd_offset_lookup_feature_node_fixture(global_graph, scd_offset_lookup_node)
     return feature_node
 
 
+@pytest.fixture(name="window_aggregate_on_simple_view_feature_node")
+def window_aggregate_on_simple_view_feature_node_fixture(
+    global_graph, event_table_input_node_with_id
+):
+    """
+    Fixture of a window aggregate feature on a simple event view without any joins
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": None,
+        "agg_func": "count",
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "3600s",  # 1h
+            "blind_spot": "900s",  # 15m
+        },
+        "timestamp": "ts",
+        "names": ["order_count_90d"],
+        "windows": ["90d"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, event_table_input_node_with_id)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["order_count_90d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
+    )
+    return feature_node
+
+
 @pytest.fixture(name="window_aggregate_on_view_with_scd_join_feature_node")
 def window_aggregate_on_view_with_scd_join_feature_node_fixture(global_graph, scd_join_node):
     """

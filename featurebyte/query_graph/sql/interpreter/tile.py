@@ -161,6 +161,10 @@ class InputFilterContext:
     def has_lag_operation(self) -> bool:
         """
         Returns whether any lag operation is applied
+
+        Returns
+        -------
+        bool
         """
         return NodeType.LAG in self.node_types
 
@@ -302,6 +306,11 @@ class TileSQLGenerator:
 
         # Filter cannot be applied when there are lag operations
         if input_filter_context.has_lag_operation:
+            return None
+
+        # No additional filtering on simple views
+        complex_view_node_types = {NodeType.JOIN, NodeType.TRACK_CHANGES}
+        if not complex_view_node_types.intersection(input_filter_context.node_types):
             return None
 
         # Determine input nodes that can be filtered
