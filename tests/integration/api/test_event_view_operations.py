@@ -736,7 +736,7 @@ def assert_datetime_almost_equal(s1: pd.Series, s2: pd.Series):
     """
     Assert that two datetime series are almost equal with difference of up to 1 microsecond
     """
-    assert (s1 - s2).dt.total_seconds().abs().max() <= 1e-6
+    assert pd.to_timedelta(s1 - s2).dt.total_seconds().abs().max() <= 1e-6
 
 
 @pytest_asyncio.fixture(name="observation_table_and_df_historical_expected", scope="module")
@@ -1050,7 +1050,10 @@ def test_datetime_operations(event_view, source_type):
     )
 
     for prop in properties:
-        series_prop = getattr(event_timestamp_localized.dt, prop)
+        if prop == "week":
+            series_prop = event_timestamp_localized.dt.isocalendar().week
+        else:
+            series_prop = getattr(event_timestamp_localized.dt, prop)
         pd.testing.assert_series_equal(
             dt_df[f"dt_{prop}"],
             series_prop,
@@ -1062,13 +1065,16 @@ def test_datetime_operations(event_view, source_type):
     pandas_previous_timestamp = get_lagged_series_pandas(
         dt_df, "ËVENT_TIMESTAMP", "ËVENT_TIMESTAMP", "CUST_ID"
     )
-    pandas_event_interval_second = (pandas_series - pandas_previous_timestamp).dt.total_seconds()
+
+    pandas_event_interval_second = pd.to_timedelta(
+        pandas_series - pandas_previous_timestamp
+    ).dt.total_seconds()
     pandas_event_interval_minute = (
-        pandas_series - pandas_previous_timestamp
-    ).dt.total_seconds() / 60
+        pd.to_timedelta(pandas_series - pandas_previous_timestamp).dt.total_seconds() / 60
+    )
     pandas_event_interval_hour = (
-        pandas_series - pandas_previous_timestamp
-    ).dt.total_seconds() / 3600
+        pd.to_timedelta(pandas_series - pandas_previous_timestamp).dt.total_seconds() / 3600
+    )
     pd.testing.assert_series_equal(
         dt_df["event_interval"].astype(float), pandas_event_interval_second, check_names=False
     )

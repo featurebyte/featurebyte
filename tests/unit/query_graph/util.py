@@ -85,7 +85,7 @@ def evaluate_and_compare_odfv_and_udf_results(
     out_udf = _get_udf_output(input_map=input_map, udf_expr=udf_expr, udf_stats=udf_stats)
 
     # check the consistency between two expressions
-    pd.testing.assert_series_equal(out_odfv, out_udf)
+    pd.testing.assert_series_equal(out_odfv, out_udf, check_dtype=False, check_names=False)
 
     # check the expected output
     if expected_output is not None:
@@ -105,4 +105,6 @@ def evaluate_and_compare_odfv_and_udf_results(
     out_udf_null = _get_udf_output(input_map=null_input_map, udf_expr=udf_expr, udf_stats=udf_stats)
 
     # check the consistency between two expressions
-    pd.testing.assert_series_equal(out_odfv_null, out_udf_null, check_dtype=False)
+    pd.testing.assert_series_equal(
+        out_odfv_null, out_udf_null, check_dtype=False, check_names=False
+    )

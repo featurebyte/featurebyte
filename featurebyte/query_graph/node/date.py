@@ -133,11 +133,16 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        def _datetime_proper_expr(dt_var_name: str, prop: str) -> str:
+            if prop == "week":
+                return f"pd.to_datetime({dt_var_name}).dt.isocalendar().week"
+            return f"pd.to_datetime({dt_var_name}).dt.{prop}"
+
         return self._derive_on_demand_view_or_user_defined_function_helper(
             node_inputs,
             var_name_generator,
             offset_adj_var_name_prefix="feat_dt",
-            expr_func=lambda dt_var_name, prop: f"pd.to_datetime({dt_var_name}).dt.{prop}",
+            expr_func=_datetime_proper_expr,
         )
 
     def _derive_user_defined_function_code(

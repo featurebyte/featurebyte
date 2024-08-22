@@ -40,7 +40,9 @@ class ConditionOperationField(StrEnum):
 class BaseCleaningOperation(FeatureByteBaseModel):
     """BaseCleaningOperation class"""
 
-    imputed_value: OptionalScalar = Field(description="Value to replace existing value")
+    imputed_value: OptionalScalar = Field(
+        description="Value to replace existing value", default=None
+    )
 
     # support all data types by default (if None)
     supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = None

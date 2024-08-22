@@ -107,7 +107,10 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         config=odfv_config,
     )
     assert odfv_stats == []
-    assert odfv_expr == f"pd.to_datetime(feat).dt.{dt_property}"
+    expected_odfv_expr = f"pd.to_datetime(feat).dt.{dt_property}"
+    if dt_property == "week":
+        expected_odfv_expr = "pd.to_datetime(feat).dt.isocalendar().week"
+    assert odfv_expr == expected_odfv_expr
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
         node_inputs=node_inputs,
@@ -133,7 +136,10 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         config=odfv_config,
     )
     assert odfv_stats == [("feat_dt", "pd.to_datetime(feat) + pd.to_timedelta(feat1)")]
-    assert odfv_expr == f"pd.to_datetime(feat_dt).dt.{dt_property}"
+    expected_odfv_expr = f"pd.to_datetime(feat_dt).dt.{dt_property}"
+    if dt_property == "week":
+        expected_odfv_expr = "pd.to_datetime(feat_dt).dt.isocalendar().week"
+    assert odfv_expr == expected_odfv_expr
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
         node_inputs=[VariableNameStr("feat"), VariableNameStr("feat1")],
@@ -154,10 +160,11 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
     )
     code_gen = CodeGenerator(statements=odfv_stats + [(VariableNameStr("output"), odfv_expr)])
     codes = code_gen.generate().strip()
+    dt_prop = "isocalendar().week" if dt_property == "week" else dt_property
     assert codes == (
         'tz_offset = pd.to_timedelta("+06:00:00")\n'
         "feat_dt = pd.to_datetime(feat) + tz_offset\n"
-        f"output = pd.to_datetime(feat_dt).dt.{dt_property}"
+        f"output = pd.to_datetime(feat_dt).dt.{dt_prop}"
     )
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(

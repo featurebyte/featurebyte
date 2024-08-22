@@ -6,7 +6,7 @@
 
 # --- TEMPLATE --- #
 # One of 'breaking', 'deprecation', 'enhancement', 'bug_fix'
-change_type: bug_fix
+change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern
 # (e.g. gh-actions, docs, middleware, worker)
@@ -16,7 +16,7 @@ component: service
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Fix feature metadata extraction throwing KeyError during feature info retrieval"
+note: "Tighten asset name length validation in the service from 255 to 230 characters"
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

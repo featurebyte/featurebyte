@@ -106,5 +106,5 @@ def test_base_model__name_validation():
     assert model.id is not None
     with pytest.raises(ValidationError) as exc:
         FeatureByteBaseDocumentModel(name="t" * 256)
-    expected_error = "1 validation error for FeatureByteBaseDocumentModel\nname\n  String should have at most 255 characters "
+    expected_error = "1 validation error for FeatureByteBaseDocumentModel\nname\n  String should have at most 230 characters "
     assert expected_error in str(exc.value)
