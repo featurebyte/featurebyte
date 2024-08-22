@@ -4,7 +4,7 @@ This module contains the Query Graph Interpreter
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, cast
+from typing import Optional, Set, Tuple, cast
 
 from collections import defaultdict
 from dataclasses import dataclass
@@ -147,6 +147,24 @@ class JoinKeysLineage:
         return _traverse(table_id, column_name)
 
 
+@dataclass
+class InputFilterContext:
+    """
+    Information that determines whether filters on input data can be applied
+    """
+
+    node_types: Set[NodeType]
+    operation_structure: OperationStructure
+    join_keys_lineage: JoinKeysLineage
+
+    @property
+    def has_lag_operation(self) -> bool:
+        """
+        Returns whether any lag operation is applied
+        """
+        return NodeType.LAG in self.node_types
+
+
 class TileSQLGenerator:
     """Generator for Tile-building SQL
 
@@ -195,21 +213,18 @@ class TileSQLGenerator:
 
         return sqls
 
-    def _get_input_operation_structure_if_no_lag(
-        self, groupby_node: GroupByNode
-    ) -> Optional[Tuple[OperationStructure, JoinKeysLineage]]:
+    def _get_input_filter_context(self, groupby_node: GroupByNode) -> InputFilterContext:
         pruned_graph, node_name_map, _ = prune_query_graph(
             graph=self.query_graph, node=groupby_node
         )
 
-        # Check there is no lag operation, otherwise cannot apply timestamp filter directly
+        # Get node_types lineage
         pruned_node = pruned_graph.get_node_by_name(node_name_map[groupby_node.name])
+        node_types = set()
         for node in dfs_traversal(pruned_graph, pruned_node):
-            if node.type == NodeType.LAG:
-                return None
+            node_types.add(node.type)
 
-        # Identify which EventTable can be filtered. This is based on the timestamp column used in
-        # the groupby node.
+        # Get operation structure of the view before tile aggregation
         groupby_input_node = pruned_graph.get_node_by_name(
             pruned_graph.get_input_node_names(pruned_node)[0]
         )
@@ -248,15 +263,24 @@ class TileSQLGenerator:
                     right_column_name=params.right_on,
                 )
 
-        return op_struct, join_keys_lineage
+        return InputFilterContext(
+            node_types=node_types,
+            operation_structure=op_struct,
+            join_keys_lineage=join_keys_lineage,
+        )
 
     def _get_event_table_timestamp_filter(
         self, groupby_node: GroupByNode
     ) -> Optional[EventTableTimestampFilter]:
-        op_struct_related_info = self._get_input_operation_structure_if_no_lag(groupby_node)
-        if op_struct_related_info is None:
+
+        # Check there is no lag operation, otherwise cannot apply timestamp filter directly
+        input_filter_context = self._get_input_filter_context(groupby_node)
+        if input_filter_context.has_lag_operation:
             return None
-        for column in op_struct_related_info[0].columns:
+
+        # Identify which EventTable can be filtered. This is based on the timestamp column used in
+        # the groupby node.
+        for column in input_filter_context.operation_structure.columns:
             if (
                 column.name == groupby_node.parameters.timestamp
                 and isinstance(column, SourceDataColumn)
@@ -273,10 +297,18 @@ class TileSQLGenerator:
     def _get_on_demand_entity_filters(
         self, groupby_node: GroupByNode
     ) -> Optional[OnDemandEntityFilters]:
-        op_struct_related_info = self._get_input_operation_structure_if_no_lag(groupby_node)
-        if op_struct_related_info is None:
+
+        input_filter_context = self._get_input_filter_context(groupby_node)
+
+        # Filter cannot be applied when there are lag operations
+        if input_filter_context.has_lag_operation:
             return None
-        op_struct, join_keys_lineage = op_struct_related_info
+
+        # Determine input nodes that can be filtered
+        op_struct, join_keys_lineage = (
+            input_filter_context.operation_structure,
+            input_filter_context.join_keys_lineage,
+        )
         entity_columns = set(groupby_node.parameters.keys)
         on_demand_entity_filters = OnDemandEntityFilters(entity_columns=list(entity_columns))
         for column in op_struct.columns:
