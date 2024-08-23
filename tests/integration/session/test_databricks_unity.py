@@ -13,7 +13,9 @@ from featurebyte.session.manager import SessionManager
 
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
 @pytest.mark.asyncio
-async def test_schema_initializer(config, session_without_datasets, credentials_mapping):
+async def test_schema_initializer(
+    config, session_without_datasets, feature_store, credentials_mapping
+):
     """
     Test the session initialization in snowflake works properly.
     """

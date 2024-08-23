@@ -181,6 +181,7 @@ async def test_get_table_details(session):
                 "Partition Provider": "Catalog",
             },
             fully_qualified_name="`spark_catalog`.`featurebyte_20240110112131_971440`.`test`",
+            description="some desc",
         )
         assert table_details.description == "some desc"
 

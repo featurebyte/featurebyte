@@ -113,6 +113,7 @@ tasks:
       - task: test-integration-spark
       - task: test-integration-databricks
       - task: test-integration-databricks-unity
+      - task: test-integration-bigquery
 
   test-integration-snowflake:
     desc: Runs integration tests against Snowflake
@@ -174,6 +175,21 @@ tasks:
     cmds:
       - task: test-setup
       - poetry run pytest --timeout=1350 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
+      - task: test-teardown
+
+  test-integration-bigquery:
+    desc: Runs integration tests against BigQuery
+    deps:
+      - task: install
+    vars:
+      # Default to 1 split 1 group
+      PYTEST_GROUP:
+        sh: printenv PYTEST_GROUP || echo "1"
+      PYTEST_SPLITS:
+        sh: printenv PYTEST_SPLITS || echo "1"
+    cmds:
+      - task: test-setup
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.5 --cov=featurebyte tests/integration/session --source-types bigquery --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
       - task: test-teardown
 
   test-docs:

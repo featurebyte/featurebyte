@@ -3,11 +3,11 @@ Unit test for BigQuerySession
 """
 
 import os
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
-from google.cloud.bigquery import SchemaField
+from google.cloud.bigquery import SchemaField, StandardSqlTypeNames
 from google.cloud.bigquery.dbapi.cursor import Column
 from google.cloud.bigquery.table import Row
 
@@ -57,7 +57,15 @@ class MockBigQueryClient:
     Mocked BigQuery client
     """
 
-    load_table_from_dataframe = AsyncMock()
+    _get_query_results = Mock(
+        return_value=Mock(
+            schema=[
+                SchemaField(name="a", field_type="INTEGER"),
+                SchemaField(name="b", field_type="INTEGER"),
+                SchemaField(name="c", field_type="INTEGER"),
+            ]
+        )
+    )
 
     def list_projects(self, page_token=None):
         return MockIterator([
@@ -88,7 +96,7 @@ class MockBigQueryClient:
                 SchemaField("col_timestamp", "TIMESTAMP", description="Timestamp Column"),
                 SchemaField("col_array", "ARRAY", description="Array Column"),
                 SchemaField("col_record", "RECORD", description="Record Column"),
-                SchemaField("col_struct", "STRUCT", description="Struct Column"),
+                SchemaField("col_json", "JSON", description="JSON Column"),
                 SchemaField("col_string", "STRING", description="String Column"),
                 SchemaField("col_unknown", "GEOGRAPHY", description="Unknown Column"),
             ],
@@ -107,6 +115,7 @@ class MockBigQueryConnection:
         self.description = None
         self.result_rows = None
         self.returned_count = 0
+        self.query_job = Mock()
 
     def cursor(self):
         return self
@@ -147,13 +156,12 @@ def bigquery_connection():
     """
     with (
         patch("featurebyte.session.bigquery.service_account.Credentials.from_service_account_info"),
-        patch("featurebyte.session.bigquery.bigquery.Client.__new__") as mock_client,
+        patch("featurebyte.session.bigquery.Client.__new__") as mock_client,
         patch("featurebyte.session.bigquery.Connection.__new__") as mock_connector,
     ):
-        with patch("featurebyte.session.bigquery.Connection", autospec=True) as mock_connector:
-            mock_client.return_value = MockBigQueryClient()
-            mock_connector.return_value = MockBigQueryConnection()
-            yield mock_connector
+        mock_client.return_value = MockBigQueryClient()
+        mock_connector.return_value = MockBigQueryConnection()
+        yield mock_connector
 
 
 @pytest.fixture(name="patched_bigquery_session_cls")
@@ -232,8 +240,8 @@ async def test_bigquery_session(bigquery_session_dict):
         "col_numeric": ColumnSpecWithDescription(
             name="col_numeric", dtype=DBVarType.FLOAT, description="Numeric Column"
         ),
-        "col_struct": ColumnSpecWithDescription(
-            name="col_struct", dtype=DBVarType.DICT, description="Struct Column"
+        "col_json": ColumnSpecWithDescription(
+            name="col_json", dtype=DBVarType.DICT, description="JSON Column"
         ),
         "col_string": ColumnSpecWithDescription(
             name="col_string", dtype=DBVarType.VARCHAR, description="String Column"
@@ -245,24 +253,6 @@ async def test_bigquery_session(bigquery_session_dict):
     df_result = await session.execute_query("SELECT * FROM table")
     df_expected = pd.DataFrame({"a": [1, 100], "b": [2, 200], "c": [3, 300]}, dtype="int64")
     pd.testing.assert_frame_equal(df_result, df_expected)
-
-
-@pytest.mark.asyncio
-async def test_bigquery_register_table(bigquery_session_dict, bigquery_connection):
-    """
-    Test BigQuery session register_table
-    """
-    session = BigQuerySession(**bigquery_session_dict)
-    df = pd.DataFrame(
-        {
-            "point_in_time": pd.to_datetime(["2022-01-01", "2022-01-02", "2022-01-03"]),
-            "cust_id": [1, 2, 3],
-        },
-    )
-    await session.register_table("my_view", df)
-    session._client.load_table_from_dataframe.assert_called_once_with(
-        df, "`some-bigquery-project`.`some-bigquery-dataset`.`my_view`"
-    )
 
 
 def test_bigquery_schema_initializer__sql_objects(patched_bigquery_session_cls):
@@ -288,3 +278,34 @@ def test_bigquery_schema_initializer__sql_objects(patched_bigquery_session_cls):
         return sorted(lst, key=lambda x: x["filename"])
 
     assert _sorted_result(sql_objects) == _sorted_result(expected)
+
+
+@pytest.mark.parametrize(
+    "bigquery_var_info,scale,expected",
+    [
+        ("INTEGER", 0, DBVarType.INT),
+        ("BOOLEAN", 0, DBVarType.BOOL),
+        ("FLOAT", 0, DBVarType.FLOAT),
+        ("STRING", 0, DBVarType.VARCHAR),
+        ("BYTES", 0, DBVarType.BINARY),
+        ("TIMESTAMP", 0, DBVarType.TIMESTAMP),
+        ("DATETIME", 0, DBVarType.TIMESTAMP),
+        ("DATE", 0, DBVarType.DATE),
+        ("TIME", 0, DBVarType.TIME),
+        ("NUMERIC", 0, DBVarType.INT),
+        ("NUMERIC", 1, DBVarType.FLOAT),
+        ("BIGNUMERIC", 0, DBVarType.INT),
+        ("BIGNUMERIC", 1, DBVarType.FLOAT),
+        ("RECORD", 0, DBVarType.DICT),
+        (StandardSqlTypeNames.INTERVAL, 0, DBVarType.TIMEDELTA),
+        (StandardSqlTypeNames.ARRAY, 0, DBVarType.ARRAY),
+        ("GEOGRAPHY", 0, DBVarType.UNKNOWN),
+        (StandardSqlTypeNames.JSON, 0, DBVarType.DICT),
+        (StandardSqlTypeNames.RANGE, 0, DBVarType.UNKNOWN),
+    ],
+)
+def test_convert_to_internal_variable_type(bigquery_var_info, scale, expected):
+    """
+    Test convert_to_internal_variable_type
+    """
+    assert BigQuerySession._convert_to_internal_variable_type(bigquery_var_info, scale) == expected  # pylint: disable=protected-access

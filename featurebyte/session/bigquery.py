@@ -564,14 +564,17 @@ class BigQuerySession(BaseSession):
         return self.sql_to_string(make_literal_value(comment))
 
     async def comment_table(self, table_name: str, comment: str) -> None:
-        formatted_table = self.format_quoted_identifier(table_name)
-        query = f"COMMENT ON TABLE {formatted_table} IS {self._format_comment(comment)}"
-        await self.execute_query(query)
+        table_ref = TableReference(
+            dataset_ref=DatasetReference(project=self.project_name, dataset_id=self.dataset_name),
+            table_id=table_name,
+        )
+        table = self._client.get_table(table_ref)
+        table.description = comment
+        self._client.update_table(table, ["description"])
 
     async def comment_column(self, table_name: str, column_name: str, comment: str) -> None:
-        formatted_table = self.format_quoted_identifier(table_name)
         formatted_column = self.format_quoted_identifier(column_name)
-        query = f"COMMENT ON COLUMN {formatted_table}.{formatted_column} IS {self._format_comment(comment)}"
+        query = f"ALTER TABLE {self.get_fully_qualified_table_name(table_name)} ALTER COLUMN {formatted_column} SET OPTIONS (description={self._format_comment(comment)})"
         await self.execute_query(query)
 
 
@@ -670,7 +673,10 @@ class BigQuerySchemaInitializer(BaseSchemaInitializer):
                 await self.drop_object("FUNCTION", name)
 
         for name in await self.list_droppable_tables_in_working_schema():
-            await self.drop_object("TABLE", name)
+            try:
+                await self.drop_object("TABLE", name)
+            except DatabaseError:
+                await self.drop_object("VIEW", name)
 
     def _fully_qualified(self, name: str) -> str:
         return f"{self._schema_qualifier}.`{name}`"

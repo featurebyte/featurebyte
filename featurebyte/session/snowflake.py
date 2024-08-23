@@ -321,8 +321,8 @@ class SnowflakeSession(BaseSession):
             f'SELECT * FROM "{database_name}"."INFORMATION_SCHEMA"."TABLES" WHERE '
             f"\"TABLE_SCHEMA\"='{schema_name}' AND \"TABLE_NAME\"='{table_name}'"
         )
-        details = await self.execute_query_interactive(query)
-        if details is None or details.shape[0] == 0:
+        details_df = await self.execute_query_interactive(query)
+        if details_df is None or details_df.shape[0] == 0:
             raise self.no_schema_error(f"Table {table_name} not found.")
 
         fully_qualified_table_name = get_fully_qualified_table_name({
@@ -330,8 +330,10 @@ class SnowflakeSession(BaseSession):
             "schema_name": schema_name,
             "database_name": database_name,
         })
+
+        details = json.loads(details_df.iloc[0].to_json(orient="index"))
         return TableDetails(
-            details=json.loads(details.iloc[0].to_json(orient="index")),
+            details=details,
             fully_qualified_name=sql_to_string(
                 fully_qualified_table_name, source_type=self.source_type
             ),

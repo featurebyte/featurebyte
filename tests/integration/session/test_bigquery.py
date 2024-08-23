@@ -6,9 +6,7 @@ from collections import OrderedDict
 
 import pandas as pd
 import pytest
-from google.cloud.bigquery import StandardSqlTypeNames
 
-from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.session.bigquery import BigQuerySchemaInitializer, BigQuerySession
 from featurebyte.session.manager import SessionManager
@@ -189,34 +187,3 @@ async def test_register_table(config, session_without_datasets):
     session = session_without_datasets
     df = pd.DataFrame({"a": [1, 2, 3], "date": pd.date_range("2021-01-01", periods=3)})
     await session.register_table(table_name="test_table", dataframe=df)
-
-
-@pytest.mark.parametrize(
-    "bigquery_var_info,scale,expected",
-    [
-        ("INTEGER", 0, DBVarType.INT),
-        ("BOOLEAN", 0, DBVarType.BOOL),
-        ("FLOAT", 0, DBVarType.FLOAT),
-        ("STRING", 0, DBVarType.VARCHAR),
-        ("BYTES", 0, DBVarType.BINARY),
-        ("TIMESTAMP", 0, DBVarType.TIMESTAMP),
-        ("DATETIME", 0, DBVarType.TIMESTAMP),
-        ("DATE", 0, DBVarType.DATE),
-        ("TIME", 0, DBVarType.TIME),
-        ("NUMERIC", 0, DBVarType.INT),
-        ("NUMERIC", 1, DBVarType.FLOAT),
-        ("BIGNUMERIC", 0, DBVarType.INT),
-        ("BIGNUMERIC", 1, DBVarType.FLOAT),
-        ("RECORD", 0, DBVarType.DICT),
-        (StandardSqlTypeNames.INTERVAL, 0, DBVarType.TIMEDELTA),
-        (StandardSqlTypeNames.ARRAY, 0, DBVarType.ARRAY),
-        ("GEOGRAPHY", 0, DBVarType.UNKNOWN),
-        (StandardSqlTypeNames.JSON, 0, DBVarType.DICT),
-        (StandardSqlTypeNames.RANGE, 0, DBVarType.UNKNOWN),
-    ],
-)
-def test_convert_to_internal_variable_type(bigquery_var_info, scale, expected):
-    """
-    Test convert_to_internal_variable_type
-    """
-    assert BigQuerySession._convert_to_internal_variable_type(bigquery_var_info, scale) == expected  # pylint: disable=protected-access
