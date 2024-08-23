@@ -9,7 +9,7 @@ import pytest
 from featurebyte.api.feature import Feature
 from featurebyte.api.item_view import ItemView
 from featurebyte.core.series import Series
-from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.enum import AggFunc, DBVarType, TableDataType
 from featurebyte.exception import RecordCreationException, RepeatedColumnNamesError
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -63,15 +63,28 @@ class TestItemView(BaseViewTestSuite):
     ) AS L
     INNER JOIN (
       SELECT
-        "col_int" AS "col_int",
-        "col_float" AS "col_float",
-        "col_char" AS "col_char",
-        "col_text" AS "col_text",
-        "col_binary" AS "col_binary",
-        "col_boolean" AS "col_boolean",
-        "event_timestamp" AS "event_timestamp",
-        "cust_id" AS "cust_id"
-      FROM "sf_database"."sf_schema"."sf_table"
+        "col_int",
+        ANY_VALUE("col_float") AS "col_float",
+        ANY_VALUE("col_char") AS "col_char",
+        ANY_VALUE("col_text") AS "col_text",
+        ANY_VALUE("col_binary") AS "col_binary",
+        ANY_VALUE("col_boolean") AS "col_boolean",
+        ANY_VALUE("event_timestamp") AS "event_timestamp",
+        ANY_VALUE("cust_id") AS "cust_id"
+      FROM (
+        SELECT
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_char" AS "col_char",
+          "col_text" AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          "event_timestamp" AS "event_timestamp",
+          "cust_id" AS "cust_id"
+        FROM "sf_database"."sf_schema"."sf_table"
+      )
+      GROUP BY
+        "col_int"
     ) AS R
       ON L."event_id_col" = R."col_int"
     LIMIT 10
@@ -258,15 +271,28 @@ def test_get_view__auto_join_columns(
         ) AS L
         INNER JOIN (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
-            "cust_id" AS "cust_id"
-          FROM "sf_database"."sf_schema"."sf_table"
+            "col_int",
+            ANY_VALUE("col_float") AS "col_float",
+            ANY_VALUE("col_char") AS "col_char",
+            ANY_VALUE("col_text") AS "col_text",
+            ANY_VALUE("col_binary") AS "col_binary",
+            ANY_VALUE("col_boolean") AS "col_boolean",
+            ANY_VALUE("event_timestamp") AS "event_timestamp",
+            ANY_VALUE("cust_id") AS "cust_id"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "event_timestamp",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."sf_table"
+          )
+          GROUP BY
+            "col_int"
         ) AS R
           ON L."event_id_col" = R."col_int"
         LIMIT 10
@@ -424,6 +450,43 @@ def test_join_event_table_attributes__more_columns(
           ) AS L
           INNER JOIN (
             SELECT
+              "col_int",
+              ANY_VALUE("col_float") AS "col_float",
+              ANY_VALUE("col_char") AS "col_char",
+              ANY_VALUE("col_text") AS "col_text",
+              ANY_VALUE("col_binary") AS "col_binary",
+              ANY_VALUE("col_boolean") AS "col_boolean",
+              ANY_VALUE("event_timestamp") AS "event_timestamp",
+              ANY_VALUE("cust_id") AS "cust_id"
+            FROM (
+              SELECT
+                "col_int" AS "col_int",
+                "col_float" AS "col_float",
+                "col_char" AS "col_char",
+                "col_text" AS "col_text",
+                "col_binary" AS "col_binary",
+                "col_boolean" AS "col_boolean",
+                "event_timestamp" AS "event_timestamp",
+                "cust_id" AS "cust_id"
+              FROM "sf_database"."sf_schema"."sf_table"
+            )
+            GROUP BY
+              "col_int"
+          ) AS R
+            ON L."event_id_col" = R."col_int"
+        ) AS L
+        INNER JOIN (
+          SELECT
+            "col_int",
+            ANY_VALUE("col_float") AS "col_float",
+            ANY_VALUE("col_char") AS "col_char",
+            ANY_VALUE("col_text") AS "col_text",
+            ANY_VALUE("col_binary") AS "col_binary",
+            ANY_VALUE("col_boolean") AS "col_boolean",
+            ANY_VALUE("event_timestamp") AS "event_timestamp",
+            ANY_VALUE("cust_id") AS "cust_id"
+          FROM (
+            SELECT
               "col_int" AS "col_int",
               "col_float" AS "col_float",
               "col_char" AS "col_char",
@@ -433,20 +496,9 @@ def test_join_event_table_attributes__more_columns(
               "event_timestamp" AS "event_timestamp",
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
-          ) AS R
-            ON L."event_id_col" = R."col_int"
-        ) AS L
-        INNER JOIN (
-          SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
-            "cust_id" AS "cust_id"
-          FROM "sf_database"."sf_schema"."sf_table"
+          )
+          GROUP BY
+            "col_int"
         ) AS R
           ON L."event_id_col" = R."col_int"
         LIMIT 10
@@ -1172,3 +1224,11 @@ def test_get_view__auto_resolve_column_conflict(
         "event_timestamp",
         "cust_id",
     ]
+
+
+def test_item_view_sample_table_node(snowflake_item_table):
+    """Test ItemView sample table node"""
+    view = snowflake_item_table.get_view(event_suffix="_event_table")
+    sample_table_node = view.graph.get_sample_table_node(view.node_name)
+    assert sample_table_node.parameters.type == TableDataType.EVENT_TABLE
+    assert sample_table_node.parameters.id == view.event_table_id

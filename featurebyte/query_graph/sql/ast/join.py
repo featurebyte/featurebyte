@@ -14,6 +14,7 @@ from typing_extensions import Literal
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier
+from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
 
 
@@ -36,8 +37,13 @@ class Join(TableNode):
             this=get_qualified_column_identifier(self.left_on, "L"),
             expression=get_qualified_column_identifier(self.right_on, "R"),
         )
+        deduplicated_right_table_expr = get_deduplicated_expr(
+            adapter=self.context.adapter,
+            table_expr=cast(Select, self.right_node.sql),
+            expected_primary_keys=[self.right_on],
+        )
         select_expr = select_expr.from_(left_subquery).join(
-            self.right_node.sql_nested(),
+            deduplicated_right_table_expr,
             on=join_conditions,
             join_type=self.join_type,
             join_alias="R",

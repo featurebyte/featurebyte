@@ -4,6 +4,7 @@ Integration tests related to DimensionView
 
 import pandas as pd
 import pytest
+import pytest_asyncio
 
 from featurebyte import Feature, RequestColumn
 from featurebyte.typing import is_scalar_nan
@@ -15,6 +16,29 @@ from tests.util.helper import (
     fb_assert_frame_equal,
     tz_localize_if_needed,
 )
+
+
+@pytest_asyncio.fixture(name="bad_dimension_table")
+async def bad_dimension_table_fixture(session, data_source, transaction_data_upper_case):
+    """
+    Fixture for a bad dimension table (primary key is not unique)
+    """
+    unique_product_action = list(transaction_data_upper_case["PRODUCT_ACTION"].unique())
+    df_bad_dimension = pd.DataFrame({
+        "PRODUCT_ACTION": unique_product_action + unique_product_action
+    })
+    df_bad_dimension["DIMENSION_VALUE"] = range(len(df_bad_dimension))
+    await session.register_table("BAD_DIMENSION_TABLE", df_bad_dimension)
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name="BAD_DIMENSION_TABLE",
+    )
+    dimension_table = database_table.create_dimension_table(
+        name="BAD_DIMENSION_TABLE",
+        dimension_id_column="PRODUCT_ACTION",
+    )
+    return dimension_table
 
 
 @pytest.fixture(name="item_type_dimension_lookup_feature")
@@ -414,3 +438,16 @@ def test_get_rank_in_dictionary__target_is_not_found(count_item_type_dictionary_
     preview_dict = get_value_feature_preview.iloc[0].to_dict()
     rank = preview_dict[get_value_feature.name]
     assert is_scalar_nan(rank)
+
+
+def test_bad_dimension_view_join(event_table, bad_dimension_table):
+    """
+    Test joining event view with a bad dimension view
+    """
+    event_view = event_table.get_view()
+    dimension_view = bad_dimension_table.get_view()
+    event_view = event_view.join(dimension_view, on="PRODUCT_ACTION")
+
+    # Check that the join does not multiply rows
+    df = event_view[event_view["TRANSACTION_ID"] == "T0"].preview()
+    assert df.shape[0] == 1
