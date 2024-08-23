@@ -372,6 +372,10 @@ class PreviewMixin(BaseGraphInterpreter):
                     sql_tree, desired_row_count=num_rows, total_row_count=total_num_rows, seed=seed
                 )
 
+        if input_node_sampled:
+            # limit the number of rows to sample to account for oversampling
+            sql_tree = sql_tree.limit(num_rows)
+
         return sql_tree, type_conversions
 
     def construct_preview_sql(

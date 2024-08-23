@@ -57,3 +57,4 @@ INNER JOIN (
     "order_id"
 ) AS R
   ON L."order_id" = R."order_id"
+LIMIT 10

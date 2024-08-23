@@ -115,3 +115,4 @@ LEFT JOIN (
     "GroceryCustomerGuid"
 ) AS R
   ON L."__FB_LAST_TS" = R."ValidFrom" AND L."__FB_KEY_COL_0" = R."GroceryCustomerGuid"
+LIMIT 10
