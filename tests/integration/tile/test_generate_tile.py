@@ -260,4 +260,4 @@ async def test_generate_tile_concurrent(session, base_sql_model, tile_registry_s
 
     sql = f"SELECT COUNT(*) FROM {tile_id}"
     result = await session.execute_query(sql)
-    assert result.shape[0] == 0
+    assert result.iloc[0][0] == 16

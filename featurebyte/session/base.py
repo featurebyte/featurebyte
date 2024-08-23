@@ -843,6 +843,7 @@ class BaseSession(BaseModel):
         kind: Literal["TABLE", "VIEW"] = "TABLE",
         partition_keys: list[str] | None = None,
         replace: bool = False,
+        exists: bool = False,
         retry: bool = False,
         retry_num: int = 10,
         sleep_interval: int = 5,
@@ -862,6 +863,8 @@ class BaseSession(BaseModel):
             Kind of table to create
         replace: bool
             Whether to replace the table if exists
+        exists: bool
+            Whether to create the table only if it doesn't exist
         retry: bool
             Whether to retry the operation
         retry_num: int
@@ -891,13 +894,23 @@ class BaseSession(BaseModel):
                 kind=kind,
                 partition_keys=partition_keys,
                 replace=replace,
+                exists=exists,
             ),
             source_type=self.source_type,
         )
 
-        if retry:
-            return await self.retry_sql(query, retry_num=retry_num, sleep_interval=sleep_interval)
-        return await self.execute_query_long_running(query)
+        try:
+            if retry:
+                return await self.retry_sql(
+                    query, retry_num=retry_num, sleep_interval=sleep_interval
+                )
+            return await self.execute_query_long_running(query)
+        except self.no_schema_error:
+            if exists:
+                # Some connectors like Snowflake raise error even though CREATE TABLE IF EXISTS
+                # statement succeeded when there is an existing table.
+                return None
+            raise
 
 
 class SqlObjectType(StrEnum):
