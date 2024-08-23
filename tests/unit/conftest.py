@@ -2084,6 +2084,7 @@ def mock_snowflake_session_fixture():
     session.clone_if_not_threadsafe.return_value = session
     session.create_table_as = partial(SnowflakeSession.create_table_as, session)
     session.retry_sql = partial(SnowflakeSession.retry_sql, session)
+    session.list_table_schema.return_value = {}
     return session
 
 

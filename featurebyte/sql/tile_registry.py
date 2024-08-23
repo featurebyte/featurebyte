@@ -2,6 +2,9 @@
 Tile Registry Job Script
 """
 
+from typing import Optional
+
+from featurebyte.exception import DocumentConflictError
 from featurebyte.logging import get_logger
 from featurebyte.models.tile_registry import TileModel
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -19,6 +22,7 @@ class TileRegistry(TileCommon):
 
     table_name: str
     table_exist: bool
+    sql_with_index: Optional[str]
     tile_registry_service: TileRegistryService
 
     async def execute(self) -> None:
@@ -50,9 +54,25 @@ class TileRegistry(TileCommon):
                 time_modulo_frequency_second=self.time_modulo_frequency_second,
                 blind_spot_second=self.blind_spot_second,
             )
-            await self.tile_registry_service.create_document(tile_model)
+            try:
+                await self.tile_registry_service.create_document(tile_model)
+            except DocumentConflictError:
+                # Can occur on concurrent tile tasks creating the same tile table
+                pass
 
-        if self.table_exist:
+        table_exist = self.table_exist
+        if not self.table_exist and self.sql_with_index is not None:
+            column_parts = ["index"]
+            column_parts.extend([self.quote_column(col) for col in self.entity_column_names])
+            column_parts.append("created_at")
+            await self._session.create_table_as(
+                table_details=self.tile_id,
+                select_expr=f"SELECT {', '.join(column_parts)} FROM ({self.sql_with_index}) LIMIT 0",
+                exists=True,
+            )
+            table_exist = True
+
+        if table_exist:
             cols = [
                 c.upper()
                 for c in (
@@ -76,4 +96,8 @@ class TileRegistry(TileCommon):
             if add_statements:
                 tile_add_sql += ",\n".join(add_statements)
                 logger.debug(f"tile_add_sql: {tile_add_sql}")
-                await self._session.retry_sql(tile_add_sql)
+                try:
+                    await self._session.execute_query_long_running(tile_add_sql)
+                except self._session.no_schema_error:
+                    # Can occur on concurrent tile tasks creating the same tile table
+                    pass
