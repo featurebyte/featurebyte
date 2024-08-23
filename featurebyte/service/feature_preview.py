@@ -32,6 +32,7 @@ from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.query_cache_manager import QueryCacheManagerService
 from featurebyte.service.session_manager import SessionManagerService
 
 # This time is used as an arbitrary value to use in scenarios where we don't have any time provided in previews.
@@ -58,8 +59,11 @@ class FeaturePreviewService(PreviewService):
         observation_table_service: ObservationTableService,
         feature_service: FeatureService,
         target_service: TargetService,
+        query_cache_manager_service: QueryCacheManagerService,
     ):
-        super().__init__(session_manager_service, feature_store_service)
+        super().__init__(
+            session_manager_service, feature_store_service, query_cache_manager_service
+        )
         self.entity_validation_service = entity_validation_service
         self.feature_list_service = feature_list_service
         self.observation_table_service = observation_table_service

@@ -6,9 +6,9 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
-from bson import ObjectId
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
 from tests.util.helper import assert_equal_with_expected_fixture
@@ -23,25 +23,15 @@ def patch_num_tables_per_join():
         yield
 
 
-@pytest.fixture(autouse=True)
-def patch_unique_identifier():
-    """
-    Patch unique identifier generator
-    """
-    with patch(
-        "featurebyte.query_graph.sql.interpreter.preview.ObjectId", return_value=ObjectId("0" * 24)
-    ):
-        yield
-
-
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS)
 def test_graph_interpreter_describe(simple_graph, source_type, update_fixtures):
     """Test graph sample"""
     graph, node = simple_graph
     interpreter = GraphInterpreter(graph, source_type)
 
-    sql_code = (
-        interpreter.construct_describe_queries(node.name, num_rows=10, seed=1234).queries[0].sql
+    sql_code = sql_to_string(
+        interpreter.construct_describe_queries(node.name, num_rows=10, seed=1234).queries[0].expr,
+        source_type,
     )
     expected_filename = f"tests/fixtures/query_graph/expected_describe_{source_type.lower()}.sql"
     assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
@@ -64,7 +54,9 @@ def test_describe_specify_stats_names(simple_graph, update_fixtures):
         "a_copy",
     ]
     expected_filename = "tests/fixtures/query_graph/expected_describe_stats_names.sql"
-    assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
+    assert_equal_with_expected_fixture(
+        sql_to_string(describe_query.expr, SourceType.SNOWFLAKE), expected_filename, update_fixtures
+    )
 
 
 def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures):
@@ -86,7 +78,9 @@ def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures):
         "a_copy",
     ]
     expected_filename = "tests/fixtures/query_graph/expected_describe_count_based_stats_only.sql"
-    assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
+    assert_equal_with_expected_fixture(
+        sql_to_string(describe_query.expr, SourceType.SNOWFLAKE), expected_filename, update_fixtures
+    )
 
 
 def test_describe_specify_empty_stats(simple_graph, update_fixtures):
@@ -108,7 +102,9 @@ def test_describe_specify_empty_stats(simple_graph, update_fixtures):
         "a_copy",
     ]
     expected_filename = "tests/fixtures/query_graph/expected_describe_empty_stats.sql"
-    assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
+    assert_equal_with_expected_fixture(
+        sql_to_string(describe_query.expr, SourceType.SNOWFLAKE), expected_filename, update_fixtures
+    )
 
 
 def test_describe_in_batches(simple_graph, update_fixtures):
@@ -133,7 +129,9 @@ def test_describe_in_batches(simple_graph, update_fixtures):
         "a",
     ]
     expected_filename = "tests/fixtures/query_graph/expected_describe_batches_0.sql"
-    assert_equal_with_expected_fixture(query.sql, expected_filename, update_fixtures)
+    assert_equal_with_expected_fixture(
+        sql_to_string(query.expr, SourceType.SNOWFLAKE), expected_filename, update_fixtures
+    )
 
     query = describe_queries.queries[1]
     assert query.row_names == ["dtype", "min", "max"]
@@ -142,7 +140,9 @@ def test_describe_in_batches(simple_graph, update_fixtures):
         "a_copy",
     ]
     expected_filename = "tests/fixtures/query_graph/expected_describe_batches_1.sql"
-    assert_equal_with_expected_fixture(query.sql, expected_filename, update_fixtures)
+    assert_equal_with_expected_fixture(
+        sql_to_string(query.expr, SourceType.SNOWFLAKE), expected_filename, update_fixtures
+    )
 
 
 def test_describe_no_batches(simple_graph, update_fixtures):
@@ -168,7 +168,9 @@ def test_describe_no_batches(simple_graph, update_fixtures):
         "a_copy",
     ]
     expected_filename = "tests/fixtures/query_graph/expected_describe_count_based_stats_only.sql"
-    assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
+    assert_equal_with_expected_fixture(
+        sql_to_string(describe_query.expr, SourceType.SNOWFLAKE), expected_filename, update_fixtures
+    )
 
 
 def test_describe_with_date_range_and_size(simple_graph, update_fixtures):
@@ -194,7 +196,9 @@ def test_describe_with_date_range_and_size(simple_graph, update_fixtures):
         "a_copy",
     ]
     expected_filename = "tests/fixtures/query_graph/expected_describe_date_range_and_size.sql"
-    assert_equal_with_expected_fixture(describe_query.sql, expected_filename, update_fixtures)
+    assert_equal_with_expected_fixture(
+        sql_to_string(describe_query.expr, SourceType.SNOWFLAKE), expected_filename, update_fixtures
+    )
 
 
 def test_value_counts_sql_no_casting(graph, node_input, update_fixtures):
@@ -212,8 +216,6 @@ def test_value_counts_sql_no_casting(graph, node_input, update_fixtures):
         expected_filename = (
             f"tests/fixtures/query_graph/expected_value_counts_{query.column_name}.sql"
         )
-        assert_equal_with_expected_fixture(query.sql, expected_filename, update_fixtures)
-    expected_filename = "tests/fixtures/query_graph/expected_value_counts_sampled_data.sql"
-    assert_equal_with_expected_fixture(
-        value_counts_queries.data.expr.sql(pretty=True), expected_filename, update_fixtures
-    )
+        assert_equal_with_expected_fixture(
+            sql_to_string(query.expr, SourceType.SNOWFLAKE), expected_filename, update_fixtures
+        )

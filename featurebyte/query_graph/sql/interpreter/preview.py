@@ -10,10 +10,9 @@ from datetime import datetime
 from typing import Any, Callable, List, Optional, Set, Tuple, cast
 from typing import OrderedDict as OrderedDictT
 
-from bson import ObjectId
 from sqlglot import expressions
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.metadata.operation import OperationStructure, ViewDataColumn
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
@@ -42,7 +41,6 @@ class DataQuery:
     """
 
     expr: expressions.Select
-    output_table_name: str
 
 
 @dataclass
@@ -51,7 +49,7 @@ class DescribeQuery:
     Query to describe selected columns for a given node
     """
 
-    sql: str
+    expr: expressions.Select
     row_names: List[str]
     columns: List[ViewDataColumn]
 
@@ -73,7 +71,7 @@ class ValueCountsQuery:
     Query to obtain value counts for a column
     """
 
-    sql: str
+    expr: expressions.Expression
     column_name: str
 
 
@@ -1063,7 +1061,6 @@ class PreviewMixin(BaseGraphInterpreter):
             skip_conversion=True,
             total_num_rows=total_num_rows,
         )
-        sample_table_name = f"__TEMP_SAMPLED_DATA_{ObjectId()}".upper()
 
         if not columns_batch_size:
             columns_batch_size = len(operation_structure.columns)
@@ -1071,20 +1068,20 @@ class PreviewMixin(BaseGraphInterpreter):
         queries = []
         for i in range(0, len(operation_structure.columns), columns_batch_size):
             sql_tree, row_indices, columns = self._construct_stats_sql(
-                input_table_name=sample_table_name,
+                input_table_name=InternalName.INPUT_TABLE_SQL_PLACEHOLDER,
                 sql_tree=sample_sql_tree,
                 columns=operation_structure.columns[i : i + columns_batch_size],
                 stats_names=stats_names,
             )
             queries.append(
                 DescribeQuery(
-                    sql=sql_to_string(sql_tree, source_type=self.source_type),
+                    expr=sql_tree,
                     row_names=row_indices,
                     columns=columns,
                 )
             )
         return DescribeQueries(
-            data=DataQuery(expr=sample_sql_tree, output_table_name=sample_table_name),
+            data=DataQuery(expr=sample_sql_tree),
             queries=queries,
             type_conversions=type_conversions,
         )
@@ -1127,7 +1124,6 @@ class PreviewMixin(BaseGraphInterpreter):
             seed=seed,
             total_num_rows=total_num_rows,
         )[0]
-        sample_table_name = f"__TEMP_VALUE_COUNTS_SAMPLED_DATA_{ObjectId()}".upper()
 
         queries = []
         for col_name in column_names:
@@ -1135,7 +1131,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 quoted_identifier(col_name),
                 num_categories_limit=num_categories_limit,
                 use_casted_data=False,
-                input_table_name=sample_table_name,
+                input_table_name=InternalName.INPUT_TABLE_SQL_PLACEHOLDER,
             )
             output_expr = expressions.select(
                 expressions.alias_(quoted_identifier(col_name), "key", quoted=True),
@@ -1144,13 +1140,13 @@ class PreviewMixin(BaseGraphInterpreter):
                 ),
             ).from_(cat_counts.subquery())
             value_counts_query = ValueCountsQuery(
-                sql=sql_to_string(output_expr, source_type=self.source_type),
+                expr=output_expr,
                 column_name=col_name,
             )
             queries.append(value_counts_query)
 
         return ValueCountsQueries(
-            data=DataQuery(expr=sql_tree, output_table_name=sample_table_name),
+            data=DataQuery(expr=sql_tree),
             queries=queries,
         )
 

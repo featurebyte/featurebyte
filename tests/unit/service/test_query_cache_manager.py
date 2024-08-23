@@ -1,0 +1,265 @@
+"""
+Unit tests for QueryCacheManagerService
+"""
+
+from datetime import datetime, timedelta
+from unittest.mock import call, patch
+
+import pandas as pd
+import pytest
+from freezegun import freeze_time
+
+from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.models.query_cache import QueryCacheType
+
+
+@pytest.fixture(name="service")
+def service_fixture(app_container):
+    """
+    Fixture for a QueryCacheManagerService
+    """
+    return app_container.query_cache_manager_service
+
+
+@pytest.fixture(name="periodic_task_service")
+def periodic_task_service_fixture(app_container):
+    """
+    Fixture for a PeriodicTaskService
+    """
+    return app_container.periodic_task_service
+
+
+@pytest.fixture(name="cleanup_service")
+def cleanup_service_fixture(app_container):
+    """
+    Fixture for a QueryCacheCleanupService
+    """
+    return app_container.query_cache_cleanup_service
+
+
+@pytest.fixture(name="cleanup_scheduler_service")
+def cleanup_scheduler_service_fixture(app_container):
+    """
+    Fixture for a QueryCacheCleanupSchedulerService
+    """
+    return app_container.query_cache_cleanup_scheduler_service
+
+
+@pytest.fixture(name="feature_store_id")
+def feature_store_id_fixture(feature_store):
+    """
+    Fixture for a feature store id
+    """
+    return feature_store.id
+
+
+@pytest.fixture(name="mock_snowflake_session")
+def mock_snowflake_session_fixture(mock_snowflake_session):
+    """
+    Patch get_feature_store_session to return a mock session
+    """
+    with patch(
+        "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session",
+    ) as patched_get_feature_store_session:
+        patched_get_feature_store_session.return_value = mock_snowflake_session
+        yield mock_snowflake_session
+
+
+async def get_all_periodic_tasks(periodic_task_service):
+    """
+    Helper function to retrieve all scheduled periodic tasks
+    """
+    with periodic_task_service.allow_use_raw_query_filter():
+        tasks = []
+        async for doc in periodic_task_service.list_documents_as_dict_iterator(
+            query_filter={}, use_raw_query_filter=True
+        ):
+            tasks.append(doc)
+        return tasks
+
+
+@pytest.mark.asyncio
+async def test_cache_and_get_table(service, periodic_task_service, feature_store_id):
+    """
+    Test caching a table query and retrieval
+    """
+    query = "SELECT * FROM table_1"
+
+    # No cache
+    result = await service.get_cached_table(feature_store_id, query)
+    assert result is None
+    tasks = await get_all_periodic_tasks(periodic_task_service)
+    assert tasks == []
+
+    # Cache table
+    await service.cache_table(feature_store_id, query, "created_table_1")
+    tasks = await get_all_periodic_tasks(periodic_task_service)
+    assert len(tasks) == 1
+    assert tasks[0]["name"] == f"query_cache_cleanup_feature_store_id_{feature_store_id}"
+    assert tasks[0]["kwargs"] == {
+        "task_type": "io_task",
+        "priority": 0,
+        "output_document_id": tasks[0]["kwargs"]["output_document_id"],
+        "is_scheduled_task": True,
+        "user_id": str(periodic_task_service.user.id),
+        "catalog_id": str(DEFAULT_CATALOG_ID),
+        "feature_store_id": str(feature_store_id),
+        "command": "QUERY_CACHE_CLEANUP",
+        "output_collection_name": None,
+        "is_revocable": False,
+    }
+
+    # Check retrieval
+    result = await service.get_cached_table(feature_store_id, query)
+    assert result == "created_table_1"
+
+    # Check retrieval on a later date after cache should be state (even without cleanup)
+    with freeze_time(datetime.utcnow() + timedelta(days=100)):
+        result = await service.get_cached_table(feature_store_id, query)
+        assert result is None
+
+
+@pytest.mark.asyncio
+async def test_cache_and_get_dataframe(service, periodic_task_service, feature_store_id):
+    """
+    Test caching a dataframe and retrieval
+    """
+    query = "SELECT * FROM table_1"
+    dataframe = pd.DataFrame({"a": [1, 2, 3]}, index=["x", "y", "z"])
+
+    # No cache
+    result = await service.get_cached_dataframe(feature_store_id, query)
+    assert result is None
+    tasks = await get_all_periodic_tasks(periodic_task_service)
+    assert tasks == []
+
+    # Cache table
+    await service.cache_dataframe(feature_store_id, query, dataframe)
+    tasks = await get_all_periodic_tasks(periodic_task_service)
+    assert len(tasks) == 1
+
+    # Check retrieval
+    result = await service.get_cached_dataframe(feature_store_id, query)
+    pd.testing.assert_frame_equal(result, dataframe)
+
+    # Check retrieval on a later date after cache should be state (even without cleanup)
+    with freeze_time(datetime.utcnow() + timedelta(days=100)):
+        result = await service.get_cached_dataframe(feature_store_id, query)
+        assert result is None
+
+
+@pytest.mark.asyncio
+async def test_stop_job_with_queries(
+    service, cleanup_scheduler_service, feature_store_id, periodic_task_service
+):
+    """
+    Test stopping job no-op if there are still cached queries
+    """
+    query = "SELECT * FROM table_1"
+    await service.cache_table(feature_store_id, query, "created_table_1")
+    tasks = await get_all_periodic_tasks(periodic_task_service)
+    assert len(tasks) == 1
+
+    # Try stopping job when there are still cached queries
+    await cleanup_scheduler_service.stop_job_if_no_longer_needed(feature_store_id)
+    tasks = await get_all_periodic_tasks(periodic_task_service)
+    assert len(tasks) == 1
+
+
+@pytest.mark.asyncio
+async def test_cleanup_service(
+    service,
+    cleanup_service,
+    periodic_task_service,
+    feature_store_id,
+    mock_snowflake_session,
+):
+    """
+    Test cleanup service
+    """
+    query = "SELECT * FROM table_1"
+
+    with freeze_time("2024-01-01"):
+        await service.cache_table(feature_store_id, query, "created_table_1")
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == []
+
+    with freeze_time("2024-01-02"):
+        await service.cache_table(feature_store_id, query, "created_table_2")
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == []
+
+    # Cleanup before stale
+    with freeze_time("2024-01-03"):
+        await cleanup_service.run_cleanup(feature_store_id)
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == []
+
+    # Cleanup before stale (first document already not retrievable but not yet ready for cleanup)
+    with freeze_time("2024-01-08 03:00:00"):
+        await cleanup_service.run_cleanup(feature_store_id)
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == []
+
+    # Cleanup after the first query was stale and ready for cleanup
+    with freeze_time("2024-01-08 03:00:01"):
+        await cleanup_service.run_cleanup(feature_store_id)
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == [
+            call(table_name="created_table_1", schema_name="sf_schema", database_name="sf_db")
+        ]
+
+    # Cleanup after all the remaining query was stale
+    mock_snowflake_session.drop_table.reset_mock()
+    with freeze_time("2024-01-10"):
+        await cleanup_service.run_cleanup(feature_store_id)
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 0
+        assert mock_snowflake_session.drop_table.call_args_list == [
+            call(table_name="created_table_2", schema_name="sf_schema", database_name="sf_db")
+        ]
+
+
+@pytest.mark.asyncio
+async def test_cleanup_service_dataframes(
+    app_container,
+    service,
+    cleanup_service,
+    periodic_task_service,
+    feature_store_id,
+    mock_snowflake_session,
+):
+    """
+    Test cleanup service on cached tables
+    """
+    _ = mock_snowflake_session
+
+    query = "SELECT * FROM table_1"
+    dataframe = pd.DataFrame({"a": [1, 2, 3]}, index=["x", "y", "z"])
+
+    with freeze_time("2024-01-01"):
+        await service.cache_dataframe(feature_store_id, query, dataframe)
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 1
+
+    # Check file exists in storage
+    cache_key = service._get_cache_key(feature_store_id, query, QueryCacheType.DATAFRAME)
+    docs = await service.query_cache_document_service.list_documents_as_dict(
+        query_filter={"cache_key": cache_key}
+    )
+    assert len(docs["data"]) == 1
+    storage_path = docs["data"][0]["cached_object"]["storage_path"]
+    await app_container.storage.get_bytes(storage_path)
+
+    with freeze_time("2024-01-09"):
+        await cleanup_service.run_cleanup(feature_store_id)
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 0
+
+    with pytest.raises(FileNotFoundError):
+        await app_container.storage.get_bytes(storage_path)

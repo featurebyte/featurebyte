@@ -5,7 +5,7 @@ WITH "casted_data" AS (
     CAST("a" AS VARCHAR) AS "a",
     CAST("b" AS VARCHAR) AS "b",
     CAST("a_copy" AS VARCHAR) AS "a_copy"
-  FROM "__TEMP_SAMPLED_DATA_000000000000000000000000"
+  FROM "__FB_INPUT_TABLE_SQL_PLACEHOLDER"
 ), counts__1 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict."COUNT_DICT") AS "entropy__1",
