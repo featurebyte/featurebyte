@@ -2,6 +2,8 @@
 Tile Registry Job Script
 """
 
+from typing import Optional
+
 from featurebyte.exception import DocumentConflictError
 from featurebyte.logging import get_logger
 from featurebyte.models.tile_registry import TileModel
@@ -18,9 +20,9 @@ class TileRegistry(TileCommon):
     Tile Registry script
     """
 
-    sql_with_index: str
     table_name: str
     table_exist: bool
+    sql_with_index: Optional[str]
     tile_registry_service: TileRegistryService
 
     async def execute(self) -> None:
@@ -58,7 +60,8 @@ class TileRegistry(TileCommon):
                 # Can occur on concurrent tile tasks creating the same tile table
                 pass
 
-        if not self.table_exist:
+        table_exist = self.table_exist
+        if not self.table_exist and self.sql_with_index is not None:
             column_parts = ["index"]
             column_parts.extend([self.quote_column(col) for col in self.entity_column_names])
             column_parts.append("created_at")
@@ -67,32 +70,34 @@ class TileRegistry(TileCommon):
                 select_expr=f"SELECT {', '.join(column_parts)} FROM ({self.sql_with_index}) LIMIT 0",
                 exists=True,
             )
+            table_exist = True
 
-        cols = [
-            c.upper()
-            for c in (
-                await self._session.list_table_schema(
-                    self.table_name,
-                    self._session.database_name,
-                    self._session.schema_name,
-                    timeout=LIST_TABLE_SCHEMA_TIMEOUT_SECONDS,
-                )
-            ).keys()
-        ]
-        tile_add_sql = f"ALTER TABLE {self.table_name} ADD COLUMN\n"
-        add_statements = []
-        for i, input_column in enumerate(input_value_columns):
-            if input_column.upper() not in cols:
-                element_type = input_value_columns_types[i]
-                add_statements.append(f"{input_column} {element_type}")
-                if "_MONITOR" in self.table_name:
-                    add_statements.append(f"OLD_{input_column} {element_type}")
+        if table_exist:
+            cols = [
+                c.upper()
+                for c in (
+                    await self._session.list_table_schema(
+                        self.table_name,
+                        self._session.database_name,
+                        self._session.schema_name,
+                        timeout=LIST_TABLE_SCHEMA_TIMEOUT_SECONDS,
+                    )
+                ).keys()
+            ]
+            tile_add_sql = f"ALTER TABLE {self.table_name} ADD COLUMN\n"
+            add_statements = []
+            for i, input_column in enumerate(input_value_columns):
+                if input_column.upper() not in cols:
+                    element_type = input_value_columns_types[i]
+                    add_statements.append(f"{input_column} {element_type}")
+                    if "_MONITOR" in self.table_name:
+                        add_statements.append(f"OLD_{input_column} {element_type}")
 
-        if add_statements:
-            tile_add_sql += ",\n".join(add_statements)
-            logger.debug(f"tile_add_sql: {tile_add_sql}")
-            try:
-                await self._session.execute_query_long_running(tile_add_sql)
-            except self._session.no_schema_error:
-                # Can occur on concurrent tile tasks creating the same tile table
-                pass
+            if add_statements:
+                tile_add_sql += ",\n".join(add_statements)
+                logger.debug(f"tile_add_sql: {tile_add_sql}")
+                try:
+                    await self._session.execute_query_long_running(tile_add_sql)
+                except self._session.no_schema_error:
+                    # Can occur on concurrent tile tasks creating the same tile table
+                    pass
