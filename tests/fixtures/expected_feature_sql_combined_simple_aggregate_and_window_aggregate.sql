@@ -85,15 +85,28 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
       ) AS L
       INNER JOIN (
         SELECT
-          "col_int" AS "col_int",
-          "col_float" AS "col_float",
-          "col_char" AS "col_char",
-          "col_text" AS "col_text",
-          "col_binary" AS "col_binary",
-          "col_boolean" AS "col_boolean",
-          "event_timestamp" AS "event_timestamp",
-          "cust_id" AS "cust_id"
-        FROM "sf_database"."sf_schema"."sf_table"
+          "col_int",
+          ANY_VALUE("col_float") AS "col_float",
+          ANY_VALUE("col_char") AS "col_char",
+          ANY_VALUE("col_text") AS "col_text",
+          ANY_VALUE("col_binary") AS "col_binary",
+          ANY_VALUE("col_boolean") AS "col_boolean",
+          ANY_VALUE("event_timestamp") AS "event_timestamp",
+          ANY_VALUE("cust_id") AS "cust_id"
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+        )
+        GROUP BY
+          "col_int"
       ) AS R
         ON L."event_id_col" = R."col_int"
     ) AS ITEM

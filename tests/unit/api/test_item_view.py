@@ -63,15 +63,28 @@ class TestItemView(BaseViewTestSuite):
     ) AS L
     INNER JOIN (
       SELECT
-        "col_int" AS "col_int",
-        "col_float" AS "col_float",
-        "col_char" AS "col_char",
-        "col_text" AS "col_text",
-        "col_binary" AS "col_binary",
-        "col_boolean" AS "col_boolean",
-        "event_timestamp" AS "event_timestamp",
-        "cust_id" AS "cust_id"
-      FROM "sf_database"."sf_schema"."sf_table"
+        "col_int",
+        ANY_VALUE("col_float") AS "col_float",
+        ANY_VALUE("col_char") AS "col_char",
+        ANY_VALUE("col_text") AS "col_text",
+        ANY_VALUE("col_binary") AS "col_binary",
+        ANY_VALUE("col_boolean") AS "col_boolean",
+        ANY_VALUE("event_timestamp") AS "event_timestamp",
+        ANY_VALUE("cust_id") AS "cust_id"
+      FROM (
+        SELECT
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_char" AS "col_char",
+          "col_text" AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          "event_timestamp" AS "event_timestamp",
+          "cust_id" AS "cust_id"
+        FROM "sf_database"."sf_schema"."sf_table"
+      )
+      GROUP BY
+        "col_int"
     ) AS R
       ON L."event_id_col" = R."col_int"
     LIMIT 10
@@ -258,15 +271,28 @@ def test_get_view__auto_join_columns(
         ) AS L
         INNER JOIN (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
-            "cust_id" AS "cust_id"
-          FROM "sf_database"."sf_schema"."sf_table"
+            "col_int",
+            ANY_VALUE("col_float") AS "col_float",
+            ANY_VALUE("col_char") AS "col_char",
+            ANY_VALUE("col_text") AS "col_text",
+            ANY_VALUE("col_binary") AS "col_binary",
+            ANY_VALUE("col_boolean") AS "col_boolean",
+            ANY_VALUE("event_timestamp") AS "event_timestamp",
+            ANY_VALUE("cust_id") AS "cust_id"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "event_timestamp",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."sf_table"
+          )
+          GROUP BY
+            "col_int"
         ) AS R
           ON L."event_id_col" = R."col_int"
         LIMIT 10
@@ -424,6 +450,43 @@ def test_join_event_table_attributes__more_columns(
           ) AS L
           INNER JOIN (
             SELECT
+              "col_int",
+              ANY_VALUE("col_float") AS "col_float",
+              ANY_VALUE("col_char") AS "col_char",
+              ANY_VALUE("col_text") AS "col_text",
+              ANY_VALUE("col_binary") AS "col_binary",
+              ANY_VALUE("col_boolean") AS "col_boolean",
+              ANY_VALUE("event_timestamp") AS "event_timestamp",
+              ANY_VALUE("cust_id") AS "cust_id"
+            FROM (
+              SELECT
+                "col_int" AS "col_int",
+                "col_float" AS "col_float",
+                "col_char" AS "col_char",
+                "col_text" AS "col_text",
+                "col_binary" AS "col_binary",
+                "col_boolean" AS "col_boolean",
+                "event_timestamp" AS "event_timestamp",
+                "cust_id" AS "cust_id"
+              FROM "sf_database"."sf_schema"."sf_table"
+            )
+            GROUP BY
+              "col_int"
+          ) AS R
+            ON L."event_id_col" = R."col_int"
+        ) AS L
+        INNER JOIN (
+          SELECT
+            "col_int",
+            ANY_VALUE("col_float") AS "col_float",
+            ANY_VALUE("col_char") AS "col_char",
+            ANY_VALUE("col_text") AS "col_text",
+            ANY_VALUE("col_binary") AS "col_binary",
+            ANY_VALUE("col_boolean") AS "col_boolean",
+            ANY_VALUE("event_timestamp") AS "event_timestamp",
+            ANY_VALUE("cust_id") AS "cust_id"
+          FROM (
+            SELECT
               "col_int" AS "col_int",
               "col_float" AS "col_float",
               "col_char" AS "col_char",
@@ -433,20 +496,9 @@ def test_join_event_table_attributes__more_columns(
               "event_timestamp" AS "event_timestamp",
               "cust_id" AS "cust_id"
             FROM "sf_database"."sf_schema"."sf_table"
-          ) AS R
-            ON L."event_id_col" = R."col_int"
-        ) AS L
-        INNER JOIN (
-          SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
-            "cust_id" AS "cust_id"
-          FROM "sf_database"."sf_schema"."sf_table"
+          )
+          GROUP BY
+            "col_int"
         ) AS R
           ON L."event_id_col" = R."col_int"
         LIMIT 10

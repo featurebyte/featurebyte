@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_series_equal
 
 from featurebyte import AggFunc, FeatureList
 
@@ -213,9 +212,6 @@ def test_item_view_joined_with_dimension_view(
     # Verify that we have non-zero number of elements to represent a successful join
     assert number_of_elements > 0
     assert item_preview.shape[0] == number_of_elements
-
-    # Verify that the item_id's are the same
-    assert_series_equal(item_preview["item_id"], original_item_preview["item_id"])
 
     # verify that the values in the joined columns are as we expect
     for _, row in item_preview.iterrows():
