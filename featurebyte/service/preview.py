@@ -289,7 +289,7 @@ class PreviewService:
         result = await self._execute_query(session, sample_sql, allow_long_running)
         return dataframe_to_json(result, type_conversions)
 
-    async def describe(
+    async def describe(  # pylint: disable=too-many-locals
         self,
         sample: FeatureStoreSample,
         size: int,
@@ -297,6 +297,7 @@ class PreviewService:
         columns_batch_size: Optional[int] = None,
         drop_all_null_stats: bool = True,
         allow_long_running: bool = True,
+        sample_on_primary_table: bool = False,
     ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
@@ -317,6 +318,9 @@ class PreviewService:
             Whether to drop the result of a statistics if all values across all columns are null
         allow_long_running: bool
             Whether to allow a longer timeout for non-interactive queries
+        sample_on_primary_table: bool
+            Whether to perform sampling on the primary table. This has an effect only when the
+            QueryObject is a join of multiple tables.
 
         Returns
         -------
@@ -362,6 +366,7 @@ class PreviewService:
             stats_names=sample.stats_names,
             columns_batch_size=columns_batch_size,
             total_num_rows=total_num_rows,
+            sample_on_primary_table=sample_on_primary_table,
         )
         feature_store_id = sample.feature_store_id
         input_table_name = await self._get_or_cache_table(
