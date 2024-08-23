@@ -411,3 +411,92 @@ def test_graph_interpreter_describe_event_join_scd_view(update_fixtures):
     assert_equal_with_expected_fixture(
         describe_query.data.expr.sql(pretty=True), expected_filename, update_fixtures
     )
+
+
+def test_describe__with_primary_table_sampling_on_graph_containing_inner_join(
+    global_graph,
+    item_table_join_event_table_node,
+    update_fixtures,
+):
+    """Test describe queries with primary table sampling on graph containing inner join or filter"""
+    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+    describe_query = interpreter.construct_describe_queries(
+        item_table_join_event_table_node.name,
+        num_rows=10,
+        seed=1234,
+        total_num_rows=1000,
+        sample_on_primary_table=True,
+    )
+
+    expected_filename = "tests/fixtures/query_graph/expected_item_table_join_event_table_primary_table_sampled_data.sql"
+    assert_equal_with_expected_fixture(
+        describe_query.data.expr.sql(pretty=True), expected_filename, update_fixtures
+    )
+
+
+def test_describe__with_primary_table_sampling_on_graph_containing_filter(
+    global_graph,
+    item_table_input_node,
+    event_table_input_node,
+    join_node_params,
+    update_fixtures,
+):
+    """Test describe queries with primary table sampling on graph containing inner join or filter"""
+    node_params = join_node_params.copy()
+    node_params["join_type"] = "left"
+    node_join = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_table_input_node, item_table_input_node],
+    )
+
+    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+
+    # sanity check on describe query without filter node & no inner join
+    describe_query = interpreter.construct_describe_queries(
+        node_join.name,
+        num_rows=10,
+        seed=1234,
+        total_num_rows=1000,
+        sample_on_primary_table=True,
+    )
+    assert "LIMIT 10\n" in describe_query.data.expr.sql(pretty=True)  # no over sampling
+
+    # add a filter operation
+    node_proj_oder_id = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["order_id"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_join],
+    )
+    node_eq = global_graph.add_operation(
+        node_type=NodeType.EQ,
+        node_params={"value": 1},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[node_proj_oder_id],
+    )
+    filter_node = global_graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[node_join, node_eq],
+    )
+
+    # check describe query with query graph containing filter node & join operation
+    describe_query = GraphInterpreter(
+        global_graph, source_type=SourceType.SNOWFLAKE
+    ).construct_describe_queries(
+        filter_node.name,
+        num_rows=10,
+        seed=1234,
+        total_num_rows=1000,
+        sample_on_primary_table=True,
+    )
+
+    expected_filename = (
+        "tests/fixtures/query_graph/expected_filtered_table_primary_table_sampled_data.sql"
+    )
+    assert_equal_with_expected_fixture(
+        describe_query.data.expr.sql(pretty=True), expected_filename, update_fixtures
+    )
