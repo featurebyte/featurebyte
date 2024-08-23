@@ -371,6 +371,10 @@ def test_join__left_join(generic_input_node_params, join_type_param):
         other_view, on=col_info_a.name, how=join_type_param, rsuffix="suffix", rprefix="_"
     )
 
+    # test sample table node (take the left input)
+    sample_table_node = joined_view.graph.get_sample_table_node(joined_view.node_name)
+    assert sample_table_node.name == "input_1"
+
     # assert updated view params
     assert joined_view.columns_info == [
         col_info_a,

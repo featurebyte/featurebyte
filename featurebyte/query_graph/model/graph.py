@@ -7,13 +7,14 @@ from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple,
 
 from pydantic import Field, PrivateAttr, field_validator, model_validator
 
+from featurebyte.enum import TableDataType
 from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
-from featurebyte.query_graph.node.input import InputNode
+from featurebyte.query_graph.node.input import InputNode, ItemTableInputNodeParameters
 from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.query_graph.util import hash_node
 
@@ -370,6 +371,30 @@ class QueryGraphModel(FeatureByteBaseModel):
             assert isinstance(input_node, InputNode)
             return input_node
         raise GraphInconsistencyError("Input node not found")
+
+    def get_sample_table_node(self, node_name: str) -> InputNode:
+        """
+        Retrieve input node used to sample table for a specified target node
+
+        Parameters
+        ----------
+        node_name: str
+            Name of node to get input node for
+
+        Returns
+        -------
+        InputNode
+        """
+        input_node = self.get_input_node(node_name)
+        if input_node.parameters.type == TableDataType.ITEM_TABLE:
+            table_params = cast(ItemTableInputNodeParameters, input_node.parameters)
+            # use the event table of the item table as the sample table
+            target_node = self.get_node_by_name(node_name)
+            for node in self.iterate_nodes(target_node=target_node, node_type=NodeType.INPUT):
+                in_node = cast(InputNode, node)
+                if in_node.parameters.id == table_params.event_table_id:
+                    return in_node
+        return input_node
 
     def get_input_node_names(self, node: Node) -> List[str]:
         """

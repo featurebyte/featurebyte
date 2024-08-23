@@ -186,9 +186,8 @@ class PreviewMixin(BaseGraphInterpreter):
                 seed=seed, total_num_rows=total_num_rows, num_rows=sample_row_num
             )
 
-            # get_input_node is always traversing the graph from the target node to the left most input node
-            # which is the primary table input node (we only have left joins & inner joins, see JoinNode's join_type)
-            input_node = query_graph.get_input_node(node_name=target_node_name)
+            # override sample parameters for sampling table
+            input_node = query_graph.get_sample_table_node(node_name=target_node_name)
             input_node.parameters.sample_parameters = sample_parameters
             input_node_sampled = True
         return query_graph, input_node_sampled
