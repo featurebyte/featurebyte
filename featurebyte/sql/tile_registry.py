@@ -4,6 +4,8 @@ Tile Registry Job Script
 
 from typing import Optional
 
+from pydantic import Field
+
 from featurebyte.exception import DocumentConflictError
 from featurebyte.logging import get_logger
 from featurebyte.models.tile_registry import TileModel
@@ -22,7 +24,7 @@ class TileRegistry(TileCommon):
 
     table_name: str
     table_exist: bool
-    sql_with_index: Optional[str]
+    sql_with_index: Optional[str] = Field(default=None)
     tile_registry_service: TileRegistryService
 
     async def execute(self) -> None:
