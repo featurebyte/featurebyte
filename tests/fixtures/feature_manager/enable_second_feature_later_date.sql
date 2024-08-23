@@ -2,7 +2,7 @@ ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN
 value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 FLOAT;
 
 
-                merge into TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 a using (
+            merge into TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 a using (
             select
                 index,
                 "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9,
@@ -42,19 +42,19 @@ GROUP BY
   index,
   "cust_id")
         ) b
-                    on a.INDEX = b.INDEX AND EQUAL_NULL(a."cust_id", b."cust_id")
-                    when matched then
-                        update set a.created_at = current_timestamp(), a.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 = b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9
-                    when not matched then
-                        insert (INDEX, "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, CREATED_AT)
-                            values (b.INDEX, b."cust_id", b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, current_timestamp())
-            ;
+                on a.INDEX = b.INDEX AND EQUAL_NULL(a."cust_id", b."cust_id")
+                when matched then
+                    update set a.created_at = current_timestamp(), a.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 = b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9
+                when not matched then
+                    insert (INDEX, "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, CREATED_AT)
+                        values (b.INDEX, b."cust_id", b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, current_timestamp())
+        ;
 
 ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN
 value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 FLOAT;
 
 
-                merge into TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 a using (
+            merge into TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 a using (
             select
                 index,
                 "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9,
@@ -94,13 +94,13 @@ GROUP BY
   index,
   "cust_id")
         ) b
-                    on a.INDEX = b.INDEX AND EQUAL_NULL(a."cust_id", b."cust_id")
-                    when matched then
-                        update set a.created_at = current_timestamp(), a.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 = b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9
-                    when not matched then
-                        insert (INDEX, "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, CREATED_AT)
-                            values (b.INDEX, b."cust_id", b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, current_timestamp())
-            ;
+                on a.INDEX = b.INDEX AND EQUAL_NULL(a."cust_id", b."cust_id")
+                when matched then
+                    update set a.created_at = current_timestamp(), a.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 = b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9
+                when not matched then
+                    insert (INDEX, "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, CREATED_AT)
+                        values (b.INDEX, b."cust_id", b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, current_timestamp())
+        ;
 
 CREATE TABLE "__SESSION_TEMP_TABLE_000000000000000000000000" AS
 SELECT * FROM (SELECT

@@ -583,6 +583,7 @@ class BaseAdapter(ABC):
         kind: Literal["TABLE", "VIEW"] = "TABLE",
         partition_keys: list[str] | None = None,
         replace: bool = False,
+        exists: bool = False,
     ) -> Expression:
         """
         Construct query to create a table using a select statement
@@ -599,6 +600,8 @@ class BaseAdapter(ABC):
             Partition keys
         replace: bool
             Whether to replace the table if exists
+        exists: bool
+            Whether to create the table only if it doesn't exist
 
         Returns
         -------
