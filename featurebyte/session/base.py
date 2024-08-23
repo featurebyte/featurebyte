@@ -875,6 +875,11 @@ class BaseSession(BaseModel):
         Returns
         -------
         pd.DataFrame | None
+
+        Raises
+        ------
+        self.no_schema_error
+            If table creation failed
         """
         adapter = get_sql_adapter(self.source_type)
 
