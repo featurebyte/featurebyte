@@ -24,9 +24,9 @@ async def bad_dimension_table_fixture(session, data_source, transaction_data_upp
     Fixture for a bad dimension table (primary key is not unique)
     """
     unique_product_action = list(transaction_data_upper_case["PRODUCT_ACTION"].unique())
-    df_bad_dimension = pd.DataFrame(
-        {"PRODUCT_ACTION": unique_product_action + unique_product_action}
-    )
+    df_bad_dimension = pd.DataFrame({
+        "PRODUCT_ACTION": unique_product_action + unique_product_action
+    })
     df_bad_dimension["DIMENSION_VALUE"] = range(len(df_bad_dimension))
     await session.register_table("BAD_DIMENSION_TABLE", df_bad_dimension)
     database_table = data_source.get_source_table(

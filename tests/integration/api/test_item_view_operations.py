@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_series_equal
 
 from featurebyte import AggFunc, FeatureList
 
