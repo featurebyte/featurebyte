@@ -4,7 +4,6 @@ Tests for more features
 
 import numpy as np
 import pandas as pd
-from pandas._testing import assert_frame_equal
 
 from featurebyte import FeatureList
 from tests.util.helper import fb_assert_frame_equal, tz_localize_if_needed
