@@ -18,7 +18,11 @@ from featurebyte.query_graph.sql.ast.generic import (
     make_assign_node,
     make_project_node,
 )
-from featurebyte.query_graph.sql.common import EventTableTimestampFilter, SQLType
+from featurebyte.query_graph.sql.common import (
+    EventTableTimestampFilter,
+    OnDemandEntityFilters,
+    SQLType,
+)
 from featurebyte.query_graph.sql.specs import AggregationSpec
 
 
@@ -114,6 +118,7 @@ class SQLOperationGraph:
         to_filter_scd_by_current_flag: bool = False,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
         aggregation_specs: Optional[dict[str, list[AggregationSpec]]] = None,
+        on_demand_entity_filters: Optional[OnDemandEntityFilters] = None,
     ) -> None:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
         self.query_graph = query_graph
@@ -122,6 +127,7 @@ class SQLOperationGraph:
         self.to_filter_scd_by_current_flag = to_filter_scd_by_current_flag
         self.event_table_timestamp_filter = event_table_timestamp_filter
         self.aggregation_specs = aggregation_specs
+        self.on_demand_entity_filters = on_demand_entity_filters
 
     def build(self, target_node: Node) -> Any:
         """Build the graph from a given query Node, working backwards
@@ -185,6 +191,7 @@ class SQLOperationGraph:
             to_filter_scd_by_current_flag=self.to_filter_scd_by_current_flag,
             event_table_timestamp_filter=self.event_table_timestamp_filter,
             aggregation_specs=self.aggregation_specs,
+            on_demand_entity_filters=self.on_demand_entity_filters,
         )
 
         # Construct an appropriate SQLNode based on the candidates defined in NodeRegistry

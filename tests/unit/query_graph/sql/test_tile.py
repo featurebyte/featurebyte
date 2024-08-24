@@ -3,8 +3,10 @@ Tests for tile related SQL generation using high level API fixtures
 """
 
 import pytest
+from bson import ObjectId
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
+from featurebyte.query_graph.sql.interpreter.tile import JoinKeysLineage
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -92,3 +94,22 @@ def test_scheduled_tile_sql__complex(complex_feature_but_push_down_eligible, upd
         "tests/fixtures/expected_tile_sql_complex_feature_push_down_eligible.sql",
         update_fixtures,
     )
+
+
+def test_join_keys_lineage():
+    """
+    Test JoinKeysLineage
+    """
+    table_1 = ObjectId()
+    table_2 = ObjectId()
+    table_3 = ObjectId()
+
+    join_keys_lineage = JoinKeysLineage()
+    assert join_keys_lineage.get_other_columns(table_1, "col_1") == []
+
+    join_keys_lineage.add_join_key(table_1, "col_1", table_2, "col_2")
+    join_keys_lineage.add_join_key(table_2, "col_2", table_3, "col_3")
+    assert join_keys_lineage.get_other_columns(table_1, "col_1") == [
+        (table_2, "col_2"),
+        (table_3, "col_3"),
+    ]

@@ -4,7 +4,6 @@ Tests for more features
 
 import numpy as np
 import pandas as pd
-from pandas._testing import assert_frame_equal
 
 from featurebyte import FeatureList
 from tests.util.helper import fb_assert_frame_equal, tz_localize_if_needed
@@ -121,7 +120,9 @@ def test_combined_simple_aggregate_and_window_aggregate(event_table, item_table,
     feature_list = FeatureList([feature], name="my_feature_list")
     df_feature_list_preview = feature_list.preview(observation_table)
     tz_localize_if_needed(df_feature_list_preview, source_type)
-    assert_frame_equal(df_feature_preview, df_feature_list_preview)
+    fb_assert_frame_equal(
+        df_feature_preview, df_feature_list_preview, sort_by_columns=["POINT_IN_TIME", "order_id"]
+    )
 
 
 def test_preview_with_numpy_array(item_table, source_type):

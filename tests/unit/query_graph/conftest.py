@@ -195,6 +195,7 @@ def scd_table_input_node_fixture(global_graph, scd_table_input_details):
         ],
         "effective_timestamp_column": "effective_ts",
         "current_flag_column": "is_record_current",
+        "id": ObjectId("66c372f39da9ad8e66c1eec6"),
     }
     node_params.update(scd_table_input_details)
     node_input = global_graph.add_operation(
@@ -235,10 +236,9 @@ def dimension_table_input_node_fixture(global_graph, dimension_table_input_detai
     return node_input
 
 
-@pytest.fixture(name="event_table_input_node")
-def event_table_input_node_fixture(global_graph, input_details):
-    """Fixture of an EventTable input node"""
-
+@pytest.fixture(name="event_table_input_node_parameters")
+def event_table_input_node_parameters_fixture(global_graph, input_details):
+    """Fixture for EventTable input node parameters"""
     node_params = {
         "type": "event_table",
         "columns": [
@@ -250,9 +250,36 @@ def event_table_input_node_fixture(global_graph, input_details):
         "timestamp": "ts",  # DEV-556: this should be timestamp_column
     }
     node_params.update(input_details)
+    return node_params
+
+
+@pytest.fixture(name="event_table_input_node")
+def event_table_input_node_fixture(global_graph, event_table_input_node_parameters):
+    """Fixture of an EventTable input node"""
     node_input = global_graph.add_operation(
         node_type=NodeType.INPUT,
-        node_params=node_params,
+        node_params=event_table_input_node_parameters,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    return node_input
+
+
+@pytest.fixture(name="event_table_id")
+def event_table_id_fixture():
+    """Fixture for EventTable id"""
+    return ObjectId("66c335fd9da9ad8e66c1eec5")
+
+
+@pytest.fixture(name="event_table_input_node_with_id")
+def event_table_input_node_with_id_fixture(
+    global_graph, event_table_input_node_parameters, event_table_id
+):
+    """Fixture of an EventTable input node with id"""
+    event_table_input_node_parameters["id"] = event_table_id
+    node_input = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=event_table_input_node_parameters,
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[],
     )
@@ -917,21 +944,21 @@ def mixed_point_in_time_and_item_aggregations_features_fixture(
 @pytest.fixture(name="scd_join_node")
 def scd_join_node_fixture(
     global_graph,
-    event_table_input_node,
+    event_table_input_node_with_id,
     scd_table_input_node,
 ):
     """
-    Fixture of a join node that performs an SCD join between EventTable and DimensionTable
+    Fixture of a join node that performs an SCD join between EventTable and SCDTable
     """
     node_params = {
         "left_on": "cust_id",
         "right_on": "cust_id",
-        "left_input_columns": ["event_timestamp", "cust_id", "event_column_1", "event_column_2"],
+        "left_input_columns": ["ts", "cust_id", "order_id", "order_method"],
         "left_output_columns": [
-            "event_timestamp",
+            "ts",
             "cust_id",
-            "event_column_1_out",
-            "event_column_2_out",
+            "order_id",
+            "order_method",
         ],
         "right_input_columns": ["membership_status"],
         "right_output_columns": ["latest_membership_status"],
@@ -945,7 +972,7 @@ def scd_join_node_fixture(
         node_type=NodeType.JOIN,
         node_params=node_params,
         node_output_type=NodeOutputType.FRAME,
-        input_nodes=[event_table_input_node, scd_table_input_node],
+        input_nodes=[event_table_input_node_with_id, scd_table_input_node],
     )
     return node
 
@@ -1133,6 +1160,103 @@ def scd_offset_lookup_feature_node_fixture(global_graph, scd_offset_lookup_node)
         node_params={"columns": ["Current Membership Status"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[global_graph.get_node_by_name(scd_offset_lookup_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="window_aggregate_on_simple_view_feature_node")
+def window_aggregate_on_simple_view_feature_node_fixture(
+    global_graph, event_table_input_node_with_id
+):
+    """
+    Fixture of a window aggregate feature on a simple event view without any joins
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": None,
+        "agg_func": "count",
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "3600s",  # 1h
+            "blind_spot": "900s",  # 15m
+        },
+        "timestamp": "ts",
+        "names": ["order_count_90d"],
+        "windows": ["90d"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, event_table_input_node_with_id)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["order_count_90d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="window_aggregate_on_view_with_scd_join_feature_node")
+def window_aggregate_on_view_with_scd_join_feature_node_fixture(global_graph, scd_join_node):
+    """
+    Fixture of a window aggregate feature on a view with SCD join
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "latest_membership_status",
+        "agg_func": "na_count",
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "3600s",  # 1h
+            "blind_spot": "900s",  # 15m
+        },
+        "timestamp": "ts",
+        "names": ["latest_membership_status_na_count_90d"],
+        "windows": ["90d"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, scd_join_node)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["latest_membership_status_na_count_90d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="complex_composite_window_aggregate_on_view_with_scd_join_feature_node")
+def complex_composite_window_aggregate_on_view_with_scd_join_feature_node_fixture(
+    global_graph, scd_join_node
+):
+    """
+    Fixture of a window aggregate feature on a view with SCD join with composite groupby keys
+    """
+    node_params = {
+        "keys": ["cust_id", "latest_membership_status"],
+        "serving_names": ["CUSTOMER_ID", "MEMBERSHIP_STATUS"],
+        "value_by": None,
+        "parent": "latest_membership_status",
+        "agg_func": "na_count",
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "3600s",  # 1h
+            "blind_spot": "900s",  # 15m
+        },
+        "timestamp": "ts",
+        "names": ["latest_membership_status_na_count_90d"],
+        "windows": ["90d"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db"), ObjectId("66c40c289da9ad8e66c1eec7")],
+    }
+    groupby_node = add_groupby_operation(global_graph, node_params, scd_join_node)
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["latest_membership_status_na_count_90d"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(groupby_node.name)],
     )
     return feature_node
 

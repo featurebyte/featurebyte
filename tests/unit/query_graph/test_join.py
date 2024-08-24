@@ -432,27 +432,27 @@ def test_scd_join(global_graph, scd_join_node):
     expected = textwrap.dedent(
         """
         SELECT
-          L."event_timestamp" AS "event_timestamp",
+          L."ts" AS "ts",
           L."cust_id" AS "cust_id",
-          L."event_column_1_out" AS "event_column_1_out",
-          L."event_column_2_out" AS "event_column_2_out",
+          L."order_id" AS "order_id",
+          L."order_method" AS "order_method",
           R."membership_status" AS "latest_membership_status"
         FROM (
           SELECT
             "__FB_KEY_COL_0",
             "__FB_LAST_TS",
-            "event_timestamp",
+            "ts",
             "cust_id",
-            "event_column_1_out",
-            "event_column_2_out"
+            "order_id",
+            "order_method"
           FROM (
             SELECT
               "__FB_KEY_COL_0",
               LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
-              "event_timestamp",
+              "ts",
               "cust_id",
-              "event_column_1_out",
-              "event_column_2_out",
+              "order_id",
+              "order_method",
               "__FB_EFFECTIVE_TS_COL"
             FROM (
               SELECT
@@ -460,10 +460,10 @@ def test_scd_join(global_graph, scd_join_node):
                 "cust_id" AS "__FB_KEY_COL_0",
                 NULL AS "__FB_EFFECTIVE_TS_COL",
                 2 AS "__FB_TS_TIE_BREAKER_COL",
-                "event_timestamp" AS "event_timestamp",
+                "ts" AS "ts",
                 "cust_id" AS "cust_id",
-                "event_column_1" AS "event_column_1_out",
-                "event_column_2" AS "event_column_2_out"
+                "order_id" AS "order_id",
+                "order_method" AS "order_method"
               FROM (
                 SELECT
                   "ts" AS "ts",
@@ -478,10 +478,10 @@ def test_scd_join(global_graph, scd_join_node):
                 "cust_id" AS "__FB_KEY_COL_0",
                 "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
                 1 AS "__FB_TS_TIE_BREAKER_COL",
-                NULL AS "event_timestamp",
+                NULL AS "ts",
                 NULL AS "cust_id",
-                NULL AS "event_column_1_out",
-                NULL AS "event_column_2_out"
+                NULL AS "order_id",
+                NULL AS "order_method"
               FROM (
                 SELECT
                   "effective_ts" AS "effective_ts",
