@@ -221,6 +221,7 @@ class DatabricksAdapter(BaseAdapter):
         kind: Literal["TABLE", "VIEW"] = "TABLE",
         partition_keys: list[str] | None = None,
         replace: bool = False,
+        exists: bool = False,
     ) -> Expression:
         """
         Construct query to create a table using a select statement
@@ -237,6 +238,8 @@ class DatabricksAdapter(BaseAdapter):
             Partition keys
         replace: bool
             Whether to replace the table if exists
+        exists: bool
+            Whether to create the table only if it doesn't exist
 
         Returns
         -------
@@ -275,6 +278,7 @@ class DatabricksAdapter(BaseAdapter):
             expression=select_expr,
             properties=properties,
             replace=replace,
+            exists=exists,
         )
 
     @classmethod

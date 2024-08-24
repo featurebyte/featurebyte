@@ -32,10 +32,12 @@ class TileGenerate(TileCommon):
         """
 
         tile_table_exist_flag = await self.table_exists(self.tile_id)
+        tile_sql = self._construct_tile_sql_with_index()
 
         await TileRegistry(
             session=self._session,
             sql=self.sql,
+            sql_with_index=tile_sql,
             table_name=self.tile_id,
             table_exist=tile_table_exist_flag,
             time_modulo_frequency_second=self.time_modulo_frequency_second,
@@ -49,8 +51,6 @@ class TileGenerate(TileCommon):
             feature_store_id=self.feature_store_id,
             tile_registry_service=self.tile_registry_service,
         ).execute()
-
-        tile_sql = self._construct_tile_sql_with_index()
 
         entity_insert_cols = []
         entity_filter_cols = []
@@ -75,35 +75,30 @@ class TileGenerate(TileCommon):
         value_update_cols_str = ",".join(value_update_cols)
 
         # insert new records and update existing records
-        if not tile_table_exist_flag:
-            logger.debug(f"creating tile table: {self.tile_id}")
-            await self._session.create_table_as(
-                table_details=self.tile_id,
-                select_expr=tile_sql,
-                retry=True,
+        logger.debug("merging into tile table", extra={"tile_id": self.tile_id})
+        if self.entity_column_names:
+            on_condition_str = f"a.INDEX = b.INDEX AND {entity_filter_cols_str}"
+            insert_str = (
+                f"INDEX, {self.entity_column_names_str}, {self.value_column_names_str}, CREATED_AT"
             )
-            logger.debug(f"done creating table: {self.tile_id}")
+            values_str = (
+                f"b.INDEX, {entity_insert_cols_str}, {value_insert_cols_str}, current_timestamp()"
+            )
         else:
-            logger.debug("merging into tile table", extra={"tile_id": self.tile_id})
-            if self.entity_column_names:
-                on_condition_str = f"a.INDEX = b.INDEX AND {entity_filter_cols_str}"
-                insert_str = f"INDEX, {self.entity_column_names_str}, {self.value_column_names_str}, CREATED_AT"
-                values_str = f"b.INDEX, {entity_insert_cols_str}, {value_insert_cols_str}, current_timestamp()"
-            else:
-                on_condition_str = "a.INDEX = b.INDEX"
-                insert_str = f"INDEX, {self.value_column_names_str}, CREATED_AT"
-                values_str = f"b.INDEX, {value_insert_cols_str}, current_timestamp()"
+            on_condition_str = "a.INDEX = b.INDEX"
+            insert_str = f"INDEX, {self.value_column_names_str}, CREATED_AT"
+            values_str = f"b.INDEX, {value_insert_cols_str}, current_timestamp()"
 
-            merge_sql = f"""
-                merge into {self.tile_id} a using ({tile_sql}) b
-                    on {on_condition_str}
-                    when matched then
-                        update set a.created_at = current_timestamp(), {value_update_cols_str}
-                    when not matched then
-                        insert ({insert_str})
-                            values ({values_str})
-            """
-            await self._session.retry_sql(sql=merge_sql)
+        merge_sql = f"""
+            merge into {self.tile_id} a using ({tile_sql}) b
+                on {on_condition_str}
+                when matched then
+                    update set a.created_at = current_timestamp(), {value_update_cols_str}
+                when not matched then
+                    insert ({insert_str})
+                        values ({values_str})
+        """
+        await self._session.retry_sql(sql=merge_sql)
 
         if self.last_tile_start_str:
             ind_value = date_util.timestamp_utc_to_tile_index(
