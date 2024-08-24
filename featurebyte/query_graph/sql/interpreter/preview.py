@@ -15,6 +15,8 @@ from sqlglot import expressions
 from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.node.generic import JoinNode
 from featurebyte.query_graph.node.input import SampleParameters
 from featurebyte.query_graph.node.metadata.operation import OperationStructure, ViewDataColumn
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
@@ -87,6 +89,31 @@ class ValueCountsQueries:
     queries: List[ValueCountsQuery]
 
 
+@dataclass
+class QueryGraphStructureInfo:
+    """
+    Structure information for a query graph used for sampling purposes
+    """
+
+    has_join_node: bool
+    has_inner_join: bool
+    has_filter_node: bool
+
+    def get_oversampling_factor(self) -> float:
+        """
+        Get oversampling factor for sampling
+
+        Returns
+        -------
+        float
+        """
+        if self.has_inner_join or self.has_filter_node:
+            # if there are inner joins or filter nodes, we need to sample more data to circumvent
+            # the problem of having too few rows after filtering/joining
+            return 20
+        return 1.0
+
+
 class PreviewMixin(BaseGraphInterpreter):
     """
     Preview mixin for Graph Interpreter
@@ -140,6 +167,45 @@ class PreviewMixin(BaseGraphInterpreter):
 
         return sql_tree, type_conversions
 
+    @staticmethod
+    def extract_graph_info_for_sampling(
+        query_graph: QueryGraphModel, target_node_name: str
+    ) -> QueryGraphStructureInfo:
+        """
+        Extract graph structure information for sampling purposes
+
+        Parameters
+        ----------
+        query_graph: QueryGraphModel
+            Query graph model
+        target_node_name: str
+            Target node name
+
+        Returns
+        -------
+        QueryGraphStructureInfo
+        """
+        target_node = query_graph.get_node_by_name(node_name=target_node_name)
+
+        has_join_node = False
+        has_inner_join = False
+        for node in query_graph.iterate_nodes(
+            target_node=target_node,
+            node_type=NodeType.JOIN,
+        ):
+            has_join_node = True
+            assert isinstance(node, JoinNode)
+            if node.parameters.join_type == "inner":
+                has_inner_join = True
+
+        return QueryGraphStructureInfo(
+            has_join_node=has_join_node,
+            has_inner_join=has_inner_join,
+            has_filter_node=query_graph.has_node_type(
+                target_node=target_node, node_type=NodeType.FILTER
+            ),
+        )
+
     def _get_query_graph_with_sample_on_primary_input_nodes(
         self,
         sample_on_primary_table: bool,
@@ -174,16 +240,12 @@ class PreviewMixin(BaseGraphInterpreter):
         if not sample_on_primary_table:
             return query_graph, input_node_sampled
 
-        has_join_node = False
-        for _ in query_graph.iterate_nodes(
-            target_node=query_graph.get_node_by_name(node_name=target_node_name),
-            node_type=NodeType.JOIN,
-        ):
-            has_join_node = True
-
-        if has_join_node and sample_row_num is not None and total_num_rows is not None:
+        graph_info = self.extract_graph_info_for_sampling(query_graph, target_node_name)
+        if graph_info.has_join_node and sample_row_num is not None and total_num_rows is not None:
             sample_parameters = SampleParameters(
-                seed=seed, total_num_rows=total_num_rows, num_rows=sample_row_num
+                seed=seed,
+                total_num_rows=total_num_rows,
+                num_rows=sample_row_num * graph_info.get_oversampling_factor(),
             )
 
             # override sample parameters for sampling table
@@ -309,6 +371,10 @@ class PreviewMixin(BaseGraphInterpreter):
                 sql_tree = self.adapter.random_sample(
                     sql_tree, desired_row_count=num_rows, total_row_count=total_num_rows, seed=seed
                 )
+
+        if input_node_sampled:
+            # limit the number of rows to sample to account for oversampling
+            sql_tree = sql_tree.limit(num_rows)
 
         return sql_tree, type_conversions
 
