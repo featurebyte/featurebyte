@@ -307,7 +307,9 @@ class BigQuerySession(BaseSession):
         """
         # get schema from query job as cursor description is missing REPEATED information
         try:
-            schema = self._client._get_query_results(cursor.query_job.job_id, DEFAULT_RETRY).schema  # pylint: disable=protected-access
+            schema = self._client._get_query_results(
+                cursor.query_job.job_id, DEFAULT_RETRY, page_size=1
+            ).schema  # pylint: disable=protected-access
         except NotFound:
             schema = [
                 SchemaField(
@@ -462,7 +464,7 @@ class BigQuerySession(BaseSession):
     async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         table_schema = self.get_columns_schema_from_dataframe(dataframe)
         types = {field.name: field.field_type for field in table_schema}
-        # convert timestamps to string
+        # convert timestamps to timezone naive string, local timestamps are converted to UTC
         if dataframe.shape[0] > 0:
             for colname in dataframe.columns:
                 if types[colname] == SqlTypeNames.TIMESTAMP:
@@ -490,6 +492,10 @@ class BigQuerySession(BaseSession):
             schema=table_schema,
             write_disposition="WRITE_EMPTY",
         )
+
+        # Load data into BigQuery table using JSON format
+        # - Load via dataframe / parquet does not support JSON columns
+        # - Load via CSV does not support ARRAY (REPEATED) columns
         job = self._client.load_table_from_json(
             json.loads(dataframe.to_json(orient="records")), table_ref, job_config=job_config
         )

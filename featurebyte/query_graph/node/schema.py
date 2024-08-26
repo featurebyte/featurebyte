@@ -280,7 +280,7 @@ class BigQueryDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
 
     Examples
     --------
-    >>> details = fb.BigQueryDetails(
+    >>> details = fb.BigQueryDetails(  # doctest: +SKIP
     ...     project_name="<project_name>",
     ...     dataset_name="<dataset_name>",
     ... )
