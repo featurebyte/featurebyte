@@ -21,6 +21,7 @@ async def test_get_historical_feature_tables_parallel(session, event_view, data_
     num_features = 3
     features_mapping = {}
     for i in range(num_features):
+        # TODO: create mix of same features and different features
         feature_name = f"my_feature_{i}"
         feature = event_view.groupby("ÜSER ID").aggregate_over(
             method="count",
@@ -70,4 +71,4 @@ async def test_get_historical_feature_tables_parallel(session, event_view, data_
         feature_table_name = f"my_feature_table_{i}"
         feature_table = fb.HistoricalFeatureTable.get(feature_table_name)
         df_preview = feature_table.preview()
-        assert df_preview.columns.tolist() == [f"my_feature_name_{i}"]
+        assert df_preview.columns.tolist() == ["POINT_IN_TIME", "üser id", f"my_feature_{i}"]

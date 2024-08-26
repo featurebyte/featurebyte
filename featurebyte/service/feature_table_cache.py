@@ -29,6 +29,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
+from featurebyte.query_graph.sql.materialisation import get_source_expr
 from featurebyte.query_graph.transform.definition import DefinitionHashExtractor
 from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_from_graph
 from featurebyte.service.entity_validation import EntityValidationService
@@ -263,67 +264,6 @@ class FeatureTableCacheService:
                 progress_callback=progress_callback,
             )
 
-    async def _create_table(  # pylint: disable=too-many-arguments
-        self,
-        feature_store: FeatureStoreModel,
-        observation_table: ObservationTableModel,
-        db_session: BaseSession,
-        final_table_name: str,
-        graph: QueryGraph,
-        nodes: List[Tuple[Node, CachedFeatureDefinition]],
-        is_target: bool = False,
-        serving_names_mapping: Optional[Dict[str, str]] = None,
-        progress_callback: Optional[
-            Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
-        ] = None,
-    ) -> None:
-        intermediate_table_name = (
-            f"__TEMP__{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{ObjectId()}"
-        )
-        try:
-            await self._populate_intermediate_table(
-                feature_store=feature_store,
-                observation_table=observation_table,
-                db_session=db_session,
-                intermediate_table_name=intermediate_table_name,
-                graph=graph,
-                nodes=nodes,
-                is_target=is_target,
-                serving_names_mapping=serving_names_mapping,
-                progress_callback=progress_callback,
-            )
-
-            request_column_names = [col.name for col in observation_table.columns_info]
-            request_columns = [quoted_identifier(col) for col in request_column_names]
-            feature_names = [
-                expressions.alias_(
-                    quoted_identifier(cast(str, graph.get_node_output_column_name(node.name))),
-                    alias=feature_definition.feature_name,
-                    quoted=True,
-                )
-                for node, feature_definition in nodes
-            ]
-            await db_session.create_table_as(
-                table_details=TableDetails(
-                    database_name=db_session.database_name,
-                    schema_name=db_session.schema_name,
-                    table_name=final_table_name,
-                ),
-                select_expr=(
-                    expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
-                    .select(*request_columns)
-                    .select(*feature_names)
-                    .from_(quoted_identifier(intermediate_table_name))
-                ),
-            )
-        finally:
-            await db_session.drop_table(
-                database_name=db_session.database_name,
-                schema_name=db_session.schema_name,
-                table_name=intermediate_table_name,
-                if_exists=True,
-            )
-
     async def _update_table(  # pylint: disable=too-many-arguments
         self,
         feature_store: FeatureStoreModel,
@@ -375,9 +315,13 @@ class FeatureTableCacheService:
                 )
                 for node, definition in non_cached_nodes
             ]
-            await db_session.execute_query_long_running(
-                adapter.alter_table_add_columns(table_exr, columns_expr)
-            )
+            try:
+                await db_session.execute_query_long_running(
+                    adapter.alter_table_add_columns(table_exr, columns_expr)
+                )
+            except db_session.no_schema_error:
+                # Can occur on concurrent historical feature tasks on overlapping features
+                pass
 
             # merge temp table into cache table
             merge_conditions = [
@@ -425,6 +369,7 @@ class FeatureTableCacheService:
                     ),
                 ],
             )
+            # TODO: add retry?
             await db_session.execute_query_long_running(
                 sql_to_string(merge_expr, source_type=db_session.source_type)
             )
@@ -527,32 +472,31 @@ class FeatureTableCacheService:
             remaining_progress_callback = None
 
         if non_cached_nodes:
-            if feature_table_cache_exists:
-                # if feature table cache exists - update existing table with new features
-                await self._update_table(
-                    feature_store=feature_store,
-                    observation_table=observation_table,
-                    cache_metadata=cache_metadata,
-                    db_session=db_session,
-                    graph=graph,
-                    non_cached_nodes=non_cached_nodes,
-                    is_target=is_target,
-                    serving_names_mapping=serving_names_mapping,
-                    progress_callback=remaining_progress_callback,
+            if not feature_table_cache_exists:
+                request_column_names = [col.name for col in observation_table.columns_info]
+                await db_session.create_table_as(
+                    table_details=TableDetails(
+                        database_name=db_session.database_name,
+                        schema_name=db_session.schema_name,
+                        table_name=cache_metadata.table_name,
+                    ),
+                    select_expr=get_source_expr(
+                        observation_table.location.table_details,
+                        column_names=[InternalName.TABLE_ROW_INDEX.value] + request_column_names,
+                    ),
+                    exists=True,
                 )
-            else:
-                # if feature table doesn't exist yet - create from scratch
-                await self._create_table(
-                    feature_store=feature_store,
-                    observation_table=observation_table,
-                    db_session=db_session,
-                    final_table_name=cache_metadata.table_name,
-                    graph=graph,
-                    nodes=non_cached_nodes,
-                    is_target=is_target,
-                    serving_names_mapping=serving_names_mapping,
-                    progress_callback=remaining_progress_callback,
-                )
+            await self._update_table(
+                feature_store=feature_store,
+                observation_table=observation_table,
+                cache_metadata=cache_metadata,
+                db_session=db_session,
+                graph=graph,
+                non_cached_nodes=non_cached_nodes,
+                is_target=is_target,
+                serving_names_mapping=serving_names_mapping,
+                progress_callback=remaining_progress_callback,
+            )
 
             await self.feature_table_cache_metadata_service.update_feature_table_cache(
                 observation_table_id=observation_table.id,
