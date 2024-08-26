@@ -18,15 +18,20 @@ async def test_get_historical_feature_tables_parallel(session, event_view, data_
     Test get historical feature tables in parallel on the same observation table
     """
     # Create feature lists
-    num_features = 3
+    num_features = 4
     features_mapping = {}
     for i in range(num_features):
-        # TODO: create mix of same features and different features
+        event_view["derived_value_column"] = (10.0 + i) * event_view["ÀMOUNT"]
+        if i < 2:
+            # Duplicate features with different names but the same definition hash
+            kwargs = {"method": "count", "value_column": None}
+        else:
+            kwargs = {"method": "sum", "value_column": "derived_value_column"}
         feature_name = f"my_feature_{i}"
         feature = event_view.groupby("ÜSER ID").aggregate_over(
-            method="count",
             windows=["24h"],
             feature_names=[feature_name],
+            **kwargs,
         )[feature_name]
         features_mapping[i] = fb.FeatureList([feature], name=feature_name)
 

@@ -369,8 +369,7 @@ class FeatureTableCacheService:
                     ),
                 ],
             )
-            # TODO: add retry?
-            await db_session.execute_query_long_running(
+            await db_session.retry_sql(
                 sql_to_string(merge_expr, source_type=db_session.source_type)
             )
         finally:
@@ -473,6 +472,7 @@ class FeatureTableCacheService:
 
         if non_cached_nodes:
             if not feature_table_cache_exists:
+                # If cache table doesn't exist yet, create one by cloning from the observation table
                 request_column_names = [col.name for col in observation_table.columns_info]
                 await db_session.create_table_as(
                     table_details=TableDetails(
