@@ -78,7 +78,7 @@ class TileGenerateEntityTracking(BaseSqlModel):
             merge_sql = f"""
                 merge into {tracking_table_name} a using ({self.entity_table}) b
                     on {entity_filter_cols_str}
-                    when matched and a.{tile_last_start_date_column} < b.{tile_last_start_date_column} then
+                    when matched then
                         update set a.{tile_last_start_date_column} = b.{tile_last_start_date_column}
                     when not matched then
                         insert ({escaped_entity_column_names_str}, {tile_last_start_date_column})
@@ -88,7 +88,7 @@ class TileGenerateEntityTracking(BaseSqlModel):
             merge_sql = f"""
                 merge into {tracking_table_name} a using ({self.entity_table}) b
                     on true
-                    when matched a.{tile_last_start_date_column} < b.{tile_last_start_date_column} then
+                    when matched then
                         update set a.{tile_last_start_date_column} = b.{tile_last_start_date_column}
                     when not matched then
                         insert ({tile_last_start_date_column})
