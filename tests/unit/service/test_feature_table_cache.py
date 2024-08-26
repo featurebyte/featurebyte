@@ -2,6 +2,8 @@
 Test FeatureTableCacheService
 """
 
+# pylint: disable=line-too-long
+
 import json
 import os
 from unittest.mock import patch
@@ -271,7 +273,7 @@ async def test_create_feature_table_cache(
     assert params["output_table_details"].schema_name == "sf_schema"
     assert params["output_table_details"].table_name == "__TEMP__FEATURE_TABLE_CACHE_ObjectId"
 
-    assert mock_snowflake_session.execute_query_long_running.await_count == 2
+    assert mock_snowflake_session.execute_query_long_running.await_count == 4
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -284,16 +286,16 @@ async def test_create_feature_table_cache(
     assert "COUNT(*)" in sql
 
     sql = mock_snowflake_session.execute_query_long_running.await_args_list[1].args[0]
-    assert sql == (
-        "CREATE TABLE "
-        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
-        "SELECT\n"
-        '  "__FB_TABLE_ROW_INDEX",\n'
-        '  "cust_id",\n'
-        '  "POINT_IN_TIME",\n'
-        '  "sum_30m" AS "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5",\n'
-        '  "sum_2h" AS "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24"\n'
-        'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
+    assert_sql_equal(
+        sql,
+        f"""
+        CREATE TABLE IF NOT EXISTS "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS
+        SELECT
+          "__FB_TABLE_ROW_INDEX",
+          "cust_id",
+          "POINT_IN_TIME"
+        FROM "fb_database"."fb_schema"."fb_materialized_table"
+        """,
     )
 
 
@@ -321,7 +323,7 @@ async def test_update_feature_table_cache(
     params = mock_get_historical_features.await_args.kwargs
     assert params["graph"] == feature_list.feature_clusters[0].graph
     assert params["nodes"] == feature_list.feature_clusters[0].nodes[:1]
-    assert mock_snowflake_session.execute_query_long_running.await_count == 2
+    assert mock_snowflake_session.execute_query_long_running.await_count == 4
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -330,20 +332,34 @@ async def test_update_feature_table_cache(
     )
     assert len(feature_table_cache.feature_definitions) == 1
 
-    sql = mock_snowflake_session.execute_query_long_running.await_args_list[0].args[0]
-    assert "COUNT(*)" in sql
+    sqls = [arg[0][0] for arg in mock_snowflake_session.execute_query_long_running.await_args_list]
+    assert "COUNT(*)" in sqls[0]
 
     # check first create sql
-    sql = mock_snowflake_session.execute_query_long_running.await_args.args[0]
-    assert sql == (
-        "CREATE TABLE "
-        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
-        "SELECT\n"
-        '  "__FB_TABLE_ROW_INDEX",\n'
-        '  "cust_id",\n'
-        '  "POINT_IN_TIME",\n'
-        '  "sum_30m" AS "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5"\n'
-        'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
+    assert_sql_equal(
+        sqls[1],
+        f"""
+        CREATE TABLE IF NOT EXISTS "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS
+        SELECT
+          "__FB_TABLE_ROW_INDEX",
+          "cust_id",
+          "POINT_IN_TIME"
+        FROM "fb_database"."fb_schema"."fb_materialized_table"
+        """,
+    )
+    assert_sql_equal(
+        sqls[2],
+        f'ALTER TABLE "sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD COLUMN "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" FLOAT',
+    )
+    assert sqls[3] == (
+        "MERGE INTO "
+        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS '
+        "feature_table_cache USING "
+        '"sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS '
+        'partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = '
+        'partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET '
+        'feature_table_cache."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" = '
+        'partial_features."sum_30m"'
     )
 
     mock_get_historical_features.reset_mock()
@@ -517,7 +533,7 @@ async def test_create_view_from_cache__create_cache(
     )
 
     assert mock_get_historical_features.await_count == 1
-    assert mock_snowflake_session.execute_query_long_running.await_count == 3
+    assert mock_snowflake_session.execute_query_long_running.await_count == 5
     assert is_output_view is True
 
     feature_table_cache = (
@@ -538,18 +554,31 @@ async def test_create_view_from_cache__create_cache(
         LIMIT 1
         """,
     )
-    assert sqls[1] == (
-        "CREATE TABLE "
-        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
-        "SELECT\n"
-        '  "__FB_TABLE_ROW_INDEX",\n'
-        '  "cust_id",\n'
-        '  "POINT_IN_TIME",\n'
-        '  "sum_30m" AS "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5",\n'
-        '  "sum_2h" AS "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24"\n'
-        'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
+    assert_sql_equal(
+        sqls[1],
+        f"""
+        CREATE TABLE IF NOT EXISTS "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS
+        SELECT
+          "__FB_TABLE_ROW_INDEX",
+          "cust_id",
+          "POINT_IN_TIME"
+        FROM "fb_database"."fb_schema"."fb_materialized_table"
+        """,
     )
-    assert sqls[2] == (
+    assert_sql_equal(
+        sqls[2],
+        f"""
+        ALTER TABLE "sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD COLUMN "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" FLOAT,
+"FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" FLOAT
+        """,
+    )
+    assert_sql_equal(
+        sqls[3],
+        f"""
+        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" = partial_features."sum_30m", feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = partial_features."sum_2h"
+        """,
+    )
+    assert sqls[4] == (
         'CREATE VIEW "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
@@ -588,7 +617,7 @@ async def test_create_view_from_cache__update_cache(
         feature_list_id=feature_list.id,
     )
     assert mock_get_historical_features.await_count == 1
-    assert mock_snowflake_session.execute_query_long_running.await_count == 3
+    assert mock_snowflake_session.execute_query_long_running.await_count == 5
     assert is_output_view is True
 
     mock_get_historical_features.reset_mock()
@@ -681,7 +710,7 @@ async def test_create_view_from_cache__create_view_failed(
     )
 
     assert mock_get_historical_features.await_count == 1
-    assert mock_snowflake_session.execute_query_long_running.await_count == 4
+    assert mock_snowflake_session.execute_query_long_running.await_count == 6
     assert is_output_view is False
 
     feature_table_cache = (
@@ -702,18 +731,31 @@ async def test_create_view_from_cache__create_view_failed(
         LIMIT 1
         """,
     )
-    assert sqls[1] == (
-        "CREATE TABLE "
-        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
-        "SELECT\n"
-        '  "__FB_TABLE_ROW_INDEX",\n'
-        '  "cust_id",\n'
-        '  "POINT_IN_TIME",\n'
-        '  "sum_30m" AS "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5",\n'
-        '  "sum_2h" AS "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24"\n'
-        'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
+    assert_sql_equal(
+        sqls[1],
+        f"""
+        CREATE TABLE IF NOT EXISTS "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS
+        SELECT
+          "__FB_TABLE_ROW_INDEX",
+          "cust_id",
+          "POINT_IN_TIME"
+        FROM "fb_database"."fb_schema"."fb_materialized_table"
+        """,
     )
-    assert sqls[2] == (
+    assert_sql_equal(
+        sqls[2],
+        f"""
+        ALTER TABLE "sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD COLUMN "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" FLOAT,
+"FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" FLOAT
+        """,
+    )
+    assert_sql_equal(
+        sqls[3],
+        f"""
+        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" = partial_features."sum_30m", feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = partial_features."sum_2h"
+        """,
+    )
+    assert sqls[4] == (
         'CREATE VIEW "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
@@ -723,7 +765,7 @@ async def test_create_view_from_cache__create_view_failed(
         '  "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
         f'FROM "sf_db"."sf_schema"."{feature_table_cache.table_name}"'
     )
-    assert sqls[3] == (
+    assert sqls[5] == (
         'CREATE TABLE "sf_db"."sf_schema"."result_view" AS\n'
         "SELECT\n"
         '  "__FB_TABLE_ROW_INDEX",\n'
@@ -762,7 +804,7 @@ async def test_create_feature_table_cache__with_target(
     assert params["output_table_details"].schema_name == "sf_schema"
     assert params["output_table_details"].table_name == "__TEMP__FEATURE_TABLE_CACHE_ObjectId"
 
-    assert mock_snowflake_session.execute_query_long_running.await_count == 2
+    assert mock_snowflake_session.execute_query_long_running.await_count == 4
 
     feature_table_cache = (
         await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
@@ -772,15 +814,11 @@ async def test_create_feature_table_cache__with_target(
     assert len(feature_table_cache.feature_definitions) == 1
 
     sql = mock_snowflake_session.execute_query_long_running.await_args.args[0]
-    assert sql == (
-        "CREATE TABLE "
-        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS\n'
-        "SELECT\n"
-        '  "__FB_TABLE_ROW_INDEX",\n'
-        '  "cust_id",\n'
-        '  "POINT_IN_TIME",\n'
-        '  "float_target" AS "FEATURE_8bf3807cdb51975c6e7460e4cd56ce3a38213996"\n'
-        'FROM "__TEMP__FEATURE_TABLE_CACHE_ObjectId"'
+    assert_sql_equal(
+        sql,
+        f"""
+        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_8bf3807cdb51975c6e7460e4cd56ce3a38213996" = partial_features."float_target"
+        """,
     )
 
 
@@ -803,7 +841,7 @@ async def test_read_from_cache(
         feature_list_id=feature_list.id,
     )
     assert mock_get_historical_features.await_count == 1
-    assert mock_snowflake_session.execute_query_long_running.await_count == 2
+    assert mock_snowflake_session.execute_query_long_running.await_count == 4
 
     mock_snowflake_session.reset_mock()
 
