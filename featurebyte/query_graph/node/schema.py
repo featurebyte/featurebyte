@@ -274,6 +274,26 @@ class SparkDetails(BaseDatabaseDetails):
         return values
 
 
+class BigQueryDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
+    """
+    Model for details used to connect to a BigQuery data source.
+
+    Examples
+    --------
+    >>> details = fb.BigQueryDetails(  # doctest: +SKIP
+    ...     project_name="<project_name>",
+    ...     dataset_name="<dataset_name>",
+    ... )
+    """
+
+    project_name: StrictStr = Field(
+        description="The name of the project to use for creation of output tables."
+    )
+    dataset_name: StrictStr = Field(
+        description="The name of the dataset to use for creation of output tables."
+    )
+
+
 class TestDatabaseDetails(BaseDatabaseDetails):
     """Model for a no-op mock database details for use in tests"""
 
@@ -284,6 +304,7 @@ DatabaseDetails = Union[
     SQLiteDetails,
     DatabricksDetails,
     DatabricksUnityDetails,
+    BigQueryDetails,
     TestDatabaseDetails,
 ]
 

@@ -10,12 +10,13 @@ from featurebyte.session.snowflake import SnowflakeSchemaInitializer, SnowflakeS
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_schema_initializer(config, feature_store, credentials_mapping):
+async def test_schema_initializer(
+    config, session_without_datasets, feature_store, credentials_mapping
+):
     """
     Test the session initialization in snowflake works properly.
     """
-    session_manager = SessionManager(credentials=credentials_mapping)
-    session = await session_manager.get_session(feature_store)
+    session = session_without_datasets
     assert isinstance(session, SnowflakeSession)
     initializer = SnowflakeSchemaInitializer(session)
 
@@ -34,6 +35,7 @@ async def test_schema_initializer(config, feature_store, credentials_mapping):
 
     # Try to retrieve the session again - this should trigger a re-initialization
     # Verify that there's still only one row in table
+    session_manager = SessionManager(credentials=credentials_mapping)
     session = await session_manager.get_session(feature_store)
     results = await session.execute_query(get_version_query)
     assert results is not None

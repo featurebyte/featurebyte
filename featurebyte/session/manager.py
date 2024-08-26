@@ -25,6 +25,7 @@ from featurebyte.session.base import (
     session_cache,
     to_thread,
 )
+from featurebyte.session.bigquery import BigQuerySession
 from featurebyte.session.databricks import DatabricksSession
 from featurebyte.session.databricks_unity import DatabricksUnitySession
 from featurebyte.session.snowflake import SnowflakeSession
@@ -37,6 +38,7 @@ SOURCE_TYPE_SESSION_MAP = {
     SourceType.DATABRICKS: DatabricksSession,
     SourceType.DATABRICKS_UNITY: DatabricksUnitySession,
     SourceType.SPARK: SparkSession,
+    SourceType.BIGQUERY: BigQuerySession,
 }
 
 logger = get_logger(__name__)

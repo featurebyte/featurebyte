@@ -48,10 +48,9 @@ async def test_execute_query(session):
     """
     Test execute query
     """
-    query = "SELECT * FROM TEST_DATA_TABLE"
+    query = f"SELECT * FROM {session.get_fully_qualified_table_name('TEST_DATA_TABLE')}"
     df = await session.execute_query(query)
     expected_df = sample_dataframe()
-
     # expect arrays and dicts to be converted to strings
     assert_frame_equal(df, expected_df)
 
@@ -61,7 +60,7 @@ async def test_fetch_empty(session):
     """
     Test fetch empty results
     """
-    query = "SELECT * FROM TEST_DATA_TABLE WHERE 1 = 0"
+    query = f"SELECT * FROM {session.get_fully_qualified_table_name('TEST_DATA_TABLE')} WHERE 1 = 0"
     df = await session.execute_query(query)
 
     # expect empty dataframe with correct schema
@@ -74,7 +73,7 @@ async def test_arrow_schema(session):
     """
     Test arrow schema and db variable type metadata
     """
-    query = "SELECT * FROM TEST_DATA_TABLE"
+    query = f"SELECT * FROM {session.get_fully_qualified_table_name('TEST_DATA_TABLE')}"
     bytestream = session.get_async_query_stream(query)
     buffer = BytesIO()
     async for chunk in bytestream:
@@ -121,7 +120,9 @@ async def check_table_does_not_exist(session, name):
     Helper function to check that a table or view doesn't exist
     """
     with pytest.raises(session._no_schema_error):
-        await session.execute_query(f"SELECT * FROM {name} LIMIT 1")
+        await session.execute_query(
+            f"SELECT * FROM {session.get_fully_qualified_table_name(name)} LIMIT 1"
+        )
 
 
 @pytest.mark.asyncio
@@ -130,7 +131,9 @@ async def test_drop_table__table_ok(session):
     Test drop_table function
     """
     name = f"MY_TABLE_{str(ObjectId()).upper()}"
-    await session.execute_query(f"CREATE TABLE {name} AS SELECT 1 AS A")
+    await session.execute_query(
+        f"CREATE TABLE {session.get_fully_qualified_table_name(name)} AS SELECT 1 AS A"
+    )
     await session.drop_table(
         table_name=name,
         schema_name=session.schema_name,
@@ -145,7 +148,9 @@ async def test_drop_table__table_error(session):
     Test drop_table function
     """
     name = f"MY_TABLE_{str(ObjectId()).upper()}"
-    await session.execute_query(f"CREATE TABLE {name} AS SELECT 1 AS A")
+    await session.execute_query(
+        f"CREATE TABLE {session.get_fully_qualified_table_name(name)} AS SELECT 1 AS A"
+    )
     with pytest.raises(DataWarehouseOperationError) as exc_info:
         await session.drop_table(
             table_name="wrong_name",
@@ -161,7 +166,9 @@ async def test_drop_table__view_ok(session):
     Test drop_table function
     """
     name = f"MY_VIEW_{str(ObjectId()).upper()}"
-    await session.execute_query(f"CREATE VIEW {name} AS SELECT 1 AS A")
+    await session.execute_query(
+        f"CREATE VIEW {session.get_fully_qualified_table_name(name)} AS SELECT 1 AS A"
+    )
     await session.drop_table(
         table_name=name,
         schema_name=session.schema_name,
@@ -176,7 +183,9 @@ async def test_drop_table__view_error(session):
     Test drop_table function
     """
     name = f"MY_VIEW_{str(ObjectId()).upper()}"
-    await session.execute_query(f"CREATE VIEW {name} AS SELECT 1 AS A")
+    await session.execute_query(
+        f"CREATE VIEW {session.get_fully_qualified_table_name(name)} AS SELECT 1 AS A"
+    )
     with pytest.raises(DataWarehouseOperationError) as exc_info:
         await session.drop_table(
             table_name="wrong_name",

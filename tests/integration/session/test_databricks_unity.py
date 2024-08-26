@@ -13,13 +13,14 @@ from featurebyte.session.manager import SessionManager
 
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
 @pytest.mark.asyncio
-async def test_schema_initializer(config, feature_store, credentials_mapping):
+async def test_schema_initializer(
+    config, session_without_datasets, feature_store, credentials_mapping
+):
     """
     Test the session initialization in snowflake works properly.
     """
     _ = config
-    session_manager = SessionManager(credentials=credentials_mapping)
-    session = await session_manager.get_session(feature_store)
+    session = session_without_datasets
     assert isinstance(session, DatabricksUnitySession)
     initializer = DatabricksUnitySchemaInitializer(session)
 
@@ -38,6 +39,7 @@ async def test_schema_initializer(config, feature_store, credentials_mapping):
 
     # Try to retrieve the session again - this should trigger a re-initialization
     # Verify that there's still only one row in table
+    session_manager = SessionManager(credentials=credentials_mapping)
     session = await session_manager.get_session(feature_store)
     results = await session.execute_query(get_version_query)
     assert results is not None
@@ -49,13 +51,12 @@ async def test_schema_initializer(config, feature_store, credentials_mapping):
 
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
 @pytest.mark.asyncio
-async def test_list_tables(config, feature_store, credentials_mapping):
+async def test_list_tables(config, session_without_datasets):
     """
     Test the session initialization in snowflake works properly.
     """
     _ = config
-    session_manager = SessionManager(credentials=credentials_mapping)
-    session = await session_manager.get_session(feature_store)
+    session = session_without_datasets
 
     tables = await session.list_tables(database_name="demo_datasets", schema_name="grocery")
     assert [table.model_dump() for table in tables] == [
@@ -78,6 +79,6 @@ async def test_list_tables(config, feature_store, credentials_mapping):
         {"description": None, "name": "__grocerycustomer"},
         {
             "name": "grocerycustomer",
-            "description": "Customer details, including their name, address, and date of " "birth.",
+            "description": "Customer details, including their name, address, and date of birth.",
         },
     ]
