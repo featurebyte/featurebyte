@@ -70,6 +70,10 @@ class RandomTask(BaseTask[RandomTaskPayload]):
             },
             user_id=self.user.id,
         )
+
+        await self.task_progress_updater.update_progress(
+            percent=100, message="Random task completed.", metadata={"some_key": "some_value"}
+        )
         return 1234
 
 

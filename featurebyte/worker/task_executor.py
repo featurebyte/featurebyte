@@ -193,7 +193,18 @@ class TaskExecutor:
                 )
 
             # Send final progress to indicate task is completed
-            await self.task_progress_updater.update_progress(percent=100)
+            task = await self.task_manager.get_task(task_id=str(self.task_id))
+            skip_last_progress_update = False
+            if (
+                task is not None
+                and task.progress is not None
+                and task.progress.get("percent") == 100
+            ):
+                # skip the last progress update if the progress is already 100%
+                skip_last_progress_update = True
+
+            if not skip_last_progress_update:
+                await self.task_progress_updater.update_progress(percent=100)
         except TaskRevokeExceptions as exc:
             await self.task.handle_task_revoke(payload_obj)
             raise TaskCanceledError("Task canceled.") from exc
