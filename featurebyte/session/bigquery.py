@@ -16,6 +16,7 @@ import pyarrow as pa
 from google.api_core.exceptions import NotFound
 from google.api_core.gapic_v1.client_info import ClientInfo
 from google.auth.exceptions import DefaultCredentialsError, MalformedError
+from google.cloud import bigquery
 from google.cloud.bigquery import (
     DEFAULT_RETRY,
     Client,
@@ -153,6 +154,12 @@ class BigQuerySession(BaseSession):
     @classmethod
     def is_threadsafe(cls) -> bool:
         return True
+
+    def get_additional_execute_query_kwargs(self) -> dict[str, Any]:
+        job_config = bigquery.QueryJobConfig(
+            default_dataset=f"{self.database_name}.{self.schema_name}"
+        )
+        return {"job_config": job_config}
 
     async def list_databases(self) -> list[str]:
         """
