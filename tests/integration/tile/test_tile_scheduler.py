@@ -32,11 +32,13 @@ async def mock_scheduler_fixture(feature, tile_spec, tile_scheduler_service):
 
 @pytest.mark.asyncio
 async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
-    feature_store, session, tile_manager_service, scheduler_fixture, app_container
+    feature_store, session, tile_manager_service, scheduler_fixture, app_container, persistent
 ):
     """
     Test generate_tiles with scheduler
     """
+    _ = persistent
+
     tile_scheduler_service, tile_spec, job_id = scheduler_fixture
 
     await tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
