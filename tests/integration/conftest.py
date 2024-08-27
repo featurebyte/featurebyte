@@ -14,6 +14,7 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
+from pprint import pprint
 from typing import Dict, List, cast
 from unittest import mock
 from unittest.mock import Mock, patch
@@ -81,6 +82,48 @@ TEST_REDIS_URI = "redis://localhost:36379"
 
 logger = get_logger(__name__)
 
+# Collection of tests that are skipped for specific source types. Should be empty except for source
+# types that are still in development.
+SKIPPED_TESTS = {
+    "bigquery": [
+        "tests/integration/api/test_change_view_operations.py",
+        "tests/integration/api/test_column_attributes.py",
+        "tests/integration/api/test_dict_operations.py",
+        "tests/integration/api/test_dimension_view_operations.py",
+        "tests/integration/api/test_distance_operations.py",
+        "tests/integration/api/test_event_view_operations.py",
+        "tests/integration/api/test_feature_correctness.py",
+        "tests/integration/api/test_features.py",
+        "tests/integration/api/test_forward_aggregate_asat.py",
+        "tests/integration/api/test_item_view_operations.py",
+        "tests/integration/api/test_lookup_feature_operations.py",
+        "tests/integration/api/test_lookup_target_operations.py",
+        "tests/integration/api/test_observation_table.py",
+        "tests/integration/api/test_on_demand_features.py",
+        "tests/integration/api/test_scd_view_operations.py",
+        "tests/integration/api/test_serving_parent_features.py",
+        "tests/integration/api/test_target_correctness.py",
+        "tests/integration/api/test_view_describe.py",
+        "tests/integration/api/test_view_sample.py",
+        "tests/integration/feature_store_integration/test_feature_materialize.py",
+        "tests/integration/migration/test_data_warehouse_migration.py",
+        "tests/integration/query_graph/test_online_serving.py",
+        "tests/integration/service/test_feature_table_cache.py",
+        "tests/integration/tile/test_generate_tile.py",
+        "tests/integration/tile/test_tile_scheduler.py",
+        "tests/integration/udf/test_cosine_similarity.py",
+        "tests/integration/udf/test_count_dict_entropy.py",
+        "tests/integration/udf/test_count_dict_num_unique.py",
+        "tests/integration/udf/test_get_rank.py",
+        "tests/integration/udf/test_get_relative_frequency.py",
+        "tests/integration/udf/test_least_frequent.py",
+        "tests/integration/udf/test_most_frequent.py",
+        "tests/integration/udf/test_object_agg.py",
+        "tests/integration/udf/test_timestamp_to_index.py",
+        "tests/integration/udf/test_timezone_offset_to_second.py",
+    ],
+}
+
 
 def pytest_collection_modifyitems(config, items):
     """
@@ -136,11 +179,33 @@ def pytest_collection_modifyitems(config, items):
 
         return filtered_items
 
+    def filter_items_by_skipped_tests(all_items):
+        filtered_items = []
+        for item in all_items:
+            source_type = get_source_type_from_item(item)
+            if source_type in SKIPPED_TESTS:
+                if item.location[0] in SKIPPED_TESTS[source_type]:
+                    continue
+            filtered_items.append(item)
+        return filtered_items
+
     # re-order the tests
     _ = config
     sorted_entries = sorted(enumerate(items), key=get_sorting_key)
     sorted_items = [entry[1] for entry in sorted_entries]
     filtered_items = filter_items_by_source_types(sorted_items)
+
+    # display test locations for debugging / setup
+    test_modules = set()
+    for item in filtered_items:
+        test_modules.add(item.location[0])
+    print(f"Available test modules with source type {source_types_config}:")
+    pprint(sorted(test_modules))
+
+    # filter out skipped tests
+    filtered_items = filter_items_by_skipped_tests(filtered_items)
+
+    # modify the items list in-place
     items[:] = filtered_items
 
 
