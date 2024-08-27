@@ -8,7 +8,8 @@ from sqlglot.expressions import Select
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
+from tests.util.helper import assert_sql_equal
 
 
 @pytest.mark.parametrize(
@@ -83,3 +84,45 @@ def test_alter_table_add_columns(source_type, expected):
         ],
     )
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "source_type, expected",
+    [
+        (
+            SourceType.SNOWFLAKE,
+            'OBJECT_AGG("key_col", TO_VARIANT("value_col"))',
+        ),
+        (
+            SourceType.DATABRICKS,
+            """
+            MAP_FILTER(
+              MAP_FROM_ENTRIES(COLLECT_LIST(STRUCT(`key_col`, `value_col`))),
+              (k, v) -> NOT v IS NULL
+            )
+            """,
+        ),
+        (
+            SourceType.SPARK,
+            """
+            MAP_FILTER(
+              MAP_FROM_ENTRIES(COLLECT_LIST(STRUCT(`key_col`, `value_col`))),
+              (k, v) -> NOT v IS NULL
+            )
+            """,
+        ),
+        (
+            SourceType.BIGQUERY,
+            "JSON_STRIP_NULLS(JSON_OBJECT(ARRAY_AGG(`key_col`), ARRAY_AGG(`value_col`)))",
+        ),
+    ],
+)
+def test_object_agg(source_type, expected):
+    """
+    Test object_agg
+    """
+    result = get_sql_adapter(source_type).object_agg(
+        key_column=quoted_identifier("key_col"),
+        value_column=quoted_identifier("value_col"),
+    )
+    assert_sql_equal(sql_to_string(result, source_type), expected)
