@@ -118,7 +118,6 @@ SKIPPED_TESTS = {
         "tests/integration/udf/test_get_relative_frequency.py",
         "tests/integration/udf/test_least_frequent.py",
         "tests/integration/udf/test_most_frequent.py",
-        "tests/integration/udf/test_object_agg.py",
         "tests/integration/udf/test_timestamp_to_index.py",
         "tests/integration/udf/test_timezone_offset_to_second.py",
     ],
