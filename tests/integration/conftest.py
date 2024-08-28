@@ -111,7 +111,6 @@ SKIPPED_TESTS = {
         "tests/integration/tile/test_generate_tile.py",
         "tests/integration/tile/test_tile_scheduler.py",
         "tests/integration/udf/test_cosine_similarity.py",
-        "tests/integration/udf/test_count_dict_entropy.py",
         "tests/integration/udf/test_get_rank.py",
         "tests/integration/udf/test_get_relative_frequency.py",
         "tests/integration/api/test_historical_features.py",
