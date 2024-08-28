@@ -314,9 +314,7 @@ class FeatureTableCacheService:
                 for node, definition in non_cached_nodes
             ]
             try:
-                await db_session.execute_query_long_running(
-                    adapter.alter_table_add_columns(table_exr, columns_expr)
-                )
+                await db_session.retry_sql(adapter.alter_table_add_columns(table_exr, columns_expr))
             except db_session.no_schema_error:
                 # Can occur on concurrent historical feature tasks on overlapping features
                 pass

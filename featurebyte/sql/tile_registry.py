@@ -99,7 +99,7 @@ class TileRegistry(TileCommon):
                 tile_add_sql += ",\n".join(add_statements)
                 logger.debug(f"tile_add_sql: {tile_add_sql}")
                 try:
-                    await self._session.execute_query_long_running(tile_add_sql)
+                    await self._session.retry_sql(tile_add_sql)
                 except self._session.no_schema_error:
                     # Can occur on concurrent tile tasks creating the same tile table
                     pass
