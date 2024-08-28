@@ -87,7 +87,6 @@ logger = get_logger(__name__)
 SKIPPED_TESTS = {
     "bigquery": [
         "tests/integration/api/test_change_view_operations.py",
-        "tests/integration/api/test_column_attributes.py",
         "tests/integration/api/test_dict_operations.py",
         "tests/integration/api/test_dimension_view_operations.py",
         "tests/integration/api/test_distance_operations.py",

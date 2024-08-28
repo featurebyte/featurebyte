@@ -520,7 +520,9 @@ class BigQuerySession(BaseSession):
         if table.schema is not None:
             for field in table.schema:
                 dtype = self._convert_to_internal_variable_type(
-                    bigquery_typecode=field.field_type, scale=field.scale
+                    bigquery_typecode=field.field_type,
+                    scale=field.scale,
+                    mode=field.mode,
                 )
                 column_name_type_map[field.name] = ColumnSpecWithDescription(
                     name=field.name,
