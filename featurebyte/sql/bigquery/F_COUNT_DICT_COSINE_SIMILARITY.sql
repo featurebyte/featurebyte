@@ -2,6 +2,17 @@ CREATE OR REPLACE FUNCTION `{project}.{dataset}.F_COUNT_DICT_COSINE_SIMILARITY`(
   RETURNS FLOAT64
   LANGUAGE js
 AS r"""
+
+  function replaceNaN(obj) {{
+    if (!obj) {{
+      return 0;
+    }}
+    if (isNaN(obj)) {{
+      return 0;
+    }}
+    return obj;
+  }}
+
   if (!COUNTS1 || !COUNTS2) {{
     return null;
   }}
@@ -22,15 +33,15 @@ AS r"""
   var norm = 0.0;
   var norm_other = 0.0;
   for (const k in counts) {{
-    var v = counts[k] || 0;
+    var v = replaceNaN(counts[k])
     if (k in counts_other) {{
-      var v_other = counts_other[k] || 0;
+      var v_other = replaceNaN(counts_other[k]);
       dot_product += v * v_other;
     }}
     norm += v * v;
   }}
   for (const k in counts_other) {{
-    var v = counts_other[k] || 0;
+    var v = replaceNaN(counts_other[k]);
     norm_other += v * v;
   }}
   var norm_product = Math.sqrt(norm) * Math.sqrt(norm_other);
