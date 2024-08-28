@@ -30,7 +30,7 @@ def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
         if v is None:
             args.append("null")
         elif np.isnan(v):
-            args.append("CAST('nan' AS FLOAT)")
+            args.append("CAST('nan' AS FLOAT64)")
         else:
             args.append(str(v))
     return f"JSON_OBJECT({', '.join(args)})"
