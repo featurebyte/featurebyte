@@ -9,7 +9,6 @@ from sqlglot import expressions
 
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import (
-    get_fully_qualified_table_name,
     quoted_identifier,
     sql_to_string,
 )
