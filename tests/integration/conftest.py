@@ -113,12 +113,10 @@ SKIPPED_TESTS = {
         "tests/integration/tile/test_tile_scheduler.py",
         "tests/integration/udf/test_cosine_similarity.py",
         "tests/integration/udf/test_count_dict_entropy.py",
-        # "tests/integration/udf/test_count_dict_num_unique.py",
         "tests/integration/udf/test_get_rank.py",
         "tests/integration/udf/test_get_relative_frequency.py",
         "tests/integration/udf/test_least_frequent.py",
         "tests/integration/udf/test_most_frequent.py",
-        "tests/integration/udf/test_timestamp_to_index.py",
         "tests/integration/udf/test_timezone_offset_to_second.py",
     ],
 }
