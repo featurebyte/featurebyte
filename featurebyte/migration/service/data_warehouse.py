@@ -169,17 +169,17 @@ class DataWarehouseMigrationServiceV1(DataWarehouseMigrationMixin):
         _ = feature_store
 
         df_tile_registry = await session.execute_query("SELECT * FROM TILE_REGISTRY")
-        if "VALUE_COLUMN_TYPES" in df_tile_registry:  # type: ignore[operator]
+        if "VALUE_COLUMN_TYPES" in df_tile_registry:
             return
 
-        df_tile_registry["VALUE_COLUMN_TYPES"] = (  # type: ignore[index]
+        df_tile_registry["VALUE_COLUMN_TYPES"] = (
             self.tile_column_type_extractor.get_tile_column_types_from_names(
-                df_tile_registry["VALUE_COLUMN_NAMES"]  # type: ignore[index]
+                df_tile_registry["VALUE_COLUMN_NAMES"]
             )
         )
         await session.register_table(
             "UPDATED_TILE_REGISTRY",
-            df_tile_registry[["TILE_ID", "VALUE_COLUMN_NAMES", "VALUE_COLUMN_TYPES"]],  # type: ignore[index]
+            df_tile_registry[["TILE_ID", "VALUE_COLUMN_NAMES", "VALUE_COLUMN_TYPES"]],
         )
 
         await session.execute_query(
@@ -198,7 +198,7 @@ class DataWarehouseMigrationServiceV1(DataWarehouseMigrationMixin):
 
         # Update columns in tile tables where the type is not FLOAT. In such cases, tile generation
         # likely encountered error and updating to correct type should fix it.
-        for _, row in df_tile_registry.iterrows():  # type: ignore[union-attr]
+        for _, row in df_tile_registry.iterrows():
             tile_id = row["TILE_ID"]
             tile_column_names = row["VALUE_COLUMN_NAMES"].replace('"', "").split(",")
             tile_column_types = row["VALUE_COLUMN_TYPES"].split(",")
