@@ -48,13 +48,7 @@ async def test_object_agg_udf(source_type, session, setup_test_data):
             alias="OUT",
             quoted=True,
         )
-    ).from_(
-        get_fully_qualified_table_name({
-            "table_name": TEST_TABLE_NAME,
-            "schema_name": session.schema_name,
-            "database_name": session.database_name,
-        })
-    )
+    ).from_(quoted_identifier(TEST_TABLE_NAME))
     df = await session.execute_query(sql_to_string(select_expr, source_type))
     actual = df.iloc[0]["OUT"]
     assert actual == {"2": -1.5}
