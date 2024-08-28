@@ -4,6 +4,7 @@ BigQueryAdapter class
 
 from __future__ import annotations
 
+from sqlglot import expressions
 from sqlglot.expressions import Anonymous, Expression
 
 from featurebyte.enum import SourceType
@@ -25,3 +26,8 @@ class BigQueryAdapter(SnowflakeAdapter):
             this="JSON_STRIP_NULLS",
             expressions=[Anonymous(this="JSON_OBJECT", expressions=[key_arr, value_arr])],
         )
+
+    @classmethod
+    def get_uniform_distribution_expr(cls, seed: int) -> Expression:
+        _ = seed
+        return expressions.Anonymous(this="RAND", expressions=[])
