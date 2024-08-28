@@ -32,11 +32,13 @@ async def mock_scheduler_fixture(feature, tile_spec, tile_scheduler_service):
 
 @pytest.mark.asyncio
 async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
-    feature_store, session, tile_manager_service, scheduler_fixture, app_container
+    feature_store, session, tile_manager_service, scheduler_fixture, app_container, persistent
 ):
     """
     Test generate_tiles with scheduler
     """
+    _ = persistent
+
     tile_scheduler_service, tile_spec, job_id = scheduler_fixture
 
     await tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
@@ -58,8 +60,10 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     with mock.patch(
         "featurebyte.service.feature_store.FeatureStoreService.get_document"
     ) as mock_feature_store_service:
-        mock_feature_store_service.return_value = feature_store
-        await task_executor.execute()
+        with mock.patch("featurebyte.service.task_manager.TaskManager.get_task") as mock_get_task:
+            mock_feature_store_service.return_value = feature_store
+            mock_get_task.return_value = None
+            await task_executor.execute()
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_spec.tile_id}"
     result = await session.execute_query(sql)

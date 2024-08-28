@@ -69,7 +69,7 @@ async def test_task_executor(random_task_class, persistent, app_container):
     assert TASK_REGISTRY_MAP[TestCommand.RANDOM_COMMAND] == random_task_class
 
     # add task record
-    task_id = uuid4()
+    task_id = app_container.task_id
     await persistent._db["celery_taskmeta"].insert_one(
         document={"_id": str(task_id)},
     )
@@ -107,6 +107,13 @@ async def test_task_executor(random_task_class, persistent, app_container):
     )
     assert isinstance(document["start_time"], datetime.datetime)
     assert document["description"] == "Execute random task"
+
+    # check that progress is not overridden
+    assert document["progress"] == {
+        "percent": 100,
+        "message": "Random task completed.",
+        "metadata": {"some_key": "some_value"},
+    }
 
     # check get task result
     task_manager = app_container.task_manager

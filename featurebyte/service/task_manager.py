@@ -122,7 +122,7 @@ class TaskManager:
 
         return Task(
             id=UUID(task_id),
-            status=document.get("status"),
+            status=document.get("status", "PENDING"),
             output_path=document.get("kwargs", {}).get("task_output_path"),
             payload=document.get("kwargs", {}),
             traceback=document.get("traceback"),
