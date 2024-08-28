@@ -272,6 +272,11 @@ def test_bigquery_schema_initializer__sql_objects(patched_bigquery_session_cls):
             "filename": "F_TIMESTAMP_TO_INDEX.sql",
             "identifier": "F_TIMESTAMP_TO_INDEX",
         },
+        {
+            "type": "function",
+            "filename": "F_COUNT_DICT_NUM_UNIQUE.sql",
+            "identifier": "F_COUNT_DICT_NUM_UNIQUE",
+        },
     ]
 
     def _sorted_result(lst):

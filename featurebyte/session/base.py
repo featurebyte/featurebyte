@@ -474,7 +474,9 @@ class BaseSession(BaseModel):
         writer = None
         try:
             # execute in separate thread
-            await to_thread(cursor.execute, timeout, query)
+            await to_thread(
+                cursor.execute, timeout, query, **self.get_additional_execute_query_kwargs()
+            )
             if not cursor.description:
                 return
 
@@ -658,7 +660,7 @@ class BaseSession(BaseModel):
         """
         cursor = self.connection.cursor()
         try:
-            cursor.execute(query)
+            cursor.execute(query, **self.get_additional_execute_query_kwargs())
             result = self.fetch_query_result_impl(cursor)
             return result
         except Exception as exc:
@@ -668,6 +670,16 @@ class BaseSession(BaseModel):
             raise exc
         finally:
             cursor.close()
+
+    def get_additional_execute_query_kwargs(self) -> dict[str, Any]:
+        """
+        Additional keywords arguments to specify when calling execute() on cursor
+
+        Returns
+        -------
+        dict[str, Any]
+        """
+        return {}
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         """
