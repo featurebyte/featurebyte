@@ -4,6 +4,10 @@ Tests for snowflake get rank UDF
 
 import numpy as np
 import pytest
+from sqlglot import parse_one
+
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from tests.integration.udf.util import execute_query_with_udf
 
 same_values = {"a": 1, "b": 1, "c": 1}
 ascending_values = {"a": 1, "b": 2, "c": 3}
@@ -35,9 +39,15 @@ async def test_get_rank_udf(session, to_object, dictionary, key, is_descending, 
     Test get rank UDF
     """
     dictionary_expr = to_object(dictionary)
-    query = f"SELECT F_GET_RANK({dictionary_expr}, {key}, {is_descending}) AS OUT"
-    df = await session.execute_query(query)
-    actual = df.iloc[0]["OUT"]
+    actual = await execute_query_with_udf(
+        session,
+        "F_GET_RANK",
+        [
+            dictionary_expr,
+            parse_one(key),
+            make_literal_value(is_descending),
+        ],
+    )
     if actual is None:
         actual = np.nan
     np.testing.assert_allclose(actual, expected, 1e-5)
