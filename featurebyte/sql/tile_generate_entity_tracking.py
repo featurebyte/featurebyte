@@ -63,33 +63,33 @@ class TileGenerateEntityTracking(BaseSqlModel):
                 self.quote_column(col)
                 for col in self.entity_column_names + [tile_last_start_date_column]
             ])
-            entity_table = f"select {cols} from ({self.entity_table})"
+            entity_table = f"select {cols} from ({self.entity_table}) limit 0"
             await self._session.create_table_as(
                 table_details=tracking_table_name,
                 select_expr=entity_table,
-                retry=True,
+                exists=True,
             )
+
+        if self.entity_column_names:
+            entity_insert_cols_str = ", ".join(entity_insert_cols)
+            entity_filter_cols_str = " AND ".join(entity_filter_cols)
+            merge_sql = f"""
+                merge into {tracking_table_name} a using ({self.entity_table}) b
+                    on {entity_filter_cols_str}
+                    when matched then
+                        update set a.{tile_last_start_date_column} = b.{tile_last_start_date_column}
+                    when not matched then
+                        insert ({escaped_entity_column_names_str}, {tile_last_start_date_column})
+                            values ({entity_insert_cols_str}, b.{tile_last_start_date_column})
+            """
         else:
-            if self.entity_column_names:
-                entity_insert_cols_str = ", ".join(entity_insert_cols)
-                entity_filter_cols_str = " AND ".join(entity_filter_cols)
-                merge_sql = f"""
-                    merge into {tracking_table_name} a using ({self.entity_table}) b
-                        on {entity_filter_cols_str}
-                        when matched then
-                            update set a.{tile_last_start_date_column} = b.{tile_last_start_date_column}
-                        when not matched then
-                            insert ({escaped_entity_column_names_str}, {tile_last_start_date_column})
-                                values ({entity_insert_cols_str}, b.{tile_last_start_date_column})
-                """
-            else:
-                merge_sql = f"""
-                    merge into {tracking_table_name} a using ({self.entity_table}) b
-                        on true
-                        when matched then
-                            update set a.{tile_last_start_date_column} = b.{tile_last_start_date_column}
-                        when not matched then
-                            insert ({tile_last_start_date_column})
-                                values (b.{tile_last_start_date_column})
-                """
-            await self._session.retry_sql(merge_sql)
+            merge_sql = f"""
+                merge into {tracking_table_name} a using ({self.entity_table}) b
+                    on true
+                    when matched then
+                        update set a.{tile_last_start_date_column} = b.{tile_last_start_date_column}
+                    when not matched then
+                        insert ({tile_last_start_date_column})
+                            values (b.{tile_last_start_date_column})
+            """
+        await self._session.retry_sql(merge_sql)

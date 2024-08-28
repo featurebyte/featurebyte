@@ -10,6 +10,7 @@ from bson import ObjectId
 from redis import Redis
 
 from featurebyte.enum import MaterializedTableNamePrefix
+from featurebyte.exception import DocumentConflictError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_table_cache_metadata import (
     CachedFeatureDefinition,
@@ -89,7 +90,12 @@ class FeatureTableCacheMetadataService(
                 table_name=f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{str(observation_table.id)}",
                 feature_definitions=[],
             )
-            document = await self.create_document(document)
+            try:
+                document = await self.create_document(document)
+            except DocumentConflictError:
+                # A FeatureTableCacheMetadataModel document was created after the existence check.
+                # Retrieve again.
+                return await self.get_or_create_feature_table_cache(observation_table_id)
 
         return document
 
