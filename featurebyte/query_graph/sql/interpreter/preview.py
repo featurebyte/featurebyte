@@ -897,15 +897,16 @@ class PreviewMixin(BaseGraphInterpreter):
         casted_columns = []
         for col_expr in sql_tree.expressions:
             col_name = col_expr.alias_or_name
-            col_dtype = columns_info[col_name].dtype if col_name in columns_info else None
-            # add casted columns
-            casted_columns.append(
-                expressions.alias_(
-                    self.adapter.cast_to_string(quoted_identifier(col_name), col_dtype),
-                    col_name,
-                    quoted=True,
+            if col_name in columns_info:
+                col_dtype = columns_info[col_name].dtype
+                # add casted columns
+                casted_columns.append(
+                    expressions.alias_(
+                        self.adapter.cast_to_string(quoted_identifier(col_name), col_dtype),
+                        col_name,
+                        quoted=True,
+                    )
                 )
-            )
         sql_tree = expressions.select(*casted_columns).from_(quoted_identifier(input_table_name))
         return quoted_identifier(CASTED_DATA_TABLE_NAME), sql_tree
 
