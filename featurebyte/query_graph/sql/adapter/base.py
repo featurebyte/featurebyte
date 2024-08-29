@@ -939,3 +939,22 @@ class BaseAdapter(ABC):
         Expression
         """
         return expressions.Anonymous(this="COUNT_IF", expressions=[condition])
+
+    @classmethod
+    def cast_to_string(cls, expr: Expression, dtype: Optional[DBVarType]) -> Expression:
+        """
+        Construct a CAST expression to convert the input expression to a string
+
+        Parameters
+        ----------
+        expr: Expression
+            Input expression
+        dtype: Optional[DBVarType]
+            Data type
+
+        Returns
+        -------
+        Expression
+        """
+        _ = dtype
+        return expressions.Cast(this=expr, to=expressions.DataType.build("VARCHAR"))

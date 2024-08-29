@@ -885,20 +885,21 @@ class PreviewMixin(BaseGraphInterpreter):
             expressions.Subquery(this=cat_count_dict, alias="count_dict")
         )
 
-    @staticmethod
     def _get_cte_with_casted_data(
-        sql_tree: expressions.Expression, input_table_name: str
+        self,
+        sql_tree: expressions.Expression,
+        input_table_name: str,
+        columns_info: dict[Optional[str], ViewDataColumn],
     ) -> CteStatement:
         # get subquery with columns casted to string to compute value counts
         casted_columns = []
         for col_expr in sql_tree.expressions:
             col_name = col_expr.alias_or_name
+            col_dtype = columns_info[col_name].dtype if col_name in columns_info else None
             # add casted columns
             casted_columns.append(
                 expressions.alias_(
-                    expressions.Cast(
-                        this=quoted_identifier(col_name), to=expressions.DataType.build("VARCHAR")
-                    ),
+                    self.adapter.cast_to_string(quoted_identifier(col_name), col_dtype),
                     col_name,
                     quoted=True,
                 )
@@ -969,7 +970,7 @@ class PreviewMixin(BaseGraphInterpreter):
         }
 
         # data casted to string
-        cte_casted_data = self._get_cte_with_casted_data(sql_tree, input_table_name)
+        cte_casted_data = self._get_cte_with_casted_data(sql_tree, input_table_name, columns_info)
 
         # only extract requested stats if specified
         required_stats_expressions = {}
