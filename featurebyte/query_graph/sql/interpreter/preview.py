@@ -659,14 +659,11 @@ class PreviewMixin(BaseGraphInterpreter):
             None,
         )
         stats_expressions["%empty"] = (
-            lambda col_expr, column_idx: expressions.Anonymous(
-                this="COUNT_IF",
-                expressions=[
-                    expressions.EQ(
-                        this=col_expr,
-                        expression=make_literal_value(""),
-                    )
-                ],
+            lambda col_expr, column_idx: self.adapter.count_if(
+                expressions.EQ(
+                    this=col_expr,
+                    expression=make_literal_value(""),
+                )
             ),
             {DBVarType.CHAR, DBVarType.VARCHAR},
         )

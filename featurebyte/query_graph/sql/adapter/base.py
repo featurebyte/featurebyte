@@ -923,3 +923,19 @@ class BaseAdapter(ABC):
         tuple_expr = expressions.Tuple(expressions=columns)
         alter_table_sql += " ADD COLUMNS " + sql_to_string(tuple_expr, source_type=cls.source_type)
         return alter_table_sql
+
+    @classmethod
+    def count_if(cls, condition: Expression) -> Expression:
+        """
+        Construct a COUNT_IF expression
+
+        Parameters
+        ----------
+        condition: Expression
+            Condition expression
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Anonymous(this="COUNT_IF", expressions=[condition])

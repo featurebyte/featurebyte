@@ -9,6 +9,7 @@ from sqlglot.expressions import Anonymous, Expression
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter.snowflake import SnowflakeAdapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
 
 class BigQueryAdapter(SnowflakeAdapter):
@@ -28,6 +29,25 @@ class BigQueryAdapter(SnowflakeAdapter):
         )
 
     @classmethod
+    def get_percentile_expr(cls, input_expr: Expression, quantile: float) -> Expression:
+        return expressions.Bracket(
+            this=Anonymous(
+                this="APPROX_QUANTILES",
+                expressions=[input_expr, make_literal_value(100)],
+            ),
+            expressions=[
+                Anonymous(
+                    this="offset",
+                    expressions=[make_literal_value(int(quantile * 100))],
+                )
+            ],
+        )
+
+    @classmethod
     def get_uniform_distribution_expr(cls, seed: int) -> Expression:
         _ = seed
         return expressions.Anonymous(this="RAND", expressions=[])
+
+    @classmethod
+    def count_if(cls, condition: Expression) -> Expression:
+        return expressions.Anonymous(this="COUNTIF", expressions=[condition])
