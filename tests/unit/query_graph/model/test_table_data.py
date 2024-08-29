@@ -265,7 +265,9 @@ def test_construct_cleaning_recipe_node__check_skip_columns_works_as_expected(
     assert output is None
 
 
-def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, event_input_node):
+def test_construct_cleaning_recipe_node__with_sql_generation(
+    event_table_data, event_input_node, source_info
+):
     """Test construct_cleaning_recipe_node (with sql generation)"""
     # construct an input node & a graph node
     query_graph = QueryGraph()
@@ -276,7 +278,7 @@ def test_construct_cleaning_recipe_node__with_sql_generation(event_table_data, e
     output_node = query_graph.add_node(node=graph_node, input_nodes=[inserted_input_node])
 
     # generate query
-    graph_interpreter = GraphInterpreter(query_graph=query_graph, source_type=SourceType.SNOWFLAKE)
+    graph_interpreter = GraphInterpreter(query_graph=query_graph, source_info=source_info)
     output, _ = graph_interpreter.construct_preview_sql(node_name=output_node.name, num_rows=10)
     assert (
         output

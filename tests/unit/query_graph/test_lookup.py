@@ -10,12 +10,12 @@ from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 
 
-def test_lookup_node_aggregation(global_graph, lookup_node):
+def test_lookup_node_aggregation(global_graph, lookup_node, source_info):
     """
     Test lookup feature node sql during aggregation
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.AGGREGATION, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.AGGREGATION, source_info=source_info
     )
     sql_tree = sql_graph.build(lookup_node).sql
     assert (
@@ -32,7 +32,7 @@ def test_lookup_node_aggregation(global_graph, lookup_node):
     )
 
 
-def test_lookup_node_post_aggregation(global_graph, lookup_feature_node, lookup_node):
+def test_lookup_node_post_aggregation(global_graph, lookup_feature_node, lookup_node, source_info):
     """
     Test post aggregation expressions for Lookup node is correct
     """
@@ -40,13 +40,13 @@ def test_lookup_node_post_aggregation(global_graph, lookup_feature_node, lookup_
         lookup_node.name: LookupSpec.from_query_graph_node(
             node=lookup_node,
             graph=global_graph,
-            source_type=SourceType.SNOWFLAKE,
+            source_info=source_info,
         )
     }
     sql_graph = SQLOperationGraph(
         global_graph,
         sql_type=SQLType.POST_AGGREGATION,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         aggregation_specs=aggregation_specs,
     )
     expr = sql_graph.build(lookup_feature_node).sql

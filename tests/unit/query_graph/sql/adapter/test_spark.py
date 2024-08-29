@@ -5,8 +5,10 @@ Test spark adapter module
 import pytest
 from sqlglot import expressions
 
+from featurebyte import SourceType
 from featurebyte.query_graph.sql.adapter import SparkAdapter
 from tests.unit.query_graph.sql.adapter.base_adapter_test import BaseAdapterTest
+from tests.util.helper import get_sql_adapter_from_source_type
 
 
 class TestSparkAdapter(BaseAdapterTest):
@@ -14,7 +16,7 @@ class TestSparkAdapter(BaseAdapterTest):
     Test spark adapter class
     """
 
-    adapter = SparkAdapter()
+    adapter = get_sql_adapter_from_source_type(SourceType.SPARK)
 
     def test_dateadd_seconds(self):
         """

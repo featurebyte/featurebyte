@@ -8,19 +8,21 @@ WITH `casted_data` AS (
   FROM `__FB_INPUT_TABLE_SQL_PLACEHOLDER`
 ), counts__1 AS (
   SELECT
-    F_COUNT_DICT_ENTROPY(count_dict.`COUNT_DICT`) AS `entropy__1`,
-    F_COUNT_DICT_MOST_FREQUENT(count_dict.`COUNT_DICT`) AS `top__1`,
-    F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__1`
+    `my_db`.`my_schema`.F_COUNT_DICT_ENTROPY(count_dict.`COUNT_DICT`) AS `entropy__1`,
+    `my_db`.`my_schema`.F_COUNT_DICT_MOST_FREQUENT(count_dict.`COUNT_DICT`) AS `top__1`,
+    `my_db`.`my_schema`.F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__1`
   FROM (
     SELECT
-      MAP_FILTER(
-        MAP_FROM_ENTRIES(
-          COLLECT_LIST(
-            STRUCT(CASE WHEN `cust_id` IS NULL THEN '__MISSING__' ELSE `cust_id` END, `__FB_COUNTS`)
+      CASE
+        WHEN ARRAY_AGG(`__FB_COUNTS`) IS NULL
+        THEN JSON_OBJECT()
+        ELSE JSON_STRIP_NULLS(
+          JSON_OBJECT(
+            ARRAY_AGG(CASE WHEN `cust_id` IS NULL THEN '__MISSING__' ELSE `cust_id` END),
+            ARRAY_AGG(`__FB_COUNTS`)
           )
-        ),
-        (k, v) -> NOT v IS NULL
-      ) AS `COUNT_DICT`
+        )
+      END AS `COUNT_DICT`
     FROM (
       SELECT
         `cust_id`,
@@ -35,16 +37,20 @@ WITH `casted_data` AS (
   ) AS count_dict
 ), counts__3 AS (
   SELECT
-    F_COUNT_DICT_MOST_FREQUENT(count_dict.`COUNT_DICT`) AS `top__3`,
-    F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__3`
+    `my_db`.`my_schema`.F_COUNT_DICT_MOST_FREQUENT(count_dict.`COUNT_DICT`) AS `top__3`,
+    `my_db`.`my_schema`.F_COUNT_DICT_MOST_FREQUENT_VALUE(count_dict.`COUNT_DICT`) AS `freq__3`
   FROM (
     SELECT
-      MAP_FILTER(
-        MAP_FROM_ENTRIES(
-          COLLECT_LIST(STRUCT(CASE WHEN `b` IS NULL THEN '__MISSING__' ELSE `b` END, `__FB_COUNTS`))
-        ),
-        (k, v) -> NOT v IS NULL
-      ) AS `COUNT_DICT`
+      CASE
+        WHEN ARRAY_AGG(`__FB_COUNTS`) IS NULL
+        THEN JSON_OBJECT()
+        ELSE JSON_STRIP_NULLS(
+          JSON_OBJECT(
+            ARRAY_AGG(CASE WHEN `b` IS NULL THEN '__MISSING__' ELSE `b` END),
+            ARRAY_AGG(`__FB_COUNTS`)
+          )
+        )
+      END AS `COUNT_DICT`
     FROM (
       SELECT
         `b`,
@@ -67,21 +73,21 @@ WITH `casted_data` AS (
     NULL AS `mean__0`,
     NULL AS `std__0`,
     MIN(
-      IF(
-        `ts` < CAST('1900-01-01' AS TIMESTAMP) OR `ts` > CAST('2200-01-01' AS TIMESTAMP),
-        NULL,
-        `ts`
-      )
+      CASE
+        WHEN `ts` < CAST('1900-01-01' AS TIMESTAMP) OR `ts` > CAST('2200-01-01' AS TIMESTAMP)
+        THEN NULL
+        ELSE `ts`
+      END
     ) AS `min__0`,
     NULL AS `25%__0`,
     NULL AS `50%__0`,
     NULL AS `75%__0`,
     MAX(
-      IF(
-        `ts` < CAST('1900-01-01' AS TIMESTAMP) OR `ts` > CAST('2200-01-01' AS TIMESTAMP),
-        NULL,
-        `ts`
-      )
+      CASE
+        WHEN `ts` < CAST('1900-01-01' AS TIMESTAMP) OR `ts` > CAST('2200-01-01' AS TIMESTAMP)
+        THEN NULL
+        ELSE `ts`
+      END
     ) AS `max__0`,
     NULL AS `min TZ offset__0`,
     NULL AS `max TZ offset__0`,
@@ -89,7 +95,7 @@ WITH `casted_data` AS (
     (
       1.0 - COUNT(`cust_id`) / NULLIF(COUNT(*), 0)
     ) * 100 AS `%missing__1`,
-    COUNT_IF(`cust_id` = '') AS `%empty__1`,
+    COUNTIF(`cust_id` = '') AS `%empty__1`,
     NULL AS `mean__1`,
     NULL AS `std__1`,
     NULL AS `min__1`,
@@ -104,12 +110,12 @@ WITH `casted_data` AS (
       1.0 - COUNT(`a`) / NULLIF(COUNT(*), 0)
     ) * 100 AS `%missing__2`,
     NULL AS `%empty__2`,
-    AVG(CAST(`a` AS DOUBLE)) AS `mean__2`,
-    STDDEV(CAST(`a` AS DOUBLE)) AS `std__2`,
+    AVG(CAST(`a` AS FLOAT64)) AS `mean__2`,
+    STDDEV(CAST(`a` AS FLOAT64)) AS `std__2`,
     MIN(`a`) AS `min__2`,
-    PERCENTILE(`a`, 0.25) AS `25%__2`,
-    PERCENTILE(`a`, 0.5) AS `50%__2`,
-    PERCENTILE(`a`, 0.75) AS `75%__2`,
+    APPROX_QUANTILES(`a`, 100)[OFFSET(25)] AS `25%__2`,
+    APPROX_QUANTILES(`a`, 100)[OFFSET(50)] AS `50%__2`,
+    APPROX_QUANTILES(`a`, 100)[OFFSET(75)] AS `75%__2`,
     MAX(`a`) AS `max__2`,
     NULL AS `min TZ offset__2`,
     NULL AS `max TZ offset__2`,
@@ -118,12 +124,12 @@ WITH `casted_data` AS (
       1.0 - COUNT(`b`) / NULLIF(COUNT(*), 0)
     ) * 100 AS `%missing__3`,
     NULL AS `%empty__3`,
-    AVG(CAST(`b` AS DOUBLE)) AS `mean__3`,
-    STDDEV(CAST(`b` AS DOUBLE)) AS `std__3`,
+    AVG(CAST(`b` AS FLOAT64)) AS `mean__3`,
+    STDDEV(CAST(`b` AS FLOAT64)) AS `std__3`,
     MIN(`b`) AS `min__3`,
-    PERCENTILE(`b`, 0.25) AS `25%__3`,
-    PERCENTILE(`b`, 0.5) AS `50%__3`,
-    PERCENTILE(`b`, 0.75) AS `75%__3`,
+    APPROX_QUANTILES(`b`, 100)[OFFSET(25)] AS `25%__3`,
+    APPROX_QUANTILES(`b`, 100)[OFFSET(50)] AS `50%__3`,
+    APPROX_QUANTILES(`b`, 100)[OFFSET(75)] AS `75%__3`,
     MAX(`b`) AS `max__3`,
     NULL AS `min TZ offset__3`,
     NULL AS `max TZ offset__3`,
@@ -132,12 +138,12 @@ WITH `casted_data` AS (
       1.0 - COUNT(`a_copy`) / NULLIF(COUNT(*), 0)
     ) * 100 AS `%missing__4`,
     NULL AS `%empty__4`,
-    AVG(CAST(`a_copy` AS DOUBLE)) AS `mean__4`,
-    STDDEV(CAST(`a_copy` AS DOUBLE)) AS `std__4`,
+    AVG(CAST(`a_copy` AS FLOAT64)) AS `mean__4`,
+    STDDEV(CAST(`a_copy` AS FLOAT64)) AS `std__4`,
     MIN(`a_copy`) AS `min__4`,
-    PERCENTILE(`a_copy`, 0.25) AS `25%__4`,
-    PERCENTILE(`a_copy`, 0.5) AS `50%__4`,
-    PERCENTILE(`a_copy`, 0.75) AS `75%__4`,
+    APPROX_QUANTILES(`a_copy`, 100)[OFFSET(25)] AS `25%__4`,
+    APPROX_QUANTILES(`a_copy`, 100)[OFFSET(50)] AS `50%__4`,
+    APPROX_QUANTILES(`a_copy`, 100)[OFFSET(75)] AS `75%__4`,
     MAX(`a_copy`) AS `max__4`,
     NULL AS `min TZ offset__4`,
     NULL AS `max TZ offset__4`

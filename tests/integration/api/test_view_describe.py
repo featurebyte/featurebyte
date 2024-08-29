@@ -9,6 +9,8 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
 
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
+
 
 def _to_utc_no_offset(date):
     """
@@ -132,9 +134,12 @@ def test_event_view_describe_with_date_range(event_table):
     )
 
 
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 def test_event_view_describe_with_date_range_and_size(event_table):
     """
     Test describe for EventView with date range and number of rows
+
+    Skipped for BigQuery as the sampling is not deterministic.
     """
     event_view = event_table.get_view()
     sample_params = {

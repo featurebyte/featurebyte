@@ -78,11 +78,11 @@ def forward_spec_with_offset_fixture(forward_node_parameters_with_offset, entity
     )
 
 
-def test_forward_aggregator(forward_spec, update_fixtures):
+def test_forward_aggregator(forward_spec, update_fixtures, source_info):
     """
     Test forward aggregator
     """
-    aggregator = ForwardAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = ForwardAggregator(source_info=source_info)
     aggregator.update(forward_spec)
 
     result = aggregator.update_aggregation_table_expr(
@@ -97,11 +97,11 @@ def test_forward_aggregator(forward_spec, update_fixtures):
     )
 
 
-def test_forward_aggregator_offset(forward_spec_with_offset, update_fixtures):
+def test_forward_aggregator_offset(forward_spec_with_offset, update_fixtures, source_info):
     """
     Test forward aggregator with offset
     """
-    aggregator = ForwardAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = ForwardAggregator(source_info=source_info)
     aggregator.update(forward_spec_with_offset)
 
     result = aggregator.update_aggregation_table_expr(

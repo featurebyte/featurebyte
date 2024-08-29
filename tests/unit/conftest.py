@@ -54,6 +54,8 @@ from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate
@@ -2084,6 +2086,12 @@ def mock_snowflake_session_fixture():
     session.create_table_as = partial(SnowflakeSession.create_table_as, session)
     session.retry_sql = partial(SnowflakeSession.retry_sql, session)
     session.list_table_schema.return_value = {}
+    session.get_source_info.return_value = SourceInfo(
+        database_name="sf_db", schema_name="sf_schema", source_type=SourceType.SNOWFLAKE
+    )
+    type(session).adapter = PropertyMock(
+        side_effect=lambda: get_sql_adapter(session.get_source_info())
+    )
     return session
 
 
@@ -2561,3 +2569,39 @@ def patch_is_featurebyte_schema():
     ) as mock_is_featurebyte_schema:
         mock_is_featurebyte_schema.return_value = False
         yield
+
+
+@pytest.fixture(name="source_info")
+def source_info_fixture():
+    """Fixture for a default SourceInfo object to use in tests"""
+    return SourceInfo(
+        database_name="my_db",
+        schema_name="my_schema",
+        source_type=SourceType.SNOWFLAKE,
+    )
+
+
+@pytest.fixture(name="databricks_source_info")
+def databricks_source_info_fixture():
+    """Fixture for a Databricks SourceInfo object to use in tests"""
+    return SourceInfo(
+        database_name="my_db",
+        schema_name="my_schema",
+        source_type=SourceType.DATABRICKS_UNITY,
+    )
+
+
+@pytest.fixture(name="spark_source_info")
+def spark_source_info_fixture():
+    """Fixture for a Spark SourceInfo object to use in tests"""
+    return SourceInfo(
+        database_name="my_db",
+        schema_name="my_schema",
+        source_type=SourceType.SPARK,
+    )
+
+
+@pytest.fixture(name="adapter")
+def adapter_fixture(source_info):
+    """Fixture for a default BaseAdapter object to use in tests"""
+    return get_sql_adapter(source_info)

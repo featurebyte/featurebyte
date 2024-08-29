@@ -7,9 +7,10 @@ from sqlglot.expressions import Select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
-from tests.util.helper import assert_sql_equal
+from featurebyte.query_graph.sql.source_info import SourceInfo
+from tests.util.helper import assert_sql_equal, get_sql_adapter_from_source_type
 
 
 @pytest.mark.parametrize(
@@ -40,7 +41,9 @@ def test_create_table_as(source_type, expected):
         table_name="table1",
     )
     expr = parse_one("SELECT * FROM A")
-    new_expr = get_sql_adapter(source_type).create_table_as(table_details, cast(Select, expr))
+    new_expr = get_sql_adapter_from_source_type(source_type).create_table_as(
+        table_details, cast(Select, expr)
+    )
     assert new_expr.sql(dialect=source_type).strip() == expected
 
 
@@ -66,7 +69,7 @@ def test_alter_table_add_columns(source_type, expected):
     """
     Test alter_table_add_columns
     """
-    result = get_sql_adapter(source_type).alter_table_add_columns(
+    result = get_sql_adapter_from_source_type(source_type).alter_table_add_columns(
         table=expressions.Table(
             this="my_table",
             db="my_schema",
@@ -113,7 +116,13 @@ def test_alter_table_add_columns(source_type, expected):
         ),
         (
             SourceType.BIGQUERY,
-            "JSON_STRIP_NULLS(JSON_OBJECT(ARRAY_AGG(`key_col`), ARRAY_AGG(`value_col`)))",
+            """
+            CASE
+              WHEN ARRAY_AGG(`value_col`) IS NULL
+              THEN JSON_OBJECT()
+              ELSE JSON_STRIP_NULLS(JSON_OBJECT(ARRAY_AGG(`key_col`), ARRAY_AGG(`value_col`)))
+            END
+            """,
         ),
     ],
 )
@@ -121,7 +130,7 @@ def test_object_agg(source_type, expected):
     """
     Test object_agg
     """
-    result = get_sql_adapter(source_type).object_agg(
+    result = get_sql_adapter_from_source_type(source_type).object_agg(
         key_column=quoted_identifier("key_col"),
         value_column=quoted_identifier("value_col"),
     )

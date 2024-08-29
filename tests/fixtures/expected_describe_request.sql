@@ -65,6 +65,7 @@ WITH "casted_data" AS (
     *
   FROM stats
   LEFT JOIN counts__1
+    ON 1 = 1
 )
 SELECT
   'FLOAT' AS "dtype__0",

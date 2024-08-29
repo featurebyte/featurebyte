@@ -19,12 +19,10 @@ from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
-def test_graph_interpreter_super_simple(simple_graph):
+def test_graph_interpreter_super_simple(simple_graph, source_info):
     """Test using a simple query graph"""
     graph, node = simple_graph
-    sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
-    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALIZE, source_info=source_info)
     sql_tree = sql_graph.build(node).sql
     expected = textwrap.dedent(
         """
@@ -40,7 +38,7 @@ def test_graph_interpreter_super_simple(simple_graph):
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_graph_interpreter_assign_scalar(graph, node_input):
+def test_graph_interpreter_assign_scalar(graph, node_input, source_info):
     """Test using a simple query graph"""
     assign = graph.add_operation(
         node_type=NodeType.ASSIGN,
@@ -48,9 +46,7 @@ def test_graph_interpreter_assign_scalar(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
     )
-    sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
-    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALIZE, source_info=source_info)
     sql_tree = sql_graph.build(assign).sql
     expected = textwrap.dedent(
         """
@@ -66,7 +62,7 @@ def test_graph_interpreter_assign_scalar(graph, node_input):
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_graph_interpreter_multi_assign(graph, node_input):
+def test_graph_interpreter_multi_assign(graph, node_input, source_info):
     """Test using a slightly more complex graph (multiple assigns)"""
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -104,9 +100,7 @@ def test_graph_interpreter_multi_assign(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, proj_c],
     )
-    sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
-    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE, source_info=source_info)
     sql_tree = sql_graph.build(assign_node_2).sql
     expected = textwrap.dedent(
         """
@@ -144,7 +138,9 @@ def test_graph_interpreter_multi_assign(graph, node_input):
         (NodeType.OR, '"a" OR 123'),
     ],
 )
-def test_graph_interpreter_binary_operations(graph, node_input, node_type, expected_expr):
+def test_graph_interpreter_binary_operations(
+    graph, node_input, node_type, expected_expr, source_info
+):
     """Test graph with binary operation nodes"""
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -164,7 +160,7 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input, binary_node],
     )
-    sql_graph = SQLOperationGraph(graph, SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE)
+    sql_graph = SQLOperationGraph(graph, SQLType.BUILD_TILE, source_info=source_info)
     sql_tree = sql_graph.build(assign_node).sql
     expected = textwrap.dedent(
         f"""
@@ -182,7 +178,7 @@ def test_graph_interpreter_binary_operations(graph, node_input, node_type, expec
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_graph_interpreter_project_multiple_columns(graph, node_input):
+def test_graph_interpreter_project_multiple_columns(graph, node_input, source_info):
     """Test using a simple query graph"""
     proj = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -190,9 +186,7 @@ def test_graph_interpreter_project_multiple_columns(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[node_input],
     )
-    sql_graph = SQLOperationGraph(
-        graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
-    )
+    sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALIZE, source_info=source_info)
     sql_tree = sql_graph.build(proj).sql
     expected = textwrap.dedent(
         """
@@ -205,9 +199,11 @@ def test_graph_interpreter_project_multiple_columns(graph, node_input):
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggregation_id):
+def test_graph_interpreter_tile_gen(
+    query_graph_with_groupby, groupby_node_aggregation_id, source_info
+):
     """Test tile building SQL"""
-    interpreter = GraphInterpreter(query_graph_with_groupby, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(query_graph_with_groupby, source_info)
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
     assert len(tile_gen_sqls) == 1
@@ -244,14 +240,14 @@ def test_graph_interpreter_tile_gen(query_graph_with_groupby, groupby_node_aggre
 
 
 def test_graph_interpreter_on_demand_tile_gen(
-    query_graph_with_groupby, groupby_node_aggregation_id
+    query_graph_with_groupby, groupby_node_aggregation_id, source_info
 ):
     """Test tile building SQL with on-demand tile generation
 
     Note that the input table query contains a inner-join with an entity table to filter only table
     belonging to specific entity IDs and date range
     """
-    interpreter = GraphInterpreter(query_graph_with_groupby, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(query_graph_with_groupby, source_info)
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=True)
     assert len(tile_gen_sqls) == 1
@@ -329,9 +325,9 @@ def test_graph_interpreter_on_demand_tile_gen(
     }
 
 
-def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_groupby):
+def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_groupby, source_info):
     """Test tile building SQL with aggregation per category"""
-    interpreter = GraphInterpreter(query_graph_with_category_groupby, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(query_graph_with_category_groupby, source_info)
     groupby_node = query_graph_with_category_groupby.get_node_by_name("groupby_1")
     tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
     assert len(tile_gen_sqls) == 1
@@ -408,11 +404,11 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
 
 
 def test_graph_interpreter_on_demand_tile_gen_two_groupby(
-    complex_feature_query_graph, groupby_node_aggregation_id
+    complex_feature_query_graph, groupby_node_aggregation_id, source_info
 ):
     """Test case for a complex feature that depends on two groupby nodes"""
     complex_feature_node, graph = complex_feature_query_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
     tile_gen_sqls = interpreter.construct_tile_gen_sql(complex_feature_node, is_on_demand=True)
     assert len(tile_gen_sqls) == 2
 
@@ -558,13 +554,13 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
 
 
 def test_one_demand_tile_gen_on_simple_view(
-    global_graph, window_aggregate_on_simple_view_feature_node, update_fixtures
+    global_graph, window_aggregate_on_simple_view_feature_node, update_fixtures, source_info
 ):
     """Test tile building SQL with on-demand tile generation on a simple view
 
     No additional inner joins should be applied
     """
-    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(global_graph, source_info)
     tile_gen_sqls = interpreter.construct_tile_gen_sql(
         window_aggregate_on_simple_view_feature_node, is_on_demand=True
     )
@@ -577,14 +573,14 @@ def test_one_demand_tile_gen_on_simple_view(
 
 
 def test_on_demand_tile_gen_on_joined_view(
-    global_graph, window_aggregate_on_view_with_scd_join_feature_node, update_fixtures
+    global_graph, window_aggregate_on_view_with_scd_join_feature_node, update_fixtures, source_info
 ):
     """Test tile building SQL with on-demand tile generation on a joined view
 
     Input tables should be filtered using a join with the entity table before performing the more
     expensive SCD join.
     """
-    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(global_graph, source_info)
     tile_gen_sqls = interpreter.construct_tile_gen_sql(
         window_aggregate_on_view_with_scd_join_feature_node, is_on_demand=True
     )
@@ -599,12 +595,13 @@ def test_on_demand_tile_gen_on_joined_view(
 def test_on_demand_tile_gen_on_joined_view_complex_composite_keys(
     global_graph,
     complex_composite_window_aggregate_on_view_with_scd_join_feature_node,
+    source_info,
     update_fixtures,
 ):
     """Test tile building SQL with on-demand tile generation on a joined view using composite keys
     from different tables. For now, filter is only supported on the non-derived entity column.
     """
-    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(global_graph, source_info)
     tile_gen_sqls = interpreter.construct_tile_gen_sql(
         complex_composite_window_aggregate_on_view_with_scd_join_feature_node, is_on_demand=True
     )
@@ -616,7 +613,7 @@ def test_on_demand_tile_gen_on_joined_view_complex_composite_keys(
     )
 
 
-def test_graph_interpreter_preview(graph, node_input):
+def test_graph_interpreter_preview(graph, node_input, source_info):
     """Test graph preview"""
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -654,7 +651,7 @@ def test_graph_interpreter_preview(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node, proj_c],
     )
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
 
     sql_code = interpreter.construct_preview_sql("assign_2")[0]
     expected = textwrap.dedent(
@@ -690,7 +687,7 @@ def test_graph_interpreter_preview(graph, node_input):
     assert sql_code == expected
 
 
-def test_filter_node(graph, node_input):
+def test_filter_node(graph, node_input, source_info):
     """Test graph with filter operation"""
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -722,7 +719,7 @@ def test_filter_node(graph, node_input):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a, binary_node],
     )
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
     sql_code = interpreter.construct_preview_sql(filter_node.name)[0]
     expected = textwrap.dedent(
         """
@@ -741,7 +738,7 @@ def test_filter_node(graph, node_input):
     ).strip()
     assert sql_code == expected
 
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
     sql_code = interpreter.construct_preview_sql(filter_series_node.name)[0]
     expected = textwrap.dedent(
         """
@@ -758,7 +755,7 @@ def test_filter_node(graph, node_input):
     assert sql_code == expected
 
 
-def test_multiple_filters(graph, node_input):
+def test_multiple_filters(graph, node_input, source_info):
     """Test graph with filter operation"""
     proj_b = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -790,7 +787,7 @@ def test_multiple_filters(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[filter_node_1, binary_node_2],
     )
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
     sql_code = interpreter.construct_preview_sql(filter_node_2.name)[0]
     expected = textwrap.dedent(
         """
@@ -812,7 +809,7 @@ def test_multiple_filters(graph, node_input):
     assert sql_code == expected
 
 
-def test_filter_assign_project(graph, node_input):
+def test_filter_assign_project(graph, node_input, source_info):
     """Test graph with both filter, assign, and project operations"""
     proj_b = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -844,7 +841,7 @@ def test_filter_assign_project(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[assign_node],
     )
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
     sql_code = interpreter.construct_preview_sql(project_node.name)[0]
     expected = textwrap.dedent(
         """
@@ -864,7 +861,7 @@ def test_filter_assign_project(graph, node_input):
     assert sql_code == expected
 
 
-def test_project_multi_then_assign(graph, node_input):
+def test_project_multi_then_assign(graph, node_input, source_info):
     """Test graph with both projection and assign operations"""
     proj_b = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -884,7 +881,7 @@ def test_project_multi_then_assign(graph, node_input):
         node_output_type=NodeOutputType.FRAME,
         input_nodes=[project_node, proj_b],
     )
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
     sql_code = interpreter.construct_preview_sql(assign_node.name)[0]
     expected = textwrap.dedent(
         """
@@ -899,7 +896,7 @@ def test_project_multi_then_assign(graph, node_input):
     assert sql_code == expected
 
 
-def test_conditional_assign__project_named(graph, node_input):
+def test_conditional_assign__project_named(graph, node_input, source_info):
     """Test graph with conditional assign operation"""
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -932,7 +929,7 @@ def test_conditional_assign__project_named(graph, node_input):
         input_nodes=[assign_node],
     )
 
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
     sql_code = interpreter.construct_preview_sql(projected_conditional.name)[0]
     expected = textwrap.dedent(
         """
@@ -946,7 +943,7 @@ def test_conditional_assign__project_named(graph, node_input):
     ).strip()
     assert sql_code == expected
 
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
     sql_code = interpreter.construct_preview_sql(assign_node.name)[0]
     expected = textwrap.dedent(
         """
@@ -964,7 +961,7 @@ def test_conditional_assign__project_named(graph, node_input):
     assert sql_code == expected
 
 
-def test_isnull(graph, node_input):
+def test_isnull(graph, node_input, source_info):
     """Test graph with isnull operation"""
     proj_a = graph.add_operation(
         node_type=NodeType.PROJECT,
@@ -978,7 +975,7 @@ def test_isnull(graph, node_input):
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_a],
     )
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
     sql_code = interpreter.construct_preview_sql(mask_node.name)[0]
     expected = textwrap.dedent(
         """
@@ -993,12 +990,14 @@ def test_isnull(graph, node_input):
     assert sql_code == expected
 
 
-def test_databricks_source(query_graph_with_groupby, groupby_node_aggregation_id):
+def test_databricks_source(
+    query_graph_with_groupby, groupby_node_aggregation_id, databricks_source_info
+):
     """Test SQL generation for databricks source"""
     graph = query_graph_with_groupby
     input_node = graph.get_node_by_name("input_1")
     groupby_node = graph.get_node_by_name("groupby_1")
-    interpreter = GraphInterpreter(graph, source_type=SourceType.DATABRICKS)
+    interpreter = GraphInterpreter(graph, source_info=databricks_source_info)
 
     # Check preview SQL
     preview_sql = interpreter.construct_preview_sql(input_node.name)[0]
@@ -1057,11 +1056,13 @@ def test_databricks_source(query_graph_with_groupby, groupby_node_aggregation_id
     assert tile_sql == expected
 
 
-def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggregation_feature_node):
+def test_tile_sql_order_dependent_aggregation(
+    global_graph, latest_value_aggregation_feature_node, source_info
+):
     """
     Test generating tile sql for an order dependent aggregation
     """
-    interpreter = GraphInterpreter(global_graph, source_type=SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(global_graph, source_info=source_info)
     tile_gen_sqls = interpreter.construct_tile_gen_sql(
         latest_value_aggregation_feature_node, is_on_demand=False
     )
@@ -1107,10 +1108,10 @@ def test_tile_sql_order_dependent_aggregation(global_graph, latest_value_aggrega
     assert tile_sql == expected
 
 
-def test_graph_interpreter_sample(simple_graph):
+def test_graph_interpreter_sample(simple_graph, source_info):
     """Test graph sample"""
     graph, node = simple_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
 
     sql_code = interpreter.construct_sample_sql(node.name, num_rows=10, seed=1234)[0]
     expected = textwrap.dedent(
@@ -1135,10 +1136,10 @@ def test_graph_interpreter_sample(simple_graph):
     assert sql_code == expected
 
 
-def test_graph_interpreter_sample_date_range(simple_graph):
+def test_graph_interpreter_sample_date_range(simple_graph, source_info):
     """Test graph sample with date range"""
     graph, node = simple_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
 
     sql_code = interpreter.construct_sample_sql(
         node.name,
@@ -1173,10 +1174,10 @@ def test_graph_interpreter_sample_date_range(simple_graph):
     assert sql_code == expected
 
 
-def test_graph_interpreter_sample_date_range_no_timestamp_column(simple_graph):
+def test_graph_interpreter_sample_date_range_no_timestamp_column(simple_graph, source_info):
     """Test graph sample with date range"""
     graph, node = simple_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
 
     sql_code = interpreter.construct_sample_sql(
         node.name,
@@ -1209,7 +1210,7 @@ def test_graph_interpreter_sample_date_range_no_timestamp_column(simple_graph):
 
 
 def test_graph_interpreter__construct_tile_gen_sql__item_join_dimension_join_scd_and_groupby(
-    test_dir,
+    test_dir, source_info
 ):
     fixture_path = os.path.join(
         test_dir,
@@ -1220,7 +1221,7 @@ def test_graph_interpreter__construct_tile_gen_sql__item_join_dimension_join_scd
 
     query_graph = QueryGraph(**graph_dict)
     node = query_graph.get_node_by_name("alias_1")
-    interpreter = GraphInterpreter(query_graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(query_graph, source_info)
 
     # check that the tile sql is generated without error
     tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)

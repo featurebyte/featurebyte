@@ -13,7 +13,8 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS
+from featurebyte.query_graph.sql.source_info import SourceInfo
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -26,11 +27,13 @@ def patch_num_tables_per_join():
         yield
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
 def test_graph_interpreter_describe(simple_graph, source_type, update_fixtures):
     """Test graph sample"""
     graph, node = simple_graph
-    interpreter = GraphInterpreter(graph, source_type)
+    interpreter = GraphInterpreter(
+        graph, SourceInfo(source_type=source_type, database_name="my_db", schema_name="my_schema")
+    )
 
     sql_code = sql_to_string(
         interpreter.construct_describe_queries(node.name, num_rows=10, seed=1234).queries[0].expr,
@@ -51,10 +54,10 @@ def test_graph_interpreter_describe(simple_graph, source_type, update_fixtures):
     assert_equal_with_expected_fixture(sql_code, expected_filename, False)
 
 
-def test_describe_specify_stats_names(simple_graph, update_fixtures):
+def test_describe_specify_stats_names(simple_graph, update_fixtures, source_info):
     """Test describe sql with only required stats names"""
     graph, node = simple_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
 
     describe_query = interpreter.construct_describe_queries(
         node.name, num_rows=10, seed=1234, stats_names=["min", "max"]
@@ -73,12 +76,12 @@ def test_describe_specify_stats_names(simple_graph, update_fixtures):
     )
 
 
-def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures):
+def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures, source_info):
     """
     Test describe sql with only count based stats
     """
     graph, node = simple_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
 
     describe_query = interpreter.construct_describe_queries(
         node.name, num_rows=10, seed=1234, stats_names=["entropy"]
@@ -97,12 +100,12 @@ def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures):
     )
 
 
-def test_describe_specify_empty_stats(simple_graph, update_fixtures):
+def test_describe_specify_empty_stats(simple_graph, update_fixtures, source_info):
     """
     Test describe sql with empty stats edge case
     """
     graph, node = simple_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
 
     describe_query = interpreter.construct_describe_queries(
         node.name, num_rows=10, seed=1234, stats_names=[]
@@ -121,10 +124,10 @@ def test_describe_specify_empty_stats(simple_graph, update_fixtures):
     )
 
 
-def test_describe_in_batches(simple_graph, update_fixtures):
+def test_describe_in_batches(simple_graph, update_fixtures, source_info):
     """Test describe sql in batches"""
     graph, node = simple_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
 
     describe_queries = interpreter.construct_describe_queries(
         node.name,
@@ -159,10 +162,10 @@ def test_describe_in_batches(simple_graph, update_fixtures):
     )
 
 
-def test_describe_no_batches(simple_graph, update_fixtures):
+def test_describe_no_batches(simple_graph, update_fixtures, source_info):
     """Test describe sql and disable batching by setting batch size to 0"""
     graph, node = simple_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
 
     describe_queries = interpreter.construct_describe_queries(
         node.name,
@@ -187,10 +190,10 @@ def test_describe_no_batches(simple_graph, update_fixtures):
     )
 
 
-def test_describe_with_date_range_and_size(simple_graph, update_fixtures):
+def test_describe_with_date_range_and_size(simple_graph, update_fixtures, source_info):
     """Test describe sql with only required stats names"""
     graph, node = simple_graph
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
 
     describe_query = interpreter.construct_describe_queries(
         node.name,
@@ -215,9 +218,9 @@ def test_describe_with_date_range_and_size(simple_graph, update_fixtures):
     )
 
 
-def test_value_counts_sql_no_casting(graph, node_input, update_fixtures):
+def test_value_counts_sql_no_casting(graph, node_input, update_fixtures, source_info):
     """Test value counts sql"""
-    interpreter = GraphInterpreter(graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(graph, source_info)
     value_counts_queries = interpreter.construct_value_counts_sql(
         node_input.name,
         column_names=["a", "b"],
@@ -235,7 +238,7 @@ def test_value_counts_sql_no_casting(graph, node_input, update_fixtures):
         )
 
 
-def test_graph_interpreter_describe_event_join_scd_view(update_fixtures):
+def test_graph_interpreter_describe_event_join_scd_view(update_fixtures, source_info):
     """Test graph sample"""
     table_details = {"database_name": "FEATUREBYTE_TESTING", "schema_name": "GROCERY"}
     event_table_id, scd_table_id = ObjectId(), ObjectId()
@@ -402,7 +405,7 @@ def test_graph_interpreter_describe_event_join_scd_view(update_fixtures):
         input_nodes=[event_graph_node, scd_graph_node],
     )
 
-    interpreter = GraphInterpreter(query_graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(query_graph, source_info)
     describe_query = interpreter.construct_describe_queries(
         join_node.name, num_rows=10, seed=1234, total_num_rows=1000, sample_on_primary_table=True
     )
@@ -417,9 +420,10 @@ def test_describe__with_primary_table_sampling_on_graph_containing_inner_join(
     global_graph,
     item_table_join_event_table_node,
     update_fixtures,
+    source_info,
 ):
     """Test describe queries with primary table sampling on graph containing inner join or filter"""
-    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(global_graph, source_info)
     describe_query = interpreter.construct_describe_queries(
         item_table_join_event_table_node.name,
         num_rows=10,
@@ -440,6 +444,7 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
     event_table_input_node,
     join_node_params,
     update_fixtures,
+    source_info,
 ):
     """Test describe queries with primary table sampling on graph containing inner join or filter"""
     node_params = join_node_params.copy()
@@ -451,7 +456,7 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
         input_nodes=[event_table_input_node, item_table_input_node],
     )
 
-    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(global_graph, source_info)
 
     # sanity check on describe query without filter node & no inner join
     describe_query = interpreter.construct_describe_queries(
@@ -484,9 +489,7 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
     )
 
     # check describe query with query graph containing filter node & join operation
-    describe_query = GraphInterpreter(
-        global_graph, source_type=SourceType.SNOWFLAKE
-    ).construct_describe_queries(
+    describe_query = GraphInterpreter(global_graph, source_info).construct_describe_queries(
         filter_node.name,
         num_rows=10,
         seed=1234,

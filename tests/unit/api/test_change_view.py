@@ -13,7 +13,6 @@ import pytest
 
 from featurebyte.api.change_view import ChangeView
 from featurebyte.api.entity import Entity
-from featurebyte.enum import SourceType
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
@@ -380,12 +379,12 @@ def test_update_feature_job_setting(snowflake_change_view):
 
 
 @pytest.mark.usefixtures("patched_datetime")
-def test_aggregate_over_feature_tile_sql(feature_from_change_view):
+def test_aggregate_over_feature_tile_sql(feature_from_change_view, source_info):
     """
     Test tile sql is as expected for a feature created from ChangeView
     """
     pruned_graph, pruned_node = feature_from_change_view.extract_pruned_graph_and_node()
-    interpreter = GraphInterpreter(pruned_graph, source_type=SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(pruned_graph, source_info)
     tile_infos = interpreter.construct_tile_gen_sql(pruned_node, is_on_demand=False)
     assert len(tile_infos) == 1
     expected_aggregation_id = pruned_graph.get_node_by_name("groupby_1").parameters.aggregation_id

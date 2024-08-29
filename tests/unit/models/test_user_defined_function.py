@@ -80,7 +80,7 @@ def test_function_parameter(dtype, default_value, test_value, expected_error_mes
     ],
 )
 def test_user_defined_function_model(
-    function_parameters, catalog_id, expected_signature, expected_test_sql
+    function_parameters, catalog_id, expected_signature, expected_test_sql, source_info
 ):
     """Test UserDefinedFunctionModel"""
     feature_store_id = ObjectId()
@@ -99,7 +99,7 @@ def test_user_defined_function_model(
     assert user_defined_function.signature == expected_signature
     assert user_defined_function.feature_store_id == feature_store_id
 
-    test_sql = user_defined_function.generate_test_sql(source_type=SourceType.SNOWFLAKE)
+    test_sql = user_defined_function.generate_test_sql(source_info=source_info)
     assert test_sql == expected_test_sql
 
 
@@ -168,7 +168,7 @@ def test_get_default_test_value(dtype, expected_type):
         (DBVarType.TIMESTAMP_TZ, "SELECT SQL_FUNC(TO_TIMESTAMP('2021-01-01T00:00:00'))"),
     ],
 )
-def test_generate_test_sql(dtype, expected_sql):
+def test_generate_test_sql(dtype, expected_sql, source_info):
     """Test generate_test_sql method"""
     function_parameter = FunctionParameter(name="x", dtype=dtype)
     udf = UserDefinedFunctionModel(
@@ -178,7 +178,7 @@ def test_generate_test_sql(dtype, expected_sql):
         output_dtype=DBVarType.FLOAT,
         feature_store_id=ObjectId(),
     )
-    assert udf.generate_test_sql(source_type=SourceType.SNOWFLAKE) == expected_sql
+    assert udf.generate_test_sql(source_info=source_info) == expected_sql
 
 
 @pytest.mark.parametrize(

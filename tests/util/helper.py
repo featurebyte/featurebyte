@@ -36,7 +36,9 @@ from featurebyte.query_graph.model.entity_relationship_info import EntityRelatio
 from featurebyte.query_graph.node.generic import GroupByNodeParameters
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.transform.null_filling_value import NullFillingValueExtractor
 from featurebyte.query_graph.transform.offline_store_ingest import (
     OfflineStoreIngestQueryGraphTransformer,
@@ -1041,3 +1043,12 @@ def inject_request_side_effect(mock_request, client):
 
     mock_request.side_effect = _request_func
     return mock_request
+
+
+def get_sql_adapter_from_source_type(source_type):
+    """
+    Get SQL adapter from source type
+    """
+    return get_sql_adapter(
+        SourceInfo(source_type=source_type, database_name="my_db", schema_name="my_schema")
+    )

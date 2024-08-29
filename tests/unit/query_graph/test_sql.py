@@ -39,6 +39,7 @@ from featurebyte.query_graph.sql.ast.string import IsStringNode
 from featurebyte.query_graph.sql.ast.unary import CastNode, LagNode
 from featurebyte.query_graph.sql.builder import SQLNodeContext
 from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
 def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type=None):
@@ -49,6 +50,9 @@ def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type
         parameters = {}
     if sql_type is None:
         sql_type = SQLType.MATERIALIZE
+    source_info = SourceInfo(
+        source_type=SourceType.SNOWFLAKE, database_name="db", schema_name="public"
+    )
     mock_query_node = Mock(type=node_type)
     mock_query_node.parameters.model_dump.return_value = parameters
     mock_graph = Mock()
@@ -57,7 +61,7 @@ def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type
         query_node=mock_query_node,
         input_sql_nodes=input_sql_nodes,
         sql_type=sql_type,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         to_filter_scd_by_current_flag=False,
         event_table_timestamp_filter=None,
         aggregation_specs=None,

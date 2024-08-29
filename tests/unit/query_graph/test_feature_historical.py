@@ -27,8 +27,8 @@ from tests.util.helper import assert_equal_with_expected_fixture
 def get_historical_features_sql(**kwargs):
     """Get historical features SQL"""
     expr, _ = get_historical_features_expr(**kwargs)
-    source_type = kwargs["source_type"]
-    return sql_to_string(expr, source_type=source_type)
+    source_info = kwargs["source_info"]
+    return sql_to_string(expr, source_type=source_info.source_type)
 
 
 @pytest.fixture(name="output_table_details")
@@ -48,7 +48,7 @@ def fixed_object_id_fixture():
         yield mocked
 
 
-def test_get_historical_feature_sql(float_feature, update_fixtures):
+def test_get_historical_feature_sql(float_feature, source_info, update_fixtures):
     """Test SQL code generated for historical features is expected"""
     request_table_columns = ["POINT_IN_TIME", "cust_id", "A", "B", "C"]
     sql = get_historical_features_sql(
@@ -56,14 +56,16 @@ def test_get_historical_feature_sql(float_feature, update_fixtures):
         graph=float_feature.graph,
         nodes=[float_feature.node],
         request_table_columns=request_table_columns,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
     assert_equal_with_expected_fixture(
         sql, "tests/fixtures/expected_historical_requests.sql", update_fixture=update_fixtures
     )
 
 
-def test_get_historical_feature_sql__serving_names_mapping(float_feature, update_fixtures):
+def test_get_historical_feature_sql__serving_names_mapping(
+    float_feature, source_info, update_fixtures
+):
     """Test SQL code generated for historical features with serving names mapping"""
     request_table_columns = ["POINT_IN_TIME", "NEW_CUST_ID", "A", "B", "C"]
     serving_names_mapping = {"cust_id": "NEW_CUST_ID"}
@@ -73,7 +75,7 @@ def test_get_historical_feature_sql__serving_names_mapping(float_feature, update
         nodes=[float_feature.node],
         request_table_columns=request_table_columns,
         serving_names_mapping=serving_names_mapping,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
     assert_equal_with_expected_fixture(
         sql,
@@ -104,7 +106,7 @@ def test_validate_historical_requests_point_in_time():
 
 
 def test_get_historical_feature_sql__with_missing_value_imputation(
-    query_graph_with_cleaning_ops_and_groupby, update_fixtures
+    query_graph_with_cleaning_ops_and_groupby, source_info, update_fixtures
 ):
     """Test SQL code generated for historical features constructed with missing value imputation"""
     request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
@@ -114,7 +116,7 @@ def test_get_historical_feature_sql__with_missing_value_imputation(
         graph=graph,
         nodes=[node],
         request_table_columns=request_table_columns,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
     assert_equal_with_expected_fixture(
         sql,
@@ -124,7 +126,7 @@ def test_get_historical_feature_sql__with_missing_value_imputation(
 
 
 def test_get_historical_feature_query_set__single_batch(
-    float_feature, output_table_details, fixed_object_id, update_fixtures
+    float_feature, output_table_details, fixed_object_id, source_info, update_fixtures
 ):
     """
     Test historical features are calculated in single batch when there are not many nodes
@@ -135,7 +137,7 @@ def test_get_historical_feature_query_set__single_batch(
         graph=float_feature.graph,
         nodes=[float_feature.node],
         request_table_columns=request_table_columns,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         output_table_details=output_table_details,
         output_feature_names=[float_feature.node.name],
         progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
@@ -154,6 +156,7 @@ def test_get_historical_feature_query_set__multiple_batches(
     feature_nodes_all_types,
     output_table_details,
     fixed_object_id,
+    source_info,
     update_fixtures,
 ):
     """
@@ -166,7 +169,7 @@ def test_get_historical_feature_query_set__multiple_batches(
             graph=global_graph,
             nodes=feature_nodes_all_types,
             request_table_columns=request_table_columns,
-            source_type=SourceType.SNOWFLAKE,
+            source_info=source_info,
             output_table_details=output_table_details,
             output_feature_names=get_feature_names(global_graph, feature_nodes_all_types),
         )
@@ -184,7 +187,7 @@ def test_get_historical_feature_query_set__multiple_batches(
 
 
 def test_get_historical_feature_query_set__output_include_row_index(
-    float_feature, output_table_details, fixed_object_id, update_fixtures
+    float_feature, output_table_details, fixed_object_id, update_fixtures, source_info
 ):
     """
     Test historical features table include row index column if specified
@@ -195,7 +198,7 @@ def test_get_historical_feature_query_set__output_include_row_index(
         graph=float_feature.graph,
         nodes=[float_feature.node],
         request_table_columns=request_table_columns,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         output_table_details=output_table_details,
         output_feature_names=[float_feature.node.name],
         output_include_row_index=True,
