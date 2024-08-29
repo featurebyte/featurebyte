@@ -691,13 +691,13 @@ class PreviewMixin(BaseGraphInterpreter):
         )
         stats_expressions["mean"] = (
             lambda col_expr, _: expressions.Avg(
-                this=expressions.Cast(this=col_expr, to="DOUBLE"),
+                this=expressions.Cast(this=col_expr, to=expressions.DataType.build("DOUBLE")),
             ),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["std"] = (
             lambda col_expr, _: expressions.Stddev(
-                this=expressions.Cast(this=col_expr, to="DOUBLE"),
+                this=expressions.Cast(this=col_expr, to=expressions.DataType.build("DOUBLE")),
             ),
             {DBVarType.FLOAT, DBVarType.INT},
         )

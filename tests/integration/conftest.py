@@ -102,7 +102,6 @@ SKIPPED_TESTS = {
         "tests/integration/api/test_scd_view_operations.py",
         "tests/integration/api/test_serving_parent_features.py",
         "tests/integration/api/test_target_correctness.py",
-        "tests/integration/api/test_view_describe.py",
         "tests/integration/api/test_view_sample.py",
         "tests/integration/feature_store_integration/test_feature_materialize.py",
         "tests/integration/migration/test_data_warehouse_migration.py",
