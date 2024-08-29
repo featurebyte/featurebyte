@@ -1100,12 +1100,17 @@ class PreviewMixin(BaseGraphInterpreter):
 
         # Join stats and counts tables in batches of NUM_TABLES_PER_JOIN tables, as joined_tables_0,
         # joined_tables_1, etc.
+        dummy_join_condition = expressions.EQ(
+            this=make_literal_value(1), expression=make_literal_value(1)
+        )
         joined_tables = []
         for join_index, i in enumerate(range(0, len(tables), NUM_TABLES_PER_JOIN)):
             cur_tables = tables[i : i + NUM_TABLES_PER_JOIN]
             sql_tree = expressions.select(expressions.Star()).from_(cur_tables[0])
             for table_name in cur_tables[1:]:
-                sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
+                sql_tree = sql_tree.join(
+                    expression=table_name, join_type="LEFT", on=dummy_join_condition
+                )
             table_alias = f"joined_tables_{join_index}"
             joined_tables.append(table_alias)
             cte_statements.append((table_alias, sql_tree))
@@ -1115,7 +1120,11 @@ class PreviewMixin(BaseGraphInterpreter):
         assert len(joined_tables) > 0
         sql_tree = sql_tree.from_(joined_tables[0])
         for table_name in joined_tables[1:]:
-            sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
+            sql_tree = sql_tree.join(
+                expression=table_name,
+                join_type="LEFT",
+                on=dummy_join_condition,
+            )
 
         return sql_tree
 
