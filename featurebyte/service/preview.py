@@ -32,7 +32,7 @@ from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSe
 from featurebyte.session.session_helper import run_coroutines
 from featurebyte.warning import QueryNoLimitWarning
 
-DEFAULT_COLUMNS_BATCH_SIZE = 50
+DEFAULT_COLUMNS_BATCH_SIZE = 15
 
 
 logger = get_logger(__name__)
