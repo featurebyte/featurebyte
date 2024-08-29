@@ -838,9 +838,9 @@ class PreviewMixin(BaseGraphInterpreter):
             # compute entropy
             selections.append(
                 expressions.alias_(
-                    expression=expressions.Anonymous(
-                        this="F_COUNT_DICT_ENTROPY",
-                        expressions=[
+                    expression=self.adapter.call_udf(
+                        "F_COUNT_DICT_ENTROPY",
+                        [
                             expressions.Column(
                                 this=quoted_identifier("COUNT_DICT"), table="count_dict"
                             )
@@ -854,9 +854,9 @@ class PreviewMixin(BaseGraphInterpreter):
             # compute most frequent value
             selections.append(
                 expressions.alias_(
-                    expression=expressions.Anonymous(
-                        this="F_COUNT_DICT_MOST_FREQUENT",
-                        expressions=[
+                    expression=self.adapter.call_udf(
+                        "F_COUNT_DICT_MOST_FREQUENT",
+                        [
                             expressions.Column(
                                 this=quoted_identifier("COUNT_DICT"), table="count_dict"
                             )
@@ -869,9 +869,9 @@ class PreviewMixin(BaseGraphInterpreter):
             # compute most frequent count
             selections.append(
                 expressions.alias_(
-                    expression=expressions.Anonymous(
-                        this="F_COUNT_DICT_MOST_FREQUENT_VALUE",
-                        expressions=[
+                    expression=self.adapter.call_udf(
+                        "F_COUNT_DICT_MOST_FREQUENT_VALUE",
+                        [
                             expressions.Column(
                                 this=quoted_identifier("COUNT_DICT"), table="count_dict"
                             )
