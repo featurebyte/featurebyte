@@ -111,7 +111,6 @@ SKIPPED_TESTS = {
         "tests/integration/tile/test_generate_tile.py",
         "tests/integration/tile/test_tile_scheduler.py",
         "tests/integration/api/test_historical_features.py",
-        "tests/integration/udf/test_timezone_offset_to_second.py",
     ],
 }
 

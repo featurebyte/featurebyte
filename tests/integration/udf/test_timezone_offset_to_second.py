@@ -4,7 +4,9 @@ This module contains integration tests for F_TIMEZONE_OFFSET_TO_SECOND
 
 import pytest
 
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.session.base import BaseSession
+from tests.integration.udf.util import execute_query_with_udf
 
 
 @pytest.mark.parametrize(
@@ -19,10 +21,9 @@ async def test_timezone_offset_to_second__valid(session, timezone_offset, expect
     """
     Test conversion of timezone offset to seconds
     """
-    query = f"SELECT F_TIMEZONE_OFFSET_TO_SECOND('{timezone_offset}') AS OUT"
-    assert isinstance(session, BaseSession)
-    result = await session.execute_query(query)
-    res = result["OUT"].iloc[0]
+    res = await execute_query_with_udf(
+        session, "F_TIMEZONE_OFFSET_TO_SECOND", [make_literal_value(timezone_offset)]
+    )
     assert res == expected
 
 
@@ -38,7 +39,8 @@ async def test_timezone_offset_to_second__invalid(session, timezone_offset):
     """
     Test conversion of timezone offset to seconds
     """
-    query = f"SELECT F_TIMEZONE_OFFSET_TO_SECOND('{timezone_offset}') AS OUT"
     assert isinstance(session, BaseSession)
     with pytest.raises(session._no_schema_error):
-        await session.execute_query(query)
+        await execute_query_with_udf(
+            session, "F_TIMEZONE_OFFSET_TO_SECOND", [make_literal_value(timezone_offset)]
+        )
