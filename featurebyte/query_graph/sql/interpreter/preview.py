@@ -607,7 +607,7 @@ class PreviewMixin(BaseGraphInterpreter):
     ) -> OrderedDictT[
         str,
         Tuple[
-            Optional[Callable[[expressions.Expression, int], expressions.Expression]],
+            Optional[Callable[[expressions.Expression, int, DBVarType], expressions.Expression]],
             Optional[Set[DBVarType]],
         ],
     ]:
@@ -617,7 +617,7 @@ class PreviewMixin(BaseGraphInterpreter):
         - the key is the name of the statistics to be computed
         - value is a tuple of:
             - optional function to generate SQL expression with the following signature:
-                f(col_expr: expressions.Expression, column_idx: int) -> expressions.Expression
+                f(col_expr: expressions.Expression, column_idx: int, column_dtype: DBVarType) -> expressions.Expression
             - optional list of applicable DBVarType that the statistics supports. If None all types are supported.
 
         Returns
@@ -632,13 +632,15 @@ class PreviewMixin(BaseGraphInterpreter):
         """
         stats_expressions: OrderedDictT[str, Tuple[Any, Optional[Set[DBVarType]]]] = OrderedDict()
         stats_expressions["unique"] = (
-            lambda col_expr, _: expressions.Count(
-                this=expressions.Distinct(expressions=[col_expr])
+            lambda col_expr, _, col_dtype: expressions.Count(
+                this=expressions.Distinct(
+                    expressions=[self.adapter.prepare_before_count_distinct(col_expr, col_dtype)]
+                )
             ),
             None,
         )
         stats_expressions["%missing"] = (
-            lambda col_expr, _: expressions.Mul(
+            lambda col_expr, *_: expressions.Mul(
                 this=expressions.Paren(
                     this=expressions.Sub(
                         this=make_literal_value(1.0),
@@ -659,7 +661,7 @@ class PreviewMixin(BaseGraphInterpreter):
             None,
         )
         stats_expressions["%empty"] = (
-            lambda col_expr, column_idx: self.adapter.count_if(
+            lambda col_expr, column_idx, _: self.adapter.count_if(
                 expressions.EQ(
                     this=col_expr,
                     expression=make_literal_value(""),
@@ -687,19 +689,19 @@ class PreviewMixin(BaseGraphInterpreter):
             },
         )
         stats_expressions["mean"] = (
-            lambda col_expr, _: expressions.Avg(
+            lambda col_expr, *_: expressions.Avg(
                 this=expressions.Cast(this=col_expr, to=expressions.DataType.build("DOUBLE")),
             ),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["std"] = (
-            lambda col_expr, _: expressions.Stddev(
+            lambda col_expr, *_: expressions.Stddev(
                 this=expressions.Cast(this=col_expr, to=expressions.DataType.build("DOUBLE")),
             ),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["min"] = (
-            lambda col_expr, _: expressions.Min(this=col_expr),
+            lambda col_expr, *_: expressions.Min(this=col_expr),
             {
                 DBVarType.FLOAT,
                 DBVarType.INT,
@@ -711,19 +713,19 @@ class PreviewMixin(BaseGraphInterpreter):
             },
         )
         stats_expressions["25%"] = (
-            lambda col_expr, _: self._percentile_expr(col_expr, 0.25),
+            lambda col_expr, *_: self._percentile_expr(col_expr, 0.25),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["50%"] = (
-            lambda col_expr, _: self._percentile_expr(col_expr, 0.5),
+            lambda col_expr, *_: self._percentile_expr(col_expr, 0.5),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["75%"] = (
-            lambda col_expr, _: self._percentile_expr(col_expr, 0.75),
+            lambda col_expr, *_: self._percentile_expr(col_expr, 0.75),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["max"] = (
-            lambda col_expr, _: expressions.Max(this=col_expr),
+            lambda col_expr, *_: expressions.Max(this=col_expr),
             {
                 DBVarType.FLOAT,
                 DBVarType.INT,
@@ -735,11 +737,11 @@ class PreviewMixin(BaseGraphInterpreter):
             },
         )
         stats_expressions["min TZ offset"] = (
-            lambda col_expr, _: expressions.Min(this=self._tz_offset_expr(col_expr)),
+            lambda col_expr, *_: expressions.Min(this=self._tz_offset_expr(col_expr)),
             {DBVarType.TIMESTAMP_TZ},
         )
         stats_expressions["max TZ offset"] = (
-            lambda col_expr, _: expressions.Max(this=self._tz_offset_expr(col_expr)),
+            lambda col_expr, *_: expressions.Max(this=self._tz_offset_expr(col_expr)),
             {DBVarType.TIMESTAMP_TZ},
         )
         return stats_expressions
@@ -1025,7 +1027,7 @@ class PreviewMixin(BaseGraphInterpreter):
                         )
                         stats_selections.append(
                             expressions.alias_(
-                                stats_func(stats_func_col_expr, column_idx),
+                                stats_func(stats_func_col_expr, column_idx, column.dtype),
                                 f"{stats_name}__{column_idx}",
                                 quoted=True,
                             ),

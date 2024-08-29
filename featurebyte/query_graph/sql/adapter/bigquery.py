@@ -68,3 +68,9 @@ class BigQueryAdapter(SnowflakeAdapter):
             function_name=udf_name,
             args=args,
         )
+
+    @classmethod
+    def prepare_before_count_distinct(cls, expr: Expression, dtype: DBVarType) -> Expression:
+        if dtype in DBVarType.json_conversion_types():
+            return Anonymous(this="TO_JSON_STRING", expressions=[expr])
+        return expr

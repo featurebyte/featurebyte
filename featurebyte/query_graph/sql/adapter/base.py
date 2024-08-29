@@ -979,3 +979,23 @@ class BaseAdapter(ABC):
         Expression
         """
         return expressions.Anonymous(this=udf_name, expressions=args)
+
+    @classmethod
+    def prepare_before_count_distinct(cls, expr: Expression, dtype: DBVarType) -> Expression:
+        """
+        Prepare the expression before applying COUNT_DISTINCT because some databases do not support
+        COUNT_DISTINCT directly on certain data types
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression to prepare
+        dtype: DBVarType
+            Data type
+
+        Returns
+        -------
+        Expression
+        """
+        _ = dtype
+        return expr
