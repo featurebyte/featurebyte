@@ -39,6 +39,8 @@ async def test_cosine_similarity_udf(session, to_object, counts1, counts2, expec
         actual = await execute_query_with_udf(
             session, "F_COUNT_DICT_COSINE_SIMILARITY", [a_expr, b_expr]
         )
+        if actual is None:
+            actual = np.nan
         np.testing.assert_allclose(actual, expected, 1e-5)
 
     await _check(counts1, counts2)
