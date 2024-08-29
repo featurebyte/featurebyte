@@ -10,6 +10,7 @@ from uuid import UUID
 
 from bson import ObjectId
 from celery import Celery
+from celery import Task as CeleryTask
 from redis import Redis
 
 from featurebyte.exception import TaskNotFound, TaskNotRevocableError
@@ -66,7 +67,12 @@ class TaskManager:
             redis=self.redis,
         )
 
-    async def submit(self, payload: BaseTaskPayload, mark_as_scheduled_task: bool = False) -> str:
+    async def submit(
+        self,
+        payload: BaseTaskPayload,
+        mark_as_scheduled_task: bool = False,
+        parent_task: Optional[CeleryTask] = None,
+    ) -> str:
         """
         Submit task to celery
 
@@ -76,6 +82,8 @@ class TaskManager:
             Payload to submit
         mark_as_scheduled_task: bool
             Whether to make the submitted task as scheduled task
+        parent_task: Optional[CeleryTask]
+            Parent task ID
 
         Returns
         -------
@@ -87,8 +95,18 @@ class TaskManager:
         kwargs["task_output_path"] = payload.task_output_path
         if mark_as_scheduled_task:
             kwargs["is_scheduled_task"] = True
-        task = self.celery.send_task(payload.task, kwargs=kwargs)
-        return str(task.id)
+
+        parent_id = None
+        if parent_task:
+            parent_id = parent_task.request.id
+            assert parent_id is not None
+
+        task = self.celery.send_task(payload.task, kwargs=kwargs, parent_id=parent_id)
+        task_id = str(task.id)
+        if parent_task:
+            parent_task.add_trail(task)
+            assert len(parent_task.request.children) > 0, parent_task.request.children
+        return task_id
 
     async def get_task(self, task_id: str) -> Task | None:
         """

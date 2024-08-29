@@ -7,9 +7,11 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Any, Generic, Optional, Type, TypeVar
 
+import celery
 from redis import Redis
 
 from featurebyte.logging import get_logger
+from featurebyte.schema.task import TaskId
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 
 logger = get_logger(__name__)
@@ -24,6 +26,31 @@ class BaseTask(Generic[TaskT]):
     """
 
     payload_class: Type[TaskT]
+
+    def __init__(self):
+        self._celery_task: Optional[celery.Task] = None
+
+    @property
+    def celery_task(self) -> Optional[celery.Task]:
+        """
+        Get celery task
+
+        Returns
+        -------
+        Optional[celery.Task]
+        """
+        return self._celery_task
+
+    def set_celery_task(self, task: celery.Task) -> None:
+        """
+        Set task ID
+
+        Parameters
+        ----------
+        task: celery.Task
+            Celery task
+        """
+        self._celery_task = task
 
     def get_payload_obj(self, payload_data: dict[str, Any]) -> TaskT:
         """

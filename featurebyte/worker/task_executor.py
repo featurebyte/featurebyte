@@ -125,6 +125,31 @@ class TaskExecutor:
         self.setup_worker_config()
         self.payload_dict = payload
 
+        # track celery task
+        self._celery_task = None
+
+    @property
+    def celery_task(self) -> Optional[Task]:
+        """
+        Get celery task
+
+        Returns
+        -------
+        Task
+        """
+        return self._celery_task
+
+    def set_celery_task(self, task: Task) -> None:
+        """
+        Set celery task
+
+        Parameters
+        ----------
+        task: Task
+            Celery task
+        """
+        self._celery_task = task
+
     async def _update_task_start_time_and_description(self, payload: Any) -> None:
         """
         Update task start time and description
@@ -182,6 +207,9 @@ class TaskExecutor:
         # Send initial progress to indicate task is started
         await self.task_progress_updater.update_progress(percent=0)
         payload_obj = self.task.get_payload_obj(self.payload_dict)
+
+        # set celery task at the start of execution
+        self.task.set_celery_task(self.celery_task)
 
         try:
             # Execute the task
@@ -283,6 +311,8 @@ class BaseCeleryTask(Task):
         executor = self.executor_class(
             payload=payload, task_id=request_id, app_container=app_container
         )
+        executor.set_celery_task(self)
+
         try:
             return_val = await executor.execute()
             return return_val
