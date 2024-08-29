@@ -7,6 +7,7 @@ AS r"""
     if (!obj) {{
       return 0;
     }}
+    // Need to use isNaN instead of Number.isNaN because the value is passed as a string.
     if (isNaN(obj)) {{
       return 0;
     }}
