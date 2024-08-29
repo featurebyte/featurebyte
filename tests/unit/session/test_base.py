@@ -22,6 +22,7 @@ from featurebyte.session.base import (
     BaseSchemaInitializer,
     BaseSession,
     MetadataSchemaInitializer,
+    retry,
     to_thread,
 )
 
@@ -288,3 +289,36 @@ async def test_to_thread__exception():
 
     # expect exception to be raised inside thread
     assert "This is an exception from the thread!" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_retry():
+    """Check retry decorator retries the function"""
+
+    attempts = 0
+    value = 0
+
+    @retry(retry_num=2, sleep_interval=1, exception_cls=ValueError)
+    async def fail_function(value_to_set: int):
+        nonlocal attempts
+        attempts += 1
+        raise ValueError()
+
+    @retry(retry_num=2, sleep_interval=1, exception_cls=ValueError)
+    async def success_function(value_to_set: int):
+        nonlocal attempts
+        nonlocal value
+        attempts += 1
+        value = value_to_set
+
+    # expect multiple failed attempts
+    with pytest.raises(ValueError) as exc:
+        await fail_function(1)
+        assert attempts == 2
+        assert value == 0
+
+    # expect only one successful attempt
+    attempts = 0
+    await success_function(3)
+    assert attempts == 1
+    assert value == 3
