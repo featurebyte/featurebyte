@@ -285,7 +285,7 @@ def test_describe_empty_view(event_table):
     """
     Test describe for an empty view
     """
-    event_view = event_table.get_view()
+    event_view = event_table.get_view()[["ÀMOUNT"]]
     view = event_view[event_view["ÀMOUNT"] > 10000000]
     assert view.preview().shape[0] == 0
 

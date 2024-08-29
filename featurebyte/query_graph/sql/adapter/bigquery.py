@@ -26,10 +26,16 @@ class BigQueryAdapter(SnowflakeAdapter):
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
         key_arr = Anonymous(this="ARRAY_AGG", expressions=[key_column])
         value_arr = Anonymous(this="ARRAY_AGG", expressions=[value_column])
-        return Anonymous(
+        aggregated_json = Anonymous(
             this="JSON_STRIP_NULLS",
             expressions=[Anonymous(this="JSON_OBJECT", expressions=[key_arr, value_arr])],
         )
+        # JSON_OBJECT errors out if the array is null, so we need to handle that case
+        empty_json_if_null_array = expressions.If(
+            this=expressions.Is(this=value_arr, expression=expressions.Null()),
+            true=Anonymous(this="JSON_OBJECT", expressions=[]),
+        )
+        return expressions.Case(ifs=[empty_json_if_null_array], default=aggregated_json)
 
     @classmethod
     def get_percentile_expr(cls, input_expr: Expression, quantile: float) -> Expression:
