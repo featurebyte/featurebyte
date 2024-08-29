@@ -14,7 +14,7 @@ import pandas as pd
 from bson import ObjectId
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import AggFunc, DBVarType, SourceType, StrEnum
+from featurebyte.enum import AggFunc, DBVarType, StrEnum
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -32,6 +32,7 @@ from featurebyte.query_graph.sql.common import (
     apply_serving_names_mapping,
 )
 from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tiling import InputColumn, get_aggregator
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
@@ -334,7 +335,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         cls,
         graph: QueryGraphModel,
         node: Node,
-        source_type: SourceType,
+        source_info: SourceInfo,
         to_filter_scd_by_current_flag: bool,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter],
     ) -> AggregationSource:
@@ -347,8 +348,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Query graph
         node: Node
             Query graph node
-        source_type: SourceType
-            Source type information
+        source_info: SourceInfo
+            Source information
         to_filter_scd_by_current_flag: bool
             Whether to filter SCD by current flag
         event_table_timestamp_filter: EventTableTimestampFilter
@@ -367,7 +368,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         sql_node = SQLOperationGraph(
             graph,
             sql_type=SQLType.AGGREGATION,
-            source_type=source_type,
+            source_info=source_info,
             to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
             event_table_timestamp_filter=event_table_timestamp_filter,
         ).build(node)
@@ -523,7 +524,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         graph: QueryGraphModel,
         agg_result_name_include_serving_names: bool = True,
         aggregation_source: Optional[AggregationSource] = None,
-        source_type: Optional[SourceType] = None,
+        source_info: Optional[SourceInfo] = None,
         serving_names_mapping: Optional[dict[str, str]] = None,
         is_online_serving: Optional[bool] = None,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
@@ -540,7 +541,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Whether to include serving names in the aggregation result names
         aggregation_source: Optional[AggregationSource]
             Source of the aggregation
-        source_type: Optional[SourceType]
+        source_info: Optional[SourceInfo]
             Source type information. Mandatory if aggregation_source is not provided
         serving_names_mapping: Optional[dict[str, str]]
             Serving names mapping
@@ -555,7 +556,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         """
         if aggregation_source is None:
             assert graph is not None
-            assert source_type is not None
+            assert source_info is not None
             to_filter_scd_by_current_flag = (
                 is_online_serving is True
                 and cls.should_filter_scd_by_current_flag(graph=graph, node=node)
@@ -563,7 +564,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             aggregation_source = cls.get_aggregation_source(
                 graph=graph,
                 node=node,
-                source_type=source_type,
+                source_info=source_info,
                 to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
                 event_table_timestamp_filter=event_table_timestamp_filter,
             )

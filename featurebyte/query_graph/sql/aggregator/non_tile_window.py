@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, Tuple, cast
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
-from featurebyte.enum import InternalName, SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
@@ -27,6 +27,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import CteStatement, CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.feature_job import get_previous_job_epoch_expr_from_settings
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specifications.non_tile_window_aggregate import (
     NonTileWindowAggregateSpec,
 )
@@ -53,9 +54,9 @@ class NonTileRequestTablePlan:
     Responsible for processing request table to have distinct serving names and window ranges
     """
 
-    def __init__(self, source_type: SourceType) -> None:
+    def __init__(self, source_info: SourceInfo) -> None:
         self.processed_request_tables: Dict[RequestTableKeyType, ProcessedRequestTable] = {}
-        self.adapter = get_sql_adapter(source_type)
+        self.adapter = get_sql_adapter(source_info)
 
     def add_aggregation_spec(self, aggregation_spec: NonTileWindowAggregateSpec) -> None:
         """
@@ -202,7 +203,7 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.request_table_plan = NonTileRequestTablePlan(self.source_type)
+        self.request_table_plan = NonTileRequestTablePlan(self.source_info)
         self.aggregation_source_views: Dict[str, Select] = {}
 
     def additional_update(self, aggregation_spec: NonTileWindowAggregateSpec) -> None:

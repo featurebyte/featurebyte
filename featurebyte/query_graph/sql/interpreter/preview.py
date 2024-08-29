@@ -308,7 +308,7 @@ class PreviewMixin(BaseGraphInterpreter):
         sql_graph = SQLOperationGraph(
             query_graph=query_graph,
             sql_type=SQLType.MATERIALIZE,
-            source_type=self.source_type,
+            source_info=self.source_info,
         )
         sql_node = sql_graph.build(flat_node)
 
@@ -401,7 +401,7 @@ class PreviewMixin(BaseGraphInterpreter):
             node_name=node_name, num_rows=0, clip_timestamp_columns=clip_timestamp_columns
         )
         return (
-            sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type),
+            sql_to_string(sql_tree.limit(num_rows), source_type=self.source_info.source_type),
             type_conversions,
         )
 
@@ -450,7 +450,7 @@ class PreviewMixin(BaseGraphInterpreter):
             total_num_rows=total_num_rows,
             clip_timestamp_columns=True,
         )
-        return sql_to_string(sql_tree, source_type=self.source_type), type_conversions
+        return sql_to_string(sql_tree, source_type=self.source_info.source_type), type_conversions
 
     @classmethod
     def _clip_timestamp_columns(
@@ -532,7 +532,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 )
             )
         )
-        return sql_to_string(output_expr.limit(num_rows), source_type=self.source_type)
+        return sql_to_string(output_expr.limit(num_rows), source_type=self.source_info.source_type)
 
     @staticmethod
     def _empty_value_expr(column_name: str) -> expressions.Expression:
@@ -1325,4 +1325,4 @@ class PreviewMixin(BaseGraphInterpreter):
                 skip_conversion=True,
             )[0].subquery()
         )
-        return sql_to_string(expr, source_type=self.source_type)
+        return sql_to_string(expr, source_type=self.adapter.source_type)

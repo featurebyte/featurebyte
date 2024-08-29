@@ -9,7 +9,7 @@ from typing import Any, List, Optional, cast
 
 import pandas as pd
 
-from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.enum import SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -18,6 +18,7 @@ from featurebyte.query_graph.sql.common import CteStatement, sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tile_compute import OnDemandTileComputePlan
 
 logger = get_logger(__name__)
@@ -27,7 +28,7 @@ def get_feature_or_target_preview_sql(
     request_table_name: str,
     graph: QueryGraphModel,
     nodes: list[Node],
-    source_type: SourceType,
+    source_info: SourceInfo,
     point_in_time_and_serving_name_list: Optional[list[dict[str, Any]]] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
 ) -> str:
@@ -42,8 +43,8 @@ def get_feature_or_target_preview_sql(
         Query graph model
     nodes : list[Node]
         List of query graph node
-    source_type : SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
     point_in_time_and_serving_name_list : Optional[list[dict[str, Any]]]
         List of Dictionary consisting the point in time and entity ids based on which the feature
         preview will be computed
@@ -56,7 +57,7 @@ def get_feature_or_target_preview_sql(
     """
     planner = FeatureExecutionPlanner(
         graph,
-        source_type=source_type,
+        source_info=source_info,
         is_online_serving=False,
     )
     execution_plan = planner.generate_plan(nodes)
@@ -94,7 +95,7 @@ def get_feature_or_target_preview_sql(
         tic = time.time()
         tile_compute_plan = OnDemandTileComputePlan(
             request_table_name=request_table_name,
-            source_type=source_type,
+            source_info=source_info,
         )
         for node in nodes:
             tile_compute_plan.process_node(graph, node)
@@ -112,7 +113,7 @@ def get_feature_or_target_preview_sql(
             prior_cte_statements=cte_statements,
             exclude_columns=exclude_columns,
         ),
-        source_type=source_type,
+        source_type=source_info.source_type,
     )
     elapsed = time.time() - tic
     logger.debug(f"Generating full SQL took {elapsed:.2}s")

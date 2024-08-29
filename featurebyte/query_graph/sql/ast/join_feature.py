@@ -10,7 +10,7 @@ from typing import Optional, Tuple, cast
 
 from sqlglot.expressions import Expression, Select, select
 
-from featurebyte.enum import SourceType, SpecialColumnName
+from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -22,6 +22,7 @@ from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
     quoted_identifier,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import AggregationSpec
 
 
@@ -50,7 +51,7 @@ class JoinFeature(TableNode):
             feature_query_node=feature_query_node,
             view_node=view_node,
             view_entity_column=context.parameters["view_entity_column"],
-            source_type=context.source_type,
+            source_info=context.source_info,
             event_table_timestamp_filter=context.event_table_timestamp_filter,
         )
 
@@ -58,7 +59,7 @@ class JoinFeature(TableNode):
         feature_expr = cls._get_feature_expr(
             graph=context.graph,
             feature_query_node=feature_query_node,
-            source_type=context.source_type,
+            source_info=context.source_info,
             aggregation_specs=aggregation_specs,
         )
 
@@ -80,7 +81,7 @@ class JoinFeature(TableNode):
         feature_query_node: Node,
         view_node: TableNode,
         view_entity_column: str,
-        source_type: SourceType,
+        source_info: SourceInfo,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
     ) -> Tuple[Select, dict[str, list[AggregationSpec]]]:
         """
@@ -100,8 +101,8 @@ class JoinFeature(TableNode):
         view_entity_column: str
             The column in the EventView to be used as the entity column when joining the
             intermediate aggregation result
-        source_type: SourceType
-            Source type information
+        source_info: SourceInfo
+            Source info information
         event_table_timestamp_filter: Optional[EventTableTimestampFilter]
             Event table timestamp filter to apply if applicable
 
@@ -118,7 +119,7 @@ class JoinFeature(TableNode):
         )
 
         item_aggregator = ItemAggregator(
-            source_type=source_type, to_inner_join_with_request_table=False
+            source_info=source_info, to_inner_join_with_request_table=False
         )
         item_groupby_nodes = list(graph.iterate_nodes(feature_query_node, NodeType.ITEM_GROUPBY))
 
@@ -134,7 +135,7 @@ class JoinFeature(TableNode):
             agg_specs = ItemAggregationSpec.from_query_graph_node(
                 node=item_groupby_node,
                 graph=graph,
-                source_type=source_type,
+                source_info=source_info,
                 serving_names_mapping=serving_names_mapping,
                 event_table_timestamp_filter=event_table_timestamp_filter,
                 agg_result_name_include_serving_names=True,
@@ -159,7 +160,7 @@ class JoinFeature(TableNode):
     def _get_feature_expr(
         graph: QueryGraphModel,
         feature_query_node: Node,
-        source_type: SourceType,
+        source_info: SourceInfo,
         aggregation_specs: dict[str, list[AggregationSpec]],
     ) -> Expression:
         """
@@ -171,8 +172,8 @@ class JoinFeature(TableNode):
             Query graph
         feature_query_node: Node
             Query node for the item aggregation feature
-        source_type: SourceType
-            Source type information
+        source_info: SourceInfo
+            Source information
         aggregation_specs: dict[str, list[AggregationSpec]]
             Aggregation specs to use when constructing SQLOperationGraph
 
@@ -188,7 +189,7 @@ class JoinFeature(TableNode):
         sql_graph = SQLOperationGraph(
             graph,
             SQLType.POST_AGGREGATION,
-            source_type=source_type,
+            source_info=source_info,
             aggregation_specs=aggregation_specs,
         )
         sql_node = sql_graph.build(feature_query_node)

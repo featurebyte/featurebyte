@@ -13,7 +13,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType, InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -22,6 +22,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
 
@@ -42,7 +43,10 @@ class BaseAdapter(ABC):
     """
 
     TABLESAMPLE_PERCENT_KEY = "percent"
-    source_type: SourceType
+
+    def __init__(self, source_info: SourceInfo):
+        self.source_info = source_info
+        self.source_type = source_info.source_type
 
     @classmethod
     @abstractmethod
@@ -958,3 +962,20 @@ class BaseAdapter(ABC):
         """
         _ = dtype
         return expressions.Cast(this=expr, to=expressions.DataType.build("VARCHAR"))
+
+    def call_udf(self, udf_name: str, args: list[Expression]) -> Expression:
+        """
+        Construct a user defined function call expression
+
+        Parameters
+        ----------
+        udf_name: str
+            User defined function name
+        args: list[Expression]
+            List of expressions to pass as arguments to the user defined function
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Anonymous(this=udf_name, expressions=args)

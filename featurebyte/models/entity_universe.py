@@ -13,7 +13,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, Subqueryable, select
 
 from featurebyte.common.model_util import parse_duration_string
-from featurebyte.enum import DBVarType, InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.parent_serving import EntityLookupStep
@@ -43,6 +43,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.feature_job import get_previous_job_epoch_expr_from_settings
 from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import AggregationType, TileBasedAggregationSpec
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
@@ -113,7 +114,7 @@ class BaseEntityUniverseConstructor:
     node.
     """
 
-    def __init__(self, graph: QueryGraphModel, node: Node, source_type: SourceType):
+    def __init__(self, graph: QueryGraphModel, node: Node, source_info: SourceInfo):
         flat_graph, node_name_map = GraphFlatteningTransformer(graph=graph).transform()
         flat_node = flat_graph.get_node_by_name(node_name_map[node.name])
         self.graph = flat_graph
@@ -122,7 +123,7 @@ class BaseEntityUniverseConstructor:
         sql_graph = SQLOperationGraph(
             self.graph,
             SQLType.AGGREGATION,
-            source_type=source_type,
+            source_info=source_info,
             event_table_timestamp_filter=self.get_event_table_timestamp_filter(
                 graph=graph,
                 node=node,
@@ -140,7 +141,7 @@ class BaseEntityUniverseConstructor:
             source_col.name: source_col.dtype for source_col in op_struct.source_columns
         }
 
-        self.adapter = get_sql_adapter(source_type)
+        self.adapter = get_sql_adapter(source_info)
 
     @abstractmethod
     def get_entity_universe_template(self) -> List[Expression]:
@@ -527,7 +528,7 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
 
 
 def get_entity_universe_constructor(
-    graph: QueryGraphModel, node: Node, source_type: SourceType
+    graph: QueryGraphModel, node: Node, source_info: SourceInfo
 ) -> BaseEntityUniverseConstructor:
     """
     Returns the entity universe constructor for the given node
@@ -538,8 +539,8 @@ def get_entity_universe_constructor(
         The query graph
     node: Node
         The node for which the entity universe constructor is to be returned
-    source_type: SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
 
     Returns
     -------
@@ -558,7 +559,7 @@ def get_entity_universe_constructor(
         NodeType.NON_TILE_WINDOW_AGGREGATE: NonTileWindowAggregateNodeEntityUniverseConstructor,
     }
     if node.type in node_type_to_constructor:
-        return node_type_to_constructor[node.type](graph, node, source_type)  # type: ignore
+        return node_type_to_constructor[node.type](graph, node, source_info)  # type: ignore
     raise NotImplementedError(f"Unsupported node type: {node.type}")
 
 
@@ -614,7 +615,7 @@ def apply_join_steps(universe_expr: Expression, join_steps: List[EntityLookupSte
 
 def get_combined_universe(
     entity_universe_params: List[EntityUniverseParams],
-    source_type: SourceType,
+    source_info: SourceInfo,
 ) -> Optional[Expression]:
     """
     Returns the combined entity universe expression
@@ -623,8 +624,8 @@ def get_combined_universe(
     ----------
     entity_universe_params: List[EntityUniverseParams]
         Parameters of the entity universe to be constructed
-    source_type: SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
 
     Returns
     -------
@@ -636,7 +637,7 @@ def get_combined_universe(
 
     for params in entity_universe_params:
         entity_universe_constructor = get_entity_universe_constructor(
-            params.graph, params.node, source_type
+            params.graph, params.node, source_info
         )
         for current_universe_expr in entity_universe_constructor.get_entity_universe_template():
             if current_universe_expr == DUMMY_ENTITY_UNIVERSE:

@@ -48,7 +48,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         self.__dict__["precompute_queries"] = get_online_store_precompute_queries(
             graph=feature.graph,
             node=feature.node,
-            source_type=feature.feature_store_type,
+            source_info=feature.get_source_info(),
             agg_result_name_include_serving_names=feature.agg_result_name_include_serving_names,
         )
         return self
@@ -113,5 +113,5 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         -------
         str
         """
-        adapter = get_sql_adapter(self.feature.feature_store_type)
+        adapter = get_sql_adapter(self.feature.get_source_info())
         return adapter.get_physical_type_from_dtype(self.feature.dtype)

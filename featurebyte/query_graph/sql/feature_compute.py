@@ -46,6 +46,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specifications.aggregate_asat import AggregateAsAtSpec
 from featurebyte.query_graph.sql.specifications.forward_aggregate_asat import (
     ForwardAggregateAsAtSpec,
@@ -90,12 +91,12 @@ class FeatureExecutionPlan:
 
     def __init__(
         self,
-        source_type: SourceType,
+        source_info: SourceInfo,
         is_online_serving: bool,
         parent_serving_preparation: ParentServingPreparation | None = None,
         feature_store_details: Optional[FeatureStoreDetails] = None,
     ) -> None:
-        aggregator_kwargs = {"source_type": source_type, "is_online_serving": is_online_serving}
+        aggregator_kwargs = {"source_info": source_info, "is_online_serving": is_online_serving}
         self.aggregators: dict[str, AggregatorType] = {
             AggregationType.LATEST: LatestAggregator(**aggregator_kwargs),
             AggregationType.LOOKUP: LookupAggregator(**aggregator_kwargs),
@@ -109,8 +110,8 @@ class FeatureExecutionPlan:
         }
         self.feature_specs: dict[str, FeatureSpec] = {}
         self.feature_entity_lookup_steps: dict[str, EntityLookupStep] = {}
-        self.adapter = get_sql_adapter(source_type)
-        self.source_type = source_type
+        self.adapter = get_sql_adapter(source_info)
+        self.source_type = source_info.source_type
         self.parent_serving_preparation = parent_serving_preparation
         self.feature_name_dtype_mapping: dict[str, DBVarType] = {}
         self.feature_store_details = feature_store_details
@@ -566,8 +567,8 @@ class FeatureExecutionPlanner:
     ----------
     graph: QueryGraphModel
         Query graph
-    source_type: SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
     is_online_serving: bool
         Whether the generated code is intended for online serving
     serving_names_mapping: dict[str, str] | None
@@ -580,23 +581,25 @@ class FeatureExecutionPlanner:
         is_online_serving: bool,
         agg_result_name_include_serving_names: bool = True,
         serving_names_mapping: dict[str, str] | None = None,
-        source_type: SourceType | None = None,
+        source_info: SourceInfo | None = None,
         parent_serving_preparation: ParentServingPreparation | None = None,
     ):
-        if source_type is None:
-            source_type = SourceType.SNOWFLAKE
+        if source_info is None:
+            source_info = SourceInfo(
+                database_name="", schema_name="", source_type=SourceType.SNOWFLAKE
+            )
         self.graph, self.node_name_map = GraphFlatteningTransformer(graph=graph).transform()
         self.op_struct_extractor = OperationStructureExtractor(graph=self.graph)
         self.plan = FeatureExecutionPlan(
-            source_type,
+            source_info,
             is_online_serving,
             parent_serving_preparation=parent_serving_preparation,
         )
-        self.source_type = source_type
+        self.source_info = source_info
         self.serving_names_mapping = serving_names_mapping
         self.agg_result_name_include_serving_names = agg_result_name_include_serving_names
         self.is_online_serving = is_online_serving
-        self.adapter = get_sql_adapter(source_type)
+        self.adapter = get_sql_adapter(source_info)
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
         """Generate FeatureExecutionPlan for given list of query graph Nodes
@@ -747,7 +750,7 @@ class FeatureExecutionPlanner:
         return spec_cls.from_query_graph_node(
             node,
             graph=self.graph,
-            source_type=self.source_type,
+            source_info=self.source_info,
             serving_names_mapping=self.serving_names_mapping,
             is_online_serving=self.is_online_serving,
             agg_result_name_include_serving_names=self.agg_result_name_include_serving_names,
@@ -768,7 +771,7 @@ class FeatureExecutionPlanner:
         sql_graph = SQLOperationGraph(
             self.graph,
             SQLType.POST_AGGREGATION,
-            source_type=self.source_type,
+            source_info=self.source_info,
             aggregation_specs=aggregation_specs,
         )
         sql_node = sql_graph.build(node)

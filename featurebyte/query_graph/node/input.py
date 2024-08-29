@@ -37,6 +37,7 @@ from featurebyte.query_graph.node.schema import (
     InputNodeFeatureStoreDetails,
     TableDetails,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
 class SampleParameters(FeatureByteBaseModel):
@@ -180,6 +181,23 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
         -------
         Optional[CommentStr]
         """
+
+    def get_source_info(self) -> SourceInfo:
+        """
+        Get source info
+
+        Returns
+        -------
+        SourceInfo
+        """
+        feature_store_details = self.feature_store_details
+        if feature_store_details.details is not None:
+            return feature_store_details.details.get_source_info()
+        return SourceInfo(
+            database_name="",
+            schema_name="",
+            source_type=self.feature_store_details.type,
+        )
 
 
 class SourceTableInputNodeParameters(BaseInputNodeParameters):

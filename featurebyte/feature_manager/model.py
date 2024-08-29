@@ -4,10 +4,10 @@ This modules contains feature manager specific models
 
 from __future__ import annotations
 
-from featurebyte.enum import SourceType
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
 class ExtendedFeatureModel(FeatureModel):
@@ -15,16 +15,15 @@ class ExtendedFeatureModel(FeatureModel):
     ExtendedFeatureModel contains tile manager specific methods or properties
     """
 
-    @property
-    def feature_store_type(self) -> SourceType:
+    def get_source_info(self) -> SourceInfo:
         """
-        Type of the FeatureStore
+        Get source info corresponding to the feature store
 
         Returns
         -------
-        SourceType
+        SourceInfo
         """
-        return self.graph.get_input_node(self.node.name).parameters.feature_store_details.type
+        return self.graph.get_input_node(self.node.name).parameters.get_source_info()
 
     @property
     def tile_specs(self) -> list[TileSpec]:
@@ -35,7 +34,7 @@ class ExtendedFeatureModel(FeatureModel):
         -------
         list[TileSpec]
         """
-        interpreter = GraphInterpreter(self.graph, self.feature_store_type)
+        interpreter = GraphInterpreter(self.graph, self.get_source_info())
         node = self.graph.get_node_by_name(self.node_name)
         tile_infos = interpreter.construct_tile_gen_sql(node, is_on_demand=False)
         out = []

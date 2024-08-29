@@ -8,7 +8,6 @@ from collections import defaultdict
 from typing import Any, Iterable, Optional, Type
 
 from featurebyte.common.path_util import import_submodules
-from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -23,6 +22,7 @@ from featurebyte.query_graph.sql.common import (
     OnDemandEntityFilters,
     SQLType,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import AggregationSpec
 
 
@@ -114,7 +114,7 @@ class SQLOperationGraph:
         self,
         query_graph: QueryGraphModel,
         sql_type: SQLType,
-        source_type: SourceType,
+        source_info: SourceInfo,
         to_filter_scd_by_current_flag: bool = False,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
         aggregation_specs: Optional[dict[str, list[AggregationSpec]]] = None,
@@ -123,7 +123,7 @@ class SQLOperationGraph:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
         self.query_graph = query_graph
         self.sql_type = sql_type
-        self.source_type = source_type
+        self.source_info = source_info
         self.to_filter_scd_by_current_flag = to_filter_scd_by_current_flag
         self.event_table_timestamp_filter = event_table_timestamp_filter
         self.aggregation_specs = aggregation_specs
@@ -186,7 +186,7 @@ class SQLOperationGraph:
             graph=self.query_graph,
             query_node=cur_node,
             sql_type=self.sql_type,
-            source_type=self.source_type,
+            source_info=self.source_info,
             input_sql_nodes=input_sql_nodes,
             to_filter_scd_by_current_flag=self.to_filter_scd_by_current_flag,
             event_table_timestamp_filter=self.event_table_timestamp_filter,

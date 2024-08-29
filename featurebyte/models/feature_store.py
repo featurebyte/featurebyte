@@ -27,6 +27,7 @@ from featurebyte.query_graph.model.common_table import BaseTableData
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
 class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
@@ -43,6 +44,16 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
         FeatureStoreDetails
         """
         return FeatureStoreDetails(**self.model_dump(by_alias=True))
+
+    def get_source_info(self) -> SourceInfo:
+        """
+        Returns a SourceInfo object corresponding to the feature store
+
+        Returns
+        -------
+        SourceInfo
+        """
+        return self.details.get_source_info()
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """

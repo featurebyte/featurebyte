@@ -41,6 +41,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 INTERACTIVE_SESSION_TIMEOUT_SECONDS = 30
 NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS = 120
@@ -278,7 +279,21 @@ class BaseSession(BaseModel):
         -------
         BaseAdapter
         """
-        return get_sql_adapter(source_type=self.source_type)
+        return get_sql_adapter(source_info=self.get_source_info())
+
+    def get_source_info(self) -> SourceInfo:
+        """
+        Get source information
+
+        Returns
+        -------
+        SourceInfo
+        """
+        return SourceInfo(
+            database_name=self.database_name,
+            schema_name=self.schema_name,
+            source_type=self.source_type,
+        )
 
     async def initialize(self) -> None:
         """
@@ -505,7 +520,7 @@ class BaseSession(BaseModel):
             Timeout in seconds
         """
         await self.execute_query(
-            query=user_defined_function.generate_test_sql(source_type=self.source_type),
+            query=user_defined_function.generate_test_sql(source_info=self.get_source_info()),
             timeout=timeout,
         )
 
@@ -992,8 +1007,6 @@ class BaseSession(BaseModel):
         self.no_schema_error
             If table creation failed
         """
-        adapter = get_sql_adapter(self.source_type)
-
         if isinstance(table_details, str):
             table_details = NodeTableDetails(
                 database_name=None,
@@ -1004,7 +1017,7 @@ class BaseSession(BaseModel):
             select_expr = f"SELECT * FROM ({select_expr})"
 
         query = sql_to_string(
-            adapter.create_table_as(
+            self.adapter.create_table_as(
                 table_details=table_details,
                 select_expr=select_expr,
                 kind=kind,

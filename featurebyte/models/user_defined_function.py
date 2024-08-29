@@ -13,7 +13,7 @@ from sqlglot.expressions import select
 from typeguard import check_type, typechecked
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
     FeatureByteBaseModel,
@@ -31,6 +31,7 @@ from featurebyte.query_graph.node.scalar import TimestampValue
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext
 from featurebyte.query_graph.sql.ast.function import GenericFunctionNode as GenericFunctionSQLNode
 from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.typing import Scalar, Timestamp
 
 # supported function parameter input DBVarType to Python type mapping
@@ -259,13 +260,13 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         output_type = get_signature_type_str(self.output_dtype)
         return f"{self.name}({param_signature}) -> {output_type}"
 
-    def generate_test_sql(self, source_type: SourceType) -> str:
+    def generate_test_sql(self, source_info: SourceInfo) -> str:
         """
         Generate test SQL query for the function
 
         Parameters
         ----------
-        source_type: SourceType
+        source_info: SourceInfo
             Source type of the test SQL query
 
         Returns
@@ -303,7 +304,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
                 query_node=node,
                 input_sql_nodes=[],
                 sql_type=SQLType.MATERIALIZE,
-                source_type=source_type,
+                source_info=source_info,
                 to_filter_scd_by_current_flag=False,
                 event_table_timestamp_filter=None,
                 aggregation_specs=None,

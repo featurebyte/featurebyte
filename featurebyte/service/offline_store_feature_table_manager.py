@@ -489,7 +489,7 @@ class OfflineStoreFeatureTableManagerService:
             primary_entities=primary_entities,
             has_ttl=has_ttl,
             feature_job_setting=feature_job_setting,
-            source_type=feature_store_model.type,
+            source_info=feature_store_model.get_source_info(),
         )
 
     async def _get_online_enabled_feature_lists(

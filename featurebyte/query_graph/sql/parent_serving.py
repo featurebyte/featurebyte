@@ -158,7 +158,7 @@ def _get_lookup_spec_from_join_step(
     sql_input_node = SQLOperationGraph(
         query_graph=graph,
         sql_type=SQLType.AGGREGATION,
-        source_type=feature_store_details.type,
+        source_info=feature_store_details.details.get_source_info(),
         to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
     ).build(input_node)
     aggregation_source = AggregationSource(
