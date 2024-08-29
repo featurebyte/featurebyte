@@ -34,7 +34,7 @@ from featurebyte.worker.task.query_cache_cleanup import QueryCacheCleanupTask
 from featurebyte.worker.task.scheduled_feature_materialize import ScheduledFeatureMaterializeTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.target_table import TargetTableTask
-from featurebyte.worker.task.test_task import TestTask
+from featurebyte.worker.task.test_task import TestIOTask, TestTask
 from featurebyte.worker.task.tile_task import TileTask
 
 # TASK_REGISTRY_MAP contains a mapping of the worker command to the task.
@@ -61,6 +61,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.CATALOG_ONLINE_STORE_UPDATE: CatalogOnlineStoreUpdateTask,
     WorkerCommand.DATA_DESCRIPTION: DataDescriptionTask,
     WorkerCommand.TEST: TestTask,
+    WorkerCommand.IOTEST: TestIOTask,
     # TO BE DEPRECATED
     WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE: FeatureListCreateWithBatchFeatureCreationTask,
 }

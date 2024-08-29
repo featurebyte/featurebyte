@@ -22,6 +22,7 @@ class TestTaskPayload(BaseTaskPayload):
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
     sleep: int = Field(default=0)
+    run_child_task: bool = Field(default=False)
 
     @property
     def task_output_path(self) -> Optional[str]:
@@ -35,27 +36,13 @@ class TestTaskPayload(BaseTaskPayload):
         return None
 
 
-class TestIOTaskPayload(BaseTaskPayload):
+class TestIOTaskPayload(TestTaskPayload):
     """
     Test IO Task Payload
     """
 
-    # add this to fix PytestCollectionWarning
-    __test__ = False
-
     # class variables
-    command: ClassVar[WorkerCommand] = WorkerCommand.TEST
+    command: ClassVar[WorkerCommand] = WorkerCommand.IOTEST
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.IO_TASK)
-
-    @property
-    def task_output_path(self) -> Optional[str]:
-        """
-        Redirect route used to retrieve the task result
-
-        Returns
-        -------
-        Optional[str]
-        """
-        return None

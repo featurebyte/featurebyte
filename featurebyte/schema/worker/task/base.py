@@ -13,6 +13,7 @@ from pydantic import ConfigDict, Field
 
 from featurebyte.enum import StrEnum, WorkerCommand
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.schema.task import TaskId
 
 
 class TaskType(StrEnum):
@@ -52,6 +53,7 @@ class BaseTaskPayload(FeatureByteBaseModel):
     is_scheduled_task: Optional[bool] = Field(default=False)
     user_id: Optional[PydanticObjectId] = Field(default=None)
     catalog_id: PydanticObjectId
+    task_id: Optional[TaskId] = Field(default=None)
 
     # pydantic model configuration
     model_config = ConfigDict(frozen=True)

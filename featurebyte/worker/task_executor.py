@@ -181,7 +181,7 @@ class TaskExecutor:
         """
         # Send initial progress to indicate task is started
         await self.task_progress_updater.update_progress(percent=0)
-        payload_obj = self.task.get_payload_obj(self.payload_dict)
+        payload_obj = self.task.get_payload_obj({**self.payload_dict, "task_id": self.task_id})
 
         try:
             # Execute the task
@@ -255,7 +255,9 @@ class BaseCeleryTask(Task):
             instance_map=instance_map_to_use,
         )
 
-    async def execute_task(self: Any, request_id: UUID, **payload: Any) -> Any:
+    async def execute_task(
+        self: Any, request_id: UUID, parent_task_id: Optional[UUID], **payload: Any
+    ) -> Any:
         """
         Execute Celery task
 
@@ -263,6 +265,8 @@ class BaseCeleryTask(Task):
         ----------
         request_id: UUID
             Request ID
+        parent_task_id: Optional[UUID]
+            Parent task ID to update children reference
         payload: Any
             Task payload
 
@@ -271,15 +275,23 @@ class BaseCeleryTask(Task):
         Any
         """
         command = str(payload.get("command"))
-        print(
-            f"Running: {command}"
-        )  # Add temporary print statement to confirm logging not causing freezing issue
         logger.debug(f"Executing: {command}")
         if request_id in PENDING_TASKS:
             PENDING_TASKS.remove(request_id)
 
         progress = self.progress_class(user_id=payload.get("user_id"), task_id=request_id)
         app_container = await self.get_app_container(request_id, payload, progress)
+
+        if parent_task_id:
+            # update children for parent task
+            await app_container.get("persistent").update_one(
+                collection_name=TaskModel.collection_name(),
+                query_filter={"_id": str(parent_task_id)},
+                update={"$push": {"children": [[str(request_id), None], None]}},
+                disable_audit=True,
+                user_id=payload.get("user_id"),
+            )
+
         executor = self.executor_class(
             payload=payload, task_id=request_id, app_container=app_container
         )
@@ -321,8 +333,9 @@ class IOBoundTask(BaseCeleryTask):
         if WORKER_TERMINATED:
             raise WorkerTerminate(True)
         try:
+            # update children for parent task (not tracked automatically in io bound tasks)
             return run_async(
-                self.execute_task(self.request.id, **payload),
+                self.execute_task(self.request.id, self.request.parent_id, **payload),
                 request_id=self.request.id,
                 timeout=self.request.timelimit[1],
             )
@@ -339,4 +352,4 @@ class CPUBoundTask(BaseCeleryTask):
     name = "featurebyte.worker.task_executor.execute_cpu_task"
 
     def run(self: Any, *args: Any, **payload: Any) -> Any:
-        return asyncio.run(self.execute_task(self.request.id, **payload))
+        return asyncio.run(self.execute_task(self.request.id, None, **payload))
