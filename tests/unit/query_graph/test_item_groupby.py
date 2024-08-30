@@ -6,7 +6,7 @@ import textwrap
 
 import pytest
 
-from featurebyte.enum import AggFunc, SourceType
+from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType

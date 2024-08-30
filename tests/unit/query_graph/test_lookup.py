@@ -4,7 +4,6 @@ Tests for Lookup SQLNode
 
 import textwrap
 
-from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec

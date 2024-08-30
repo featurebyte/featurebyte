@@ -7,9 +7,7 @@ from sqlglot.expressions import Select
 
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
-from featurebyte.query_graph.sql.source_info import SourceInfo
 from tests.util.helper import assert_sql_equal, get_sql_adapter_from_source_type
 
 

@@ -7,7 +7,6 @@ from __future__ import annotations
 import pytest
 from sqlglot import select
 
-from featurebyte import SourceType
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.node.generic import ForwardAggregateParameters
 from featurebyte.query_graph.node.schema import TableDetails

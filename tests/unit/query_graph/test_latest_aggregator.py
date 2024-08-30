@@ -8,7 +8,6 @@ import textwrap
 import pytest
 from sqlglot.expressions import select
 
-from featurebyte import SourceType
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from tests.util.helper import assert_equal_with_expected_fixture

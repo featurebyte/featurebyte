@@ -2,7 +2,6 @@ import textwrap
 
 import pytest
 
-from featurebyte import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType

@@ -9,7 +9,6 @@ import pytest
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string

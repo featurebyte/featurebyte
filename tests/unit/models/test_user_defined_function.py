@@ -7,7 +7,7 @@ import pytest
 from bson import ObjectId
 from typeguard import TypeCheckError
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType
 from featurebyte.models.user_defined_function import (
     FunctionParameter,
     UserDefinedFunctionModel,

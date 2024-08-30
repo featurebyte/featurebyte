@@ -8,7 +8,6 @@ from collections import defaultdict
 import pytest
 from bson import ObjectId
 
-from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node import construct_node

@@ -10,7 +10,7 @@ from dataclasses import asdict
 import pandas as pd
 import pytest
 
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
