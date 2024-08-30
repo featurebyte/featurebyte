@@ -21,21 +21,17 @@ WITH REQUEST_TABLE AS (
           (
             SELECT
               "BUSINESS_ID" AS "biz_id",
-              TO_TIMESTAMP(
-                FLOOR((
-                  DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
-                ) / 3600) * 3600 + 1800 - 900
-              ) AS "__FB_ENTITY_TABLE_END_DATE",
+              CAST(FLOOR((
+                DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
+              ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ) AS "__FB_ENTITY_TABLE_END_DATE",
               DATEADD(
                 microsecond,
                 (
                   168 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
                 ) * -1,
-                TO_TIMESTAMP(
-                  FLOOR((
-                    DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
-                  ) / 3600) * 3600 + 1800 - 900
-                )
+                CAST(FLOOR((
+                  DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
+                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ)
               ) AS "__FB_ENTITY_TABLE_START_DATE"
             FROM "REQUEST_TABLE"
             GROUP BY
@@ -86,21 +82,17 @@ WITH REQUEST_TABLE AS (
           (
             SELECT
               "CUSTOMER_ID" AS "cust_id",
-              TO_TIMESTAMP(
-                FLOOR((
-                  DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
-                ) / 3600) * 3600 + 1800 - 900
-              ) AS "__FB_ENTITY_TABLE_END_DATE",
+              CAST(FLOOR((
+                DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
+              ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ) AS "__FB_ENTITY_TABLE_END_DATE",
               DATEADD(
                 microsecond,
                 (
                   48 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
                 ) * -1,
-                TO_TIMESTAMP(
-                  FLOOR((
-                    DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
-                  ) / 3600) * 3600 + 1800 - 900
-                )
+                CAST(FLOOR((
+                  DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
+                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ)
               ) AS "__FB_ENTITY_TABLE_START_DATE"
             FROM "REQUEST_TABLE"
             GROUP BY
