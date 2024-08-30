@@ -10,6 +10,7 @@ from typing import Any, Generic, Optional, Type, TypeVar
 from redis import Redis
 
 from featurebyte.logging import get_logger
+from featurebyte.schema.task import TaskId
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.task_manager import TaskManager
 
@@ -28,6 +29,31 @@ class BaseTask(Generic[TaskT]):
 
     def __init__(self, task_manager: TaskManager):
         self.task_manager = task_manager
+
+        # track the task ID
+        self._task_id: Optional[TaskId] = None
+
+    @property
+    def task_id(self) -> Optional[TaskId]:
+        """
+        Task ID
+
+        Returns
+        -------
+        Optional[TaskId]
+        """
+        return self._task_id
+
+    def set_task_id(self, task_id: TaskId) -> None:
+        """
+        Set task ID
+
+        Parameters
+        ----------
+        task_id: TaskId
+            Task ID
+        """
+        self._task_id = task_id
 
     def get_payload_obj(self, payload_data: dict[str, Any]) -> TaskT:
         """
