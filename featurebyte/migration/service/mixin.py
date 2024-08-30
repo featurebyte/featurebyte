@@ -294,7 +294,7 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
             Current migration version number
         """
         df_metadata = await session.execute_query("SELECT * FROM METADATA_SCHEMA")
-        if InternalName.MIGRATION_VERSION not in df_metadata:
+        if InternalName.MIGRATION_VERSION not in df_metadata:  # type: ignore[operator]
             await session.execute_query(
                 f"ALTER TABLE METADATA_SCHEMA ADD COLUMN {InternalName.MIGRATION_VERSION} INT"
             )
