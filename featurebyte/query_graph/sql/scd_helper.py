@@ -400,7 +400,12 @@ def augment_table_with_effective_timestamp(
         ]
     )
     num_join_keys = len(left_table.join_keys)
-    matched_effective_timestamp_expr = expressions.Window(
+    matched_effective_timestamp_expr = adapter.lag_ignore_nulls(
+        expr=quoted_identifier(EFFECTIVE_TS_COL),
+        partition_by=_key_cols_as_quoted_identifiers(num_join_keys),
+        order=order,
+    )
+    expressions.Window(
         this=expressions.IgnoreNulls(
             this=expressions.Anonymous(
                 this="LAG", expressions=[quoted_identifier(EFFECTIVE_TS_COL)]

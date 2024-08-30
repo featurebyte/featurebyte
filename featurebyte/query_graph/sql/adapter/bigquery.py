@@ -4,7 +4,7 @@ BigQueryAdapter class
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Anonymous, Expression
@@ -80,3 +80,28 @@ class BigQueryAdapter(SnowflakeAdapter):
         if dtype in DBVarType.json_conversion_types():
             return Anonymous(this="TO_JSON_STRING", expressions=[expr])
         return expr
+
+    @classmethod
+    def lag_ignore_nulls(
+        cls, expr: Expression, partition_by: List[Expression], order: Expression
+    ) -> Expression:
+        return expressions.Window(
+            this=expressions.Anonymous(
+                this="LAST_VALUE", expressions=[expressions.IgnoreNulls(this=expr)]
+            ),
+            partition_by=partition_by,
+            order=order,
+            spec=expressions.WindowSpec(
+                kind="ROWS",
+                start="UNBOUNDED",
+                start_side="PRECEDING",
+                end=make_literal_value(1),
+                end_side="PRECEDING",
+            ),
+        )
+
+    @classmethod
+    def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
+        return expressions.Anonymous(
+            this="DATETIME", expressions=[timestamp_expr, make_literal_value("UTC")]
+        )
