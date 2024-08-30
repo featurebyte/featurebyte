@@ -405,15 +405,6 @@ def augment_table_with_effective_timestamp(
         partition_by=_key_cols_as_quoted_identifiers(num_join_keys),
         order=order,
     )
-    expressions.Window(
-        this=expressions.IgnoreNulls(
-            this=expressions.Anonymous(
-                this="LAG", expressions=[quoted_identifier(EFFECTIVE_TS_COL)]
-            ),
-        ),
-        partition_by=_key_cols_as_quoted_identifiers(num_join_keys),
-        order=order,
-    )
 
     # Need to use a nested query for this filter due to the LAG window function
     filter_original_left_view_rows = expressions.Is(
