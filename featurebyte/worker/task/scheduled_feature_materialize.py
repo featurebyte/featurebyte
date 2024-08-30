@@ -12,6 +12,7 @@ from featurebyte.schema.worker.task.scheduled_feature_materialize import (
 )
 from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
@@ -26,10 +27,11 @@ class ScheduledFeatureMaterializeTask(BaseTask[ScheduledFeatureMaterializeTaskPa
 
     def __init__(
         self,
+        task_manager: TaskManager,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         feature_materialize_service: FeatureMaterializeService,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feature_materialize_service = feature_materialize_service
 

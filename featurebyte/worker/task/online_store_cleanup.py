@@ -9,6 +9,7 @@ from typing import Any
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.online_store_cleanup import OnlineStoreCleanupTaskPayload
 from featurebyte.service.online_store_cleanup import OnlineStoreCleanupService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
@@ -23,9 +24,10 @@ class OnlineStoreCleanupTask(BaseTask[OnlineStoreCleanupTaskPayload]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         online_store_cleanup_service: OnlineStoreCleanupService,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.online_store_cleanup_service = online_store_cleanup_service
 
     async def get_task_description(self, payload: OnlineStoreCleanupTaskPayload) -> str:

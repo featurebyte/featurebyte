@@ -19,6 +19,7 @@ from featurebyte.schema.worker.task.feature_job_setting_analysis import (
     FeatureJobSettingAnalysisBackTestTaskPayload,
 )
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
@@ -35,12 +36,13 @@ class FeatureJobSettingAnalysisBacktestTask(BaseTask[FeatureJobSettingAnalysisBa
 
     def __init__(
         self,
+        task_manager: TaskManager,
         storage: Storage,
         temp_storage: Storage,
         feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.storage = storage
         self.temp_storage = temp_storage
         self.feature_job_setting_analysis_service = feature_job_setting_analysis_service

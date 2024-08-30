@@ -17,6 +17,7 @@ from featurebyte.schema.worker.task.deployment_create_update import (
 )
 from featurebyte.service.deploy import DeployService
 from featurebyte.service.deployment import DeploymentService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseLockTask
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
@@ -30,12 +31,13 @@ class DeploymentCreateUpdateTask(BaseLockTask[DeploymentCreateUpdateTaskPayload]
 
     def __init__(
         self,
+        task_manager: TaskManager,
         redis: Redis[Any],
         deployment_service: DeploymentService,
         deploy_service: DeployService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__(redis=redis)
+        super().__init__(task_manager=task_manager, redis=redis)
         self.deployment_service = deployment_service
         self.deploy_service = deploy_service
         self.task_progress_updater = task_progress_updater

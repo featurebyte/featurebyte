@@ -9,6 +9,7 @@ from featurebyte.enum import StrEnum
 from featurebyte.models.base import User
 from featurebyte.persistent import Persistent
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
@@ -36,11 +37,12 @@ class RandomTask(BaseTask[RandomTaskPayload]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         user: User,
         persistent: Persistent,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.persistent = persistent
         self.user = user
         self.task_progress_updater = task_progress_updater
@@ -100,9 +102,10 @@ class LongRunningTask(BaseTask[LongRunningPayload]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: LongRunningPayload) -> str:

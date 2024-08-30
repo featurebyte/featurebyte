@@ -20,6 +20,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import TableService
 from featurebyte.service.target_table import TargetTableService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.validator.materialized_table_delete import (
     ObservationTableDeleteValidator,
     check_delete_batch_request_table,
@@ -38,6 +39,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
 
     def __init__(
         self,
+        task_manager: TaskManager,
         batch_request_table_service: BatchRequestTableService,
         batch_feature_table_service: BatchFeatureTableService,
         observation_table_service: ObservationTableService,
@@ -49,7 +51,7 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         table_service: TableService,
         session_manager_service: SessionManagerService,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.batch_request_table_service = batch_request_table_service
         self.batch_feature_table_service = batch_feature_table_service
         self.observation_table_service = observation_table_service

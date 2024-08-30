@@ -9,6 +9,7 @@ from typing import Any
 
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.test import TestTaskPayload
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
@@ -24,9 +25,10 @@ class TestTask(BaseTask[TestTaskPayload]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: TestTaskPayload) -> str:

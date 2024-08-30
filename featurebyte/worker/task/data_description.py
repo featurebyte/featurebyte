@@ -9,6 +9,7 @@ from pathlib import Path
 
 from featurebyte.schema.worker.task.data_description import DataDescriptionTaskPayload
 from featurebyte.service.preview import PreviewService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
@@ -23,12 +24,13 @@ class DataDescriptionTask(BaseTask[DataDescriptionTaskPayload]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         storage: Storage,
         temp_storage: Storage,
         preview_service: PreviewService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.storage = storage
         self.temp_storage = temp_storage
         self.preview_service = preview_service

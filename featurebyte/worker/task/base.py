@@ -11,6 +11,7 @@ from redis import Redis
 
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.task_manager import TaskManager
 
 logger = get_logger(__name__)
 
@@ -24,6 +25,9 @@ class BaseTask(Generic[TaskT]):
     """
 
     payload_class: Type[TaskT]
+
+    def __init__(self, task_manager: TaskManager):
+        self.task_manager = task_manager
 
     def get_payload_obj(self, payload_data: dict[str, Any]) -> TaskT:
         """
@@ -86,9 +90,10 @@ class BaseLockTask(BaseTask[TaskT]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         redis: Redis[Any],
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.redis = redis
 
     async def execute(self, payload: TaskT) -> Any:
