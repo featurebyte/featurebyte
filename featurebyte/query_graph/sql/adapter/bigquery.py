@@ -9,7 +9,7 @@ from typing import List, Optional
 from sqlglot import expressions
 from sqlglot.expressions import Anonymous, Expression
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql.adapter.snowflake import SnowflakeAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_function_call
@@ -21,6 +21,33 @@ class BigQueryAdapter(SnowflakeAdapter):
     """
 
     source_type = SourceType.BIGQUERY
+
+    class DataType(StrEnum):
+        """
+        Possible column types in BigQuery online store tables
+        """
+
+        FLOAT = "FLOAT64"
+        OBJECT = "JSON"
+        TIMESTAMP = "TIMESTAMP"
+        STRING = "STRING"
+        ARRAY = "ARRAY"
+
+    @classmethod
+    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
+        mapping = {
+            DBVarType.INT: cls.DataType.FLOAT,
+            DBVarType.FLOAT: cls.DataType.FLOAT,
+            DBVarType.VARCHAR: cls.DataType.STRING,
+            DBVarType.OBJECT: cls.DataType.OBJECT,
+            DBVarType.TIMESTAMP: cls.DataType.TIMESTAMP,
+            DBVarType.TIMESTAMP_TZ: cls.DataType.TIMESTAMP,
+            DBVarType.ARRAY: cls.DataType.ARRAY,
+            DBVarType.EMBEDDING: cls.DataType.ARRAY,
+        }
+        if dtype in mapping:
+            return mapping[dtype]
+        return cls.DataType.STRING
 
     @classmethod
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
