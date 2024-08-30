@@ -8,7 +8,6 @@ from datetime import datetime
 import pytest
 from bson import ObjectId
 
-from featurebyte import SourceType
 from featurebyte.models.entity_universe import (
     EntityUniverseModel,
     EntityUniverseParams,
@@ -151,13 +150,13 @@ def assert_one_item_and_format_sql(universe_template):
     return universe_template[0].sql(pretty=True)
 
 
-def test_lookup_feature(catalog, lookup_graph_and_node):
+def test_lookup_feature(catalog, lookup_graph_and_node, source_info):
     """
     Test lookup feature's universe
     """
     _ = catalog
     graph, node = lookup_graph_and_node
-    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
+    constructor = get_entity_universe_constructor(graph, node, source_info)
     expected = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -186,13 +185,13 @@ def test_lookup_feature(catalog, lookup_graph_and_node):
     assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
 
 
-def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node):
+def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node, source_info):
     """
     Test aggregate as-at feature's universe
     """
     _ = catalog
     graph, node = aggregate_asat_graph_and_node
-    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
+    constructor = get_entity_universe_constructor(graph, node, source_info)
     expected = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -221,13 +220,15 @@ def test_aggregate_asat_universe(catalog, aggregate_asat_graph_and_node):
     assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
 
 
-def test_aggregate_asat_no_entity_universe(catalog, aggregate_asat_no_entity_graph_and_node):
+def test_aggregate_asat_no_entity_universe(
+    catalog, aggregate_asat_no_entity_graph_and_node, source_info
+):
     """
     Test aggregate as-at feature's universe (no entity)
     """
     _ = catalog
     graph, node = aggregate_asat_no_entity_graph_and_node
-    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
+    constructor = get_entity_universe_constructor(graph, node, source_info)
     expected = textwrap.dedent(
         """
         SELECT
@@ -237,13 +238,13 @@ def test_aggregate_asat_no_entity_universe(catalog, aggregate_asat_no_entity_gra
     assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
 
 
-def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node):
+def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node, source_info):
     """
     Test item aggregate feature's universe
     """
     _ = catalog
     graph, node = item_aggregate_graph_and_node
-    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
+    constructor = get_entity_universe_constructor(graph, node, source_info)
     expected = textwrap.dedent(
         """
         SELECT DISTINCT
@@ -308,7 +309,9 @@ def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node):
     assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
 
 
-def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_and_node):
+def test_combined_universe(
+    catalog, lookup_graph_and_node, aggregate_asat_graph_and_node, source_info
+):
     """
     Test combined universe
     """
@@ -328,7 +331,7 @@ def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_
                 join_steps=None,
             ),
         ],
-        SourceType.SNOWFLAKE,
+        source_info,
     )
     expected = textwrap.dedent(
         """
@@ -381,7 +384,7 @@ def test_combined_universe(catalog, lookup_graph_and_node, aggregate_asat_graph_
 
 
 def test_combined_universe_deduplicate(
-    catalog, lookup_graph_and_node, lookup_graph_and_node_same_input
+    catalog, lookup_graph_and_node, lookup_graph_and_node_same_input, source_info
 ):
     """
     Test combined universe doesn't duplicate the same universe
@@ -400,7 +403,7 @@ def test_combined_universe_deduplicate(
                 join_steps=None,
             ),
         ],
-        SourceType.SNOWFLAKE,
+        source_info,
     )
     expected = textwrap.dedent(
         """
@@ -430,7 +433,7 @@ def test_combined_universe_deduplicate(
     assert universe.sql(pretty=True) == expected
 
 
-def test_combined_universe__join_steps(catalog, lookup_graph_and_node, join_steps):
+def test_combined_universe__join_steps(catalog, lookup_graph_and_node, join_steps, source_info):
     """
     Test combined universe with join steps
     """
@@ -443,7 +446,7 @@ def test_combined_universe__join_steps(catalog, lookup_graph_and_node, join_step
                 join_steps=join_steps,
             ),
         ],
-        SourceType.SNOWFLAKE,
+        source_info,
     )
     expected = textwrap.dedent(
         """
@@ -480,7 +483,7 @@ def test_combined_universe__join_steps(catalog, lookup_graph_and_node, join_step
 
 
 def test_combined_universe__output_dummy_entity_universe(
-    catalog, window_aggregate_no_entity_graph_and_node
+    catalog, window_aggregate_no_entity_graph_and_node, source_info
 ):
     """
     Test combined universe should include dummy entity universe only when there are no other entity
@@ -495,7 +498,7 @@ def test_combined_universe__output_dummy_entity_universe(
                 join_steps=None,
             ),
         ],
-        SourceType.SNOWFLAKE,
+        source_info,
     )
     expected = textwrap.dedent(
         """
@@ -507,7 +510,7 @@ def test_combined_universe__output_dummy_entity_universe(
 
 
 def test_combined_universe__exclude_dummy_entity_universe(
-    catalog, window_aggregate_graph_and_node, window_aggregate_no_entity_graph_and_node
+    catalog, window_aggregate_graph_and_node, window_aggregate_no_entity_graph_and_node, source_info
 ):
     """
     Test combined universe should exclude dummy entity universe only when there are other entity
@@ -527,7 +530,7 @@ def test_combined_universe__exclude_dummy_entity_universe(
                 join_steps=None,
             ),
         ],
-        SourceType.SNOWFLAKE,
+        source_info,
     )
     expected = textwrap.dedent(
         """
@@ -543,7 +546,7 @@ def test_combined_universe__exclude_dummy_entity_universe(
 
 
 def test_combined_universe__window_aggregate_multiple_windows(
-    catalog, window_aggregate_graph_and_node, window_aggregate_multiple_windows
+    catalog, window_aggregate_graph_and_node, window_aggregate_multiple_windows, source_info
 ):
     """
     Test constructing universe for a window aggregate involving multiple windows
@@ -567,7 +570,7 @@ def test_combined_universe__window_aggregate_multiple_windows(
                 for groupby_node in window_aggregate_multiple_windows[1]
             ],
         ),
-        SourceType.SNOWFLAKE,
+        source_info,
     )
     expected = textwrap.dedent(
         """
@@ -596,13 +599,15 @@ def test_combined_universe__window_aggregate_multiple_windows(
     assert universe.sql(pretty=True) == expected
 
 
-def test_entity_universe_model_get_entity_universe_expr(catalog, lookup_graph_and_node):
+def test_entity_universe_model_get_entity_universe_expr(
+    catalog, lookup_graph_and_node, source_info
+):
     """
     Test EntityUniverseModel get_entity_universe_expr() method
     """
     _ = catalog
     graph, node = lookup_graph_and_node
-    constructor = get_entity_universe_constructor(graph, node, SourceType.SNOWFLAKE)
+    constructor = get_entity_universe_constructor(graph, node, source_info)
     query_template = constructor.get_entity_universe_template()[0]
     entity_universe_model = EntityUniverseModel(
         query_template=SqlglotExpressionModel.create(query_template)

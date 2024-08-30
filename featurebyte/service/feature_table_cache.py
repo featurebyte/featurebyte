@@ -22,7 +22,6 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     get_qualified_column_identifier,
@@ -298,7 +297,7 @@ class FeatureTableCacheService:
             )
 
             # alter cached tables adding columns for new features
-            adapter = get_sql_adapter(db_session.source_type)
+            adapter = db_session.adapter
             table_exr = expressions.Table(
                 this=quoted_identifier(cache_metadata.table_name),
                 db=quoted_identifier(db_session.schema_name),

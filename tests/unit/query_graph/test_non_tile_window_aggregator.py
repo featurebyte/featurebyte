@@ -5,7 +5,6 @@ Tests for NonTileWindowAggregator
 import pytest
 from sqlglot.expressions import select
 
-from featurebyte import SourceType
 from featurebyte.query_graph.sql.aggregator.non_tile_window import NonTileWindowAggregator
 from featurebyte.query_graph.sql.common import construct_cte_sql
 from featurebyte.query_graph.sql.specifications.non_tile_window_aggregate import (
@@ -15,7 +14,7 @@ from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture
-def agg_specs(global_graph, non_tile_window_aggregate_feature_node):
+def agg_specs(global_graph, non_tile_window_aggregate_feature_node, source_info):
     """
     Fixture of TileAggregationSpec without window
     """
@@ -25,16 +24,16 @@ def agg_specs(global_graph, non_tile_window_aggregate_feature_node):
     return NonTileWindowAggregateSpec.from_query_graph_node(
         node=agg_node,
         graph=global_graph,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         agg_result_name_include_serving_names=True,
     )
 
 
-def test_non_tile_window_aggregate(agg_specs, update_fixtures):
+def test_non_tile_window_aggregate(agg_specs, update_fixtures, source_info):
     """
     Test non tile window aggregator
     """
-    aggregator = NonTileWindowAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = NonTileWindowAggregator(source_info=source_info)
     for spec in agg_specs:
         aggregator.update(spec)
     result = aggregator.update_aggregation_table_expr(

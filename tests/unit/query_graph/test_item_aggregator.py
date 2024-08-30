@@ -8,7 +8,7 @@ import pytest
 from bson import ObjectId
 from sqlglot.expressions import select
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
 from featurebyte.query_graph.sql.specs import AggregationSource, ItemAggregationSpec
@@ -101,12 +101,12 @@ def aggregation_specs(
     ]
 
 
-def test_item_aggregation(aggregation_specs):
+def test_item_aggregation(aggregation_specs, source_info):
     """
     Test ItemAggregator
     """
 
-    aggregator = ItemAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = ItemAggregator(source_info=source_info)
     for spec in aggregation_specs:
         aggregator.update(spec)
     # updating same spec twice should not have issue

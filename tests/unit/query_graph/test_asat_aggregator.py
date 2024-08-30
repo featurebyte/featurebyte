@@ -7,7 +7,7 @@ import textwrap
 import pytest
 from sqlglot.expressions import select
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.node.generic import AggregateAsAtParameters
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
 from featurebyte.query_graph.sql.aggregator.forward_asat import ForwardAsAtAggregator
@@ -223,11 +223,13 @@ def forward_aggregation_spec_with_offset(
     )
 
 
-def test_asat_aggregate_scd_table_without_end_timestamp(aggregation_spec_without_end_timestamp):
+def test_asat_aggregate_scd_table_without_end_timestamp(
+    aggregation_spec_without_end_timestamp, source_info
+):
     """
     Test AsAtAggregator on SCD table without end timestamp
     """
-    aggregator = AsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = AsAtAggregator(source_info=source_info)
     aggregator.update(aggregation_spec_without_end_timestamp)
 
     result = aggregator.update_aggregation_table_expr(
@@ -289,12 +291,14 @@ def test_asat_aggregate_scd_table_without_end_timestamp(aggregation_spec_without
     assert request_table_ctes[0][1].sql(pretty=True) == expected
 
 
-def test_asat_aggregate_scd_table_with_end_timestamp(aggregation_spec_with_end_timestamp):
+def test_asat_aggregate_scd_table_with_end_timestamp(
+    aggregation_spec_with_end_timestamp, source_info
+):
     """
     Test AsAtAggregator on SCD table with end timestamp (query is simpler because no need to compute
     the end timestamp for the SCD table)
     """
-    aggregator = AsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = AsAtAggregator(source_info=source_info)
     aggregator.update(aggregation_spec_with_end_timestamp)
 
     result = aggregator.update_aggregation_table_expr(
@@ -339,13 +343,13 @@ def test_asat_aggregate_scd_table_with_end_timestamp(aggregation_spec_with_end_t
 
 
 def test_asat_aggregate_scd_table_with_serving_names_mapping(
-    aggregation_spec_with_serving_names_mapping,
+    aggregation_spec_with_serving_names_mapping, source_info
 ):
     """
     Test AsAtAggregator handles serving names mapping properly (new_serving_cust_id is referenced
     instead of the original serving_cust_id)
     """
-    aggregator = AsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = AsAtAggregator(source_info=source_info)
     aggregator.update(aggregation_spec_with_serving_names_mapping)
 
     result = aggregator.update_aggregation_table_expr(
@@ -389,12 +393,14 @@ def test_asat_aggregate_scd_table_with_serving_names_mapping(
     assert result.updated_table_expr.sql(pretty=True) == expected
 
 
-def test_same_source_different_agg_funcs(aggregation_specs_same_source_different_agg_funcs):
+def test_same_source_different_agg_funcs(
+    aggregation_specs_same_source_different_agg_funcs, source_info
+):
     """
     Test that asat_aggregation using the same source and join keys but different agg_func can be
     aggregated in the same groubpy statement
     """
-    aggregator = AsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = AsAtAggregator(source_info=source_info)
     for spec in aggregation_specs_same_source_different_agg_funcs:
         aggregator.update(spec)
 
@@ -442,12 +448,12 @@ def test_same_source_different_agg_funcs(aggregation_specs_same_source_different
     assert result.updated_table_expr.sql(pretty=True) == expected
 
 
-def test_same_source_different_keys(aggregation_specs_same_source_different_keys):
+def test_same_source_different_keys(aggregation_specs_same_source_different_keys, source_info):
     """
     Test that asat_aggregation using the same source and join keys but different keys will have to
     be aggregated using multiple groupby operations
     """
-    aggregator = AsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = AsAtAggregator(source_info=source_info)
     for spec in aggregation_specs_same_source_different_keys:
         aggregator.update(spec)
 
@@ -516,11 +522,11 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
     assert result.updated_table_expr.sql(pretty=True) == expected
 
 
-def test_asat_aggregate_with_cateogry(aggregation_spec_with_category):
+def test_asat_aggregate_with_cateogry(aggregation_spec_with_category, source_info):
     """
     Test AsAtAggregator with category parameter
     """
-    aggregator = AsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = AsAtAggregator(source_info=source_info)
     aggregator.update(aggregation_spec_with_category)
 
     result = aggregator.update_aggregation_table_expr(
@@ -584,12 +590,12 @@ def test_asat_aggregate_with_cateogry(aggregation_spec_with_category):
     assert result.updated_table_expr.sql(pretty=True) == expected
 
 
-def test_aggregate_asat_with_offset(aggregation_spec_with_offset):
+def test_aggregate_asat_with_offset(aggregation_spec_with_offset, source_info):
     """
     Test AsAtAggregator with offset parameter
     """
 
-    aggregator = AsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = AsAtAggregator(source_info=source_info)
     aggregator.update(aggregation_spec_with_offset)
 
     result = aggregator.update_aggregation_table_expr(
@@ -638,12 +644,12 @@ def test_aggregate_asat_with_offset(aggregation_spec_with_offset):
     assert result.updated_table_expr.sql(pretty=True) == expected
 
 
-def test_forward_aggregate_asat_with_offset(forward_aggregation_spec_with_offset):
+def test_forward_aggregate_asat_with_offset(forward_aggregation_spec_with_offset, source_info):
     """
     Test ForwardAsAtAggregator with offset parameter
     """
 
-    aggregator = ForwardAsAtAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = ForwardAsAtAggregator(source_info=source_info)
     aggregator.update(forward_aggregation_spec_with_offset)
 
     result = aggregator.update_aggregation_table_expr(

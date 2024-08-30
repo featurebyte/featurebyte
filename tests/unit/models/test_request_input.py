@@ -18,7 +18,7 @@ from featurebyte.session.snowflake import SnowflakeSession
 
 
 @pytest.fixture(name="session")
-def session_fixture():
+def session_fixture(adapter):
     """
     Fixture for the db session object
     """
@@ -32,6 +32,7 @@ def session_fixture():
                 "b": ColumnSpecWithDescription(name="a", dtype=DBVarType.INT),
             }
         ),
+        adapter=adapter,
     )
     session.create_table_as = partial(SnowflakeSession.create_table_as, session)
     return session

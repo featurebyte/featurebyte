@@ -10,7 +10,7 @@ import pytest
 from bson import ObjectId
 from sqlglot import select
 
-from featurebyte.enum import AggFunc, DBVarType, SourceType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.parent_serving import (
     EntityLookupInfo,
     EntityLookupStep,
@@ -117,9 +117,9 @@ def assert_sql_equal(sql, expected):
     assert sql == expected
 
 
-def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_1d):
+def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_1d, source_info):
     """Test that two compatible AggregationSpec shares the same expanded request table"""
-    plan = TileBasedRequestTablePlan(source_type=SourceType.SNOWFLAKE)
+    plan = TileBasedRequestTablePlan(source_info=source_info)
     plan.add_aggregation_spec(agg_spec_sum_1d)
     plan.add_aggregation_spec(agg_spec_max_1d)
 
@@ -157,9 +157,9 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     assert_sql_equal(cte[1].sql(pretty=True), expected_sql)
 
 
-def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d):
+def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d, source_info):
     """Test that two incompatible AggregationSpec does not share expanded request tables"""
-    plan = TileBasedRequestTablePlan(source_type=SourceType.SNOWFLAKE)
+    plan = TileBasedRequestTablePlan(source_info=source_info)
     plan.add_aggregation_spec(agg_spec_max_2h)
     plan.add_aggregation_spec(agg_spec_max_1d)
 
@@ -243,11 +243,12 @@ def test_feature_execution_planner(
     groupby_node_aggregation_id,
     expected_pruned_graph_and_node_1,
     expected_pruned_graph_and_node_2,
+    source_info,
 ):
     """Test FeatureExecutionPlanner generates the correct plan from groupby node"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     planner = FeatureExecutionPlanner(
-        query_graph_with_groupby, source_type=SourceType.SNOWFLAKE, is_online_serving=False
+        query_graph_with_groupby, source_info=source_info, is_online_serving=False
     )
     plan = planner.generate_plan([groupby_node])
     actual = list(
@@ -342,6 +343,7 @@ def test_feature_execution_planner__serving_names_mapping(
     groupby_node_aggregation_id,
     expected_pruned_graph_and_node_1,
     expected_pruned_graph_and_node_2,
+    source_info,
 ):
     """Test FeatureExecutionPlanner with serving names mapping provided"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
@@ -349,7 +351,7 @@ def test_feature_execution_planner__serving_names_mapping(
     planner = FeatureExecutionPlanner(
         query_graph_with_groupby,
         serving_names_mapping=mapping,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         is_online_serving=False,
     )
     plan = planner.generate_plan([groupby_node])
@@ -437,7 +439,9 @@ def test_feature_execution_planner__serving_names_mapping(
     }
 
 
-def test_feature_execution_planner__lookup_features(global_graph, projected_lookup_features):
+def test_feature_execution_planner__lookup_features(
+    global_graph, projected_lookup_features, source_info
+):
     """
     Test FeatureExecutionPlanner on an LookupFeature node
     """
@@ -445,7 +449,7 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
     planner = FeatureExecutionPlanner(
         global_graph,
         serving_names_mapping=mapping,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         is_online_serving=False,
     )
     nodes = list(projected_lookup_features)
@@ -472,13 +476,11 @@ def test_feature_execution_planner__lookup_features(global_graph, projected_look
 
 
 def test_feature_execution_planner__query_graph_with_graph_node(
-    query_graph_with_cleaning_ops_and_groupby,
+    query_graph_with_cleaning_ops_and_groupby, source_info
 ):
     """Test FeatureExecutionPlanner generates the plan without any error"""
     query_graph, groupby_node = query_graph_with_cleaning_ops_and_groupby
-    planner = FeatureExecutionPlanner(
-        query_graph, source_type=SourceType.SNOWFLAKE, is_online_serving=False
-    )
+    planner = FeatureExecutionPlanner(query_graph, source_info=source_info, is_online_serving=False)
     execution_plan = planner.generate_plan([groupby_node])
     groupby_node_aggregation_id = "afacb99e2c3aa0d15070807b8a43294696753bc5"
     assert execution_plan.feature_specs == {
@@ -502,6 +504,7 @@ def test_feature_execution_planner__query_graph_with_graph_node(
 def test_feature_execution_planner__feature_no_entity_ids(
     query_graph_with_groupby_no_entity_ids,
     groupby_node_aggregation_id,
+    source_info,
 ):
     """
     Test FeatureExecutionPlanner when feature node has no entity_ids
@@ -509,7 +512,7 @@ def test_feature_execution_planner__feature_no_entity_ids(
     groupby_node = query_graph_with_groupby_no_entity_ids.get_node_by_name("groupby_1")
     planner = FeatureExecutionPlanner(
         query_graph_with_groupby_no_entity_ids,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         is_online_serving=False,
     )
     plan = planner.generate_plan([groupby_node])
@@ -524,6 +527,7 @@ def test_feature_execution_planner__entity_relationships_context(
     business_entity_id,
     relation_table,
     parent_serving_preparation,
+    source_info,
     update_fixtures,
 ):
     """
@@ -542,7 +546,7 @@ def test_feature_execution_planner__entity_relationships_context(
     parent_serving_preparation.entity_relationships_context = entity_relationships_context
     planner = FeatureExecutionPlanner(
         graph,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         is_online_serving=False,
         parent_serving_preparation=parent_serving_preparation,
     )

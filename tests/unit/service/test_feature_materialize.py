@@ -696,6 +696,7 @@ async def test_initialize_new_columns__databricks_unity(
     mock_snowflake_session,
     offline_store_feature_table,
     mock_materialize_partial,
+    databricks_source_info,
     update_fixtures,
 ):
     """
@@ -707,6 +708,7 @@ async def test_initialize_new_columns__databricks_unity(
             raise ValueError()
 
     mock_snowflake_session.source_type = "databricks_unity"
+    mock_snowflake_session.get_source_info.return_value = databricks_source_info
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 
@@ -821,6 +823,7 @@ async def test_materialize_features_no_entity_databricks_unity(
     feature_materialize_service,
     mock_get_feature_store_session,
     mock_snowflake_session,
+    databricks_source_info,
     update_fixtures,
 ):
     """
@@ -833,6 +836,7 @@ async def test_materialize_features_no_entity_databricks_unity(
             raise ValueError()
 
     mock_snowflake_session.source_type = "databricks_unity"
+    mock_snowflake_session.get_source_info.return_value = databricks_source_info
     mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
     mock_snowflake_session._no_schema_error = ValueError
 

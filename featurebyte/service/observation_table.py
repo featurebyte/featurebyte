@@ -19,7 +19,6 @@ from featurebyte.common.utils import dataframe_from_json
 from featurebyte.enum import (
     DBVarType,
     MaterializedTableNamePrefix,
-    SourceType,
     SpecialColumnName,
     UploadFileFormat,
 )
@@ -42,7 +41,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
@@ -460,7 +459,7 @@ class ObservationTableService(
 
     @staticmethod
     def get_minimum_iet_sql_expr(
-        entity_column_names: List[str], table_details: TableDetails, source_type: SourceType
+        entity_column_names: List[str], table_details: TableDetails, adapter: BaseAdapter
     ) -> Expression:
         """
         Get the SQL expression to compute the minimum interval in seconds for each entity.
@@ -471,14 +470,13 @@ class ObservationTableService(
             List of entity column names
         table_details: TableDetails
             Table details of the materialized table
-        source_type: SourceType
-            Source type
+        adapter: BaseAdapter
+            Instance of the SQL adapter
 
         Returns
         -------
         str
         """
-        adapter = get_sql_adapter(source_type)
         point_in_time_quoted = quoted_identifier(SpecialColumnName.POINT_IN_TIME)
         previous_point_in_time_quoted = quoted_identifier("PREVIOUS_POINT_IN_TIME")
 
@@ -549,7 +547,7 @@ class ObservationTableService(
         entity_col_names = [col.name for col in columns_info if col.entity_id is not None]
         # Construct SQL
         sql_expr = self.get_minimum_iet_sql_expr(
-            entity_col_names, table_details, db_session.source_type
+            entity_col_names, table_details, db_session.adapter
         )
 
         # Execute SQL

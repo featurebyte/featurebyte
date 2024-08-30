@@ -149,6 +149,7 @@ WITH "casted_data" AS (
     *
   FROM stats
   LEFT JOIN counts__1
+    ON 1 = 1
 ), joined_tables_1 AS (
   SELECT
     *
@@ -237,3 +238,4 @@ SELECT
   "max TZ offset__4"
 FROM joined_tables_0
 LEFT JOIN joined_tables_1
+  ON 1 = 1

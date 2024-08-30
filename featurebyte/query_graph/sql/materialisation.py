@@ -18,6 +18,7 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
 def get_source_expr(
@@ -71,7 +72,7 @@ def get_source_count_expr(
 def get_view_expr(
     graph: QueryGraphModel,
     node_name: str,
-    source_type: SourceType,
+    source_info: SourceInfo,
 ) -> Select:
     """
     Construct SQL query to materialize a view given its query graph
@@ -82,14 +83,14 @@ def get_view_expr(
         Query graph
     node_name: str
         Name of the node to materialize
-    source_type: SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
 
     Returns
     -------
     Select
     """
-    interpreter = GraphInterpreter(query_graph=graph, source_type=source_type)
+    interpreter = GraphInterpreter(query_graph=graph, source_info=source_info)
     table_expr = interpreter.construct_materialize_expr(node_name)
     return table_expr
 

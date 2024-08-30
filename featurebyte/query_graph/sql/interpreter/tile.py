@@ -10,7 +10,6 @@ from typing import Optional, Set, Tuple, cast
 
 from bson import ObjectId
 
-from featurebyte.enum import SourceType
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -24,6 +23,7 @@ from featurebyte.query_graph.sql.common import (
     SQLType,
 )
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
@@ -175,10 +175,10 @@ class TileSQLGenerator:
     query_graph : QueryGraphModel
     """
 
-    def __init__(self, query_graph: QueryGraphModel, is_on_demand: bool, source_type: SourceType):
+    def __init__(self, query_graph: QueryGraphModel, is_on_demand: bool, source_info: SourceInfo):
         self.query_graph = query_graph
         self.is_on_demand = is_on_demand
-        self.source_type = source_type
+        self.source_info = source_info
 
     def construct_tile_gen_sql(self, starting_node: Node) -> list[TileGenSql]:
         """Construct a list of tile building SQLs for the given Query Graph
@@ -366,7 +366,7 @@ class TileSQLGenerator:
         groupby_sql_node = SQLOperationGraph(
             query_graph=self.query_graph,
             sql_type=sql_type,
-            source_type=self.source_type,
+            source_info=self.source_info,
             event_table_timestamp_filter=event_table_timestamp_filter,
             on_demand_entity_filters=on_demand_entity_filters,
         ).build(groupby_node)
@@ -378,7 +378,7 @@ class TileSQLGenerator:
         tile_value_types = [spec.tile_column_type for spec in groupby_sql_node.tile_specs]
         assert tile_table_id is not None, "Tile table ID is required"
         assert aggregation_id is not None, "Aggregation ID is required"
-        sql_template = SqlExpressionTemplate(sql_expr=sql, source_type=self.source_type)
+        sql_template = SqlExpressionTemplate(sql_expr=sql, source_type=self.source_info.source_type)
         fjs = groupby_node.parameters.feature_job_setting
         info = TileGenSql(
             tile_table_id=tile_table_id,
@@ -409,7 +409,7 @@ class TileGenMixin(BaseGraphInterpreter):
     ----------
     query_graph : QueryGraphModel
         Query graph
-    source_type : SourceType
+    source_info: SourceInfo
         Data source type information
     """
 
@@ -429,6 +429,6 @@ class TileGenMixin(BaseGraphInterpreter):
         """
         flat_starting_node = self.get_flattened_node(starting_node.name)
         generator = TileSQLGenerator(
-            self.query_graph, is_on_demand=is_on_demand, source_type=self.source_type
+            self.query_graph, is_on_demand=is_on_demand, source_info=self.source_info
         )
         return generator.construct_tile_gen_sql(flat_starting_node)

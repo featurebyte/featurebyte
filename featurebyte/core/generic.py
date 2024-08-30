@@ -290,7 +290,7 @@ class QueryObject(FeatureByteBaseModel):
         """
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node(**kwargs)
         return GraphInterpreter(
-            pruned_graph, source_type=self.feature_store.type
+            pruned_graph, source_info=self.feature_store.get_source_info()
         ).construct_preview_sql(node_name=mapped_node.name, num_rows=limit)[0]
 
 

@@ -7,9 +7,10 @@ import textwrap
 import pytest
 from sqlglot.expressions import select
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.sql.adapter import SnowflakeAdapter
 from tests.unit.query_graph.sql.adapter.base_adapter_test import BaseAdapterTest
+from tests.util.helper import get_sql_adapter_from_source_type
 
 
 class TestSnowflakeAdapter(BaseAdapterTest):
@@ -17,7 +18,7 @@ class TestSnowflakeAdapter(BaseAdapterTest):
     Test snowflake adapter class
     """
 
-    adapter = SnowflakeAdapter()
+    adapter = get_sql_adapter_from_source_type(SourceType.SNOWFLAKE)
 
     @classmethod
     def get_group_by_expected_result(cls) -> str:

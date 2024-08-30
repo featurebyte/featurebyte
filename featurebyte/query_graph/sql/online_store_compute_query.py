@@ -10,7 +10,7 @@ from typing import List, Optional, Tuple, cast
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, alias_, select
 
-from featurebyte.enum import InternalName, SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -20,6 +20,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import AggregationType, TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 
@@ -81,15 +82,15 @@ class OnlineStorePrecomputePlan:
         self._update(graph, node, agg_result_name_include_serving_names)
 
     def construct_online_store_precompute_queries(
-        self, source_type: SourceType
+        self, source_info: SourceInfo
     ) -> list[OnlineStoreComputeQueryModel]:
         """
         Construct SQL queries for online store pre-computation
 
         Parameters
         ----------
-        source_type: SourceType
-            Source type information
+        source_info: SourceInfo
+            Source information
 
         Returns
         -------
@@ -99,7 +100,7 @@ class OnlineStorePrecomputePlan:
         for _, agg_params in self.params_by_agg_result_name.items():
             query = self._construct_online_store_precompute_query(
                 params=agg_params,
-                source_type=source_type,
+                source_info=source_info,
             )
             result.append(query)
         return result
@@ -134,11 +135,11 @@ class OnlineStorePrecomputePlan:
     def _construct_online_store_precompute_query(
         self,
         params: PrecomputeQueryParams,
-        source_type: SourceType,
+        source_info: SourceInfo,
     ) -> OnlineStoreComputeQueryModel:
         planner = FeatureExecutionPlanner(
             params.agg_spec.pruned_graph,
-            source_type=source_type,
+            source_info=source_info,
             is_online_serving=False,
         )
         plan = planner.generate_plan([params.agg_spec.pruned_node])
@@ -159,7 +160,7 @@ class OnlineStorePrecomputePlan:
             serving_names=sorted(params.agg_spec.serving_names),
             result_name=params.agg_spec.agg_result_name,
         )
-        sql = sql_to_string(sql_expr, source_type)
+        sql = sql_to_string(sql_expr, source_info.source_type)
 
         return OnlineStoreComputeQueryModel(
             sql=sql,
@@ -309,7 +310,7 @@ class OnlineStorePrecomputePlan:
 def get_online_store_precompute_queries(
     graph: QueryGraph,
     node: Node,
-    source_type: SourceType,
+    source_info: SourceInfo,
     agg_result_name_include_serving_names: bool,
 ) -> list[OnlineStoreComputeQueryModel]:
     """
@@ -321,8 +322,8 @@ def get_online_store_precompute_queries(
         Query graph
     node : Node
         Query graph node
-    source_type : SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
     agg_result_name_include_serving_names: bool
         Whether to include serving names in the aggregation result names
 
@@ -333,8 +334,8 @@ def get_online_store_precompute_queries(
     universe_plan = OnlineStorePrecomputePlan(
         graph,
         node,
-        adapter=get_sql_adapter(source_type),
+        adapter=get_sql_adapter(source_info),
         agg_result_name_include_serving_names=agg_result_name_include_serving_names,
     )
-    queries = universe_plan.construct_online_store_precompute_queries(source_type=source_type)
+    queries = universe_plan.construct_online_store_precompute_queries(source_info=source_info)
     return queries

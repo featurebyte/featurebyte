@@ -102,7 +102,6 @@ SKIPPED_TESTS = {
         "tests/integration/api/test_scd_view_operations.py",
         "tests/integration/api/test_serving_parent_features.py",
         "tests/integration/api/test_target_correctness.py",
-        "tests/integration/api/test_view_describe.py",
         "tests/integration/api/test_view_sample.py",
         "tests/integration/feature_store_integration/test_feature_materialize.py",
         "tests/integration/migration/test_data_warehouse_migration.py",
@@ -174,7 +173,11 @@ def pytest_collection_modifyitems(config, items):
         for item in all_items:
             source_type = get_source_type_from_item(item)
             if source_type in SKIPPED_TESTS:
-                if item.location[0] in SKIPPED_TESTS[source_type]:
+                skipped_tests = SKIPPED_TESTS[source_type]
+                if (
+                    item.location[0] in skipped_tests
+                    or f"{item.location[0]}::{item.location[2]}" in skipped_tests
+                ):
                     continue
             filtered_items.append(item)
         return filtered_items

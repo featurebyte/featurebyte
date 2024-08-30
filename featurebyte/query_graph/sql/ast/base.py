@@ -12,7 +12,6 @@ from typing import Optional, Type, TypeVar, cast
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
-from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -22,6 +21,7 @@ from featurebyte.query_graph.sql.common import (
     OnDemandEntityFilters,
     SQLType,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import AggregationSpec
 
 SQLNodeT = TypeVar("SQLNodeT", bound="SQLNode")
@@ -50,7 +50,7 @@ class SQLNodeContext:
     graph: QueryGraphModel
     query_node: Node
     sql_type: SQLType
-    source_type: SourceType
+    source_info: SourceInfo
     input_sql_nodes: list[SQLNode]
     to_filter_scd_by_current_flag: Optional[bool]
     event_table_timestamp_filter: Optional[EventTableTimestampFilter]
@@ -72,7 +72,7 @@ class SQLNodeContext:
         -------
         BaseAdapter
         """
-        return get_sql_adapter(self.source_type)
+        return get_sql_adapter(self.source_info)
 
 
 @dataclass

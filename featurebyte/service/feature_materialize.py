@@ -27,7 +27,7 @@ from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
 )
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     get_qualified_column_identifier,
@@ -288,7 +288,7 @@ class FeatureMaterializeService:
                 graph=feature_table_model.feature_cluster.graph,
                 nodes=nodes,
                 request_data=batch_request_table,
-                source_type=session.source_type,
+                source_info=session.get_source_info(),
                 online_store_table_version_service=self.online_store_table_version_service,
                 output_table_details=output_table_details,
                 request_timestamp=feature_timestamp,
@@ -305,7 +305,7 @@ class FeatureMaterializeService:
                     column_names.append(column_name)
                     column_dtypes.append(data_type)
 
-            adapter = get_sql_adapter(session.source_type)
+            adapter = session.adapter
             materialized_features = MaterializedFeatures(
                 materialized_table_name=output_table_details.table_name,
                 column_names=column_names,
@@ -719,7 +719,7 @@ class FeatureMaterializeService:
                 materialized_lookup_features = (
                     await self._materialize_precomputed_lookup_feature_table(
                         session=session,
-                        adapter=get_sql_adapter(session.source_type),
+                        adapter=session.adapter,
                         feature_timestamp=source_features.feature_timestamp,
                         materialized_feature_table_name=source_feature_table.name,
                         column_names=source_features.column_names,
@@ -769,8 +769,9 @@ class FeatureMaterializeService:
             for col in feature_table_model.output_column_names
             if col not in column_names_not_in_warehouse
         ]
+        adapter = session.adapter
         column_name_to_data_type = {
-            column_name: get_sql_adapter(session.source_type).get_physical_type_from_dtype(dtype)
+            column_name: adapter.get_physical_type_from_dtype(dtype)
             for (column_name, dtype) in zip(
                 feature_table_model.output_column_names, feature_table_model.output_dtypes
             )
@@ -1354,7 +1355,7 @@ class FeatureMaterializeService:
         )
 
         if new_columns:
-            adapter = get_sql_adapter(session.source_type)
+            adapter = session.adapter
             query = adapter.alter_table_add_columns(
                 expressions.Table(this=quoted_identifier(feature_table_name)),
                 cls._get_column_defs(

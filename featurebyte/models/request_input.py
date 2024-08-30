@@ -11,7 +11,7 @@ from pydantic import Field, PrivateAttr, StrictStr
 from sqlglot import expressions
 from sqlglot.expressions import Select
 
-from featurebyte.enum import SourceType, StrEnum
+from featurebyte.enum import StrEnum
 from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -24,6 +24,7 @@ from featurebyte.query_graph.sql.materialisation import (
     get_view_expr,
     select_and_rename_columns,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.session.base import BaseSession
 
@@ -49,13 +50,13 @@ class BaseRequestInput(FeatureByteBaseModel):
     columns_rename_mapping: Optional[Dict[str, str]] = Field(default=None)
 
     @abstractmethod
-    def get_query_expr(self, source_type: SourceType) -> Select:
+    def get_query_expr(self, source_info: SourceInfo) -> Select:
         """
         Get the SQL expression for the underlying data (can be either a table or a view)
 
         Parameters
         ----------
-        source_type: SourceType
+        source_info: SourceInfo
             The source type of the destination table
 
         Returns
@@ -136,7 +137,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         sample_rows: Optional[int]
             The number of rows to sample. If None, no sampling is performed
         """
-        query_expr = self.get_query_expr(source_type=session.source_type)
+        query_expr = self.get_query_expr(source_info=session.get_source_info())
 
         if self.columns is not None or self.columns_rename_mapping is not None:
             available_columns = await self.get_column_names(session=session)
@@ -151,7 +152,7 @@ class BaseRequestInput(FeatureByteBaseModel):
             num_rows = await self.get_row_count(session=session, query_expr=query_expr)
             if num_rows > sample_rows:
                 num_percent = self.get_sample_percentage_from_row_count(num_rows, sample_rows)
-                adapter = get_sql_adapter(source_type=session.source_type)
+                adapter = get_sql_adapter(session.get_source_info())
                 query_expr = (
                     adapter.tablesample(query_expr, num_percent)
                     .order_by(expressions.Anonymous(this="RANDOM"))
@@ -209,8 +210,8 @@ class ViewRequestInput(BaseRequestInput):
                 self._graph = self.internal_graph
         return self._graph
 
-    def get_query_expr(self, source_type: SourceType) -> Select:
-        return get_view_expr(graph=self.graph, node_name=self.node_name, source_type=source_type)
+    def get_query_expr(self, source_info: SourceInfo) -> Select:
+        return get_view_expr(graph=self.graph, node_name=self.node_name, source_info=source_info)
 
     async def get_column_names(self, session: BaseSession) -> List[str]:
         node = self.graph.get_node_by_name(self.node_name)
@@ -232,8 +233,8 @@ class SourceTableRequestInput(BaseRequestInput):
     source: TabularSource
     type: Literal[RequestInputType.SOURCE_TABLE] = RequestInputType.SOURCE_TABLE
 
-    def get_query_expr(self, source_type: SourceType) -> Select:
-        _ = source_type
+    def get_query_expr(self, source_info: SourceInfo) -> Select:
+        _ = source_info
         return get_source_expr(source=self.source.table_details)
 
     async def get_column_names(self, session: BaseSession) -> list[str]:

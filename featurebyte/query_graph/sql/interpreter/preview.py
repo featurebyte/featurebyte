@@ -308,7 +308,7 @@ class PreviewMixin(BaseGraphInterpreter):
         sql_graph = SQLOperationGraph(
             query_graph=query_graph,
             sql_type=SQLType.MATERIALIZE,
-            source_type=self.source_type,
+            source_info=self.source_info,
         )
         sql_node = sql_graph.build(flat_node)
 
@@ -401,7 +401,7 @@ class PreviewMixin(BaseGraphInterpreter):
             node_name=node_name, num_rows=0, clip_timestamp_columns=clip_timestamp_columns
         )
         return (
-            sql_to_string(sql_tree.limit(num_rows), source_type=self.source_type),
+            sql_to_string(sql_tree.limit(num_rows), source_type=self.source_info.source_type),
             type_conversions,
         )
 
@@ -450,7 +450,7 @@ class PreviewMixin(BaseGraphInterpreter):
             total_num_rows=total_num_rows,
             clip_timestamp_columns=True,
         )
-        return sql_to_string(sql_tree, source_type=self.source_type), type_conversions
+        return sql_to_string(sql_tree, source_type=self.source_info.source_type), type_conversions
 
     @classmethod
     def _clip_timestamp_columns(
@@ -532,7 +532,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 )
             )
         )
-        return sql_to_string(output_expr.limit(num_rows), source_type=self.source_type)
+        return sql_to_string(output_expr.limit(num_rows), source_type=self.source_info.source_type)
 
     @staticmethod
     def _empty_value_expr(column_name: str) -> expressions.Expression:
@@ -607,7 +607,7 @@ class PreviewMixin(BaseGraphInterpreter):
     ) -> OrderedDictT[
         str,
         Tuple[
-            Optional[Callable[[expressions.Expression, int], expressions.Expression]],
+            Optional[Callable[[expressions.Expression, int, DBVarType], expressions.Expression]],
             Optional[Set[DBVarType]],
         ],
     ]:
@@ -617,7 +617,7 @@ class PreviewMixin(BaseGraphInterpreter):
         - the key is the name of the statistics to be computed
         - value is a tuple of:
             - optional function to generate SQL expression with the following signature:
-                f(col_expr: expressions.Expression, column_idx: int) -> expressions.Expression
+                f(col_expr: expressions.Expression, column_idx: int, column_dtype: DBVarType) -> expressions.Expression
             - optional list of applicable DBVarType that the statistics supports. If None all types are supported.
 
         Returns
@@ -632,13 +632,15 @@ class PreviewMixin(BaseGraphInterpreter):
         """
         stats_expressions: OrderedDictT[str, Tuple[Any, Optional[Set[DBVarType]]]] = OrderedDict()
         stats_expressions["unique"] = (
-            lambda col_expr, _: expressions.Count(
-                this=expressions.Distinct(expressions=[col_expr])
+            lambda col_expr, _, col_dtype: expressions.Count(
+                this=expressions.Distinct(
+                    expressions=[self.adapter.prepare_before_count_distinct(col_expr, col_dtype)]
+                )
             ),
             None,
         )
         stats_expressions["%missing"] = (
-            lambda col_expr, _: expressions.Mul(
+            lambda col_expr, *_: expressions.Mul(
                 this=expressions.Paren(
                     this=expressions.Sub(
                         this=make_literal_value(1.0),
@@ -659,14 +661,11 @@ class PreviewMixin(BaseGraphInterpreter):
             None,
         )
         stats_expressions["%empty"] = (
-            lambda col_expr, column_idx: expressions.Anonymous(
-                this="COUNT_IF",
-                expressions=[
-                    expressions.EQ(
-                        this=col_expr,
-                        expression=make_literal_value(""),
-                    )
-                ],
+            lambda col_expr, column_idx, _: self.adapter.count_if(
+                expressions.EQ(
+                    this=col_expr,
+                    expression=make_literal_value(""),
+                )
             ),
             {DBVarType.CHAR, DBVarType.VARCHAR},
         )
@@ -690,19 +689,19 @@ class PreviewMixin(BaseGraphInterpreter):
             },
         )
         stats_expressions["mean"] = (
-            lambda col_expr, _: expressions.Avg(
-                this=expressions.Cast(this=col_expr, to="DOUBLE"),
+            lambda col_expr, *_: expressions.Avg(
+                this=expressions.Cast(this=col_expr, to=expressions.DataType.build("DOUBLE")),
             ),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["std"] = (
-            lambda col_expr, _: expressions.Stddev(
-                this=expressions.Cast(this=col_expr, to="DOUBLE"),
+            lambda col_expr, *_: expressions.Stddev(
+                this=expressions.Cast(this=col_expr, to=expressions.DataType.build("DOUBLE")),
             ),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["min"] = (
-            lambda col_expr, _: expressions.Min(this=col_expr),
+            lambda col_expr, *_: expressions.Min(this=col_expr),
             {
                 DBVarType.FLOAT,
                 DBVarType.INT,
@@ -714,19 +713,19 @@ class PreviewMixin(BaseGraphInterpreter):
             },
         )
         stats_expressions["25%"] = (
-            lambda col_expr, _: self._percentile_expr(col_expr, 0.25),
+            lambda col_expr, *_: self._percentile_expr(col_expr, 0.25),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["50%"] = (
-            lambda col_expr, _: self._percentile_expr(col_expr, 0.5),
+            lambda col_expr, *_: self._percentile_expr(col_expr, 0.5),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["75%"] = (
-            lambda col_expr, _: self._percentile_expr(col_expr, 0.75),
+            lambda col_expr, *_: self._percentile_expr(col_expr, 0.75),
             {DBVarType.FLOAT, DBVarType.INT},
         )
         stats_expressions["max"] = (
-            lambda col_expr, _: expressions.Max(this=col_expr),
+            lambda col_expr, *_: expressions.Max(this=col_expr),
             {
                 DBVarType.FLOAT,
                 DBVarType.INT,
@@ -738,11 +737,11 @@ class PreviewMixin(BaseGraphInterpreter):
             },
         )
         stats_expressions["min TZ offset"] = (
-            lambda col_expr, _: expressions.Min(this=self._tz_offset_expr(col_expr)),
+            lambda col_expr, *_: expressions.Min(this=self._tz_offset_expr(col_expr)),
             {DBVarType.TIMESTAMP_TZ},
         )
         stats_expressions["max TZ offset"] = (
-            lambda col_expr, _: expressions.Max(this=self._tz_offset_expr(col_expr)),
+            lambda col_expr, *_: expressions.Max(this=self._tz_offset_expr(col_expr)),
             {DBVarType.TIMESTAMP_TZ},
         )
         return stats_expressions
@@ -841,9 +840,9 @@ class PreviewMixin(BaseGraphInterpreter):
             # compute entropy
             selections.append(
                 expressions.alias_(
-                    expression=expressions.Anonymous(
-                        this="F_COUNT_DICT_ENTROPY",
-                        expressions=[
+                    expression=self.adapter.call_udf(
+                        "F_COUNT_DICT_ENTROPY",
+                        [
                             expressions.Column(
                                 this=quoted_identifier("COUNT_DICT"), table="count_dict"
                             )
@@ -857,9 +856,9 @@ class PreviewMixin(BaseGraphInterpreter):
             # compute most frequent value
             selections.append(
                 expressions.alias_(
-                    expression=expressions.Anonymous(
-                        this="F_COUNT_DICT_MOST_FREQUENT",
-                        expressions=[
+                    expression=self.adapter.call_udf(
+                        "F_COUNT_DICT_MOST_FREQUENT",
+                        [
                             expressions.Column(
                                 this=quoted_identifier("COUNT_DICT"), table="count_dict"
                             )
@@ -872,9 +871,9 @@ class PreviewMixin(BaseGraphInterpreter):
             # compute most frequent count
             selections.append(
                 expressions.alias_(
-                    expression=expressions.Anonymous(
-                        this="F_COUNT_DICT_MOST_FREQUENT_VALUE",
-                        expressions=[
+                    expression=self.adapter.call_udf(
+                        "F_COUNT_DICT_MOST_FREQUENT_VALUE",
+                        [
                             expressions.Column(
                                 this=quoted_identifier("COUNT_DICT"), table="count_dict"
                             )
@@ -888,24 +887,26 @@ class PreviewMixin(BaseGraphInterpreter):
             expressions.Subquery(this=cat_count_dict, alias="count_dict")
         )
 
-    @staticmethod
     def _get_cte_with_casted_data(
-        sql_tree: expressions.Expression, input_table_name: str
+        self,
+        sql_tree: expressions.Expression,
+        input_table_name: str,
+        columns_info: dict[Optional[str], ViewDataColumn],
     ) -> CteStatement:
         # get subquery with columns casted to string to compute value counts
         casted_columns = []
         for col_expr in sql_tree.expressions:
             col_name = col_expr.alias_or_name
-            # add casted columns
-            casted_columns.append(
-                expressions.alias_(
-                    expressions.Cast(
-                        this=quoted_identifier(col_name), to=expressions.DataType.build("VARCHAR")
-                    ),
-                    col_name,
-                    quoted=True,
+            if col_name in columns_info:
+                col_dtype = columns_info[col_name].dtype
+                # add casted columns
+                casted_columns.append(
+                    expressions.alias_(
+                        self.adapter.cast_to_string(quoted_identifier(col_name), col_dtype),
+                        col_name,
+                        quoted=True,
+                    )
                 )
-            )
         sql_tree = expressions.select(*casted_columns).from_(quoted_identifier(input_table_name))
         return quoted_identifier(CASTED_DATA_TABLE_NAME), sql_tree
 
@@ -972,7 +973,7 @@ class PreviewMixin(BaseGraphInterpreter):
         }
 
         # data casted to string
-        cte_casted_data = self._get_cte_with_casted_data(sql_tree, input_table_name)
+        cte_casted_data = self._get_cte_with_casted_data(sql_tree, input_table_name, columns_info)
 
         # only extract requested stats if specified
         required_stats_expressions = {}
@@ -1027,7 +1028,7 @@ class PreviewMixin(BaseGraphInterpreter):
                         )
                         stats_selections.append(
                             expressions.alias_(
-                                stats_func(stats_func_col_expr, column_idx),
+                                stats_func(stats_func_col_expr, column_idx, column.dtype),
                                 f"{stats_name}__{column_idx}",
                                 quoted=True,
                             ),
@@ -1100,12 +1101,17 @@ class PreviewMixin(BaseGraphInterpreter):
 
         # Join stats and counts tables in batches of NUM_TABLES_PER_JOIN tables, as joined_tables_0,
         # joined_tables_1, etc.
+        dummy_join_condition = expressions.EQ(
+            this=make_literal_value(1), expression=make_literal_value(1)
+        )
         joined_tables = []
         for join_index, i in enumerate(range(0, len(tables), NUM_TABLES_PER_JOIN)):
             cur_tables = tables[i : i + NUM_TABLES_PER_JOIN]
             sql_tree = expressions.select(expressions.Star()).from_(cur_tables[0])
             for table_name in cur_tables[1:]:
-                sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
+                sql_tree = sql_tree.join(
+                    expression=table_name, join_type="LEFT", on=dummy_join_condition
+                )
             table_alias = f"joined_tables_{join_index}"
             joined_tables.append(table_alias)
             cte_statements.append((table_alias, sql_tree))
@@ -1115,7 +1121,11 @@ class PreviewMixin(BaseGraphInterpreter):
         assert len(joined_tables) > 0
         sql_tree = sql_tree.from_(joined_tables[0])
         for table_name in joined_tables[1:]:
-            sql_tree = sql_tree.join(expression=table_name, join_type="LEFT")
+            sql_tree = sql_tree.join(
+                expression=table_name,
+                join_type="LEFT",
+                on=dummy_join_condition,
+            )
 
         return sql_tree
 
@@ -1327,4 +1337,4 @@ class PreviewMixin(BaseGraphInterpreter):
                 skip_conversion=True,
             )[0].subquery()
         )
-        return sql_to_string(expr, source_type=self.source_type)
+        return sql_to_string(expr, source_type=self.adapter.source_type)

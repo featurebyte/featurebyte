@@ -13,13 +13,13 @@ from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, select
 
 from featurebyte.common.progress import divide_progress_callback
-from featurebyte.enum import InternalName, SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -28,6 +28,7 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tile_util import (
     construct_entity_table_query,
     get_earliest_tile_start_date_expr,
@@ -236,18 +237,18 @@ class TileCache:
         -------
         BaseAdapter
         """
-        return get_sql_adapter(self.source_type)
+        return self.session.adapter
 
     @property
-    def source_type(self) -> SourceType:
+    def source_info(self) -> SourceInfo:
         """
-        Returns the source type that corresponds to this TileCache
+        Returns the source info that corresponds to this TileCache
 
         Returns
         -------
-        SourceType
+        SourceInfo
         """
-        return self.session.source_type
+        return self.adapter.source_info
 
     async def invoke_tile_manager(
         self,
@@ -469,7 +470,7 @@ class TileCache:
         dict[TileInfoKey, TileGenSql]
         """
         out = {}
-        interpreter = GraphInterpreter(graph, source_type=self.source_type)
+        interpreter = GraphInterpreter(graph, source_info=self.source_info)
         for i, node in enumerate(nodes):
             infos = interpreter.construct_tile_gen_sql(node, is_on_demand=True)
             for info in infos:
@@ -783,7 +784,7 @@ class TileCache:
         request = OnDemandTileComputeRequest(
             tile_table_id=tile_info.tile_table_id,
             aggregation_id=aggregation_id,
-            tracker_sql=sql_to_string(entity_table_expr, source_type=self.source_type),
+            tracker_sql=sql_to_string(entity_table_expr, source_type=self.source_info.source_type),
             tile_compute_sql=tile_compute_sql,
             tile_gen_info=tile_info,
         )

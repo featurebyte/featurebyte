@@ -84,7 +84,7 @@ def point_in_time_has_missing_values_fixture():
 
 
 @pytest.fixture(name="db_session")
-def db_session_fixture(point_in_time_has_missing_values):
+def db_session_fixture(point_in_time_has_missing_values, adapter):
     """
     Fixture for a db session
     """
@@ -124,6 +124,7 @@ def db_session_fixture(point_in_time_has_missing_values):
         source_type=SourceType.SNOWFLAKE,
         schema_name="my_schema",
         database_name="my_db",
+        adapter=adapter,
     )
     return mock_db_session
 
@@ -149,7 +150,10 @@ async def test_create_observation_table_from_source_table(
 
 @pytest.mark.asyncio
 async def test_validate__missing_point_in_time(
-    observation_table_service, snowflake_feature_store, table_details
+    observation_table_service,
+    snowflake_feature_store,
+    table_details,
+    adapter,
 ):
     """
     Test validation of missing point in time
@@ -166,11 +170,14 @@ async def test_validate__missing_point_in_time(
             ),
         }
 
+    # TODO: we should consolidate the definition of mock_snowflake_session in a single fixture and
+    #  override whatever is necessary in tests if needed.
     mock_db_session = Mock(
         name="mock_session",
         spec=BaseSession,
         list_table_schema=Mock(side_effect=mock_list_table_schema),
         source_type=SourceType.SNOWFLAKE,
+        adapter=adapter,
     )
     with pytest.raises(MissingPointInTimeColumnError):
         await observation_table_service.validate_materialized_table_and_get_metadata(
@@ -353,13 +360,11 @@ async def test_request_input_get_row_count(observation_table_from_source_table, 
     assert query == expected_query
 
 
-def test_get_minimum_iet_sql_expr(observation_table_service, table_details):
+def test_get_minimum_iet_sql_expr(observation_table_service, table_details, adapter):
     """
     Test get_minimum_iet_sql_expr
     """
-    expr = observation_table_service.get_minimum_iet_sql_expr(
-        ["entity"], table_details, SourceType.SNOWFLAKE
-    )
+    expr = observation_table_service.get_minimum_iet_sql_expr(["entity"], table_details, adapter)
     expr_sql = expr.sql(pretty=True)
     expected_query = textwrap.dedent(
         """

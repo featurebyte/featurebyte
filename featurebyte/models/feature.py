@@ -569,9 +569,9 @@ class FeatureModel(BaseFeatureModel):
             graph_dict = graph_dict.model_dump(by_alias=True)
         graph = QueryGraph(**graph_dict)
         node_name = self.node_name
-        feature_store_type = graph.get_input_node(node_name).parameters.feature_store_details.type
+        source_info = graph.get_input_node(node_name).parameters.get_source_info()
 
-        interpreter = GraphInterpreter(graph, feature_store_type)
+        interpreter = GraphInterpreter(graph, source_info)
         node = graph.get_node_by_name(node_name)
 
         try:
@@ -598,7 +598,7 @@ class FeatureModel(BaseFeatureModel):
         for query in get_online_store_precompute_queries(
             graph,
             graph.get_node_by_name(node_name),
-            feature_store_type,
+            source_info,
             self.agg_result_name_include_serving_names,
         ):
             self.__dict__["aggregation_result_names"].append(query.result_name)

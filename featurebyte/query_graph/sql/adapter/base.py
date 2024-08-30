@@ -13,7 +13,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType, InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -22,6 +22,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
 
@@ -42,7 +43,10 @@ class BaseAdapter(ABC):
     """
 
     TABLESAMPLE_PERCENT_KEY = "percent"
-    source_type: SourceType
+
+    def __init__(self, source_info: SourceInfo):
+        self.source_info = source_info
+        self.source_type = source_info.source_type
 
     @classmethod
     @abstractmethod
@@ -923,3 +927,75 @@ class BaseAdapter(ABC):
         tuple_expr = expressions.Tuple(expressions=columns)
         alter_table_sql += " ADD COLUMNS " + sql_to_string(tuple_expr, source_type=cls.source_type)
         return alter_table_sql
+
+    @classmethod
+    def count_if(cls, condition: Expression) -> Expression:
+        """
+        Construct a COUNT_IF expression
+
+        Parameters
+        ----------
+        condition: Expression
+            Condition expression
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Anonymous(this="COUNT_IF", expressions=[condition])
+
+    @classmethod
+    def cast_to_string(cls, expr: Expression, dtype: Optional[DBVarType]) -> Expression:
+        """
+        Construct a CAST expression to convert the input expression to a string
+
+        Parameters
+        ----------
+        expr: Expression
+            Input expression
+        dtype: Optional[DBVarType]
+            Data type
+
+        Returns
+        -------
+        Expression
+        """
+        _ = dtype
+        return expressions.Cast(this=expr, to=expressions.DataType.build("VARCHAR"))
+
+    def call_udf(self, udf_name: str, args: list[Expression]) -> Expression:
+        """
+        Construct a user defined function call expression
+
+        Parameters
+        ----------
+        udf_name: str
+            User defined function name
+        args: list[Expression]
+            List of expressions to pass as arguments to the user defined function
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Anonymous(this=udf_name, expressions=args)
+
+    @classmethod
+    def prepare_before_count_distinct(cls, expr: Expression, dtype: DBVarType) -> Expression:
+        """
+        Prepare the expression before applying COUNT_DISTINCT because some databases do not support
+        COUNT_DISTINCT directly on certain data types
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression to prepare
+        dtype: DBVarType
+            Data type
+
+        Returns
+        -------
+        Expression
+        """
+        _ = dtype
+        return expr

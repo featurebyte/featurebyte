@@ -275,7 +275,7 @@ def get_child_entity_universe_template(
                         join_steps=None,
                     )
                 ],
-                source_type=feature_store.type,
+                source_info=feature_store.get_source_info(),
             ),
         )
     else:

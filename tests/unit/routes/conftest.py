@@ -42,7 +42,7 @@ def api_client_persistent(persistent, user_id, temp_storage):
 
 
 @pytest.fixture(name="mock_get_session")
-def get_mocked_get_session_fixture(session_manager, snowflake_execute_query):
+def get_mocked_get_session_fixture(session_manager, snowflake_execute_query, adapter, source_info):
     """
     Returns a mocked get_feature_store_session.
     """
@@ -56,6 +56,8 @@ def get_mocked_get_session_fixture(session_manager, snowflake_execute_query):
             source_type=SourceType.SNOWFLAKE,
             database_name="sf_database",
             schema_name="sf_schema",
+            get_source_info=Mock(return_value=source_info),
+            adapter=adapter,
         )
         yield mocked_get_session
 

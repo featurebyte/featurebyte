@@ -19,6 +19,7 @@ from featurebyte.query_graph.sql.groupby_helper import (
     get_vector_agg_column_snowflake,
     update_aggregation_expression_for_columns,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from tests.unit.query_graph.sql.fixtures.snowflake_double_vector_agg_only import (
     SNOWFLAKE_DOUBLE_VECTOR_AGG_ONLY_QUERY,
 )
@@ -202,7 +203,9 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
         groupby_keys=[groupby_key, groupby_key_point_in_time],
         groupby_columns=groupby_columns,
         value_by=valueby_key,
-        adapter=get_sql_adapter(source_type),
+        adapter=get_sql_adapter(
+            SourceInfo(source_type=source_type, database_name="", schema_name="")
+        ),
     )
 
     result_0 = _maybe_wrap_in_variant(source_type, 'INNER_."result_0_inner"')
@@ -358,7 +361,9 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         groupby_keys=[groupby_key, groupby_key_point_in_time],
         groupby_columns=groupby_columns,
         value_by=value_by,
-        adapter=get_sql_adapter(source_type),
+        adapter=get_sql_adapter(
+            SourceInfo(source_type=source_type, database_name="", schema_name="")
+        ),
     )
     assert groupby_expr.sql(pretty=True) == result.strip()
 
@@ -372,7 +377,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         (AggFunc.MAX, DBVarType.ARRAY, "VECTOR_AGGREGATE_MAX"),
     ],
 )
-def test_get_groupby_expr(agg_func, parent_dtype, method, common_params):
+def test_get_groupby_expr(agg_func, parent_dtype, method, common_params, spark_source_info):
     """
     Test get_groupby_expr
     """
@@ -389,7 +394,7 @@ def test_get_groupby_expr(agg_func, parent_dtype, method, common_params):
         groupby_keys=[groupby_key, groupby_key_point_in_time],
         groupby_columns=[groupby_column],
         value_by=valueby_key,
-        adapter=get_sql_adapter(SourceType.SPARK),
+        adapter=get_sql_adapter(spark_source_info),
     )
     expected = textwrap.dedent(
         f"""

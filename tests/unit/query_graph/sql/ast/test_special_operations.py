@@ -2,58 +2,57 @@
 Test for special operations that do not have a specific SQLNode implementation: filter, project, assign
 """
 
-from featurebyte import SourceType
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 
 
-def test_handle_filter_node(snowflake_event_view_with_entity):
+def test_handle_filter_node(snowflake_event_view_with_entity, source_info):
     """
     Test handling for filter query node
     """
     view = snowflake_event_view_with_entity
     filtered_view = view[view["col_float"] > 1.5]
-    interpreter = BaseGraphInterpreter(view.graph, SourceType.SNOWFLAKE)
+    interpreter = BaseGraphInterpreter(view.graph, source_info)
     node = interpreter.get_flattened_node(filtered_view.node.name)
     sql_node = SQLOperationGraph(
         query_graph=interpreter.query_graph,
         sql_type=SQLType.AGGREGATION,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     ).build(node)
     assert sql_node.context.query_node.name.startswith("input")
     assert sql_node.context.current_query_node.name == node.name
 
 
-def test_handle_assign_node(snowflake_event_view_with_entity):
+def test_handle_assign_node(snowflake_event_view_with_entity, source_info):
     """
     Test handling for assign query node
     """
     view = snowflake_event_view_with_entity
     view["col_float"] = view["col_float"] + 1.5
-    interpreter = BaseGraphInterpreter(view.graph, SourceType.SNOWFLAKE)
+    interpreter = BaseGraphInterpreter(view.graph, source_info)
     node = interpreter.get_flattened_node(view.node.name)
     sql_node = SQLOperationGraph(
         query_graph=interpreter.query_graph,
         sql_type=SQLType.AGGREGATION,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     ).build(node)
     assert sql_node.context.query_node.name.startswith("input")
     assert sql_node.context.current_query_node.name == node.name
 
 
-def test_handle_project_node(snowflake_event_view_with_entity):
+def test_handle_project_node(snowflake_event_view_with_entity, source_info):
     """
     Test handling for project query node
     """
     view = snowflake_event_view_with_entity
     view = view[["col_int", "col_float"]]
-    interpreter = BaseGraphInterpreter(view.graph, SourceType.SNOWFLAKE)
+    interpreter = BaseGraphInterpreter(view.graph, source_info)
     node = interpreter.get_flattened_node(view.node.name)
     sql_node = SQLOperationGraph(
         query_graph=interpreter.query_graph,
         sql_type=SQLType.AGGREGATION,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     ).build(node)
     assert sql_node.context.query_node.name.startswith("input")
     assert sql_node.context.current_query_node.name == node.name

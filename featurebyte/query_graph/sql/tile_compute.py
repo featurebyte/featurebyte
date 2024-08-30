@@ -11,7 +11,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
 from featurebyte.common.model_util import parse_duration_string
-from featurebyte.enum import InternalName, SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
@@ -19,6 +19,7 @@ from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tile_util import (
     construct_entity_table_query,
     get_earliest_tile_start_date_expr,
@@ -40,20 +41,20 @@ class OnDemandTileComputePlan:
     ----------
     request_table_name : str
         Name of request table to use
-    source_type : SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
     """
 
     def __init__(
         self,
         request_table_name: str,
-        source_type: SourceType,
+        source_info: SourceInfo,
     ):
         self.processed_agg_ids: set[str] = set()
         self.max_window_size_by_tile_id: dict[str, Optional[int]] = {}
         self.tile_infos: list[TileGenSql] = []
         self.request_table_name = request_table_name
-        self.source_type = source_type
+        self.source_info = source_info
 
     @property
     def adapter(self) -> BaseAdapter:
@@ -64,7 +65,7 @@ class OnDemandTileComputePlan:
         -------
         BaseAdapter
         """
-        return get_sql_adapter(self.source_type)
+        return get_sql_adapter(self.source_info)
 
     def process_node(self, graph: QueryGraphModel, node: Node) -> None:
         """Update state given a query graph node
@@ -76,7 +77,7 @@ class OnDemandTileComputePlan:
         node : Node
             Query graph node
         """
-        tile_gen_info_lst = get_tile_gen_info(graph, node, self.source_type)
+        tile_gen_info_lst = get_tile_gen_info(graph, node, self.source_info)
 
         for tile_info in tile_gen_info_lst:
             # The date range of each tile table depends on the feature window sizes.
@@ -208,7 +209,7 @@ class OnDemandTileComputePlan:
 
 
 def get_tile_gen_info(
-    graph: QueryGraphModel, node: Node, source_type: SourceType
+    graph: QueryGraphModel, node: Node, source_info: SourceInfo
 ) -> list[TileGenSql]:
     """Construct TileGenSql that contains recipe of building tiles
 
@@ -218,14 +219,14 @@ def get_tile_gen_info(
         Query graph
     node : Node
         Query graph node
-    source_type : SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
 
     Returns
     -------
     list[TileGenSql]
     """
-    interpreter = GraphInterpreter(graph, source_type=source_type)
+    interpreter = GraphInterpreter(graph, source_info=source_info)
     tile_gen_info = interpreter.construct_tile_gen_sql(node, is_on_demand=True)
     return tile_gen_info
 

@@ -12,7 +12,7 @@ from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
-from featurebyte.enum import DBVarType, InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -24,6 +24,7 @@ from featurebyte.query_graph.sql.online_serving_util import (
     get_online_store_table_name,
     get_version_placeholder,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import (
     AggregationSpec,
     NonTileBasedAggregationSpec,
@@ -91,9 +92,9 @@ class Aggregator(Generic[AggregationSpecT], ABC):
     Base class of all aggregators
     """
 
-    def __init__(self, source_type: SourceType, is_online_serving: bool = False):
-        self.source_type = source_type
-        self.adapter = get_sql_adapter(source_type)
+    def __init__(self, source_info: SourceInfo, is_online_serving: bool = False):
+        self.source_info = source_info
+        self.adapter = get_sql_adapter(source_info)
         self.is_online_serving = is_online_serving
         self.required_serving_names: set[str] = set()
         self.required_entity_ids: set[ObjectId] = set()

@@ -65,7 +65,7 @@ class EntityServingNamesService:
             feature_store=feature_store,
         )
         unique_values_sql = GraphInterpreter(
-            graph, source_type=feature_store.type
+            graph, source_info=feature_store.get_source_info()
         ).construct_unique_values_sql(
             node_name=node.name, column_name=column_name, num_rows=num_rows
         )
