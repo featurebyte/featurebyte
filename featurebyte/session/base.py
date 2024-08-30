@@ -109,88 +109,6 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
         raise
 
 
-def retry(
-    retry_num: int = 3, sleep_interval: int = 1, exception_cls: type[Exception] = Exception
-) -> Any:
-    """
-    Decorator to retry a function on a specific exception
-
-    Parameters
-    ----------
-    retry_num: int
-        Number of retries
-    sleep_interval: int
-        Sleep interval between retries
-    exception_cls: type[Exception]
-        Exception class to retry on
-
-    Returns
-    -------
-    Any
-        Return from function
-    """
-
-    def inner(func: Any) -> Any:
-        """
-        Inner decorator wrapper
-
-        Parameters
-        ----------
-        func: Any
-            Function to wrap
-
-        Returns
-        -------
-        Any
-            Wrapped function
-        """
-
-        @functools.wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:
-            """
-            Wrapped function to retry the operation
-
-            Parameters
-            ----------
-            args: Any
-                Positional arguments for the function
-            kwargs: Any
-                Keyword arguments for the function
-
-            Returns
-            -------
-            Any
-                Return value from execution of the function
-
-            Raises
-            ------
-            exception_cls
-                if the operation fails after retry_num retries
-            """
-            for i in range(retry_num):
-                try:
-                    return await func(*args, **kwargs)
-                except exception_cls as exc:
-                    logger.warning(
-                        "Function call failed",
-                        extra={"attempt": i, "args": args, "kwargs": kwargs, "exception": exc},
-                    )
-                    if i == retry_num - 1:
-                        logger.error(
-                            "Function call failed", extra={"attempts": retry_num, "exception": exc}
-                        )
-                        raise
-
-                random_interval = randint(1, sleep_interval)
-                await asyncio.sleep(random_interval)
-
-            return None
-
-        return wrapper
-
-    return inner
-
-
 class BaseSession(BaseModel):
     """
     Abstract session class to extract data warehouse table metadata & execute query
@@ -641,7 +559,6 @@ class BaseSession(BaseModel):
             "feature_store_id": results["FEATURE_STORE_ID"][0],
         }
 
-    @retry(retry_num=3, sleep_interval=5, exception_cls=QueryExecutionTimeOut)
     async def execute_query(
         self,
         query: str,
@@ -928,12 +845,31 @@ class BaseSession(BaseModel):
         -------
         pd.DataFrame
             Result of the sql operation
+
+        Raises
+        ------
+        Exception
+            if the sql operation fails after retry_num retries
         """
 
-        execute_query = retry(retry_num=retry_num, sleep_interval=sleep_interval)(
-            self.execute_query_long_running
-        )
-        return await execute_query(sql)
+        for i in range(retry_num):
+            try:
+                return await self.execute_query_long_running(sql)
+            except Exception as exc:
+                logger.warning(
+                    "SQL query failed",
+                    extra={"attempt": i, "query": sql.strip()[:50].replace("\n", " ")},
+                )
+                if i == retry_num - 1:
+                    logger.error(
+                        "SQL query failed", extra={"attempts": retry_num, "exception": exc}
+                    )
+                    raise
+
+            random_interval = randint(1, sleep_interval)
+            await asyncio.sleep(random_interval)
+
+        return None
 
     async def table_exists(self, table_name: str) -> bool:
         """
