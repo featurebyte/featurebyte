@@ -39,7 +39,7 @@ async def test_object_agg_udf(source_type, session, setup_test_data):
     Test object aggregate UDF
     """
     _ = setup_test_data
-    adapter = get_sql_adapter(source_type)
+    adapter = get_sql_adapter(session.get_source_info())
     object_agg_expr = adapter.object_agg(quoted_identifier("id_col"), quoted_identifier("val_col"))
     select_expr = expressions.select(
         expressions.alias_(
