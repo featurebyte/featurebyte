@@ -815,9 +815,8 @@ class TileCache:
             point_in_time_epoch_expr = self.adapter.to_epoch_seconds(point_in_time_identifier)
         return point_in_time_epoch_expr
 
-    @staticmethod
     def _get_last_tile_start_date_expr(
-        point_in_time_epoch_expr: Expression, tile_info: TileGenSql
+        self, point_in_time_epoch_expr: Expression, tile_info: TileGenSql
     ) -> Expression:
         """Get the SQL expression for the "last tile start date" corresponding to the point-in-time
 
@@ -838,14 +837,11 @@ class TileCache:
         frequency = make_literal_value(tile_info.frequency)
 
         # TO_TIMESTAMP(PREVIOUS_JOB_EPOCH_EXPR - BLIND_SPOT - FREQUENCY
-        last_tile_start_date_expr = expressions.Anonymous(
-            this="TO_TIMESTAMP",
-            expressions=[
-                expressions.Sub(
-                    this=expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot),
-                    expression=frequency,
-                ),
-            ],
+        last_tile_start_date_expr = self.adapter.from_epoch_seconds(
+            expressions.Sub(
+                this=expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot),
+                expression=frequency,
+            ),
         )
         return last_tile_start_date_expr
 
@@ -874,9 +870,8 @@ class TileCache:
         time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
 
         # TO_TIMESTAMP(PREVIOUS_JOB_EPOCH - BLIND_SPOT)
-        end_date_expr = expressions.Anonymous(
-            this="TO_TIMESTAMP",
-            expressions=[expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)],
+        end_date_expr = self.adapter.from_epoch_seconds(
+            expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)
         )
         earliest_start_date_expr = get_earliest_tile_start_date_expr(
             adapter=self.adapter,

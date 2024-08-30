@@ -102,6 +102,44 @@ class BigQueryAdapter(SnowflakeAdapter):
 
     @classmethod
     def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
-        return expressions.Anonymous(
-            this="DATETIME", expressions=[timestamp_expr, make_literal_value("UTC")]
+        return expressions.Cast(
+            this=Anonymous(
+                this="DATETIME", expressions=[timestamp_expr, make_literal_value("UTC")]
+            ),
+            to=expressions.DataType.build("TIMESTAMP"),
         )
+
+    @classmethod
+    def from_epoch_seconds(cls, timestamp_epoch_expr: Expression) -> Expression:
+        return Anonymous(
+            this="TIMESTAMP_SECONDS",
+            expressions=[
+                expressions.Cast(this=timestamp_epoch_expr, to=expressions.DataType.build("BIGINT"))
+            ],
+        )
+
+    @classmethod
+    def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
+        return Anonymous(this="UNIX_SECONDS", expressions=[timestamp_expr])
+
+    @classmethod
+    def _dateadd_helper(
+        cls, quantity_expr: Expression, timestamp_expr: Expression, unit: str
+    ) -> Expression:
+        return expressions.DatetimeAdd(
+            this=timestamp_expr,
+            expression=expressions.Cast(
+                this=quantity_expr, to=expressions.DataType.build("BIGINT")
+            ),
+            unit=expressions.Var(this=unit),
+        )
+
+    @classmethod
+    def dateadd_microsecond(
+        cls, quantity_expr: Expression, timestamp_expr: Expression
+    ) -> Expression:
+        return cls._dateadd_helper(quantity_expr, timestamp_expr, "MICROSECOND")
+
+    @classmethod
+    def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
+        return cls._dateadd_helper(quantity_expr, timestamp_expr, "SECOND")

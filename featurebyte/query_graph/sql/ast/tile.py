@@ -56,9 +56,9 @@ class BuildTileNode(TableNode):
     def sql(self) -> Expression:
         input_filtered = self._get_input_filtered_within_date_range()
         tile_index_expr = alias_(
-            expressions.Anonymous(
-                this="F_TIMESTAMP_TO_INDEX",
-                expressions=[
+            self.adapter.call_udf(
+                "F_TIMESTAMP_TO_INDEX",
+                [
                     self.context.adapter.convert_to_utc_timestamp(
                         quoted_identifier(self.timestamp)
                     ),

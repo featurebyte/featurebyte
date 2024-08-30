@@ -294,9 +294,8 @@ def get_tile_sql(
         previous_job_epoch_expr = get_previous_job_epoch_expr(
             adapter.to_epoch_seconds(point_in_time_expr), tile_info
         )
-        return expressions.Anonymous(
-            this="TO_TIMESTAMP",
-            expressions=[expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)],
+        return adapter.from_epoch_seconds(
+            expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)
         )
 
     blind_spot = make_literal_value(tile_info.blind_spot)
