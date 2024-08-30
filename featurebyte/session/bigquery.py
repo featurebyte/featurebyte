@@ -81,7 +81,7 @@ db_vartype_mapping = {
     StandardSqlTypeNames.JSON: DBVarType.DICT,
     # Unsupported types
     SqlTypeNames.GEOGRAPHY: DBVarType.UNKNOWN,
-    StandardSqlTypeNames.RANGE: DBVarType.UNKNOWN,
+    # StandardSqlTypeNames.RANGE: DBVarType.UNKNOWN,
 }
 
 pa_type_mapping = {
@@ -108,7 +108,7 @@ pa_type_mapping = {
     StandardSqlTypeNames.JSON: pa.string(),
     # Unsupported types
     SqlTypeNames.GEOGRAPHY: DBVarType.UNKNOWN,
-    StandardSqlTypeNames.RANGE: DBVarType.UNKNOWN,
+    # StandardSqlTypeNames.RANGE: DBVarType.UNKNOWN,
 }
 
 
@@ -315,7 +315,8 @@ class BigQuerySession(BaseSession):
         # get schema from query job as cursor description is missing REPEATED information
         try:
             schema = self._client._get_query_results(
-                cursor.query_job.job_id, DEFAULT_RETRY, page_size=1
+                cursor.query_job.job_id,
+                DEFAULT_RETRY,
             ).schema  # pylint: disable=protected-access
         except NotFound:
             schema = [
