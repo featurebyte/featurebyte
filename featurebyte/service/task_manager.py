@@ -66,7 +66,12 @@ class TaskManager:
             redis=self.redis,
         )
 
-    async def submit(self, payload: BaseTaskPayload, mark_as_scheduled_task: bool = False) -> str:
+    async def submit(
+        self,
+        payload: BaseTaskPayload,
+        mark_as_scheduled_task: bool = False,
+        parent_task_id: Optional[str] = None,
+    ) -> str:
         """
         Submit task to celery
 
@@ -76,6 +81,8 @@ class TaskManager:
             Payload to submit
         mark_as_scheduled_task: bool
             Whether to make the submitted task as scheduled task
+        parent_task_id: Optional[str]
+            Parent task ID
 
         Returns
         -------
@@ -87,7 +94,7 @@ class TaskManager:
         kwargs["task_output_path"] = payload.task_output_path
         if mark_as_scheduled_task:
             kwargs["is_scheduled_task"] = True
-        task = self.celery.send_task(payload.task, kwargs=kwargs)
+        task = self.celery.send_task(payload.task, kwargs=kwargs, parent_id=parent_task_id)
         return str(task.id)
 
     async def get_task(self, task_id: str) -> Task | None:
@@ -129,6 +136,7 @@ class TaskManager:
             start_time=document.get("start_time"),
             date_done=document.get("date_done"),
             progress=document.get("progress"),
+            child_task_ids=document.get("child_task_ids"),
         )
 
     async def update_task_result(self, task_id: str, result: Any) -> None:
@@ -146,6 +154,25 @@ class TaskManager:
             collection_name=TaskModel.collection_name(),
             query_filter={"_id": task_id},
             update={"$set": {"task_result": result}},
+            user_id=self.user.id,
+            disable_audit=True,
+        )
+
+    async def add_child_task_id(self, task_id: str, child_task_id: str) -> None:
+        """
+        Add child task ID to parent task
+
+        Parameters
+        ----------
+        task_id: str
+            Parent task ID
+        child_task_id: str
+            Child task ID
+        """
+        await self.persistent.update_one(
+            collection_name=TaskModel.collection_name(),
+            query_filter={"_id": task_id},
+            update={"$addToSet": {"child_task_ids": child_task_id}},
             user_id=self.user.id,
             disable_audit=True,
         )

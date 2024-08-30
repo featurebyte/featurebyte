@@ -11,6 +11,7 @@ import pytest
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.periodic_task import Interval
+from featurebyte.models.task import Task
 from featurebyte.schema.task import TaskId, TaskStatus
 from featurebyte.schema.worker.task.test import TestIOTaskPayload, TestTaskPayload
 from featurebyte.service.task_manager import TaskManager
@@ -50,6 +51,20 @@ def payload_fixture(worker_type, task_manager):
     return payload_class(
         user_id=task_manager.user.id,
         catalog_id=DEFAULT_CATALOG_ID,
+    )
+
+
+@pytest.fixture(name="parent_payload")
+def parent_payload_fixture(worker_type, task_manager):
+    """Parent task payload fixture"""
+    if worker_type == "cpu":
+        payload_class = TestTaskPayload
+    else:
+        payload_class = TestIOTaskPayload
+    return payload_class(
+        user_id=task_manager.user.id,
+        catalog_id=DEFAULT_CATALOG_ID,
+        run_child_task=True,
     )
 
 
@@ -118,3 +133,28 @@ async def test_revoke_task(task_manager, persistent):
     await task_manager.revoke_task(task_id)
     task = await task_manager.get_task(task_id)
     assert task.status == TaskStatus.REVOKED
+
+
+@pytest.mark.asyncio
+async def test_submit_child_task(task_manager, parent_payload, celery_service):
+    """Test submitting child task from parent task"""
+    persistent, _ = celery_service
+    task_id = await task_manager.submit(payload=parent_payload)
+    task = await wait_for_async_task(task_manager, task_id)
+    assert task.status == "SUCCESS"
+    assert task.progress == {"percent": 100}
+
+    # check child task tracked in parent task result
+    task_document = await persistent.find_one(
+        collection_name=Task.collection_name(),
+        query_filter={"_id": task_id},
+    )
+    assert len(task_document["child_task_ids"]) == 1
+    child_task_id = task_document["child_task_ids"][0]
+
+    # check parent task tracked in child task result
+    task_document = await persistent.find_one(
+        collection_name=Task.collection_name(),
+        query_filter={"_id": child_task_id},
+    )
+    assert task_document["parent_id"] == str(task_id)

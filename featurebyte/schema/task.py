@@ -68,6 +68,7 @@ class Task(FeatureByteBaseModel):
     start_time: Optional[datetime.datetime] = Field(frozen=True, default=None)
     date_done: Optional[datetime.datetime] = Field(frozen=True, default=None)
     progress: Optional[Dict[str, Any]] = Field(default=None)
+    child_task_ids: Optional[List[TaskId]] = Field(default=None)
 
 
 class TaskList(PaginationMixin):

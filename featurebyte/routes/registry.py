@@ -215,7 +215,7 @@ from featurebyte.worker.task.query_cache_cleanup import QueryCacheCleanupTask
 from featurebyte.worker.task.scheduled_feature_materialize import ScheduledFeatureMaterializeTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
 from featurebyte.worker.task.target_table import TargetTableTask
-from featurebyte.worker.task.test_task import TestTask
+from featurebyte.worker.task.test_task import TestIOTask, TestTask
 from featurebyte.worker.task.tile_task import TileTask
 from featurebyte.worker.test_util.random_task import LongRunningTask, RandomTask
 from featurebyte.worker.util.batch_feature_creator import BatchFeatureCreator
@@ -418,6 +418,7 @@ app_container_config.register_class(TileTask)
 app_container_config.register_class(OnlineStoreCleanupTask)
 app_container_config.register_class(QueryCacheCleanupTask)
 app_container_config.register_class(LongRunningTask)
+app_container_config.register_class(TestIOTask)
 app_container_config.register_class(TestTask)
 app_container_config.register_class(DataDescriptionTask)
 app_container_config.register_class(FeatureListMakeProductionReadyTask)

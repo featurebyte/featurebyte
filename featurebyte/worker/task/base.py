@@ -55,6 +55,33 @@ class BaseTask(Generic[TaskT]):
         """
         self._task_id = task_id
 
+    async def submit_task(
+        self, payload: BaseTaskPayload, mark_as_scheduled_task: bool = False
+    ) -> str:
+        """
+        Submit the task to the task manager
+
+        Parameters
+        ----------
+        payload: BaseTaskPayload
+            Task payload
+        mark_as_scheduled_task: bool
+            Whether to mark the task as a scheduled task
+
+        Returns
+        -------
+        str
+        """
+        task_id = await self.task_manager.submit(
+            payload=payload,
+            mark_as_scheduled_task=mark_as_scheduled_task,
+            parent_task_id=str(self.task_id),
+        )
+        await self.task_manager.add_child_task_id(
+            task_id=str(self.task_id), child_task_id=str(task_id)
+        )
+        return task_id
+
     def get_payload_obj(self, payload_data: dict[str, Any]) -> TaskT:
         """
         Get payload object from payload data.
