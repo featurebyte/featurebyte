@@ -134,6 +134,59 @@ def _json_serialization_handler(value: Any) -> str:
     return str(value)
 
 
+def bq_to_arrow_schema(schema: list[SchemaField]):
+    def _get_pyarrow_type(
+        datatype: str, precision: int = 0, scale: int = 0, mode: str | None = None
+    ) -> pa.DataType:
+        """
+        Get pyarrow type from BigQuery data type
+
+        Parameters
+        ----------
+        datatype: str
+            BigQuery data type
+        precision: int
+            Precision
+        scale: int
+            Scale
+        mode: str | None
+            Mode
+
+        Returns
+        -------
+        pa.DataType
+        """
+        if datatype == SqlTypeNames.INTERVAL:
+            pyarrow_type = pa.int64()
+        elif datatype in {SqlTypeNames.NUMERIC, SqlTypeNames.BIGNUMERIC}:
+            if scale > 0:
+                pyarrow_type = pa.decimal128(precision, scale)
+            else:
+                pyarrow_type = pa.int64()
+        elif mode == "REPEATED":
+            pyarrow_type = pa.string()
+        else:
+            pyarrow_type = pa_type_mapping.get(datatype)
+
+        if not pyarrow_type:
+            # warn and fallback to string for unrecognized types
+            logger.warning("Cannot infer pyarrow type", extra={"datatype": datatype})
+            pyarrow_type = pa.string()
+        return pyarrow_type
+
+    fields = []
+    for column in schema:
+        field_name = column.name
+        field_type = column.field_type
+        fields.append(
+            pa.field(
+                field_name,
+                _get_pyarrow_type(field_type, column.precision, column.scale, column.mode),
+            )
+        )
+    return pa.schema(fields)
+
+
 class BigQuerySession(BaseSession):
     """
     BigQuery session class
