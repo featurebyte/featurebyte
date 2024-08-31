@@ -362,8 +362,6 @@ class FeastBigQueryDetails(AbstractDatabaseDetailsForFeast, BigQueryDetails):
         return BigQueryOfflineStoreConfig(
             dataset=self.dataset_name,
             project_id=self.project_name,
-            **self.model_dump(),
-            database_credential=database_credential,
         )
 
 

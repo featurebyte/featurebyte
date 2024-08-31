@@ -360,10 +360,6 @@ def test_scd_lookup_feature(
         '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
     )
 
-    # Note: temporary
-    if source_type == "bigquery":
-        return
-
     # Check online serving.
     feature_list.save()
     deployment = None
