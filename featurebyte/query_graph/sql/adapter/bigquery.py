@@ -207,3 +207,8 @@ class BigQueryAdapter(SnowflakeAdapter):
         return Anonymous(
             this="REGEXP_CONTAINS", expressions=[expr, make_literal_value(exact_match_pattern)]
         )
+
+    @classmethod
+    def modulo(cls, expr1: Expression, expr2: Expression) -> Expression:
+        # The % operator doesn't work in BigQuery
+        return expressions.Anonymous(this="MOD", expressions=[expr1, expr2])

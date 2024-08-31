@@ -1027,3 +1027,21 @@ class BaseAdapter(ABC):
             partition_by=partition_by,
             order=order,
         )
+
+    @classmethod
+    def modulo(cls, expr1: Expression, expr2: Expression) -> Expression:
+        """
+        Construct a modulo expression
+
+        Parameters
+        ----------
+        expr1: Expression
+            First expression
+        expr2: Expression
+            Second expression
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Mod(this=expr1, expression=expr2)
