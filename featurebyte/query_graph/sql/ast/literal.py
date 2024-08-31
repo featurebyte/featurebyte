@@ -26,9 +26,9 @@ def make_literal_value_from_non_native_types(value: dict[str, Any]) -> expressio
     """
     assert value["type"] == NonNativeValueType.TIMESTAMP
     timestamp_value = TimestampValue(**value)
-    return expressions.Anonymous(
-        this="TO_TIMESTAMP",
-        expressions=[expressions.Literal.string(timestamp_value.get_isoformat_utc())],
+    return expressions.Cast(
+        this=expressions.Literal.string(timestamp_value.get_isoformat_utc()),
+        to=expressions.DataType.build("TIMESTAMP"),
     )
 
 
