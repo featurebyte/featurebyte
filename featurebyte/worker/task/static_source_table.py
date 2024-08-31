@@ -12,6 +12,7 @@ from featurebyte.schema.worker.task.static_source_table import StaticSourceTable
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.static_source_table import StaticSourceTableService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -27,11 +28,12 @@ class StaticSourceTableTask(DataWarehouseMixin, BaseTask[StaticSourceTableTaskPa
 
     def __init__(
         self,
+        task_manager: TaskManager,
         feature_store_service: FeatureStoreService,
         static_source_table_service: StaticSourceTableService,
         session_manager_service: SessionManagerService,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
         self.static_source_table_service = static_source_table_service
         self.session_manager_service = session_manager_service

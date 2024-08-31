@@ -17,6 +17,7 @@ from featurebyte.schema.worker.task.feature_list_create import (
     FeaturesParameters,
 )
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.batch_feature_creator import BatchFeatureCreator
@@ -32,13 +33,14 @@ class FeatureListCreateTask(BaseTask[FeatureListCreateTaskPayload]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         feature_list_controller: FeatureListController,
         batch_feature_creator: BatchFeatureCreator,
         feature_service: FeatureService,
         storage: Storage,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.feature_list_controller = feature_list_controller
         self.batch_feature_creator = batch_feature_creator
         self.feature_service = feature_service

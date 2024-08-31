@@ -9,6 +9,7 @@ from typing import Any
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.query_cache_cleanup import QueryCacheCleanupTaskPayload
 from featurebyte.service.query_cache_cleanup import QueryCacheCleanupService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
@@ -21,8 +22,12 @@ class QueryCacheCleanupTask(BaseTask[QueryCacheCleanupTaskPayload]):
 
     payload_class = QueryCacheCleanupTaskPayload
 
-    def __init__(self, query_cache_cleanup_service: QueryCacheCleanupService):
-        super().__init__()
+    def __init__(
+        self,
+        task_manager: TaskManager,
+        query_cache_cleanup_service: QueryCacheCleanupService,
+    ):
+        super().__init__(task_manager=task_manager)
         self.query_cache_cleanup_service = query_cache_cleanup_service
 
     async def get_task_description(self, payload: QueryCacheCleanupTaskPayload) -> str:

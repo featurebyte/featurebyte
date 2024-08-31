@@ -8,6 +8,7 @@ from typing import Any
 
 from featurebyte.logging import get_logger
 from featurebyte.schema.worker.task.batch_feature_create import BatchFeatureCreateTaskPayload
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.batch_feature_creator import (
     BatchFeatureCreator,
@@ -26,9 +27,10 @@ class BatchFeatureCreateTask(BaseTask[BatchFeatureCreateTaskPayload]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         batch_feature_creator: BatchFeatureCreator,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.batch_feature_creator = batch_feature_creator
 
     async def get_task_description(self, payload: BatchFeatureCreateTaskPayload) -> str:

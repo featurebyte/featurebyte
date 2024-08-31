@@ -125,6 +125,9 @@ class TaskExecutor:
         self.setup_worker_config()
         self.payload_dict = payload
 
+        # store task_id in task object
+        self.task.set_task_id(task_id)
+
     async def _update_task_start_time_and_description(self, payload: Any) -> None:
         """
         Update task start time and description

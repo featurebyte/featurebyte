@@ -17,6 +17,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
@@ -34,6 +35,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
 
     def __init__(
         self,
+        task_manager: TaskManager,
         temp_storage: Storage,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
@@ -41,7 +43,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         catalog_service: CatalogService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.temp_storage = temp_storage
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
