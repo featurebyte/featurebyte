@@ -203,10 +203,7 @@ class BigQueryAdapter(SnowflakeAdapter):
 
     @classmethod
     def str_contains(cls, expr: Expression, pattern: str) -> Expression:
-        exact_match_pattern = f"^({pattern})$"
-        return Anonymous(
-            this="REGEXP_CONTAINS", expressions=[expr, make_literal_value(exact_match_pattern)]
-        )
+        return Anonymous(this="REGEXP_CONTAINS", expressions=[expr, make_literal_value(pattern)])
 
     @classmethod
     def modulo(cls, expr1: Expression, expr2: Expression) -> Expression:

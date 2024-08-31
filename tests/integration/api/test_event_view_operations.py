@@ -156,7 +156,7 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
         expected["ËVENT_TIMESTAMP"] = pd.to_datetime(
             expected["ËVENT_TIMESTAMP"], utc=True
         ).dt.tz_localize(None)
-    pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
+    fb_assert_frame_equal(output[columns], expected[columns], sort_by_columns=["TRANSACTION_ID"])
 
 
 def test_feature_operations__feature_group_preview(feature_group):
@@ -1183,6 +1183,12 @@ def check_cast_operations(event_view, source_type, limit=100):
         pd.testing.assert_series_equal(
             df["AMOUNT_STR"],
             df["ÀMOUNT"].astype(str).apply(lambda x: "0" if x == "0.0" else x),
+            check_names=False,
+        )
+    if source_type == SourceType.BIGQUERY:
+        pd.testing.assert_series_equal(
+            df["AMOUNT_STR"],
+            df["ÀMOUNT"].astype(str).str.replace(".0$", "", regex=True),
             check_names=False,
         )
     else:

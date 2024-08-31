@@ -181,7 +181,10 @@ class PadNode(ExpressionNode):
             left_remain_width = expressions.Ceil(
                 this=expressions.Div(this=remain_width, expression=make_literal_value(2))
             )
-            left_length = expressions.Sub(this=target_length_expr, expression=left_remain_width)
+            left_length = expressions.Cast(
+                this=expressions.Sub(this=target_length_expr, expression=left_remain_width),
+                to=expressions.DataType.build("INT"),
+            )
             pad_expr = self._generate_pad_expression(
                 str_column_expr=self._generate_pad_expression(
                     str_column_expr=self.expr.sql,
