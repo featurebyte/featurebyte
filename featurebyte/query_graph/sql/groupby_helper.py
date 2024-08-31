@@ -87,7 +87,9 @@ def _get_vector_sql_func(agg_func: AggFunc, is_tile: bool) -> str:
     return array_parent_agg_func_sql_mapping[agg_func]
 
 
-def column_distinct_count_including_null(column_expr: Expression) -> Expression:
+def column_distinct_count_including_null(
+    column_expr: Expression, adapter: BaseAdapter
+) -> Expression:
     """
     Get an expression for counting the number of distinct values in a column including null values
 
@@ -95,6 +97,8 @@ def column_distinct_count_including_null(column_expr: Expression) -> Expression:
     ----------
     column_expr: Expression
         Column expression
+    adapter: BaseAdapter
+        Adapter
 
     Returns
     -------
@@ -104,14 +108,11 @@ def column_distinct_count_including_null(column_expr: Expression) -> Expression:
         this=expressions.Count(this=expressions.Distinct(expressions=[column_expr])),
         expression=expressions.Cast(
             this=expressions.GT(
-                this=expressions.Anonymous(
-                    this="COUNT_IF",
-                    expressions=[
-                        expressions.Is(
-                            this=column_expr,
-                            expression=expressions.Null(),
-                        )
-                    ],
+                this=adapter.count_if(
+                    expressions.Is(
+                        this=column_expr,
+                        expression=expressions.Null(),
+                    )
                 ),
                 expression=make_literal_value(0),
             ),
@@ -121,7 +122,10 @@ def column_distinct_count_including_null(column_expr: Expression) -> Expression:
 
 
 def get_aggregation_expression(
-    agg_func: AggFunc, input_column: Optional[str | Expression], parent_dtype: Optional[DBVarType]
+    agg_func: AggFunc,
+    input_column: Optional[str | Expression],
+    parent_dtype: Optional[DBVarType],
+    adapter: BaseAdapter,
 ) -> Expression:
     """
     Convert an AggFunc and input column name to a SQL expression to be used in GROUP BY
@@ -134,6 +138,8 @@ def get_aggregation_expression(
         Input column name
     parent_dtype : Optional[DBVarType]
         Parent column data type
+    adapter: BaseAdapter
+        Adapter
 
     Returns
     -------
@@ -151,7 +157,7 @@ def get_aggregation_expression(
         input_column_expr = input_column
 
     if agg_func == AggFunc.COUNT_DISTINCT:
-        return column_distinct_count_including_null(input_column_expr)
+        return column_distinct_count_including_null(input_column_expr, adapter)
 
     # Try to get a built-in SQL aggregate function
     agg_func_sql_mapping = {
@@ -319,7 +325,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
 
 
 def update_aggregation_expression_for_columns(
-    groupby_columns: list[GroupbyColumn], adapter_type: SourceType
+    groupby_columns: list[GroupbyColumn], adapter: BaseAdapter
 ) -> list[GroupbyColumn]:
     """
     Helper function to update the aggregation expression for the groupby columns. This will update the parent_expr
@@ -329,8 +335,8 @@ def update_aggregation_expression_for_columns(
     ----------
     groupby_columns: list[GroupbyColumn]
         List of groupby columns
-    adapter_type: SourceType
-        Adapter type
+    adapter: BaseAdapter
+        Adapter
 
     Returns
     -------
@@ -339,12 +345,14 @@ def update_aggregation_expression_for_columns(
     output: list[GroupbyColumn] = []
     for column in groupby_columns:
         if not (
-            column.parent_dtype in DBVarType.array_types() and adapter_type == SourceType.SNOWFLAKE
+            column.parent_dtype in DBVarType.array_types()
+            and adapter.source_type == SourceType.SNOWFLAKE
         ):
             aggregation_expression = get_aggregation_expression(
                 agg_func=column.agg_func,
                 input_column=column.parent_cols[0] if column.parent_cols else None,
                 parent_dtype=column.parent_dtype,
+                adapter=adapter,
             )
             column.parent_expr = aggregation_expression
         output.append(column)
@@ -379,9 +387,7 @@ def get_groupby_expr(
     -------
     Select
     """
-    updated_groupby_columns = update_aggregation_expression_for_columns(
-        groupby_columns, adapter.source_type
-    )
+    updated_groupby_columns = update_aggregation_expression_for_columns(groupby_columns, adapter)
     agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
         input_expr,
         groupby_keys,

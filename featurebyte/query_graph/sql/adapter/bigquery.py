@@ -200,3 +200,10 @@ class BigQueryAdapter(SnowflakeAdapter):
             )
         alter_table_sql += ",\n".join(add_column_lines)
         return alter_table_sql
+
+    @classmethod
+    def str_contains(cls, expr: Expression, pattern: str) -> Expression:
+        exact_match_pattern = f"^({pattern})$"
+        return Anonymous(
+            this="REGEXP_CONTAINS", expressions=[expr, make_literal_value(exact_match_pattern)]
+        )
