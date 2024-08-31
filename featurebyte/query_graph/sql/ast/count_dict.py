@@ -44,11 +44,11 @@ class CountDictTransformNode(ExpressionNode):
         if self.include_missing:
             counts_expr = self.expr.sql
         else:
-            counts_expr = expressions.Anonymous(
-                this="OBJECT_DELETE",
-                expressions=[self.expr.sql, make_literal_value(MISSING_VALUE_REPLACEMENT)],
+            counts_expr = self.context.adapter.call_udf(
+                "OBJECT_DELETE",
+                [self.expr.sql, make_literal_value(MISSING_VALUE_REPLACEMENT)],
             )
-        output_expr = expressions.Anonymous(this=function_name, expressions=[counts_expr])  # type: Expression
+        output_expr = self.context.adapter.call_udf(function_name, [counts_expr])  # type: Expression
         if (
             self.transform_type
             in CountDictTransformQueryGraphNode.transform_types_with_varchar_output
@@ -129,9 +129,9 @@ class GetRelativeFrequencyNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return expressions.Anonymous(
-            this="F_GET_RELATIVE_FREQUENCY",
-            expressions=[self.dictionary_node.sql, self.lookup_key_node.sql],
+        return self.context.adapter.call_udf(
+            "F_GET_RELATIVE_FREQUENCY",
+            [self.dictionary_node.sql, self.lookup_key_node.sql],
         )
 
     @classmethod
@@ -156,9 +156,9 @@ class GetRankNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return expressions.Anonymous(
-            this="F_GET_RANK",
-            expressions=[
+        return self.context.adapter.call_udf(
+            "F_GET_RANK",
+            [
                 self.dictionary_node.sql,
                 self.lookup_key_node.sql,
                 make_literal_value(self.descending),

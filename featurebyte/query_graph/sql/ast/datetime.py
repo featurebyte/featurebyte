@@ -56,9 +56,9 @@ class DatetimeExtractNode(ExpressionNode):
         else:
             # If timezone offset is provided, apply that to the input timestamp (in UTC) to obtain
             # the local time before extracting date properties
-            timezone_offset_seconds = expressions.Anonymous(
-                this="F_TIMEZONE_OFFSET_TO_SECOND",
-                expressions=[timezone_offset_expr],
+            timezone_offset_seconds = context.adapter.call_udf(
+                "F_TIMEZONE_OFFSET_TO_SECOND",
+                [timezone_offset_expr],
             )
             timestamp_expr = context.adapter.dateadd_second(
                 timezone_offset_seconds, input_expr_node.sql

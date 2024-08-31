@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from sqlglot import expressions
 from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.enum import NodeType
@@ -24,9 +23,9 @@ class VectorCosineSimilarityNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return expressions.Anonymous(
-            this="F_VECTOR_COSINE_SIMILARITY",
-            expressions=[
+        return self.context.adapter.call_udf(
+            "F_VECTOR_COSINE_SIMILARITY",
+            [
                 self.array_column_1_node.sql,
                 self.array_column_2_node.sql,
             ],
