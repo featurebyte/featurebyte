@@ -55,7 +55,7 @@ class BaseTask(Generic[TaskT]):
         """
         self._task_id = task_id
 
-    async def submit_task(
+    async def submit_child_task(
         self, payload: BaseTaskPayload, mark_as_scheduled_task: bool = False
     ) -> str:
         """
@@ -72,13 +72,11 @@ class BaseTask(Generic[TaskT]):
         -------
         str
         """
+        assert self.task_id is not None, "Task ID is not set"
         task_id = await self.task_manager.submit(
             payload=payload,
             mark_as_scheduled_task=mark_as_scheduled_task,
             parent_task_id=str(self.task_id),
-        )
-        await self.task_manager.add_child_task_id(
-            task_id=str(self.task_id), child_task_id=str(task_id)
         )
         return task_id
 

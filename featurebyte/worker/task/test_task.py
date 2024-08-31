@@ -38,7 +38,7 @@ class TestTask(BaseTask[TestTaskPayload]):
     async def execute(self, payload: TestTaskPayload) -> Any:
         logger.debug("Test task started")
         if payload.run_child_task:
-            child_task_id = await self.submit_task(
+            child_task_id = await self.submit_child_task(
                 payload=self.payload_class(
                     user_id=payload.user_id,
                     catalog_id=payload.catalog_id,

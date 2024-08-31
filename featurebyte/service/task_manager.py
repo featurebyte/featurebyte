@@ -95,6 +95,9 @@ class TaskManager:
         if mark_as_scheduled_task:
             kwargs["is_scheduled_task"] = True
         task = self.celery.send_task(payload.task, kwargs=kwargs, parent_id=parent_task_id)
+
+        if parent_task_id:
+            await self._add_child_task_id(str(parent_task_id), str(task.id))
         return str(task.id)
 
     async def get_task(self, task_id: str) -> Task | None:
@@ -158,7 +161,7 @@ class TaskManager:
             disable_audit=True,
         )
 
-    async def add_child_task_id(self, task_id: str, child_task_id: str) -> None:
+    async def _add_child_task_id(self, task_id: str, child_task_id: str) -> None:
         """
         Add child task ID to parent task
 
