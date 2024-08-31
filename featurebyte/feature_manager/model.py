@@ -15,16 +15,6 @@ class ExtendedFeatureModel(FeatureModel):
     ExtendedFeatureModel contains tile manager specific methods or properties
     """
 
-    def get_source_info(self) -> SourceInfo:
-        """
-        Get source info corresponding to the feature store
-
-        Returns
-        -------
-        SourceInfo
-        """
-        return self.graph.get_input_node(self.node.name).parameters.get_source_info()
-
     @property
     def tile_specs(self) -> list[TileSpec]:
         """
