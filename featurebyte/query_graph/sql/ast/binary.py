@@ -63,6 +63,11 @@ class BinaryOp(ExpressionNode):
             op_expr = self.operation(expressions=[self.left_node.sql, right_expr])
         elif self.operation == expressions.Pow:
             op_expr = self.operation(this=self.left_node.sql, power=right_expr)
+        elif self.operation == expressions.Mod:
+            # The % operator doesn't work in the WHERE clause of BigQuery
+            op_expr = expressions.Anonymous(
+                this="MOD", expressions=[self.left_node.sql, right_expr]
+            )
         else:
             op_expr = self.operation(this=self.left_node.sql, expression=right_expr)
         return expressions.Paren(this=op_expr)
