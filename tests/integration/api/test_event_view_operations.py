@@ -30,6 +30,7 @@ from featurebyte.query_graph.sql.common import sql_to_string
 from tests.util.helper import (
     assert_preview_result_equal,
     compute_historical_feature_table_dataframe_helper,
+    create_observation_table_by_upload,
     create_observation_table_from_dataframe,
     fb_assert_frame_equal,
     get_dataframe_from_materialized_table,
@@ -740,22 +741,17 @@ def assert_datetime_almost_equal(s1: pd.Series, s2: pd.Series):
 
 
 @pytest_asyncio.fixture(name="observation_table_and_df_historical_expected", scope="module")
-async def observation_table_and_df_historical_expected_fixture(session, data_source):
+async def observation_table_and_df_historical_expected_fixture():
     """Observation table fixture"""
     df_training_events, df_historical_expected = get_training_events_and_expected_result()
     df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
-    observation_table = await create_observation_table_from_dataframe(
-        session,
-        df_training_events,
-        data_source,
-    )
+    observation_table = create_observation_table_by_upload(df_training_events)
     return observation_table, df_historical_expected
 
 
 @pytest.mark.asyncio
 async def test_get_historical_features__feature_table_cache(
     session,
-    data_source,
     feature_group,
     feature_group_per_category,
     user_entity,
