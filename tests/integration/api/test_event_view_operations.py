@@ -329,7 +329,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
 
     # assign new feature and preview again
     new_feature = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
-    feature_group["COUNT_2h / COUNT_24h"] = new_feature
+    feature_group["COUNT_2h DIV COUNT_24h"] = new_feature
     df_feature_preview = feature_group.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(
         df_feature_preview,
@@ -338,7 +338,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
             "üser id": 1,
             "COUNT_2h": 3,
             "COUNT_24h": 14,
-            "COUNT_2h / COUNT_24h": 0.21428599999999998,
+            "COUNT_2h DIV COUNT_24h": 0.21428599999999998,
         },
     )
 
@@ -516,7 +516,7 @@ def get_training_events_and_expected_result():
             None,
         ],
         "NUM_UNIQUE_ACTION_24h": [5.0, 4.0, 4.0, 4.0, 5.0, 5.0, 5.0, 5.0, 5.0, 0.0],
-        "COUNT_2h / COUNT_24h": [
+        "COUNT_2h DIV COUNT_24h": [
             0.214286,
             0.083333,
             0.076923,
@@ -572,7 +572,7 @@ async def test_get_historical_features(
     assert input_format in {"dataframe", "table", "uploaded_table"}
     assert output_format in {"dataframe", "table"}
 
-    feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    feature_group["COUNT_2h DIV COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     feature_list = FeatureList(
         [
             feature_group["COUNT_2h"],
@@ -581,7 +581,7 @@ async def test_get_historical_features(
             feature_group_per_category["ENTROPY_BY_ACTION_24h"],
             feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
             feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
-            feature_group["COUNT_2h / COUNT_24h"],
+            feature_group["COUNT_2h DIV COUNT_24h"],
             feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
         ],
         name="My FeatureList",
