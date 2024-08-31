@@ -4,12 +4,12 @@ BigQueryAdapter class
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Anonymous, Expression
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql.adapter.snowflake import SnowflakeAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_function_call
@@ -21,6 +21,33 @@ class BigQueryAdapter(SnowflakeAdapter):
     """
 
     source_type = SourceType.BIGQUERY
+
+    class DataType(StrEnum):
+        """
+        Possible column types in BigQuery online store tables
+        """
+
+        FLOAT = "FLOAT64"
+        OBJECT = "JSON"
+        TIMESTAMP = "TIMESTAMP"
+        STRING = "STRING"
+        ARRAY = "ARRAY"
+
+    @classmethod
+    def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
+        mapping = {
+            DBVarType.INT: cls.DataType.FLOAT,
+            DBVarType.FLOAT: cls.DataType.FLOAT,
+            DBVarType.VARCHAR: cls.DataType.STRING,
+            DBVarType.OBJECT: cls.DataType.OBJECT,
+            DBVarType.TIMESTAMP: cls.DataType.TIMESTAMP,
+            DBVarType.TIMESTAMP_TZ: cls.DataType.TIMESTAMP,
+            DBVarType.ARRAY: cls.DataType.ARRAY,
+            DBVarType.EMBEDDING: cls.DataType.ARRAY,
+        }
+        if dtype in mapping:
+            return mapping[dtype]
+        return cls.DataType.STRING
 
     @classmethod
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
@@ -80,3 +107,66 @@ class BigQueryAdapter(SnowflakeAdapter):
         if dtype in DBVarType.json_conversion_types():
             return Anonymous(this="TO_JSON_STRING", expressions=[expr])
         return expr
+
+    @classmethod
+    def lag_ignore_nulls(
+        cls, expr: Expression, partition_by: List[Expression], order: Expression
+    ) -> Expression:
+        return expressions.Window(
+            this=expressions.Anonymous(
+                this="LAST_VALUE", expressions=[expressions.IgnoreNulls(this=expr)]
+            ),
+            partition_by=partition_by,
+            order=order,
+            spec=expressions.WindowSpec(
+                kind="ROWS",
+                start="UNBOUNDED",
+                start_side="PRECEDING",
+                end=make_literal_value(1),
+                end_side="PRECEDING",
+            ),
+        )
+
+    @classmethod
+    def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
+        return expressions.Cast(
+            this=Anonymous(
+                this="DATETIME", expressions=[timestamp_expr, make_literal_value("UTC")]
+            ),
+            to=expressions.DataType.build("TIMESTAMP"),
+        )
+
+    @classmethod
+    def from_epoch_seconds(cls, timestamp_epoch_expr: Expression) -> Expression:
+        return Anonymous(
+            this="TIMESTAMP_SECONDS",
+            expressions=[
+                expressions.Cast(this=timestamp_epoch_expr, to=expressions.DataType.build("BIGINT"))
+            ],
+        )
+
+    @classmethod
+    def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
+        return Anonymous(this="UNIX_SECONDS", expressions=[timestamp_expr])
+
+    @classmethod
+    def _dateadd_helper(
+        cls, quantity_expr: Expression, timestamp_expr: Expression, unit: str
+    ) -> Expression:
+        return expressions.DatetimeAdd(
+            this=timestamp_expr,
+            expression=expressions.Cast(
+                this=quantity_expr, to=expressions.DataType.build("BIGINT")
+            ),
+            unit=expressions.Var(this=unit),
+        )
+
+    @classmethod
+    def dateadd_microsecond(
+        cls, quantity_expr: Expression, timestamp_expr: Expression
+    ) -> Expression:
+        return cls._dateadd_helper(quantity_expr, timestamp_expr, "MICROSECOND")
+
+    @classmethod
+    def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
+        return cls._dateadd_helper(quantity_expr, timestamp_expr, "SECOND")

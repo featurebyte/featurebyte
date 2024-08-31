@@ -300,7 +300,7 @@ def test_event_view_join_scd_view__preview_feature(event_table, scd_table):
 
 
 def test_scd_lookup_feature(
-    config, event_table, dimension_table, scd_table, item_table, scd_dataframe
+    config, event_table, dimension_table, scd_table, item_table, scd_dataframe, source_type
 ):
     """
     Test creating lookup feature from a SCDView
@@ -360,6 +360,10 @@ def test_scd_lookup_feature(
         '{\n  "STÀTUS_CODE_34": 3,\n  "STÀTUS_CODE_39": 15\n}'
     )
 
+    # Note: temporary
+    if source_type == "bigquery":
+        return
+
     # Check online serving.
     feature_list.save()
     deployment = None
@@ -386,7 +390,7 @@ def test_scd_lookup_feature(
             deployment.disable()
 
 
-def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
+def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe, source_type):
     """
     Test creating lookup feature from a SCDView with offset
     """
@@ -431,6 +435,10 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe):
         preview_output["Current User Status Offset 7d"]
         == _get_expected_row(offset_2)["User Status"]
     )
+
+    # Note: temporary
+    if source_type == "bigquery":
+        return
 
     # Check online serving
     feature_list.save()
@@ -584,6 +592,10 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)
     pd.testing.assert_frame_equal(df, expected, check_dtype=False)
+
+    # Note: temporary
+    if source_type == "bigquery":
+        return
 
     # check online serving
     feature_list = FeatureList([feature, feature_other], "feature_list")

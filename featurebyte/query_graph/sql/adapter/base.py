@@ -999,3 +999,31 @@ class BaseAdapter(ABC):
         """
         _ = dtype
         return expr
+
+    @classmethod
+    def lag_ignore_nulls(
+        cls, expr: Expression, partition_by: List[Expression], order: Expression
+    ) -> Expression:
+        """
+        Construct a LAG window function that ignores nulls
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression to lag
+        partition_by: List[Expression]
+            Partition by expressions
+        order: Expression
+            Order expression
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Window(
+            this=expressions.IgnoreNulls(
+                this=expressions.Anonymous(this="LAG", expressions=[expr]),
+            ),
+            partition_by=partition_by,
+            order=order,
+        )
