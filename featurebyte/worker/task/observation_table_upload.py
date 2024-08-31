@@ -75,7 +75,8 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
             feature_store_id
         )
 
-        # Write the file to the warehouse
+        # Write the file to the warehouse. Add row index to the DataFrame in memory to ensure that
+        # the row index follows the same order as the uploaded file.
         uploaded_dataframe.insert(
             0, InternalName.TABLE_ROW_INDEX.value, np.arange(1, len(uploaded_dataframe) + 1)
         )

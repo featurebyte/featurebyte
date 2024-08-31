@@ -606,12 +606,20 @@ async def test_get_historical_features(
         df_historical_features = feature_list.compute_historical_features(df_training_events)
         assert HistoricalFeatureTable.list().shape[0] == existing_historical_feature_tables
 
+    # When input_format is "table", it is created by creating a source table using db session's
+    # register_table method. In BigQuery's case, this method doesn't guarantee that the original
+    # DataFrame's ordering is preserved. In other words, we cannot expect that the row index is
+    # np.arange(1, 11) as setup in df_historical_expected.
+    row_index_not_comparable = session.source_type == "bigquery" and input_format == "table"
+    ignore_columns = ["__FB_TABLE_ROW_INDEX"] if row_index_not_comparable else None
+
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
     fb_assert_frame_equal(
         df_historical_features,
         df_historical_expected,
         dict_like_columns=["COUNT_BY_ACTION_24h"],
         sort_by_columns=["POINT_IN_TIME", "üser id"] if output_format == "table" else None,
+        ignore_columns=ignore_columns,
     )
 
     # Test again using the same feature list and table but with serving names mapping
@@ -623,6 +631,7 @@ async def test_get_historical_features(
         data_source,
         input_format=input_format,
         output_format=output_format,
+        ignore_columns=ignore_columns,
     )
 
 
@@ -634,6 +643,7 @@ async def _test_get_historical_features_with_serving_names(
     data_source,
     input_format,
     output_format,
+    ignore_columns,
 ):
     """Test getting historical features from FeatureList with alternative serving names"""
 
@@ -667,6 +677,7 @@ async def _test_get_historical_features_with_serving_names(
         df_historical_expected,
         dict_like_columns=["COUNT_BY_ACTION_24h"],
         sort_by_columns=["POINT_IN_TIME", "new_user id"] if output_format == "table" else None,
+        ignore_columns=ignore_columns,
     )
 
 
@@ -760,7 +771,7 @@ async def test_get_historical_features__feature_table_cache(
     observation_table_and_df_historical_expected,
 ):
     """Test feature table cache create/update"""
-    _ = user_entity, new_user_id_entity, data_source
+    _ = user_entity, new_user_id_entity
 
     feature_list_1 = FeatureList(
         [

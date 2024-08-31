@@ -319,7 +319,13 @@ def assert_dict_equal(s1, s2):
     pd.testing.assert_series_equal(s1, s2)
 
 
-def fb_assert_frame_equal(df, df_expected, dict_like_columns=None, sort_by_columns=None):
+def fb_assert_frame_equal(
+    df,
+    df_expected,
+    dict_like_columns=None,
+    sort_by_columns=None,
+    ignore_columns=None,
+):
     """
     Check that two DataFrames are equal
 
@@ -333,12 +339,18 @@ def fb_assert_frame_equal(df, df_expected, dict_like_columns=None, sort_by_colum
         List of dict like columns which will be compared accordingly, not just exact match
     sort_by_columns : list | None
         List of columns to sort by before comparing
+    ignore_columns : list | None
+        Exclude these columns from comparison
     """
     assert df.columns.tolist() == df_expected.columns.tolist()
 
     if sort_by_columns is not None:
         df = df.sort_values(by=sort_by_columns).reset_index(drop=True)
         df_expected = df_expected.sort_values(by=sort_by_columns).reset_index(drop=True)
+
+    if ignore_columns is not None:
+        df = df.drop(columns=ignore_columns)
+        df_expected = df_expected.drop(columns=ignore_columns)
 
     regular_columns = df.columns.tolist()
     if dict_like_columns is not None:
