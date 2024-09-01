@@ -1178,7 +1178,7 @@ def check_cast_operations(event_view, source_type, limit=100):
             df["ÀMOUNT"].astype(str).apply(lambda x: "0" if x == "0.0" else x),
             check_names=False,
         )
-    if source_type == SourceType.BIGQUERY:
+    elif source_type == SourceType.BIGQUERY:
         pd.testing.assert_series_equal(
             df["AMOUNT_STR"],
             df["ÀMOUNT"].astype(str).str.replace(".0$", "", regex=True),
