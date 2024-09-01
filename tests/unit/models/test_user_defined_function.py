@@ -164,8 +164,8 @@ def test_get_default_test_value(dtype, expected_type):
         (DBVarType.VARCHAR, "SELECT SQL_FUNC('test')"),
         (DBVarType.FLOAT, "SELECT SQL_FUNC(1.0)"),
         (DBVarType.INT, "SELECT SQL_FUNC(1)"),
-        (DBVarType.TIMESTAMP, "SELECT SQL_FUNC(TO_TIMESTAMP('2021-01-01T00:00:00'))"),
-        (DBVarType.TIMESTAMP_TZ, "SELECT SQL_FUNC(TO_TIMESTAMP('2021-01-01T00:00:00'))"),
+        (DBVarType.TIMESTAMP, "SELECT SQL_FUNC(CAST('2021-01-01T00:00:00' AS TIMESTAMP))"),
+        (DBVarType.TIMESTAMP_TZ, "SELECT SQL_FUNC(CAST('2021-01-01T00:00:00' AS TIMESTAMP))"),
     ],
 )
 def test_generate_test_sql(dtype, expected_sql, source_info):

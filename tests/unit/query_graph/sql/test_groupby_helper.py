@@ -51,11 +51,11 @@ from tests.unit.query_graph.sql.fixtures.snowflake_vector_agg_with_normal_agg im
         (AggFunc.AVG, "col", DBVarType.ARRAY, 'VECTOR_AGGREGATE_SIMPLE_AVERAGE("col")'),
     ],
 )
-def test_get_aggregation_expression(agg_func, input_column, parent_dtype, expected):
+def test_get_aggregation_expression(agg_func, input_column, parent_dtype, expected, adapter):
     """
     Test get_aggregation_expression
     """
-    expr = get_aggregation_expression(agg_func, input_column, parent_dtype)
+    expr = get_aggregation_expression(agg_func, input_column, parent_dtype, adapter)
     assert expr.sql(pretty=True) == expected
 
 
@@ -340,6 +340,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
     Test get_groupby_expr with multiple groupby columns
     """
     select_expr, groupby_key, groupby_key_point_in_time, value_by = common_params
+    adapter = get_sql_adapter(SourceInfo(source_type=source_type, database_name="", schema_name=""))
 
     groupby_columns = []
     i = 0
@@ -353,7 +354,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         )
         i += 1
         groupby_columns.append(groupby_column)
-    groupby_columns = update_aggregation_expression_for_columns(groupby_columns, source_type)
+    groupby_columns = update_aggregation_expression_for_columns(groupby_columns, adapter)
     if not use_value_by:
         value_by = None
     groupby_expr = get_groupby_expr(
@@ -361,9 +362,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         groupby_keys=[groupby_key, groupby_key_point_in_time],
         groupby_columns=groupby_columns,
         value_by=value_by,
-        adapter=get_sql_adapter(
-            SourceInfo(source_type=source_type, database_name="", schema_name="")
-        ),
+        adapter=adapter,
     )
     assert groupby_expr.sql(pretty=True) == result.strip()
 
