@@ -7,7 +7,6 @@ from __future__ import annotations
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
 class ExtendedFeatureModel(FeatureModel):

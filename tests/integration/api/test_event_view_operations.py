@@ -31,7 +31,6 @@ from tests.util.helper import (
     assert_preview_result_equal,
     compute_historical_feature_table_dataframe_helper,
     create_observation_table_by_upload,
-    create_observation_table_from_dataframe,
     fb_assert_frame_equal,
     get_dataframe_from_materialized_table,
     get_lagged_series_pandas,

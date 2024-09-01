@@ -617,8 +617,8 @@ class FeatureModel(BaseFeatureModel):
         SourceInfo
         """
         return SourceInfo(
-            database_name=self.tabular_source.table_details.database_name,
-            schema_name=self.tabular_source.table_details.schema_name,
+            database_name=self.tabular_source.table_details.database_name or "",
+            schema_name=self.tabular_source.table_details.schema_name or "",
             source_type=self.graph.get_input_node(
                 self.node_name
             ).parameters.feature_store_details.type,
