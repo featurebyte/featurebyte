@@ -13,6 +13,7 @@ from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql.adapter.snowflake import SnowflakeAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_function_call, sql_to_string
+from featurebyte.typing import DatetimeSupportedPropertyType
 
 
 class BigQueryAdapter(SnowflakeAdapter):
@@ -196,6 +197,12 @@ class BigQueryAdapter(SnowflakeAdapter):
             ),
             make_literal_value(7),
         )
+
+    @classmethod
+    def get_datetime_extract_property(cls, property_type: DatetimeSupportedPropertyType) -> str:
+        if property_type == "week":
+            return "isoweek"
+        return super().get_datetime_extract_property(property_type)
 
     @classmethod
     def alter_table_add_columns(

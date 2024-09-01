@@ -29,7 +29,10 @@ class DatetimeExtractNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        params = {"this": self.dt_property, "expression": self.expr}
+        params = {
+            "this": self.context.adapter.get_datetime_extract_property(self.dt_property),
+            "expression": self.expr,
+        }
         prop_expr = expressions.Extract(**params)
         if self.dt_property == "dayofweek":
             return self.context.adapter.adjust_dayofweek(prop_expr)

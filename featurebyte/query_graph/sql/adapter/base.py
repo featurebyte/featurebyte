@@ -23,6 +23,7 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 from featurebyte.query_graph.sql.source_info import SourceInfo
+from featurebyte.typing import DatetimeSupportedPropertyType
 
 FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
 
@@ -207,6 +208,22 @@ class BaseAdapter(ABC):
                 timestamp_expr_2,
             ],
         )
+
+    @classmethod
+    def get_datetime_extract_property(cls, property_type: DatetimeSupportedPropertyType) -> str:
+        """
+        Get the property name for the datetime extract function
+
+        Parameters
+        ----------
+        property_type : DatetimeSupportedPropertyType
+            Datetime property type
+
+        Returns
+        -------
+        str
+        """
+        return str(property_type)
 
     @classmethod
     def construct_key_value_aggregation_sql(
