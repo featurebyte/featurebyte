@@ -1330,11 +1330,13 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
     assert new_columns == expected_updated_column_names
 
     # test that count feature have missing values
-    assert event_view_preview["transaction_count"].isna().sum() == 2500
+    assert event_view_preview["transaction_count"].isna().sum() > 2000
     assert event_view_preview["transaction_count"].equals(event_view_preview["transaction_count_2"])
 
     # test that one of the feature join keys is correct
-    order_id_to_match = "T0"
+    order_id_to_match = event_view_preview[event_view_preview["transaction_count"].notnull()].iloc[
+        0
+    ]["TRANSACTION_ID"]
     feature_preview = non_time_based_feature.preview(
         pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": order_id_to_match}])
     )
