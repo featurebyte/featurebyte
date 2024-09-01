@@ -187,6 +187,17 @@ class BigQueryAdapter(SnowflakeAdapter):
         )
 
     @classmethod
+    def adjust_dayofweek(cls, extracted_expr: Expression) -> Expression:
+        # pandas: Monday=0, Sunday=6; bigquery: Sunday=1, Saturday=7
+        # Conversion formula: (bigquery_dayofweek - 1 + 6) % 7
+        return cls.modulo(
+            expressions.Paren(
+                this=expressions.Add(this=extracted_expr, expression=make_literal_value(5))
+            ),
+            make_literal_value(7),
+        )
+
+    @classmethod
     def alter_table_add_columns(
         cls,
         table: expressions.Table,
