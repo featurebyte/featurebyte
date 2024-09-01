@@ -940,8 +940,6 @@ async def test_get_historical_features__features_info(
 
 @pytest.mark.asyncio
 async def test_get_target__feature_table_cache(
-    session,
-    data_source,
     event_view,
     user_entity,
     new_user_id_entity,
@@ -980,11 +978,7 @@ async def test_get_target__feature_table_cache(
     df_expected = pd.concat([df_training_events, expected_targets], axis=1)
     df_expected.columns = ["POINT_IN_TIME", "üser id", "avg_24h_target"]
 
-    observation_table = await create_observation_table_from_dataframe(
-        session,
-        df_training_events,
-        data_source,
-    )
+    observation_table = create_observation_table_by_upload(df_training_events)
     target_table = target.compute_target_table(observation_table, f"new_table_{time.time()}")
     df = target_table.to_pandas()
     assert df.columns.tolist() == ["POINT_IN_TIME", "üser id", "avg_24h_target"]
