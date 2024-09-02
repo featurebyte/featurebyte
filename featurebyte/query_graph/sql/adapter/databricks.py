@@ -249,7 +249,7 @@ class DatabricksAdapter(BaseAdapter):
 
         if kind == "TABLE":
             table_properties = [
-                expressions.TableFormatProperty(this=expressions.Var(this="DELTA")),
+                expressions.FileFormatProperty(this=expressions.Var(this="DELTA")),
                 expressions.Property(
                     this=expressions.Literal(this="delta.columnMapping.mode"), value="'name'"
                 ),

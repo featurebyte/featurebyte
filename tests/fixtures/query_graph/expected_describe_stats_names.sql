@@ -2,16 +2,14 @@ WITH stats AS (
   SELECT
     MIN(
       IFF(
-        "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
-        OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+        "ts" < CAST('1900-01-01' AS TIMESTAMP) OR "ts" > CAST('2200-01-01' AS TIMESTAMP),
         NULL,
         "ts"
       )
     ) AS "min__0",
     MAX(
       IFF(
-        "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
-        OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+        "ts" < CAST('1900-01-01' AS TIMESTAMP) OR "ts" > CAST('2200-01-01' AS TIMESTAMP),
         NULL,
         "ts"
       )

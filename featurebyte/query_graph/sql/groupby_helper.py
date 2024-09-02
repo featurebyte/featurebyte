@@ -238,8 +238,10 @@ def get_vector_agg_column_snowflake(
         expressions=[parent_col.name for parent_col in parent_cols],
     )
     window_expr = expressions.Window(this=agg_func_expr, partition_by=partition_by_keys)
-    table_expr = expressions.Anonymous(this="TABLE", expressions=[window_expr])
-    aliased_table_expr = alias_(table_expr, alias=agg_name, quoted=True)
+    table_expr = expressions.Table(
+        this=expressions.Anonymous(this="TABLE", expressions=[window_expr]),
+        alias=expressions.TableAlias(this=quoted_identifier(agg_name)),
+    )
 
     updated_groupby_keys = []
     for key in groupby_keys:
@@ -248,12 +250,15 @@ def get_vector_agg_column_snowflake(
         updated_groupby_keys.append(alias_(parent_col, alias=parent_col.name))
 
     updated_input_expr_with_select_keys = input_expr.select(*updated_groupby_keys)
-    expr = select(
-        *select_keys,
-        agg_result_column,
-    ).from_(
-        updated_input_expr_with_select_keys.subquery(alias=initial_data_table_name),
-        aliased_table_expr,
+    expr = (
+        select(
+            *select_keys,
+            agg_result_column,
+        )
+        .from_(
+            updated_input_expr_with_select_keys.subquery(alias=initial_data_table_name),
+        )
+        .join(table_expr)
     )
     return VectorAggColumn(
         aggr_expr=expr,

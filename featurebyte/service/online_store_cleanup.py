@@ -109,10 +109,6 @@ class OnlineStoreCleanupService:
                     ),
                 ),
             ),
-            expressions=[
-                expressions.When(
-                    this=expressions.Identifier(this="MATCHED"), then=expressions.Var(this="DELETE")
-                )
-            ],
+            expressions=[expressions.When(matched=True, then=expressions.Var(this="DELETE"))],
         )
         return merge_expr

@@ -16,7 +16,7 @@ CREATE TABLE "sf_db"."sf_schema"."TEMP_FEATURE_TABLE_000000000000000000000000" A
 WITH ONLINE_REQUEST_TABLE AS (
   SELECT
     REQ."cust_id",
-    CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ) AS POINT_IN_TIME
+    CAST('2022-01-06 00:00:00' AS TIMESTAMP) AS POINT_IN_TIME
   FROM "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS REQ
 ), _FB_AGGREGATED AS (
   SELECT
@@ -45,7 +45,10 @@ WITH ONLINE_REQUEST_TABLE AS (
               "AGGREGATION_RESULT_NAME",
               "LATEST_VERSION"
             FROM (VALUES
-              ('_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+              (
+                '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295',
+                _fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER
+              )) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
           ) AS L
           INNER JOIN online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c AS R
             ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
@@ -53,7 +56,8 @@ WITH ONLINE_REQUEST_TABLE AS (
         )
         WHERE
           "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
-      )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
+      )
+      PIVOT(MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
     )
   ) AS T0
     ON REQ."cust_id" = T0."cust_id"
@@ -66,7 +70,7 @@ FROM _FB_AGGREGATED AS AGG;
 CREATE TABLE "sf_db"."sf_schema"."TEMP_LOOKUP_UNIVERSE_TABLE_000000000000000000000000" AS
 WITH ENTITY_UNIVERSE AS (
   SELECT
-    CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
+    CAST('2022-01-06 00:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
     "transaction_id"
   FROM (
     SELECT DISTINCT
@@ -84,8 +88,8 @@ WITH ENTITY_UNIVERSE AS (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."sf_table"
       WHERE
-        "event_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
-        AND "event_timestamp" < CAST('2022-01-06 00:00:00' AS TIMESTAMPNTZ)
+        "event_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMP)
+        AND "event_timestamp" < CAST('2022-01-06 00:00:00' AS TIMESTAMP)
     )
     WHERE
       NOT "col_int" IS NULL
@@ -153,8 +157,9 @@ INSERT INTO "cat1_cust_id_30m" (
   "__feature_timestamp",
   "cust_id",
   "__feature_requiring_parent_serving_ttl_V220101__part0"
-) SELECT
-  CAST('2022-01-06T00:00:00' AS TIMESTAMPNTZ) AS "__feature_timestamp",
+)
+SELECT
+  CAST('2022-01-06T00:00:00' AS TIMESTAMP) AS "__feature_timestamp",
   "cust_id",
   "__feature_requiring_parent_serving_ttl_V220101__part0"
 FROM "TEMP_FEATURE_TABLE_000000000000000000000000";
@@ -163,8 +168,9 @@ INSERT INTO "cat1_cust_id_30m_via_transaction_id_000000" (
   "__feature_timestamp",
   "transaction_id",
   "__feature_requiring_parent_serving_ttl_V220101__part0"
-) SELECT
-  CAST('2022-01-06T00:00:00' AS TIMESTAMPNTZ) AS "__feature_timestamp",
+)
+SELECT
+  CAST('2022-01-06T00:00:00' AS TIMESTAMP) AS "__feature_timestamp",
   "transaction_id",
   "__feature_requiring_parent_serving_ttl_V220101__part0"
 FROM "TEMP_LOOKUP_FEATURE_TABLE_000000000000000000000000";

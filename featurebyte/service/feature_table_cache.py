@@ -359,12 +359,7 @@ class FeatureTableCacheService:
                     alias=expressions.TableAlias(this=merge_source_table_alias),
                 ),
                 on=expressions.and_(*merge_conditions),
-                expressions=[
-                    expressions.When(
-                        this=expressions.Column(this=expressions.Identifier(this="MATCHED")),
-                        then=update_expr,
-                    ),
-                ],
+                expressions=[expressions.When(matched=True, then=update_expr)],
             )
             await db_session.retry_sql(
                 sql_to_string(merge_expr, source_type=db_session.source_type)
