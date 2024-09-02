@@ -71,12 +71,12 @@ class BaseAdapterTest:
         keys = [k.expr for k in groupby_keys]
         agg_exprs = [
             alias_(
-                get_aggregation_expression(AggFunc.SUM, "parent", None),
+                get_aggregation_expression(AggFunc.SUM, "parent", None, self.adapter),
                 alias="sum_result",
                 quoted=True,
             ),
             alias_(
-                get_aggregation_expression(AggFunc.AVG, "parent_avg", None),
+                get_aggregation_expression(AggFunc.AVG, "parent_avg", None, self.adapter),
                 alias="avg_result",
                 quoted=True,
             ),

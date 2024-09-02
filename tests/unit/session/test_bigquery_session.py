@@ -262,25 +262,16 @@ def test_bigquery_schema_initializer__sql_objects(patched_bigquery_session_cls):
         item["filename"] = os.path.basename(item["filename"])
         item["type"] = item["type"].value
     expected = [
-        {
-            "type": "function",
-            "filename": "F_COUNT_DICT_COSINE_SIMILARITY.sql",
-            "identifier": "F_COUNT_DICT_COSINE_SIMILARITY",
-        },
-        {
-            "type": "function",
-            "filename": "F_COUNT_DICT_ENTROPY.sql",
-            "identifier": "F_COUNT_DICT_ENTROPY",
-        },
-        {
-            "type": "function",
-            "filename": "F_COUNT_DICT_LEAST_FREQUENT.sql",
-            "identifier": "F_COUNT_DICT_LEAST_FREQUENT",
-        },
+        {"type": "function", "filename": "F_OBJECT_DELETE.sql", "identifier": "OBJECT_DELETE"},
         {
             "type": "function",
             "filename": "F_COUNT_DICT_MOST_FREQUENT.sql",
             "identifier": "F_COUNT_DICT_MOST_FREQUENT",
+        },
+        {
+            "type": "function",
+            "filename": "F_TIMESTAMP_TO_INDEX.sql",
+            "identifier": "F_TIMESTAMP_TO_INDEX",
         },
         {
             "type": "function",
@@ -289,15 +280,14 @@ def test_bigquery_schema_initializer__sql_objects(patched_bigquery_session_cls):
         },
         {
             "type": "function",
-            "filename": "F_COUNT_DICT_MOST_FREQUENT_VALUE.sql",
-            "identifier": "F_COUNT_DICT_MOST_FREQUENT_VALUE",
+            "filename": "F_COUNT_DICT_ENTROPY.sql",
+            "identifier": "F_COUNT_DICT_ENTROPY",
         },
         {
             "type": "function",
-            "filename": "F_COUNT_DICT_NUM_UNIQUE.sql",
-            "identifier": "F_COUNT_DICT_NUM_UNIQUE",
+            "filename": "F_COUNT_DICT_COSINE_SIMILARITY.sql",
+            "identifier": "F_COUNT_DICT_COSINE_SIMILARITY",
         },
-        {"type": "function", "filename": "F_GET_RANK.sql", "identifier": "F_GET_RANK"},
         {
             "type": "function",
             "filename": "F_GET_RELATIVE_FREQUENCY.sql",
@@ -308,15 +298,26 @@ def test_bigquery_schema_initializer__sql_objects(patched_bigquery_session_cls):
             "filename": "F_INDEX_TO_TIMESTAMP.sql",
             "identifier": "F_INDEX_TO_TIMESTAMP",
         },
+        {"type": "function", "filename": "F_GET_RANK.sql", "identifier": "F_GET_RANK"},
         {
             "type": "function",
-            "filename": "F_TIMESTAMP_TO_INDEX.sql",
-            "identifier": "F_TIMESTAMP_TO_INDEX",
+            "filename": "F_COUNT_DICT_MOST_FREQUENT_VALUE.sql",
+            "identifier": "F_COUNT_DICT_MOST_FREQUENT_VALUE",
         },
         {
             "type": "function",
             "filename": "F_TIMEZONE_OFFSET_TO_SECOND.sql",
             "identifier": "F_TIMEZONE_OFFSET_TO_SECOND",
+        },
+        {
+            "type": "function",
+            "filename": "F_COUNT_DICT_LEAST_FREQUENT.sql",
+            "identifier": "F_COUNT_DICT_LEAST_FREQUENT",
+        },
+        {
+            "type": "function",
+            "filename": "F_COUNT_DICT_NUM_UNIQUE.sql",
+            "identifier": "F_COUNT_DICT_NUM_UNIQUE",
         },
     ]
 

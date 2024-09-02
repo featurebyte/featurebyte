@@ -473,6 +473,7 @@ class BigQuerySession(BaseSession):
         types = {field.name: field.field_type for field in table_schema}
         # convert timestamps to timezone naive string, local timestamps are converted to UTC
         if dataframe.shape[0] > 0:
+            dataframe = dataframe.copy()
             for colname in dataframe.columns:
                 if types[colname] == SqlTypeNames.TIMESTAMP:
                     try:

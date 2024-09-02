@@ -12,7 +12,8 @@ from sqlglot.expressions import Anonymous, Expression
 from featurebyte.enum import DBVarType, SourceType, StrEnum
 from featurebyte.query_graph.sql.adapter.snowflake import SnowflakeAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import get_fully_qualified_function_call
+from featurebyte.query_graph.sql.common import get_fully_qualified_function_call, sql_to_string
+from featurebyte.typing import DatetimeSupportedPropertyType
 
 
 class BigQueryAdapter(SnowflakeAdapter):
@@ -170,3 +171,59 @@ class BigQueryAdapter(SnowflakeAdapter):
     @classmethod
     def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
         return cls._dateadd_helper(quantity_expr, timestamp_expr, "SECOND")
+
+    @classmethod
+    def datediff_microsecond(
+        cls, timestamp_expr_1: Expression, timestamp_expr_2: Expression
+    ) -> Expression:
+        # Need to calculate timestamp_expr_2 - timestamp_expr_1
+        return expressions.TimestampDiff(
+            this=expressions.Cast(
+                this=timestamp_expr_2, to=expressions.DataType.build("TIMESTAMP")
+            ),
+            expression=expressions.Cast(
+                this=timestamp_expr_1, to=expressions.DataType.build("TIMESTAMP")
+            ),
+            unit=expressions.Var(this="MICROSECOND"),
+        )
+
+    @classmethod
+    def adjust_dayofweek(cls, extracted_expr: Expression) -> Expression:
+        # pandas: Monday=0, Sunday=6; bigquery: Sunday=1, Saturday=7
+        # Conversion formula: (bigquery_dayofweek - 1 + 6) % 7
+        return cls.modulo(
+            expressions.Paren(
+                this=expressions.Add(this=extracted_expr, expression=make_literal_value(5))
+            ),
+            make_literal_value(7),
+        )
+
+    @classmethod
+    def get_datetime_extract_property(cls, property_type: DatetimeSupportedPropertyType) -> str:
+        if property_type == "week":
+            return "isoweek"
+        return super().get_datetime_extract_property(property_type)
+
+    @classmethod
+    def alter_table_add_columns(
+        cls,
+        table: expressions.Table,
+        columns: List[expressions.ColumnDef],
+    ) -> str:
+        alter_table_sql = f"ALTER TABLE {sql_to_string(table, source_type=cls.source_type)}\n"
+        add_column_lines = []
+        for column in columns:
+            add_column_lines.append(
+                "  ADD COLUMN " + sql_to_string(column, source_type=cls.source_type)
+            )
+        alter_table_sql += ",\n".join(add_column_lines)
+        return alter_table_sql
+
+    @classmethod
+    def str_contains(cls, expr: Expression, pattern: str) -> Expression:
+        return Anonymous(this="REGEXP_CONTAINS", expressions=[expr, make_literal_value(pattern)])
+
+    @classmethod
+    def modulo(cls, expr1: Expression, expr2: Expression) -> Expression:
+        # The % operator doesn't work in BigQuery
+        return expressions.Anonymous(this="MOD", expressions=[expr1, expr2])

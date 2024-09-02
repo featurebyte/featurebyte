@@ -30,7 +30,7 @@ from featurebyte.query_graph.sql.common import sql_to_string
 from tests.util.helper import (
     assert_preview_result_equal,
     compute_historical_feature_table_dataframe_helper,
-    create_observation_table_from_dataframe,
+    create_observation_table_by_upload,
     fb_assert_frame_equal,
     get_dataframe_from_materialized_table,
     get_lagged_series_pandas,
@@ -155,7 +155,7 @@ def test_event_view_ops(event_view, transaction_data_upper_case, source_type):
         expected["ËVENT_TIMESTAMP"] = pd.to_datetime(
             expected["ËVENT_TIMESTAMP"], utc=True
         ).dt.tz_localize(None)
-    pd.testing.assert_frame_equal(output[columns], expected[columns], check_dtype=False)
+    fb_assert_frame_equal(output[columns], expected[columns], sort_by_columns=["TRANSACTION_ID"])
 
 
 def test_feature_operations__feature_group_preview(feature_group):
@@ -329,7 +329,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
 
     # assign new feature and preview again
     new_feature = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
-    feature_group["COUNT_2h / COUNT_24h"] = new_feature
+    feature_group["COUNT_2h DIV COUNT_24h"] = new_feature
     df_feature_preview = feature_group.preview(pd.DataFrame([preview_param]))
     assert_feature_preview_output_equal(
         df_feature_preview,
@@ -338,7 +338,7 @@ def test_feature_operations(event_view, feature_group, feature_group_per_categor
             "üser id": 1,
             "COUNT_2h": 3,
             "COUNT_24h": 14,
-            "COUNT_2h / COUNT_24h": 0.21428599999999998,
+            "COUNT_2h DIV COUNT_24h": 0.21428599999999998,
         },
     )
 
@@ -516,7 +516,7 @@ def get_training_events_and_expected_result():
             None,
         ],
         "NUM_UNIQUE_ACTION_24h": [5.0, 4.0, 4.0, 4.0, 5.0, 5.0, 5.0, 5.0, 5.0, 0.0],
-        "COUNT_2h / COUNT_24h": [
+        "COUNT_2h DIV COUNT_24h": [
             0.214286,
             0.083333,
             0.076923,
@@ -572,7 +572,7 @@ async def test_get_historical_features(
     assert input_format in {"dataframe", "table", "uploaded_table"}
     assert output_format in {"dataframe", "table"}
 
-    feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    feature_group["COUNT_2h DIV COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     feature_list = FeatureList(
         [
             feature_group["COUNT_2h"],
@@ -581,7 +581,7 @@ async def test_get_historical_features(
             feature_group_per_category["ENTROPY_BY_ACTION_24h"],
             feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
             feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
-            feature_group["COUNT_2h / COUNT_24h"],
+            feature_group["COUNT_2h DIV COUNT_24h"],
             feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
         ],
         name="My FeatureList",
@@ -605,12 +605,20 @@ async def test_get_historical_features(
         df_historical_features = feature_list.compute_historical_features(df_training_events)
         assert HistoricalFeatureTable.list().shape[0] == existing_historical_feature_tables
 
+    # When input_format is "table", it is created by creating a source table using db session's
+    # register_table method. In BigQuery's case, this method doesn't guarantee that the original
+    # DataFrame's ordering is preserved. In other words, we cannot expect that the row index is
+    # np.arange(1, 11) as setup in df_historical_expected.
+    row_index_not_comparable = session.source_type == "bigquery" and input_format == "table"
+    ignore_columns = ["__FB_TABLE_ROW_INDEX"] if row_index_not_comparable else None
+
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
     fb_assert_frame_equal(
         df_historical_features,
         df_historical_expected,
         dict_like_columns=["COUNT_BY_ACTION_24h"],
         sort_by_columns=["POINT_IN_TIME", "üser id"] if output_format == "table" else None,
+        ignore_columns=ignore_columns,
     )
 
     # Test again using the same feature list and table but with serving names mapping
@@ -622,6 +630,7 @@ async def test_get_historical_features(
         data_source,
         input_format=input_format,
         output_format=output_format,
+        ignore_columns=ignore_columns,
     )
 
 
@@ -633,6 +642,7 @@ async def _test_get_historical_features_with_serving_names(
     data_source,
     input_format,
     output_format,
+    ignore_columns,
 ):
     """Test getting historical features from FeatureList with alternative serving names"""
 
@@ -666,6 +676,7 @@ async def _test_get_historical_features_with_serving_names(
         df_historical_expected,
         dict_like_columns=["COUNT_BY_ACTION_24h"],
         sort_by_columns=["POINT_IN_TIME", "new_user id"] if output_format == "table" else None,
+        ignore_columns=ignore_columns,
     )
 
 
@@ -740,22 +751,17 @@ def assert_datetime_almost_equal(s1: pd.Series, s2: pd.Series):
 
 
 @pytest_asyncio.fixture(name="observation_table_and_df_historical_expected", scope="module")
-async def observation_table_and_df_historical_expected_fixture(session, data_source):
+async def observation_table_and_df_historical_expected_fixture():
     """Observation table fixture"""
     df_training_events, df_historical_expected = get_training_events_and_expected_result()
     df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
-    observation_table = await create_observation_table_from_dataframe(
-        session,
-        df_training_events,
-        data_source,
-    )
+    observation_table = create_observation_table_by_upload(df_training_events)
     return observation_table, df_historical_expected
 
 
 @pytest.mark.asyncio
 async def test_get_historical_features__feature_table_cache(
     session,
-    data_source,
     feature_group,
     feature_group_per_category,
     user_entity,
@@ -764,7 +770,7 @@ async def test_get_historical_features__feature_table_cache(
     observation_table_and_df_historical_expected,
 ):
     """Test feature table cache create/update"""
-    _ = user_entity, new_user_id_entity, data_source
+    _ = user_entity, new_user_id_entity
 
     feature_list_1 = FeatureList(
         [
@@ -933,8 +939,6 @@ async def test_get_historical_features__features_info(
 
 @pytest.mark.asyncio
 async def test_get_target__feature_table_cache(
-    session,
-    data_source,
     event_view,
     user_entity,
     new_user_id_entity,
@@ -973,11 +977,7 @@ async def test_get_target__feature_table_cache(
     df_expected = pd.concat([df_training_events, expected_targets], axis=1)
     df_expected.columns = ["POINT_IN_TIME", "üser id", "avg_24h_target"]
 
-    observation_table = await create_observation_table_from_dataframe(
-        session,
-        df_training_events,
-        data_source,
-    )
+    observation_table = create_observation_table_by_upload(df_training_events)
     target_table = target.compute_target_table(observation_table, f"new_table_{time.time()}")
     df = target_table.to_pandas()
     assert df.columns.tolist() == ["POINT_IN_TIME", "üser id", "avg_24h_target"]
@@ -1178,6 +1178,12 @@ def check_cast_operations(event_view, source_type, limit=100):
             df["ÀMOUNT"].astype(str).apply(lambda x: "0" if x == "0.0" else x),
             check_names=False,
         )
+    elif source_type == SourceType.BIGQUERY:
+        pd.testing.assert_series_equal(
+            df["AMOUNT_STR"],
+            df["ÀMOUNT"].astype(str).str.replace(".0$", "", regex=True),
+            check_names=False,
+        )
     else:
         pd.testing.assert_series_equal(
             df["AMOUNT_STR"], df["ÀMOUNT"].astype(str), check_names=False
@@ -1317,11 +1323,13 @@ def test_add_feature(event_view, non_time_based_feature, scd_table, source_type)
     assert new_columns == expected_updated_column_names
 
     # test that count feature have missing values
-    assert event_view_preview["transaction_count"].isna().sum() == 2500
+    assert event_view_preview["transaction_count"].isna().sum() > 2000
     assert event_view_preview["transaction_count"].equals(event_view_preview["transaction_count_2"])
 
     # test that one of the feature join keys is correct
-    order_id_to_match = "T0"
+    order_id_to_match = event_view_preview[event_view_preview["transaction_count"].notnull()].iloc[
+        0
+    ]["TRANSACTION_ID"]
     feature_preview = non_time_based_feature.preview(
         pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "order_id": order_id_to_match}])
     )

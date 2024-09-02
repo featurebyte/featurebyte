@@ -113,9 +113,9 @@ def test_replace_expression(
               LENGTH("PRODUCT_ACTION") >= 8,
               "PRODUCT_ACTION",
               RPAD(
-                LPAD("PRODUCT_ACTION", 8 - CEIL((
+                LPAD("PRODUCT_ACTION", CAST(8 - CEIL((
                   8 - LENGTH("PRODUCT_ACTION")
-                ) / 2), '-'),
+                ) / 2) AS INT), '-'),
                 8,
                 '-'
               )
