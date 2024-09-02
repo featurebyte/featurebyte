@@ -130,7 +130,7 @@ def test_is_in_dictionary__target_is_dictionary_feature(
     isin_feature.name = "lookup_is_in_dictionary"
 
     # assert
-    preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "cust_id": "1", "item_id": "item_0"}
+    preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "cust_id": 1, "item_id": "item_0"}
     isin_feature_preview = isin_feature.preview(pd.DataFrame([preview_params]))
     tz_localize_if_needed(isin_feature_preview, source_type)
     assert isin_feature_preview.shape[0] == 1
@@ -217,7 +217,7 @@ def test_get_value_in_dictionary__target_is_scalar(event_table, source_type):
     get_value_feature.name = feature_name
 
     # assert
-    preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "cust_id": "350"}
+    preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "cust_id": 350}
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
 
     # Note: See notes above in test_get_value_from_dictionary__target_is_lookup_feature for why the
@@ -262,7 +262,7 @@ def test_get_value_in_dictionary__target_is_non_lookup(event_table, source_type)
     get_value_feature.name = feature_name
 
     # assert
-    preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "cust_id": "350"}
+    preview_params = {"POINT_IN_TIME": "2001-01-13 12:00:00", "cust_id": 350}
     get_value_feature_preview = get_value_feature.preview(pd.DataFrame([preview_params]))
 
     # Note: See notes above in test_get_value_from_dictionary__target_is_lookup_feature for why the
@@ -306,7 +306,7 @@ def test_get_value_in_dictionary__target_derived_from_request_column(event_table
     final_feature.save()
 
     # Check output
-    preview_params = [{"POINT_IN_TIME": "2001-01-09 12:00:00", "cust_id": "350"}]
+    preview_params = [{"POINT_IN_TIME": "2001-01-09 12:00:00", "cust_id": 350}]
     get_value_feature_preview = final_feature.preview(pd.DataFrame(preview_params))
     tz_localize_if_needed(get_value_feature_preview, source_type)
     assert_preview_result_equal(
