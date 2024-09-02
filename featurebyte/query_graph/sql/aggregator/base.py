@@ -61,7 +61,7 @@ class LeftJoinableSubquery:
     join_keys: list[str]
 
     def get_expression_for_column(
-        self, main_alias: str, join_alias: str, column_name: str
+        self, main_alias: str, join_alias: str, column_name: str, adapter: BaseAdapter
     ) -> expressions.Expression:
         """
         Get the expression for a column name after join. The default implementation is simply to
@@ -78,12 +78,15 @@ class LeftJoinableSubquery:
             Alias of the right table (which this LeftJoinableSubquery is representing)
         column_name: str
             Column name in the right table
+        adapter: BaseAdapter
+            SQL adapter
 
         Returns
         -------
         Expression
         """
         _ = main_alias
+        _ = adapter
         return get_qualified_column_identifier(column_name, join_alias, quote_table=True)
 
 
@@ -215,8 +218,8 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         )
         return result
 
-    @staticmethod
     def _construct_left_join_sql(
+        self,
         index: int,
         table_expr: expressions.Select,
         left_joinable_subquery: LeftJoinableSubquery,
@@ -241,7 +244,10 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         agg_result_name_aliases = [
             alias_(
                 left_joinable_subquery.get_expression_for_column(
-                    "REQ", agg_table_alias, agg_result_name
+                    "REQ",
+                    agg_table_alias,
+                    agg_result_name,
+                    adapter=self.adapter,
                 ),
                 agg_result_name,
                 quoted=True,

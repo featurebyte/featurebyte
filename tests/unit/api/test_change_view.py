@@ -442,8 +442,8 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view, source_info):
               )
             )
             WHERE
-              "new_effective_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-              AND "new_effective_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+              "new_effective_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND "new_effective_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
           )
         )
         GROUP BY
