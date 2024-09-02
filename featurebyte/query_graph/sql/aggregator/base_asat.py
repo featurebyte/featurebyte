@@ -124,14 +124,17 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
                 offset=spec.parameters.offset,
                 offset_direction=self.get_offset_direction(),
             )
+        point_in_time_expr = self.adapter.normalize_timestamp_before_comparison(point_in_time_expr)
 
         # Only join records from the SCD table that are valid as at point in time
         record_validity_condition = expressions.and_(
             # SCD.effective_timestamp_column <= REQ.POINT_IN_TIME; i.e. record became effective
             # at or before point in time
             expressions.LTE(
-                this=get_qualified_column_identifier(
-                    spec.parameters.effective_timestamp_column, "SCD"
+                this=self.adapter.normalize_timestamp_before_comparison(
+                    get_qualified_column_identifier(
+                        spec.parameters.effective_timestamp_column, "SCD"
+                    )
                 ),
                 expression=point_in_time_expr,
             ),
@@ -139,7 +142,9 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
                 # SCD.end_timestamp_column > REQ.POINT_IN_TIME; i.e. record has not yet been
                 # invalidated as at the point in time, but will be at a future time
                 expressions.GT(
-                    this=get_qualified_column_identifier(end_timestamp_column, "SCD"),
+                    this=self.adapter.normalize_timestamp_before_comparison(
+                        get_qualified_column_identifier(end_timestamp_column, "SCD")
+                    ),
                     expression=point_in_time_expr,
                 ),
                 # SCD.end_timestamp_column IS NULL; i.e. record is current

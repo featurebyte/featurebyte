@@ -84,14 +84,17 @@ class InputNode(TableNode):
                     )
                 return expressions.Identifier(this=identifier_name)
 
+            timestamp_col_expr = self.context.adapter.normalize_timestamp_before_comparison(
+                quoted_identifier(push_down_filter.timestamp_column_name)
+            )
             select_expr = select_expr.where(
                 expressions.and_(
                     expressions.GTE(
-                        this=quoted_identifier(push_down_filter.timestamp_column_name),
+                        this=timestamp_col_expr,
                         expression=_maybe_cast(start_date_placeholder),
                     ),
                     expressions.LT(
-                        this=quoted_identifier(push_down_filter.timestamp_column_name),
+                        this=timestamp_col_expr,
                         expression=_maybe_cast(end_date_placeholder),
                     ),
                 )
@@ -121,6 +124,7 @@ class InputNode(TableNode):
                     entity_column_names=entity_filter.entity_columns,
                     table_column_names=entity_filter.table_columns,
                     distinct=need_distinct,
+                    adapter=self.context.adapter,
                 ).subquery()
             )
         else:

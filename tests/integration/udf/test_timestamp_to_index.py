@@ -4,6 +4,7 @@ This module contains integration tests for F_TIMESTAMP_TO_INDEX UDF
 
 import pytest
 
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from tests.integration.udf.util import execute_query_with_udf
 
@@ -28,7 +29,9 @@ async def test_timestamp_to_index(
         session,
         "F_TIMESTAMP_TO_INDEX",
         [
-            f"CAST('{test_input}' AS TIMESTAMP)",
+            get_sql_adapter(session.get_source_info()).convert_to_utc_timestamp(
+                make_literal_value(test_input)
+            ),
             make_literal_value(time_modulo_frequency_second),
             make_literal_value(blind_spot_second),
             make_literal_value(frequency_minute),

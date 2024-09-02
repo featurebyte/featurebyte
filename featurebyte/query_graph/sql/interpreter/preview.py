@@ -338,11 +338,14 @@ class PreviewMixin(BaseGraphInterpreter):
 
         # apply timestamp filtering
         if timestamp_column:
+            normalized_timestamp_column = self.adapter.normalize_timestamp_before_comparison(
+                quoted_identifier(timestamp_column),
+            )
             filter_conditions: List[expressions.Expression] = []
             if from_timestamp:
                 filter_conditions.append(
                     expressions.GTE(
-                        this=quoted_identifier(timestamp_column),
+                        this=normalized_timestamp_column,
                         expression=make_literal_value(
                             from_timestamp.isoformat(), cast_as_timestamp=True
                         ),
@@ -351,7 +354,7 @@ class PreviewMixin(BaseGraphInterpreter):
             if to_timestamp:
                 filter_conditions.append(
                     expressions.LT(
-                        this=quoted_identifier(timestamp_column),
+                        this=normalized_timestamp_column,
                         expression=make_literal_value(
                             to_timestamp.isoformat(), cast_as_timestamp=True
                         ),
@@ -927,6 +930,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
     @classmethod
     def _clip_timestamp_column(cls, col_expr: expressions.Expression) -> expressions.Expression:
+        col_expr = expressions.Cast(this=col_expr, to=expressions.DataType.build("TIMESTAMP"))
         invalid_mask = expressions.or_(
             expressions.LT(
                 this=col_expr,

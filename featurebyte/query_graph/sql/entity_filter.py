@@ -10,12 +10,14 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
 from featurebyte.enum import InternalName
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 
 
 def get_table_filtered_by_entity(
     input_expr: Select,
     entity_column_names: list[str],
+    adapter: BaseAdapter,
     table_column_names: Optional[list[str]] = None,
     timestamp_column: Optional[str] = None,
     inject_entity_table_placeholder: bool = False,
@@ -38,6 +40,8 @@ def get_table_filtered_by_entity(
         Input table to be filtered
     entity_column_names: list[str]
         Entity column name(s) that the filter will be based on
+    adapter: BaseAdapter
+        SQL adapter
     table_column_names: list[str]
         Column names in the table that correspond to entity_column_names if they are not the same
     timestamp_column: Optional[str]
@@ -69,9 +73,12 @@ def get_table_filtered_by_entity(
         join_conditions.append(condition)
 
     if timestamp_column is not None:
+        normalized_timestamp_column = adapter.normalize_timestamp_before_comparison(
+            get_qualified_column_identifier(timestamp_column, "R")
+        )
         join_conditions.append(
             expressions.GTE(
-                this=get_qualified_column_identifier(timestamp_column, "R"),
+                this=normalized_timestamp_column,
                 expression=get_qualified_column_identifier(
                     start_date, entity_table, quote_column=False
                 ),
@@ -79,7 +86,7 @@ def get_table_filtered_by_entity(
         )
         join_conditions.append(
             expressions.LT(
-                this=get_qualified_column_identifier(timestamp_column, "R"),
+                this=normalized_timestamp_column,
                 expression=get_qualified_column_identifier(
                     end_date, entity_table, quote_column=False
                 ),

@@ -1057,3 +1057,22 @@ class BaseAdapter(ABC):
         Expression
         """
         return expressions.Mod(this=expr1, expression=expr2)
+
+    @classmethod
+    def normalize_timestamp_before_comparison(cls, expr: Expression) -> Expression:
+        """
+        Normalize the timestamp before comparison
+
+        No op by default. This is to handle databases like BigQuery that have TIMESTAMP and DATETIME
+        types that cannot be directly compared.
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression to normalize
+
+        Returns
+        -------
+        Expression
+        """
+        return expr
