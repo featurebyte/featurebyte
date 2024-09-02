@@ -411,7 +411,7 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
                 )
             ])
             .distinct()
-            .from_(expressions.Table(this=online_store_table_name))
+            .from_(expressions.Table(this=expressions.Identifier(this=online_store_table_name)))
             .where(
                 expressions.and_(
                     online_store_table_condition, columns_not_null(node.parameters.serving_names)

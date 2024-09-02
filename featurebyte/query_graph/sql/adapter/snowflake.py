@@ -266,7 +266,7 @@ class SnowflakeAdapter(BaseAdapter):
         # quotes (") in some cases. This Alias removes them.
         if cls.will_pivoted_column_name_be_quoted(serving_name):
             return expressions.Alias(
-                this=quoted_identifier(f'""{serving_name}""'),
+                this=expressions.Column(this=quoted_identifier(f'"{serving_name}"')),
                 alias=quoted_identifier(serving_name),
             )
         return quoted_identifier(serving_name)
