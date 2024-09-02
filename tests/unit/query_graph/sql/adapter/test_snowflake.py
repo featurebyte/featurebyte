@@ -9,6 +9,7 @@ from sqlglot.expressions import select
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.sql.adapter import SnowflakeAdapter
+from featurebyte.query_graph.sql.common import sql_to_string
 from tests.unit.query_graph.sql.adapter.base_adapter_test import BaseAdapterTest
 from tests.util.helper import get_sql_adapter_from_source_type
 
@@ -216,6 +217,6 @@ def test_tablesample_percentage_formatting(percent, expected_format):
     Test the percentage in TABLESAMPLE is not formatted using scientific notation because that is
     not supported in some engines like Spark
     """
-    out = SnowflakeAdapter.tablesample(select("*").from_("A"), percent).sql()
-    expected = f"SELECT * FROM (SELECT * FROM A) TABLESAMPLE({expected_format})"
+    out = SnowflakeAdapter.tablesample(select("*").from_("A"), percent).sql(dialect="snowflake")
+    expected = f"SELECT * FROM (SELECT * FROM A) TABLESAMPLE ({expected_format})"
     assert out == expected

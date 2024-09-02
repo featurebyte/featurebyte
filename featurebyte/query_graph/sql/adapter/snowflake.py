@@ -32,11 +32,6 @@ class SnowflakeAdapter(BaseAdapter):
 
     source_type = SourceType.SNOWFLAKE
 
-    # Snowflake does not support the PERCENT keyword. Setting the size parameter instead to
-    # prevent the generated SQL to have the PERCENT keyword. Ideally, this should be handled by
-    # sqlglot automatically but that is not the case yet.
-    TABLESAMPLE_PERCENT_KEY = "size"
-
     class SnowflakeDataType(StrEnum):
         """
         Possible column types in Snowflake online store tables

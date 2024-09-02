@@ -43,8 +43,6 @@ class BaseAdapter(ABC):
     Helper class to generate engine specific SQL expressions
     """
 
-    TABLESAMPLE_PERCENT_KEY = "percent"
-
     def __init__(self, source_info: SourceInfo):
         self.source_info = source_info
         self.source_type = source_info.source_type
@@ -520,15 +518,12 @@ class BaseAdapter(ABC):
         # Need to perform syntax tree surgery this way since TABLESAMPLE needs to be attached to the
         # FROM clause so that the result is still a SELECT expression. This way we can do things
         # like limit(), subquery() etc on the result.
-        params = {
-            cls.TABLESAMPLE_PERCENT_KEY: expressions.Literal(
+        table_sample_expr = expressions.TableSample(
+            percent=expressions.Literal(
                 this=format_float_positional(sample_percent, trim="-"), is_string=False
             )
-        }
-        tablesample_expr = expressions.TableSample(
-            this=nested_select_expr.args["from"].expressions[0], **params
         )
-        nested_select_expr.args["from"].set("expressions", [tablesample_expr])
+        nested_select_expr.args["from"].args["this"].set("sample", table_sample_expr)
 
         return nested_select_expr
 
