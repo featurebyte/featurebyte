@@ -586,6 +586,8 @@ class TileCache:
                         f"REQ.{quoted_identifier(serving_name).sql()} <=> {table_alias}.{quoted_identifier(entity_column_name).sql()}"
                     )
                 )
+            if not join_conditions:
+                join_conditions = [expressions.true()]
             # Note: join_conditions is empty list if there is no entity column. In this case, there
             # is only one row in the tracking table and the join condition can be omitted.
             table_expr = table_expr.join(
