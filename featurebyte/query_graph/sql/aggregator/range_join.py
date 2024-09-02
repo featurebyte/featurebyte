@@ -166,12 +166,12 @@ def range_join_tables(
     # 1. FLOOR(LEFT.RANGE_END / WINDOW) = FLOOR(RIGHT.RANGE_COLUMN / WINDOW)
     # 2. FLOOR(LEFT.RANGE_END / WINDOW) - 1 = FLOOR(RIGHT.RANGE_COLUMN / WINDOW)
     left_range_end_div_window = expressions.Floor(
-        expression=expressions.Div(
+        this=expressions.Div(
             this=left_table.qualified_range_end, expression=make_literal_value(window_size)
         ),
     )
     right_range_div_window = expressions.Floor(
-        expression=expressions.Div(
+        this=expressions.Div(
             this=right_table.qualified_range_column, expression=make_literal_value(window_size)
         )
     )

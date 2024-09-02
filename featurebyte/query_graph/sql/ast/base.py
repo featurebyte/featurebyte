@@ -93,7 +93,7 @@ class SQLNode(ABC):
 
     @property
     @abstractmethod
-    def sql(self) -> Expression | expressions.Subqueryable:
+    def sql(self) -> Expression | expressions.Query:
         """Construct a sql expression
 
         Returns
@@ -218,7 +218,7 @@ class TableNode(SQLNode, ABC):
         Expression
             Expression that can be used within from_()
         """
-        sql = cast(expressions.Subqueryable, self.sql)
+        sql = cast(expressions.Query, self.sql)
         return cast(expressions.Expression, sql.subquery())
 
     @property

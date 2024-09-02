@@ -117,7 +117,7 @@ class OnDemandTileComputePlan:
             # Build wide tile table by joining tile sqls with the same tile_table_id
             tile_table_id = tile_info.tile_table_id
             agg_id = tile_info.aggregation_id
-            assert isinstance(tile_sql_expr, expressions.Subqueryable)
+            assert isinstance(tile_sql_expr, expressions.Query)
 
             if tile_table_id not in tile_sqls:
                 # New tile table - get the tile index column, entity columns and tile value columns

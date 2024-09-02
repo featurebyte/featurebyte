@@ -1,6 +1,6 @@
 WITH REQUEST_TABLE AS (
   SELECT
-    CAST('2022-04-20 10:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
+    CAST('2022-04-20 10:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
     'C1' AS "CUSTOMER_ID"
 ), TILE_F3600_M1800_B900_AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E AS (
   SELECT
@@ -33,7 +33,7 @@ WITH REQUEST_TABLE AS (
                 "BUSINESS_ID" AS "biz_id",
                 CAST(FLOOR((
                   DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
-                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ) AS "__FB_ENTITY_TABLE_END_DATE",
+                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
                 DATEADD(
                   microsecond,
                   (
@@ -41,8 +41,8 @@ WITH REQUEST_TABLE AS (
                       1800 - 900
                     ) * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
                   ),
-                  CAST('1970-01-01' AS TIMESTAMPNTZ)
-                ) AS "__FB_ENTITY_TABLE_START_DATE"
+                  CAST('1970-01-01' AS TIMESTAMP)
+                ) AS __FB_ENTITY_TABLE_START_DATE
               FROM "REQUEST_TABLE"
               GROUP BY
                 "CUSTOMER_ID",

@@ -27,7 +27,7 @@ class IsInNode(ExpressionNode):
         in_array_expr = self.context.adapter.in_array(
             self.input_series_expression_node.sql, self.array_expression_node.sql
         )
-        expr_is_null = expressions.Is(this=in_array_expr, expression=expressions.NULL)
+        expr_is_null = expressions.Is(this=in_array_expr, expression=expressions.Null())
         cast_as_boolean = expressions.Cast(this=expr_is_null, to=parse_one("BOOLEAN"))
         return expressions.If(this=cast_as_boolean, true=parse_one("FALSE"), false=in_array_expr)
 

@@ -186,7 +186,9 @@ class BuildTileNode(TableNode):
 
         window_exprs = [
             alias_(
-                _make_window_expr(expressions.Anonymous(this="ROW_NUMBER")), alias=self.ROW_NUMBER
+                _make_window_expr(expressions.Anonymous(this="ROW_NUMBER")),
+                alias=self.ROW_NUMBER,
+                quoted=True,
             ),
             *[
                 alias_(_make_window_expr(spec.tile_expr), alias=spec.tile_column_name)

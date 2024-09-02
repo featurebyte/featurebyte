@@ -61,8 +61,6 @@ class BinaryOp(ExpressionNode):
             )
         elif self.operation == fb_expressions.Concat:
             op_expr = self.operation(expressions=[self.left_node.sql, right_expr])
-        elif self.operation == expressions.Pow:
-            op_expr = self.operation(this=self.left_node.sql, power=right_expr)
         elif self.operation == expressions.Mod:
             op_expr = self.context.adapter.modulo(self.left_node.sql, right_expr)
         else:

@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import List, Optional, Sequence, cast
 
 from sqlglot import expressions
-from sqlglot.expressions import Expression, Select, Subqueryable, select
+from sqlglot.expressions import Expression, Query, Select, select
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType, InternalName
@@ -564,7 +564,7 @@ def get_entity_universe_constructor(
 
 
 def _apply_join_step(universe_expr: Expression, join_step: EntityLookupStep) -> Expression:
-    assert isinstance(universe_expr, Subqueryable)
+    assert isinstance(universe_expr, Query)
     table_details_dict = join_step.table.tabular_source.table_details.model_dump()
     updated_universe_expr = (
         select(

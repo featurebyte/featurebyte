@@ -276,7 +276,7 @@ class BaseAdapter(ABC):
         inner_agg_result_names : list[str]
             Column names of the intermediate aggregation result names (one value per category - this
             is to be used as the values in the aggregated key-value pairs)
-        inner_agg_expr : expressions.Subqueryable:
+        inner_agg_expr : expressions.Query:
             Query that produces the intermediate aggregation result
 
         Returns

@@ -175,7 +175,7 @@ def get_aggregation_expression(
 
     # Must be NA_COUNT
     assert agg_func == AggFunc.NA_COUNT
-    expr_is_null = expressions.Is(this=input_column_expr, expression=expressions.NULL)
+    expr_is_null = expressions.Is(this=input_column_expr, expression=expressions.Null())
     return expressions.Sum(this=expressions.Cast(this=expr_is_null, to=parse_one("INTEGER")))
 
 

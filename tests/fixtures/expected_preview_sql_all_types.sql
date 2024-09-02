@@ -1,6 +1,6 @@
 WITH REQUEST_TABLE AS (
   SELECT
-    CAST('2022-04-20 10:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
+    CAST('2022-04-20 10:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
     'C1' AS "CUSTOMER_ID"
 ), TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   SELECT
@@ -26,7 +26,7 @@ WITH REQUEST_TABLE AS (
               "CUSTOMER_ID" AS "cust_id",
               CAST(FLOOR((
                 DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
-              ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ) AS "__FB_ENTITY_TABLE_END_DATE",
+              ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
               DATEADD(
                 microsecond,
                 (
@@ -34,8 +34,8 @@ WITH REQUEST_TABLE AS (
                 ) * -1,
                 CAST(FLOOR((
                   DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
-                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ)
-              ) AS "__FB_ENTITY_TABLE_START_DATE"
+                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP)
+              ) AS __FB_ENTITY_TABLE_START_DATE
             FROM "REQUEST_TABLE"
             GROUP BY
               "CUSTOMER_ID"
@@ -86,7 +86,7 @@ WITH REQUEST_TABLE AS (
                 "CUSTOMER_ID" AS "cust_id",
                 CAST(FLOOR((
                   DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
-                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ) AS "__FB_ENTITY_TABLE_END_DATE",
+                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
                 DATEADD(
                   microsecond,
                   (
@@ -94,8 +94,8 @@ WITH REQUEST_TABLE AS (
                   ) * -1,
                   CAST(FLOOR((
                     DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
-                  ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ)
-                ) AS "__FB_ENTITY_TABLE_START_DATE"
+                  ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP)
+                ) AS __FB_ENTITY_TABLE_START_DATE
               FROM "REQUEST_TABLE"
               GROUP BY
                 "CUSTOMER_ID"
@@ -154,7 +154,7 @@ WITH REQUEST_TABLE AS (
                 "BUSINESS_ID" AS "biz_id",
                 CAST(FLOOR((
                   DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
-                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ) AS "__FB_ENTITY_TABLE_END_DATE",
+                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
                 DATEADD(
                   microsecond,
                   (
@@ -162,8 +162,8 @@ WITH REQUEST_TABLE AS (
                       1800 - 900
                     ) * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
                   ),
-                  CAST('1970-01-01' AS TIMESTAMPNTZ)
-                ) AS "__FB_ENTITY_TABLE_START_DATE"
+                  CAST('1970-01-01' AS TIMESTAMP)
+                ) AS __FB_ENTITY_TABLE_START_DATE
               FROM "REQUEST_TABLE"
               GROUP BY
                 "CUSTOMER_ID",
@@ -197,10 +197,10 @@ WITH REQUEST_TABLE AS (
     "CUSTOMER_ID",
     FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) AS "__FB_LAST_TILE_INDEX",
+    ) / 3600) AS __FB_LAST_TILE_INDEX,
     FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) - 2 AS "__FB_FIRST_TILE_INDEX"
+    ) / 3600) - 2 AS __FB_FIRST_TILE_INDEX
   FROM (
     SELECT DISTINCT
       "POINT_IN_TIME",
@@ -213,10 +213,10 @@ WITH REQUEST_TABLE AS (
     "CUSTOMER_ID",
     FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) AS "__FB_LAST_TILE_INDEX",
+    ) / 3600) AS __FB_LAST_TILE_INDEX,
     FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) - 48 AS "__FB_FIRST_TILE_INDEX"
+    ) / 3600) - 48 AS __FB_FIRST_TILE_INDEX
   FROM (
     SELECT DISTINCT
       "POINT_IN_TIME",
@@ -229,10 +229,10 @@ WITH REQUEST_TABLE AS (
     "CUSTOMER_ID",
     FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) AS "__FB_LAST_TILE_INDEX",
+    ) / 3600) AS __FB_LAST_TILE_INDEX,
     FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) - 2160 AS "__FB_FIRST_TILE_INDEX"
+    ) / 3600) - 2160 AS __FB_FIRST_TILE_INDEX
   FROM (
     SELECT DISTINCT
       "POINT_IN_TIME",
