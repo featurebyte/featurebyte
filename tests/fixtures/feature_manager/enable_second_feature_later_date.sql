@@ -1,6 +1,3 @@
-ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN
-value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 FLOAT;
-
 
             merge into TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 a using (
             select
@@ -49,9 +46,6 @@ GROUP BY
                     insert (INDEX, "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, CREATED_AT)
                         values (b.INDEX, b."cust_id", b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, current_timestamp())
         ;
-
-ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN
-value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 FLOAT;
 
 
             merge into TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 a using (

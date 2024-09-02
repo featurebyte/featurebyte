@@ -4,6 +4,7 @@ Tile Registry Job Script
 
 from typing import Optional
 
+import regex as re
 from pydantic import Field
 
 from featurebyte.exception import DocumentConflictError
@@ -62,19 +63,18 @@ class TileRegistry(TileCommon):
                 # Can occur on concurrent tile tasks creating the same tile table
                 pass
 
-        table_exist = self.table_exist
+        # Create empty tile table with the finalised schema
         if not self.table_exist and self.sql_with_index is not None:
-            column_parts = ["index"]
-            column_parts.extend([self.quote_column(col) for col in self.entity_column_names])
-            column_parts.append("created_at")
             await self._session.create_table_as(
                 table_details=self.tile_id,
-                select_expr=f"SELECT {', '.join(column_parts)} FROM ({self.sql_with_index}) LIMIT 0",
+                select_expr=f"SELECT * FROM ({self.sql_with_index}) LIMIT 0",
                 exists=True,
             )
-            table_exist = True
 
-        if table_exist:
+        # Handle old features with TILE_ID_VERSION 1 which has tile table sharing (tile table name
+        # looks like TILE_F3600_M1800_B1800_972CE54D0A3F2F920422054CB5E994D631925519). This should
+        # be deprecated.
+        if re.search(r"_F\d+_", self.tile_id) and self.table_exist:
             cols = [
                 c.upper()
                 for c in (

@@ -27,6 +27,7 @@ from featurebyte.enum import InternalName
 from featurebyte.exception import RecordCreationException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.sql.common import sql_to_string
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import (
     assert_preview_result_equal,
     compute_historical_feature_table_dataframe_helper,
@@ -1444,10 +1445,13 @@ def test_latest_per_category_aggregation(event_view):
     assert df.iloc[0]["LATEST_ACTION_DICT_30d"] == expected
 
 
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @mock.patch.dict(os.environ, {"FEATUREBYTE_TILE_ID_VERSION": "1"})
 def test_non_float_tile_value_added_to_tile_table(event_view, source_type):
     """
     Test case to ensure non-float tile value can be added to an existing tile table without issues
+
+    Only need to test source types that can possibly have old features with tile id version 1.
     """
     feature_group_1 = event_view.groupby("ÜSER ID").aggregate_over(
         value_column=None,
