@@ -18,7 +18,7 @@ FROM (
     "gender",
     "__feature_requiring_parent_serving_V220101__part1",
     "__feature_requiring_parent_serving_plus_123_V220101__part1",
-    ROW_NUMBER()  BETWEEN  AND CURRENT ROW (PARTITION BY "gender" ORDER BY "__feature_timestamp" DESC NULLS LAST) AS "_row_number"
+    ROW_NUMBER() OVER (PARTITION BY "gender" ORDER BY "__feature_timestamp" DESC NULLS LAST) AS "_row_number"
   FROM "cat1_gender_1d"
 )
 WHERE

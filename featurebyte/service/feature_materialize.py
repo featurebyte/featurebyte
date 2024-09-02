@@ -787,7 +787,6 @@ class FeatureMaterializeService:
                     for timestamp_col in timestamp_cols
                 ]
             ),
-            over=expressions.WindowSpec(),
         )
         select_fields = timestamp_cols + join_key_cols + feature_name_cols
 
