@@ -24,6 +24,7 @@ from featurebyte.enum import SourceType, StorageType
 from featurebyte.feast.infra.offline_stores.spark_thrift_source import SparkThriftSource
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import StorageCredential
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.session.base_spark import BaseSparkSession
 from featurebyte.session.spark import SparkDatabaseCredential, SparkSession
@@ -183,7 +184,7 @@ class SparkThriftOfflineStore(OfflineStore):
             .where(
                 expressions.EQ(
                     this=quoted_identifier("feast_row_"),
-                    expression=expressions.Literal(this=1, is_string=False),
+                    expression=make_literal_value(1),
                 )
             )
         )

@@ -4,8 +4,6 @@ Custom sqlglot dialects
 
 from __future__ import annotations
 
-from typing import Type
-
 from sqlglot.dialects.databricks import Databricks
 from sqlglot.dialects.dialect import DialectType
 from sqlglot.dialects.spark import Spark

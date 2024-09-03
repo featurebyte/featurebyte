@@ -30,7 +30,9 @@ class DatetimeExtractNode(ExpressionNode):
     @property
     def sql(self) -> Expression:
         params = {
-            "this": self.context.adapter.get_datetime_extract_property(self.dt_property),
+            "this": expressions.Var(
+                this=self.context.adapter.get_datetime_extract_property(self.dt_property)
+            ),
             "expression": self.expr,
         }
         prop_expr = expressions.Extract(**params)

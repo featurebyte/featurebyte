@@ -813,7 +813,7 @@ class BaseAdapter(ABC):
 
     @staticmethod
     def _square_expr(expr: Expression) -> Expression:
-        return expressions.Pow(this=expr, power=make_literal_value(2))
+        return expressions.Pow(this=expr, expression=make_literal_value(2))
 
     @staticmethod
     def _asin_expr(expr: Expression) -> Expression:
