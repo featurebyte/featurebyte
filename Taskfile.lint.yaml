@@ -71,9 +71,6 @@ tasks:
   style-darglint:
     desc: "Run the linter[style] with only darglint"
     vars:
-      CPU_CORES:
-        sh: python -c 'import multiprocessing as mp; print(mp.cpu_count())'
-    env:
       DARG_SOURCES:
         sh: |
           echo "$(find featurebyte -type d \( -path featurebyte/routes \) -prune -false -o -name "*.py" ! -path "featurebyte/__main__.py" ! -path "featurebyte/datasets/*" ! -path "featurebyte/conftest.py" | xargs)" "$(find featurebyte -type f \( -path featurebyte/routes \) -o -name "controller.py" | xargs)"
@@ -81,7 +78,7 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
-      - echo "${DARG_SOURCES}" | xargs -n16 -P {{ .CPU_CORES }} poetry run darglint
+      - poetry run darglint --docstring-style numpy --strictness full -v 2 {{.DARG_SOURCES}}
 
   type:
     desc: "Run the linter[type]"

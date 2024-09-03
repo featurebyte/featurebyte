@@ -63,7 +63,7 @@ jobs:
       - name: Building hive-udf
         run: task build-jar
       - name: Upload hive-udf
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: hive-udf
           path: hive-udf/lib/build/libs/*
@@ -113,15 +113,16 @@ jobs:
       - name: Renaming test assets
         run: mv .coverage .coverage.0
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.0
           path: pytest.xml.0
       - name: Upload coverage results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: python-${{ matrix.python-version }}-.coverage.0
           path: .coverage.0
+          include-hidden-files: true
   test-integration-snowflake:
     needs:
       - build-jar
@@ -176,17 +177,18 @@ jobs:
           mv .coverage .coverage.1.${{ matrix.pytest-group }}
           mv pytest.xml.1 pytest.xml.1.${{ matrix.pytest-group }}
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.1.${{ matrix.pytest-group }}
           path: pytest.xml.1.${{ matrix.pytest-group }}
           overwrite: true
       - name: Upload coverage results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: python-${{ matrix.python-version }}-.coverage.1.${{ matrix.pytest-group }}
           path: .coverage.1.${{ matrix.pytest-group }}
           overwrite: true
+          include-hidden-files: true
   test-integration-spark:
     needs:
       - build-jar
@@ -258,7 +260,7 @@ jobs:
           mv .coverage .coverage.2.${{ matrix.pytest-group }}
           mv pytest.xml.2 pytest.xml.2.${{ matrix.pytest-group }}
       - name: Upload spark-thrift log file
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: spark-thrift-logs-${{ matrix.python-version }}-${{ matrix.spark-version }}-${{ matrix.pytest-group }}
           path: spark-thrift-${{ matrix.python-version }}-${{ matrix.spark-version }}-${{ matrix.pytest-group }}.log
@@ -266,17 +268,18 @@ jobs:
 
       # NOTE: Only holding 1 test result to be used in pytest report
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.2.${{ matrix.pytest-group }}
           path: pytest.xml.2.${{ matrix.pytest-group }}
           overwrite: true
       - name: Upload coverage results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: python-${{ matrix.python-version }}-.coverage.2.${{ matrix.pytest-group }}
           path: .coverage.2.${{ matrix.pytest-group }}
           overwrite: true
+          include-hidden-files: true
 
       # Fail the job if the test run failed
       - name: Check test status
@@ -333,15 +336,16 @@ jobs:
           mv .coverage .coverage.4.${{ matrix.pytest-group }}
           mv pytest.xml.4 pytest.xml.4.${{ matrix.pytest-group }}
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.4.${{ matrix.pytest-group }}
           path: pytest.xml.4.${{ matrix.pytest-group }}
       - name: Upload coverage results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: python-${{ matrix.python-version }}-.coverage.4.${{ matrix.pytest-group }}
           path: .coverage.4.${{ matrix.pytest-group }}
+          include-hidden-files: true
 
   test-integration-bigquery:
     needs:
@@ -396,17 +400,18 @@ jobs:
           mv .coverage .coverage.5.${{ matrix.pytest-group }}
           mv pytest.xml.5 pytest.xml.5.${{ matrix.pytest-group }}
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: python-${{ matrix.python-version }}-pytest.xml.5.${{ matrix.pytest-group }}
           path: pytest.xml.5.${{ matrix.pytest-group }}
           overwrite: true
       - name: Upload coverage results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: python-${{ matrix.python-version }}-.coverage.5.${{ matrix.pytest-group }}
           path: .coverage.5.${{ matrix.pytest-group }}
           overwrite: true
+          include-hidden-files: true
 
   test-docs:
     needs:
@@ -496,7 +501,7 @@ jobs:
       - name: Merge test results
         run: task test-merge
       - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         with:
           name: pytest-coverage.txt
           path: pytest-coverage.txt
