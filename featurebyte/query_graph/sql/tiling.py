@@ -265,7 +265,9 @@ class NACountAggregator(OrderIndependentAggregator):
         col_is_null = expressions.Is(
             this=quoted_identifier(col.name), expression=expressions.Null()
         )
-        col_casted_as_integer = expressions.Cast(this=col_is_null, to="INTEGER")
+        col_casted_as_integer = expressions.Cast(
+            this=col_is_null, to=expressions.DataType.build("INT")
+        )
         return [
             self.construct_numeric_tile_spec(
                 expressions.Sum(this=col_casted_as_integer), f"value_{agg_id}", AggFunc.SUM

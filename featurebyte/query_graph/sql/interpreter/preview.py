@@ -601,7 +601,7 @@ class PreviewMixin(BaseGraphInterpreter):
                     ),
                 ]
             ),
-            to="DECIMAL",
+            to=expressions.DataType.build("DECIMAL"),
         )
 
     @property
