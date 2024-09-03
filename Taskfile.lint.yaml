@@ -82,7 +82,7 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
-      - echo "${DARG_SOURCES}" | xargs -n16 -P {{ .CPU_CORES }} poetry run darglint
+      - echo "${DARG_SOURCES}" | xargs -n16 -P {{ .CPU_CORES }} poetry run darglint --docstring-style numpy --strictness full -v 2
 
   type:
     desc: "Run the linter[type]"
