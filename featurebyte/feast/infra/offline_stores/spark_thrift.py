@@ -137,7 +137,6 @@ class SparkThriftOfflineStore(OfflineStore):
                     for timestamp_col in timestamp_cols
                 ]
             ),
-            over=expressions.WindowSpec(),
         )
 
         # inner query expression
