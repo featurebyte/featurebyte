@@ -4,7 +4,7 @@ Feature Table Cache service
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -41,7 +41,7 @@ class FeatureTableCacheMetadataService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         block_modification_handler: BlockModificationHandler,
         observation_table_service: ObservationTableService,
         storage: Storage,
@@ -102,7 +102,7 @@ class FeatureTableCacheMetadataService(
     async def update_feature_table_cache(
         self,
         observation_table_id: PydanticObjectId,
-        feature_definitions: List[CachedFeatureDefinition],
+        feature_definitions: list[CachedFeatureDefinition],
     ) -> None:
         """
         Update Feature Table Cache by adding new feature definitions.

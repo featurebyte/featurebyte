@@ -3,8 +3,8 @@ Local storage class
 """
 
 import shutil
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import AsyncGenerator
 
 import aiofiles
 from aiofiles import os as async_os

@@ -157,7 +157,6 @@ pytest-rerunfailures = "^11.1.2"
 pytest-split = "^0.8.2"
 pytest-timeout = "^2.1.0"
 pytest-xdist = "^3.0.2"
-pyupgrade = "^2.37.2"
 
 [tool.poetry.group.docs.dependencies]
 docstring-parser = "^0.15"
@@ -242,7 +241,7 @@ docstring-code-format = true
 docstring-code-line-length = "dynamic"
 
 [tool.ruff.lint]
-select = ["E1", "E4", "E7", "E9", "F", "I"]  # Rules to use by default. Consider adding "UP" for upgradability checks.
+select = ["E1", "E4", "E7", "E9", "F", "I", "UP"]  # Rules to use by default.
 ignore = []
 fixable = ["ALL"]
 unfixable = []

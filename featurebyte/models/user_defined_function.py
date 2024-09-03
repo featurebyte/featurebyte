@@ -4,7 +4,7 @@ This module contains UserDefinedFunction related models
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Union
+from typing import Any, ClassVar
 
 import pandas as pd
 import pymongo
@@ -45,7 +45,7 @@ function_parameter_dtype_to_python_type = {
 }
 
 
-def get_default_test_value(dtype: DBVarType) -> Union[Scalar, Timestamp]:
+def get_default_test_value(dtype: DBVarType) -> Scalar | Timestamp:
     """
     Get default test value for this type. This is used to generate the test input value
     for user-defined functions.
@@ -135,8 +135,8 @@ class FunctionParameter(FeatureByteBaseModel):
     # instance variables
     name: str
     dtype: DBVarType
-    default_value: Optional[Union[Scalar, Timestamp]] = Field(default=None)
-    test_value: Optional[Union[Scalar, Timestamp]] = Field(default=None)
+    default_value: Scalar | Timestamp | None = Field(default=None)
+    test_value: Scalar | Timestamp | None = Field(default=None)
 
     @property
     def has_default_value(self) -> bool:
@@ -178,9 +178,9 @@ class FunctionParameter(FeatureByteBaseModel):
     def __init__(
         self,
         name: str,
-        dtype: Union[DBVarType, str],
-        default_value: Optional[Union[Scalar, pd.Timestamp]] = None,
-        test_value: Optional[Union[Scalar, pd.Timestamp]] = None,
+        dtype: DBVarType | str,
+        default_value: Scalar | pd.Timestamp | None = None,
+        test_value: Scalar | pd.Timestamp | None = None,
     ) -> None:
         expected_type = function_parameter_dtype_to_python_type.get(DBVarType(dtype))
         if expected_type is None:
@@ -218,10 +218,10 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
 
     name: NameStr
     sql_function_name: str
-    function_parameters: List[FunctionParameter]
+    function_parameters: list[FunctionParameter]
     output_dtype: DBVarType
     signature: str = Field(default_factory=str)
-    catalog_id: Optional[PydanticObjectId] = Field(default=None)
+    catalog_id: PydanticObjectId | None = Field(default=None)
     feature_store_id: PydanticObjectId
 
     @field_validator("name", "sql_function_name")
@@ -235,8 +235,8 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
     @field_validator("function_parameters")
     @classmethod
     def _validate_function_parameters(
-        cls, value: List[FunctionParameter]
-    ) -> List[FunctionParameter]:
+        cls, value: list[FunctionParameter]
+    ) -> list[FunctionParameter]:
         # check that function parameter name is unique and valid
         func_names = set()
         for func_param in value:
@@ -274,7 +274,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         str
         """
         function_parameters = []
-        value: Optional[Union[Scalar, TimestampValue]]
+        value: Scalar | TimestampValue | None
         for param in self.function_parameters:
             if param.has_test_value:
                 test_value = param.test_value
@@ -325,7 +325,7 @@ class UserDefinedFunctionModel(FeatureByteBaseDocumentModel):
         """
 
         collection_name = "user_defined_function"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

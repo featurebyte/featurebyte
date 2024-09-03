@@ -71,7 +71,7 @@ def update_or_check_payload_fixture(request_payload_dir, name, json_payload, upd
             fhandle.write(json.dumps(json_payload, indent=4, sort_keys=True))
             fhandle.write("\n")
     else:
-        with open(filename, "r") as fhandle:
+        with open(filename) as fhandle:
             stored_payload = json.load(fhandle)
         if stored_payload != json_payload:
             raise AssertionError(

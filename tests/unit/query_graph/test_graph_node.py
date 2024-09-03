@@ -528,7 +528,7 @@ def test_graph_node__redundant_graph_node(input_node_params):
 def test_graph_flattening(test_dir):
     """Test graph flattening"""
     fixture_path = os.path.join(test_dir, "fixtures/graph/event_view_nested_graph.json")
-    with open(fixture_path, "r") as file_handle:
+    with open(fixture_path) as file_handle:
         query_graph_dict = json_util.loads(file_handle.read())
         query_graph = QueryGraph(**query_graph_dict)
 

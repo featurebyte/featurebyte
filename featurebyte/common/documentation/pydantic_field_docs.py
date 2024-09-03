@@ -2,8 +2,6 @@
 Docstrings for pydantic field overrides for a class.
 """
 
-from typing import Dict
-
 CATALOG_ID = "catalog_id"
 CREATED_AT = "created_at"
 DTYPE = "dtype"
@@ -38,7 +36,7 @@ def _get_dtype_docstring_override(class_name: str) -> str:
     return f"Returns the data type of the {class_name}."
 
 
-def _get_doc_overrides(class_name: str) -> Dict[str, str]:
+def _get_doc_overrides(class_name: str) -> dict[str, str]:
     """
     Get the docstring overrides for a class.
 
@@ -60,7 +58,7 @@ def _get_doc_overrides(class_name: str) -> Dict[str, str]:
     }
 
 
-def _get_target_or_feature_overrides(class_name: str) -> Dict[str, str]:
+def _get_target_or_feature_overrides(class_name: str) -> dict[str, str]:
     """
     Get the docstring overrides for a Target or Feature class.
 

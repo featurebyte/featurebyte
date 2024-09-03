@@ -5,7 +5,6 @@ FeatureMaterializeRunService document service class
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List
 
 from bson import ObjectId
 
@@ -37,7 +36,7 @@ class FeatureMaterializeRunService(
     async def update_incomplete_tile_tasks(
         self,
         document_id: ObjectId,
-        incomplete_tile_tasks: List[IncompleteTileTask],
+        incomplete_tile_tasks: list[IncompleteTileTask],
     ) -> None:
         """
         Update the incomplete tile tasks for the document
@@ -103,7 +102,7 @@ class FeatureMaterializeRunService(
 
     async def get_recent_runs_by_deployment_id(
         self, deployment_id: ObjectId, num_runs: int
-    ) -> List[FeatureMaterializeRun]:
+    ) -> list[FeatureMaterializeRun]:
         """
         Get recent feature materialize runs for the deployment_id
 

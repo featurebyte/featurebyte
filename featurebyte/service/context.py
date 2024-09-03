@@ -4,7 +4,7 @@ ContextService class
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -33,7 +33,7 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         entity_service: EntityService,
         block_modification_handler: BlockModificationHandler,
         table_service: TableService,
@@ -117,11 +117,11 @@ class ContextService(BaseDocumentService[ContextModel, ContextCreate, ContextUpd
         document_id: ObjectId,
         data: ContextUpdate,
         exclude_none: bool = True,
-        document: Optional[ContextModel] = None,
+        document: ContextModel | None = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
-    ) -> Optional[ContextModel]:
+    ) -> ContextModel | None:
         document = await self.get_document(
             document_id=document_id, populate_remote_attributes=False
         )

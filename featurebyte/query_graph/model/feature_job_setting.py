@@ -2,7 +2,7 @@
 Feature Job Setting Model
 """
 
-from typing import Any, ClassVar, Dict
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -163,7 +163,7 @@ class FeatureJobSetting(FeatureByteBaseModel):
         """
         return parse_duration_string(self.execution_buffer)
 
-    def to_seconds(self) -> Dict[str, Any]:
+    def to_seconds(self) -> dict[str, Any]:
         """Convert job settings format using seconds as time unit
 
         Returns

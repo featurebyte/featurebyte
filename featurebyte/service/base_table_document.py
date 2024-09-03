@@ -4,7 +4,7 @@ BaseTableDocumentService class
 
 from __future__ import annotations
 
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 from bson import ObjectId
 from redis import Redis
@@ -35,7 +35,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         block_modification_handler: BlockModificationHandler,
         feature_store_service: FeatureStoreService,
         storage: Storage,
@@ -100,7 +100,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
 
     def construct_list_query_filter(
         self,
-        query_filter: Optional[QueryFilter] = None,
+        query_filter: QueryFilter | None = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
@@ -114,7 +114,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         self,
         conflict_doc: dict[str, Any],
         conflict_signature: dict[str, Any],
-        resolution_signature: Optional[UniqueConstraintResolutionSignature],
+        resolution_signature: UniqueConstraintResolutionSignature | None,
     ) -> str:
         table_type = conflict_doc["type"]
         formatted_conflict_signature = ", ".join(

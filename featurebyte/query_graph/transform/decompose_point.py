@@ -3,7 +3,7 @@ This module contains
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -40,10 +40,10 @@ class AggregationInfo:
     - RequestColumnNode
     """
 
-    agg_node_types: List[NodeType]
-    primary_entity_ids: List[PydanticObjectId]
-    primary_entity_dtypes: List[DBVarType]
-    feature_job_settings: List[FeatureJobSetting]
+    agg_node_types: list[NodeType]
+    primary_entity_ids: list[PydanticObjectId]
+    primary_entity_dtypes: list[DBVarType]
+    feature_job_settings: list[FeatureJobSetting]
     has_request_column: bool
     has_ingest_graph_node: bool
     has_ttl_agg_type: bool
@@ -60,7 +60,7 @@ class AggregationInfo:
         self.extract_primary_entity_ids_only = extract_primary_entity_ids_only
 
     @property
-    def primary_entity_id_to_dtype_map(self) -> Dict[PydanticObjectId, DBVarType]:
+    def primary_entity_id_to_dtype_map(self) -> dict[PydanticObjectId, DBVarType]:
         """
         Get primary entity id to dtype mapping
 
@@ -181,15 +181,15 @@ class DecomposePointState:
     # entity id to ancestor/descendant mapping
     entity_ancestor_descendant_mapper: EntityAncestorDescendantMapper
     # (original graph) node name to aggregation node info mapping (from the original graph)
-    node_name_to_aggregation_info: Dict[str, AggregationInfo]
+    node_name_to_aggregation_info: dict[str, AggregationInfo]
     # (original graph) aggregation node names used to determine whether to start decomposing the graph
-    aggregation_node_names: Set[str]
+    aggregation_node_names: set[str]
     # (original graph) node names that should be used as decompose point
-    decompose_node_names: Set[str]
+    decompose_node_names: set[str]
     # (original graph) node names that should be used as offline store ingest query graph output node
-    ingest_graph_output_node_names: Set[str]
+    ingest_graph_output_node_names: set[str]
     # operation structure info
-    operation_structure_map: Dict[str, OperationStructure]
+    operation_structure_map: dict[str, OperationStructure]
     # extract primary entity ids only
     extract_primary_entity_ids_only: bool
 
@@ -205,7 +205,7 @@ class DecomposePointState:
         return bool(self.decompose_node_names)
 
     @property
-    def primary_entity_ids(self) -> List[PydanticObjectId]:
+    def primary_entity_ids(self) -> list[PydanticObjectId]:
         """
         Get entity ids
 
@@ -219,7 +219,7 @@ class DecomposePointState:
         return sorted(entity_ids)
 
     @property
-    def primary_entity_ids_to_dtypes_map(self) -> Dict[PydanticObjectId, DBVarType]:
+    def primary_entity_ids_to_dtypes_map(self) -> dict[PydanticObjectId, DBVarType]:
         """
         Get entity ids to dtypes mapping
 
@@ -235,9 +235,9 @@ class DecomposePointState:
     @classmethod
     def create(
         cls,
-        relationships_info: List[EntityRelationshipInfo],
-        aggregation_node_names: Set[str],
-        operation_structure_map: Dict[str, OperationStructure],
+        relationships_info: list[EntityRelationshipInfo],
+        aggregation_node_names: set[str],
+        operation_structure_map: dict[str, OperationStructure],
         extract_primary_entity_ids_only: bool,
     ) -> "DecomposePointState":
         """
@@ -326,7 +326,7 @@ class DecomposePointState:
         self,
         query_graph: QueryGraphModel,
         node: Node,
-        input_node_names: List[str],
+        input_node_names: list[str],
         extract_primary_entity_ids_only: bool,
     ) -> None:
         """
@@ -374,7 +374,7 @@ class DecomposePointState:
         self.node_name_to_aggregation_info[node.name] = aggregation_info
 
     def check_input_aggregations(
-        self, agg_info: AggregationInfo, input_node_names: List[str]
+        self, agg_info: AggregationInfo, input_node_names: list[str]
     ) -> bool:
         """
         Check whether to split the input nodes into multiple offline store ingest query graphs
@@ -439,7 +439,7 @@ class DecomposePointState:
         # if none of the above conditions are met, that means we should split the query graph
         return True
 
-    def should_decompose_query_graph(self, node_name: str, input_node_names: List[str]) -> bool:
+    def should_decompose_query_graph(self, node_name: str, input_node_names: list[str]) -> bool:
         """
         Check whether to decompose the query graph into graph with nested offline store ingest query nodes
 
@@ -461,7 +461,7 @@ class DecomposePointState:
 
         return self.check_input_aggregations(agg_info=agg_info, input_node_names=input_node_names)
 
-    def update_ingest_graph_node_output_names(self, input_node_names: List[str]) -> None:
+    def update_ingest_graph_node_output_names(self, input_node_names: list[str]) -> None:
         """
         Check the list of input node names to determine whether the input should be an offline store ingest
         query graph. If so, add the input node name to the list of ingest graph output node names.
@@ -510,8 +510,8 @@ class DecomposePointExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: DecomposePointState,
         node: Node,
-        input_node_names: List[str],
-    ) -> Tuple[List[str], bool]:
+        input_node_names: list[str],
+    ) -> tuple[list[str], bool]:
         skip_input_nodes = False
         if isinstance(node.parameters, BaseGroupbyParameters):
             # if groupby node has entity_ids, skip further exploration on input nodes
@@ -532,7 +532,7 @@ class DecomposePointExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: DecomposePointState,
         node: Node,
-        inputs: List[Any],
+        inputs: list[Any],
         skip_post: bool,
     ) -> DecomposePointState:
         input_node_names = self.graph.get_input_node_names(node)
@@ -559,7 +559,7 @@ class DecomposePointExtractor(
     def extract(
         self,
         node: Node,
-        relationships_info: Optional[List[EntityRelationshipInfo]] = None,
+        relationships_info: Optional[list[EntityRelationshipInfo]] = None,
         extract_primary_entity_ids_only: bool = False,
         **kwargs: Any,
     ) -> DecomposePointState:

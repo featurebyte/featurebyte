@@ -3,8 +3,9 @@ Handles API requests middleware
 """
 
 import inspect
+from collections.abc import Awaitable
 from http import HTTPStatus
-from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Optional, Union
 
 from fastapi import FastAPI, Request, Response
 from pydantic import ValidationError
@@ -30,7 +31,7 @@ class ExecutionContext:
     ExecutionContext to handle exception and http status code globally
     """
 
-    exception_handlers: Dict[Type[Exception], Any] = {}
+    exception_handlers: dict[type[Exception], Any] = {}
 
     @classmethod
     def register(
@@ -134,7 +135,7 @@ class ExecutionContext:
         """
         return self
 
-    async def __aexit__(self, *exc: Dict[str, Any]) -> bool:
+    async def __aexit__(self, *exc: dict[str, Any]) -> bool:
         """
         Signature method for async context manager
 

@@ -5,9 +5,10 @@ This module contains the logic to construct the entity universe for a given node
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, Sequence, cast
+from typing import cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, Subqueryable, select
@@ -102,7 +103,7 @@ class EntityUniverseParams:
 
     graph: QueryGraphModel
     node: Node
-    join_steps: Optional[List[EntityLookupStep]]
+    join_steps: list[EntityLookupStep] | None
 
 
 class BaseEntityUniverseConstructor:
@@ -144,14 +145,14 @@ class BaseEntityUniverseConstructor:
         self.adapter = get_sql_adapter(source_info)
 
     @abstractmethod
-    def get_entity_universe_template(self) -> List[Expression]:
+    def get_entity_universe_template(self) -> list[Expression]:
         """
         Returns SQL expressions for the universe of the entity with placeholders for current
         feature timestamp and last materialization timestamp
         """
 
     @abstractmethod
-    def get_serving_names(self) -> List[str]:
+    def get_serving_names(self) -> list[str]:
         """
         Return list of serving names
         """
@@ -159,7 +160,7 @@ class BaseEntityUniverseConstructor:
     @classmethod
     def get_event_table_timestamp_filter(
         cls, graph: QueryGraphModel, node: Node
-    ) -> Optional[EventTableTimestampFilter]:
+    ) -> EventTableTimestampFilter | None:
         """
         Construct an instance of EventTableTimestampFilter used to filter input EventTable when
         applicable. To be passed to SQLOperationGraph when constructing aggregate input expression
@@ -180,7 +181,7 @@ class BaseEntityUniverseConstructor:
         return None
 
     def get_entity_column(
-        self, entity_column_name: str, entity_column_to_get_dtype: Optional[str] = None
+        self, entity_column_name: str, entity_column_to_get_dtype: str | None = None
     ) -> Expression:
         """
         Get the expression for the entity column with casting applied if needed
@@ -215,11 +216,11 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     Construct the entity universe expression for lookup node
     """
 
-    def get_serving_names(self) -> List[str]:
+    def get_serving_names(self) -> list[str]:
         node = cast(LookupNode, self.node)
         return [node.parameters.serving_name]
 
-    def get_entity_universe_template(self) -> List[Expression]:
+    def get_entity_universe_template(self) -> list[Expression]:
         node = cast(LookupNode, self.node)
 
         if node.parameters.scd_parameters is not None:
@@ -265,11 +266,11 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     Construct the entity universe expression for aggregate as at node
     """
 
-    def get_serving_names(self) -> List[str]:
+    def get_serving_names(self) -> list[str]:
         node = cast(AggregateAsAtNode, self.node)
         return node.parameters.serving_names
 
-    def get_entity_universe_template(self) -> List[Expression]:
+    def get_entity_universe_template(self) -> list[Expression]:
         node = cast(AggregateAsAtNode, self.node)
 
         if not node.parameters.serving_names:
@@ -304,14 +305,14 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     Construct the entity universe expression for item aggregate node
     """
 
-    def get_serving_names(self) -> List[str]:
+    def get_serving_names(self) -> list[str]:
         node = cast(ItemGroupbyNode, self.node)
         return node.parameters.serving_names
 
     @classmethod
     def get_event_table_timestamp_filter(
         cls, graph: QueryGraphModel, node: Node
-    ) -> Optional[EventTableTimestampFilter]:
+    ) -> EventTableTimestampFilter | None:
         # Find the graph node corresponding to the ItemView. From that graph node's parameters we
         # can get the EventTable's id corresponding to this ItemView.
         graph_node = None
@@ -344,7 +345,7 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         )
         return event_table_timestamp_filter
 
-    def get_entity_universe_template(self) -> List[Expression]:
+    def get_entity_universe_template(self) -> list[Expression]:
         node = cast(ItemGroupbyNode, self.node)
         universe_expr = (
             select(*[
@@ -363,11 +364,11 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
     Construct the entity universe expression for tile based aggregate node
     """
 
-    def get_serving_names(self) -> List[str]:
+    def get_serving_names(self) -> list[str]:
         node = cast(GroupByNode, self.node)
         return node.parameters.serving_names
 
-    def get_entity_universe_template(self) -> List[Expression]:
+    def get_entity_universe_template(self) -> list[Expression]:
         node = cast(GroupByNode, self.node)
 
         if not node.parameters.serving_names:
@@ -468,11 +469,11 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
     Construct the entity universe expression for tile based aggregate node
     """
 
-    def get_serving_names(self) -> List[str]:
+    def get_serving_names(self) -> list[str]:
         node = cast(NonTileWindowAggregateNode, self.node)
         return node.parameters.serving_names
 
-    def get_entity_universe_template(self) -> List[Expression]:
+    def get_entity_universe_template(self) -> list[Expression]:
         node = cast(NonTileWindowAggregateNode, self.node)
 
         if not node.parameters.serving_names:
@@ -589,7 +590,7 @@ def _apply_join_step(universe_expr: Expression, join_step: EntityLookupStep) -> 
     return updated_universe_expr
 
 
-def apply_join_steps(universe_expr: Expression, join_steps: List[EntityLookupStep]) -> Expression:
+def apply_join_steps(universe_expr: Expression, join_steps: list[EntityLookupStep]) -> Expression:
     """
     Apply join steps to lookup child entities from parent entities
 
@@ -614,9 +615,9 @@ def apply_join_steps(universe_expr: Expression, join_steps: List[EntityLookupSte
 
 
 def get_combined_universe(
-    entity_universe_params: List[EntityUniverseParams],
+    entity_universe_params: list[EntityUniverseParams],
     source_info: SourceInfo,
-) -> Optional[Expression]:
+) -> Expression | None:
     """
     Returns the combined entity universe expression
 
@@ -631,7 +632,7 @@ def get_combined_universe(
     -------
     Optional[Expression]
     """
-    combined_universe_expr: Optional[Expression] = None
+    combined_universe_expr: Expression | None = None
     processed_universe_exprs = set()
     has_dummy_entity_universe = False
 
@@ -689,7 +690,7 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
         expressions.select(quoted_identifier(event_table_model.event_id_column))
         .from_(
             get_fully_qualified_table_name(
-                (event_table_model.tabular_source.table_details.model_dump())
+                event_table_model.tabular_source.table_details.model_dump()
             )
         )
         .where(
@@ -743,7 +744,7 @@ class EntityUniverseModel(FeatureByteBaseModel):
     def get_entity_universe_expr(
         self,
         current_feature_timestamp: datetime,
-        last_materialized_timestamp: Optional[datetime],
+        last_materialized_timestamp: datetime | None,
     ) -> Select:
         """
         Get a concrete SQL expression for the entity universe for the given feature timestamp and

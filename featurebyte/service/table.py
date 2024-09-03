@@ -4,8 +4,6 @@ TableService class
 
 from __future__ import annotations
 
-from typing import Optional
-
 from bson import ObjectId
 
 from featurebyte.models.feature_store import TableModel as BaseDataModel
@@ -34,11 +32,11 @@ class TableService(BaseDocumentService[BaseDataModel, TableCreate, TableServiceU
         document_id: ObjectId,
         data: DocumentUpdateSchema,
         exclude_none: bool = True,
-        document: Optional[Document] = None,
+        document: Document | None = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
-    ) -> Optional[Document]:
+    ) -> Document | None:
         raise NotImplementedError
 
 

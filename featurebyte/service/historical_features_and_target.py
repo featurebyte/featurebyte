@@ -5,7 +5,8 @@ Module with utility functions to compute historical features
 from __future__ import annotations
 
 import time
-from typing import Any, Callable, Coroutine, Optional, Union
+from collections.abc import Coroutine
+from typing import Any, Callable
 
 import pandas as pd
 from bson import ObjectId
@@ -46,9 +47,9 @@ async def compute_tiles_on_demand(
     request_table_name: str,
     request_table_columns: list[str],
     feature_store_id: ObjectId,
-    serving_names_mapping: Optional[dict[str, str]],
-    parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+    serving_names_mapping: dict[str, str] | None,
+    parent_serving_preparation: ParentServingPreparation | None = None,
+    progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
 ) -> None:
     """
     Compute tiles on demand
@@ -121,12 +122,12 @@ async def get_historical_features(
     tile_cache_service: TileCacheService,
     graph: QueryGraph,
     nodes: list[Node],
-    observation_set: Union[pd.DataFrame, ObservationTableModel],
+    observation_set: pd.DataFrame | ObservationTableModel,
     feature_store: FeatureStoreModel,
     output_table_details: TableDetails,
     serving_names_mapping: dict[str, str] | None = None,
-    parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+    parent_serving_preparation: ParentServingPreparation | None = None,
+    progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
 ) -> None:
     """Get historical features
 
@@ -252,12 +253,12 @@ async def get_target(
     session: BaseSession,
     graph: QueryGraph,
     nodes: list[Node],
-    observation_set: Union[pd.DataFrame, ObservationTableModel],
+    observation_set: pd.DataFrame | ObservationTableModel,
     feature_store: FeatureStoreModel,
     output_table_details: TableDetails,
     serving_names_mapping: dict[str, str] | None = None,
-    parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+    parent_serving_preparation: ParentServingPreparation | None = None,
+    progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
 ) -> None:
     """Get target
 

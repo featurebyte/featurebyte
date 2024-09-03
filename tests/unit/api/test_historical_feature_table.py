@@ -2,7 +2,7 @@
 Unit tests for HistoricalFeatureTable class
 """
 
-from typing import Any, Dict
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -21,7 +21,7 @@ class TestHistoricalFeatureTable(BaseMaterializedTableApiTest):
 
     table_type = HistoricalFeatureTable
 
-    def assert_info_dict(self, info_dict: Dict[str, Any]) -> None:
+    def assert_info_dict(self, info_dict: dict[str, Any]) -> None:
         assert info_dict["table_details"]["table_name"].startswith("HISTORICAL_FEATURE_TABLE_")
         assert isinstance(info_dict["feature_list_version"], str)
         assert info_dict == {

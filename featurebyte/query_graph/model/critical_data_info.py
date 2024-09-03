@@ -4,8 +4,6 @@ This module contains critical data info related models.
 
 from __future__ import annotations
 
-from typing import List
-
 from pydantic import field_validator
 
 from featurebyte.exception import InvalidImputationsError
@@ -16,13 +14,13 @@ from featurebyte.query_graph.node.cleaning_operation import BaseCleaningOperatio
 class CriticalDataInfo(FeatureByteBaseModel):
     """Critical data info model"""
 
-    cleaning_operations: List[CleaningOperation]
+    cleaning_operations: list[CleaningOperation]
 
     @field_validator("cleaning_operations")
     @classmethod
     def _validate_cleaning_operation(
-        cls, values: List[CleaningOperation]
-    ) -> List[CleaningOperation]:
+        cls, values: list[CleaningOperation]
+    ) -> list[CleaningOperation]:
         error_message = (
             "Column values imputed by {first_imputation} will be imputed by {second_imputation}. "
             "Please revise the imputations so that no value could be imputed twice."

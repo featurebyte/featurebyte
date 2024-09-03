@@ -5,7 +5,8 @@ This module functions used to patch the Feast library.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Union
+from collections.abc import Iterable
+from typing import Any
 
 import pandas as pd
 from feast import OnDemandFeatureView
@@ -20,8 +21,8 @@ from google.protobuf.timestamp_pb2 import Timestamp
 
 def augment_response_with_on_demand_transforms(
     online_features_response: GetOnlineFeaturesResponse,
-    feature_refs: List[str],
-    requested_on_demand_feature_views: List[OnDemandFeatureView],
+    feature_refs: list[str],
+    requested_on_demand_feature_views: list[OnDemandFeatureView],
     full_feature_names: bool,
 ) -> None:
     """
@@ -124,7 +125,7 @@ class DataFrameWrapper(pd.DataFrame):
         """
         self.attrs["_alias"][alias] = column_name
 
-    def __getitem__(self, key: Any) -> Union[pd.Series, pd.DataFrame]:
+    def __getitem__(self, key: Any) -> pd.Series | pd.DataFrame:
         if not isinstance(key, str) and isinstance(key, Iterable):
             return pd.DataFrame({_key: self.__getitem__(_key) for _key in key})
 
@@ -175,7 +176,7 @@ def get_transformed_features_df(
     df_with_transformed_features = feature_view.feature_transformation.udf(df_with_features)  # type: ignore
 
     # Work out whether the correct columns names are used.
-    rename_columns: Dict[str, str] = {}
+    rename_columns: dict[str, str] = {}
     for feature in feature_view.features:
         short_name = feature.name
         long_name = f"{feature_view.projection.name_to_use()}__{feature.name}"

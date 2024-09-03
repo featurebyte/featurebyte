@@ -4,8 +4,6 @@ Job status route
 
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import APIRouter, Request
 
 from featurebyte.persistent.base import SortDir
@@ -63,7 +61,7 @@ class TaskRouter(BaseRouter):
         request: Request,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
-        sort_dir: Optional[SortDir] = SortDirQuery,
+        sort_dir: SortDir | None = SortDirQuery,
     ) -> TaskList:
         """
         List TaskStatus

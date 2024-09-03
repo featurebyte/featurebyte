@@ -3,7 +3,8 @@ DeployService class
 """
 
 import traceback
-from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, Set
+from collections.abc import AsyncIterator, Coroutine, Sequence
+from typing import Any, Callable, Optional
 
 from bson import ObjectId
 
@@ -125,7 +126,7 @@ class DeployFeatureManagementService:
             Updated feature model
         """
         document = await self.feature_service.get_document(document_id=feature_id)
-        deployed_feature_list_ids: Set[ObjectId] = set(document.deployed_feature_list_ids)
+        deployed_feature_list_ids: set[ObjectId] = set(document.deployed_feature_list_ids)
         if feature_list_to_deploy:
             deployed_feature_list_ids.add(feature_list_id)
         else:
@@ -147,7 +148,7 @@ class DeployFeatureManagementService:
 
     async def update_offline_feature_table_deployment_reference(
         self,
-        feature_ids: List[PydanticObjectId],
+        feature_ids: list[PydanticObjectId],
         deployment_id: ObjectId,
         to_enable: bool,
     ) -> None:
@@ -256,8 +257,8 @@ class DeploymentServingEntityService:
         self.context_service = context_service
 
     async def get_serving_entity_specs(
-        self, serving_entity_ids: List[PydanticObjectId]
-    ) -> List[ColumnSpec]:
+        self, serving_entity_ids: list[PydanticObjectId]
+    ) -> list[ColumnSpec]:
         """
         Get serving entity name & dtype for the given serving entity ids
 
@@ -401,7 +402,7 @@ class DeployFeatureListManagementService:
         document = await self.feature_list_namespace_service.get_document(
             document_id=feature_list_namespace_id
         )
-        deployed_feature_list_ids: Set[ObjectId] = set(document.deployed_feature_list_ids)
+        deployed_feature_list_ids: set[ObjectId] = set(document.deployed_feature_list_ids)
         if feature_list_to_deploy:
             deployed_feature_list_ids.add(feature_list_id)
         else:
@@ -433,7 +434,7 @@ class DeployFeatureListManagementService:
 
     async def _iterate_enabled_deployments_as_dict(
         self, feature_list_id: ObjectId, deployment_id: ObjectId, to_enable_deployment: bool
-    ) -> AsyncIterator[Dict[str, Any]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Iterate deployments that are enabled, including the one that is going to be enabled in the
         current request
@@ -587,7 +588,7 @@ class FeastIntegrationService:
 
     async def handle_online_enabled_features(
         self,
-        features: List[FeatureModel],
+        features: list[FeatureModel],
         feature_list_to_online_enable: FeatureListModel,
         deployment: DeploymentModel,
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]],
@@ -641,7 +642,7 @@ class FeastIntegrationService:
         self,
         deployment: DeploymentModel,
         feature_list: FeatureListModel,
-        online_enabled_features: List[FeatureModel],
+        online_enabled_features: list[FeatureModel],
     ) -> None:
         """
         Handle deployed feature list
@@ -655,7 +656,7 @@ class FeastIntegrationService:
         online_enabled_features: List[FeatureModel]
             List of online enabled features
         """
-        serving_entity_specs: Optional[List[ColumnSpec]] = None
+        serving_entity_specs: Optional[list[ColumnSpec]] = None
         serving_names = set()
         if deployment.serving_entity_ids:
             serving_entity_specs = (

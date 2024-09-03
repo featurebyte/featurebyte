@@ -2,7 +2,7 @@
 UseCase API route controller
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from bson import ObjectId
 
@@ -199,7 +199,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [
             (self.observation_table_service, {"use_case_ids": document_id}),
             (self.deployment_service, {"use_case_id": document_id}),
@@ -271,7 +271,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: Optional[List[Tuple[str, SortDir]]] = None,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         search: Optional[str] = None,
         name: Optional[str] = None,
         feature_list_id: Optional[PyObjectId] = None,
@@ -326,7 +326,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
 
     async def list_feature_tables(
         self, use_case_id: ObjectId, page: int, page_size: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Delete UseCase from persistent
 

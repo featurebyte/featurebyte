@@ -4,7 +4,7 @@ Feature Namespace module.
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional
+from typing import Any, ClassVar
 
 from pydantic import Field
 
@@ -34,23 +34,23 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
     _update_schema_class: ClassVar[Any] = TargetNamespaceUpdate
     _list_schema: ClassVar[Any] = TargetNamespaceModel
     _get_schema: ClassVar[Any] = TargetNamespaceModel
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "dtype",
         "entities",
         "created_at",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
     ]
 
     # pydantic instance variables
-    internal_window: Optional[str] = Field(alias="window", default=None)
+    internal_window: str | None = Field(alias="window", default=None)
     internal_dtype: DBVarType = Field(alias="dtype")
 
     @classmethod
     def create(
-        cls, name: str, primary_entity: List[str], dtype: DBVarType, window: Optional[str] = None
+        cls, name: str, primary_entity: list[str], dtype: DBVarType, window: str | None = None
     ) -> TargetNamespace:
         """
         Create a new TargetNamespace.
@@ -102,7 +102,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             return self.internal_dtype
 
     @property
-    def window(self) -> Optional[str]:
+    def window(self) -> str | None:
         """
         Window of the target namespace.
 
@@ -116,7 +116,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             return self.internal_window
 
     @property
-    def target_ids(self) -> List[PydanticObjectId]:
+    def target_ids(self) -> list[PydanticObjectId]:
         """
         List of target IDs from the same target namespace
 

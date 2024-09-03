@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from functools import partial
 from itertools import groupby
-from typing import Any, Dict, List, Optional, Type
+from typing import Any
 
 import pandas as pd
 from pandas import DataFrame
@@ -31,9 +31,9 @@ class ListHandler:
     def __init__(
         self,
         route: str,
-        list_schema: Type[FeatureByteBaseDocumentModel],
-        list_fields: Optional[List[str]] = None,
-        list_foreign_keys: Optional[List[ForeignKeyMapping]] = None,
+        list_schema: type[FeatureByteBaseDocumentModel],
+        list_fields: list[str] | None = None,
+        list_foreign_keys: list[ForeignKeyMapping] | None = None,
     ):
         """
         Creates a new list handler.
@@ -55,7 +55,7 @@ class ListHandler:
         self.list_foreign_keys = list_foreign_keys or []
 
     def list(
-        self, include_id: Optional[bool] = False, params: Optional[Dict[str, Any]] = None
+        self, include_id: bool | None = False, params: dict[str, Any] | None = None
     ) -> DataFrame:
         """
         List the object name store at the persistent

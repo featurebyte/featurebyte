@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import random
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -44,7 +44,7 @@ class FeastRegistryService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         block_modification_handler: BlockModificationHandler,
         feature_list_service: FeatureListService,
         feature_service: FeatureService,
@@ -173,11 +173,11 @@ class FeastRegistryService(
 
     async def _construct_feast_registry_model(
         self,
-        project_name: Optional[str],
-        offline_table_name_prefix: Optional[str],
-        feature_lists: List[FeatureListModel],
-        deployment_id: Optional[ObjectId],
-        document_id: Optional[ObjectId] = None,
+        project_name: str | None,
+        offline_table_name_prefix: str | None,
+        feature_lists: list[FeatureListModel],
+        deployment_id: ObjectId | None,
+        document_id: ObjectId | None = None,
     ) -> FeastRegistryModel:
         # retrieve latest feature lists
         feature_ids = set()
@@ -306,11 +306,11 @@ class FeastRegistryService(
         document_id: ObjectId,
         data: FeastRegistryUpdate,
         exclude_none: bool = True,
-        document: Optional[FeastRegistryModel] = None,
+        document: FeastRegistryModel | None = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
-    ) -> Optional[FeastRegistryModel]:
+    ) -> FeastRegistryModel | None:
         assert data.feature_store_id is None, "Not allowed to update feature store ID directly"
         if data.feature_lists is None:
             return await self.get_document(
@@ -349,7 +349,7 @@ class FeastRegistryService(
                 document_id=document_id, populate_remote_attributes=populate_remote_attributes
             )
 
-    async def get_feast_registry_for_catalog(self) -> Optional[FeastRegistryModel]:
+    async def get_feast_registry_for_catalog(self) -> FeastRegistryModel | None:
         """
         Get feast registry document for the catalog if it exists (this is used to retrieve older feast registry
         that is not deployment specific)
@@ -367,7 +367,7 @@ class FeastRegistryService(
             return await self._populate_remote_attributes(feast_registry_model)
         return None
 
-    async def get_feast_registry(self, deployment: DeploymentModel) -> Optional[FeastRegistryModel]:
+    async def get_feast_registry(self, deployment: DeploymentModel) -> FeastRegistryModel | None:
         """
         Get feast registry document for the deployment if it exists
 

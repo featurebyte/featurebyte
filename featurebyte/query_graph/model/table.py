@@ -3,11 +3,11 @@ This module contains specialized table related models.
 """
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Annotated, Any, Optional, Union
 
 from bson import ObjectId
 from pydantic import Field, StrictStr
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal
 
 from featurebyte.common.join_utils import (
     apply_column_name_modifiers,
@@ -44,7 +44,7 @@ class SourceTableData(BaseTableData):
     type: Literal[TableDataType.SOURCE_TABLE] = TableDataType.SOURCE_TABLE
 
     @property
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         return []
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
@@ -69,7 +69,7 @@ class EventTableData(BaseTableData):
     event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(default=None)
 
     @property
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         if self.event_id_column:
             return [self.event_id_column]
         return []  # DEV-556: event_id_column should not be empty
@@ -91,9 +91,9 @@ class EventTableData(BaseTableData):
     def construct_event_view_graph_node(
         self,
         event_table_node: InputNode,
-        drop_column_names: List[str],
+        drop_column_names: list[str],
         metadata: ViewMetadata,
-    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+    ) -> tuple[GraphNode, list[ColumnInfo]]:
         """
         Construct a graph node & columns info for EventView of this event table.
 
@@ -131,7 +131,7 @@ class ItemTableData(BaseTableData):
     event_table_id: PydanticObjectId
 
     @property
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         return [self.item_id_column]
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
@@ -150,11 +150,11 @@ class ItemTableData(BaseTableData):
     @classmethod
     def _prepare_join_with_event_view_columns_parameters(
         cls,
-        item_view_columns: List[str],
+        item_view_columns: list[str],
         item_view_event_id_column: str,
-        event_view_columns: List[str],
+        event_view_columns: list[str],
         event_view_event_id_column: str,
-        columns_to_join: List[str],
+        columns_to_join: list[str],
         event_suffix: Optional[str] = None,
     ) -> JoinNodeParameters:
         for col in columns_to_join:
@@ -204,14 +204,14 @@ class ItemTableData(BaseTableData):
         cls,
         graph: Union[QueryGraph, GraphNode],
         item_view_node: Node,
-        item_view_columns_info: List[ColumnInfo],
+        item_view_columns_info: list[ColumnInfo],
         item_view_event_id_column: str,
         event_view_node: Node,
-        event_view_columns_info: List[ColumnInfo],
+        event_view_columns_info: list[ColumnInfo],
         event_view_event_id_column: str,
         event_suffix: Optional[str],
-        columns_to_join: List[str],
-    ) -> Tuple[Node, List[ColumnInfo], JoinNodeParameters]:
+        columns_to_join: list[str],
+    ) -> tuple[Node, list[ColumnInfo], JoinNodeParameters]:
         """
         Join EventView columns to ItemView
 
@@ -268,15 +268,15 @@ class ItemTableData(BaseTableData):
     def construct_item_view_graph_node(
         self,
         item_table_node: InputNode,
-        columns_to_join: List[str],
+        columns_to_join: list[str],
         event_view_node: Node,
-        event_view_columns_info: List[ColumnInfo],
+        event_view_columns_info: list[ColumnInfo],
         event_view_event_id_column: str,
         event_suffix: Optional[str],
-        drop_column_names: List[str],
+        drop_column_names: list[str],
         metadata: ItemViewMetadata,
         to_auto_resolve_column_conflict: bool = False,
-    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+    ) -> tuple[GraphNode, list[ColumnInfo]]:
         """
         Construct ItemView graph node
 
@@ -349,7 +349,7 @@ class DimensionTableData(BaseTableData):
     dimension_id_column: StrictStr
 
     @property
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         return [self.dimension_id_column]
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
@@ -366,9 +366,9 @@ class DimensionTableData(BaseTableData):
     def construct_dimension_view_graph_node(
         self,
         dimension_table_node: InputNode,
-        drop_column_names: List[str],
+        drop_column_names: list[str],
         metadata: ViewMetadata,
-    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+    ) -> tuple[GraphNode, list[ColumnInfo]]:
         """
         Construct DimensionView graph node
 
@@ -420,7 +420,7 @@ class SCDTableData(BaseTableData):
     current_flag_column: Optional[StrictStr] = Field(default=None)
 
     @property
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         return [self.natural_key_column]
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
@@ -441,9 +441,9 @@ class SCDTableData(BaseTableData):
     def construct_scd_view_graph_node(
         self,
         scd_table_node: InputNode,
-        drop_column_names: List[str],
+        drop_column_names: list[str],
         metadata: ViewMetadata,
-    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+    ) -> tuple[GraphNode, list[ColumnInfo]]:
         """
         Construct SCDView graph node
 
@@ -474,7 +474,7 @@ class SCDTableData(BaseTableData):
     def get_new_column_names(
         tracked_column: str,
         timestamp_column: str,
-        prefixes: Optional[Tuple[Optional[str], Optional[str]]],
+        prefixes: Optional[tuple[Optional[str], Optional[str]]],
     ) -> ChangeViewColumnNames:
         """
         Helper method to return the tracked column names.
@@ -520,7 +520,7 @@ class SCDTableData(BaseTableData):
         self,
         view_graph_node: GraphNode,
         track_changes_column: str,
-        proxy_input_nodes: List[Node],
+        proxy_input_nodes: list[Node],
         column_names: ChangeViewColumnNames,
     ) -> GraphNode:
         frame_node = proxy_input_nodes[0]
@@ -544,7 +544,7 @@ class SCDTableData(BaseTableData):
         self,
         column_names: ChangeViewColumnNames,
         track_changes_column: str,
-    ) -> List[ColumnInfo]:
+    ) -> list[ColumnInfo]:
         time_col_info, track_col_info, natural_key_col_info = None, None, None
         for col in self.columns_info:
             if col.name == self.natural_key_column:
@@ -577,10 +577,10 @@ class SCDTableData(BaseTableData):
         self,
         scd_table_node: InputNode,
         track_changes_column: str,
-        prefixes: Optional[Tuple[Optional[str], Optional[str]]],
-        drop_column_names: List[str],
+        prefixes: Optional[tuple[Optional[str], Optional[str]]],
+        drop_column_names: list[str],
         metadata: ChangeViewMetadata,
-    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+    ) -> tuple[GraphNode, list[ColumnInfo]]:
         """
         Construct a graph node for a change view.
 
@@ -665,6 +665,6 @@ class TableDetails(FeatureByteBaseModel):
     Table specification with additional details
     """
 
-    details: Dict[str, Any] = Field(default_factory=dict)
+    details: dict[str, Any] = Field(default_factory=dict)
     fully_qualified_name: str
     description: Optional[str] = Field(default=None)

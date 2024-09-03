@@ -5,7 +5,7 @@ ItemTable class
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from bson import ObjectId
 from cachetools import cachedmethod
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 def get_default_job_setting_cache_key(
-    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel], *args: Any, **kwargs: Any
+    obj: ApiObjectT | FeatureByteBaseDocumentModel, *args: Any, **kwargs: Any
 ) -> Any:
     """
     Construct cache key for a given document model object
@@ -90,7 +90,7 @@ class ItemTable(TableApiObject):
     _update_schema_class: ClassVar[Any] = ItemTableUpdate
     _create_schema_class: ClassVar[Any] = ItemTableCreate
     _get_schema: ClassVar[Any] = ItemTableModel
-    _table_data_class: ClassVar[Type[AllTableDataT]] = ItemTableData
+    _table_data_class: ClassVar[type[AllTableDataT]] = ItemTableData
 
     # pydantic instance variable (public)
     type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
@@ -120,13 +120,13 @@ class ItemTable(TableApiObject):
 
     def get_view(
         self,
-        event_suffix: Optional[str] = None,
+        event_suffix: str | None = None,
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
-        drop_column_names: Optional[List[str]] = None,
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
-        event_drop_column_names: Optional[List[str]] = None,
-        event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
-        event_join_column_names: Optional[List[str]] = None,
+        drop_column_names: list[str] | None = None,
+        column_cleaning_operations: list[ColumnCleaningOperation] | None = None,
+        event_drop_column_names: list[str] | None = None,
+        event_column_cleaning_operations: list[ColumnCleaningOperation] | None = None,
+        event_join_column_names: list[str] | None = None,
     ) -> ItemView:
         """
         Gets an ItemView object from an ItemTable object.
@@ -331,7 +331,7 @@ class ItemTable(TableApiObject):
 
     @property
     @cachedmethod(cache=operator.attrgetter("_cache"), key=get_default_job_setting_cache_key)
-    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+    def default_feature_job_setting(self) -> FeatureJobSetting | None:
         """
         Returns the default feature job setting for the table.
 
@@ -381,7 +381,7 @@ class ItemTable(TableApiObject):
             return self.internal_item_id_column
 
     @property
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         return None
 
     @classmethod

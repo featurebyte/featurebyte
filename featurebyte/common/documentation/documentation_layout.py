@@ -3,7 +3,7 @@ Layout for API documentation.
 """
 
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional
 
 from featurebyte.common.documentation.constants import (
     ADD_METADATA,
@@ -78,7 +78,7 @@ class DocLayoutItem:
     # SDK through, without the `featurebyte.` prefix.
     # For example, if the last value provided is `Table`, the user will be expected to be able to access the SDK through
     # `featurebyte.Table` (even if that is not necessarily the path to the class in the codebase).
-    menu_header: List[str]
+    menu_header: list[str]
     # This should represent a path to a markdown file that will be used to override the documentation. This is to
     # provide an exit hatch in case we are not able to easily infer the documentation from the API path.
     doc_path_override: Optional[str] = None
@@ -105,7 +105,7 @@ class DocLayoutItem:
         return "featurebyte." + self.doc_path_override
 
 
-def _get_table_layout() -> List[DocLayoutItem]:
+def _get_table_layout() -> list[DocLayoutItem]:
     """
     Return the layout for the table module.
 
@@ -219,7 +219,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_sample_mixin_layout(object_type: str) -> List[DocLayoutItem]:
+def _get_sample_mixin_layout(object_type: str) -> list[DocLayoutItem]:
     """
     Returns the layout for the sample mixin documentation.
 
@@ -239,7 +239,7 @@ def _get_sample_mixin_layout(object_type: str) -> List[DocLayoutItem]:
     ]
 
 
-def _get_table_column_layout() -> List[DocLayoutItem]:
+def _get_table_column_layout() -> list[DocLayoutItem]:
     """
     Returns the layout for the table column documentation
 
@@ -261,7 +261,7 @@ def _get_table_column_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_entity_layout() -> List[DocLayoutItem]:
+def _get_entity_layout() -> list[DocLayoutItem]:
     """
     Returns the layout for the entity documentation
 
@@ -285,7 +285,7 @@ def _get_entity_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_feature_or_target_items(section: str) -> List[DocLayoutItem]:
+def _get_feature_or_target_items(section: str) -> list[DocLayoutItem]:
     """
     Get common documentation items for Feature and Target.
 
@@ -325,7 +325,7 @@ def _get_feature_or_target_items(section: str) -> List[DocLayoutItem]:
     ]
 
 
-def _get_feature_layout() -> List[DocLayoutItem]:
+def _get_feature_layout() -> list[DocLayoutItem]:
     """
     Returns the layout for the feature documentation
 
@@ -360,7 +360,7 @@ def _get_feature_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_feature_group_layout() -> List[DocLayoutItem]:
+def _get_feature_group_layout() -> list[DocLayoutItem]:
     """
     The layout for the FeatureGroup class.
 
@@ -383,7 +383,7 @@ def _get_feature_group_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_feature_list_layout() -> List[DocLayoutItem]:
+def _get_feature_list_layout() -> list[DocLayoutItem]:
     """
     The layout for the FeatureList class.
 
@@ -427,7 +427,7 @@ def _get_feature_list_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_feature_store_layout() -> List[DocLayoutItem]:
+def _get_feature_store_layout() -> list[DocLayoutItem]:
     """
     The layout for the FeatureStore class.
 
@@ -453,7 +453,7 @@ def _get_feature_store_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_online_store_layout() -> List[DocLayoutItem]:
+def _get_online_store_layout() -> list[DocLayoutItem]:
     """
     The layout for the OnlineStore class.
 
@@ -477,7 +477,7 @@ def _get_online_store_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_data_source_layout() -> List[DocLayoutItem]:
+def _get_data_source_layout() -> list[DocLayoutItem]:
     """
     The layout for the DataSource class.
 
@@ -496,7 +496,7 @@ def _get_data_source_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_relationship_layout() -> List[DocLayoutItem]:
+def _get_relationship_layout() -> list[DocLayoutItem]:
     """
     The layout for the Relationship class.
 
@@ -518,7 +518,7 @@ def _get_relationship_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_view_layout() -> List[DocLayoutItem]:
+def _get_view_layout() -> list[DocLayoutItem]:
     """
     The layout for the View class.
 
@@ -572,7 +572,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayoutItem]:
+def _get_datetime_accessor_properties_layout(series_type: str) -> list[DocLayoutItem]:
     """
     The layout for the DatetimeAccessor related properties
 
@@ -605,7 +605,7 @@ def _get_datetime_accessor_properties_layout(series_type: str) -> List[DocLayout
     ]
 
 
-def _get_str_accessor_properties_layout(series_type: str) -> List[DocLayoutItem]:
+def _get_str_accessor_properties_layout(series_type: str) -> list[DocLayoutItem]:
     """
     The layout for the StringAccessor related properties
 
@@ -636,7 +636,7 @@ def _get_str_accessor_properties_layout(series_type: str) -> List[DocLayoutItem]
     ]
 
 
-def _get_series_properties_layout(series_type: str) -> List[DocLayoutItem]:
+def _get_series_properties_layout(series_type: str) -> list[DocLayoutItem]:
     """
     The layout for the Series related properties
 
@@ -669,7 +669,7 @@ def _get_series_properties_layout(series_type: str) -> List[DocLayoutItem]:
     ]
 
 
-def _get_view_column_layout() -> List[DocLayoutItem]:
+def _get_view_column_layout() -> list[DocLayoutItem]:
     """
     The layout for the ViewColumn class.
 
@@ -698,7 +698,7 @@ def _get_view_column_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_catalog_layout() -> List[DocLayoutItem]:
+def _get_catalog_layout() -> list[DocLayoutItem]:
     """
     The layout for the Catalog module.
 
@@ -770,7 +770,7 @@ def _get_catalog_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_utility_methods_layout() -> List[DocLayoutItem]:
+def _get_utility_methods_layout() -> list[DocLayoutItem]:
     """
     The layout for any utility methods used in featurebyte.
 
@@ -803,7 +803,7 @@ def _get_utility_methods_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_utility_classes_layout() -> List[DocLayoutItem]:
+def _get_utility_classes_layout() -> list[DocLayoutItem]:
     """
     The layout for the utility classes used in featurebyte.
 
@@ -869,7 +869,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_source_table_layout() -> List[DocLayoutItem]:
+def _get_source_table_layout() -> list[DocLayoutItem]:
     """
     The layout for the SourceTable module.
 
@@ -890,7 +890,7 @@ def _get_source_table_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_feature_job_layout() -> List[DocLayoutItem]:
+def _get_feature_job_layout() -> list[DocLayoutItem]:
     """
     The layout for the FeatureJob module.
 
@@ -928,7 +928,7 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_deployment_layout() -> List[DocLayoutItem]:
+def _get_deployment_layout() -> list[DocLayoutItem]:
     """
     The layout for the Deployment module.
 
@@ -953,7 +953,7 @@ def _get_deployment_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_materialized_table_layout(table_type: str) -> List[DocLayoutItem]:
+def _get_materialized_table_layout(table_type: str) -> list[DocLayoutItem]:
     """
     The common layout for MaterializedTable modules.
 
@@ -979,7 +979,7 @@ def _get_materialized_table_layout(table_type: str) -> List[DocLayoutItem]:
     ]
 
 
-def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
+def _get_batch_feature_table_layout() -> list[DocLayoutItem]:
     """
     The layout for the BatchFeatureTable module.
 
@@ -995,7 +995,7 @@ def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_observation_table_layout() -> List[DocLayoutItem]:
+def _get_observation_table_layout() -> list[DocLayoutItem]:
     """
     The layout for the ObservationTable module.
 
@@ -1018,7 +1018,7 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_batch_request_table_layout() -> List[DocLayoutItem]:
+def _get_batch_request_table_layout() -> list[DocLayoutItem]:
     """
     The layout for the BatchRequestTable module.
 
@@ -1034,7 +1034,7 @@ def _get_batch_request_table_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
+def _get_historical_feature_table_layout() -> list[DocLayoutItem]:
     """
     The layout for the HistoricalFeatureTable module.
 
@@ -1064,7 +1064,7 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_user_defined_function_layout() -> List[DocLayoutItem]:
+def _get_user_defined_function_layout() -> list[DocLayoutItem]:
     """
     The layout for the UserDefinedFunction module.
 
@@ -1100,7 +1100,7 @@ def _get_user_defined_function_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_target_layout() -> List[DocLayoutItem]:
+def _get_target_layout() -> list[DocLayoutItem]:
     """
     The layout for the Target module.
 
@@ -1117,7 +1117,7 @@ def _get_target_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_use_case_layout() -> List[DocLayoutItem]:
+def _get_use_case_layout() -> list[DocLayoutItem]:
     """
     Get use case layout
 
@@ -1152,7 +1152,7 @@ def _get_use_case_layout() -> List[DocLayoutItem]:
     ]
 
 
-def _get_context_layout() -> List[DocLayoutItem]:
+def _get_context_layout() -> list[DocLayoutItem]:
     """
     Get context layout
 
@@ -1183,7 +1183,7 @@ def _get_context_layout() -> List[DocLayoutItem]:
     ]
 
 
-def get_overall_layout() -> List[DocLayoutItem]:
+def get_overall_layout() -> list[DocLayoutItem]:
     """
     The overall layout for the documentation.
 

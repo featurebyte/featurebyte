@@ -8,7 +8,7 @@ import inspect
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, get_type_hints
+from typing import Any, get_type_hints
 
 from docstring_parser import parse
 from docstring_parser.common import DocstringExample, DocstringRaises, DocstringReturns
@@ -39,7 +39,7 @@ class RawParameterDetails:
 
 def get_params(
     signature: inspect.Signature, type_hints: dict[str, Any]
-) -> List[RawParameterDetails]:
+) -> list[RawParameterDetails]:
     """
     Extract parameter details from signature and type hints
 
@@ -55,7 +55,7 @@ def get_params(
     List[tuple[str, Any, Any]]
         List of parameter name, type and default value
     """
-    params: List[RawParameterDetails] = []
+    params: list[RawParameterDetails] = []
     render_pos_only_separator = True
     render_kw_only_separator = True
 
@@ -93,7 +93,7 @@ def get_params(
     return params
 
 
-def get_params_from_signature(resource: Any) -> tuple[List[RawParameterDetails], Any]:
+def get_params_from_signature(resource: Any) -> tuple[list[RawParameterDetails], Any]:
     """
     Get parameters from function signature
 
@@ -163,7 +163,7 @@ def _format_example(example: DocstringExample) -> str:
 
 
 def _get_return_param_details(
-    docstring_returns: Optional[DocstringReturns], return_type_from_signature: Any
+    docstring_returns: DocstringReturns | None, return_type_from_signature: Any
 ) -> ParameterDetails:
     """
     Helper function to get return details from docstring.
@@ -190,7 +190,7 @@ def _get_return_param_details(
     )
 
 
-def _get_raises_from_docstring(docstring_raises: List[DocstringRaises]) -> List[ExceptionDetails]:
+def _get_raises_from_docstring(docstring_raises: list[DocstringRaises]) -> list[ExceptionDetails]:
     """
     Helper function to get exception details from docstring.
 
@@ -215,8 +215,8 @@ def _get_raises_from_docstring(docstring_raises: List[DocstringRaises]) -> List[
 
 
 def _get_param_details(
-    parameters: List[RawParameterDetails], parameters_desc: Dict[str, str]
-) -> List[ParameterDetails]:
+    parameters: list[RawParameterDetails], parameters_desc: dict[str, str]
+) -> list[ParameterDetails]:
     """
     Helper function to get parameter details from docstring.
 
@@ -453,7 +453,7 @@ def get_resource_details(resource_descriptor: str) -> ResourceDetails:
                     parameters_desc[param_name] = resource_details.description_string
 
     enum_desc = {}
-    enum_possible_values: List[RawParameterDetails] = []
+    enum_possible_values: list[RawParameterDetails] = []
     if issubclass(resource_class, Enum):
         # Set to empty list to avoid showing parameters in the docs
         parameters_desc = {}

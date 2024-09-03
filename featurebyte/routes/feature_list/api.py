@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union, cast
+from typing import Any, Union, cast
 
 from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile
 
@@ -56,7 +56,7 @@ class FeatureListRouter(BaseRouter):
 
 @router.post("", response_model=FeatureListModelResponse, status_code=HTTPStatus.CREATED)
 async def create_feature_list(
-    request: Request, data: Union[FeatureListCreate, FeatureListNewVersionCreate]
+    request: Request, data: FeatureListCreate | FeatureListNewVersionCreate
 ) -> FeatureListModelResponse:
     """
     Create FeatureList
@@ -107,7 +107,7 @@ async def get_feature_list(
 @router.patch("/{feature_list_id}", response_model=Union[FeatureListModelResponse, Task])
 async def update_feature_list(
     request: Request, feature_list_id: PyObjectId, data: FeatureListUpdate, response: Response
-) -> Union[FeatureListModelResponse, Task]:
+) -> FeatureListModelResponse | Task:
     """
     Update FeatureList
     """
@@ -137,12 +137,12 @@ async def list_feature_list(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
-    version: Optional[str] = VersionQuery,
-    feature_list_namespace_id: Optional[PyObjectId] = None,
+    sort_by: str | None = SortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
+    name: str | None = NameQuery,
+    version: str | None = VersionQuery,
+    feature_list_namespace_id: PyObjectId | None = None,
 ) -> FeatureListPaginatedList:
     """
     List FeatureLists
@@ -166,9 +166,9 @@ async def list_feature_list_audit_logs(
     feature_list_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
+    sort_by: str | None = AuditLogSortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
 ) -> AuditDocumentList:
     """
     List FeatureList audit logs
@@ -201,17 +201,17 @@ async def get_feature_list_info(
     return cast(FeatureListInfo, info)
 
 
-@router.post("/preview", response_model=Dict[str, Any])
+@router.post("/preview", response_model=dict[str, Any])
 async def get_feature_list_preview(
     request: Request,
     featurelist_preview: FeatureListPreview,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Retrieve Feature preview
     """
     controller = request.state.app_container.feature_list_controller
     return cast(
-        Dict[str, Any],
+        dict[str, Any],
         await controller.preview(featurelist_preview=featurelist_preview),
     )
 
@@ -251,12 +251,12 @@ async def get_historical_features_sql(
     )
 
 
-@router.get("/{feature_list_id}/feature_job_logs", response_model=Dict[str, Any])
+@router.get("/{feature_list_id}/feature_job_logs", response_model=dict[str, Any])
 async def get_feature_job_logs(
     request: Request,
     feature_list_id: PyObjectId,
     hour_limit: int = Query(default=24, gt=0, le=2400),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Retrieve feature job status
     """
@@ -265,7 +265,7 @@ async def get_feature_job_logs(
         feature_list_id=feature_list_id,
         hour_limit=hour_limit,
     )
-    return cast(Dict[str, Any], result)
+    return cast(dict[str, Any], result)
 
 
 @router.patch("/{feature_list_id}/description", response_model=FeatureListModelResponse)

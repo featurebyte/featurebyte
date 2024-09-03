@@ -5,8 +5,9 @@ Base class for aggregation SQL generators
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Generic, Sequence, Tuple, TypeVar
+from typing import Any, Generic, TypeVar
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -345,7 +346,7 @@ class TileBasedAggregatorOnlineJoinInfo:
         return list(self.agg_result_name_aliases.values())
 
 
-OnlineJoinInfoKeyType = Tuple[str, Tuple[str, ...]]
+OnlineJoinInfoKeyType = tuple[str, tuple[str, ...]]
 
 
 class TileBasedAggregator(Aggregator[TileBasedAggregationSpec], ABC):

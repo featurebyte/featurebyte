@@ -4,8 +4,6 @@ Models related to entity validation
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
 from bson import ObjectId
 from pydantic import Field, field_validator
 
@@ -26,13 +24,13 @@ class EntityInfo(FeatureByteBaseModel):
         wants to override the original serving names with new ones)
     """
 
-    required_entities: List[EntityModel]
-    provided_entities: List[EntityModel]
-    serving_names_mapping: Optional[Dict[str, str]] = Field(default=None)
+    required_entities: list[EntityModel]
+    provided_entities: list[EntityModel]
+    serving_names_mapping: dict[str, str] | None = Field(default=None)
 
     @field_validator("required_entities", "provided_entities")
     @classmethod
-    def _deduplicate_entities(cls, val: List[EntityModel]) -> List[EntityModel]:
+    def _deduplicate_entities(cls, val: list[EntityModel]) -> list[EntityModel]:
         entities_dict: dict[ObjectId, EntityModel] = {}
         for entity in val:
             entities_dict[entity.id] = entity
@@ -71,7 +69,7 @@ class EntityInfo(FeatureByteBaseModel):
         return {entity.id for entity in self.provided_entities}
 
     @property
-    def missing_entities(self) -> List[EntityModel]:
+    def missing_entities(self) -> list[EntityModel]:
         """
         List of entities that are required but not provided
 
@@ -122,7 +120,7 @@ class EntityInfo(FeatureByteBaseModel):
             return original_serving_name
         return self.serving_names_mapping[original_serving_name]
 
-    def format_missing_entities_error(self, missing_entity_ids: List[ObjectId]) -> str:
+    def format_missing_entities_error(self, missing_entity_ids: list[ObjectId]) -> str:
         """
         Format an error message for inform users on the missing entities that should be provided
 

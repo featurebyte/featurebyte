@@ -5,7 +5,7 @@ TableColumnsInfoService
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import List, Tuple, Union
+from typing import Union
 
 from bson import ObjectId
 from pymongo.errors import OperationFailure
@@ -60,9 +60,9 @@ class TableColumnsInfoService(OpsServiceMixin):
 
     @staticmethod
     async def _validate_column_info_id_field_values(
-        columns_info: List[ColumnInfo],
+        columns_info: list[ColumnInfo],
         field_name: str,
-        service: Union[EntityService, SemanticService],
+        service: EntityService | SemanticService,
         field_class_name: str,
     ) -> None:
         id_values = [
@@ -97,7 +97,7 @@ class TableColumnsInfoService(OpsServiceMixin):
         self,
         service: TableDocumentService,
         document_id: ObjectId,
-        columns_info: List[ColumnInfo],
+        columns_info: list[ColumnInfo],
         skip_semantic_check: bool = False,
         skip_block_modification_check: bool = False,
     ) -> None:
@@ -186,11 +186,11 @@ class TableColumnsInfoService(OpsServiceMixin):
 
     @staticmethod
     def _include_parent_entities(
-        parents: List[ParentEntity],
+        parents: list[ParentEntity],
         table_id: ObjectId,
         table_type: TableDataType,
-        parent_entity_ids: List[ObjectId],
-    ) -> Tuple[List[ParentEntity], List[ObjectId]]:
+        parent_entity_ids: list[ObjectId],
+    ) -> tuple[list[ParentEntity], list[ObjectId]]:
         current_parent_entity_ids = {
             parent.id
             for parent in parents
@@ -206,11 +206,11 @@ class TableColumnsInfoService(OpsServiceMixin):
 
     @staticmethod
     def _exclude_parent_entities(
-        parents: List[ParentEntity],
+        parents: list[ParentEntity],
         table_id: ObjectId,
         table_type: TableDataType,
-        parent_entity_ids: List[ObjectId],
-    ) -> Tuple[List[ParentEntity], List[PydanticObjectId]]:
+        parent_entity_ids: list[ObjectId],
+    ) -> tuple[list[ParentEntity], list[PydanticObjectId]]:
         removed_parent_entity_ids = []
         output = []
         for parent in parents:
@@ -225,7 +225,7 @@ class TableColumnsInfoService(OpsServiceMixin):
         return output, removed_parent_entity_ids
 
     async def _remove_parent_entity_ids(
-        self, primary_entity_id: ObjectId, parent_entity_ids_to_remove: List[PydanticObjectId]
+        self, primary_entity_id: ObjectId, parent_entity_ids_to_remove: list[PydanticObjectId]
     ) -> None:
         # Remove relationship info links for old parent entity relationships
         for removed_parent_entity_id in parent_entity_ids_to_remove:
@@ -235,7 +235,7 @@ class TableColumnsInfoService(OpsServiceMixin):
             )
 
     @staticmethod
-    def _get_column_name_for_entity_id(columns_info: List[ColumnInfo], entity_id: ObjectId) -> str:
+    def _get_column_name_for_entity_id(columns_info: list[ColumnInfo], entity_id: ObjectId) -> str:
         for column_info in columns_info:
             if column_info.entity_id == entity_id:
                 return column_info.name
@@ -245,8 +245,8 @@ class TableColumnsInfoService(OpsServiceMixin):
         self,
         entity_id: ObjectId,
         table_id: ObjectId,
-        updated_columns_info: List[ColumnInfo],
-        parent_entity_ids_to_add: List[ObjectId],
+        updated_columns_info: list[ColumnInfo],
+        parent_entity_ids_to_add: list[ObjectId],
     ) -> None:
         # Add relationship info links for new parent entity relationships
         entity_column_name = self._get_column_name_for_entity_id(updated_columns_info, entity_id)
@@ -271,7 +271,7 @@ class TableColumnsInfoService(OpsServiceMixin):
     async def _update_entity_relationship(
         self,
         document: TableModel,
-        updated_columns_info: List[ColumnInfo],
+        updated_columns_info: list[ColumnInfo],
         old_primary_entities: set[ObjectId],
         old_parent_entities: set[ObjectId],
         new_primary_entities: set[ObjectId],
@@ -358,7 +358,7 @@ class TableColumnsInfoService(OpsServiceMixin):
                     await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
 
     async def update_entity_table_references(
-        self, document: TableModel, columns_info: List[ColumnInfo]
+        self, document: TableModel, columns_info: list[ColumnInfo]
     ) -> None:
         """
         This method prepares table to:

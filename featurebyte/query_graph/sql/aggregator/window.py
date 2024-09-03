@@ -4,7 +4,8 @@ SQL generation for aggregation with time windows
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional, Tuple, cast
+from collections.abc import Iterable
+from typing import Any, Optional, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -37,11 +38,11 @@ Offset = Optional[int]
 Frequency = int
 BlindSpot = int
 TimeModuloFreq = int
-AggSpecEntityIDs = Tuple[str, ...]
-TileIndicesIdType = Tuple[Window, Offset, Frequency, BlindSpot, TimeModuloFreq, AggSpecEntityIDs]
+AggSpecEntityIDs = tuple[str, ...]
+TileIndicesIdType = tuple[Window, Offset, Frequency, BlindSpot, TimeModuloFreq, AggSpecEntityIDs]
 TileIdType = str
 IsOrderDependent = bool
-AggregationSpecIdType = Tuple[TileIdType, Window, Offset, AggSpecEntityIDs, IsOrderDependent]
+AggregationSpecIdType = tuple[TileIdType, Window, Offset, AggSpecEntityIDs, IsOrderDependent]
 
 ROW_NUMBER = "__FB_ROW_NUMBER"
 
@@ -192,7 +193,7 @@ class TileBasedRequestTablePlan:
     def construct_expanded_request_table_sql(
         self,
         window_size: int,
-        offset: Optional[int],
+        offset: int | None,
         frequency: int,
         time_modulo_frequency: int,
         serving_names: list[str],
@@ -308,8 +309,7 @@ class TileBasedAggregationSpecSet:
         list[AggregationSpec]
             Group of AggregationSpec
         """
-        for agg_specs in self.aggregation_specs.values():
-            yield agg_specs
+        yield from self.aggregation_specs.values()
 
 
 class WindowAggregator(TileBasedAggregator):

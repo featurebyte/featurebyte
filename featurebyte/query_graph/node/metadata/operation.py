@@ -4,25 +4,18 @@ This module contains models used to store node output operation info
 
 import dataclasses
 from collections import defaultdict
+from collections.abc import Iterator, Sequence
 from typing import (
+    Annotated,
     Any,
-    DefaultDict,
-    Dict,
-    Iterator,
-    List,
     Literal,
     Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     overload,
 )
 
 from pydantic import Field
-from typing_extensions import Annotated
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -75,10 +68,10 @@ class BaseColumn:
     name: Optional[str]
     dtype: DBVarType
     filter: bool
-    node_names: Set[str]
+    node_names: set[str]
     node_name: str
 
-    def _get_hash_key(self) -> Tuple[Optional[str], DBVarType, bool, str]:
+    def _get_hash_key(self) -> tuple[Optional[str], DBVarType, bool, str]:
         """
         Get the hash key of the column (used to construct the hash key of the column)
 
@@ -105,7 +98,7 @@ class BaseColumn:
 
     def clone_without_internal_nodes(
         self: BaseColumnT,
-        proxy_node_name_map: Dict[str, "OperationStructure"],
+        proxy_node_name_map: dict[str, "OperationStructure"],
         graph_node_name: str,
         graph_node_transform: str,
         **kwargs: Any,
@@ -143,7 +136,7 @@ class BaseColumn:
         for name in proxy_input_names:
             node_names.update(proxy_node_name_map[name].all_node_names)
 
-        node_kwargs: Dict[str, Any] = {"node_names": node_names}
+        node_kwargs: dict[str, Any] = {"node_names": node_names}
         if self.node_name in proxy_node_name_map:
             # update node_name if it points to proxy input node
             # as proxy input node name will be removed from node_names
@@ -172,13 +165,13 @@ class BaseDataColumn(BaseColumn):
 class BaseDerivedColumn(BaseColumn):
     """BaseDerivedColumn class"""
 
-    transforms: List[str]
+    transforms: list[str]
     columns: Sequence[BaseDataColumn]
 
     @staticmethod
     def insert_column(
-        column_map: Dict[Tuple[str, str], BaseDataColumn], column: BaseDataColumn
-    ) -> Dict[Tuple[str, str], BaseDataColumn]:
+        column_map: dict[tuple[str, str], BaseDataColumn], column: BaseDataColumn
+    ) -> dict[tuple[str, str], BaseDataColumn]:
         """
         Insert column into dictionary. If more than more columns with the same name, aggregate the node names
         (make sure we don't miss any node which is used for pruning) and combine filter flag (take the max
@@ -214,10 +207,10 @@ class BaseDerivedColumn(BaseColumn):
     @classmethod
     def _flatten_columns(
         cls, columns: Sequence[Union[BaseDataColumn, "BaseDerivedColumn"]]
-    ) -> Tuple[Sequence[BaseDataColumn], List[str], Set[str]]:
-        col_map: Dict[Tuple[str, str], BaseDataColumn] = {}
-        transforms: List[str] = []
-        node_names: Set[str] = set()
+    ) -> tuple[Sequence[BaseDataColumn], list[str], set[str]]:
+        col_map: dict[tuple[str, str], BaseDataColumn] = {}
+        transforms: list[str] = []
+        node_names: set[str] = set()
         for column in columns:
             node_names.update(column.node_names)
             if isinstance(column, BaseDerivedColumn):
@@ -240,13 +233,13 @@ class BaseDerivedColumn(BaseColumn):
 
     @classmethod
     def create(
-        cls: Type[BaseDerivedColumnT],
+        cls: type[BaseDerivedColumnT],
         name: Optional[str],
         columns: Sequence[Union[BaseDataColumn, "BaseDerivedColumn"]],
         transform: Optional[str],
         node_name: str,
         dtype: DBVarType,
-        other_node_names: Optional[Set[str]] = None,
+        other_node_names: Optional[set[str]] = None,
     ) -> BaseDerivedColumnT:
         """
         Create derived column by flattening the derived columns in the given list of columns
@@ -289,7 +282,7 @@ class BaseDerivedColumn(BaseColumn):
 
     def clone_without_internal_nodes(
         self,
-        proxy_node_name_map: Dict[str, "OperationStructure"],
+        proxy_node_name_map: dict[str, "OperationStructure"],
         graph_node_name: str,
         graph_node_transform: str,
         **kwargs: Any,
@@ -327,7 +320,7 @@ class SourceDataColumn(BaseDataColumn):
 class DerivedDataColumn(BaseDerivedColumn):
     """Derived column"""
 
-    columns: List[SourceDataColumn]
+    columns: list[SourceDataColumn]
     type: Literal[ViewDataColumnType.DERIVED] = ViewDataColumnType.DERIVED
 
     def __hash__(self) -> int:
@@ -378,7 +371,7 @@ class AggregationColumn(BaseDataColumn):
 
     def clone_without_internal_nodes(
         self,
-        proxy_node_name_map: Dict[str, "OperationStructure"],
+        proxy_node_name_map: dict[str, "OperationStructure"],
         graph_node_name: str,
         graph_node_transform: str,
         **kwargs: Any,
@@ -404,7 +397,7 @@ class AggregationColumn(BaseDataColumn):
 class PostAggregationColumn(BaseDerivedColumn):
     """Post aggregation column"""
 
-    columns: List[AggregationColumn]
+    columns: list[AggregationColumn]
     type: Literal[FeatureDataColumnType.POST_AGGREGATION] = FeatureDataColumnType.POST_AGGREGATION
 
     def __hash__(self) -> int:
@@ -421,15 +414,15 @@ FeatureDataColumn = Annotated[
 class GroupOperationStructure(FeatureByteBaseModel):
     """GroupOperationStructure class is used to construct feature/target info's metadata attribute."""
 
-    source_columns: List[SourceDataColumn] = Field(default_factory=list)
-    derived_columns: List[DerivedDataColumn] = Field(default_factory=list)
-    aggregations: List[AggregationColumn] = Field(default_factory=list)
+    source_columns: list[SourceDataColumn] = Field(default_factory=list)
+    derived_columns: list[DerivedDataColumn] = Field(default_factory=list)
+    aggregations: list[AggregationColumn] = Field(default_factory=list)
     post_aggregation: Optional[PostAggregationColumn] = Field(default=None)
-    row_index_lineage: Tuple[str, ...]
+    row_index_lineage: tuple[str, ...]
     is_time_based: bool = Field(default=False)
 
     @property
-    def table_ids(self) -> List[PydanticObjectId]:
+    def table_ids(self) -> list[PydanticObjectId]:
         """
         List of table IDs used in the operation
 
@@ -450,14 +443,14 @@ class OperationStructure:
     # - NodeOutputType.FEATURE or TARGET -> columns represents the input columns
     output_type: NodeOutputType
     output_category: NodeOutputCategory
-    row_index_lineage: Tuple[str, ...]
-    columns: List[ViewDataColumn] = dataclasses.field(default_factory=list)
-    aggregations: List[FeatureDataColumn] = dataclasses.field(default_factory=list)
+    row_index_lineage: tuple[str, ...]
+    columns: list[ViewDataColumn] = dataclasses.field(default_factory=list)
+    aggregations: list[FeatureDataColumn] = dataclasses.field(default_factory=list)
     is_time_based: bool = False
 
     @staticmethod
-    def _deduplicate(columns: List[Any]) -> List[Any]:
-        output: Dict[Any, None] = {}
+    def _deduplicate(columns: list[Any]) -> list[Any]:
+        output: dict[Any, None] = {}
         for col in columns:
             if col not in output:
                 output[col] = None
@@ -504,7 +497,7 @@ class OperationStructure:
         return self.aggregations[0].dtype
 
     @property
-    def all_node_names(self) -> Set[str]:
+    def all_node_names(self) -> set[str]:
         """
         Retrieve all node names in the operation structure
 
@@ -520,7 +513,7 @@ class OperationStructure:
         return node_names
 
     @property
-    def source_columns(self) -> List[SourceDataColumn]:
+    def source_columns(self) -> list[SourceDataColumn]:
         """
         List of source columns used in the operation structure
 
@@ -531,7 +524,7 @@ class OperationStructure:
         return [col for col in self.columns if isinstance(col, SourceDataColumn)]
 
     @property
-    def output_column_names(self) -> List[str]:
+    def output_column_names(self) -> list[str]:
         """
         List of output column names
 
@@ -545,27 +538,27 @@ class OperationStructure:
 
     @overload
     def _split_column_by_type(
-        self, columns: List[Union[SourceDataColumn, DerivedDataColumn]]
-    ) -> Tuple[List[SourceDataColumn], List[DerivedDataColumn]]: ...
+        self, columns: list[Union[SourceDataColumn, DerivedDataColumn]]
+    ) -> tuple[list[SourceDataColumn], list[DerivedDataColumn]]: ...
 
     @overload
     def _split_column_by_type(
-        self, columns: List[Union[AggregationColumn, PostAggregationColumn]]
-    ) -> Tuple[List[AggregationColumn], List[PostAggregationColumn]]: ...
+        self, columns: list[Union[AggregationColumn, PostAggregationColumn]]
+    ) -> tuple[list[AggregationColumn], list[PostAggregationColumn]]: ...
 
     def _split_column_by_type(
         self,
         columns: Union[
-            List[Union[SourceDataColumn, DerivedDataColumn]],
-            List[Union[AggregationColumn, PostAggregationColumn]],
+            list[Union[SourceDataColumn, DerivedDataColumn]],
+            list[Union[AggregationColumn, PostAggregationColumn]],
         ],
     ) -> Union[
-        Tuple[List[SourceDataColumn], List[DerivedDataColumn]],
-        Tuple[List[AggregationColumn], List[PostAggregationColumn]],
+        tuple[list[SourceDataColumn], list[DerivedDataColumn]],
+        tuple[list[AggregationColumn], list[PostAggregationColumn]],
     ]:
         _ = self
-        input_column_map: Dict[Tuple[str, str], Any] = {}
-        derived_column_map: Dict[Any, None] = {}
+        input_column_map: dict[tuple[str, str], Any] = {}
+        derived_column_map: dict[Any, None] = {}
         for column in columns:
             if isinstance(column, (DerivedDataColumn, PostAggregationColumn)):
                 derived_column_map[column] = None
@@ -592,8 +585,7 @@ class OperationStructure:
                 yield column
             else:
                 assert isinstance(column, DerivedDataColumn)
-                for source_col in column.columns:
-                    yield source_col
+                yield from column.columns
 
     def iterate_aggregations(self) -> Iterator[AggregationColumn]:
         """
@@ -609,8 +601,7 @@ class OperationStructure:
                 yield aggregation
             else:
                 assert isinstance(aggregation, PostAggregationColumn)
-                for source_agg in aggregation.columns:
-                    yield source_agg
+                yield from aggregation.columns
 
     def iterate_source_columns_or_aggregations(
         self,
@@ -625,11 +616,9 @@ class OperationStructure:
             Column/Aggregation that directly contributes to the output
         """
         if self.output_category == NodeOutputCategory.VIEW:
-            for column in self.iterate_source_columns():
-                yield column
+            yield from self.iterate_source_columns()
         else:
-            for aggregation in self.iterate_aggregations():
-                yield aggregation
+            yield from self.iterate_aggregations()
 
     def to_group_operation_structure(self) -> GroupOperationStructure:
         """
@@ -658,9 +647,9 @@ class OperationStructureInfo:
 
     def __init__(
         self,
-        operation_structure_map: Optional[Dict[str, OperationStructure]] = None,
-        edges_map: Optional[DefaultDict[str, Set[str]]] = None,
-        proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
+        operation_structure_map: Optional[dict[str, OperationStructure]] = None,
+        edges_map: Optional[defaultdict[str, set[str]]] = None,
+        proxy_input_operation_structures: Optional[list[OperationStructure]] = None,
         keep_all_source_columns: bool = False,
         **kwargs: Any,
     ):

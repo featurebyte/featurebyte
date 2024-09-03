@@ -4,8 +4,6 @@ CatalogService class
 
 from __future__ import annotations
 
-from typing import Optional
-
 from bson import ObjectId
 
 from featurebyte.models.catalog import CatalogModel
@@ -51,7 +49,7 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         self,
         document_id: ObjectId,
         data: CatalogOnlineStoreUpdate,
-    ) -> Optional[CatalogOnlineStoreInitializeTaskPayload]:
+    ) -> CatalogOnlineStoreInitializeTaskPayload | None:
         """
         Get OnlineStoreInitializeTask payload
 

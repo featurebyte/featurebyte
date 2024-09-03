@@ -2,7 +2,7 @@
 Table info service
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from bson import ObjectId
 
@@ -29,8 +29,8 @@ class TableInfoService:
         self.catalog_name_injector = catalog_name_injector
 
     async def _get_semantic_id_to_name_map(
-        self, semantic_ids: List[ObjectId]
-    ) -> Dict[ObjectId, str]:
+        self, semantic_ids: list[ObjectId]
+    ) -> dict[ObjectId, str]:
         semantics = await self.semantic_service.list_documents_as_dict(
             page=1, page_size=0, query_filter={"_id": {"$in": semantic_ids}}
         )
@@ -39,7 +39,7 @@ class TableInfoService:
         }
         return semantic_map
 
-    async def get_table_info(self, data_document: TableModel, verbose: bool) -> Dict[str, Any]:
+    async def get_table_info(self, data_document: TableModel, verbose: bool) -> dict[str, Any]:
         """
         Get table info
 

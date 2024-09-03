@@ -5,7 +5,7 @@ This module contains DatabaseSource related models
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+from typing import Any, ClassVar
 
 import pymongo
 from pydantic import Field, StrictStr
@@ -61,7 +61,7 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
         """
 
         collection_name: str = "feature_store"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
@@ -102,15 +102,15 @@ class TableStatus(OrderedStrEnum):
 class ConstructGraphMixin:
     """ConstructGraphMixin class"""
 
-    _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
+    _table_data_class: ClassVar[type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
     @classmethod
     def construct_graph_and_node(
         cls,
         feature_store_details: FeatureStoreDetails,
-        table_data_dict: Dict[str, Any],
-        graph: Optional[QueryGraph] = None,
-    ) -> Tuple[QueryGraph, Node]:
+        table_data_dict: dict[str, Any],
+        graph: QueryGraph | None = None,
+    ) -> tuple[QueryGraph, Node]:
         """
         Construct graph & node based on column info
 
@@ -151,11 +151,11 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
     """
 
     status: TableStatus = Field(default=TableStatus.PUBLIC_DRAFT.value, frozen=True)
-    record_creation_timestamp_column: Optional[StrictStr] = Field(default=None)
-    _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
+    record_creation_timestamp_column: StrictStr | None = Field(default=None)
+    _table_data_class: ClassVar[type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
     @property
-    def entity_ids(self) -> List[PydanticObjectId]:
+    def entity_ids(self) -> list[PydanticObjectId]:
         """
         List of entity IDs in the table model
 
@@ -166,7 +166,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         return list(set(col.entity_id for col in self.columns_info if col.entity_id))
 
     @property
-    def semantic_ids(self) -> List[PydanticObjectId]:
+    def semantic_ids(self) -> list[PydanticObjectId]:
         """
         List of semantic IDs in the table model
 
@@ -188,7 +188,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         return self._table_data_class(**self.model_dump(by_alias=True))
 
     @property
-    def table_primary_key_entity_ids(self) -> List[PydanticObjectId]:
+    def table_primary_key_entity_ids(self) -> list[PydanticObjectId]:
         """
         List of entity IDs that are primary key in the table model
 
@@ -204,7 +204,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
 
     @property
     @abstractmethod
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         """
         Primary key column names
 
@@ -215,7 +215,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
 
     @property
     @abstractmethod
-    def special_columns(self) -> List[str]:
+    def special_columns(self) -> list[str]:
         """
         Special columns is a list of columns that have special meaning in the table
 
@@ -227,7 +227,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
     @abstractmethod
     def create_view_graph_node(
         self, input_node: InputNode, metadata: Any, **kwargs: Any
-    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+    ) -> tuple[GraphNode, list[ColumnInfo]]:
         """
         Create view graph node
 
@@ -251,7 +251,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         """
 
         collection_name: str = "table"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

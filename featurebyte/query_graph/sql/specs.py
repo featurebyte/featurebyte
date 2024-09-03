@@ -8,7 +8,7 @@ import hashlib
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -71,7 +71,7 @@ class AggregationSpec(ABC):
     feature_name: str
     entity_ids: list[ObjectId] | None  # DEV-556: should not be None for new features
     serving_names: list[str]
-    serving_names_mapping: Optional[dict[str, str]]
+    serving_names_mapping: dict[str, str] | None
     agg_result_name_include_serving_names: bool
 
     def __post_init__(self) -> None:
@@ -272,7 +272,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         graph: QueryGraphModel,
         groupby_node: Node,
         feature_name: str,
-    ) -> Tuple[QueryGraphModel, Node, DBVarType]:
+    ) -> tuple[QueryGraphModel, Node, DBVarType]:
         """Get the column type of the aggregation
 
         Parameters
@@ -318,7 +318,7 @@ class AggregationSource:
 
     expr: Select
     query_node_name: str
-    is_scd_filtered_by_current_flag: Optional[bool] = None
+    is_scd_filtered_by_current_flag: bool | None = None
 
 
 @dataclass
@@ -337,7 +337,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         node: Node,
         source_info: SourceInfo,
         to_filter_scd_by_current_flag: bool,
-        event_table_timestamp_filter: Optional[EventTableTimestampFilter],
+        event_table_timestamp_filter: EventTableTimestampFilter | None,
     ) -> AggregationSource:
         """
         Get the expression of the input view to be aggregated
@@ -468,11 +468,11 @@ class NonTileBasedAggregationSpec(AggregationSpec):
     @classmethod
     @abstractmethod
     def construct_specs(
-        cls: Type[NonTileBasedAggregationSpecT],
+        cls: type[NonTileBasedAggregationSpecT],
         node: Node,
         aggregation_source: AggregationSource,
-        serving_names_mapping: Optional[dict[str, str]],
-        graph: Optional[QueryGraphModel],
+        serving_names_mapping: dict[str, str] | None,
+        graph: QueryGraphModel | None,
         agg_result_name_include_serving_names: bool,
     ) -> list[NonTileBasedAggregationSpecT]:
         """
@@ -494,8 +494,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
 
     @classmethod
     def get_parent_dtype_from_graph(
-        cls, graph: Optional[QueryGraphModel], parent: Optional[str], node: Node
-    ) -> Optional[DBVarType]:
+        cls, graph: QueryGraphModel | None, parent: str | None, node: Node
+    ) -> DBVarType | None:
         """
         Helper method to get the dtype of the parent variable
 
@@ -519,15 +519,15 @@ class NonTileBasedAggregationSpec(AggregationSpec):
 
     @classmethod
     def from_query_graph_node(
-        cls: Type[NonTileBasedAggregationSpecT],
+        cls: type[NonTileBasedAggregationSpecT],
         node: Node,
         graph: QueryGraphModel,
         agg_result_name_include_serving_names: bool = True,
-        aggregation_source: Optional[AggregationSource] = None,
-        source_info: Optional[SourceInfo] = None,
-        serving_names_mapping: Optional[dict[str, str]] = None,
-        is_online_serving: Optional[bool] = None,
-        event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
+        aggregation_source: AggregationSource | None = None,
+        source_info: SourceInfo | None = None,
+        serving_names_mapping: dict[str, str] | None = None,
+        is_online_serving: bool | None = None,
+        event_table_timestamp_filter: EventTableTimestampFilter | None = None,
     ) -> list[NonTileBasedAggregationSpecT]:
         """Construct NonTileBasedAggregationSpec objects given a query graph node
 
@@ -585,7 +585,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
     """
 
     parameters: ItemGroupbyParameters
-    parent_dtype: Optional[DBVarType]
+    parent_dtype: DBVarType | None
 
     @property
     def agg_result_name(self) -> str:
@@ -617,8 +617,8 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         cls,
         node: Node,
         aggregation_source: AggregationSource,
-        serving_names_mapping: Optional[dict[str, str]],
-        graph: Optional[QueryGraphModel],
+        serving_names_mapping: dict[str, str] | None,
+        graph: QueryGraphModel | None,
         agg_result_name_include_serving_names: bool,
     ) -> list[ItemAggregationSpec]:
         assert isinstance(node, ItemGroupbyNode)
@@ -626,7 +626,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
             ItemAggregationSpec(
                 node_name=node.name,
                 feature_name=node.parameters.name,
-                entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
+                entity_ids=cast(list[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
                 parameters=node.parameters,
@@ -644,7 +644,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
     """
 
     parameters: ForwardAggregateParameters
-    parent_dtype: Optional[DBVarType]
+    parent_dtype: DBVarType | None
 
     @property
     def agg_result_name(self) -> str:
@@ -666,11 +666,11 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
 
     @classmethod
     def construct_specs(
-        cls: Type[NonTileBasedAggregationSpecT],
+        cls: type[NonTileBasedAggregationSpecT],
         node: Node,
         aggregation_source: AggregationSource,
-        serving_names_mapping: Optional[dict[str, str]],
-        graph: Optional[QueryGraphModel],
+        serving_names_mapping: dict[str, str] | None,
+        graph: QueryGraphModel | None,
         agg_result_name_include_serving_names: bool,
     ) -> list[ForwardAggregateSpec]:
         assert isinstance(node, ForwardAggregateNode)
@@ -680,7 +680,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
                 feature_name=node.parameters.name,
                 parameters=node.parameters,
                 aggregation_source=aggregation_source,
-                entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
+                entity_ids=cast(list[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
                 parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
@@ -697,4 +697,4 @@ class FeatureSpec:
 
     feature_name: str
     feature_expr: Expression
-    feature_dtype: Optional[DBVarType]
+    feature_dtype: DBVarType | None

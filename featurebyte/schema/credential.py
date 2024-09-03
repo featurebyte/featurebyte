@@ -2,7 +2,7 @@
 Pydantic schemas for handling API payloads for credential routes
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from bson import ObjectId
 from pydantic import Field, field_validator
@@ -77,7 +77,7 @@ class CredentialList(PaginationMixin):
     Schema for credentials listing
     """
 
-    data: List[CredentialRead]
+    data: list[CredentialRead]
 
 
 class CredentialUpdate(FeatureByteBaseModel):
@@ -111,7 +111,7 @@ class CredentialServiceUpdate(BaseDocumentServiceUpdateSchema):
         Unique constraints checking
         """
 
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

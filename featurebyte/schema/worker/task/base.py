@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from enum import IntEnum
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from bson import ObjectId
 from pydantic import ConfigDict, Field
@@ -42,15 +42,15 @@ class BaseTaskPayload(FeatureByteBaseModel):
 
     # class variables
     command: ClassVar[WorkerCommand]
-    output_collection_name: ClassVar[Optional[str]] = None
+    output_collection_name: ClassVar[str | None] = None
     is_revocable: ClassVar[bool] = False
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.IO_TASK)
     priority: TaskPriority = Field(default=TaskPriority.MEDIUM)
     output_document_id: PydanticObjectId = Field(default_factory=ObjectId)
-    is_scheduled_task: Optional[bool] = Field(default=False)
-    user_id: Optional[PydanticObjectId] = Field(default=None)
+    is_scheduled_task: bool | None = Field(default=False)
+    user_id: PydanticObjectId | None = Field(default=None)
     catalog_id: PydanticObjectId
 
     # pydantic model configuration
@@ -90,7 +90,7 @@ class BaseTaskPayload(FeatureByteBaseModel):
         return queue_name
 
     @property
-    def task_output_path(self) -> Optional[str]:
+    def task_output_path(self) -> str | None:
         """
         Redirect route used to retrieve the task result
 

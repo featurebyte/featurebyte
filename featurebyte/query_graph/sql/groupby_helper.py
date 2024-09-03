@@ -5,7 +5,7 @@ Utilities related to SQL generation for groupby operations
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, cast
+from typing import cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -27,15 +27,15 @@ class GroupbyColumn:
     agg_func: AggFunc
     # parent_expr refers to the expression that is used to generate the column. For example, `sum(col1)`.
     # This is not provided for certain aggregations like count.
-    parent_expr: Optional[Expression]
+    parent_expr: Expression | None
     # parent_dtype is the dtype of the parent column.
-    parent_dtype: Optional[DBVarType]
+    parent_dtype: DBVarType | None
     # result_name is the aliased name of the aggregation result. For example if we want `sum(col1) as "sum_col_1",
     # the result_name is "sum_col_1".
     result_name: str
     # parent_cols refers to the columns used in the parent_expr. As an example, for the aggregation `sum(col1)`, the
     # parent_cols here will be ['col1'].
-    parent_cols: List[Expression]
+    parent_cols: list[Expression]
     # Use this to skip quoting result name when aliasing.
     quote_result_name: bool = True
 
@@ -123,8 +123,8 @@ def column_distinct_count_including_null(
 
 def get_aggregation_expression(
     agg_func: AggFunc,
-    input_column: Optional[str | Expression],
-    parent_dtype: Optional[DBVarType],
+    input_column: str | Expression | None,
+    parent_dtype: DBVarType | None,
     adapter: BaseAdapter,
 ) -> Expression:
     """
@@ -182,7 +182,7 @@ def get_aggregation_expression(
 def get_vector_agg_column_snowflake(
     input_expr: Select,
     agg_func: AggFunc,
-    groupby_keys: List[GroupbyKey],
+    groupby_keys: list[GroupbyKey],
     groupby_column: GroupbyColumn,
     index: int,
     is_tile: bool,
@@ -265,7 +265,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     input_expr: Select,
     groupby_keys: list[GroupbyKey],
     groupby_columns: list[GroupbyColumn],
-    value_by: Optional[GroupbyKey],
+    value_by: GroupbyKey | None,
     source_type: SourceType,
     is_tile: bool,
 ) -> tuple[list[Expression], list[VectorAggColumn]]:
@@ -363,7 +363,7 @@ def get_groupby_expr(
     input_expr: Select,
     groupby_keys: list[GroupbyKey],
     groupby_columns: list[GroupbyColumn],
-    value_by: Optional[GroupbyKey],
+    value_by: GroupbyKey | None,
     adapter: BaseAdapter,
 ) -> Select:
     """

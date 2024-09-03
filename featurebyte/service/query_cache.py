@@ -4,8 +4,9 @@ QueryCacheService class
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
-from typing import Any, AsyncIterator, Dict
+from typing import Any
 
 from bson import ObjectId
 
@@ -28,7 +29,7 @@ class QueryCacheDocumentService(
 
     async def list_stale_documents_as_dict_iterator(
         self, feature_store_id: ObjectId
-    ) -> AsyncIterator[Dict[str, Any]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         List stale documents iterator
 
@@ -55,7 +56,7 @@ class QueryCacheDocumentService(
             yield doc
 
     @classmethod
-    def get_cache_validity_filter(cls) -> Dict[str, Any]:
+    def get_cache_validity_filter(cls) -> dict[str, Any]:
         """
         Get cache validity filter
 

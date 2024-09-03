@@ -2,7 +2,7 @@
 This module contains Tile related models
 """
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -54,9 +54,9 @@ class TileSpec(FeatureByteBaseModel):
     blind_spot_second: int = Field(ge=0)
     frequency_minute: int = Field(gt=0)
     tile_sql: str
-    entity_column_names: List[str]
-    value_column_names: List[str]
-    value_column_types: List[str]
+    entity_column_names: list[str]
+    value_column_names: list[str]
+    value_column_types: list[str]
     tile_id: str
     aggregation_id: str
     aggregation_function_name: Optional[str] = Field(default=None)
@@ -64,7 +64,7 @@ class TileSpec(FeatureByteBaseModel):
     category_column_name: Optional[str] = Field(default=None)
     feature_store_id: Optional[ObjectId] = Field(default=None)
     entity_tracker_table_name: str
-    windows: List[Optional[str]] = Field(default=None)
+    windows: list[Optional[str]] = Field(default=None)
     offset: Optional[str] = Field(default=None)
 
     # pydantic model configuration
@@ -147,9 +147,9 @@ class TileCommonParameters(FeatureByteBaseModel):
     frequency_minute: int
 
     sql: str
-    entity_column_names: List[str]
-    value_column_names: List[str]
-    value_column_types: List[str]
+    entity_column_names: list[str]
+    value_column_names: list[str]
+    value_column_types: list[str]
 
     # pydantic model configuration
     model_config = ConfigDict(extra="forbid")

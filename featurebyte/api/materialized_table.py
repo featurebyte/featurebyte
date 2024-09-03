@@ -4,7 +4,7 @@ Materialized Table Mixin
 
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Callable, ClassVar, Optional, Tuple, Union
+from typing import Any, Callable, ClassVar, Optional, Union
 
 import pandas as pd
 from typeguard import typechecked
@@ -192,7 +192,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         """
         return self._source_table.describe(size=size, seed=seed)
 
-    def shape(self) -> Tuple[int, int]:
+    def shape(self) -> tuple[int, int]:
         """
         Returns the shape of the table.
 

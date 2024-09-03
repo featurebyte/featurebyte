@@ -8,7 +8,7 @@ from abc import abstractmethod
 from datetime import datetime, timedelta
 from http import HTTPStatus
 from io import BytesIO
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import humanize
 import numpy as np
@@ -44,7 +44,7 @@ class FeatureJobStatusResult(FeatureByteBaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
-    def request_parameters(self) -> Dict[str, Any]:
+    def request_parameters(self) -> dict[str, Any]:
         """
         Parameters used to make the status request
 
@@ -180,7 +180,7 @@ class FeatureJobMixin(ApiObject):
     id: PydanticObjectId
 
     @abstractmethod
-    def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
+    def _get_feature_tiles_specs(self) -> list[tuple[str, list[TileSpec]]]:
         """
         Get dictionary of feature and tile specs
 

@@ -2,7 +2,8 @@
 Custom nav module
 """
 
-from typing import Any, Iterable, List, Mapping
+from collections.abc import Iterable, Mapping
+from typing import Any
 
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
@@ -144,7 +145,7 @@ class BetaWave3Nav(Nav):
     }
 
     @classmethod
-    def _get_items_for_level(cls, data: Mapping, custom_order: List[str]) -> Any:  # type: ignore[type-arg]
+    def _get_items_for_level(cls, data: Mapping, custom_order: list[str]) -> Any:  # type: ignore[type-arg]
         """
         Helper method to get items sorted by a custom ordering.
 

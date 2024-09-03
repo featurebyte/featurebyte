@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import copy
 from collections import defaultdict
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 from bson import ObjectId
 
@@ -16,7 +16,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 
 
-def sorted_entity_ids(entity_ids: Sequence[ObjectId]) -> Tuple[ObjectId, ...]:
+def sorted_entity_ids(entity_ids: Sequence[ObjectId]) -> tuple[ObjectId, ...]:
     """
     Return a sorted tuple of entity ids
 
@@ -40,12 +40,12 @@ class EntityLookupPlan:
     """
 
     feature_primary_entity_ids: Sequence[ObjectId]
-    descendant_ids: Set[ObjectId]
-    lookup_steps_mapping: Dict[Tuple[ObjectId, ...], List[EntityRelationshipInfo]]
+    descendant_ids: set[ObjectId]
+    lookup_steps_mapping: dict[tuple[ObjectId, ...], list[EntityRelationshipInfo]]
 
     def get_entity_lookup_steps(
         self, serving_entity_ids: Sequence[ObjectId]
-    ) -> Optional[List[EntityRelationshipInfo]]:
+    ) -> list[EntityRelationshipInfo] | None:
         """
         Get the parent entity lookup steps required to convert serving entity ids to feature table's
         primary entity ids
@@ -72,7 +72,7 @@ class EntityLookupState:
     """
 
     entity_ids: Sequence[ObjectId]
-    lookup_path: List[EntityRelationshipInfo]
+    lookup_path: list[EntityRelationshipInfo]
 
     def apply_relationship(
         self,
@@ -118,8 +118,8 @@ class EntityLookupPlanner:
     @classmethod
     def generate_plan(
         cls,
-        feature_primary_entity_ids: List[PydanticObjectId],
-        relationships_info: List[EntityRelationshipInfo],
+        feature_primary_entity_ids: list[PydanticObjectId],
+        relationships_info: list[EntityRelationshipInfo],
     ) -> EntityLookupPlan:
         """
         Generate an EntityLookupPlan object with all the join steps pre-calculated for all posssible
@@ -167,8 +167,8 @@ class EntityLookupPlanner:
         cls,
         available_entity_ids: Sequence[ObjectId],
         required_entity_ids: Sequence[ObjectId],
-        relationships_info: List[EntityRelationshipInfo],
-    ) -> List[EntityRelationshipInfo]:
+        relationships_info: list[EntityRelationshipInfo],
+    ) -> list[EntityRelationshipInfo]:
         """
         Generate a list of required lookup steps to retrieve missing parent entities based on the
         available relationships.
@@ -227,8 +227,8 @@ class EntityLookupPlanner:
     @classmethod
     def _get_relationships_to_children(
         cls,
-        relationships_info: List[EntityRelationshipInfo],
-    ) -> Dict[ObjectId, List[EntityRelationshipInfo]]:
+        relationships_info: list[EntityRelationshipInfo],
+    ) -> dict[ObjectId, list[EntityRelationshipInfo]]:
         """
         Construct a mapping from entity id to a list of relationships that lead to its children
 
@@ -250,8 +250,8 @@ class EntityLookupPlanner:
     @classmethod
     def _get_relationships_to_parents(
         cls,
-        relationships_info: List[EntityRelationshipInfo],
-    ) -> Dict[ObjectId, List[EntityRelationshipInfo]]:
+        relationships_info: list[EntityRelationshipInfo],
+    ) -> dict[ObjectId, list[EntityRelationshipInfo]]:
         """
         Construct a mapping from entity id to a list of relationships that lead to its parents
 
@@ -273,8 +273,8 @@ class EntityLookupPlanner:
     @classmethod
     def _bfs(
         cls,
-        relationships_mapping: Dict[ObjectId, List[EntityRelationshipInfo]],
-        pending: List[EntityLookupState],
+        relationships_mapping: dict[ObjectId, list[EntityRelationshipInfo]],
+        pending: list[EntityLookupState],
     ) -> Iterator[EntityLookupState]:
         visited = set()
         while pending:
@@ -310,8 +310,8 @@ class EntityColumn:
 
     entity_id: ObjectId
     serving_name: str
-    child_serving_name: Optional[str]
-    relationship_info_id: Optional[ObjectId]
+    child_serving_name: str | None
+    relationship_info_id: ObjectId | None
 
     def get_parent_entity_columns(
         self, lookup_steps: list[EntityRelationshipInfo]

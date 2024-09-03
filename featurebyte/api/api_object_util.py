@@ -6,9 +6,10 @@ from __future__ import annotations
 
 import ctypes
 import threading
+from collections.abc import Iterator
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any
 
 from bson import ObjectId
 
@@ -38,7 +39,7 @@ class ForeignKeyMapping:
     # Field to display instead of `name` from the retrieved list API response.
     # By default, we will pull the `name` from the retrieved values. This will override that behaviour
     # to pull a different field.
-    display_field_override: Optional[str] = None
+    display_field_override: str | None = None
     # Whether to use list or list_versions to retrieve the data. By default, we will use list.
     # This will override that behaviour to use list_versions.
     use_list_versions: bool = False
@@ -79,7 +80,7 @@ class ProgressThread(threading.Thread):
             finally:
                 pass
 
-    def get_id(self) -> Optional[int]:
+    def get_id(self) -> int | None:
         """
         Returns id of the respective thread
 
@@ -146,8 +147,8 @@ class NameAttributeUpdatableMixin:
 
 
 def map_object_id_to_name(
-    object_map: Dict[Optional[str], str], object_id: Union[str, List[str]]
-) -> Union[Optional[str], List[Optional[str]]]:
+    object_map: dict[str | None, str], object_id: str | list[str]
+) -> str | None | list[str | None]:
     """
     Map list of object ids object names
 
@@ -168,10 +169,10 @@ def map_object_id_to_name(
 
 
 def map_dict_list_to_name(
-    object_map: Dict[Optional[str], str],
+    object_map: dict[str | None, str],
     object_id_field: str,
-    object_dict: Union[Dict[str, str], List[Dict[str, str]]],
-) -> Union[Optional[str], List[Optional[str]]]:
+    object_dict: dict[str, str] | list[dict[str, str]],
+) -> str | None | list[str | None]:
     """
     Map list of object dict to object names
 
@@ -216,7 +217,7 @@ def to_request_func(response_dict: dict[str, Any], page: int) -> bool:
 
 
 def get_api_object_by_id(
-    route: str, id_value: ObjectId, resource_url: Optional[str] = None
+    route: str, id_value: ObjectId, resource_url: str | None = None
 ) -> dict[str, Any]:
     """
     Retrieve api object by given route & id
@@ -276,7 +277,7 @@ def delete_api_object_by_id(route: str, id_value: ObjectId) -> None:
 
 
 def iterate_api_object_using_paginated_routes(
-    route: str, params: Optional[dict[str, Any]] = None
+    route: str, params: dict[str, Any] | None = None
 ) -> Iterator[dict[str, Any]]:
     """
     Api object generator by iterating listing route
@@ -309,7 +310,6 @@ def iterate_api_object_using_paginated_routes(
             response_dict = response.json()
             to_request = to_request_func(response_dict, page)
             page += 1
-            for obj_dict in response_dict["data"]:
-                yield obj_dict
+            yield from response_dict["data"]
         else:
             raise RecordRetrievalException(response, f"Failed to list {route}.")

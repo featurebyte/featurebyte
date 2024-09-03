@@ -5,7 +5,7 @@ Deployment API route controller
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Any, List, Literal, Optional, Tuple
+from typing import Any, Literal
 
 from bson import ObjectId
 from fastapi import HTTPException
@@ -139,9 +139,7 @@ class DeploymentController(
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
-    async def update_deployment(
-        self, document_id: ObjectId, data: DeploymentUpdate
-    ) -> Optional[Task]:
+    async def update_deployment(self, document_id: ObjectId, data: DeploymentUpdate) -> Task | None:
         """
         Update deployment.
 
@@ -172,7 +170,7 @@ class DeploymentController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [(self.batch_feature_table_service, {"deployment_id": document_id})]
 
     async def delete(self, document_id: ObjectId) -> None:
@@ -249,7 +247,7 @@ class DeploymentController(
         feature_list = await self.feature_list_service.get_document(document.feature_list_id)
         catalog = await self.catalog_service.get_document(feature_list.catalog_id)
         try:
-            result: Optional[OnlineFeaturesResponseModel]
+            result: OnlineFeaturesResponseModel | None
             if feature_list.store_info.feast_enabled and catalog.online_store_id is not None:
                 feast_store = (
                     await self.feast_feature_store_service.get_feast_feature_store_for_deployment(

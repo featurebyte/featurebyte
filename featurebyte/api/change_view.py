@@ -5,7 +5,7 @@ ChangeView class
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, ClassVar, List, Optional, Tuple, Union
+from typing import Any, ClassVar
 
 from pydantic import Field
 from typeguard import typechecked
@@ -29,7 +29,7 @@ class ChangeViewColumn(LaggableViewColumn):
 
     @typechecked
     def lag(
-        self: ChangeViewColumn, entity_columns: Union[str, List[str]], offset: int = 1
+        self: ChangeViewColumn, entity_columns: str | list[str], offset: int = 1
     ) -> ChangeViewColumn:
         """
         Lag is a transform that enables the retrieval of the preceding value associated with a particular entity in
@@ -134,7 +134,7 @@ class ChangeView(View, GroupByMixin):
         return {self.timestamp_column}
 
     @staticmethod
-    def _validate_prefixes(prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None) -> None:
+    def _validate_prefixes(prefixes: tuple[str | None, str | None] | None = None) -> None:
         """
         Validate prefixes
 
@@ -174,7 +174,7 @@ class ChangeView(View, GroupByMixin):
     def validate_inputs(
         scd_table: SCDTable,
         track_changes_column: str,
-        prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
+        prefixes: tuple[str | None, str | None] | None = None,
     ) -> None:
         """
         Validate the inputs.
@@ -256,7 +256,7 @@ class ChangeView(View, GroupByMixin):
 
     @staticmethod
     def get_default_feature_job_setting(
-        feature_job_setting: Optional[FeatureJobSetting] = None,
+        feature_job_setting: FeatureJobSetting | None = None,
     ) -> FeatureJobSetting:
         """
         Returns the default feature job setting of the Change View. If none has been set, it returns the default job

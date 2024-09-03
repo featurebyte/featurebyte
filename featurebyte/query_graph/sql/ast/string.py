@@ -5,7 +5,6 @@ Module containing string operations related sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -79,7 +78,7 @@ class TrimNode(ExpressionNode):
     """Node for TRIM, LTRIM, RTRIM operations"""
 
     expr: ExpressionNode
-    character: Optional[str]
+    character: str | None
     side: Literal["left", "right", "both"]
     query_node_type = NodeType.TRIM
 
@@ -218,7 +217,7 @@ class SubStringNode(ExpressionNode):
 
     expr: ExpressionNode
     start: int
-    length: Optional[int]
+    length: int | None
     query_node_type = NodeType.SUBSTRING
 
     @property

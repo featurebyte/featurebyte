@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional, Set, Tuple, cast
+from typing import cast
 
 from bson import ObjectId
 
@@ -85,7 +85,7 @@ class TileGenSql:
         return cast(str, self.sql_template.render())
 
 
-JoinKeysLineageKey = Tuple[ObjectId, str]
+JoinKeysLineageKey = tuple[ObjectId, str]
 
 
 class JoinKeysLineage:
@@ -151,7 +151,7 @@ class InputFilterContext:
     Information that determines whether filters on input data can be applied
     """
 
-    node_types: Set[NodeType]
+    node_types: set[NodeType]
     operation_structure: OperationStructure
     join_keys_lineage: JoinKeysLineage
 
@@ -236,7 +236,7 @@ class TileSQLGenerator:
         # Identify join keys lineage to propagate filtering to applicable tables
         def _get_join_key_from_op_struct(
             op_struct_obj: OperationStructure, column_name: str
-        ) -> Optional[SourceDataColumn]:
+        ) -> SourceDataColumn | None:
             for column in op_struct_obj.columns:
                 if (
                     column.name == column_name
@@ -273,7 +273,7 @@ class TileSQLGenerator:
 
     def _get_event_table_timestamp_filter(
         self, groupby_node: GroupByNode
-    ) -> Optional[EventTableTimestampFilter]:
+    ) -> EventTableTimestampFilter | None:
         # Check there is no lag operation, otherwise cannot apply timestamp filter directly
         input_filter_context = self._get_input_filter_context(groupby_node)
         if input_filter_context.has_lag_operation:
@@ -297,7 +297,7 @@ class TileSQLGenerator:
 
     def _get_on_demand_entity_filters(
         self, groupby_node: GroupByNode
-    ) -> Optional[OnDemandEntityFilters]:
+    ) -> OnDemandEntityFilters | None:
         input_filter_context = self._get_input_filter_context(groupby_node)
 
         # Filter cannot be applied when there are lag operations
@@ -341,8 +341,8 @@ class TileSQLGenerator:
     def make_one_tile_sql(
         self,
         groupby_node: GroupByNode,
-        event_table_timestamp_filter: Optional[EventTableTimestampFilter],
-        on_demand_entity_filters: Optional[OnDemandEntityFilters],
+        event_table_timestamp_filter: EventTableTimestampFilter | None,
+        on_demand_entity_filters: OnDemandEntityFilters | None,
     ) -> TileGenSql:
         """Construct tile building SQL for a specific groupby query graph node
 

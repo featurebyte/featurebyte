@@ -5,7 +5,7 @@ UserDefinedFunction API object
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Any, ClassVar, Dict, List, Optional, Union, cast
+from typing import Any, ClassVar, cast
 
 from bson import ObjectId
 from pydantic import Field
@@ -41,7 +41,7 @@ from featurebyte.schema.user_defined_function import (
 logger = get_logger(__name__)
 
 
-def _get_active_feature_store_id(catalog_id: Optional[ObjectId] = None) -> Optional[ObjectId]:
+def _get_active_feature_store_id(catalog_id: ObjectId | None = None) -> ObjectId | None:
     # get the active feature store id
     if catalog_id is None:
         catalog_id = get_active_catalog_id()
@@ -113,27 +113,27 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
     _update_schema_class: ClassVar[Any] = UserDefinedFunctionUpdate
     _get_schema: ClassVar[Any] = UserDefinedFunctionResponse
     _list_schema: ClassVar[Any] = UserDefinedFunctionResponse
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "signature",
         "sql_function_name",
         "feature_store_name",
         "is_global",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
 
     # pydantic instance variable (internal use)
     internal_is_global: bool = Field(alias="is_global")
     internal_sql_function_name: str = Field(alias="sql_function_name")
-    internal_function_parameters: List[FunctionParameter] = Field(alias="function_parameters")
+    internal_function_parameters: list[FunctionParameter] = Field(alias="function_parameters")
     internal_output_dtype: DBVarType = Field(alias="output_dtype")
 
     # function accessor containing all user-defined functions
     func: ClassVar[Any] = FunctionDescriptor(route=_route)
 
     @property
-    def catalog_id(self) -> Optional[PydanticObjectId]:
+    def catalog_id(self) -> PydanticObjectId | None:
         """
         Catalog id of the user-defined function. If the user-defined function is global, the catalog id is None.
 
@@ -166,7 +166,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         return self.cached_model.sql_function_name
 
     @property
-    def function_parameters(self) -> List[FunctionParameter]:
+    def function_parameters(self) -> list[FunctionParameter]:
         """
         The function parameters of the user-defined function.
 
@@ -223,7 +223,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         )
 
     @classmethod
-    def _get(cls, name: str, other_params: Optional[dict[str, Any]] = None) -> UserDefinedFunction:
+    def _get(cls, name: str, other_params: dict[str, Any] | None = None) -> UserDefinedFunction:
         # Override the default _get method to handle the case where there are multiple UDFs
         # with the same name (one global and one local). In this case, the local UDF should be returned.
         def _record_selector(records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -241,8 +241,8 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         cls,
         name: str,
         sql_function_name: str,
-        function_parameters: List[FunctionParameter],
-        output_dtype: Union[DBVarType, str],
+        function_parameters: list[FunctionParameter],
+        output_dtype: DBVarType | str,
         is_global: bool = False,
     ) -> UserDefinedFunction:
         """
@@ -367,7 +367,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         )
 
     @typechecked
-    def update_function_parameters(self, function_parameters: List[FunctionParameter]) -> None:
+    def update_function_parameters(self, function_parameters: list[FunctionParameter]) -> None:
         """
         Update the function parameters of the user-defined function.
 
@@ -390,7 +390,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         )
 
     @typechecked
-    def update_output_dtype(self, output_dtype: Union[DBVarType, str]) -> None:
+    def update_output_dtype(self, output_dtype: DBVarType | str) -> None:
         """
         Update the output data type of the user-defined function.
 
@@ -422,7 +422,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         """
         self._delete()
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary containing the user-defined function's metadata. The dictionary contains the following
         keys:
@@ -456,7 +456,7 @@ class UserDefinedFunction(DeletableApiObject, SavableApiObject):
         """
         return super().info(verbose)
 
-    def __call__(self, *args: Any, **kwargs: Any) -> Union[ViewColumn, Feature]:
+    def __call__(self, *args: Any, **kwargs: Any) -> ViewColumn | Feature:
         udf = cast(UserDefinedFunctionModel, self.cached_model)
         dynamic_func = UserDefinedFunctionInjector.create(udf=udf)
         return dynamic_func(*args, **kwargs)
@@ -468,7 +468,7 @@ class UserDefinedFunctionAccessorWrapper:
     The FunctionAccessor object is constructed dynamically when needed.
     """
 
-    def __dir__(self) -> List[str]:
+    def __dir__(self) -> list[str]:
         # provide auto-completion for user-defined functions by dynamically constructing the function accessor
         # and returning the function accessor's dir list
         attrs = [attr for attr in dir(UserDefinedFunction.func) if not attr.startswith("__")]

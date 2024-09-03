@@ -4,7 +4,7 @@ Base class for SQL interpreter.
 
 from __future__ import annotations
 
-from typing import Tuple, cast
+from typing import cast
 
 from sqlglot import expressions
 
@@ -51,7 +51,7 @@ class BaseGraphInterpreter:
         """
         return self.query_graph.get_node_by_name(self.node_name_map[node_name])
 
-    def construct_shape_sql(self, node_name: str) -> Tuple[str, int]:
+    def construct_shape_sql(self, node_name: str) -> tuple[str, int]:
         """Construct SQL to get row count from a given node
 
         Parameters

@@ -6,7 +6,7 @@
 import os
 import shutil
 import sys
-from typing import Any, List, Optional
+from typing import Any
 
 import pandas as pd
 import yaml
@@ -202,7 +202,7 @@ def use_profile(profile: str) -> None:
 
 
 def register_profile(
-    profile_name: str, api_url: str, api_token: Optional[str] = None, make_default: bool = False
+    profile_name: str, api_url: str, api_token: str | None = None, make_default: bool = False
 ) -> None:
     """
     Register a profile for connecting to a FeatureByte service in the configuration file.
@@ -232,7 +232,7 @@ def register_profile(
     with open(config_file_path, encoding="utf-8") as file_obj:
         loaded_config = yaml.safe_load(file_obj)
 
-    profiles: List[Any] = loaded_config["profile"]
+    profiles: list[Any] = loaded_config["profile"]
     # Update API token in existing profile if it's there
     for profile in profiles:
         if profile["name"] == profile_name:
@@ -297,7 +297,7 @@ def register_tutorial_api_token(api_token: str) -> None:
 
 
 def list_credentials(
-    include_id: Optional[bool] = False,
+    include_id: bool | None = False,
 ) -> pd.DataFrame:
     """
     List all credentials
@@ -321,7 +321,7 @@ def list_credentials(
     return Credential.list(include_id=include_id)
 
 
-def list_feature_stores(include_id: Optional[bool] = False) -> pd.DataFrame:
+def list_feature_stores(include_id: bool | None = False) -> pd.DataFrame:
     """
     List all feature stores
 
@@ -365,7 +365,7 @@ def get_feature_store(name: str) -> FeatureStore:
     return FeatureStore.get(name)
 
 
-def list_catalogs(include_id: Optional[bool] = False) -> pd.DataFrame:
+def list_catalogs(include_id: bool | None = False) -> pd.DataFrame:
     """
     List all catalogs
 
@@ -437,9 +437,9 @@ def stop(clean: bool = False) -> None:
 
 
 def playground(
-    datasets: Optional[List[str]] = None,
-    krb5_realm: Optional[str] = None,
-    krb5_kdc: Optional[str] = None,
+    datasets: list[str] | None = None,
+    krb5_realm: str | None = None,
+    krb5_kdc: str | None = None,
     force_import: bool = False,
 ) -> None:
     """

@@ -6,17 +6,11 @@ from __future__ import annotations
 
 import copy
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator, Awaitable, Iterable
 from contextlib import asynccontextmanager
 from typing import (
     Any,
-    AsyncIterator,
-    Awaitable,
     Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
     cast,
 )
 
@@ -61,7 +55,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         document: Document,
-        user_id: Optional[ObjectId],
+        user_id: ObjectId | None,
         disable_audit: bool = False,
     ) -> ObjectId:
         """
@@ -92,7 +86,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         documents: Iterable[Document],
-        user_id: Optional[ObjectId],
+        user_id: ObjectId | None,
         disable_audit: bool = False,
     ) -> list[ObjectId]:
         """
@@ -125,8 +119,8 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        projection: Optional[dict[str, Any]] = None,
-    ) -> Optional[Document]:
+        projection: dict[str, Any] | None = None,
+    ) -> Document | None:
         """
         Find one record from collection. Note that when using this method inside a non BaseDocumentService,
         please use with caution as it does not inject catalog_id into the query filter automatically.
@@ -153,8 +147,8 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        projection: dict[str, Any] | None = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
@@ -195,9 +189,9 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        pipeline: Optional[list[dict[str, Any]]] = None,
-        projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        pipeline: list[dict[str, Any]] | None = None,
+        projection: dict[str, Any] | None = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
     ) -> AsyncIterator[Document]:
         """
         Find all records from collection. Note that when using this method inside a non BaseDocumentService,
@@ -235,7 +229,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         update: DocumentUpdate,
-        user_id: Optional[ObjectId],
+        user_id: ObjectId | None,
         disable_audit: bool = False,
     ) -> int:
         """
@@ -284,7 +278,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         update: DocumentUpdate,
-        user_id: Optional[ObjectId],
+        user_id: ObjectId | None,
         disable_audit: bool = False,
     ) -> int:
         """
@@ -333,7 +327,7 @@ class Persistent(ABC):
         collection_name: str,
         query_filter: QueryFilter,
         replacement: Document,
-        user_id: Optional[ObjectId],
+        user_id: ObjectId | None,
         disable_audit: bool = False,
     ) -> int:
         """
@@ -371,7 +365,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        user_id: Optional[ObjectId],
+        user_id: ObjectId | None,
         disable_audit: bool = False,
     ) -> int:
         """
@@ -401,7 +395,7 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        user_id: Optional[ObjectId],
+        user_id: ObjectId | None,
         disable_audit: bool = False,
     ) -> int:
         """
@@ -451,9 +445,9 @@ class Persistent(ABC):
         self,
         collection_name: str,
         document_id: ObjectId,
-        query_filter: Optional[QueryFilter] = None,
-        projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        query_filter: QueryFilter | None = None,
+        projection: dict[str, Any] | None = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
@@ -589,7 +583,7 @@ class Persistent(ABC):
         await self._replace_one(
             collection_name=collection_name,
             query_filter=query_filter,
-            replacement=await migrate_func(cast(Dict[str, Any], document)),
+            replacement=await migrate_func(cast(dict[str, Any], document)),
         )
 
     async def _migrate_audit_records(
@@ -673,8 +667,8 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        projection: Optional[dict[str, Any]] = None,
-    ) -> Optional[Document]:
+        projection: dict[str, Any] | None = None,
+    ) -> Document | None:
         pass
 
     @abstractmethod
@@ -682,8 +676,8 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        projection: dict[str, Any] | None = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
@@ -694,9 +688,9 @@ class Persistent(ABC):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        pipeline: Optional[list[dict[str, Any]]] = None,
-        projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        pipeline: list[dict[str, Any]] | None = None,
+        projection: dict[str, Any] | None = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
     ) -> AsyncIterator[Document]:
         pass
 
@@ -749,12 +743,12 @@ class Persistent(ABC):
     async def aggregate_find(
         self,
         collection_name: str,
-        pipeline: List[Dict[str, Any]],
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        pipeline: list[dict[str, Any]],
+        sort_by: list[tuple[str, SortDir]] | None = None,
         page: int = 1,
         page_size: int = 0,
         **kwargs: Any,
-    ) -> Tuple[Iterable[Document], int]:
+    ) -> tuple[Iterable[Document], int]:
         """
         Execute aggregation pipeline
 

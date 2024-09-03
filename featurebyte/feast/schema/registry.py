@@ -2,7 +2,7 @@
 Feast registry related schemas
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import Field
 
@@ -16,7 +16,7 @@ class FeastRegistryCreate(FeatureByteBaseModel):
     Feast registry create schema
     """
 
-    feature_lists: List[FeatureListModel]
+    feature_lists: list[FeatureListModel]
     deployment_id: PydanticObjectId
 
 
@@ -25,7 +25,7 @@ class FeastRegistryUpdate(BaseDocumentServiceUpdateSchema):
     Feast registry update schema
     """
 
-    feature_lists: Optional[List[FeatureListModel]] = Field(default=None)
+    feature_lists: Optional[list[FeatureListModel]] = Field(default=None)
 
     # these fields are not expected to be updated directly
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)

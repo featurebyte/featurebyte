@@ -2,7 +2,7 @@
 This module contains an extractor class to generate SDK codes from a query graph.
 """
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from bson import ObjectId
 from pydantic import Field
@@ -45,20 +45,20 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
         Code generator is used to generate final SDK codes from a list of statements & imports
     """
 
-    node_name_to_post_compute_output: Dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
-    node_name_to_operation_structure: Dict[str, OperationStructure] = Field(default_factory=dict)
+    node_name_to_post_compute_output: dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
+    node_name_to_operation_structure: dict[str, OperationStructure] = Field(default_factory=dict)
     code_generation_config: SDKCodeGenConfig = Field(default_factory=SDKCodeGenConfig)
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
     code_generator: CodeGenerator = Field(default_factory=CodeGenerator)
-    no_op_node_names: Set[str] = Field(default_factory=set)
-    as_info_dict_node_names: Set[str] = Field(default_factory=set)
-    required_copy_node_names: Set[str] = Field(default_factory=set)
+    no_op_node_names: set[str] = Field(default_factory=set)
+    as_info_dict_node_names: set[str] = Field(default_factory=set)
+    required_copy_node_names: set[str] = Field(default_factory=set)
 
     def _identify_output_as_info_dict(
         self,
         node: Node,
         query_graph: QueryGraphModel,
-        node_name_to_operation_structure: Dict[str, OperationStructure],
+        node_name_to_operation_structure: dict[str, OperationStructure],
     ) -> None:
         """
         Identify the node names that should output info dict rather than variable name or expression.
@@ -103,7 +103,7 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
                 # postpone the assignment operation to AssignNode.
                 self.as_info_dict_node_names.add(node.name)
 
-    def _identify_no_op_node(self, node: Node, backward_nodes: List[Node]) -> None:
+    def _identify_no_op_node(self, node: Node, backward_nodes: list[Node]) -> None:
         """
         Identify a node as no-op node by looking at the structure of the node type & its input node types.
 
@@ -130,7 +130,7 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
             self.no_op_node_names.add(node.name)
 
     def _identify_required_copy_node(
-        self, node: Node, backward_nodes: List[Node], edges_map: Dict[str, List[str]]
+        self, node: Node, backward_nodes: list[Node], edges_map: dict[str, list[str]]
     ) -> None:
         """
         Identify whether a copy is required for the inplace operation node.
@@ -165,7 +165,7 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
     def initialize(
         self,
         query_graph: QueryGraphModel,
-        node_name_to_operation_structure: Dict[str, OperationStructure],
+        node_name_to_operation_structure: dict[str, OperationStructure],
     ) -> None:
         """
         Initialize SDKCodeGlobalState
@@ -198,8 +198,8 @@ class SDKCodeExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: SDKCodeGlobalState,
         node: Node,
-        input_node_names: List[str],
-    ) -> Tuple[List[str], bool]:
+        input_node_names: list[str],
+    ) -> tuple[list[str], bool]:
         if node.type == NodeType.GRAPH and node.parameters.type == GraphNodeType.ITEM_VIEW:  # type: ignore
             # item view consume 2 inputs (item table & event view), when constructing SDK code, we only need to use the
             # first input (item table).
@@ -220,7 +220,7 @@ class SDKCodeExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: SDKCodeGlobalState,
         node: Node,
-        inputs: List[VarNameExpressionInfo],
+        inputs: list[VarNameExpressionInfo],
         skip_post: bool,
     ) -> VarNameExpressionInfo:
         if node.name in global_state.node_name_to_post_compute_output:
@@ -229,7 +229,7 @@ class SDKCodeExtractor(
         # construct SDK code
         op_struct = global_state.node_name_to_operation_structure[node.name]
 
-        statements: List[StatementT]
+        statements: list[StatementT]
         if node.name in global_state.no_op_node_names:
             var_name_or_expr = inputs[0]
             statements = []
@@ -268,14 +268,14 @@ class SDKCodeExtractor(
         feature_store_name: Optional[str] = None,
         feature_store_id: Optional[ObjectId] = None,
         database_details: Optional[DatabaseDetails] = None,
-        table_id_to_info: Optional[Dict[ObjectId, Dict[str, Any]]] = None,
+        table_id_to_info: Optional[dict[ObjectId, dict[str, Any]]] = None,
         output_id: Optional[ObjectId] = None,
         last_statement_callback: Optional[Any] = None,
         **kwargs: Any,
     ) -> SDKCodeGlobalState:
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
 
-        code_generation_config: Dict[str, Any] = {"to_use_saved_data": to_use_saved_data}
+        code_generation_config: dict[str, Any] = {"to_use_saved_data": to_use_saved_data}
         if feature_store_name:
             code_generation_config["feature_store_name"] = feature_store_name
         if feature_store_id:

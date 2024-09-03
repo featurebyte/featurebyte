@@ -3,10 +3,10 @@ Aggregation method model
 """
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Union, cast
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Optional, Union, cast
 
 from pydantic import Field
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal
 
 from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.enum import AggFunc, DBVarType
@@ -75,7 +75,7 @@ class SumAggFunc(BaseAggFunc):
     """SumAggFunc class"""
 
     type: Literal[AggFunc.SUM] = AggFunc.SUM
-    _var_type_map: ClassVar[Dict[DBVarType, DBVarType]] = {
+    _var_type_map: ClassVar[dict[DBVarType, DBVarType]] = {
         DBVarType.INT: DBVarType.INT,
         DBVarType.FLOAT: DBVarType.FLOAT,
         DBVarType.ARRAY: DBVarType.ARRAY,
@@ -94,7 +94,7 @@ class SumAggFunc(BaseAggFunc):
 class BaseNumAggFunc(BaseAggFunc):
     """BaseNumAggFunc class"""
 
-    _var_type_map: ClassVar[Dict[DBVarType, DBVarType]] = {
+    _var_type_map: ClassVar[dict[DBVarType, DBVarType]] = {
         DBVarType.INT: DBVarType.FLOAT,
         DBVarType.FLOAT: DBVarType.FLOAT,
         DBVarType.TIMEDELTA: DBVarType.FLOAT,

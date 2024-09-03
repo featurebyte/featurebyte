@@ -3,7 +3,6 @@ Tests functions/methods in routes/common directory
 """
 
 from datetime import datetime
-from typing import List
 from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
@@ -39,7 +38,7 @@ class Document(FeatureByteBaseDocumentModel):
         """Settings class"""
 
         collection_name = "col"
-        unique_constraints: List[UniqueValuesConstraint] = []
+        unique_constraints: list[UniqueValuesConstraint] = []
 
 
 class DocumentService(BaseDocumentService):
@@ -55,7 +54,7 @@ class NonAuditableDocument(FeatureByteBaseDocumentModel):
         """Settings class"""
 
         collection_name = "non_auditable_col"
-        unique_constraints: List[UniqueValuesConstraint] = []
+        unique_constraints: list[UniqueValuesConstraint] = []
         auditable = False
 
 

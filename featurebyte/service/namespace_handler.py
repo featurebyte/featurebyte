@@ -2,7 +2,7 @@
 Namespace handler
 """
 
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Union
 
 from bson import ObjectId
 
@@ -23,7 +23,7 @@ from featurebyte.service.view_construction import ViewConstructionService
 async def validate_version_and_namespace_consistency(
     base_model: FeatureByteCatalogBaseDocumentModel,
     base_namespace_model: FeatureByteCatalogBaseDocumentModel,
-    attributes: List[str],
+    attributes: list[str],
 ) -> None:
     """
     Validate whether the target & target namespace are consistent
@@ -45,13 +45,13 @@ async def validate_version_and_namespace_consistency(
     for attr in attributes:
         version_attr = getattr(base_model, attr)
         namespace_attr = getattr(base_namespace_model, attr)
-        version_attr_str: Union[str, List[str]] = f'"{version_attr}"'
-        namespace_attr_str: Union[str, List[str]] = f'"{namespace_attr}"'
-        if isinstance(version_attr, List):
+        version_attr_str: Union[str, list[str]] = f'"{version_attr}"'
+        namespace_attr_str: Union[str, list[str]] = f'"{namespace_attr}"'
+        if isinstance(version_attr, list):
             version_attr = sorted(version_attr)
             version_attr_str = [str(val) for val in version_attr]
 
-        if isinstance(namespace_attr, List):
+        if isinstance(namespace_attr, list):
             namespace_attr = sorted(namespace_attr)
             namespace_attr_str = [str(val) for val in namespace_attr]
 
@@ -77,7 +77,7 @@ class NamespaceHandler:
 
     async def prepare_graph_to_store(
         self, graph: QueryGraphModel, node: Node, sanitize_for_definition: bool = False
-    ) -> Tuple[QueryGraphModel, str]:
+    ) -> tuple[QueryGraphModel, str]:
         """
         Prepare the graph to store by pruning the query graph
 
@@ -127,7 +127,7 @@ class NamespaceHandler:
         str
         """
         # check whether table has been saved at persistent storage
-        table_id_to_info: Dict[ObjectId, Dict[str, Any]] = {}
+        table_id_to_info: dict[ObjectId, dict[str, Any]] = {}
         for table_id in document.table_ids:
             table = await self.table_service.get_document(document_id=table_id)
             table_id_to_info[table_id] = table.model_dump()

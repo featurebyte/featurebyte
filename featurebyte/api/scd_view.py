@@ -4,7 +4,7 @@ SCDView class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from pydantic import Field
 
@@ -53,12 +53,12 @@ class SCDView(View, GroupByMixin, RawMixin):
     # pydantic instance variables
     natural_key_column: str = Field(frozen=True)
     effective_timestamp_column: str = Field(frozen=True)
-    surrogate_key_column: Optional[str] = Field(frozen=True)
-    end_timestamp_column: Optional[str] = Field(frozen=True)
-    current_flag_column: Optional[str] = Field(frozen=True)
+    surrogate_key_column: str | None = Field(frozen=True)
+    end_timestamp_column: str | None = Field(frozen=True)
+    current_flag_column: str | None = Field(frozen=True)
 
     @property
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         return self.effective_timestamp_column
 
     @property
@@ -163,7 +163,7 @@ class SCDView(View, GroupByMixin, RawMixin):
             excluded_columns.append(self.end_timestamp_column)
         return excluded_columns
 
-    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_additional_lookup_parameters(self, offset: str | None = None) -> dict[str, Any]:
         return {
             "scd_parameters": {
                 "offset": offset,

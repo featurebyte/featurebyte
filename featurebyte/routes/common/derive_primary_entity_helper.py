@@ -4,7 +4,8 @@ Derive primary entity helper
 
 from __future__ import annotations
 
-from typing import Any, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from bson import ObjectId
 
@@ -49,7 +50,7 @@ class DerivePrimaryEntityHelper:
     async def derive_primary_entity_ids(
         self,
         entity_ids: Sequence[ObjectId],
-        entity_id_to_entity: Optional[dict[ObjectId, EntityModel]] = None,
+        entity_id_to_entity: dict[ObjectId, EntityModel] | None = None,
     ) -> list[ObjectId]:
         """
         Derive primary entity IDs from a list of entity IDs

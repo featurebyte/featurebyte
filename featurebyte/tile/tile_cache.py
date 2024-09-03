@@ -5,8 +5,9 @@ Module for TileCache and its implementors
 from __future__ import annotations
 
 import time
+from collections.abc import Coroutine, Iterator
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, Iterator, Optional, cast
+from typing import Any, Callable, cast
 
 from bson import ObjectId
 from sqlglot import expressions, parse_one
@@ -129,7 +130,7 @@ class TileCacheStatus:
             keys_with_tracker=subset_keys_with_tracker,
         )
 
-    def split_batches(self, batch_size: Optional[int] = None) -> Iterator[TileCacheStatus]:
+    def split_batches(self, batch_size: int | None = None) -> Iterator[TileCacheStatus]:
         """
         Split TileCacheStatus in batches to be processed in parallel
 
@@ -253,7 +254,7 @@ class TileCache:
     async def invoke_tile_manager(
         self,
         required_requests: list[OnDemandTileComputeRequest],
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """Interacts with FeatureListManager to compute tiles and update cache
 
@@ -290,7 +291,7 @@ class TileCache:
         nodes: list[Node],
         request_table_name: str,
         serving_names_mapping: dict[str, str] | None = None,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
     ) -> list[OnDemandTileComputeRequest]:
         """Query the entity tracker tables and obtain a list of tile computations that are required
 
@@ -358,7 +359,7 @@ class TileCache:
         request_id: str,
         request_table_name: str,
         tile_cache_status: TileCacheStatus,
-        done_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
+        done_callback: Callable[[], Coroutine[Any, Any, None]] | None = None,
     ) -> list[OnDemandTileComputeRequest]:
         # Construct a temp table and query from it whether each tile has updated cache
         tic = time.time()
@@ -414,7 +415,7 @@ class TileCache:
         graph: QueryGraph,
         nodes: list[Node],
         serving_names_mapping: dict[str, str] | None = None,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
     ) -> TileCacheStatus:
         """Get a TileCacheStatus object that corresponds to the graph and nodes
 
@@ -450,7 +451,7 @@ class TileCache:
         graph: QueryGraph,
         nodes: list[Node],
         serving_names_mapping: dict[str, str] | None,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
     ) -> dict[TileInfoKey, TileGenSql]:
         """Construct mapping from aggregation id to TileGenSql for easier manipulation
 

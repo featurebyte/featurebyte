@@ -5,7 +5,6 @@ FeatureManagerService class
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Set
 
 import pandas as pd
 from bson import ObjectId
@@ -87,7 +86,7 @@ class FeatureManagerService:
         self,
         session: BaseSession,
         feature_spec: OnlineFeatureSpec,
-        schedule_time: Optional[datetime] = None,
+        schedule_time: datetime | None = None,
         is_recreating_schema: bool = False,
     ) -> None:
         """
@@ -179,7 +178,7 @@ class FeatureManagerService:
 
     async def _get_unscheduled_aggregation_result_names(
         self, feature_spec: OnlineFeatureSpec
-    ) -> Set[str]:
+    ) -> set[str]:
         """
         Get the aggregation result names that are not yet scheduled
 
@@ -205,8 +204,8 @@ class FeatureManagerService:
 
     @staticmethod
     def _filter_precompute_queries(
-        feature_spec: OnlineFeatureSpec, includes: Optional[Set[str]]
-    ) -> List[OnlineStoreComputeQueryModel]:
+        feature_spec: OnlineFeatureSpec, includes: set[str] | None
+    ) -> list[OnlineStoreComputeQueryModel]:
         out = []
         for query in feature_spec.precompute_queries:
             if includes is None or query.result_name in includes:
@@ -286,7 +285,7 @@ class FeatureManagerService:
 
         # Determine the earliest tiles required to compute the features for offline store. This is
         # determined by the largest feature derivation window.
-        max_window_seconds: Optional[int] = None
+        max_window_seconds: int | None = None
         for window in tile_spec.windows:
             if window is None:
                 max_window_seconds = None
@@ -304,10 +303,10 @@ class FeatureManagerService:
             # For features with a bounded window, backfill only the required tiles
             start_ts = end_ts - timedelta(seconds=max_window_seconds)
 
-        start_ts_1: Optional[datetime] = None
-        end_ts_1: Optional[datetime] = None
-        start_ts_2: Optional[datetime] = None
-        end_ts_2: Optional[datetime] = None
+        start_ts_1: datetime | None = None
+        end_ts_1: datetime | None = None
+        start_ts_2: datetime | None = None
+        end_ts_2: datetime | None = None
 
         tile_model = await self.tile_registry_service.get_tile_model(
             tile_spec.tile_id, tile_spec.aggregation_id
@@ -406,7 +405,7 @@ class FeatureManagerService:
     async def _update_tile_feature_mapping_table(
         self,
         feature_spec: OnlineFeatureSpec,
-        unscheduled_result_names: Set[str],
+        unscheduled_result_names: set[str],
     ) -> None:
         """
         Insert records into tile-feature mapping table
@@ -424,7 +423,7 @@ class FeatureManagerService:
             await self.online_store_compute_query_service.create_document(query)
 
     async def online_disable(
-        self, session: Optional[BaseSession], feature_spec: OnlineFeatureSpec
+        self, session: BaseSession | None, feature_spec: OnlineFeatureSpec
     ) -> None:
         """
         Schedule both online and offline tile jobs
@@ -459,7 +458,7 @@ class FeatureManagerService:
         )
 
     async def remove_online_store_compute_queries(
-        self, aggregation_result_names: List[str]
+        self, aggregation_result_names: list[str]
     ) -> None:
         """
         Update the list of currently active online store compute queries
@@ -494,7 +493,7 @@ class FeatureManagerService:
                     pass
 
     async def remove_online_store_cleanup_jobs(
-        self, session: Optional[BaseSession], online_store_table_names: List[str]
+        self, session: BaseSession | None, online_store_table_names: list[str]
     ) -> None:
         """
         Stop online store cleanup jobs if no longer referenced by other online enabled features

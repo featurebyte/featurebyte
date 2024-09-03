@@ -1216,7 +1216,7 @@ def test_graph_interpreter__construct_tile_gen_sql__item_join_dimension_join_scd
         test_dir,
         "fixtures/graph/PRODUCT_vs_PRODUCTGROUP_item_TotalCost_across_customer_PostalCodes_28d.json",
     )
-    with open(fixture_path, "r") as file_handle:
+    with open(fixture_path) as file_handle:
         graph_dict = json.load(file_handle)
 
     query_graph = QueryGraph(**graph_dict)

@@ -5,7 +5,6 @@ This module contains base aggregator related class
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Type, Union
 
 from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.feature import Feature
@@ -27,7 +26,7 @@ class BaseAggregator(ABC):
     def __init__(
         self,
         view: View,
-        category: Optional[str],
+        category: str | None,
         entity_ids: list[PydanticObjectId],
         keys: list[str],
         serving_names: list[str],
@@ -47,7 +46,7 @@ class BaseAggregator(ABC):
 
     @property
     @abstractmethod
-    def supported_views(self) -> List[Type[View]]:
+    def supported_views(self) -> list[type[View]]:
         """
         Views that support this type of aggregation
 
@@ -68,7 +67,7 @@ class BaseAggregator(ABC):
         """
 
     @property
-    def not_supported_aggregation_methods(self) -> Optional[List[AggFunc]]:
+    def not_supported_aggregation_methods(self) -> list[AggFunc] | None:
         """
         Aggregators can override this to indicate aggregation methods that are not supported
 
@@ -78,7 +77,7 @@ class BaseAggregator(ABC):
         """
         return None
 
-    def _validate_method_and_value_column(self, method: str, value_column: Optional[str]) -> None:
+    def _validate_method_and_value_column(self, method: str, value_column: str | None) -> None:
         if method not in AggFunc.all():
             raise ValueError(f"Aggregation method not supported: {method}")
 
@@ -113,7 +112,7 @@ class BaseAggregator(ABC):
             )
 
     def get_output_var_type(
-        self, agg_method: AggFuncType, method: str, value_column: Optional[str]
+        self, agg_method: AggFuncType, method: str, value_column: str | None
     ) -> DBVarType:
         """
         Get output variable type for aggregation method.
@@ -155,7 +154,7 @@ class BaseAggregator(ABC):
         feature_name: str,
         aggregation_node: Node,
         method: str,
-        value_column: Optional[str],
+        value_column: str | None,
         fill_value: OptionalScalar,
         skip_fill_na: bool,
     ) -> Feature:
@@ -173,11 +172,11 @@ class BaseAggregator(ABC):
 
     def _fill_feature_or_target(
         self,
-        feature_or_target: Union[Feature, Target],
+        feature_or_target: Feature | Target,
         method: str,
         feature_or_target_name: str,
         fill_value: OptionalScalar,
-    ) -> Union[Feature, Target]:
+    ) -> Feature | Target:
         """
         Fill feature or target values as needed.
 

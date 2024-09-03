@@ -4,7 +4,7 @@ BaseDataController for API routes
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from bson import ObjectId
 
@@ -58,7 +58,7 @@ class BaseTableDocumentController(
     BaseTableDocumentController for API routes
     """
 
-    document_update_schema_class: Type[TableServiceUpdate]
+    document_update_schema_class: type[TableServiceUpdate]
     semantic_tag_rules: dict[str, SemanticType] = {
         "record_creation_timestamp_column": SemanticType.RECORD_CREATION_TIMESTAMP,
     }
@@ -297,7 +297,7 @@ class BaseTableDocumentController(
         return await self.get(document_id=document_id)
 
     async def update_column_entity(
-        self, document_id: ObjectId, column_name: str, entity_id: Optional[ObjectId]
+        self, document_id: ObjectId, column_name: str, entity_id: ObjectId | None
     ) -> TableDocumentT:
         """
         Update column entity
@@ -365,7 +365,7 @@ class BaseTableDocumentController(
         )
 
     async def update_column_description(
-        self, document_id: ObjectId, column_name: str, description: Optional[str]
+        self, document_id: ObjectId, column_name: str, description: str | None
     ) -> TableDocumentT:
         """
         Update column description
@@ -395,7 +395,7 @@ class BaseTableDocumentController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [
             (self.entity_service, {"primary_table_ids": document_id}),
             (

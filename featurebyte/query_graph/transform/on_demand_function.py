@@ -2,7 +2,7 @@
 On demand function (for DataBricks) related classes and functions.
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from pydantic import Field
 
@@ -48,8 +48,8 @@ class OnDemandFeatureFunctionGlobalState(FeatureByteBaseModel):
     On demand feature function global state
     """
 
-    node_name_to_post_compute_output: Dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
-    input_var_name_to_info: Dict[str, InputArgumentInfo] = Field(default_factory=dict)
+    node_name_to_post_compute_output: dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
+    input_var_name_to_info: dict[str, InputArgumentInfo] = Field(default_factory=dict)
     code_generation_config: OnDemandFunctionCodeGenConfig = Field(
         default_factory=OnDemandFunctionCodeGenConfig
     )
@@ -59,7 +59,7 @@ class OnDemandFeatureFunctionGlobalState(FeatureByteBaseModel):
     )
 
     @property
-    def sql_inputs_info(self) -> List[SQLInputArgumentInfo]:
+    def sql_inputs_info(self) -> list[SQLInputArgumentInfo]:
         """
         SQL inputs info
 
@@ -175,8 +175,8 @@ class OnDemandFeatureFunctionExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureFunctionGlobalState,
         node: Node,
-        input_node_names: List[str],
-    ) -> Tuple[List[str], bool]:
+        input_node_names: list[str],
+    ) -> tuple[list[str], bool]:
         return input_node_names, False
 
     def _in_compute(
@@ -217,7 +217,7 @@ class OnDemandFeatureFunctionExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureFunctionGlobalState,
         node: Node,
-        inputs: List[Any],
+        inputs: list[Any],
         skip_post: bool,
     ) -> VarNameExpressionInfo:
         if node.name in global_state.node_name_to_post_compute_output:

@@ -3,7 +3,8 @@ This module contains SQL operation related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union, cast
+from collections.abc import Sequence
+from typing import Any, ClassVar, Optional, Union, cast
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing_extensions import Literal
@@ -68,7 +69,7 @@ class ProjectNode(BaseNode):
     class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
-        columns: List[InColumnStr]
+        columns: list[InColumnStr]
 
     type: Literal[NodeType.PROJECT] = NodeType.PROJECT
     parameters: Parameters
@@ -78,14 +79,14 @@ class ProjectNode(BaseNode):
         return 1
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self.parameters.columns
 
     def prune(
         self: NodeT,
-        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
-        input_operation_structures: List[OperationStructure],
+        target_node_input_order_pairs: Sequence[tuple[NodeT, int]],
+        input_operation_structures: list[OperationStructure],
     ) -> NodeT:
         assert len(input_operation_structures) == 1
         input_op_struct = input_operation_structures[0]
@@ -102,14 +103,14 @@ class ProjectNode(BaseNode):
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         _ = global_state
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
         names = set(self.parameters.columns)
-        node_kwargs: Dict[str, Any] = {}
+        node_kwargs: dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
                 col.clone(node_names=col.node_names.union([self.name]))
@@ -133,12 +134,12 @@ class ProjectNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -169,9 +170,9 @@ class ProjectNode(BaseNode):
 
     def normalize_and_recreate_node(
         self,
-        input_node_hashes: List[str],
-        input_node_column_mappings: List[Dict[str, str]],
-    ) -> Tuple["ProjectNode", Dict[str, str]]:
+        input_node_hashes: list[str],
+        input_node_column_mappings: list[dict[str, str]],
+    ) -> tuple["ProjectNode", dict[str, str]]:
         remapped_node, column_name_remap = super().normalize_and_recreate_node(
             input_node_hashes=input_node_hashes,
             input_node_column_mappings=input_node_column_mappings,
@@ -200,7 +201,7 @@ class FilterNode(BaseNode):
         return 2
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         # the first input is the input view and the second input is the mask view
         if input_index == 0:
@@ -211,13 +212,13 @@ class FilterNode(BaseNode):
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         _ = global_state
         input_operation_info, mask_operation_info = inputs
         output_category = input_operation_info.output_category
-        node_kwargs: Dict[str, Any] = {}
+        node_kwargs: dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             other_node_names = {self.name}.union(mask_operation_info.all_node_names)
             node_kwargs["columns"] = [
@@ -252,12 +253,12 @@ class FilterNode(BaseNode):
 
     def _derive_python_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         node_output_type: NodeOutputType,
         node_output_category: NodeOutputCategory,
         to_reindex: bool,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expr = var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
@@ -277,12 +278,12 @@ class FilterNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         return self._derive_python_code(
             node_inputs=node_inputs,
             var_name_generator=var_name_generator,
@@ -293,10 +294,10 @@ class FilterNode(BaseNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         output = self._derive_python_code(
             node_inputs=node_inputs,
             var_name_generator=var_name_generator,
@@ -308,10 +309,10 @@ class FilterNode(BaseNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expr = var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
@@ -328,7 +329,7 @@ class FilterNode(BaseNode):
 class AssignColumnMixin:
     """AssignColumnMixin class"""
 
-    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
+    def resolve_node_pruned(self, input_node_names: list[str]) -> str:
         """
         Method used to resolve the situation when the node get pruned. As all the nodes only produce single
         output, we should only choose one node from the input nodes.
@@ -357,7 +358,7 @@ class AssignColumnMixin:
     def _construct_operation_structure(
         input_operation_info: OperationStructure,
         new_column_name: str,
-        columns: List[ViewDataColumn],
+        columns: list[ViewDataColumn],
         node_name: str,
         new_column_var_type: DBVarType,
     ) -> OperationStructure:
@@ -423,7 +424,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
         return True
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
@@ -434,7 +435,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # First input is a View
@@ -461,12 +462,12 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expr = node_inputs[0]
         assert not isinstance(var_name_expr, InfoDict)
         column_name = self.parameters.name
@@ -515,7 +516,7 @@ class LagNode(BaseSeriesOutputNode):
     class Parameters(FeatureByteBaseModel):
         """Parameters"""
 
-        entity_columns: List[InColumnStr]
+        entity_columns: list[InColumnStr]
         timestamp_column: InColumnStr
         offset: int
 
@@ -528,7 +529,7 @@ class LagNode(BaseSeriesOutputNode):
         return len(self.parameters.entity_columns) + 2
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         # this node has the following input structure:
         # [0] column to lag
@@ -543,17 +544,17 @@ class LagNode(BaseSeriesOutputNode):
         # entity column
         return [self.parameters.entity_columns[input_index - 1]]
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         col_name = var_name_expressions[0].as_input()
         entity_columns = ValueStr.create(self.parameters.entity_columns)
@@ -563,9 +564,9 @@ class LagNode(BaseSeriesOutputNode):
 
     def normalize_and_recreate_node(
         self,
-        input_node_hashes: List[str],
-        input_node_column_mappings: List[Dict[str, str]],
-    ) -> Tuple["LagNode", Dict[str, str]]:
+        input_node_hashes: list[str],
+        input_node_column_mappings: list[dict[str, str]],
+    ) -> tuple["LagNode", dict[str, str]]:
         remapped_node, column_name_remap = super().normalize_and_recreate_node(
             input_node_hashes=input_node_hashes,
             input_node_column_mappings=input_node_column_mappings,
@@ -612,11 +613,11 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
 
     def _get_aggregations(
         self,
-        columns: List[ViewDataColumn],
+        columns: list[ViewDataColumn],
         node_name: str,
-        other_node_names: Set[str],
+        other_node_names: set[str],
         output_var_type: DBVarType,
-    ) -> List[AggregationColumn]:
+    ) -> list[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
@@ -635,7 +636,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
             )
         ]
 
-    def _exclude_source_columns(self) -> List[str]:
+    def _exclude_source_columns(self) -> list[str]:
         cols = self.parameters.keys
         return [str(col) for col in cols]
 
@@ -643,18 +644,18 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
         return True
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -686,9 +687,9 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
 class BaseWindowAggregateParameters(BaseGroupbyParameters):
     """Common parameters for window aggregates"""
 
-    windows: List[Optional[str]]
+    windows: list[Optional[str]]
     timestamp: InColumnStr
-    names: List[OutColumnStr]
+    names: list[OutColumnStr]
     feature_job_setting: FeatureJobSetting
     offset: Optional[str] = Field(default=None)
 
@@ -729,11 +730,11 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
         return 1
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
-    def _exclude_source_columns(self) -> List[str]:
+    def _exclude_source_columns(self) -> list[str]:
         cols = self.parameters.keys + [self.parameters.timestamp]
         return [str(col) for col in cols]
 
@@ -742,11 +743,11 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
 
     def _get_aggregations(
         self,
-        columns: List[ViewDataColumn],
+        columns: list[ViewDataColumn],
         node_name: str,
-        other_node_names: Set[str],
+        other_node_names: set[str],
         output_var_type: DBVarType,
-    ) -> List[AggregationColumn]:
+    ) -> list[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
@@ -768,8 +769,8 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
 
     def prune(
         self: NodeT,
-        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
-        input_operation_structures: List[OperationStructure],
+        target_node_input_order_pairs: Sequence[tuple[NodeT, int]],
+        input_operation_structures: list[OperationStructure],
     ) -> NodeT:
         if target_node_input_order_pairs:
             required_columns = set().union(
@@ -793,12 +794,12 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -836,9 +837,9 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
 
     def normalize_and_recreate_node(
         self,
-        input_node_hashes: List[str],
-        input_node_column_mappings: List[Dict[str, str]],
-    ) -> Tuple["BaseWindowAggregateNode", Dict[str, str]]:
+        input_node_hashes: list[str],
+        input_node_column_mappings: list[dict[str, str]],
+    ) -> tuple["BaseWindowAggregateNode", dict[str, str]]:
         remapped_node, column_name_remap = super().normalize_and_recreate_node(
             input_node_hashes=input_node_hashes,
             input_node_column_mappings=input_node_column_mappings,
@@ -875,9 +876,9 @@ class GroupByNode(BaseWindowAggregateNode):
 
     def normalize_and_recreate_node(
         self,
-        input_node_hashes: List[str],
-        input_node_column_mappings: List[Dict[str, str]],
-    ) -> Tuple["GroupByNode", Dict[str, str]]:
+        input_node_hashes: list[str],
+        input_node_column_mappings: list[dict[str, str]],
+    ) -> tuple["GroupByNode", dict[str, str]]:
         remapped_node, column_name_remap = super().normalize_and_recreate_node(
             input_node_hashes, input_node_column_mappings
         )
@@ -913,11 +914,11 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
         return 1
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
-    def _exclude_source_columns(self) -> List[str]:
+    def _exclude_source_columns(self) -> list[str]:
         return [str(key) for key in self.parameters.keys]
 
     def _is_time_based(self) -> bool:
@@ -925,11 +926,11 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
 
     def _get_aggregations(
         self,
-        columns: List[ViewDataColumn],
+        columns: list[ViewDataColumn],
         node_name: str,
-        other_node_names: Set[str],
+        other_node_names: set[str],
         output_var_type: DBVarType,
-    ) -> List[AggregationColumn]:
+    ) -> list[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
@@ -950,12 +951,12 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         # Note: this node is a special case as the output of this node is not a complete SDK code.
         # Currently, `item_view.groupby(...).aggregate()` will generate ItemGroupbyNode + ProjectNode.
         # Output of ItemGroupbyNode is just an expression, the actual variable assignment
@@ -1024,8 +1025,8 @@ class EventLookupParameters(FeatureByteBaseModel):
 class LookupParameters(FeatureByteBaseModel):
     """Lookup NOde Parameters"""
 
-    input_column_names: List[InColumnStr]
-    feature_names: List[OutColumnStr]
+    input_column_names: list[InColumnStr]
+    feature_names: list[OutColumnStr]
     entity_column: InColumnStr
     serving_name: str
     entity_id: PydanticObjectId
@@ -1051,7 +1052,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
     parameters: LookupParameters
 
     # feature definition hash generation configuration
-    _normalize_nested_parameter_field_names: ClassVar[Optional[List[str]]] = [
+    _normalize_nested_parameter_field_names: ClassVar[Optional[list[str]]] = [
         "scd_parameters",
         "event_parameters",
     ]
@@ -1061,11 +1062,11 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         return 1
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
-    def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
+    def _get_parent_columns(self, columns: list[ViewDataColumn]) -> Optional[list[ViewDataColumn]]:
         parent_columns = [col for col in columns if col.name in self.parameters.input_column_names]
         return parent_columns
 
@@ -1077,11 +1078,11 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
 
     def _get_aggregations(
         self,
-        columns: List[ViewDataColumn],
+        columns: list[ViewDataColumn],
         node_name: str,
-        other_node_names: Set[str],
+        other_node_names: set[str],
         output_var_type: DBVarType,
-    ) -> List[AggregationColumn]:
+    ) -> list[AggregationColumn]:
         name_to_column = {col.name: col for col in columns}
         offset = None
         if self.parameters.scd_parameters:
@@ -1106,14 +1107,14 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
             )
         ]
 
-    def _exclude_source_columns(self) -> List[str]:
+    def _exclude_source_columns(self) -> list[str]:
         return [self.parameters.entity_column]
 
     def normalize_and_recreate_node(
         self,
-        input_node_hashes: List[str],
-        input_node_column_mappings: List[Dict[str, str]],
-    ) -> Tuple["BaseLookupNode", Dict[str, str]]:
+        input_node_hashes: list[str],
+        input_node_column_mappings: list[dict[str, str]],
+    ) -> tuple["BaseLookupNode", dict[str, str]]:
         remapped_node, column_name_remap = super().normalize_and_recreate_node(
             input_node_hashes=input_node_hashes,
             input_node_column_mappings=input_node_column_mappings,
@@ -1147,12 +1148,12 @@ class LookupNode(BaseLookupNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -1197,12 +1198,12 @@ class LookupTargetNode(BaseLookupNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -1243,7 +1244,7 @@ class JoinEventTableAttributesMetadata(FeatureByteBaseModel):
     """Metadata to track `item_view.join_event_table_attributes(...)` operation"""
 
     type: str = "join_event_table_attributes"
-    columns: List[str]
+    columns: list[str]
     event_suffix: Optional[str] = Field(default=None)
 
 
@@ -1252,10 +1253,10 @@ class JoinNodeParameters(FeatureByteBaseModel):
 
     left_on: str
     right_on: str
-    left_input_columns: List[InColumnStr]
-    left_output_columns: List[OutColumnStr]
-    right_input_columns: List[InColumnStr]
-    right_output_columns: List[OutColumnStr]
+    left_input_columns: list[InColumnStr]
+    left_output_columns: list[OutColumnStr]
+    right_input_columns: list[InColumnStr]
+    right_output_columns: list[OutColumnStr]
     join_type: Literal["left", "inner"]
     scd_parameters: Optional[SCDJoinParameters] = Field(default=None)
     metadata: Optional[Union[JoinMetadata, JoinEventTableAttributesMetadata]] = Field(
@@ -1269,7 +1270,7 @@ class JoinNodeParameters(FeatureByteBaseModel):
         "right_output_columns",
     )
     @classmethod
-    def _validate_columns_are_unique(cls, values: List[str]) -> List[str]:
+    def _validate_columns_are_unique(cls, values: list[str]) -> list[str]:
         if len(values) != len(set(values)):
             raise ValueError(f"Column names (values: {values}) must be unique!")
         return values
@@ -1292,14 +1293,14 @@ class JoinNode(BasePrunableNode):
     parameters: JoinNodeParameters
 
     # feature definition hash generation configuration
-    _normalize_nested_parameter_field_names: ClassVar[Optional[List[str]]] = ["scd_parameters"]
+    _normalize_nested_parameter_field_names: ClassVar[Optional[list[str]]] = ["scd_parameters"]
 
     @property
     def max_input_count(self) -> int:
         return 2
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         if input_index == 0:
             return list(set(self.parameters.left_input_columns).union([self.parameters.left_on]))
@@ -1307,8 +1308,8 @@ class JoinNode(BasePrunableNode):
 
     @staticmethod
     def _filter_and_reorder_columns(
-        input_columns: Sequence[str], output_columns: Sequence[str], available_columns: List[str]
-    ) -> Tuple[List[str], List[str]]:
+        input_columns: Sequence[str], output_columns: Sequence[str], available_columns: list[str]
+    ) -> tuple[list[str], list[str]]:
         # filter input & output columns using the available columns
         in_cols, out_cols = [], []
         in_to_out_col = {}
@@ -1328,8 +1329,8 @@ class JoinNode(BasePrunableNode):
 
     def prune(
         self: NodeT,
-        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
-        input_operation_structures: List[OperationStructure],
+        target_node_input_order_pairs: Sequence[tuple[NodeT, int]],
+        input_operation_structures: list[OperationStructure],
     ) -> NodeT:
         # Prune the join node parameters by using the available columns. If the input column is not found in the
         # input operation structure, remove it & its corresponding output column name from the join node parameters.
@@ -1360,13 +1361,13 @@ class JoinNode(BasePrunableNode):
             ]
         return self.clone(parameters=node_params)
 
-    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
+    def resolve_node_pruned(self, input_node_names: list[str]) -> str:
         # if this join node is pruned, use the first input node to resolve pruned node not found issue
         return input_node_names[0]
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         params = self.parameters
@@ -1440,12 +1441,12 @@ class JoinNode(BasePrunableNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_statements, left_var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -1488,12 +1489,12 @@ class JoinNode(BasePrunableNode):
 
     @staticmethod
     def _remap_output_columns(
-        input_columns: List[InColumnStr],
-        output_columns: List[OutColumnStr],
-        column_name_remap: Dict[str, str],
+        input_columns: list[InColumnStr],
+        output_columns: list[OutColumnStr],
+        column_name_remap: dict[str, str],
         input_nodes_hash: str,
         prefix: str,
-    ) -> Tuple[List[OutColumnStr], Dict[str, str]]:
+    ) -> tuple[list[OutColumnStr], dict[str, str]]:
         remapped_output_columns = []
         for left_in_col, left_out_cols in zip(input_columns, output_columns):
             remapped_out_col = f"{prefix}{input_nodes_hash}_{left_in_col}"
@@ -1503,9 +1504,9 @@ class JoinNode(BasePrunableNode):
 
     def normalize_and_recreate_node(
         self,
-        input_node_hashes: List[str],
-        input_node_column_mappings: List[Dict[str, str]],
-    ) -> Tuple["JoinNode", Dict[str, str]]:
+        input_node_hashes: list[str],
+        input_node_column_mappings: list[dict[str, str]],
+    ) -> tuple["JoinNode", dict[str, str]]:
         remapped_node, column_name_remap = super().normalize_and_recreate_node(
             input_node_hashes=input_node_hashes,
             input_node_column_mappings=input_node_column_mappings,
@@ -1592,7 +1593,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
         return 2
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         if input_index == 0:
             view_required_columns = [self.parameters.view_entity_column]
@@ -1612,7 +1613,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # First input is a View
@@ -1645,12 +1646,12 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         new_column_name = ValueStr.create(self.parameters.name)
         feature = var_name_expressions[1]
@@ -1696,7 +1697,7 @@ class TrackChangesNode(BaseNode):
         return 1
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return [
             self.parameters.natural_key_column,
@@ -1706,7 +1707,7 @@ class TrackChangesNode(BaseNode):
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         _ = global_state
@@ -1753,19 +1754,19 @@ class TrackChangesNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         raise NotImplementedError()
 
     def normalize_and_recreate_node(
         self,
-        input_node_hashes: List[str],
-        input_node_column_mappings: List[Dict[str, str]],
-    ) -> Tuple["TrackChangesNode", Dict[str, str]]:
+        input_node_hashes: list[str],
+        input_node_column_mappings: list[dict[str, str]],
+    ) -> tuple["TrackChangesNode", dict[str, str]]:
         remapped_node, column_name_remap = super().normalize_and_recreate_node(
             input_node_hashes=input_node_hashes,
             input_node_column_mappings=input_node_column_mappings,
@@ -1817,11 +1818,11 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         return 1
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
-    def _exclude_source_columns(self) -> List[str]:
+    def _exclude_source_columns(self) -> list[str]:
         return [str(key) for key in self.parameters.keys]
 
     def _is_time_based(self) -> bool:
@@ -1829,11 +1830,11 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
 
     def _get_aggregations(
         self,
-        columns: List[ViewDataColumn],
+        columns: list[ViewDataColumn],
         node_name: str,
-        other_node_names: Set[str],
+        other_node_names: set[str],
         output_var_type: DBVarType,
-    ) -> List[AggregationColumn]:
+    ) -> list[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
             AggregationColumn(
@@ -1863,12 +1864,12 @@ class AggregateAsAtNode(BaseAggregateAsAtNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         # Note: this node is a special case as the output of this node is not a complete SDK code.
         # Currently, `scd_view.groupby(...).aggregate_asat()` will generate AggregateAsAtNode + ProjectNode.
         # Output of AggregateAsAtNode is just an expression, the actual variable assignment
@@ -1908,12 +1909,12 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         # Note: this node is a special case as the output of this node is not a complete SDK code.
         # Currently, `scd_view.groupby(...).forward_aggregate_asat()` will generate
         # ForwardAggregateAsAtNode + ProjectNode. Output of ForwardAggregateAsAtNode is just an
@@ -1980,20 +1981,20 @@ class AliasNode(BaseNode):
         return True
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         _ = global_state
         input_operation_info = inputs[0]
         output_category = input_operation_info.output_category
 
-        node_kwargs: Dict[str, Any] = {}
+        node_kwargs: dict[str, Any] = {}
         new_name = self.parameters.name
         if output_category == NodeOutputCategory.VIEW:
             last_col = input_operation_info.columns[-1]
@@ -2022,12 +2023,12 @@ class AliasNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expr = var_name_expressions[0]
         statements, var_name = self._convert_expression_to_variable(
@@ -2053,19 +2054,19 @@ class AliasNode(BaseNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         # this is a no-op node for on-demand view, it should appear on the last node of the graph
         return [], node_inputs[0]
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         # this is a no-op node for on-demand function, it should appear on the last node of the graph
         return [], node_inputs[0]
 
@@ -2084,20 +2085,20 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         return True
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return inputs[0].series_output_dtype
 
     def _prepare_var_name_and_mask_var_name(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         node_output_category: NodeOutputCategory,
         mask_var_name_prefix: str = "mask",
-    ) -> Tuple[List[StatementT], VariableNameStr, VariableNameStr]:
+    ) -> tuple[list[StatementT], VariableNameStr, VariableNameStr]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         statements, var_name = self._convert_expression_to_variable(
             var_name_expression=var_name_expressions[0],
@@ -2119,12 +2120,12 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         statements, var_name, mask_var_name = self._prepare_var_name_and_mask_var_name(
             node_inputs=node_inputs,
             var_name_generator=var_name_generator,
@@ -2152,7 +2153,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
             # Since there is no single line in SDK code to generate conditional expression, we output info instead
             # and delay the generation of SDK code to the assign node. This method only generates the conditional part,
             # the assignment part will be generated in the assign node.
-            info_dict_data: Dict[str, Any] = {"value": self.parameters.value, "mask": mask_var_name}
+            info_dict_data: dict[str, Any] = {"value": self.parameters.value, "mask": mask_var_name}
             if is_series_assignment:
                 info_dict_data["value"] = value
                 info_dict_data["is_series_assignment"] = True
@@ -2168,10 +2169,10 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         statements, var_name, mask_var_name = self._prepare_var_name_and_mask_var_name(
             node_inputs=node_inputs,
             var_name_generator=var_name_generator,
@@ -2194,10 +2195,10 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         statements, var_name, flag_var_name = self._prepare_var_name_and_mask_var_name(
             node_inputs=node_inputs,
             var_name_generator=var_name_generator,

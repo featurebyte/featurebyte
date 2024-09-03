@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -86,7 +86,7 @@ def get_aggregation_result_names(
 
 
 def fill_version_placeholders(
-    template_expr: Expression, versions: Dict[str, int]
+    template_expr: Expression, versions: dict[str, int]
 ) -> expressions.Select:
     """
     Fill the version placeholders in the SQL template
@@ -113,7 +113,7 @@ def fill_version_placeholders(
 
 
 def fill_version_placeholders_for_query_set(
-    query_set: FeatureQuerySet, versions: Dict[str, int]
+    query_set: FeatureQuerySet, versions: dict[str, int]
 ) -> None:
     """
     Update an FeatureQuerySet in place to replace all feature version placeholders with concrete
@@ -136,8 +136,8 @@ def fill_version_placeholders_for_query_set(
 def construct_request_table_query(
     current_timestamp_expr: Expression,
     request_table_columns: list[str],
-    request_table_expr: Optional[expressions.Select] = None,
-    request_table_details: Optional[TableDetails] = None,
+    request_table_expr: expressions.Select | None = None,
+    request_table_details: TableDetails | None = None,
 ) -> expressions.Select:
     """
     Construct a Select expression for the request table
@@ -178,10 +178,10 @@ def get_online_store_retrieval_expr(
     source_info: SourceInfo,
     current_timestamp_expr: Expression,
     request_table_columns: list[str],
-    request_table_expr: Optional[expressions.Select] = None,
-    request_table_details: Optional[TableDetails] = None,
-    parent_serving_preparation: Optional[ParentServingPreparation] = None,
-) -> Tuple[expressions.Select, list[str]]:
+    request_table_expr: expressions.Select | None = None,
+    request_table_details: TableDetails | None = None,
+    parent_serving_preparation: ParentServingPreparation | None = None,
+) -> tuple[expressions.Select, list[str]]:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
 
@@ -238,7 +238,7 @@ def get_online_store_retrieval_expr(
 
 
 def get_current_timestamp_expr(
-    request_timestamp: Optional[datetime], source_info: SourceInfo
+    request_timestamp: datetime | None, source_info: SourceInfo
 ) -> Expression:
     """
     Get the sql expression to use for the current timestamp
@@ -264,9 +264,9 @@ def get_current_timestamp_expr(
 
 def add_concatenated_serving_names(
     select_expr: expressions.Select,
-    concatenate_serving_names: Optional[list[str]],
+    concatenate_serving_names: list[str] | None,
     source_type: SourceType,
-    serving_names_table_alias: Optional[str] = None,
+    serving_names_table_alias: str | None = None,
 ) -> expressions.Select:
     """
     Add concatenated serving name column to the provided Select statement which is assumed to
@@ -319,14 +319,14 @@ def get_online_features_query_set(
     source_info: SourceInfo,
     request_table_columns: list[str],
     output_feature_names: list[str],
-    request_table_name: Optional[str],
-    request_table_expr: Optional[expressions.Select] = None,
-    request_table_details: Optional[TableDetails] = None,
-    request_timestamp: Optional[datetime] = None,
-    parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    output_table_details: Optional[TableDetails] = None,
+    request_table_name: str | None,
+    request_table_expr: expressions.Select | None = None,
+    request_table_details: TableDetails | None = None,
+    request_timestamp: datetime | None = None,
+    parent_serving_preparation: ParentServingPreparation | None = None,
+    output_table_details: TableDetails | None = None,
     output_include_row_index: bool = False,
-    concatenate_serving_names: Optional[list[str]] = None,
+    concatenate_serving_names: list[str] | None = None,
 ) -> FeatureQuerySet:
     """
     Construct a FeatureQuerySet object to compute the online features
@@ -461,7 +461,7 @@ class TemporaryBatchRequestTable(FeatureByteBaseModel):
     materialization.
     """
 
-    column_names: List[str]
+    column_names: list[str]
     table_details: TableDetails
 
 
@@ -469,14 +469,14 @@ async def get_online_features(
     session: BaseSession,
     graph: QueryGraph,
     nodes: list[Node],
-    request_data: Union[pd.DataFrame, BatchRequestTableModel, TemporaryBatchRequestTable],
+    request_data: pd.DataFrame | BatchRequestTableModel | TemporaryBatchRequestTable,
     source_info: SourceInfo,
     online_store_table_version_service: OnlineStoreTableVersionService,
-    parent_serving_preparation: Optional[ParentServingPreparation] = None,
-    output_table_details: Optional[TableDetails] = None,
-    request_timestamp: Optional[datetime] = None,
-    concatenate_serving_names: Optional[list[str]] = None,
-) -> Optional[List[Dict[str, Any]]]:
+    parent_serving_preparation: ParentServingPreparation | None = None,
+    output_table_details: TableDetails | None = None,
+    request_timestamp: datetime | None = None,
+    concatenate_serving_names: list[str] | None = None,
+) -> list[dict[str, Any]] | None:
     """
     Get online features
 

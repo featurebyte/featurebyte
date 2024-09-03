@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional
 
 from numpy import format_float_positional
 from sqlglot import expressions
@@ -84,7 +83,7 @@ class BaseAdapter(ABC):
     @classmethod
     @abstractmethod
     def str_trim(
-        cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
+        cls, expr: Expression, character: str | None, side: Literal["left", "right", "both"]
     ) -> Expression:
         """
         Expression to trim leading and / or trailing characters from string
@@ -228,7 +227,7 @@ class BaseAdapter(ABC):
     @classmethod
     def construct_key_value_aggregation_sql(
         cls,
-        point_in_time_column: Optional[str],
+        point_in_time_column: str | None,
         serving_names: list[str],
         value_by: str,
         agg_result_names: list[str],
@@ -758,10 +757,10 @@ class BaseAdapter(ABC):
     def group_by(
         cls,
         input_expr: Select,
-        select_keys: List[Expression],
-        agg_exprs: List[Expression],
-        keys: List[Expression],
-        vector_aggregate_columns: Optional[List[VectorAggColumn]] = None,
+        select_keys: list[Expression],
+        agg_exprs: list[Expression],
+        keys: list[Expression],
+        vector_aggregate_columns: list[VectorAggColumn] | None = None,
         quote_vector_agg_aliases: bool = True,
     ) -> Select:
         """
@@ -920,7 +919,7 @@ class BaseAdapter(ABC):
     def alter_table_add_columns(
         cls,
         table: expressions.Table,
-        columns: List[expressions.ColumnDef],
+        columns: list[expressions.ColumnDef],
     ) -> str:
         """
         Generate a query to add columns to an existing table
@@ -962,7 +961,7 @@ class BaseAdapter(ABC):
         return expressions.Anonymous(this="COUNT_IF", expressions=[condition])
 
     @classmethod
-    def cast_to_string(cls, expr: Expression, dtype: Optional[DBVarType]) -> Expression:
+    def cast_to_string(cls, expr: Expression, dtype: DBVarType | None) -> Expression:
         """
         Construct a CAST expression to convert the input expression to a string
 
@@ -1019,7 +1018,7 @@ class BaseAdapter(ABC):
 
     @classmethod
     def lag_ignore_nulls(
-        cls, expr: Expression, partition_by: List[Expression], order: Expression
+        cls, expr: Expression, partition_by: list[Expression], order: Expression
     ) -> Expression:
         """
         Construct a LAG window function that ignores nulls

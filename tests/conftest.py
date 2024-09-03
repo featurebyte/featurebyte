@@ -3,8 +3,8 @@ Common fixture for both unit and integration tests
 """
 
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Tuple
 from unittest.mock import patch
 
 import pytest
@@ -44,7 +44,7 @@ def test_directory_fixture():
 
 
 @pytest_asyncio.fixture(name="mongo_persistent")
-async def mongo_persistent_fixture() -> Tuple[MongoDB, AsyncMongoMockClient]:
+async def mongo_persistent_fixture() -> tuple[MongoDB, AsyncMongoMockClient]:
     """
     Patched MongoDB fixture for testing
 

@@ -4,7 +4,8 @@ EventTable API payload schema
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Sequence
+from collections.abc import Sequence
+from typing import Literal
 
 from pydantic import Field, StrictStr, field_validator, model_validator
 
@@ -25,9 +26,9 @@ class EventTableCreate(TableCreate):
     type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
     event_id_column: StrictStr
     event_timestamp_column: StrictStr
-    event_timestamp_timezone_offset: Optional[StrictStr] = Field(default=None)
-    event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(default=None)
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    event_timestamp_timezone_offset: StrictStr | None = Field(default=None)
+    event_timestamp_timezone_offset_column: StrictStr | None = Field(default=None)
+    default_feature_job_setting: FeatureJobSetting | None = Field(default=None)
 
     # pydantic validators
     _special_columns_validator = field_validator(
@@ -40,13 +41,13 @@ class EventTableCreate(TableCreate):
 
     @field_validator("event_timestamp_timezone_offset")
     @staticmethod
-    def _validate_event_timestamp_timezone_offset(value: Optional[str]) -> Optional[str]:
+    def _validate_event_timestamp_timezone_offset(value: str | None) -> str | None:
         if value is not None:
             validate_timezone_offset_string(value)
         return value
 
     @model_validator(mode="after")
-    def _validate_event_timestamp_timezone_offset_parameters(self) -> "EventTableCreate":
+    def _validate_event_timestamp_timezone_offset_parameters(self) -> EventTableCreate:
         if (
             self.event_timestamp_timezone_offset is not None
             and self.event_timestamp_timezone_offset_column is not None
@@ -70,7 +71,7 @@ class EventTableUpdateMixin(FeatureByteBaseModel):
     EventTable specific update schema
     """
 
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    default_feature_job_setting: FeatureJobSetting | None = Field(default=None)
 
 
 class EventTableUpdate(EventTableUpdateMixin, TableUpdate):

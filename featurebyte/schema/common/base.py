@@ -4,8 +4,9 @@ Base info related schema
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, List, Optional, Sequence
+from typing import Any
 
 from pydantic import Field
 
@@ -26,8 +27,8 @@ class BaseInfo(BaseBriefInfo):
     """
 
     created_at: datetime
-    updated_at: Optional[datetime] = Field(default=None)
-    description: Optional[str] = Field(default=None)
+    updated_at: datetime | None = Field(default=None)
+    description: str | None = Field(default=None)
 
 
 class BaseDocumentServiceUpdateSchema(FeatureByteBaseModel):
@@ -40,7 +41,7 @@ class BaseDocumentServiceUpdateSchema(FeatureByteBaseModel):
         Unique constraints checking during update
         """
 
-        unique_constraints: List[UniqueValuesConstraint] = []
+        unique_constraints: list[UniqueValuesConstraint] = []
 
 
 class DocumentSoftDeleteUpdate(BaseDocumentServiceUpdateSchema):
@@ -73,4 +74,4 @@ class DescriptionUpdate(FeatureByteBaseModel):
     Description update schema
     """
 
-    description: Optional[str]
+    description: str | None

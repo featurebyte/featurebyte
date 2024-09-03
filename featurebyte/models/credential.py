@@ -5,12 +5,11 @@ Document model for stored credentials
 import base64
 import json
 import os
-from typing import Any, Callable, ClassVar, Dict, List, Literal, Optional, Union
+from typing import Annotated, Any, Callable, ClassVar, Literal, Optional, Union
 
 import pymongo
 from cryptography.fernet import Fernet
 from pydantic import BaseModel, Field, Strict, StrictStr, model_validator
-from typing_extensions import Annotated
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import StrEnum
@@ -233,7 +232,7 @@ class ServiceAccountCredentialMixin(FeatureByteBaseModel):
     Mixin for google credential.
     """
 
-    service_account_info: Union[Dict[str, str], StrictStr] = Field(
+    service_account_info: Union[dict[str, str], StrictStr] = Field(
         description="Service account information used for connecting to your GCS store."
     )
 
@@ -338,7 +337,7 @@ class GCSStorageCredential(BaseStorageCredential, ServiceAccountCredentialMixin)
 
     # instance variables
     type: Literal[StorageCredentialType.GCS] = StorageCredentialType.GCS
-    service_account_info: Union[Dict[str, str], StrictStr] = Field(
+    service_account_info: Union[dict[str, str], StrictStr] = Field(
         description="Service account information used for connecting to your GCS store."
     )
 
@@ -414,7 +413,7 @@ class CredentialModel(FeatureByteBaseDocumentModel):
         """
 
         collection_name = "credential"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

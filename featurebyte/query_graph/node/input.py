@@ -4,11 +4,12 @@ This module contains SQL operation related to input node
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from abc import abstractmethod
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Annotated, Any, ClassVar, Optional, Union
 
 from bson import ObjectId
 from pydantic import BaseModel, Field, model_validator
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -53,13 +54,13 @@ class SampleParameters(FeatureByteBaseModel):
 class BaseInputNodeParameters(FeatureByteBaseModel):
     """BaseInputNodeParameters"""
 
-    columns: List[ColumnSpec]
+    columns: list[ColumnSpec]
     table_details: TableDetails
     feature_store_details: InputNodeFeatureStoreDetails
     sample_parameters: Optional[SampleParameters] = Field(default=None, exclude=True)
 
     # class variable
-    _source_type_to_import: ClassVar[Dict[SourceType, ClassEnum]] = {
+    _source_type_to_import: ClassVar[dict[SourceType, ClassEnum]] = {
         SourceType.SNOWFLAKE: ClassEnum.SNOWFLAKE_DETAILS,
         SourceType.DATABRICKS: ClassEnum.DATABRICK_DETAILS,
         SourceType.DATABRICKS_UNITY: ClassEnum.DATABRICK_DETAILS,
@@ -129,7 +130,7 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
             ),
         )
 
-    def extract_columns_info_objects(self) -> List[ObjectClass]:
+    def extract_columns_info_objects(self) -> list[ObjectClass]:
         """
         Construct list of column info objects for SDK code generation
 
@@ -151,7 +152,7 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
         """
 
     @abstractmethod
-    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: dict[str, Any]) -> dict[str, Any]:
         """
         Extract other constructor parameters used in SDK code generation
 
@@ -167,7 +168,7 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
 
     @abstractmethod
     def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: dict[PydanticObjectId, dict[str, Any]]
     ) -> Optional[CommentStr]:
         """
         Construct comment for the input node
@@ -210,11 +211,11 @@ class SourceTableInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "table"
 
-    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: dict[str, Any]) -> dict[str, Any]:
         return {}
 
     def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: dict[PydanticObjectId, dict[str, Any]]
     ) -> Optional[CommentStr]:
         return None
 
@@ -233,7 +234,7 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
 
     @model_validator(mode="before")
     @classmethod
-    def _convert_node_parameters_format(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_node_parameters_format(cls, values: dict[str, Any]) -> dict[str, Any]:
         # DEV-556: converted older record (parameters) into a newer format
         if "dbtable" in values:
             values["table_details"] = values["dbtable"]
@@ -247,7 +248,7 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "event_table"
 
-    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: dict[str, Any]) -> dict[str, Any]:
         return {
             "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "event_id_column": self.id_column,
@@ -256,7 +257,7 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
         }
 
     def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: dict[PydanticObjectId, dict[str, Any]]
     ) -> Optional[CommentStr]:
         output = None
         if self.id:
@@ -279,7 +280,7 @@ class ItemTableInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "item_table"
 
-    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: dict[str, Any]) -> dict[str, Any]:
         return {
             "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "item_id_column": self.id_column,
@@ -289,7 +290,7 @@ class ItemTableInputNodeParameters(BaseInputNodeParameters):
         }
 
     def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: dict[PydanticObjectId, dict[str, Any]]
     ) -> Optional[CommentStr]:
         output = None
         if self.id and self.event_table_id:
@@ -313,7 +314,7 @@ class DimensionTableInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "dimension_table"
 
-    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: dict[str, Any]) -> dict[str, Any]:
         return {
             "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "dimension_id_column": self.id_column,
@@ -321,7 +322,7 @@ class DimensionTableInputNodeParameters(BaseInputNodeParameters):
         }
 
     def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: dict[PydanticObjectId, dict[str, Any]]
     ) -> Optional[CommentStr]:
         output = None
         if self.id:
@@ -350,7 +351,7 @@ class SCDTableInputNodeParameters(BaseInputNodeParameters):
     def variable_name_prefix(self) -> str:
         return "scd_table"
 
-    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_other_constructor_parameters(self, table_info: dict[str, Any]) -> dict[str, Any]:
         return {
             "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "natural_key_column": self.natural_key_column,
@@ -362,7 +363,7 @@ class SCDTableInputNodeParameters(BaseInputNodeParameters):
         }
 
     def construct_comment(
-        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+        self, table_id_to_info: dict[PydanticObjectId, dict[str, Any]]
     ) -> Optional[CommentStr]:
         output = None
         if self.id:
@@ -392,7 +393,7 @@ class InputNode(BaseNode):
     parameters: InputNodeParameters
 
     # class variable
-    _table_type_to_table_class_enum: ClassVar[Dict[TableDataType, ClassEnum]] = {
+    _table_type_to_table_class_enum: ClassVar[dict[TableDataType, ClassEnum]] = {
         TableDataType.SOURCE_TABLE: ClassEnum.SOURCE_TABLE,
         TableDataType.EVENT_TABLE: ClassEnum.EVENT_TABLE,
         TableDataType.ITEM_TABLE: ClassEnum.ITEM_TABLE,
@@ -405,13 +406,13 @@ class InputNode(BaseNode):
         return 0
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         _ = global_state
@@ -435,13 +436,13 @@ class InputNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        statements: List[StatementT] = []
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
+        statements: list[StatementT] = []
         table_type = self.parameters.type
         table_class_enum = self._table_type_to_table_class_enum[table_type]
 

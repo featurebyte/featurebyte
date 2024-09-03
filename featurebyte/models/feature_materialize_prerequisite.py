@@ -5,7 +5,7 @@ FeatureMaterializePrerequisiteModel
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Literal
+from typing import Literal
 
 from pydantic import Field
 from pymongo import IndexModel
@@ -38,7 +38,7 @@ class FeatureMaterializePrerequisite(FeatureByteCatalogBaseDocumentModel):
 
     offline_store_feature_table_id: PydanticObjectId
     scheduled_job_ts: datetime
-    completed: List[PrerequisiteTileTask] = Field(default_factory=list)
+    completed: list[PrerequisiteTileTask] = Field(default_factory=list)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

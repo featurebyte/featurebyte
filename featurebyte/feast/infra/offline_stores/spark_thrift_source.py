@@ -3,7 +3,8 @@ Spark Thrift Server Data Source
 """
 
 import json
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, cast
+from collections.abc import Iterable
+from typing import Any, Callable, Optional, cast
 
 from feast.data_source import DataSource
 from feast.protos.feast.core.DataSource_pb2 import DataSource as DataSourceProto
@@ -28,9 +29,9 @@ class SparkThriftSource(DataSource):
         table: str,
         timestamp_field: Optional[str] = None,
         created_timestamp_column: Optional[str] = None,
-        field_mapping: Optional[Dict[str, str]] = None,
+        field_mapping: Optional[dict[str, str]] = None,
         description: Optional[str] = "",
-        tags: Optional[Dict[str, str]] = None,
+        tags: Optional[dict[str, str]] = None,
         owner: Optional[str] = "",
         date_partition_column: Optional[str] = None,
     ):
@@ -126,9 +127,9 @@ class SparkThriftSource(DataSource):
     def source_datatype_to_feast_value_type() -> Callable[[str], ValueType]:
         return spark_to_feast_value_type
 
-    def get_table_column_names_and_types(self, config: RepoConfig) -> Iterable[Tuple[str, str]]:
+    def get_table_column_names_and_types(self, config: RepoConfig) -> Iterable[tuple[str, str]]:
         return cast(
-            Iterable[Tuple[str, str]],
+            Iterable[tuple[str, str]],
             config.offline_store.get_table_column_names_and_types(self.get_table_query_string()),
         )
 

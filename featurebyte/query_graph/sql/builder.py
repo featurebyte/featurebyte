@@ -5,7 +5,8 @@ Module for SQL syntax tree builder
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Iterable, Optional, Type
+from collections.abc import Iterable
+from typing import Any
 
 from featurebyte.common.path_util import import_submodules
 from featurebyte.query_graph.enum import NodeType
@@ -30,11 +31,11 @@ class NodeRegistry:
     """Registry of mapping between query graph Node and SQLNode"""
 
     def __init__(self) -> None:
-        self.ast_classes_by_query: dict[NodeType, set[Type[SQLNode]]] = defaultdict(set)
+        self.ast_classes_by_query: dict[NodeType, set[type[SQLNode]]] = defaultdict(set)
         for _, cls in self.iterate_sql_nodes():
             self.register_sql_node(cls)
 
-    def add(self, node_type: NodeType, ast_node_cls: Type[SQLNode]) -> None:
+    def add(self, node_type: NodeType, ast_node_cls: type[SQLNode]) -> None:
         """Add a query graph node to SQLNode mapping
 
         Parameters
@@ -46,7 +47,7 @@ class NodeRegistry:
         """
         self.ast_classes_by_query[node_type].add(ast_node_cls)
 
-    def get_sql_node_classes(self, node_type: NodeType) -> set[Type[SQLNode]] | None:
+    def get_sql_node_classes(self, node_type: NodeType) -> set[type[SQLNode]] | None:
         """Retrieve a set of candidate classes corresponding to the query node type
 
         Parameters
@@ -60,7 +61,7 @@ class NodeRegistry:
         """
         return self.ast_classes_by_query.get(node_type, set())
 
-    def register_sql_node(self, sql_node_cls: Type[SQLNode]) -> None:
+    def register_sql_node(self, sql_node_cls: type[SQLNode]) -> None:
         """Register a SQLNode subclass
 
         Parameters
@@ -82,7 +83,7 @@ class NodeRegistry:
             self.add(node_type, sql_node_cls)
 
     @classmethod
-    def iterate_sql_nodes(cls) -> Iterable[tuple[str, Type[SQLNode]]]:
+    def iterate_sql_nodes(cls) -> Iterable[tuple[str, type[SQLNode]]]:
         """Iterate subclasses of SQLNode in the ast subpackage
 
         Yields
@@ -116,9 +117,9 @@ class SQLOperationGraph:
         sql_type: SQLType,
         source_info: SourceInfo,
         to_filter_scd_by_current_flag: bool = False,
-        event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
-        aggregation_specs: Optional[dict[str, list[AggregationSpec]]] = None,
-        on_demand_entity_filters: Optional[OnDemandEntityFilters] = None,
+        event_table_timestamp_filter: EventTableTimestampFilter | None = None,
+        aggregation_specs: dict[str, list[AggregationSpec]] | None = None,
+        on_demand_entity_filters: OnDemandEntityFilters | None = None,
     ) -> None:
         self.sql_nodes: dict[str, SQLNode | TableNode] = {}
         self.query_graph = query_graph

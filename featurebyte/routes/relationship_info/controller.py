@@ -2,7 +2,7 @@
 RelationshipInfo controller
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from bson import ObjectId
 
@@ -97,7 +97,7 @@ class RelationshipInfoController(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: Optional[List[Tuple[str, SortDir]]] = None,
+        sort_by: Optional[list[tuple[str, SortDir]]] = None,
         search: Optional[str] = None,
         name: Optional[str] = None,
     ) -> RelationshipInfoList:
@@ -122,7 +122,7 @@ class RelationshipInfoController(
         RelationshipInfoList
             List of RelationshipInfo objects
         """
-        params: Dict[str, Any] = {"search": search, "name": name}
+        params: dict[str, Any] = {"search": search, "name": name}
         return await self.list(
             page=page,
             page_size=page_size,

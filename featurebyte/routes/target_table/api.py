@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from typing import Optional, cast
+from typing import cast
 
 from fastapi import Form, Request, UploadFile
 from starlette.responses import StreamingResponse
@@ -101,7 +101,7 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
     async def create_target_table(
         request: Request,
         payload: str = Form(),
-        observation_set: Optional[UploadFile] = None,
+        observation_set: UploadFile | None = None,
     ) -> Task:
         """
         Create TargetTable by submitting a materialization task
@@ -134,10 +134,10 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         request: Request,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
-        sort_by: Optional[str] = SortByQuery,
-        sort_dir: Optional[SortDir] = SortDirQuery,
-        search: Optional[str] = SearchQuery,
-        name: Optional[str] = NameQuery,
+        sort_by: str | None = SortByQuery,
+        sort_dir: SortDir | None = SortDirQuery,
+        search: str | None = SearchQuery,
+        name: str | None = NameQuery,
     ) -> TargetTableList:
         """
         List TargetTables
@@ -158,9 +158,9 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
         target_table_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
-        sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[SortDir] = SortDirQuery,
-        search: Optional[str] = SearchQuery,
+        sort_by: str | None = AuditLogSortByQuery,
+        sort_dir: SortDir | None = SortDirQuery,
+        search: str | None = SearchQuery,
     ) -> AuditDocumentList:
         """
         List TargetTable audit logs

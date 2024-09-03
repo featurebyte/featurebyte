@@ -5,8 +5,9 @@ PreviewService class
 from __future__ import annotations
 
 import warnings
+from collections.abc import Coroutine
 from datetime import datetime
-from typing import Any, Callable, Coroutine, Optional, Tuple, Type, cast
+from typing import Any, Callable, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -54,8 +55,8 @@ class PreviewService:
         self.query_cache_manager_service = query_cache_manager_service
 
     async def _get_feature_store_session(
-        self, graph: QueryGraph, node_name: str, feature_store_id: Optional[ObjectId]
-    ) -> Tuple[FeatureStoreModel, BaseSession]:
+        self, graph: QueryGraph, node_name: str, feature_store_id: ObjectId | None
+    ) -> tuple[FeatureStoreModel, BaseSession]:
         """
         Get feature store and session from a graph
 
@@ -99,7 +100,7 @@ class PreviewService:
     @classmethod
     async def _execute_query(
         cls, session: BaseSession, query: str, allow_long_running: bool
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         if allow_long_running:
             result = await session.execute_query_long_running(query)
         else:
@@ -109,7 +110,7 @@ class PreviewService:
     async def _get_or_cache_table(
         self,
         session: BaseSession,
-        feature_store_id: Optional[ObjectId],
+        feature_store_id: ObjectId | None,
         table_expr: Select,
     ) -> str:
         if feature_store_id is None:
@@ -127,10 +128,10 @@ class PreviewService:
     async def _get_or_cache_dataframe(
         self,
         session: BaseSession,
-        feature_store_id: Optional[ObjectId],
+        feature_store_id: ObjectId | None,
         query: str,
         allow_long_running: bool,
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         # No caching possible without feature_store_id
         if feature_store_id is None:
             return await self._execute_query(session, query, allow_long_running)
@@ -294,7 +295,7 @@ class PreviewService:
         sample: FeatureStoreSample,
         size: int,
         seed: int,
-        columns_batch_size: Optional[int] = None,
+        columns_batch_size: int | None = None,
         drop_all_null_stats: bool = True,
         allow_long_running: bool = True,
         sample_on_primary_table: bool = False,
@@ -425,7 +426,7 @@ class PreviewService:
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
-        completion_callback: Optional[Callable[[int], Coroutine[Any, Any, None]]] = None,
+        completion_callback: Callable[[int], Coroutine[Any, Any, None]] | None = None,
     ) -> dict[str, dict[Any, int]]:
         """
         Get value counts for a column
@@ -535,9 +536,9 @@ class PreviewService:
         query: str,
         column_name: str,
         column_dtype: DBVarType,
-        feature_store_id: Optional[ObjectId],
+        feature_store_id: ObjectId | None,
         done_callback: Callable[[], Coroutine[Any, Any, None]],
-    ) -> Tuple[str, dict[Any, int]]:
+    ) -> tuple[str, dict[Any, int]]:
         session = await session.clone_if_not_threadsafe()
         df_result = await self._get_or_cache_dataframe(
             session, feature_store_id, query, allow_long_running=True
@@ -547,7 +548,7 @@ class PreviewService:
         output = df_result.set_index("key")["count"].to_dict()  # type: ignore
 
         # Cast int and float to native types
-        cast_type: Optional[Type[int] | Type[float]]
+        cast_type: type[int] | type[float] | None
         if column_dtype == DBVarType.INT:
             cast_type = int
         elif column_dtype == DBVarType.FLOAT:
@@ -571,10 +572,10 @@ class PreviewService:
         session: BaseSession,
         graph: QueryGraph,
         node_name: str,
-        feature_store_id: Optional[ObjectId],
-        from_timestamp: Optional[datetime] = None,
-        to_timestamp: Optional[datetime] = None,
-        timestamp_column: Optional[str] = None,
+        feature_store_id: ObjectId | None,
+        from_timestamp: datetime | None = None,
+        to_timestamp: datetime | None = None,
+        timestamp_column: str | None = None,
         allow_long_running: bool = True,
     ) -> int:
         query = GraphInterpreter(

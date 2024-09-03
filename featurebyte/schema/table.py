@@ -4,8 +4,6 @@ Table model's attribute payload schema
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from bson import ObjectId
 from pydantic import Field, StrictStr, field_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -25,12 +23,12 @@ class TableCreate(FeatureByteBaseModel):
     TableService create schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     tabular_source: TabularSource
-    columns_info: List[ColumnSpecWithDescription]
-    record_creation_timestamp_column: Optional[StrictStr] = Field(default=None)
-    description: Optional[StrictStr] = Field(default=None)
+    columns_info: list[ColumnSpecWithDescription]
+    record_creation_timestamp_column: StrictStr | None = Field(default=None)
+    description: StrictStr | None = Field(default=None)
 
     # pydantic validators
     _columns_info_validator = field_validator("columns_info")(columns_info_validator)
@@ -70,12 +68,12 @@ class TableUpdate(FeatureByteBaseModel):
     Update table payload schema
     """
 
-    status: Optional[TableStatus] = Field(default=None)
-    record_creation_timestamp_column: Optional[StrictStr] = Field(default=None)
+    status: TableStatus | None = Field(default=None)
+    record_creation_timestamp_column: StrictStr | None = Field(default=None)
 
     # Update of columns info is deprecated and will be removed in release 0.5.0
     # See https://featurebyte.atlassian.net/browse/DEV-2000
-    columns_info: Optional[List[ColumnInfo]] = Field(default=None)
+    columns_info: list[ColumnInfo] | None = Field(default=None)
 
 
 class TableServiceUpdate(TableUpdate, BaseDocumentServiceUpdateSchema):
@@ -92,7 +90,7 @@ class TableColumnsInfoUpdate(BaseDocumentServiceUpdateSchema):
     a special schema is created for columns_info update.
     """
 
-    columns_info: Optional[List[ColumnInfo]] = Field(default=None)
+    columns_info: list[ColumnInfo] | None = Field(default=None)
 
     # pydantic validators
     _columns_info_validator = field_validator("columns_info")(columns_info_validator)
@@ -103,10 +101,10 @@ class TableList(PaginationMixin):
     TableList used to deserialize list document output
     """
 
-    data: List[TableModel]
+    data: list[TableModel]
 
     @property
-    def entity_ids(self) -> List[PydanticObjectId]:
+    def entity_ids(self) -> list[PydanticObjectId]:
         """
         List of entity IDs in the table model list
 
@@ -120,7 +118,7 @@ class TableList(PaginationMixin):
         return list(output)
 
     @property
-    def semantic_ids(self) -> List[PydanticObjectId]:
+    def semantic_ids(self) -> list[PydanticObjectId]:
         """
         List of semantic IDs in the table model list
 
@@ -140,7 +138,7 @@ class ColumnCriticalDataInfoUpdate(FeatureByteBaseModel):
     """
 
     column_name: NameStr
-    critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
+    critical_data_info: CriticalDataInfo | None = Field(default=None)
 
 
 class ColumnEntityUpdate(FeatureByteBaseModel):
@@ -149,7 +147,7 @@ class ColumnEntityUpdate(FeatureByteBaseModel):
     """
 
     column_name: NameStr
-    entity_id: Optional[PydanticObjectId] = Field(default=None)
+    entity_id: PydanticObjectId | None = Field(default=None)
 
 
 class ColumnDescriptionUpdate(FeatureByteBaseModel):
@@ -158,7 +156,7 @@ class ColumnDescriptionUpdate(FeatureByteBaseModel):
     """
 
     column_name: NameStr
-    description: Optional[StrictStr] = Field(default=None)
+    description: StrictStr | None = Field(default=None)
 
 
 class ColumnSemanticUpdate(FeatureByteBaseModel):
@@ -167,4 +165,4 @@ class ColumnSemanticUpdate(FeatureByteBaseModel):
     """
 
     column_name: NameStr
-    semantic_id: Optional[PydanticObjectId] = Field(default=None)
+    semantic_id: PydanticObjectId | None = Field(default=None)

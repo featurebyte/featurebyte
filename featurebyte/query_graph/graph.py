@@ -3,17 +3,11 @@ Implement graph data structure for query graph
 """
 
 from collections import OrderedDict, defaultdict
+from collections.abc import Generator, Iterator
 from typing import (
     Any,
     Callable,
-    DefaultDict,
-    Dict,
-    Generator,
-    Iterator,
-    List,
     Optional,
-    Set,
-    Tuple,
     TypedDict,
     Union,
     cast,
@@ -67,7 +61,7 @@ class QueryGraph(QueryGraphModel):
     Graph data structure
     """
 
-    def get_primary_input_nodes(self, node_name: str) -> List[InputNode]:
+    def get_primary_input_nodes(self, node_name: str) -> list[InputNode]:
         """
         Get the primary input node of the query graph
 
@@ -99,7 +93,7 @@ class QueryGraph(QueryGraphModel):
                 node_name_to_input_node[input_node.name] = input_node
         return list(node_name_to_input_node.values())
 
-    def get_table_ids(self, node_name: str) -> List[ObjectId]:
+    def get_table_ids(self, node_name: str) -> list[ObjectId]:
         """
         Get table IDs of the query graph given the target node name
 
@@ -121,7 +115,7 @@ class QueryGraph(QueryGraphModel):
                 output.append(node.parameters.id)
         return sorted(set(output))
 
-    def get_primary_table_ids(self, node_name: str) -> List[ObjectId]:
+    def get_primary_table_ids(self, node_name: str) -> list[ObjectId]:
         """
         Get primary table IDs of the query graph given the target node name
 
@@ -141,7 +135,7 @@ class QueryGraph(QueryGraphModel):
     def get_decompose_state(
         self,
         node_name: str,
-        relationships_info: Optional[List[EntityRelationshipInfo]] = None,
+        relationships_info: Optional[list[EntityRelationshipInfo]] = None,
         extract_primary_entity_ids_only: bool = False,
     ) -> DecomposePointState:
         """
@@ -168,7 +162,7 @@ class QueryGraph(QueryGraphModel):
         )
         return decompose_state
 
-    def get_entity_ids(self, node_name: str) -> List[ObjectId]:
+    def get_entity_ids(self, node_name: str) -> list[ObjectId]:
         """
         Get entity IDs of the query graph given the target node name
 
@@ -188,7 +182,7 @@ class QueryGraph(QueryGraphModel):
         )
         return sorted(decompose_state.primary_entity_ids)
 
-    def get_user_defined_function_ids(self, node_name: str) -> List[ObjectId]:
+    def get_user_defined_function_ids(self, node_name: str) -> list[ObjectId]:
         """
         Get user defined function IDs of the query graph given the target node name
 
@@ -211,7 +205,7 @@ class QueryGraph(QueryGraphModel):
             output.append(node.parameters.function_id)
         return sorted(set(output))
 
-    def get_entity_columns(self, node_name: str) -> List[str]:
+    def get_entity_columns(self, node_name: str) -> list[str]:
         """
         Get entity columns of the query graph given the target node name
 
@@ -237,7 +231,7 @@ class QueryGraph(QueryGraphModel):
 
     def iterate_group_by_node_and_table_id_pairs(
         self, target_node: Node
-    ) -> Iterator[Tuple[Union[GroupByNode, NonTileWindowAggregateNode], Optional[ObjectId]]]:
+    ) -> Iterator[tuple[Union[GroupByNode, NonTileWindowAggregateNode], Optional[ObjectId]]]:
         """
         Iterate all GroupBy nodes and their corresponding Table ID
 
@@ -257,14 +251,10 @@ class QueryGraph(QueryGraphModel):
         )
 
         def _iter_window_aggregate_nodes() -> Generator[Node, None, None]:
-            for group_by_node in self.iterate_nodes(
-                target_node=target_node, node_type=NodeType.GROUPBY
-            ):
-                yield group_by_node
-            for non_tile_window_aggregate_node in self.iterate_nodes(
+            yield from self.iterate_nodes(target_node=target_node, node_type=NodeType.GROUPBY)
+            yield from self.iterate_nodes(
                 target_node=target_node, node_type=NodeType.NON_TILE_WINDOW_AGGREGATE
-            ):
-                yield non_tile_window_aggregate_node
+            )
 
         for node in _iter_window_aggregate_nodes():
             assert isinstance(node, (GroupByNode, NonTileWindowAggregateNode))
@@ -292,7 +282,7 @@ class QueryGraph(QueryGraphModel):
 
     def extract_table_id_feature_job_settings(
         self, target_node: Node, keep_first_only: bool = False
-    ) -> List[TableIdFeatureJobSetting]:
+    ) -> list[TableIdFeatureJobSetting]:
         """
         Extract table ID feature job settings of the query graph given the target node name
 
@@ -333,8 +323,8 @@ class QueryGraph(QueryGraphModel):
         self,
         target_node: Node,
         keep_all_columns: bool = True,
-        table_id_to_col_names: Optional[Dict[ObjectId, Set[str]]] = None,
-    ) -> List[TableIdCleaningOperation]:
+        table_id_to_col_names: Optional[dict[ObjectId, set[str]]] = None,
+    ) -> list[TableIdCleaningOperation]:
         """
         Extract table ID cleaning operations from the query graph given the target node name
 
@@ -401,7 +391,7 @@ class QueryGraph(QueryGraphModel):
 
         return table_column_operations
 
-    def load(self, graph: QueryGraphModel) -> Tuple["QueryGraph", Dict[str, str]]:
+    def load(self, graph: QueryGraphModel) -> tuple["QueryGraph", dict[str, str]]:
         """
         Load the query graph into the query graph
 
@@ -415,7 +405,7 @@ class QueryGraph(QueryGraphModel):
         QueryGraph, dict[str, str]
             updated query graph with the node name mapping between input query graph & output query graph
         """
-        node_name_map: Dict[str, str] = {}
+        node_name_map: dict[str, str] = {}
         for node in graph.iterate_sorted_nodes():
             input_nodes = [
                 self.get_node_by_name(node_name_map[input_node_name])
@@ -479,7 +469,7 @@ class QueryGraph(QueryGraphModel):
         )
         return op_struct_info.operation_structure_map[node.name]
 
-    def extract_table_id_to_table_column_names(self, node: Node) -> Dict[ObjectId, Set[str]]:
+    def extract_table_id_to_table_column_names(self, node: Node) -> dict[ObjectId, set[str]]:
         """
         Extract table ID to table column names based on the graph & given target node.
         This mapping is used to prune the view graph node parameters or extract the table columns used by the
@@ -497,7 +487,7 @@ class QueryGraph(QueryGraphModel):
         """
         operation_structure = self.extract_operation_structure(node, keep_all_source_columns=True)
         # prepare table ID to source column names mapping, use this mapping to prune the view graph node parameters
-        table_id_to_source_column_names: Dict[ObjectId, Set[str]] = defaultdict(set)
+        table_id_to_source_column_names: dict[ObjectId, set[str]] = defaultdict(set)
         for src_col in operation_structure.iterate_source_columns():
             assert src_col.table_id is not None, "Source table ID is missing."
             table_id_to_source_column_names[src_col.table_id].add(src_col.name)
@@ -524,7 +514,7 @@ class QueryGraph(QueryGraphModel):
         pruned_graph, node_name_map, _ = prune_query_graph(graph=self, node=target_node)
         return pruned_graph, node_name_map
 
-    def quick_prune(self, target_node_names: List[str]) -> GraphNodeNameMap:
+    def quick_prune(self, target_node_names: list[str]) -> GraphNodeNameMap:
         """
         Quick prune the query graph and return the pruned graph & mapped node.
 
@@ -546,7 +536,7 @@ class QueryGraph(QueryGraphModel):
         )
 
     def reconstruct(
-        self, node_name_to_replacement_node: Dict[str, Node], regenerate_groupby_hash: bool
+        self, node_name_to_replacement_node: dict[str, Node], regenerate_groupby_hash: bool
     ) -> GraphNodeNameMap:
         """
         Reconstruct the query graph using the replacement node mapping
@@ -577,7 +567,7 @@ class QueryGraph(QueryGraphModel):
         """
         return GraphFlatteningTransformer(graph=self).transform()
 
-    def add_node(self, node: NodeT, input_nodes: List[Node]) -> NodeT:
+    def add_node(self, node: NodeT, input_nodes: list[Node]) -> NodeT:
         """
         Add graph node to the graph
 
@@ -613,14 +603,14 @@ class GraphState(TypedDict):
     Typed dictionary for graph state
     """
 
-    edges: List[Edge]
-    nodes: List[Node]
-    nodes_map: Dict[str, Node]
-    edges_map: Dict[str, List[str]]
-    backward_edges_map: Dict[str, List[str]]
-    node_type_counter: Dict[str, int]
-    node_name_to_ref: Dict[str, int]
-    ref_to_node_name: Dict[int, str]
+    edges: list[Edge]
+    nodes: list[Node]
+    nodes_map: dict[str, Node]
+    edges_map: dict[str, list[str]]
+    backward_edges_map: dict[str, list[str]]
+    node_type_counter: dict[str, int]
+    node_name_to_ref: dict[str, int]
+    ref_to_node_name: dict[int, str]
 
 
 # query state field values
@@ -698,28 +688,28 @@ class GlobalQueryGraph(QueryGraph):
     """
 
     # all the attributes (including non-serialized) should be stored at GlobalGraphState
-    edges: List[Edge] = Field(default_factory=GlobalGraphState.construct_getter_func("edges"))
-    nodes: List[Node] = Field(default_factory=GlobalGraphState.construct_getter_func("nodes"))
+    edges: list[Edge] = Field(default_factory=GlobalGraphState.construct_getter_func("edges"))
+    nodes: list[Node] = Field(default_factory=GlobalGraphState.construct_getter_func("nodes"))
 
     # non-serialized attributes
-    nodes_map: Dict[str, Node] = Field(
+    nodes_map: dict[str, Node] = Field(
         default_factory=GlobalGraphState.construct_getter_func("nodes_map"), exclude=True
     )
-    edges_map: DefaultDict[str, List[str]] = Field(
+    edges_map: defaultdict[str, list[str]] = Field(
         default_factory=GlobalGraphState.construct_getter_func("edges_map"), exclude=True
     )
-    backward_edges_map: DefaultDict[str, List[str]] = Field(
+    backward_edges_map: defaultdict[str, list[str]] = Field(
         default_factory=GlobalGraphState.construct_getter_func("backward_edges_map"), exclude=True
     )
-    node_type_counter: DefaultDict[str, int] = Field(
+    node_type_counter: defaultdict[str, int] = Field(
         default_factory=GlobalGraphState.construct_getter_func("node_type_counter"),
         exclude=True,
     )
-    node_name_to_ref: Dict[str, str] = Field(
+    node_name_to_ref: dict[str, str] = Field(
         default_factory=GlobalGraphState.construct_getter_func("node_name_to_ref"),
         exclude=True,
     )
-    ref_to_node_name: Dict[str, str] = Field(
+    ref_to_node_name: dict[str, str] = Field(
         default_factory=GlobalGraphState.construct_getter_func("ref_to_node_name"),
         exclude=True,
     )

@@ -4,7 +4,7 @@ This module contains count_dict accessor class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, Union
 
 from typeguard import typechecked
 
@@ -511,7 +511,7 @@ class CountDictAccessor:
         >>> df["Chips et Tortillas Rank"].iloc[0]
         1.0
         """
-        additional_node_params: Dict[str, Any] = {
+        additional_node_params: dict[str, Any] = {
             "descending": descending,
         }
         if is_scalar(key):

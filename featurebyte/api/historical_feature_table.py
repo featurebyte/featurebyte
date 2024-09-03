@@ -5,7 +5,7 @@ HistoricalFeatureTable class
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 import pandas as pd
 from typeguard import typechecked
@@ -41,20 +41,20 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
     _route: ClassVar[str] = "/historical_feature_table"
     _list_schema: ClassVar[Any] = HistoricalFeatureTableListRecord
     _get_schema: ClassVar[Any] = HistoricalFeatureTableModel
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "feature_store_name",
         "observation_table_name",
         "shape",
         "created_at",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
         ForeignKeyMapping("observation_table_id", ObservationTable, "observation_table_name"),
     ]
 
     @property
-    def observation_table(self) -> Optional[ObservationTable]:
+    def observation_table(self) -> ObservationTable | None:
         """
         ObservationTable object associated with the historical feature table.
 
@@ -85,7 +85,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         return FeatureList.get_by_id(feature_list_id)  # type: ignore
 
     @property
-    def target_name(self) -> Optional[str]:
+    def target_name(self) -> str | None:
         """
         Target name associated with the historical feature table.
 
@@ -231,7 +231,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         """
         return super().describe(size=size, seed=seed)
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download(self, output_path: str | Path | None = None) -> Path:
         """
         Downloads the historical feature table from the database.
 
@@ -285,7 +285,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         super().delete()
 
     @typechecked
-    def update_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: str | None) -> None:
         """
         Update description for the historical feature table.
 

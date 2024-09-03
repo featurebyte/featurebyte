@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from typing import Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Form, Request, UploadFile
@@ -53,7 +52,7 @@ class HistoricalFeatureTableRouter(BaseRouter):
 async def create_historical_feature_table(
     request: Request,
     payload: str = Form(),
-    observation_set: Optional[UploadFile] = None,
+    observation_set: UploadFile | None = None,
 ) -> Task:
     """
     Create HistoricalFeatureTable by submitting a materialization task
@@ -103,10 +102,10 @@ async def list_historical_feature_tables(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
+    sort_by: str | None = SortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
+    name: str | None = NameQuery,
 ) -> HistoricalFeatureTableList:
     """
     List HistoricalFeatureTables
@@ -128,9 +127,9 @@ async def list_historical_feature_table_audit_logs(
     historical_feature_table_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
+    sort_by: str | None = AuditLogSortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
 ) -> AuditDocumentList:
     """
     List HistoricalFeatureTable audit logs

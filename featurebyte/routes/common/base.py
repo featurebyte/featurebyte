@@ -4,7 +4,7 @@ BaseController for API routes
 
 from __future__ import annotations
 
-from typing import Any, Generic, List, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import Any, Generic, TypeVar, cast
 
 from bson import ObjectId
 
@@ -87,7 +87,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
     BaseDocumentController for API routes
     """
 
-    paginated_document_class: Type[PaginationMixin] = PaginationMixin
+    paginated_document_class: type[PaginationMixin] = PaginationMixin
 
     def __init__(self, service: DocumentServiceT):
         self.service: DocumentServiceT = service
@@ -126,7 +126,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: Optional[List[Tuple[str, SortDir]]] = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
         **kwargs: Any,
     ) -> PaginatedDocument:
         """
@@ -159,7 +159,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         """
         List of service and query filter pairs. The first element of each pair is the document service
         of the related document, and the second element is the query filter to retrieve the related
@@ -181,7 +181,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
     async def verify_operation_by_checking_reference(
         self,
         document_id: ObjectId,
-        exception_class: Union[Type[DocumentDeletionError], Type[DocumentUpdateError]],
+        exception_class: type[DocumentDeletionError] | type[DocumentUpdateError],
     ) -> None:
         """
         Check whether the document can be deleted. This function uses the output of
@@ -229,10 +229,10 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
     async def list_audit(
         self,
         document_id: ObjectId,
-        query_filter: Optional[QueryFilter] = None,
+        query_filter: QueryFilter | None = None,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: Optional[List[Tuple[str, SortDir]]] = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
         **kwargs: Any,
     ) -> AuditDocumentList:
         """
@@ -273,7 +273,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         self,
         document_id: ObjectId,
         field: str,
-    ) -> List[FieldValueHistory]:
+    ) -> list[FieldValueHistory]:
         """
         List historical values for a field in a document
 
@@ -297,7 +297,7 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
     async def update_description(
         self,
         document_id: ObjectId,
-        description: Optional[str],
+        description: str | None,
     ) -> Document:
         """
         Update document description

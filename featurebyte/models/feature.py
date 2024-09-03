@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import traceback
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pymongo
 from bson import ObjectId
@@ -63,7 +63,7 @@ class TableIdColumnNames(FeatureByteBaseModel):
     """
 
     table_id: PydanticObjectId
-    column_names: List[str]
+    column_names: list[str]
 
 
 class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
@@ -76,39 +76,39 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     node_name: str
     tabular_source: TabularSource = Field(frozen=True)
     version: VersionIdentifier = Field(frozen=True, default_factory=VersionIdentifier.create)
-    definition: Optional[str] = Field(frozen=True, default=None)
-    definition_hash: Optional[str] = Field(frozen=True, default=None)
+    definition: str | None = Field(frozen=True, default=None)
+    definition_hash: str | None = Field(frozen=True, default=None)
 
     # query graph derived attributes
     # - table columns used by the feature or target
     # - table feature job settings used by the feature or target
     # - table cleaning operations used by the feature or target
-    table_id_column_names: List[TableIdColumnNames] = Field(default_factory=list)
-    table_id_feature_job_settings: List[TableIdFeatureJobSetting] = Field(default_factory=list)
-    table_id_cleaning_operations: List[TableIdCleaningOperation] = Field(default_factory=list)
+    table_id_column_names: list[TableIdColumnNames] = Field(default_factory=list)
+    table_id_feature_job_settings: list[TableIdFeatureJobSetting] = Field(default_factory=list)
+    table_id_cleaning_operations: list[TableIdCleaningOperation] = Field(default_factory=list)
 
     # list of IDs attached to this feature or target
-    entity_ids: List[PydanticObjectId] = Field(default_factory=list)
-    entity_dtypes: List[DBVarType] = Field(default_factory=list)
-    primary_entity_ids: List[PydanticObjectId] = Field(default_factory=list)
-    table_ids: List[PydanticObjectId] = Field(default_factory=list)
-    primary_table_ids: List[PydanticObjectId] = Field(default_factory=list)
-    user_defined_function_ids: List[PydanticObjectId] = Field(default_factory=list)
+    entity_ids: list[PydanticObjectId] = Field(default_factory=list)
+    entity_dtypes: list[DBVarType] = Field(default_factory=list)
+    primary_entity_ids: list[PydanticObjectId] = Field(default_factory=list)
+    table_ids: list[PydanticObjectId] = Field(default_factory=list)
+    primary_table_ids: list[PydanticObjectId] = Field(default_factory=list)
+    user_defined_function_ids: list[PydanticObjectId] = Field(default_factory=list)
 
     # relationship info contains the bare enough entity relationship information between all the entities
     # for example, if there are following entity relationship (child -> parent):
     # transaction -> order -> customer -> city -> state
     # if the feature uses order & city entities, the relationship info will be (order -> customer -> city)
     # transaction and state will not be included as they are not used by the feature.
-    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(frozen=True, default=None)
+    relationships_info: list[EntityRelationshipInfo] | None = Field(frozen=True, default=None)
 
     # entity join steps contains the steps required to join the entities used by the feature or target
     # when it is None, it means that the attribute is not initialized (for backward compatibility)
-    entity_join_steps: Optional[List[EntityRelationshipInfo]] = Field(frozen=True, default=None)
+    entity_join_steps: list[EntityRelationshipInfo] | None = Field(frozen=True, default=None)
 
     # offline store info contains the information used to construct the offline store table(s) required
     # by the feature or target.
-    internal_offline_store_info: Optional[Dict[str, Any]] = Field(
+    internal_offline_store_info: dict[str, Any] | None = Field(
         alias="offline_store_info", default=None
     )
 
@@ -123,7 +123,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
     )(construct_sort_validator())
 
     @field_serializer("internal_offline_store_info", when_used="json")
-    def _serialize_offline_store_info(self, value: Optional[Any]) -> Optional[Any]:
+    def _serialize_offline_store_info(self, value: Any | None) -> Any | None:
         if value:
             return serialize_obj(self.offline_store_info.model_dump(by_alias=True))
         return value
@@ -141,7 +141,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         return op_struct.aggregations[0].dtype
 
     @model_validator(mode="after")
-    def _add_derived_attributes(self) -> "BaseFeatureModel":
+    def _add_derived_attributes(self) -> BaseFeatureModel:
         # do not check entity_ids as the derived result can be an empty list
         derived_attributes = [
             self.primary_entity_ids,
@@ -206,7 +206,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
     @field_validator("name")
     @classmethod
-    def _validate_asset_name(cls, value: Optional[str]) -> Optional[str]:
+    def _validate_asset_name(cls, value: str | None) -> str | None:
         if value and value.startswith("__"):
             raise ValueError(
                 f"{cls.__name__} name cannot start with '__' as it is reserved for internal use."
@@ -217,7 +217,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         "table_id_column_names", "table_id_feature_job_settings", "table_id_cleaning_operations"
     )
     @classmethod
-    def _sort_list_by_table_id_(cls, value: List[Any]) -> List[Any]:
+    def _sort_list_by_table_id_(cls, value: list[Any]) -> list[Any]:
         return sorted(value, key=lambda item: item.table_id)  # type: ignore
 
     @property
@@ -306,7 +306,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
     def extract_table_id_feature_job_settings(
         self, keep_first_only: bool = False
-    ) -> List[TableIdFeatureJobSetting]:
+    ) -> list[TableIdFeatureJobSetting]:
         """
         Extract table id feature job settings
 
@@ -335,8 +335,8 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         return output
 
     def extract_table_feature_job_settings(
-        self, table_id_to_name: Dict[ObjectId, str], keep_first_only: bool = False
-    ) -> List[TableFeatureJobSetting]:
+        self, table_id_to_name: dict[ObjectId, str], keep_first_only: bool = False
+    ) -> list[TableFeatureJobSetting]:
         """
         Extract table feature job settings
 
@@ -364,7 +364,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
     def extract_table_id_cleaning_operations(
         self, keep_all_columns: bool = True
-    ) -> List[TableIdCleaningOperation]:
+    ) -> list[TableIdCleaningOperation]:
         """
         Extract table cleaning operations
 
@@ -383,8 +383,8 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         )
 
     def extract_table_cleaning_operations(
-        self, table_id_to_name: Dict[ObjectId, str], keep_all_columns: bool = True
-    ) -> List[TableCleaningOperation]:
+        self, table_id_to_name: dict[ObjectId, str], keep_all_columns: bool = True
+    ) -> list[TableCleaningOperation]:
         """
         Extract table cleaning operations
 
@@ -412,7 +412,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
             )
         return output
 
-    def extract_request_column_nodes(self) -> List[RequestColumnNode]:
+    def extract_request_column_nodes(self) -> list[RequestColumnNode]:
         """
         Extract request column nodes
 
@@ -441,7 +441,7 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
         extractor = DefinitionHashExtractor(graph=self.graph)
         return extractor.extract(self.node)
 
-    def extract_aggregation_nodes_info(self) -> List[AggregationNodeInfo]:
+    def extract_aggregation_nodes_info(self) -> list[AggregationNodeInfo]:
         """
         Extract aggregation nodes info from the feature or target graph
 
@@ -549,16 +549,16 @@ class FeatureModel(BaseFeatureModel):
 
     # ID related fields associated with this feature
     feature_namespace_id: PydanticObjectId = Field(default_factory=ObjectId)
-    feature_list_ids: List[PydanticObjectId] = Field(default_factory=list)
-    deployed_feature_list_ids: List[PydanticObjectId] = Field(default_factory=list)
-    aggregation_ids: List[str] = Field(default_factory=list)
-    aggregation_result_names: List[str] = Field(default_factory=list)
-    online_store_table_names: List[str] = Field(default_factory=list)
+    feature_list_ids: list[PydanticObjectId] = Field(default_factory=list)
+    deployed_feature_list_ids: list[PydanticObjectId] = Field(default_factory=list)
+    aggregation_ids: list[str] = Field(default_factory=list)
+    aggregation_result_names: list[str] = Field(default_factory=list)
+    online_store_table_names: list[str] = Field(default_factory=list)
     agg_result_name_include_serving_names: bool = Field(default=False)  # backward compatibility
-    last_updated_by_scheduled_task_at: Optional[datetime] = Field(frozen=True, default=None)
+    last_updated_by_scheduled_task_at: datetime | None = Field(frozen=True, default=None)
 
     @model_validator(mode="after")
-    def _add_tile_derived_attributes(self) -> "FeatureModel":
+    def _add_tile_derived_attributes(self) -> FeatureModel:
         # Each aggregation_id refers to a set of columns in a tile table. It is associated to a
         # specific scheduled tile task. An aggregation_id can produce multiple aggregation results
         # using different feature derivation windows.

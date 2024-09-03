@@ -5,7 +5,6 @@ DatabricksAdapter class for generating Databricks specific SQL expressions
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
@@ -74,7 +73,7 @@ class DatabricksAdapter(BaseAdapter):
 
     @classmethod
     def str_trim(
-        cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
+        cls, expr: Expression, character: str | None, side: Literal["left", "right", "both"]
     ) -> Expression:
         if character is None:
             character = " "
@@ -133,7 +132,7 @@ class DatabricksAdapter(BaseAdapter):
         cls,
         quantity_expr: Expression,
         timestamp_expr: Expression,
-        quantity_scale: Optional[float] = None,
+        quantity_scale: float | None = None,
     ) -> Expression:
         # DATEADD with a customisable unit is not supported in older versions of Spark (< 3.3). To
         # workaround that, convert to double (epoch seconds with sub-seconds preserved) to perform

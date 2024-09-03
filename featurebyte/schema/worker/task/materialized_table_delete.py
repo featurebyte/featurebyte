@@ -4,7 +4,7 @@ Materialized Table Delete Task Payload schema
 
 from __future__ import annotations
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from featurebyte.enum import StrEnum, WorkerCommand
 from featurebyte.models.base import PydanticObjectId
@@ -35,7 +35,7 @@ class MaterializedTableDeleteTaskPayload(BaseTaskPayload):
 
     # class variables
     command: ClassVar[WorkerCommand] = WorkerCommand.MATERIALIZED_TABLE_DELETE
-    output_collection_name: ClassVar[Optional[str]] = None
+    output_collection_name: ClassVar[str | None] = None
 
     # instance variables
     collection_name: MaterializedTableCollectionName

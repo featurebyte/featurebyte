@@ -4,8 +4,6 @@ SQL generation related to materialising tables such as ObservationTable
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
@@ -23,7 +21,7 @@ from featurebyte.query_graph.sql.source_info import SourceInfo
 
 def get_source_expr(
     source: TableDetails,
-    column_names: Optional[List[str]] = None,
+    column_names: list[str] | None = None,
 ) -> Select:
     """
     Construct SQL query to materialize a table from a source table
@@ -121,7 +119,7 @@ def get_row_count_sql(table_expr: Select, source_type: SourceType) -> str:
 def select_and_rename_columns(
     table_expr: Select,
     columns: list[str],
-    columns_rename_mapping: Optional[dict[str, str]],
+    columns_rename_mapping: dict[str, str] | None,
 ) -> Select:
     """
     Select columns from a table expression
@@ -168,8 +166,8 @@ def get_row_index_column_expr() -> Expression:
 
 
 def get_feature_store_id_expr(
-    database_name: Optional[str],
-    schema_name: Optional[str],
+    database_name: str | None,
+    schema_name: str | None,
 ) -> Select:
     """
     Construct SQL query to get the feature store id of a featurebyte schema

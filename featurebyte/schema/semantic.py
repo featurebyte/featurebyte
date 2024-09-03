@@ -2,7 +2,7 @@
 Semantic API payload schema
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from bson import ObjectId
 from pydantic import Field
@@ -27,7 +27,7 @@ class SemanticList(PaginationMixin):
     Paginated list of Semantic
     """
 
-    data: List[SemanticModel]
+    data: list[SemanticModel]
 
 
 class SemanticServiceUpdate(BaseDocumentServiceUpdateSchema):
@@ -35,5 +35,5 @@ class SemanticServiceUpdate(BaseDocumentServiceUpdateSchema):
     Semantic service update schema
     """
 
-    ancestor_ids: Optional[List[PydanticObjectId]]
-    parents: Optional[List[Parent]]
+    ancestor_ids: Optional[list[PydanticObjectId]]
+    parents: Optional[list[Parent]]

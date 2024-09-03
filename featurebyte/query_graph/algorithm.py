@@ -4,7 +4,8 @@ Generic graph related algorithms
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any
 
 from featurebyte.query_graph.enum import NodeType
 
@@ -16,8 +17,8 @@ if TYPE_CHECKING:
 def dfs_traversal(
     query_graph: QueryGraphModel,
     node: Node,
-    skip_node_type: Optional[NodeType] = None,
-    skip_node_names: Optional[Set[str]] = None,
+    skip_node_type: NodeType | None = None,
+    skip_node_names: set[str] | None = None,
 ) -> Iterator[Node]:
     """Perform a DFS traversal
 
@@ -50,8 +51,8 @@ def dfs_inner(
     query_graph: QueryGraphModel,
     node: Node,
     visited: dict[str, bool],
-    skip_node_type: Optional[NodeType] = None,
-    skip_node_names: Optional[Set[str]] = None,
+    skip_node_type: NodeType | None = None,
+    skip_node_names: set[str] | None = None,
 ) -> Iterator[Node]:
     """Performs the actual work of a DFS traversal
 
@@ -87,7 +88,7 @@ def dfs_inner(
 
 
 def _topological_sort_util(
-    edges_map: Dict[str, Any], node_name: str, visited: dict[str, bool], stack: list[str]
+    edges_map: dict[str, Any], node_name: str, visited: dict[str, bool], stack: list[str]
 ) -> None:
     # mark node as visited
     visited[node_name] = True
@@ -100,7 +101,7 @@ def _topological_sort_util(
     stack.append(node_name)
 
 
-def topological_sort(node_names: List[str], edges_map: Dict[str, Any]) -> list[str]:
+def topological_sort(node_names: list[str], edges_map: dict[str, Any]) -> list[str]:
     """
     Topological sort the graph (reference: https://www.geeksforgeeks.org/topological-sorting/)
 

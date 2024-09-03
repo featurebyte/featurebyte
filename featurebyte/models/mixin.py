@@ -5,7 +5,7 @@ This module contains mixin classes for models.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import Field, PrivateAttr, field_serializer
 
@@ -22,7 +22,7 @@ class QueryGraphMixin(FeatureByteBaseModel):
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
     internal_graph: Any = Field(default=None, frozen=True, alias="graph")
-    _graph: Optional[QueryGraph] = PrivateAttr(default=None)
+    _graph: QueryGraph | None = PrivateAttr(default=None)
 
     @field_serializer("internal_graph", when_used="json")
     def _serialize_graph(self, graph: Any) -> Any:

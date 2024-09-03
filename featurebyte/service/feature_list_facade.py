@@ -2,7 +2,8 @@
 Feature List Facade Service which is responsible for handling high level feature list operations
 """
 
-from typing import Any, Callable, Coroutine, Optional
+from collections.abc import Coroutine
+from typing import Any, Callable, Optional
 
 from bson import ObjectId
 

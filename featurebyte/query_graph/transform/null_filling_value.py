@@ -2,7 +2,7 @@
 This graph extractor is responsible for extracting null filling values from the graph.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import pandas as pd
 from pydantic import Field
@@ -26,12 +26,12 @@ class NullFillingValueGlobalState(FeatureByteBaseModel):
     NullFillingValueGlobalState encapsulates the global state for null filling value extraction.
     """
 
-    aggregation_node_names: List[str] = Field(default_factory=list)
+    aggregation_node_names: list[str] = Field(default_factory=list)
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
     node_name_map: NodeNameMap = Field(default_factory=dict)
     fill_value: Optional[Scalar] = Field(default=None)
     codes: str = Field(default="")
-    operation_structure_map: Dict[str, OperationStructure]
+    operation_structure_map: dict[str, OperationStructure]
 
 
 class NullFillingValueExtractor(
@@ -48,8 +48,8 @@ class NullFillingValueExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: NullFillingValueGlobalState,
         node: Node,
-        input_node_names: List[str],
-    ) -> Tuple[List[str], bool]:
+        input_node_names: list[str],
+    ) -> tuple[list[str], bool]:
         input_nodes = [self.graph.get_node_by_name(name) for name in input_node_names]
         if node.type == NodeType.PROJECT and any(
             isinstance(input_node, AggregationOpStructMixin) for input_node in input_nodes
@@ -74,7 +74,7 @@ class NullFillingValueExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: NullFillingValueGlobalState,
         node: Node,
-        inputs: List[Any],
+        inputs: list[Any],
         skip_post: bool,
     ) -> NullFillingValueGlobalState:
         if node.name in global_state.node_name_map:
@@ -151,7 +151,7 @@ class NullFillingValueExtractor(
         input_params = ", ".join(input_values)
         null_filling_value_codes += f"\n\nfill_value = extract_null_filling_value({input_params})\n"
         state.codes = null_filling_value_codes
-        scope: Dict[str, Any] = {}
+        scope: dict[str, Any] = {}
         exec(null_filling_value_codes, scope)  # nosec
         fill_value = scope["fill_value"]
 

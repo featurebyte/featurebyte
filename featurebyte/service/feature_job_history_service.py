@@ -4,8 +4,6 @@ FeatureJobHistoryService class
 
 from __future__ import annotations
 
-from typing import Dict, List
-
 from bson import ObjectId
 
 from featurebyte.models.feature_materialize_run import FeatureMaterializeRun
@@ -76,9 +74,9 @@ class FeatureJobHistoryService:
 
     @classmethod
     def _convert_feature_materialize_runs(
-        cls, feature_materialize_runs: List[FeatureMaterializeRun], aggregation_ids: List[str]
-    ) -> List[FeatureTableJobRuns]:
-        job_runs: Dict[ObjectId, FeatureTableJobRuns] = {}
+        cls, feature_materialize_runs: list[FeatureMaterializeRun], aggregation_ids: list[str]
+    ) -> list[FeatureTableJobRuns]:
+        job_runs: dict[ObjectId, FeatureTableJobRuns] = {}
         for feature_materialize_run in feature_materialize_runs:
             # Only count an incomplete tile task if the aggregation_id is relevant to the deployment
             aggregation_ids_set = set(aggregation_ids)

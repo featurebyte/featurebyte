@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar
 
 import pandas as pd
 from bson import ObjectId
@@ -52,7 +52,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
     _route: ClassVar[str] = "/feature_job_setting_analysis"
     _list_schema: ClassVar[Any] = FeatureJobSettingAnalysisRecord
     _get_schema: ClassVar[Any] = FeatureJobSettingAnalysisModel
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "created_at",
         "event_table",
         "analysis_start",
@@ -61,7 +61,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         "offset",
         "blind_spot",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("event_table_id", TableApiObject, "event_table"),
     ]
 
@@ -77,8 +77,8 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
     @classmethod
     def list(
         cls,
-        include_id: Optional[bool] = True,
-        event_table_id: Optional[ObjectId] = None,
+        include_id: bool | None = True,
+        event_table_id: ObjectId | None = None,
     ) -> pd.DataFrame:
         """
         List saved feature job setting analysis
@@ -113,7 +113,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         display_html_in_notebook(self.analysis_report)
 
     @typechecked
-    def download_report(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download_report(self, output_path: str | Path | None = None) -> Path:
         """
         Downloads analysis report.
 
@@ -215,7 +215,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         response = client.get(f"{output_url}.parquet")
         return pd.read_parquet(path=BytesIO(response.content))
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         The info method provides comprehensive details about a FeatureJobSettingAnalysis object, which encompasses:
 

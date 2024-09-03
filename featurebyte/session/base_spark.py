@@ -7,7 +7,8 @@ from __future__ import annotations
 import collections
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Optional, OrderedDict, cast
+from collections import OrderedDict
+from typing import Any, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -82,7 +83,7 @@ class BaseSparkSession(BaseSession, ABC):
     catalog_name: str
     schema_name: str
 
-    region_name: Optional[str] = Field(default=None)
+    region_name: str | None = Field(default=None)
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
@@ -495,7 +496,7 @@ class BaseSparkSchemaInitializer(BaseSchemaInitializer):
         return await self.session.execute_query(query)
 
     async def _list_functions(self) -> list[str]:
-        def _function_name_to_identifier(function_name: str) -> Optional[str]:
+        def _function_name_to_identifier(function_name: str) -> str | None:
             # function names returned from SHOW FUNCTIONS are three part fully qualified, but
             # identifiers are based on function names only
             parts = function_name.rsplit(".", 1)

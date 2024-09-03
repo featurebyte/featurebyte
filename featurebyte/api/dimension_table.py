@@ -4,7 +4,7 @@ DimensionTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, model_validator
@@ -58,7 +58,7 @@ class DimensionTable(TableApiObject):
     _update_schema_class: ClassVar[Any] = DimensionTableUpdate
     _create_schema_class: ClassVar[Any] = DimensionTableCreate
     _get_schema: ClassVar[Any] = DimensionTableModel
-    _table_data_class: ClassVar[Type[AllTableDataT]] = DimensionTableData
+    _table_data_class: ClassVar[type[AllTableDataT]] = DimensionTableData
 
     # pydantic instance variable (public)
     type: Literal[TableDataType.DIMENSION_TABLE] = TableDataType.DIMENSION_TABLE
@@ -83,8 +83,8 @@ class DimensionTable(TableApiObject):
     def get_view(
         self,
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
-        drop_column_names: Optional[List[str]] = None,
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
+        drop_column_names: list[str] | None = None,
+        column_cleaning_operations: list[ColumnCleaningOperation] | None = None,
     ) -> DimensionView:
         """
         Gets a DimensionView object from a DimensionTable object.
@@ -207,7 +207,7 @@ class DimensionTable(TableApiObject):
             return self.internal_dimension_id_column
 
     @property
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         return None
 
     @classmethod

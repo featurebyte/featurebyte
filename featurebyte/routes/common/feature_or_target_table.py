@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Any, Generic, List, Optional, TypeVar
+from typing import Any, Generic, TypeVar
 
 import pandas as pd
 from bson import ObjectId
@@ -72,10 +72,10 @@ class ValidationParameters:
     """
 
     graph: QueryGraph
-    nodes: List[Node]
+    nodes: list[Node]
     feature_store: FeatureStoreModel
-    feature_list_model: Optional[FeatureListModel] = None
-    serving_names_mapping: Optional[dict[str, str]] = None
+    feature_list_model: FeatureListModel | None = None
+    serving_names_mapping: dict[str, str] | None = None
 
 
 class FeatureOrTargetTableController(
@@ -131,7 +131,7 @@ class FeatureOrTargetTableController(
 
     @abstractmethod
     async def get_payload(
-        self, table_create: TableCreateT, observation_set_dataframe: Optional[pd.DataFrame]
+        self, table_create: TableCreateT, observation_set_dataframe: pd.DataFrame | None
     ) -> PayloadT:
         """
         Get payload
@@ -166,7 +166,7 @@ class FeatureOrTargetTableController(
     async def create_table(
         self,
         data: TableCreateT,
-        observation_set: Optional[UploadFile],
+        observation_set: UploadFile | None,
     ) -> Task:
         """
         Create table by submitting an async request task
@@ -239,7 +239,7 @@ class FeatureOrTargetTableController(
         ------
         ValueError
         """
-        observation_table: Optional[ObservationTableModel] = None
+        observation_table: ObservationTableModel | None = None
         if document.observation_table_id is not None:
             observation_table = await self.observation_table_service.get_document(
                 document_id=document.observation_table_id

@@ -4,7 +4,7 @@ VersionService class
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from bson import ObjectId
 
@@ -60,7 +60,7 @@ class VersionService:
     async def _prepare_group_by_node_name_to_replacement_node(
         self,
         feature: FeatureModel,
-        table_feature_job_settings: Optional[list[TableFeatureJobSetting]],
+        table_feature_job_settings: list[TableFeatureJobSetting] | None,
         use_source_settings: bool,
     ) -> dict[str, Node]:
         """
@@ -106,7 +106,7 @@ class VersionService:
                 # prepare feature job setting
                 assert table_id is not None, "Table ID should not be None."
                 table = table_id_to_table[table_id]
-                feature_job_setting: Optional[FeatureJobSetting] = None
+                feature_job_setting: FeatureJobSetting | None = None
                 if use_source_settings:
                     # use the event table source's default feature job setting if table is event table
                     # otherwise, do not create a replacement node for the group by node
@@ -138,7 +138,7 @@ class VersionService:
     @staticmethod
     def _create_new_feature_version_from(
         feature: FeatureModel, node_name_to_replacement_node: dict[str, Node]
-    ) -> Optional[FeatureModel]:
+    ) -> FeatureModel | None:
         """
         Create a new feature version from the provided feature model and node name to replacement node mapping.
 
@@ -184,8 +184,8 @@ class VersionService:
     async def _create_new_feature_version(
         self,
         feature: FeatureModel,
-        table_feature_job_settings: Optional[list[TableFeatureJobSetting]],
-        table_cleaning_operations: Optional[list[TableCleaningOperation]],
+        table_feature_job_settings: list[TableFeatureJobSetting] | None,
+        table_cleaning_operations: list[TableCleaningOperation] | None,
         use_source_settings: bool,
     ) -> FeatureModel:
         node_name_to_replacement_node: dict[str, Node] = {}

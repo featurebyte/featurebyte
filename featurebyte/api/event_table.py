@@ -5,7 +5,7 @@ EventTable class
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -66,23 +66,23 @@ class EventTable(TableApiObject):
     _update_schema_class: ClassVar[Any] = EventTableUpdate
     _create_schema_class: ClassVar[Any] = EventTableCreate
     _get_schema: ClassVar[Any] = EventTableModel
-    _table_data_class: ClassVar[Type[AllTableDataT]] = EventTableData
+    _table_data_class: ClassVar[type[AllTableDataT]] = EventTableData
 
     # pydantic instance variable (public)
     type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
 
     # pydantic instance variable (internal use)
-    internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+    internal_default_feature_job_setting: FeatureJobSetting | None = Field(
         alias="default_feature_job_setting", default=None
     )
     internal_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
-    internal_event_id_column: Optional[StrictStr] = Field(
+    internal_event_id_column: StrictStr | None = Field(
         alias="event_id_column", default=None
     )  # DEV-556
-    internal_event_timestamp_timezone_offset: Optional[StrictStr] = Field(
+    internal_event_timestamp_timezone_offset: StrictStr | None = Field(
         alias="event_timestamp_timezone_offset", default=None
     )
-    internal_event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(
+    internal_event_timestamp_timezone_offset_column: StrictStr | None = Field(
         alias="event_timestamp_timezone_offset_column", default=None
     )
 
@@ -104,8 +104,8 @@ class EventTable(TableApiObject):
     def get_view(
         self,
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
-        drop_column_names: Optional[List[str]] = None,
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
+        drop_column_names: list[str] | None = None,
+        column_cleaning_operations: list[ColumnCleaningOperation] | None = None,
     ) -> EventView:
         """
         Gets an EventView object from an EventTable object.
@@ -216,7 +216,7 @@ class EventTable(TableApiObject):
         )
 
     @property
-    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+    def default_feature_job_setting(self) -> FeatureJobSetting | None:
         """
         Default feature job setting of the EventTable
 
@@ -244,7 +244,7 @@ class EventTable(TableApiObject):
             return self.internal_event_timestamp_column
 
     @property
-    def event_id_column(self) -> Optional[str]:
+    def event_id_column(self) -> str | None:
         """
         Event ID column name of the EventTable associated with the ItemTable
 
@@ -258,7 +258,7 @@ class EventTable(TableApiObject):
             return self.internal_event_id_column
 
     @property
-    def event_timestamp_timezone_offset(self) -> Optional[str]:
+    def event_timestamp_timezone_offset(self) -> str | None:
         """
         Timezone offset of the event timestamp column
 
@@ -272,7 +272,7 @@ class EventTable(TableApiObject):
             return self.internal_event_timestamp_timezone_offset
 
     @property
-    def event_timestamp_timezone_offset_column(self) -> Optional[str]:
+    def event_timestamp_timezone_offset_column(self) -> str | None:
         """
         A column in the EventTable that contains the timezone offset of the event timestamp column
 
@@ -286,7 +286,7 @@ class EventTable(TableApiObject):
             return self.internal_event_timestamp_timezone_offset_column
 
     @property
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         """
         Timestamp column name of the EventTable
 
@@ -371,12 +371,12 @@ class EventTable(TableApiObject):
     @typechecked
     def create_new_feature_job_setting_analysis(
         self,
-        analysis_date: Optional[datetime] = None,
+        analysis_date: datetime | None = None,
         analysis_length: int = 2419200,
         min_featurejob_period: int = 60,
         exclude_late_job: bool = False,
         blind_spot_buffer_setting: int = 5,
-        job_time_buffer_setting: Union[int, Literal["auto"]] = "auto",
+        job_time_buffer_setting: int | Literal["auto"] = "auto",
         late_data_allowance: float = 5e-5,
     ) -> FeatureJobSettingAnalysis:
         """
@@ -518,7 +518,7 @@ class EventTable(TableApiObject):
         analysis = self.create_new_feature_job_setting_analysis()
         self.update_default_feature_job_setting(analysis.get_recommendation())
 
-    def list_feature_job_setting_analysis(self) -> Optional[pd.DataFrame]:
+    def list_feature_job_setting_analysis(self) -> pd.DataFrame | None:
         """
         Lists feature job setting analyses that have been performed.
 

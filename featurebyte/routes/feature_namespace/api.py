@@ -4,7 +4,7 @@ FeatureNamespace API routes
 
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import cast
 
 from fastapi import APIRouter, Request
 
@@ -79,10 +79,10 @@ async def list_feature_namespaces(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
+    sort_by: str | None = SortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
+    name: str | None = NameQuery,
 ) -> FeatureNamespaceList:
     """
     List FeatureNamespace
@@ -104,9 +104,9 @@ async def list_feature_namespace_audit_logs(
     feature_namespace_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
+    sort_by: str | None = AuditLogSortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
 ) -> AuditDocumentList:
     """
     List Feature Namespace audit logs

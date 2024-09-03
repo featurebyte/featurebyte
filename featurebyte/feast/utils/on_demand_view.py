@@ -2,7 +2,7 @@
 On demand feature view related classes and functions.
 """
 
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Optional, Union, cast
 from unittest.mock import patch
 
 from feast import FeatureView, Field, RequestSource
@@ -17,8 +17,8 @@ from featurebyte.models.feature import FeatureModel
 def create_feast_on_demand_feature_view(
     definition: str,
     function_name: str,
-    sources: List[Union[FeatureView, RequestSource, FeatureViewProjection]],
-    schema: List[Field],
+    sources: list[Union[FeatureView, RequestSource, FeatureViewProjection]],
+    schema: list[Field],
 ) -> OnDemandFeatureView:
     """
     Create a Feast OnDemandFeatureView from a function definition.
@@ -40,7 +40,7 @@ def create_feast_on_demand_feature_view(
         The created OnDemandFeatureView
     """
     # get the function from the definition
-    locals_namespace: Dict[str, Any] = {}
+    locals_namespace: dict[str, Any] = {}
     exec(definition, locals_namespace)  # nosec
     func = locals_namespace[function_name]
 
@@ -61,8 +61,8 @@ class OnDemandFeatureViewConstructor:
     def create(
         cls,
         feature_model: FeatureModel,
-        name_to_feast_feature_view: Dict[str, FeatureView],
-        name_to_feast_request_source: Dict[str, RequestSource],
+        name_to_feast_feature_view: dict[str, FeatureView],
+        name_to_feast_request_source: dict[str, RequestSource],
     ) -> OnDemandFeatureView:
         """
         Create a Feast OnDemandFeatureView from an offline store info.
@@ -85,7 +85,7 @@ class OnDemandFeatureViewConstructor:
         offline_store_info = feature_model.offline_store_info
         assert feature_model.name is not None, "FeatureModel does not have a name"
 
-        sources: List[Union[FeatureView, RequestSource, FeatureViewProjection]] = []
+        sources: list[Union[FeatureView, RequestSource, FeatureViewProjection]] = []
         has_point_in_time = False
         ttl_seconds: Optional[float] = None
         if offline_store_info.is_decomposed:

@@ -5,7 +5,7 @@ Target controller
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from bson import ObjectId
 from fastapi import HTTPException
@@ -90,9 +90,9 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
-        search: Optional[str] = None,
-        name: Optional[str] = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
+        search: str | None = None,
+        name: str | None = None,
     ) -> TargetList:
         """
         List Target at persistent
@@ -116,7 +116,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             List of Target objects
         """
         sort_by = sort_by or [("created_at", "desc")]
-        params: Dict[str, Any] = {"search": search, "name": name}
+        params: dict[str, Any] = {"search": search, "name": name}
         return await self.list(
             page=page,
             page_size=page_size,
@@ -126,7 +126,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [
             (self.use_case_service, {"target_id": document_id}),
             (self.observation_table_service, {"request_input.target_id": document_id}),

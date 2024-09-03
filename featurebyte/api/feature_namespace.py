@@ -2,7 +2,7 @@
 Feature Namespace module.
 """
 
-from typing import Any, ClassVar, List, Optional, Union
+from typing import Any, ClassVar, Optional, Union
 
 import pandas as pd
 
@@ -34,14 +34,14 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
     _update_schema_class: ClassVar[Any] = FeatureNamespaceUpdate
     _list_schema: ClassVar[Any] = FeatureNamespaceModelResponse
     _get_schema: ClassVar[Any] = FeatureNamespaceModelResponse
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         *FEATURE_COMMON_LIST_FIELDS,
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = FEATURE_LIST_FOREIGN_KEYS
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = FEATURE_LIST_FOREIGN_KEYS
 
     @property
-    def feature_ids(self) -> List[PydanticObjectId]:
+    def feature_ids(self) -> list[PydanticObjectId]:
         """
         List of feature IDs from the same feature namespace
 
@@ -52,7 +52,7 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
         return self.cached_model.feature_ids
 
     @property
-    def online_enabled_feature_ids(self) -> List[PydanticObjectId]:
+    def online_enabled_feature_ids(self) -> list[PydanticObjectId]:
         """
         List of online-enabled feature IDs from the same feature namespace
 
@@ -97,8 +97,8 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
     def list(
         cls,
         include_id: Optional[bool] = False,
-        primary_entity: Optional[Union[str, List[str]]] = None,
-        primary_table: Optional[Union[str, List[str]]] = None,
+        primary_entity: Optional[Union[str, list[str]]] = None,
+        primary_table: Optional[Union[str, list[str]]] = None,
     ) -> pd.DataFrame:
         """
         List saved features

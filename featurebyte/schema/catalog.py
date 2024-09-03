@@ -4,8 +4,6 @@ Catalog API payload schema
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from bson import ObjectId
 from pydantic import Field
 
@@ -25,10 +23,10 @@ class CatalogCreate(FeatureByteBaseModel):
     Catalog creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    default_feature_store_ids: List[PydanticObjectId]
-    online_store_id: Optional[PydanticObjectId] = Field(default=None)
+    default_feature_store_ids: list[PydanticObjectId]
+    online_store_id: PydanticObjectId | None = Field(default=None)
 
 
 class CatalogList(PaginationMixin):
@@ -36,7 +34,7 @@ class CatalogList(PaginationMixin):
     Paginated list of Catalog
     """
 
-    data: List[CatalogModel]
+    data: list[CatalogModel]
 
 
 class CatalogUpdate(FeatureByteBaseModel):
@@ -44,7 +42,7 @@ class CatalogUpdate(FeatureByteBaseModel):
     Catalog update schema
     """
 
-    name: Optional[NameStr] = Field(default=None)
+    name: NameStr | None = Field(default=None)
 
 
 class CatalogOnlineStoreUpdate(BaseDocumentServiceUpdateSchema):
@@ -52,7 +50,7 @@ class CatalogOnlineStoreUpdate(BaseDocumentServiceUpdateSchema):
     Catalog update online store schema
     """
 
-    online_store_id: Optional[PydanticObjectId] = Field(default=None)
+    online_store_id: PydanticObjectId | None = Field(default=None)
 
 
 class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
@@ -60,14 +58,14 @@ class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):
     Catalog service update schema
     """
 
-    name: Optional[NameStr] = Field(default=None)
+    name: NameStr | None = Field(default=None)
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """
         Unique constraints checking
         """
 
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("name",),
                 conflict_fields_signature={"name": ["name"]},

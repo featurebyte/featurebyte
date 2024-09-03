@@ -4,7 +4,8 @@ Utilities related to progress update
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Tuple
+from collections.abc import Coroutine
+from typing import Any, Callable
 
 ProgressCallbackType = Callable[..., Coroutine[Any, Any, None]]
 
@@ -57,7 +58,7 @@ def get_ranged_progress_callback(
 def divide_progress_callback(
     progress_callback: Callable[..., Coroutine[Any, Any, None]],
     at_percent: int | float,
-) -> Tuple[ProgressCallbackType, ProgressCallbackType]:
+) -> tuple[ProgressCallbackType, ProgressCallbackType]:
     """
     Divide a progress callback into two ranged progress callbacks at the specified percent
 

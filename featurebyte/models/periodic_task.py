@@ -3,7 +3,7 @@ Periodic Task document model
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import pymongo
 from pydantic import Field
@@ -50,8 +50,8 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
     task: str
     interval: Optional[Interval] = Field(default=None)
     crontab: Optional[Crontab] = Field(default=None)
-    args: List[Any]
-    kwargs: Dict[str, Any]
+    args: list[Any]
+    kwargs: dict[str, Any]
 
     queue: Optional[str] = Field(default=None)
     exchange: Optional[str] = Field(default=None)
@@ -80,7 +80,7 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "periodic_task"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

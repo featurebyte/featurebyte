@@ -5,7 +5,7 @@ Test gen ref pages docs builder.
 import re
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Set
+from typing import Any
 
 import pytest
 
@@ -67,7 +67,7 @@ class NavItem:
     property: str
     markdown_filename: str
 
-    def is_missing(self, all_markdown_files: Set[str]):
+    def is_missing(self, all_markdown_files: set[str]):
         reference_file = f"reference/{self.markdown_filename}"
         return (
             MISSING_DEBUG_MARKDOWN in self.markdown_filename

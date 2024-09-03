@@ -5,8 +5,9 @@ OfflineStoreFeatureTableUpdateService class
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Coroutine, Iterable
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, Dict, Iterable, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, cast
 
 from bson import ObjectId
 
@@ -59,13 +60,13 @@ class OfflineIngestGraphContainer:
     This helper class breaks FeatureModel objects into groups by offline store feature table name.
     """
 
-    offline_store_table_name_to_features: Dict[str, List[FeatureModel]]
-    offline_store_table_name_to_graphs: Dict[str, List[OfflineStoreIngestQueryGraph]]
+    offline_store_table_name_to_features: dict[str, list[FeatureModel]]
+    offline_store_table_name_to_graphs: dict[str, list[OfflineStoreIngestQueryGraph]]
 
     @classmethod
     async def build(
         cls,
-        features: List[FeatureModel],
+        features: list[FeatureModel],
     ) -> OfflineIngestGraphContainer:
         """
         Build OfflineIngestGraphContainer
@@ -102,7 +103,7 @@ class OfflineIngestGraphContainer:
 
     def get_offline_ingest_graphs(
         self, feature_table_name: str
-    ) -> List[OfflineStoreIngestQueryGraph]:
+    ) -> list[OfflineStoreIngestQueryGraph]:
         """
         Get offline ingest graphs by offline store feature table name
 
@@ -117,7 +118,7 @@ class OfflineIngestGraphContainer:
         """
         return self.offline_store_table_name_to_graphs[feature_table_name]
 
-    def iterate_features_by_table_name(self) -> Iterable[Tuple[str, List[FeatureModel]]]:
+    def iterate_features_by_table_name(self) -> Iterable[tuple[str, list[FeatureModel]]]:
         """
         Iterate features by offline store feature table name
 
@@ -126,8 +127,7 @@ class OfflineIngestGraphContainer:
         Tuple[str, List[FeatureModel]]
             Tuple of offline store feature table name and list of features
         """
-        for table_name, features in self.offline_store_table_name_to_features.items():
-            yield table_name, features
+        yield from self.offline_store_table_name_to_features.items()
 
 
 class OfflineStoreFeatureTableManagerService:
@@ -173,10 +173,10 @@ class OfflineStoreFeatureTableManagerService:
 
     async def handle_online_enabled_features(
         self,
-        features: List[FeatureModel],
+        features: list[FeatureModel],
         feature_list_to_online_enable: FeatureListModel,
         deployment: DeploymentModel,
-        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """
         Handles the case where features are enabled for online serving by updating all affected
@@ -287,7 +287,7 @@ class OfflineStoreFeatureTableManagerService:
         self,
         feature_list_to_online_disable: FeatureListModel,
         deployment: DeploymentModel,
-        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """
         Handles the case where a feature is disabled for online serving by updating all affected
@@ -397,7 +397,7 @@ class OfflineStoreFeatureTableManagerService:
             await update_progress(100, "Updated entity lookup feature tables")
 
     @staticmethod
-    def _get_offline_store_feature_table_columns(features: List[FeatureModel]) -> List[str]:
+    def _get_offline_store_feature_table_columns(features: list[FeatureModel]) -> list[str]:
         for feature_model in features:
             info = feature_model.offline_store_info
             assert info is not None
@@ -409,18 +409,18 @@ class OfflineStoreFeatureTableManagerService:
 
     async def _get_compatible_existing_feature_table(
         self, table_name: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         feature_table_data = await self.offline_store_feature_table_service.list_documents_as_dict(
             query_filter={"name": table_name},
         )
         if feature_table_data["total"] > 0:
-            return cast(Dict[str, Any], feature_table_data["data"][0])
+            return cast(dict[str, Any], feature_table_data["data"][0])
         return None
 
     async def _update_offline_store_feature_table(
         self,
-        feature_table_dict: Dict[str, Any],
-        updated_feature_ids: List[ObjectId],
+        feature_table_dict: dict[str, Any],
+        updated_feature_ids: list[ObjectId],
     ) -> OfflineStoreFeatureTableModel:
         feature_job_setting = None
         if feature_table_dict["feature_job_setting"]:
@@ -440,9 +440,7 @@ class OfflineStoreFeatureTableManagerService:
             ),
         )
 
-    async def _get_entities(
-        self, entity_ids: Optional[List[PydanticObjectId]]
-    ) -> List[EntityModel]:
+    async def _get_entities(self, entity_ids: list[PydanticObjectId] | None) -> list[EntityModel]:
         entities_mapping = {}
         query_filter = {} if entity_ids is None else {"_id": {"$in": entity_ids}}
         async for entity_model in self.entity_service.list_documents_iterator(
@@ -458,9 +456,9 @@ class OfflineStoreFeatureTableManagerService:
 
     async def _get_feature_ids_to_model(
         self,
-        feature_ids: List[ObjectId],
-    ) -> Dict[ObjectId, FeatureModel]:
-        feature_ids_to_model: Dict[ObjectId, FeatureModel] = {}
+        feature_ids: list[ObjectId],
+    ) -> dict[ObjectId, FeatureModel]:
+        feature_ids_to_model: dict[ObjectId, FeatureModel] = {}
         async for feature_model in self.feature_service.list_documents_iterator(
             query_filter={"_id": {"$in": feature_ids}}
         ):
@@ -470,10 +468,10 @@ class OfflineStoreFeatureTableManagerService:
     async def _construct_offline_store_feature_table_model(
         self,
         feature_table_name: str,
-        feature_ids: List[ObjectId],
-        primary_entity_ids: List[PydanticObjectId],
+        feature_ids: list[ObjectId],
+        primary_entity_ids: list[PydanticObjectId],
         has_ttl: bool,
-        feature_job_setting: Optional[FeatureJobSetting],
+        feature_job_setting: FeatureJobSetting | None,
     ) -> OfflineStoreFeatureTableModel:
         feature_ids_to_model = await self._get_feature_ids_to_model(feature_ids)
         primary_entities = await self._get_entities(primary_entity_ids)
@@ -494,9 +492,9 @@ class OfflineStoreFeatureTableManagerService:
 
     async def _get_online_enabled_feature_lists(
         self,
-        feature_list_to_online_enable: Optional[FeatureListModel] = None,
-        feature_list_to_online_disable: Optional[FeatureListModel] = None,
-    ) -> List[FeatureListModel]:
+        feature_list_to_online_enable: FeatureListModel | None = None,
+        feature_list_to_online_disable: FeatureListModel | None = None,
+    ) -> list[FeatureListModel]:
         feature_lists = []
         fl_has_been_enabled = False
         async for (
@@ -525,11 +523,11 @@ class OfflineStoreFeatureTableManagerService:
 
     async def _create_or_update_feast_registry(
         self,
-        feature_lists: List[FeatureListModel],
+        feature_lists: list[FeatureListModel],
         active_feature_list: FeatureListModel,
         deployment: DeploymentModel,
         to_enable: bool,
-    ) -> Optional[FeastRegistryModel]:
+    ) -> FeastRegistryModel | None:
         feast_registry = await self.feast_registry_service.get_feast_registry(deployment)
         if feast_registry is None:
             if to_enable:
@@ -587,7 +585,7 @@ class OfflineStoreFeatureTableManagerService:
     async def _update_precomputed_lookup_feature_table_enable_deployment(
         self,
         feature_table_id: PydanticObjectId,
-        feature_ids: List[PydanticObjectId],
+        feature_ids: list[PydanticObjectId],
         active_feature_list: FeatureListModel,
         feature_store_model: FeatureStoreModel,
         deployment: DeploymentModel,
@@ -713,12 +711,12 @@ class OfflineStoreFeatureTableManagerService:
 
     async def _update_table_and_column_comments(
         self,
-        new_tables: List[OfflineStoreFeatureTableModel],
-        new_features: List[FeatureModel],
+        new_tables: list[OfflineStoreFeatureTableModel],
+        new_features: list[FeatureModel],
         feature_store_model: FeatureStoreModel,
-        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
-        comments: List[Union[TableComment, ColumnComment]] = []
+        comments: list[TableComment | ColumnComment] = []
         for feature_table_model in new_tables:
             comments.append(
                 await self.offline_store_feature_table_comment_service.generate_table_comment(
@@ -735,7 +733,7 @@ class OfflineStoreFeatureTableManagerService:
         )
 
     async def update_table_deployment_reference(
-        self, feature_ids: List[PydanticObjectId], deployment_id: ObjectId, to_enable: bool
+        self, feature_ids: list[PydanticObjectId], deployment_id: ObjectId, to_enable: bool
     ) -> None:
         """
         Update deployment reference in offline store feature tables

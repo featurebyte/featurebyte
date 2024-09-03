@@ -4,7 +4,7 @@ HistoricalFeaturesTaskPayload schema
 
 from __future__ import annotations
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import Field
 
@@ -26,4 +26,4 @@ class HistoricalFeatureTableTaskPayload(BaseTaskPayload, HistoricalFeatureTableC
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
-    observation_set_storage_path: Optional[str] = Field(default=None)
+    observation_set_storage_path: str | None = Field(default=None)

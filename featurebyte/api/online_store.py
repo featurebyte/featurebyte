@@ -4,7 +4,7 @@ OnlineStore class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar
 
 from bson import ObjectId
 from pandas import DataFrame
@@ -29,13 +29,13 @@ class OnlineStore(OnlineStoreModel, SavableApiObject, DeletableApiObject):
     _route: ClassVar[str] = "/online_store"
     _list_schema: ClassVar[Any] = OnlineStoreModel
     _get_schema: ClassVar[Any] = OnlineStoreModel
-    _list_fields: ClassVar[List[str]] = ["name", "details", "created_at"]
+    _list_fields: ClassVar[list[str]] = ["name", "details", "created_at"]
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = OnlineStoreCreate(**self.model_dump(by_alias=True))
         return data.json_dict()
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of the online store represented by the
         OnlineStore object. The dictionary contains the following keys:
@@ -205,7 +205,7 @@ class OnlineStore(OnlineStoreModel, SavableApiObject, DeletableApiObject):
         return cls._get_by_id(id=id)
 
     @classmethod
-    def list(cls, include_id: Optional[bool] = True) -> DataFrame:
+    def list(cls, include_id: bool | None = True) -> DataFrame:
         """
         Returns a DataFrame that lists the online stores by their names, types and creation dates.
 

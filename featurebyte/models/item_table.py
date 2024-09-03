@@ -4,7 +4,7 @@ This module contains ItemTable related models
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Tuple, Type
+from typing import Any, ClassVar
 
 from pydantic import Field, model_validator
 
@@ -45,7 +45,7 @@ class ItemTableModel(ItemTableData, TableModel):
         Datetime when the ItemTable object was last updated
     """
 
-    _table_data_class: ClassVar[Type[ItemTableData]] = ItemTableData
+    _table_data_class: ClassVar[type[ItemTableData]] = ItemTableData
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -59,14 +59,14 @@ class ItemTableModel(ItemTableData, TableModel):
         )
     )
 
-    event_table_model: Optional[EventTableModel] = Field(default=None, exclude=True)
+    event_table_model: EventTableModel | None = Field(default=None, exclude=True)
 
     @property
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         return [self.item_id_column]
 
     @property
-    def special_columns(self) -> List[str]:
+    def special_columns(self) -> list[str]:
         cols = [
             self.item_id_column,
             self.event_id_column,
@@ -79,7 +79,7 @@ class ItemTableModel(ItemTableData, TableModel):
         input_node: InputNode,
         metadata: ItemViewMetadata,
         **kwargs: Any,
-    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+    ) -> tuple[GraphNode, list[ColumnInfo]]:
         table_data = ItemTableData(**self.model_dump(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations
         )

@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import json
 import os.path
-from typing import Optional
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
@@ -466,7 +465,7 @@ def event_table_factory_fixture(test_dir, feature_store, event_table_service, se
     _ = feature_store
 
     async def factory(
-        remove_feature_job_setting: Optional[bool] = False,
+        remove_feature_job_setting: bool | None = False,
     ):
         fixture_path = os.path.join(test_dir, "fixtures/request_payloads/event_table.json")
         with open(fixture_path, encoding="utf") as fhandle:

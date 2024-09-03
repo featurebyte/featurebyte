@@ -4,14 +4,14 @@ RelationshipAnalysisService class
 
 from __future__ import annotations
 
-from typing import List, TypeVar
+from typing import TypeVar
 
 from featurebyte.models.entity import EntityModel
 
 EntityModelT = TypeVar("EntityModelT", bound=EntityModel)
 
 
-def derive_primary_entity(entities: List[EntityModelT]) -> List[EntityModelT]:
+def derive_primary_entity(entities: list[EntityModelT]) -> list[EntityModelT]:
     """
     Derive the primary entity from a list of entities
 

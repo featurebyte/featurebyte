@@ -2,7 +2,7 @@
 Tile Generate entity tracking Job script
 """
 
-from typing import Any, List
+from typing import Any
 
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
@@ -17,7 +17,7 @@ class TileGenerateEntityTracking(BaseSqlModel):
     Tile Generate entity tracking script
     """
 
-    entity_column_names: List[str]
+    entity_column_names: list[str]
     entity_tracker_table_name: str
     entity_table: str
 

@@ -4,7 +4,8 @@ TileCacheService class
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Optional
+from collections.abc import Coroutine
+from typing import Any, Callable
 
 from bson import ObjectId
 
@@ -40,7 +41,7 @@ class TileCacheService:
         request_table_name: str,
         feature_store_id: ObjectId,
         serving_names_mapping: dict[str, str] | None = None,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """
         Compute tiles on demand for the given graph and nodes.

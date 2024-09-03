@@ -6,7 +6,8 @@ from __future__ import annotations
 
 import sys
 from collections import defaultdict
-from typing import Iterable, Optional, Sequence, Set, Type, Union
+from collections.abc import Iterable, Sequence
+from typing import Union
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -94,7 +95,7 @@ class FeatureExecutionPlan:
         source_info: SourceInfo,
         is_online_serving: bool,
         parent_serving_preparation: ParentServingPreparation | None = None,
-        feature_store_details: Optional[FeatureStoreDetails] = None,
+        feature_store_details: FeatureStoreDetails | None = None,
     ) -> None:
         aggregator_kwargs = {"source_info": source_info, "is_online_serving": is_online_serving}
         self.aggregators: dict[str, AggregatorType] = {
@@ -147,7 +148,7 @@ class FeatureExecutionPlan:
         -------
         list[str]
         """
-        out: Set[str] = set()
+        out: set[str] = set()
         for aggregator in self.iter_aggregators():
             if isinstance(aggregator, TileBasedAggregator):
                 for info in aggregator.online_join_info.values():
@@ -342,7 +343,7 @@ class FeatureExecutionPlan:
         self,
         request_table_name: str,
         point_in_time_column: str,
-        request_table_columns: Optional[list[str]],
+        request_table_columns: list[str] | None,
     ) -> tuple[CteStatement, list[str]]:
         """Construct SQL code for all aggregations
 
@@ -391,7 +392,7 @@ class FeatureExecutionPlan:
     def construct_post_aggregation_sql(
         self,
         cte_context: expressions.Select,
-        request_table_columns: Optional[list[str]],
+        request_table_columns: list[str] | None,
         exclude_post_aggregation: bool,
         agg_result_names: list[str],
         exclude_columns: set[str],
@@ -487,10 +488,10 @@ class FeatureExecutionPlan:
         self,
         request_table_name: str,
         point_in_time_column: str,
-        request_table_columns: Optional[list[str]],
-        prior_cte_statements: Optional[CteStatements] = None,
+        request_table_columns: list[str] | None,
+        prior_cte_statements: CteStatements | None = None,
         exclude_post_aggregation: bool = False,
-        exclude_columns: Optional[set[str]] = None,
+        exclude_columns: set[str] | None = None,
     ) -> expressions.Select:
         """Construct combined SQL that will generate the features
 
@@ -731,7 +732,7 @@ class FeatureExecutionPlanner:
         )
 
     def get_non_tiling_specs(
-        self, spec_cls: Type[NonTileBasedAggregationSpec], node: Node
+        self, spec_cls: type[NonTileBasedAggregationSpec], node: Node
     ) -> Sequence[NonTileBasedAggregationSpec]:
         """
         Update FeatureExecutionPlan with a node that produces NonTileBasedAggregationSpec

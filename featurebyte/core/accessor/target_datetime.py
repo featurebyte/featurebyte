@@ -4,7 +4,7 @@ Target datetime accessor module.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, TypeVar, Union
+from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.accessor.datetime import DatetimeAccessor
@@ -294,7 +294,7 @@ class TargetDatetimeAccessor(DatetimeAccessor):
         """
         return super().microsecond  # type: ignore[return-value]
 
-    def tz_offset(self, timezone_offset: Union[str, Target]) -> DatetimeAccessor:  # type: ignore[override]
+    def tz_offset(self, timezone_offset: str | Target) -> DatetimeAccessor:  # type: ignore[override]
         """
         Returns a DatetimeAccessor object with the specified timezone offset.
 

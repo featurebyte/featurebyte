@@ -4,8 +4,6 @@ Deployment model
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import pymongo
 from pydantic import Field, StrictStr
 from pydantic_settings import BaseSettings
@@ -29,14 +27,14 @@ class FeastRegistryInfo(FeatureByteBaseModel):
 class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
     """Model for a deployment"""
 
-    name: Optional[StrictStr] = Field(default=None)
+    name: StrictStr | None = Field(default=None)
     feature_list_id: PydanticObjectId
-    feature_list_namespace_id: Optional[PydanticObjectId] = Field(default=None)
+    feature_list_namespace_id: PydanticObjectId | None = Field(default=None)
     enabled: bool
-    context_id: Optional[PydanticObjectId] = Field(default=None)
-    use_case_id: Optional[PydanticObjectId] = Field(default=None)
-    registry_info: Optional[FeastRegistryInfo] = Field(default=None)
-    serving_entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    context_id: PydanticObjectId | None = Field(default=None)
+    use_case_id: PydanticObjectId | None = Field(default=None)
+    registry_info: FeastRegistryInfo | None = Field(default=None)
+    serving_entity_ids: list[PydanticObjectId] | None = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -44,7 +42,7 @@ class DeploymentModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "deployment"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

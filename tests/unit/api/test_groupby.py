@@ -2,8 +2,6 @@
 Unit test for EventViewGroupBy
 """
 
-from typing import List, Type
-
 import pytest
 from typeguard import TypeCheckError
 
@@ -402,7 +400,7 @@ def test_supported_views__aggregate(snowflake_event_view_with_entity):
 
 class BaseAggregatorTest(BaseAggregator):
     @property
-    def supported_views(self) -> List[Type[View]]:
+    def supported_views(self) -> list[type[View]]:
         return [EventView]
 
     @property

@@ -4,7 +4,8 @@ SCDTable API payload schema
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Sequence
+from collections.abc import Sequence
+from typing import Literal
 
 from pydantic import Field, StrictStr, field_validator
 
@@ -23,11 +24,11 @@ class SCDTableCreate(TableCreate):
 
     type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
     natural_key_column: StrictStr
-    surrogate_key_column: Optional[StrictStr] = Field(default=None)
+    surrogate_key_column: StrictStr | None = Field(default=None)
     effective_timestamp_column: StrictStr
-    end_timestamp_column: Optional[StrictStr] = Field(default=None)
-    current_flag_column: Optional[StrictStr] = Field(default=None)
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+    end_timestamp_column: StrictStr | None = Field(default=None)
+    current_flag_column: StrictStr | None = Field(default=None)
+    default_feature_job_setting: FeatureJobSetting | None = Field(
         default=FeatureJobSetting(blind_spot="0h", offset="0h", period="24h")
     )
 
@@ -55,9 +56,9 @@ class SCDDataUpdateMixin(FeatureByteBaseModel):
     SCDTable specific update schema
     """
 
-    end_timestamp_column: Optional[StrictStr] = Field(default=None)
-    current_flag_column: Optional[StrictStr] = Field(default=None)
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    end_timestamp_column: StrictStr | None = Field(default=None)
+    current_flag_column: StrictStr | None = Field(default=None)
+    default_feature_job_setting: FeatureJobSetting | None = Field(default=None)
 
 
 class SCDTableUpdate(SCDDataUpdateMixin, TableUpdate):

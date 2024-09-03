@@ -4,8 +4,6 @@ OnlineEnableService class
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from bson import ObjectId
 
 from featurebyte.exception import DataWarehouseConnectionError
@@ -50,7 +48,7 @@ class OnlineEnableService:
 
     async def _update_feature_lists(
         self,
-        feature_list_ids: List[PydanticObjectId],
+        feature_list_ids: list[PydanticObjectId],
         feature: FeatureModel,
     ) -> None:
         """
@@ -92,7 +90,7 @@ class OnlineEnableService:
 
     @staticmethod
     async def update_data_warehouse_with_session(
-        session: Optional[BaseSession],
+        session: BaseSession | None,
         feature_manager_service: FeatureManagerService,
         feature: FeatureModel,
         target_online_enabled: bool,

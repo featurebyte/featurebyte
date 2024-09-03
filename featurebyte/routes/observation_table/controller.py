@@ -4,7 +4,7 @@ ObservationTable API route controller
 
 from __future__ import annotations
 
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable
 
 import pandas as pd
 from bson import ObjectId
@@ -164,7 +164,7 @@ class ObservationTableController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         document = await self.service.get_document(document_id=document_id)
         return [
             (self.historical_feature_table_service, {"observation_table_id": document_id}),
@@ -212,7 +212,7 @@ class ObservationTableController(
 
     async def update_observation_table(
         self, observation_table_id: ObjectId, data: ObservationTableUpdate
-    ) -> Optional[ObservationTableModel]:
+    ) -> ObservationTableModel | None:
         """
         Update ObservationTable
 

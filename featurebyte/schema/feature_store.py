@@ -3,7 +3,7 @@ FeatureStore API payload schema
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from bson import ObjectId
 from pydantic import Field, model_validator
@@ -36,7 +36,7 @@ class FeatureStoreList(PaginationMixin):
     Paginated list of FeatureStore
     """
 
-    data: List[FeatureStoreModel]
+    data: list[FeatureStoreModel]
 
 
 class FeatureStorePreview(FeatureByteBaseModel):
@@ -57,7 +57,7 @@ class FeatureStoreSample(FeatureStorePreview):
     from_timestamp: Optional[datetime] = Field(default=None)
     to_timestamp: Optional[datetime] = Field(default=None)
     timestamp_column: Optional[str] = Field(default=None)
-    stats_names: Optional[List[str]] = Field(default=None)
+    stats_names: Optional[list[str]] = Field(default=None)
 
     @model_validator(mode="after")
     def _validate_timestamp_column(self) -> "FeatureStoreSample":

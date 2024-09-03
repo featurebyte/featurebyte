@@ -7,7 +7,7 @@ from __future__ import annotations
 import functools
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, cast
 
 import pymongo
 from bson import ObjectId
@@ -99,7 +99,7 @@ class FeatureReadinessDistribution(RootModel[Any]):
     Feature readiness distribution
     """
 
-    root: List[FeatureReadinessCount]
+    root: list[FeatureReadinessCount]
 
     @property
     def total_count(self) -> int:
@@ -234,9 +234,9 @@ class FeatureNodeDefinitionHash(FeatureByteBaseModel):
     """
 
     node_name: str
-    definition_hash: Optional[str] = Field(default=None)
-    feature_id: Optional[PydanticObjectId] = Field(default=None)
-    feature_name: Optional[str] = Field(default=None)
+    definition_hash: str | None = Field(default=None)
+    feature_id: PydanticObjectId | None = Field(default=None)
+    feature_name: str | None = Field(default=None)
 
 
 class FeatureCluster(FeatureByteBaseModel):
@@ -246,12 +246,12 @@ class FeatureCluster(FeatureByteBaseModel):
 
     feature_store_id: PydanticObjectId
     graph: QueryGraph
-    node_names: List[StrictStr]
-    feature_node_relationships_infos: Optional[List[FeatureNodeRelationshipsInfo]] = Field(
+    node_names: list[StrictStr]
+    feature_node_relationships_infos: list[FeatureNodeRelationshipsInfo] | None = Field(
         default=None
     )
-    feature_node_definition_hashes: Optional[List[FeatureNodeDefinitionHash]] = Field(default=None)
-    combined_relationships_info: List[EntityRelationshipInfo] = Field(frozen=True)
+    feature_node_definition_hashes: list[FeatureNodeDefinitionHash] | None = Field(default=None)
+    combined_relationships_info: list[EntityRelationshipInfo] = Field(frozen=True)
 
     @model_validator(mode="before")
     @classmethod
@@ -261,14 +261,14 @@ class FeatureCluster(FeatureByteBaseModel):
 
         if "combined_relationships_info" in values:
             return values
-        combined_relationships_info: Set[EntityRelationshipInfo] = set()
+        combined_relationships_info: set[EntityRelationshipInfo] = set()
         for info in values.get("feature_node_relationships_infos", []):
             combined_relationships_info.update(info.relationships_info or [])
         values["combined_relationships_info"] = list(combined_relationships_info)
         return values
 
     @property
-    def nodes(self) -> List[Node]:
+    def nodes(self) -> list[Node]:
         """
         Get feature nodes
 
@@ -278,7 +278,7 @@ class FeatureCluster(FeatureByteBaseModel):
         """
         return [self.graph.get_node_by_name(name) for name in self.node_names]
 
-    def get_nodes_for_feature_names(self, feature_names: List[str]) -> List[Node]:
+    def get_nodes_for_feature_names(self, feature_names: list[str]) -> list[Node]:
         """
         Get feature nodes for a list of feature names
 
@@ -299,7 +299,7 @@ class FeatureCluster(FeatureByteBaseModel):
         return selected_nodes
 
 
-ServingEntity = List[PydanticObjectId]
+ServingEntity = list[PydanticObjectId]
 
 
 class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
@@ -335,40 +335,40 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     version: VersionIdentifier = Field(frozen=True, description="Feature list version")
-    relationships_info: Optional[List[EntityRelationshipInfo]] = Field(
+    relationships_info: list[EntityRelationshipInfo] | None = Field(
         frozen=True,
         default=None,  # DEV-556
     )
-    features_entity_lookup_info: Optional[List[FeatureEntityLookupInfo]] = Field(
+    features_entity_lookup_info: list[FeatureEntityLookupInfo] | None = Field(
         frozen=True, default=None
     )
-    supported_serving_entity_ids: List[ServingEntity] = Field(frozen=True, default_factory=list)
+    supported_serving_entity_ids: list[ServingEntity] = Field(frozen=True, default_factory=list)
     readiness_distribution: FeatureReadinessDistribution = Field(
         frozen=True, default=FeatureReadinessDistribution(root=[])
     )
-    dtype_distribution: List[FeatureTypeFeatureCount] = Field(frozen=True, default_factory=list)
+    dtype_distribution: list[FeatureTypeFeatureCount] = Field(frozen=True, default_factory=list)
     deployed: bool = Field(frozen=True, default=False)
 
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
-    feature_clusters_path: Optional[str] = Field(default=None)
-    internal_feature_clusters: Optional[List[Any]] = Field(alias="feature_clusters", default=None)
-    _feature_clusters: Optional[List[FeatureCluster]] = PrivateAttr(default=None)
+    feature_clusters_path: str | None = Field(default=None)
+    internal_feature_clusters: list[Any] | None = Field(alias="feature_clusters", default=None)
+    _feature_clusters: list[FeatureCluster] | None = PrivateAttr(default=None)
 
     # list of IDs attached to this feature list
-    feature_ids: List[PydanticObjectId]
-    primary_entity_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
-    entity_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
-    features_primary_entity_ids: List[List[PydanticObjectId]] = Field(
+    feature_ids: list[PydanticObjectId]
+    primary_entity_ids: list[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    entity_ids: list[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    features_primary_entity_ids: list[list[PydanticObjectId]] = Field(
         frozen=True, default_factory=list
     )
-    table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    table_ids: list[PydanticObjectId] = Field(frozen=True, default_factory=list)
     feature_list_namespace_id: PydanticObjectId = Field(frozen=True, default_factory=ObjectId)
-    online_enabled_feature_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
-    aggregation_ids: List[str] = Field(frozen=True, default_factory=list)
+    online_enabled_feature_ids: list[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    aggregation_ids: list[str] = Field(frozen=True, default_factory=list)
 
     # store info contains the warehouse specific info for the feature list
-    internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)
+    internal_store_info: dict[str, Any] | None = Field(alias="store_info", default=None)
 
     # pydantic validators
     _sort_ids_validator = field_validator(
@@ -382,7 +382,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     _version_validator = field_validator("version", mode="before")(version_validator)
 
     @field_serializer("internal_feature_clusters", when_used="json")
-    def _serialize_clusters(self, clusters: Optional[List[Any]]) -> Optional[List[Any]]:
+    def _serialize_clusters(self, clusters: list[Any] | None) -> list[Any] | None:
         feature_clusters = self.feature_clusters
         if clusters and feature_clusters:
             return [
@@ -393,8 +393,8 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     @field_validator("supported_serving_entity_ids")
     @classmethod
     def _validate_supported_serving_entity_ids(
-        cls, value: List[ServingEntity]
-    ) -> List[ServingEntity]:
+        cls, value: list[ServingEntity]
+    ) -> list[ServingEntity]:
         return [
             sorted(set(serving_entity))
             for serving_entity in sorted(value, key=lambda e: (len(e), e))
@@ -409,7 +409,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         # "features" is not an attribute to the FeatureList model, when it appears in the input to
         # constructor, it is intended to be used to derive other feature-related attributes
         if "features" in values:
-            features: List[FeatureModel] = values["features"]
+            features: list[FeatureModel] = values["features"]
             values["readiness_distribution"] = cls.derive_readiness_distribution(features)
             values["dtype_distribution"] = cls.derive_dtype_distribution(features)
             try:
@@ -448,7 +448,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         return values
 
     @staticmethod
-    def derive_readiness_distribution(features: List[FeatureModel]) -> FeatureReadinessDistribution:
+    def derive_readiness_distribution(features: list[FeatureModel]) -> FeatureReadinessDistribution:
         """
         Derive feature readiness distribution from features
 
@@ -470,7 +470,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         ])
 
     @staticmethod
-    def derive_dtype_distribution(features: List[FeatureModel]) -> List[FeatureTypeFeatureCount]:
+    def derive_dtype_distribution(features: list[FeatureModel]) -> list[FeatureTypeFeatureCount]:
         """
         Derive feature table type distribution from features
 
@@ -492,7 +492,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         ]
 
     @staticmethod
-    def derive_feature_clusters(features: List[FeatureModel]) -> List[FeatureCluster]:
+    def derive_feature_clusters(features: list[FeatureModel]) -> list[FeatureCluster]:
         """
         Derive feature_clusters attribute from features
 
@@ -558,7 +558,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         return f"{self.name}_{self.version.to_str()}"
 
     @property
-    def feature_clusters(self) -> Optional[List[FeatureCluster]]:
+    def feature_clusters(self) -> list[FeatureCluster] | None:
         """
         List of combined graphs for features from the same feature store
 
@@ -576,7 +576,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         return self._feature_clusters
 
     @classmethod
-    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
+    def _get_remote_attribute_paths(cls, document_dict: dict[str, Any]) -> list[Path]:
         paths = []
         feature_clusters_path = document_dict.get("feature_clusters_path")
         if feature_clusters_path:
@@ -597,10 +597,10 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
 
     def initialize_store_info(
         self,
-        features: List[FeatureModel],
+        features: list[FeatureModel],
         feature_store: FeatureStoreModel,
-        feature_table_map: Dict[str, Any],
-        serving_entity_specs: Optional[List[ColumnSpec]],
+        feature_table_map: dict[str, Any],
+        serving_entity_specs: list[ColumnSpec] | None,
     ) -> None:
         """
         Initialize store info for a feature list
@@ -639,7 +639,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "feature_list"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

@@ -4,7 +4,7 @@ BatchRequestTableService class
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -38,7 +38,7 @@ class BatchRequestTableService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         entity_service: EntityService,

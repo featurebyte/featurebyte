@@ -4,7 +4,7 @@ FeatureJobSettingAnalysisService class
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -48,7 +48,7 @@ class FeatureJobSettingAnalysisService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         event_table_service: EventTableService,
         block_modification_handler: BlockModificationHandler,
         storage: Storage,

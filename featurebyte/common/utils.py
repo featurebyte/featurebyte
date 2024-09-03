@@ -10,11 +10,12 @@ import json
 import logging
 import os
 import time
+from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
-from typing import Any, Generator, Iterator, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -204,7 +205,7 @@ def prepare_dataframe_for_json(dataframe: pd.DataFrame) -> None:
 
 def dataframe_to_json(
     dataframe: pd.DataFrame,
-    type_conversions: Optional[dict[Optional[str], DBVarType]] = None,
+    type_conversions: dict[str | None, DBVarType] | None = None,
     skip_prepare: bool = False,
 ) -> dict[str, Any]:
     """
@@ -278,7 +279,7 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
         return value
 
     dataframe = pd.read_json(values["data"], orient="table", convert_dates=False)
-    type_conversions: Optional[dict[Optional[str], DBVarType]] = values.get("type_conversions")
+    type_conversions: dict[str | None, DBVarType] | None = values.get("type_conversions")
     if type_conversions:
         for col_name, dtype in type_conversions.items():
             # is col_name is None in type_conversions it should apply to the only column in the dataframe
@@ -292,7 +293,7 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
     return dataframe
 
 
-def validate_datetime_input(value: Union[datetime, str]) -> str:
+def validate_datetime_input(value: datetime | str) -> str:
     """
     Validate datetime input value
 
@@ -349,7 +350,7 @@ def enforce_observation_set_row_order(function: Any) -> Any:
     return wrapper
 
 
-def construct_repr_string(obj: object, additional_info: Optional[str] = None) -> str:
+def construct_repr_string(obj: object, additional_info: str | None = None) -> str:
     """
     Construct repr string for an object
 
@@ -371,7 +372,7 @@ def construct_repr_string(obj: object, additional_info: Optional[str] = None) ->
     return repr_str
 
 
-def convert_to_list_of_strings(value: Optional[Union[str, List[str]]]) -> List[str]:
+def convert_to_list_of_strings(value: str | list[str] | None) -> list[str]:
     """
     Convert value to list of strings
 

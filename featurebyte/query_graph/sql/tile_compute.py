@@ -4,7 +4,7 @@ On-demand tile computation for feature preview
 
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import cast
 
 import pandas as pd
 from sqlglot import expressions
@@ -51,7 +51,7 @@ class OnDemandTileComputePlan:
         source_info: SourceInfo,
     ):
         self.processed_agg_ids: set[str] = set()
-        self.max_window_size_by_tile_id: dict[str, Optional[int]] = {}
+        self.max_window_size_by_tile_id: dict[str, int | None] = {}
         self.tile_infos: list[TileGenSql] = []
         self.request_table_name = request_table_name
         self.source_info = source_info
@@ -180,7 +180,7 @@ class OnDemandTileComputePlan:
                 window_size=window_size,
             )
 
-    def get_max_window_size(self, tile_id: str) -> Optional[int]:
+    def get_max_window_size(self, tile_id: str) -> int | None:
         """Get the maximum feature window size for a given tile table id
 
         Parameters
@@ -266,7 +266,7 @@ def get_tile_sql(
     adapter: BaseAdapter,
     tile_info: TileGenSql,
     request_table_name: str,
-    window: Optional[int],
+    window: int | None,
 ) -> Select:
     """
     Construct the SQL query that would compute the tiles for a given TileGenSql.

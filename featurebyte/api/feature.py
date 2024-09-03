@@ -4,8 +4,9 @@ Feature and FeatureList classes
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from http import HTTPStatus
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Type, Union, cast
+from typing import Any, ClassVar, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -108,13 +109,13 @@ class Feature(
     _update_schema_class: ClassVar[Any] = FeatureUpdate
     _list_schema: ClassVar[Any] = FeatureModelResponse
     _get_schema: ClassVar[Any] = FeatureModelResponse
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "version",
         *FEATURE_COMMON_LIST_FIELDS,
         "is_default",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = FEATURE_LIST_FOREIGN_KEYS
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = FEATURE_LIST_FOREIGN_KEYS
 
     # pydantic instance variable (public)
     feature_store: FeatureStoreModel = Field(
@@ -130,12 +131,12 @@ class Feature(
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"feature_store": self.feature_store}
 
-    def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
+    def _get_feature_tiles_specs(self) -> list[tuple[str, list[TileSpec]]]:
         tile_specs = ExtendedFeatureModel(**self.model_dump(by_alias=True)).tile_specs
         return [(str(self.name), tile_specs)] if tile_specs else []
 
     @property
-    def row_index_lineage(self) -> Tuple[str, ...]:
+    def row_index_lineage(self) -> tuple[str, ...]:
         # Override the row_index_lineage property to return a constant value. This is so that the
         # check for row_lineage_index alignment for Feature objects always passes. The check is not
         # applicable to Feature objects because they can freely interact with each other regardless
@@ -191,12 +192,12 @@ class Feature(
 
     @property
     @substitute_docstring(doc_template=ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def entities(self) -> List[Entity]:
+    def entities(self) -> list[Entity]:
         return self._get_entities()
 
     @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def primary_entity(self) -> List[Entity]:
+    def primary_entity(self) -> list[Entity]:
         return self._get_primary_entity()
 
     @property
@@ -230,7 +231,7 @@ class Feature(
         return self._generate_definition()
 
     @typechecked
-    def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
+    def isin(self: FrozenSeriesT, other: FrozenSeries | ScalarSequence) -> FrozenSeriesT:
         """
         Identifies if each element is contained in a sequence of values represented by the `other` parameter.
 
@@ -258,7 +259,7 @@ class Feature(
         """
         return super().isin(other)
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of an Feature object. The dictionary contains
         the following keys:
@@ -306,7 +307,7 @@ class Feature(
         return super().info(verbose)
 
     @classmethod
-    def get(cls, name: str, version: Optional[str] = None) -> Feature:
+    def get(cls, name: str, version: str | None = None) -> Feature:
         """
         Retrieve the Feature from the persistent data store given the object's name, and version.
 
@@ -339,9 +340,9 @@ class Feature(
     @classmethod
     def list(
         cls,
-        include_id: Optional[bool] = False,
-        primary_entity: Optional[Union[str, List[str]]] = None,
-        primary_table: Optional[Union[str, List[str]]] = None,
+        include_id: bool | None = False,
+        primary_entity: str | list[str] | None = None,
+        primary_table: str | list[str] | None = None,
     ) -> pd.DataFrame:
         """
         List saved features
@@ -378,8 +379,8 @@ class Feature(
     @classmethod
     def _list_versions(
         cls,
-        include_id: Optional[bool] = True,
-        feature_list_id: Optional[ObjectId] = None,
+        include_id: bool | None = True,
+        feature_list_id: ObjectId | None = None,
     ) -> pd.DataFrame:
         """
         Returns a DataFrame that presents a summary of the feature versions belonging to the namespace of the
@@ -520,7 +521,7 @@ class Feature(
             return False
 
     @property
-    def deployed_feature_list_ids(self) -> List[PydanticObjectId]:
+    def deployed_feature_list_ids(self) -> list[PydanticObjectId]:
         """
         IDs of deployed feature lists which use this feature
 
@@ -633,7 +634,7 @@ class Feature(
             )
 
     @property
-    def table_id_feature_job_settings(self) -> List[TableIdFeatureJobSetting]:
+    def table_id_feature_job_settings(self) -> list[TableIdFeatureJobSetting]:
         """
         Return table feature job settings of tables used by the feature
 
@@ -645,7 +646,7 @@ class Feature(
 
     @typechecked
     def save(
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+        self, conflict_resolution: ConflictResolution = "raise", _id: ObjectId | None = None
     ) -> None:
         """
         Adds a Feature object to the catalog.
@@ -723,7 +724,7 @@ class Feature(
     @typechecked
     def astype(
         self: FrozenSeriesT,
-        new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
+        new_type: type[int] | type[float] | type[str] | Literal["int", "float", "str"],
     ) -> FrozenSeriesT:
         """
         Modifies the data type of a feature. It is useful when you need to convert feature values between numerical
@@ -793,15 +794,15 @@ class Feature(
     @typechecked
     def preview(
         self,
-        observation_set: Union[ObservationTable, pd.DataFrame],
+        observation_set: ObservationTable | pd.DataFrame,
     ) -> pd.DataFrame:
         return self._preview(observation_set=observation_set, url="/feature/preview")
 
     @typechecked
     def create_new_version(
         self,
-        table_feature_job_settings: Optional[List[TableFeatureJobSetting]] = None,
-        table_cleaning_operations: Optional[List[TableCleaningOperation]] = None,
+        table_feature_job_settings: list[TableFeatureJobSetting] | None = None,
+        table_cleaning_operations: list[TableCleaningOperation] | None = None,
     ) -> Feature:
         """
         Creates a new feature version from a Feature object. The new version is created by replacing the current
@@ -971,7 +972,7 @@ class Feature(
     @typechecked
     def update_readiness(
         self,
-        readiness: Union[FeatureReadiness, str],
+        readiness: FeatureReadiness | str,
         ignore_guardrails: bool = False,
     ) -> None:
         """
@@ -1015,9 +1016,7 @@ class Feature(
         )
 
     @typechecked
-    def update_default_version_mode(
-        self, default_version_mode: Union[DefaultVersionMode, str]
-    ) -> None:
+    def update_default_version_mode(self, default_version_mode: DefaultVersionMode | str) -> None:
         """
         Sets the default version mode of a feature.
 
@@ -1137,7 +1136,7 @@ class Feature(
     )
 
     @typechecked
-    def update_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: str | None) -> None:
         """
         Update feature description
 
@@ -1149,7 +1148,7 @@ class Feature(
         self.feature_namespace.update_description(description=description)
 
     @typechecked
-    def update_version_description(self, description: Optional[str]) -> None:
+    def update_version_description(self, description: str | None) -> None:
         """
         Update feature version description
 

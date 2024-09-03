@@ -5,7 +5,7 @@ Module for datetime operations related sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union, cast
+from typing import cast
 
 import pandas as pd
 from sqlglot import expressions
@@ -123,7 +123,7 @@ class DateDiffNode(ExpressionNode):
 class TimedeltaExtractNode(ExpressionNode):
     """Node for converting Timedelta to numeric value given a unit"""
 
-    timedelta_node: Union[TimedeltaNode, DateDiffNode]
+    timedelta_node: TimedeltaNode | DateDiffNode
     unit: TimedeltaSupportedUnitType
     query_node_type = NodeType.TIMEDELTA_EXTRACT
 
@@ -241,7 +241,7 @@ class DateAddNode(ExpressionNode):
     """Node for date increment by timedelta operation"""
 
     input_date_node: ExpressionNode
-    timedelta_node: Union[TimedeltaNode, DateDiffNode, ParsedExpressionNode]
+    timedelta_node: TimedeltaNode | DateDiffNode | ParsedExpressionNode
     query_node_type = NodeType.DATE_ADD
 
     @property

@@ -2,7 +2,7 @@
 This module contains schema related model
 """
 
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -27,7 +27,7 @@ class BaseMigrationMetadataModel(FeatureByteBaseDocumentModel):
         """
 
         collection_name: str = "__migration_metadata"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

@@ -2,12 +2,12 @@
 BigQuery UDF util
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import numpy as np
 
 
-def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
+def to_object(obj_dict: Optional[dict[Any, Any]]) -> str:
     """
     Returns an expression converts the dict to an object in BigQuery
 

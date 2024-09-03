@@ -2,7 +2,7 @@
 This module contains graph node class.
 """
 
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Optional, cast
 
 from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.models.base import FeatureByteBaseModel
@@ -37,13 +37,13 @@ class GraphNode(BaseGraphNode):
     def create(
         cls,
         node_type: NodeType,
-        node_params: Dict[str, Any],
+        node_params: dict[str, Any],
         node_output_type: NodeOutputType,
-        input_nodes: List[Node],
+        input_nodes: list[Node],
         graph_node_type: GraphNodeType,
-        nested_node_input_indices: Optional[List[int]] = None,
+        nested_node_input_indices: Optional[list[int]] = None,
         metadata: Optional[FeatureByteBaseModel] = None,
-    ) -> Tuple["GraphNode", List[Node]]:
+    ) -> tuple["GraphNode", list[Node]]:
         """
         Construct a graph node
 
@@ -109,9 +109,9 @@ class GraphNode(BaseGraphNode):
     def add_operation(
         self,
         node_type: NodeType,
-        node_params: Dict[str, Any],
+        node_params: dict[str, Any],
         node_output_type: NodeOutputType,
-        input_nodes: List[Node],
+        input_nodes: list[Node],
     ) -> Node:
         """
         Add operation to the query graph inside the graph node

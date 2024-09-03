@@ -4,10 +4,11 @@ This module contains generic function related node classes
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
+from collections.abc import Sequence
+from typing import Annotated, Any, Optional, Union, cast
 
 from pydantic import Field
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, FunctionParameterInputForm
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -48,7 +49,7 @@ class BaseFunctionParameterInput(FeatureByteBaseModel):
     dtype: DBVarType
 
     @abstractmethod
-    def get_column_args(self) -> List[Optional[str]]:
+    def get_column_args(self) -> list[Optional[str]]:
         """
         Get column arguments (column name or None) for the function parameter input.
         If the input is a value, return empty list.
@@ -60,8 +61,8 @@ class BaseFunctionParameterInput(FeatureByteBaseModel):
 
     @abstractmethod
     def get_sdk_function_argument(
-        self, node_inputs: List[VarNameExpressionInfo], node_input_index: int
-    ) -> Tuple[SDKFunctionArgument, int]:
+        self, node_inputs: list[VarNameExpressionInfo], node_input_index: int
+    ) -> tuple[SDKFunctionArgument, int]:
         """
         Get SDK function argument for the function parameter input.
 
@@ -85,12 +86,12 @@ class ValueFunctionParameterInput(BaseFunctionParameterInput):
     value: Optional[ValueParameterType] = Field(default=None)
     input_form: Literal[FunctionParameterInputForm.VALUE] = FunctionParameterInputForm.VALUE
 
-    def get_column_args(self) -> List[Optional[str]]:
+    def get_column_args(self) -> list[Optional[str]]:
         return []
 
     def get_sdk_function_argument(
-        self, node_inputs: List[VarNameExpressionInfo], node_input_index: int
-    ) -> Tuple[SDKFunctionArgument, int]:
+        self, node_inputs: list[VarNameExpressionInfo], node_input_index: int
+    ) -> tuple[SDKFunctionArgument, int]:
         # do not increment node_input_index as this is a value input, it should not increment the node_input_index
         if isinstance(self.value, TimestampValue):
             return ClassEnum.PD_TIMESTAMP(self.value.iso_format_str), node_input_index
@@ -105,12 +106,12 @@ class ColumnFunctionParameterInput(BaseFunctionParameterInput):
     column_name: Optional[str] = Field(default=None)
     input_form: Literal[FunctionParameterInputForm.COLUMN] = FunctionParameterInputForm.COLUMN
 
-    def get_column_args(self) -> List[Optional[str]]:
+    def get_column_args(self) -> list[Optional[str]]:
         return [self.column_name]
 
     def get_sdk_function_argument(
-        self, node_inputs: List[VarNameExpressionInfo], node_input_index: int
-    ) -> Tuple[SDKFunctionArgument, int]:
+        self, node_inputs: list[VarNameExpressionInfo], node_input_index: int
+    ) -> tuple[SDKFunctionArgument, int]:
         # InfoDict is not expected here as it should be used only in (ConditionNode - AssignNode) structure
         value = node_inputs[node_input_index]
         assert not isinstance(value, InfoDict), "Unexpected InfoDict type"
@@ -129,7 +130,7 @@ class GenericFunctionNodeParameters(FeatureByteBaseModel):
 
     name: str
     sql_function_name: str
-    function_parameters: List[FunctionParameterInput]
+    function_parameters: list[FunctionParameterInput]
     output_dtype: DBVarType
     function_id: PydanticObjectId
 
@@ -140,7 +141,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
     type: Literal[NodeType.GENERIC_FUNCTION] = NodeType.GENERIC_FUNCTION
     parameters: GenericFunctionNodeParameters
 
-    def _get_column_function_args(self) -> List[Optional[str]]:
+    def _get_column_function_args(self) -> list[Optional[str]]:
         column_input_args = []
         for func_arg in self.parameters.function_parameters:
             column_input_args.extend(func_arg.get_column_args())
@@ -151,19 +152,19 @@ class GenericFunctionNode(BaseSeriesOutputNode):
         return len(self._get_column_function_args())
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         column_input_args = self._get_column_function_args()
         if column_input_args[input_index] is None:
             return []
         return [column_input_args[input_index]]  # type: ignore
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return self.parameters.output_dtype
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         input_category = inputs[0].output_category
@@ -187,7 +188,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
             columns.extend(input_operation_structure.columns)
             aggregations.extend(input_operation_structure.aggregations)
 
-        node_kwargs: Dict[str, Any] = {"columns": []}
+        node_kwargs: dict[str, Any] = {"columns": []}
         if input_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
                 DerivedDataColumn.create(
@@ -219,13 +220,13 @@ class GenericFunctionNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        function_parameters: List[Any] = []
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
+        function_parameters: list[Any] = []
         node_input_index = 0
         for func_param in self.parameters.function_parameters:
             func_param_val, node_input_index = func_param.get_sdk_function_argument(
@@ -235,7 +236,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
 
         # if function_id in var_name_generator.func_id_to_var_name,
         # it means there is a udf variable name is corresponding to the function_id.
-        statements: List[StatementT] = []
+        statements: list[StatementT] = []
         to_retrieve_udf = self.parameters.function_id not in var_name_generator.func_id_to_var_name
         udf_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix=f"udf_{self.parameters.name}",
@@ -264,10 +265,10 @@ class GenericFunctionNode(BaseSeriesOutputNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         if config.to_generate_null_filling_function:
             # NOTE: We make an assumption that all UDFs does not have null filling capability,
             # any null input(s) will result in null output.

@@ -4,7 +4,7 @@ TargetTable API payload schema
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
@@ -22,14 +22,14 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
     TargetTable creation payload
     """
 
-    serving_names_mapping: Optional[Dict[str, str]] = Field(default=None)
-    target_id: Optional[PydanticObjectId] = Field(default=None)
-    graph: Optional[QueryGraph] = Field(default=None)
+    serving_names_mapping: dict[str, str] | None = Field(default=None)
+    target_id: PydanticObjectId | None = Field(default=None)
+    graph: QueryGraph | None = Field(default=None)
     # Note that even though node_names is a list, we typically only expect one node. We can't change this to a non-list
     # for backwards compatibility reasons.
-    node_names: Optional[List[StrictStr]] = Field(default=None)
-    request_input: Optional[TargetInput] = Field(default=None)
-    context_id: Optional[PydanticObjectId] = Field(default=None)
+    node_names: list[StrictStr] | None = Field(default=None)
+    request_input: TargetInput | None = Field(default=None)
+    context_id: PydanticObjectId | None = Field(default=None)
     skip_entity_validation_checks: bool = Field(default=False)
 
     @model_validator(mode="before")
@@ -65,7 +65,7 @@ class TargetTableCreate(FeatureOrTargetTableCreate):
         )
 
     @property
-    def nodes(self) -> List[Node]:
+    def nodes(self) -> list[Node]:
         """
         Get target nodes
 
@@ -83,7 +83,7 @@ class TargetTableList(PaginationMixin):
     Schema for listing targe tables
     """
 
-    data: List[ObservationTableModel]
+    data: list[ObservationTableModel]
 
 
 class TargetTableListRecord(BaseMaterializedTableListRecord):

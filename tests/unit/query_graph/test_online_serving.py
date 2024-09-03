@@ -3,7 +3,6 @@ Tests for featurebyte.query_graph.sql.online_serving
 """
 
 import textwrap
-from typing import List
 from unittest.mock import patch
 
 import pandas as pd
@@ -63,7 +62,7 @@ def mocked_unique_identifier_generator_fixture():
         yield patched_object_id
 
 
-def get_aggregation_specs(graph, groupby_node, adapter) -> List[TileBasedAggregationSpec]:
+def get_aggregation_specs(graph, groupby_node, adapter) -> list[TileBasedAggregationSpec]:
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(graph, groupby_node, adapter, True)
     return agg_specs
 

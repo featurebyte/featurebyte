@@ -4,7 +4,8 @@ FeatureReadinessService
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from bson import ObjectId
 from pymongo.errors import OperationFailure
@@ -54,7 +55,7 @@ class FeatureReadinessService:
 
     async def _get_default_feature_list_doc(
         self, feature_list_ids: Sequence[ObjectId]
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get default feature from list of feature IDs
 
@@ -68,7 +69,7 @@ class FeatureReadinessService:
         Dict[str, Any]
         """
         assert len(feature_list_ids) > 0, "feature_list_ids should not be empty"
-        default_feature_list: Optional[Dict[str, Any]] = None
+        default_feature_list: dict[str, Any] | None = None
         async for feature_list in self.feature_list_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_list_ids}}
         ):
@@ -92,7 +93,7 @@ class FeatureReadinessService:
     async def update_feature_list_namespace(
         self,
         feature_list_namespace_id: ObjectId,
-        deleted_feature_list_ids: Optional[list[ObjectId]] = None,
+        deleted_feature_list_ids: list[ObjectId] | None = None,
     ) -> FeatureListNamespaceModel:
         """
         Update default feature list and feature list readiness distribution in feature list namespace
@@ -141,7 +142,7 @@ class FeatureReadinessService:
         feature_list_id: ObjectId,
         from_readiness: FeatureReadiness,
         to_readiness: FeatureReadiness,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Update FeatureReadiness distribution in feature list
 
@@ -173,7 +174,7 @@ class FeatureReadinessService:
             return await self.feature_list_service.get_document_as_dict(document_id=feature_list_id)
         return document
 
-    async def _get_default_feature(self, feature_ids: Sequence[ObjectId]) -> Dict[str, Any]:
+    async def _get_default_feature(self, feature_ids: Sequence[ObjectId]) -> dict[str, Any]:
         """
         Get default feature from list of feature IDs
 
@@ -187,7 +188,7 @@ class FeatureReadinessService:
         Dict[str, Any]
         """
         assert len(feature_ids) > 0, "feature_ids should not be empty"
-        default_feature: Optional[Dict[str, Any]] = None
+        default_feature: dict[str, Any] | None = None
         async for feature in self.feature_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": feature_ids}}
         ):
@@ -210,7 +211,7 @@ class FeatureReadinessService:
     async def update_feature_namespace(
         self,
         feature_namespace_id: ObjectId,
-        deleted_feature_ids: Optional[list[ObjectId]] = None,
+        deleted_feature_ids: list[ObjectId] | None = None,
     ) -> FeatureNamespaceModel:
         """
         Update default feature and feature readiness in feature namespace

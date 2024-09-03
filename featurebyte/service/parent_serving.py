@@ -5,7 +5,6 @@ Module to support serving parent features using child entities
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import List, Optional
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.entity_validation import EntityInfo
@@ -39,7 +38,7 @@ class ParentEntityLookupService:
     async def get_required_join_steps(
         self,
         entity_info: EntityInfo,
-        relationships_info: Optional[list[EntityRelationshipInfo]] = None,
+        relationships_info: list[EntityRelationshipInfo] | None = None,
     ) -> list[EntityLookupStep]:
         """
         Get the list of required JoinStep to lookup the missing entities in the request
@@ -85,7 +84,7 @@ class ParentEntityLookupService:
         return list(all_join_steps.values())
 
     async def get_entity_lookup_step_creator(
-        self, entity_relationships_info: List[EntityRelationshipInfo]
+        self, entity_relationships_info: list[EntityRelationshipInfo]
     ) -> EntityLookupStepCreator:
         """
         Creates an instance of EntityLookupStepCreator
@@ -135,8 +134,8 @@ class ParentEntityLookupService:
 
     async def get_entity_lookup_steps(
         self,
-        entity_relationships_info: List[EntityRelationshipInfo],
-        entity_info: Optional[EntityInfo] = None,
+        entity_relationships_info: list[EntityRelationshipInfo],
+        entity_info: EntityInfo | None = None,
     ) -> list[EntityLookupStep]:
         """
         Convert a list of join path (list of EntityRelationshipInfo) into a list of EntityLookupStep

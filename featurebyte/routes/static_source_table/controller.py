@@ -4,7 +4,7 @@ StaticSourceTable API route controller
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any
 
 from bson import ObjectId
 
@@ -70,7 +70,7 @@ class StaticSourceTableController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         document = await self.service.get_document(document_id=document_id)
         return [(self.table_service, {"tabular_source": document.location.model_dump()})]
 

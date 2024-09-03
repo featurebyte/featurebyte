@@ -4,7 +4,7 @@ UserDefinedFunction API route controller
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple, cast
+from typing import Any, cast
 
 from bson import ObjectId
 
@@ -193,7 +193,7 @@ class UserDefinedFunctionController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [(self.feature_service, {"user_defined_function_ids": {"$in": [document_id]}})]
 
     async def list_user_defined_functions(
@@ -229,7 +229,7 @@ class UserDefinedFunctionController(
             Paginated list of UserDefinedFunction
         """
         sort_by = sort_by or [("created_at", "desc")]
-        params: Dict[str, Any] = {"search": search, "name": name}
+        params: dict[str, Any] = {"search": search, "name": name}
         if feature_store_id:
             params["query_filter"] = {"feature_store_id": feature_store_id}
         return await self.list(
@@ -260,7 +260,7 @@ class UserDefinedFunctionController(
         feature_store = await self.feature_store_service.get_document(
             document_id=(await self._get_feature_store_id())
         )
-        features_info: List[UserDefinedFunctionFeatureInfo] = []
+        features_info: list[UserDefinedFunctionFeatureInfo] = []
         features = await self.feature_service.list_documents_as_dict(
             query_filter={"user_defined_function_ids": {"$in": [document_id]}},
             projection={"_id": 1, "name": 1},

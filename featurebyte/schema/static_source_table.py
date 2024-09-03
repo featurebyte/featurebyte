@@ -4,8 +4,6 @@ StaticSourceTableModel API payload schema
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from bson import ObjectId
 from pydantic import Field
 
@@ -20,10 +18,10 @@ class StaticSourceTableCreate(FeatureByteBaseModel):
     StaticSourceTableModel creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     feature_store_id: PydanticObjectId
-    sample_rows: Optional[int] = Field(ge=0, default=None)
+    sample_rows: int | None = Field(ge=0, default=None)
     request_input: StaticSourceInput
 
 
@@ -32,7 +30,7 @@ class StaticSourceTableList(PaginationMixin):
     Schema for listing static source tables
     """
 
-    data: List[StaticSourceTableModel]
+    data: list[StaticSourceTableModel]
 
 
 class StaticSourceTableListRecord(BaseRequestTableListRecord):

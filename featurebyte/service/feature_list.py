@@ -4,9 +4,10 @@ FeatureListService class
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Coroutine, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, cast
+from typing import Any, Callable, cast
 
 from bson import ObjectId, json_util
 from redis import Redis
@@ -101,10 +102,10 @@ class FeatureListEntityRelationshipData:
     FeatureListEntityRelationshipData class
     """
 
-    primary_entity_ids: List[ObjectId]
-    relationships_info: List[EntityRelationshipInfo]
-    supported_serving_entity_ids: List[List[ObjectId]]
-    features_entity_lookup_info: List[FeatureEntityLookupInfo]
+    primary_entity_ids: list[ObjectId]
+    relationships_info: list[EntityRelationshipInfo]
+    supported_serving_entity_ids: list[list[ObjectId]]
+    features_entity_lookup_info: list[FeatureEntityLookupInfo]
 
 
 class FeatureListService(
@@ -120,7 +121,7 @@ class FeatureListService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         feature_store_service: FeatureStoreService,
         entity_service: EntityService,
         relationship_info_service: RelationshipInfoService,
@@ -194,8 +195,8 @@ class FeatureListService(
         document.internal_feature_clusters = None
         return document
 
-    async def _extract_feature_data(self, document: FeatureListModel) -> Dict[str, Any]:
-        feature_store_id: Optional[ObjectId] = None
+    async def _extract_feature_data(self, document: FeatureListModel) -> dict[str, Any]:
+        feature_store_id: ObjectId | None = None
         feature_namespace_ids = set()
         features = []
         feature_id_to_feature = {
@@ -243,8 +244,8 @@ class FeatureListService(
 
     async def extract_entity_relationship_data(
         self,
-        features: List[FeatureModel],
-        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+        features: list[FeatureModel],
+        progress_callback: Callable[..., Coroutine[Any, Any, None]] | None = None,
     ) -> FeatureListEntityRelationshipData:
         """
         Extract entity relationship data from feature models
@@ -320,8 +321,8 @@ class FeatureListService(
     async def _update_features(
         self,
         feature_ids: Sequence[ObjectId],
-        inserted_feature_list_id: Optional[ObjectId] = None,
-        deleted_feature_list_id: Optional[ObjectId] = None,
+        inserted_feature_list_id: ObjectId | None = None,
+        deleted_feature_list_id: ObjectId | None = None,
     ) -> None:
         if inserted_feature_list_id:
             await self.feature_service.update_documents(
@@ -346,7 +347,7 @@ class FeatureListService(
     async def _clean_up_mongo_create_document(
         self,
         feature_list: FeatureListModel,
-        feature_list_namespace: Optional[FeatureListNamespaceModel],
+        feature_list_namespace: FeatureListNamespaceModel | None,
     ) -> None:
         await self.persistent.delete_one(
             collection_name=self.collection_name,
@@ -374,7 +375,7 @@ class FeatureListService(
         )
 
     async def _create_document(
-        self, feature_list: FeatureListModel, features: List[FeatureModel]
+        self, feature_list: FeatureListModel, features: list[FeatureModel]
     ) -> ObjectId:
         assert feature_list.feature_clusters is None
         feature_list_doc = feature_list.model_dump(by_alias=True)
@@ -441,7 +442,7 @@ class FeatureListService(
     async def create_document(
         self,
         data: FeatureListServiceCreate,
-        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+        progress_callback: Callable[..., Coroutine[Any, Any, None]] | None = None,
     ) -> FeatureListModel:
         # sort feature_ids before saving to persistent storage to ease feature_ids comparison in uniqueness check
         document = FeatureListModel(**{
@@ -546,9 +547,9 @@ class FeatureListService(
     async def update_store_info(
         self,
         document_id: ObjectId,
-        features: List[FeatureModel],
-        feature_table_map: Dict[str, OfflineStoreFeatureTableModel],
-        serving_entity_specs: Optional[List[ColumnSpec]],
+        features: list[FeatureModel],
+        feature_table_map: dict[str, OfflineStoreFeatureTableModel],
+        serving_entity_specs: list[ColumnSpec] | None,
     ) -> None:
         """
         Update store info for a feature list
@@ -591,7 +592,7 @@ class FeatureListService(
     async def delete_document(
         self,
         document_id: ObjectId,
-        exception_detail: Optional[str] = None,
+        exception_detail: str | None = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> int:
@@ -628,7 +629,7 @@ class FeatureListService(
 
     async def get_sample_entity_serving_names(
         self, feature_list_id: ObjectId, count: int
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """
         Get sample entity serving names for a feature list
 

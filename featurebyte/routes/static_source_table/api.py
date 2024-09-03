@@ -5,7 +5,7 @@ StaticSourceTable API routes
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Optional, cast
+from typing import cast
 
 from fastapi import APIRouter, Request
 from starlette.responses import StreamingResponse
@@ -81,10 +81,10 @@ async def list_static_source_tables(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
+    sort_by: str | None = SortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
+    name: str | None = NameQuery,
 ) -> StaticSourceTableList:
     """
     List StaticSourceTables
@@ -106,9 +106,9 @@ async def list_static_source_table_audit_logs(
     static_source_table_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
+    sort_by: str | None = AuditLogSortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
 ) -> AuditDocumentList:
     """
     List StaticSourceTable audit logs

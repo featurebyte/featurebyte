@@ -7,7 +7,7 @@ from __future__ import annotations
 import copy
 import re
 from datetime import datetime
-from typing import Any, Dict, Union
+from typing import Any
 from xml.dom import getDOMImplementation
 from xml.dom.minidom import Document, Element
 
@@ -36,12 +36,12 @@ class CodeStr(str):
         )
 
 
-class InfoDict(Dict[str, Any]):
+class InfoDict(dict[str, Any]):
     """
     Featurebyte asset information dictionary that can be displayed in HTML
     """
 
-    def __init__(self, data: Union[Dict[str, Any], InfoDict]) -> None:
+    def __init__(self, data: dict[str, Any] | InfoDict) -> None:
         self.class_name: str = "Unknown"
         if isinstance(data, InfoDict):
             self.class_name = data.class_name
@@ -72,7 +72,7 @@ class InfoDict(Dict[str, Any]):
         str
         """
 
-        def _set_element_style(elem: Element, style: Dict[str, Any]) -> None:
+        def _set_element_style(elem: Element, style: dict[str, Any]) -> None:
             """
             Set style of dom element
 
@@ -86,7 +86,7 @@ class InfoDict(Dict[str, Any]):
             elem.setAttribute("style", ";".join(f"{key}:{value}" for key, value in style.items()))
 
         def _populate_html_elem(
-            data: Dict[str, Any], doc: Document, elem: Element, html_content: Dict[str, str]
+            data: dict[str, Any], doc: Document, elem: Element, html_content: dict[str, str]
         ) -> None:
             """
             Populate html document with data dict
@@ -190,7 +190,7 @@ class InfoDict(Dict[str, Any]):
         doc_elem.appendChild(title_div)
 
         # add info table
-        html_content: Dict[str, str] = {}
+        html_content: dict[str, str] = {}
         _populate_html_elem(data=data, doc=doc, elem=doc_elem, html_content=html_content)
         html = str(doc.toprettyxml())
         return html.format(**html_content)

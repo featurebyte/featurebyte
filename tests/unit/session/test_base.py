@@ -7,7 +7,8 @@ from __future__ import annotations
 import collections
 import time
 from asyncio.exceptions import TimeoutError as AsyncIOTimeoutError
-from typing import Any, OrderedDict
+from collections import OrderedDict
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pandas as pd

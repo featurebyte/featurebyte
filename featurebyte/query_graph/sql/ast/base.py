@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from copy import copy
 from dataclasses import dataclass, field
-from typing import Optional, Type, TypeVar, cast
+from typing import TypeVar, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
@@ -52,10 +52,10 @@ class SQLNodeContext:
     sql_type: SQLType
     source_info: SourceInfo
     input_sql_nodes: list[SQLNode]
-    to_filter_scd_by_current_flag: Optional[bool]
-    event_table_timestamp_filter: Optional[EventTableTimestampFilter]
-    aggregation_specs: Optional[dict[str, list[AggregationSpec]]]
-    on_demand_entity_filters: Optional[OnDemandEntityFilters]
+    to_filter_scd_by_current_flag: bool | None
+    event_table_timestamp_filter: EventTableTimestampFilter | None
+    aggregation_specs: dict[str, list[AggregationSpec]] | None
+    on_demand_entity_filters: OnDemandEntityFilters | None
 
     def __post_init__(self) -> None:
         self.parameters = self.query_node.parameters.model_dump()
@@ -89,7 +89,7 @@ class SQLNode(ABC):
     """
 
     context: SQLNodeContext
-    query_node_type: Optional[NodeType | list[NodeType]] = field(init=False, default=None)
+    query_node_type: NodeType | list[NodeType] | None = field(init=False, default=None)
 
     @property
     @abstractmethod
@@ -103,7 +103,7 @@ class SQLNode(ABC):
         """
 
     @classmethod
-    def build(cls: Type[SQLNodeT], context: SQLNodeContext) -> Optional[SQLNodeT]:
+    def build(cls: type[SQLNodeT], context: SQLNodeContext) -> SQLNodeT | None:
         """Create an instance of SQLNode given a context if applicable
 
         Parameters
@@ -137,8 +137,8 @@ class TableNode(SQLNode, ABC):
 
     columns_map: dict[str, Expression]
     columns_node: dict[str, ExpressionNode] = field(init=False)
-    where_condition: Optional[Expression] = field(init=False)
-    qualify_condition: Optional[Expression] = field(init=False)
+    where_condition: Expression | None = field(init=False)
+    qualify_condition: Expression | None = field(init=False)
 
     def __post_init__(self) -> None:
         self.columns_node = {}
@@ -238,7 +238,7 @@ class TableNode(SQLNode, ABC):
     def get_sql_for_expressions(
         self,
         exprs: list[Expression],
-        aliases: Optional[list[str]] = None,
+        aliases: list[str] | None = None,
     ) -> Expression:
         """
         Construct a Select statement using expr within the context of this table
@@ -402,7 +402,7 @@ class TableNode(SQLNode, ABC):
 class ExpressionNode(SQLNode, ABC):
     """Base class for all expression nodes (non-table)"""
 
-    table_node: Optional[TableNode]
+    table_node: TableNode | None
 
     @property
     def sql_standalone(self) -> Expression:

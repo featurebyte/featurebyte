@@ -4,7 +4,7 @@ Module for constructs to work with template SQL code with placeholders
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -26,7 +26,7 @@ class SqlExpressionTemplate:
         Source type information
     """
 
-    def __init__(self, sql_expr: Expression, source_type: Optional[SourceType] = None):
+    def __init__(self, sql_expr: Expression, source_type: SourceType | None = None):
         self.sql_expr = sql_expr
         self.source_type = source_type
 

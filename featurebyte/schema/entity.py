@@ -4,8 +4,6 @@ Entity API payload schema
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from bson import ObjectId
 from pydantic import Field
 
@@ -25,7 +23,7 @@ class EntityCreate(FeatureByteBaseModel):
     Entity creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     serving_name: NameStr
 
@@ -35,7 +33,7 @@ class EntityList(PaginationMixin):
     Paginated list of Entity
     """
 
-    data: List[EntityModel]
+    data: list[EntityModel]
 
 
 class EntityUpdate(FeatureByteBaseModel):
@@ -51,18 +49,18 @@ class EntityServiceUpdate(BaseDocumentServiceUpdateSchema):
     Entity service update schema
     """
 
-    name: Optional[NameStr] = Field(default=None)
-    ancestor_ids: Optional[List[PydanticObjectId]] = Field(default=None)
-    parents: Optional[List[ParentEntity]] = Field(default=None)
-    table_ids: Optional[List[PydanticObjectId]] = Field(default=None)
-    primary_table_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    name: NameStr | None = Field(default=None)
+    ancestor_ids: list[PydanticObjectId] | None = Field(default=None)
+    parents: list[ParentEntity] | None = Field(default=None)
+    table_ids: list[PydanticObjectId] | None = Field(default=None)
+    primary_table_ids: list[PydanticObjectId] | None = Field(default=None)
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """
         Unique contraints checking
         """
 
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("name",),
                 conflict_fields_signature={"name": ["name"]},

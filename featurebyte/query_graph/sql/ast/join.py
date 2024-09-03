@@ -5,7 +5,7 @@ Module for join operation sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, cast
+from typing import cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Select
@@ -51,7 +51,7 @@ class Join(TableNode):
         return select_expr
 
     @classmethod
-    def build(cls, context: SQLNodeContext) -> Optional[Join]:
+    def build(cls, context: SQLNodeContext) -> Join | None:
         if context.parameters.get("scd_parameters") is not None:
             return None
         parameters = context.parameters
@@ -138,7 +138,7 @@ class SCDJoin(TableNode):
         return select_expr
 
     @classmethod
-    def build(cls, context: SQLNodeContext) -> Optional[SCDJoin]:
+    def build(cls, context: SQLNodeContext) -> SCDJoin | None:
         if context.parameters.get("scd_parameters") is None:
             return None
         parameters = context.parameters

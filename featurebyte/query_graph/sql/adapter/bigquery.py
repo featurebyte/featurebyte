@@ -4,8 +4,6 @@ BigQueryAdapter class
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from sqlglot import expressions
 from sqlglot.expressions import Anonymous, Expression
 
@@ -90,7 +88,7 @@ class BigQueryAdapter(SnowflakeAdapter):
         return expressions.Anonymous(this="COUNTIF", expressions=[condition])
 
     @classmethod
-    def cast_to_string(cls, expr: Expression, dtype: Optional[DBVarType]) -> Expression:
+    def cast_to_string(cls, expr: Expression, dtype: DBVarType | None) -> Expression:
         if dtype is not None and dtype in DBVarType.json_conversion_types():
             expr = Anonymous(this="TO_JSON_STRING", expressions=[expr])
         return super().cast_to_string(expr, dtype)
@@ -111,7 +109,7 @@ class BigQueryAdapter(SnowflakeAdapter):
 
     @classmethod
     def lag_ignore_nulls(
-        cls, expr: Expression, partition_by: List[Expression], order: Expression
+        cls, expr: Expression, partition_by: list[Expression], order: Expression
     ) -> Expression:
         return expressions.Window(
             this=expressions.Anonymous(
@@ -208,7 +206,7 @@ class BigQueryAdapter(SnowflakeAdapter):
     def alter_table_add_columns(
         cls,
         table: expressions.Table,
-        columns: List[expressions.ColumnDef],
+        columns: list[expressions.ColumnDef],
     ) -> str:
         alter_table_sql = f"ALTER TABLE {sql_to_string(table, source_type=cls.source_type)}\n"
         add_column_lines = []

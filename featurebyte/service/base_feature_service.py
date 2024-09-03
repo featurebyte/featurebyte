@@ -5,7 +5,7 @@ Base namespace service
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -30,9 +30,9 @@ from featurebyte.storage import Storage
 class FeatureOrTargetDerivedData:
     """Feature or Target data"""
 
-    primary_entity_ids: List[ObjectId]
-    entity_id_to_entity: Dict[ObjectId, EntityModel]
-    relationships_info: List[EntityRelationshipInfo]
+    primary_entity_ids: list[ObjectId]
+    entity_id_to_entity: dict[ObjectId, EntityModel]
+    relationships_info: list[EntityRelationshipInfo]
 
 
 class BaseFeatureService(
@@ -46,7 +46,7 @@ class BaseFeatureService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         block_modification_handler: BlockModificationHandler,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,

@@ -4,7 +4,7 @@ Lag module
 
 from __future__ import annotations
 
-from typing import List, TypeVar, Union
+from typing import TypeVar
 
 from typeguard import typechecked
 
@@ -21,7 +21,7 @@ class LaggableViewColumn(ViewColumn):
 
     @typechecked
     def lag(
-        self: LagColumnTypeT, entity_columns: Union[str, List[str]], offset: int = 1
+        self: LagColumnTypeT, entity_columns: str | list[str], offset: int = 1
     ) -> LagColumnTypeT:
         """
         Lag is a transform that enables the retrieval of the preceding value associated with a particular entity in

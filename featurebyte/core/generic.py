@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import operator
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from cachetools import LRUCache, cachedmethod
 from cachetools.keys import hashkey
@@ -127,7 +127,7 @@ class QueryObject(FeatureByteBaseModel):
         return self.operation_structure_info.operation_structure_map[self.node_name]
 
     @property
-    def row_index_lineage(self) -> Tuple[str, ...]:
+    def row_index_lineage(self) -> tuple[str, ...]:
         """
         A list of node names that changes number of rows leading to the current node
 
@@ -175,7 +175,7 @@ class QueryObject(FeatureByteBaseModel):
         return self.operation_structure.output_category
 
     @model_validator(mode="after")
-    def _convert_query_graph_to_global_query_graph(self) -> "QueryObject":
+    def _convert_query_graph_to_global_query_graph(self) -> QueryObject:
         if not isinstance(self.graph, GlobalQueryGraph):
             global_graph, node_name_map = GlobalQueryGraph().load(self.graph)
             # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
@@ -207,7 +207,7 @@ class QueryObject(FeatureByteBaseModel):
         self,
         to_format: bool = False,
         to_use_saved_data: bool = False,
-        table_id_to_info: Optional[Dict[PydanticObjectId, Dict[str, Any]]] = None,
+        table_id_to_info: dict[PydanticObjectId, dict[str, Any]] | None = None,
     ) -> str:
         """
         Generate SDK codes this graph & node

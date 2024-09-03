@@ -5,7 +5,7 @@ Module for aggregation related sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, cast
+from typing import cast
 
 from sqlglot.expressions import Expression, Select
 
@@ -47,7 +47,7 @@ class Aggregate(TableNode):
         return self.source_node.sql
 
     @classmethod
-    def build(cls, context: SQLNodeContext) -> Optional[Aggregate]:
+    def build(cls, context: SQLNodeContext) -> Aggregate | None:
         if context.sql_type not in {SQLType.AGGREGATION, SQLType.POST_AGGREGATION}:
             return None
 

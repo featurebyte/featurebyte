@@ -2,8 +2,6 @@
 This module contains Semantic related models
 """
 
-from typing import List
-
 import pymongo
 
 from featurebyte.models.base import UniqueValuesConstraint
@@ -34,7 +32,7 @@ class SemanticModel(Relationship):
         """
 
         collection_name: str = "semantic"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

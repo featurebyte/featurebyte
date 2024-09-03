@@ -2,7 +2,7 @@
 Request data related node classes
 """
 
-from typing import List, Sequence, Tuple
+from collections.abc import Sequence
 
 from pydantic import StrictStr
 from typing_extensions import Literal
@@ -52,13 +52,13 @@ class RequestColumnNode(BaseNode):
         return 0
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         return OperationStructure(
@@ -87,13 +87,13 @@ class RequestColumnNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        statements: List[StatementT] = []
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
+        statements: list[StatementT] = []
         var_name = var_name_generator.convert_to_variable_name("request_col", node_name=self.name)
         if self.parameters.column_name == SpecialColumnName.POINT_IN_TIME:
             obj = ClassEnum.REQUEST_COLUMN(
@@ -110,7 +110,7 @@ class RequestColumnNode(BaseNode):
         input_var_name_expr: VariableNameStr,
         var_name_prefix: str,
         is_databricks_udf: bool,
-    ) -> Tuple[List[StatementT], VariableNameStr]:
+    ) -> tuple[list[StatementT], VariableNameStr]:
         if self.parameters.dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=var_name_prefix, node_name=self.name
@@ -124,10 +124,10 @@ class RequestColumnNode(BaseNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         input_df_name = config.input_df_name
         column_name = self.parameters.column_name
         expr = VariableNameStr(subset_frame_column_expr(input_df_name, column_name))
@@ -140,10 +140,10 @@ class RequestColumnNode(BaseNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         associated_node_name = None
         if self.parameters.dtype not in DBVarType.supported_timestamp_types():
             associated_node_name = self.name

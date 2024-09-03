@@ -4,22 +4,20 @@ This module contains nested graph related node classes
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
-    Sequence,
-    Tuple,
     TypeVar,
     Union,
     cast,
 )
 
 from pydantic import Field
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, SpecialColumnName, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -75,13 +73,13 @@ class ProxyInputNode(BaseNode):
         return 0
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         raise RuntimeError("Proxy input node should not be used to derive input columns.")
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # lookup the operation structure using the proxy input's node_name parameter
@@ -112,12 +110,12 @@ class BaseGraphNodeParameters(FeatureByteBaseModel):
     @abstractmethod
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         node_name: str,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         """
         Derive SDK code for the current graph node
 
@@ -144,16 +142,16 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
     """GraphNode (type:cleaning) parameters"""
 
     type: Literal[GraphNodeType.CLEANING] = GraphNodeType.CLEANING
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         node_name: str,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         raise RuntimeError("Not implemented")
 
 
@@ -172,12 +170,12 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     Offline store metadata
     """
 
-    aggregation_nodes_info: List[AggregationNodeInfo]
+    aggregation_nodes_info: list[AggregationNodeInfo]
     feature_job_setting: Optional[FeatureJobSetting]
     has_ttl: bool
     offline_store_table_name: str
     output_dtype: DBVarType
-    primary_entity_dtypes: List[DBVarType]
+    primary_entity_dtypes: list[DBVarType]
     null_filling_value: Optional[Scalar] = Field(default=None)
 
 
@@ -190,16 +188,16 @@ class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraph
         GraphNodeType.OFFLINE_STORE_INGEST_QUERY
     )
     output_column_name: str
-    primary_entity_ids: List[PydanticObjectId]
+    primary_entity_ids: list[PydanticObjectId]
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         node_name: str,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         raise RuntimeError("Not implemented")
 
 
@@ -210,14 +208,14 @@ class ViewMetadata(FeatureByteBaseModel):
     """View metadata (used by event, scd & dimension view)"""
 
     view_mode: ViewMode
-    drop_column_names: List[str]
-    column_cleaning_operations: List[ColumnCleaningOperation]
+    drop_column_names: list[str]
+    column_cleaning_operations: list[ColumnCleaningOperation]
     table_id: PydanticObjectId
 
     def clone(
         self: ViewMetadataT,
         view_mode: ViewMode,
-        column_cleaning_operations: List[ColumnCleaningOperation],
+        column_cleaning_operations: list[ColumnCleaningOperation],
         **kwargs: Any,
     ) -> ViewMetadataT:
         """
@@ -250,7 +248,7 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
 
     metadata: ViewMetadata
 
-    def prune_metadata(self, target_columns: List[str], input_nodes: Sequence[NodeT]) -> Any:
+    def prune_metadata(self, target_columns: list[str], input_nodes: Sequence[NodeT]) -> Any:
         """
         Prune metadata for the current graph node
 
@@ -268,8 +266,8 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
         return type(self.metadata)(**self._prune_metadata(target_columns, input_nodes))
 
     def _prune_metadata(
-        self, target_columns: List[str], input_nodes: Sequence[NodeT]
-    ) -> Dict[str, Any]:
+        self, target_columns: list[str], input_nodes: Sequence[NodeT]
+    ) -> dict[str, Any]:
         _ = input_nodes
         metadata = self.metadata.model_dump(by_alias=True)
         metadata["column_cleaning_operations"] = [
@@ -281,8 +279,8 @@ class BaseViewGraphNodeParameters(BaseGraphNodeParameters, ABC):
 
     @staticmethod
     def prepare_column_cleaning_operation_code_generation(
-        column_cleaning_operations: List[ColumnCleaningOperation],
-    ) -> List[ObjectClass]:
+        column_cleaning_operations: list[ColumnCleaningOperation],
+    ) -> list[ObjectClass]:
         """
         Prepare column cleaning operation code generation
 
@@ -313,12 +311,12 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         node_name: str,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         # construct event view sdk statement
         view_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="event_view", node_name=node_name
@@ -340,9 +338,9 @@ class ItemViewMetadata(ViewMetadata):
     """Item view metadata"""
 
     event_suffix: Optional[str] = Field(default=None)
-    event_drop_column_names: List[str]
-    event_column_cleaning_operations: List[ColumnCleaningOperation]
-    event_join_column_names: List[str]
+    event_drop_column_names: list[str]
+    event_column_cleaning_operations: list[ColumnCleaningOperation]
+    event_join_column_names: list[str]
     event_table_id: PydanticObjectId
 
 
@@ -354,12 +352,12 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         node_name: str,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         # construct item view sdk statement
         view_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="item_view", node_name=node_name
@@ -383,8 +381,8 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
         return [(view_var_name, expression)], view_var_name
 
     def _prune_metadata(
-        self, target_columns: List[str], input_nodes: Sequence[NodeT]
-    ) -> Dict[str, Any]:
+        self, target_columns: list[str], input_nodes: Sequence[NodeT]
+    ) -> dict[str, Any]:
         metadata = super()._prune_metadata(target_columns=target_columns, input_nodes=input_nodes)
         # for item view graph node, we need to use the event view graph node's metadata
         # to generate the event column cleaning operations
@@ -405,12 +403,12 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         node_name: str,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         # construct dimension view sdk statement
         view_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="dimension_view", node_name=node_name
@@ -435,12 +433,12 @@ class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         node_name: str,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         # construct scd view sdk statement
         view_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="scd_view", node_name=node_name
@@ -463,7 +461,7 @@ class ChangeViewMetadata(ViewMetadata):
 
     track_changes_column: str
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
-    prefixes: Optional[Tuple[Optional[str], Optional[str]]] = Field(default=None)
+    prefixes: Optional[tuple[Optional[str], Optional[str]]] = Field(default=None)
 
 
 class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
@@ -474,12 +472,12 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         node_name: str,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         # construct change view sdk statement
         view_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="change_view", node_name=node_name
@@ -565,7 +563,7 @@ class BaseGraphNode(BasePrunableNode):
         return self.parameters.type == GraphNodeType.CLEANING
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         # first the corresponding input proxy node in the nested graph
         proxy_input_node: Optional[BaseNode] = None
@@ -594,7 +592,7 @@ class BaseGraphNode(BasePrunableNode):
             )
         return list(required_input_columns)
 
-    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
+    def resolve_node_pruned(self, input_node_names: list[str]) -> str:
         if self.parameters.type == GraphNodeType.CLEANING:
             return input_node_names[0]
 
@@ -603,7 +601,7 @@ class BaseGraphNode(BasePrunableNode):
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # this should not be called as it should be handled at operation structure extractor level
@@ -611,19 +609,19 @@ class BaseGraphNode(BasePrunableNode):
 
     def prune(
         self: NodeT,
-        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
-        input_operation_structures: List[OperationStructure],
+        target_node_input_order_pairs: Sequence[tuple[NodeT, int]],
+        input_operation_structures: list[OperationStructure],
     ) -> NodeT:
         raise RuntimeError("BaseGroupNode.prune should not be called!")
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         return self.parameters.derive_sdk_code(
             input_var_name_expressions=node_inputs,
             var_name_generator=var_name_generator,
@@ -642,11 +640,11 @@ class BaseGraphNode(BasePrunableNode):
         config_for_ttl: Optional[OnDemandViewCodeGenConfig] = None,
         ttl_handling_column: Optional[str] = None,
         ttl_seconds: Optional[int] = None,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         if self.parameters.type != GraphNodeType.OFFLINE_STORE_INGEST_QUERY:
             raise RuntimeError("BaseGroupNode._derive_on_demand_view_code should not be called!")
 
-        statements: List[StatementT] = []
+        statements: list[StatementT] = []
         node_params = self.parameters
         assert isinstance(node_params, OfflineStoreIngestQueryGraphNodeParameters)
         if node_params.null_filling_value is not None:
@@ -734,10 +732,10 @@ class BaseGraphNode(BasePrunableNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         def _json_conversion_func(expr: VarNameExpressionInfo) -> ExpressionStr:
             out_expr = get_object_class_from_function_call(
                 f"{expr}.apply",
@@ -775,10 +773,10 @@ class BaseGraphNode(BasePrunableNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         output_dtype = cast(
             OfflineStoreIngestQueryGraphNodeParameters, self.parameters
         ).output_dtype

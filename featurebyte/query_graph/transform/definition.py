@@ -3,7 +3,7 @@ Definition extractor used to extract the definition hash of a query graph.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -11,7 +11,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 
 DefinitionHash = str
-ColumnNameRemap = Dict[str, str]
+ColumnNameRemap = dict[str, str]
 
 
 @dataclass
@@ -41,10 +41,10 @@ class DefinitionGlobalState:
     def __init__(self) -> None:
         # variables for graph reconstruction
         self.graph = QueryGraphModel()
-        self.node_name_map: Dict[str, str] = {}
+        self.node_name_map: dict[str, str] = {}
 
         # variable to store the column name remap for each node
-        self.node_name_to_column_name_remap: Dict[str, ColumnNameRemap] = {}
+        self.node_name_to_column_name_remap: dict[str, ColumnNameRemap] = {}
 
 
 class DefinitionBranchState:
@@ -70,8 +70,8 @@ class DefinitionHashExtractor(
         branch_state: DefinitionBranchState,
         global_state: DefinitionGlobalState,
         node: Node,
-        input_node_names: List[str],
-    ) -> Tuple[List[str], bool]:
+        input_node_names: list[str],
+    ) -> tuple[list[str], bool]:
         return input_node_names, False
 
     def _in_compute(
@@ -88,7 +88,7 @@ class DefinitionHashExtractor(
         branch_state: DefinitionBranchState,
         global_state: DefinitionGlobalState,
         node: Node,
-        inputs: List[Any],
+        inputs: list[Any],
         skip_post: bool,
     ) -> Any:
         if node.name in global_state.node_name_map:

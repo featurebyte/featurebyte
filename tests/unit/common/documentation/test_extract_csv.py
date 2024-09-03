@@ -3,7 +3,6 @@ Test extract CSV
 """
 
 from dataclasses import dataclass
-from typing import List
 
 from featurebyte.common.documentation.extract_csv import _generate_items_to_render
 from featurebyte.common.documentation.gen_ref_pages_docs_builder import (
@@ -28,7 +27,7 @@ class FailureMode:
         return self.missing_docstring or self.missing_examples
 
     def __repr__(self):
-        failures: List[str] = []
+        failures: list[str] = []
         if self.missing_docstring:
             failures.append("docstring")
         if self.missing_examples:
@@ -69,7 +68,7 @@ def test_attributes_populated():
     doc_groups_to_use = get_doc_groups()
     _, doc_items = generate_documentation_for_docs(doc_groups_to_use)
     all_doc_items_to_generate = _generate_items_to_render(doc_items)
-    failures: List[Failure] = []
+    failures: list[Failure] = []
     for item in all_doc_items_to_generate:
         failure_mode = FailureMode()
         # Perform checks

@@ -4,9 +4,10 @@ OfflineStoreFeatureTableService class
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any
 
 from bson import ObjectId, json_util
 from redis.lock import Lock
@@ -194,11 +195,11 @@ class OfflineStoreFeatureTableService(
         document_id: ObjectId,
         data: OfflineStoreFeatureTableUpdate,
         exclude_none: bool = True,
-        document: Optional[OfflineStoreFeatureTableModel] = None,
+        document: OfflineStoreFeatureTableModel | None = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
-    ) -> Optional[OfflineStoreFeatureTableModel]:
+    ) -> OfflineStoreFeatureTableModel | None:
         if isinstance(data, FeaturesUpdate):
             with self.get_feature_cluster_storage_lock(
                 document_id, timeout=OFFLINE_STORE_FEATURE_TABLE_REDIS_LOCK_TIMEOUT
@@ -292,7 +293,7 @@ class OfflineStoreFeatureTableService(
 
     async def list_deprecated_entity_lookup_feature_tables_as_dict(
         self,
-    ) -> AsyncIterator[Dict[str, Any]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Retrieve entity lookup feature tables that deprecated for clean up purpose
 

@@ -3,7 +3,7 @@ Base materialize table test class
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, Type, TypeVar
+from typing import Any, TypeVar
 
 import pandas as pd
 import pytest
@@ -20,10 +20,10 @@ class BaseMaterializedTableApiTest:
     Base materialized table api tests
     """
 
-    table_type: Type[BaseFeatureOrTargetTableT]
+    table_type: type[BaseFeatureOrTargetTableT]
 
     @abstractmethod
-    def assert_info_dict(self, info_dict: Dict[str, Any]) -> None:
+    def assert_info_dict(self, info_dict: dict[str, Any]) -> None:
         """
         Assert info dict that is returned from table.info().
 

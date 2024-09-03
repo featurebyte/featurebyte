@@ -5,7 +5,6 @@ SCDTable API routes
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import List, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Request
@@ -101,7 +100,7 @@ class SCDTableRouter(
             "/history/default_feature_job_setting/{scd_table_id}",
             self.list_default_feature_job_setting_history,
             methods=["GET"],
-            response_model=List[FeatureJobSettingHistoryEntry],
+            response_model=list[FeatureJobSettingHistoryEntry],
         )
 
     async def get_object(self, request: Request, scd_table_id: PyObjectId) -> SCDTableModel:
@@ -113,9 +112,9 @@ class SCDTableRouter(
         scd_table_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
-        sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[SortDir] = SortDirQuery,
-        search: Optional[str] = SearchQuery,
+        sort_by: str | None = AuditLogSortByQuery,
+        sort_dir: SortDir | None = SortDirQuery,
+        search: str | None = SearchQuery,
     ) -> AuditDocumentList:
         return await super().list_audit_logs(
             request,
@@ -214,7 +213,7 @@ class SCDTableRouter(
         self,
         request: Request,
         scd_table_id: PyObjectId,
-    ) -> List[FeatureJobSettingHistoryEntry]:
+    ) -> list[FeatureJobSettingHistoryEntry]:
         """
         List SCDTable default feature job settings history
         """

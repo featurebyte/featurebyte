@@ -10,13 +10,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -93,16 +87,16 @@ class ViewColumn(Series, SampleMixin):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.ViewColumn")
 
     # instance variables
-    _parent: Optional[View] = PrivateAttr(default=None)
+    _parent: View | None = PrivateAttr(default=None)
 
     @property
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         if not self._parent:
             return None
         return self._parent.timestamp_column
 
     @property
-    def cleaning_operations(self) -> Optional[List[CleaningOperation]]:
+    def cleaning_operations(self) -> list[CleaningOperation] | None:
         """
         List of cleaning operations that were applied to this column during the view's creation.
 
@@ -137,15 +131,15 @@ class ViewColumn(Series, SampleMixin):
 
         for column_cleaning_operations in self.parent.column_cleaning_operations:
             if column_cleaning_operations.column_name == self.name:
-                return cast(List[CleaningOperation], column_cleaning_operations.cleaning_operations)
+                return cast(list[CleaningOperation], column_cleaning_operations.cleaning_operations)
         return []
 
     def sample(
         self,
         size: int = 10,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
@@ -229,8 +223,8 @@ class ViewColumn(Series, SampleMixin):
         self,
         size: int = 0,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
@@ -276,7 +270,7 @@ class ViewColumn(Series, SampleMixin):
         """
         return super().describe(size, seed, from_timestamp, to_timestamp, **kwargs)
 
-    def _get_view_and_input_col_for_lookup(self, function_name: str) -> Tuple[View, str]:
+    def _get_view_and_input_col_for_lookup(self, function_name: str) -> tuple[View, str]:
         """
         Returns the View object that is used for lookup targets or features.
 
@@ -305,7 +299,7 @@ class ViewColumn(Series, SampleMixin):
         return cast(View, view[[input_column_name]]), input_column_name
 
     @typechecked
-    def as_target(self, target_name: str, offset: Optional[str] = None) -> Target:
+    def as_target(self, target_name: str, offset: str | None = None) -> Target:
         """
         Create a lookup target directly from the column in the View.
 
@@ -365,7 +359,7 @@ class ViewColumn(Series, SampleMixin):
         )
 
     @typechecked
-    def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
+    def as_feature(self, feature_name: str, offset: str | None = None) -> Feature:
         """
         Creates a lookup feature directly from the column in the View.
 
@@ -474,7 +468,7 @@ class ViewColumn(Series, SampleMixin):
     @typechecked
     def astype(
         self: FrozenSeriesT,
-        new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
+        new_type: type[int] | type[float] | type[str] | Literal["int", "float", "str"],
     ) -> FrozenSeriesT:
         """
         Converts the data type of a column. It is useful when you need to convert column values between numerical and
@@ -501,7 +495,7 @@ class ViewColumn(Series, SampleMixin):
         return super().astype(new_type=new_type)
 
     @typechecked
-    def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
+    def isin(self: FrozenSeriesT, other: FrozenSeries | ScalarSequence) -> FrozenSeriesT:
         """
         Identifies if each element is contained in a sequence of values represented by the `other` parameter.
 
@@ -542,7 +536,7 @@ class GroupByMixin:
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc()
 
     @typechecked
-    def groupby(self, by_keys: Union[str, List[str]], category: Optional[str] = None) -> GroupBy:
+    def groupby(self, by_keys: str | list[str], category: str | None = None) -> GroupBy:
         """
         The groupby method of a view returns a GroupBy class that can be used to group data based on one or more
         columns representing entities (specified in the key parameter). Within each entity or group of entities,
@@ -621,9 +615,7 @@ class GroupByMixin:
 
         return GroupBy(obj=self, keys=by_keys, category=category)  # type: ignore
 
-    def validate_aggregate_over_parameters(
-        self, keys: list[str], value_column: Optional[str]
-    ) -> None:
+    def validate_aggregate_over_parameters(self, keys: list[str], value_column: str | None) -> None:
         """
         Perform View specific validation on the parameters provided for aggregate_over groupby's.
 
@@ -636,7 +628,7 @@ class GroupByMixin:
         """
 
     def validate_simple_aggregate_parameters(
-        self, keys: list[str], value_column: Optional[str]
+        self, keys: list[str], value_column: str | None
     ) -> None:
         """
         Perform View specific validation on the parameters provided for simple aggregation functions.
@@ -743,7 +735,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         return super().columns
 
     @property
-    def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+    def column_cleaning_operations(self) -> list[ColumnCleaningOperation]:
         """
         List the cleaning operations associated with each column in the view during view creation.
 
@@ -789,8 +781,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         self,
         size: int = 0,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
@@ -870,8 +862,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         self,
         size: int = 10,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
@@ -973,9 +965,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         return set()
 
     @typechecked
-    def __getitem__(
-        self, item: Union[str, List[str], FrozenSeries]
-    ) -> Union[FrozenSeries, FrozenFrame]:
+    def __getitem__(self, item: str | list[str] | FrozenSeries) -> FrozenSeries | FrozenFrame:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             item = sorted(self.inherited_columns.union(item))
         output = super().__getitem__(item)
@@ -984,8 +974,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
     @typechecked
     def __setitem__(
         self,
-        key: Union[str, Tuple[FrozenSeries, str]],
-        value: Union[int, float, str, bool, FrozenSeries],
+        key: str | tuple[FrozenSeries, str],
+        value: int | float | str | bool | FrozenSeries,
     ) -> None:
         key_to_check = key if not isinstance(key, tuple) else key[1]
         if key_to_check in self.protected_columns:
@@ -1031,7 +1021,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         _ = calling_view
         return {}
 
-    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_additional_lookup_parameters(self, offset: str | None = None) -> dict[str, Any]:
         """
         Returns any additional query node parameters for lookup operations - as_feature (LookupNode), or
         as_target (LookupTargetNode).
@@ -1065,7 +1055,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
     def _create_joined_view(
         self: ViewT,
         new_node_name: str,
-        joined_columns_info: List[ColumnInfo],
+        joined_columns_info: list[ColumnInfo],
         **kwargs: Any,
     ) -> ViewT:
         """
@@ -1096,7 +1086,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             },
         )
 
-    def _get_key_if_entity(self, other_view: View) -> Optional[tuple[str, str]]:
+    def _get_key_if_entity(self, other_view: View) -> tuple[str, str] | None:
         """
         Returns a key if there's a match based on entity.
 
@@ -1139,7 +1129,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         )
         return None
 
-    def _get_join_keys(self, other_view: View, on_column: Optional[str] = None) -> tuple[str, str]:
+    def _get_join_keys(self, other_view: View, on_column: str | None = None) -> tuple[str, str]:
         """
         Returns the join keys of the two tables.
 
@@ -1193,7 +1183,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         self,
         other_view: View,
         rsuffix: str = "",
-        on: Optional[str] = None,
+        on: str | None = None,
         rprefix: str = "",
     ) -> None:
         """
@@ -1285,7 +1275,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
     def join(
         self: ViewT,
         other_view: View,
-        on: Optional[str] = None,
+        on: str | None = None,
         how: Literal["left", "inner"] = "left",
         rsuffix: str = "",
         rprefix: str = "",
@@ -1538,8 +1528,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         return node_before_projection
 
     def get_lookup_node_params(
-        self, column_names: List[str], feature_names: List[str], offset: Optional[str]
-    ) -> Dict[str, Any]:
+        self, column_names: list[str], feature_names: list[str], offset: str | None
+    ) -> dict[str, Any]:
         """
         Get the parameters for the lookup node in as_features().
 
@@ -1588,9 +1578,9 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
     @typechecked
     def as_features(
         self,
-        column_names: List[str],
-        feature_names: List[str],
-        offset: Optional[str] = None,
+        column_names: list[str],
+        feature_names: list[str],
+        offset: str | None = None,
     ) -> FeatureGroup:
         """
         Creates lookup features directly from the column in the View. The primary entity associated with the features
@@ -1659,13 +1649,13 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
     def create_observation_table(
         self,
         name: str,
-        sample_rows: Optional[int] = None,
-        columns: Optional[list[str]] = None,
-        columns_rename_mapping: Optional[dict[str, str]] = None,
-        context_name: Optional[str] = None,
-        skip_entity_validation_checks: Optional[bool] = False,
-        primary_entities: Optional[List[str]] = None,
-        target_column: Optional[str] = None,
+        sample_rows: int | None = None,
+        columns: list[str] | None = None,
+        columns_rename_mapping: dict[str, str] | None = None,
+        context_name: str | None = None,
+        skip_entity_validation_checks: bool | None = False,
+        primary_entities: list[str] | None = None,
+        target_column: str | None = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the View.
@@ -1779,8 +1769,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
     def create_batch_request_table(
         self,
         name: str,
-        columns: Optional[list[str]] = None,
-        columns_rename_mapping: Optional[dict[str, str]] = None,
+        columns: list[str] | None = None,
+        columns_rename_mapping: dict[str, str] | None = None,
     ) -> BatchRequestTable:
         """
         Creates an BatchRequestTable from the View.
@@ -1833,9 +1823,9 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
     def create_static_source_table(
         self,
         name: str,
-        sample_rows: Optional[int] = None,
-        columns: Optional[list[str]] = None,
-        columns_rename_mapping: Optional[dict[str, str]] = None,
+        sample_rows: int | None = None,
+        columns: list[str] | None = None,
+        columns_rename_mapping: dict[str, str] | None = None,
     ) -> StaticSourceTable:
         """
         Creates an StaticSourceTable from the View.

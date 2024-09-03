@@ -2,7 +2,7 @@
 ItemTable API payload schema
 """
 
-from typing import List, Literal
+from typing import Literal
 
 from pydantic import StrictStr, field_validator
 
@@ -34,7 +34,7 @@ class ItemTableList(PaginationMixin):
     Paginated list of ItemTable
     """
 
-    data: List[ItemTableModel]
+    data: list[ItemTableModel]
 
 
 class ItemTableUpdate(TableUpdate):

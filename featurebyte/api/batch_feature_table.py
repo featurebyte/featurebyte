@@ -5,7 +5,7 @@ BatchFeatureTable class
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, ClassVar, List, Optional, Union
+from typing import Any, ClassVar
 
 import pandas as pd
 
@@ -29,14 +29,14 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
     _route: ClassVar[str] = "/batch_feature_table"
     _list_schema: ClassVar[Any] = BatchFeatureTableListRecord
     _get_schema: ClassVar[Any] = BatchFeatureTableModel
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "feature_store_name",
         "batch_request_table_name",
         "shape",
         "created_at",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
         ForeignKeyMapping("batch_request_table_id", BatchRequestTable, "batch_request_table_name"),
     ]
@@ -115,7 +115,7 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         """
         return super().describe(size=size, seed=seed)
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download(self, output_path: str | Path | None = None) -> Path:
         """
         Downloads the batch feature table from the database.
 

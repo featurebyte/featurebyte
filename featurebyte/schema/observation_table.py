@@ -4,8 +4,6 @@ ObservationTableModel API payload schema
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from bson import ObjectId
 from pydantic import Field, StrictStr
 
@@ -20,12 +18,12 @@ class ObservationTableCreate(BaseRequestTableCreate):
     ObservationTableModel creation schema
     """
 
-    sample_rows: Optional[int] = Field(ge=0, default=None)
+    sample_rows: int | None = Field(ge=0, default=None)
     request_input: ObservationInput
     skip_entity_validation_checks: bool = Field(default=False)
-    purpose: Optional[Purpose] = Field(default=None)
-    primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
-    target_column: Optional[StrictStr] = Field(default=None)
+    purpose: Purpose | None = Field(default=None)
+    primary_entity_ids: list[PydanticObjectId] | None = Field(default=None)
+    target_column: StrictStr | None = Field(default=None)
 
 
 class ObservationTableUpload(FeatureByteBaseModel):
@@ -33,11 +31,11 @@ class ObservationTableUpload(FeatureByteBaseModel):
     ObservationTableUpload creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    purpose: Optional[Purpose] = Field(default=None)
-    primary_entity_ids: List[PydanticObjectId]
-    target_column: Optional[StrictStr] = Field(default=None)
+    purpose: Purpose | None = Field(default=None)
+    primary_entity_ids: list[PydanticObjectId]
+    target_column: StrictStr | None = Field(default=None)
 
 
 class ObservationTableList(PaginationMixin):
@@ -45,7 +43,7 @@ class ObservationTableList(PaginationMixin):
     Schema for listing observation tables
     """
 
-    data: List[ObservationTableModel]
+    data: list[ObservationTableModel]
 
 
 class ObservationTableListRecord(BaseRequestTableListRecord):
@@ -59,12 +57,12 @@ class ObservationTableUpdate(FeatureByteBaseModel):
     ObservationTable Update schema
     """
 
-    context_id: Optional[PydanticObjectId] = Field(default=None)
-    context_id_to_remove: Optional[PydanticObjectId] = Field(default=None)
-    use_case_id_to_add: Optional[PydanticObjectId] = Field(default=None)
-    use_case_id_to_remove: Optional[PydanticObjectId] = Field(default=None)
-    purpose: Optional[Purpose] = Field(default=None)
-    name: Optional[NameStr] = Field(default=None)
+    context_id: PydanticObjectId | None = Field(default=None)
+    context_id_to_remove: PydanticObjectId | None = Field(default=None)
+    use_case_id_to_add: PydanticObjectId | None = Field(default=None)
+    use_case_id_to_remove: PydanticObjectId | None = Field(default=None)
+    purpose: Purpose | None = Field(default=None)
+    name: NameStr | None = Field(default=None)
 
 
 class ObservationTableServiceUpdate(BaseDocumentServiceUpdateSchema, ObservationTableUpdate):
@@ -72,4 +70,4 @@ class ObservationTableServiceUpdate(BaseDocumentServiceUpdateSchema, Observation
     ObservationTable Update schema for service
     """
 
-    use_case_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    use_case_ids: list[PydanticObjectId] | None = Field(default=None)

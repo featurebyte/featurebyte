@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional, Tuple, cast
+from typing import cast
 
 from sqlglot.expressions import Expression, Select, select
 
@@ -41,7 +41,7 @@ class JoinFeature(TableNode):
         return select_expr.from_(self.aggregated_table_expr.subquery())
 
     @classmethod
-    def build(cls, context: SQLNodeContext) -> Optional[JoinFeature]:
+    def build(cls, context: SQLNodeContext) -> JoinFeature | None:
         feature_query_node = context.input_sql_nodes[1].context.query_node
         view_node = cast(TableNode, context.input_sql_nodes[0])
 
@@ -82,8 +82,8 @@ class JoinFeature(TableNode):
         view_node: TableNode,
         view_entity_column: str,
         source_info: SourceInfo,
-        event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
-    ) -> Tuple[Select, dict[str, list[AggregationSpec]]]:
+        event_table_timestamp_filter: EventTableTimestampFilter | None = None,
+    ) -> tuple[Select, dict[str, list[AggregationSpec]]]:
         """
         Join the intermediate aggregation result of item aggregation with the EventView
 

@@ -4,8 +4,6 @@ Request table processing used by aggregators
 
 from __future__ import annotations
 
-from typing import Tuple
-
 from sqlglot import expressions
 from sqlglot.expressions import select
 
@@ -13,7 +11,7 @@ from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.specs import AggregationSpec
 
-AggSpecEntityIDs = Tuple[str, ...]
+AggSpecEntityIDs = tuple[str, ...]
 
 
 class RequestTablePlan:

@@ -4,7 +4,7 @@ HistoricalFeatureTable API payload schema
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -29,7 +29,7 @@ class HistoricalFeatureTableList(PaginationMixin):
     Schema for listing historical feature tables
     """
 
-    data: List[HistoricalFeatureTableModel]
+    data: list[HistoricalFeatureTableModel]
 
 
 class HistoricalFeatureTableListRecord(BaseMaterializedTableListRecord):
@@ -38,7 +38,7 @@ class HistoricalFeatureTableListRecord(BaseMaterializedTableListRecord):
     """
 
     feature_store_id: PydanticObjectId
-    observation_table_id: Optional[PydanticObjectId] = Field(default=None)
+    observation_table_id: PydanticObjectId | None = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod
@@ -55,4 +55,4 @@ class HistoricalFeatureTableUpdate(BaseDocumentServiceUpdateSchema):
     HistoricalFeatureTable update payload
     """
 
-    name: Optional[NameStr] = Field(default=None)
+    name: NameStr | None = Field(default=None)

@@ -8,7 +8,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
+from typing import Annotated, Any, Callable, TypeVar
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -23,7 +23,6 @@ from pydantic import (
 )
 from pydantic_core import core_schema
 from pymongo.operations import IndexModel
-from typing_extensions import Annotated
 
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import StrEnum
@@ -31,7 +30,7 @@ from featurebyte.enum import StrEnum
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
 
 DEFAULT_CATALOG_ID = ObjectId("23eda344d0313fb925f7883a")
-ACTIVE_CATALOG_ID: Optional[ObjectId] = None
+ACTIVE_CATALOG_ID: ObjectId | None = None
 CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0-9])[A-Z])")
 
 
@@ -46,7 +45,7 @@ CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0
 NameStr = Annotated[str, StringConstraints(min_length=0, max_length=230)]
 
 
-def get_active_catalog_id() -> Optional[ObjectId]:
+def get_active_catalog_id() -> ObjectId | None:
     """
     Get active catalog id
 
@@ -57,7 +56,7 @@ def get_active_catalog_id() -> Optional[ObjectId]:
     return ACTIVE_CATALOG_ID
 
 
-def activate_catalog(catalog_id: Optional[ObjectId]) -> None:
+def activate_catalog(catalog_id: ObjectId | None) -> None:
     """
     Set active catalog
 
@@ -200,10 +199,10 @@ class UniqueValuesConstraint(FeatureByteBaseModel):
     Unique values constraints for fields in a collection
     """
 
-    fields: List[str]
-    conflict_fields_signature: Dict[str, Any]
-    resolution_signature: Optional[UniqueConstraintResolutionSignature] = Field(default=None)
-    extra_query_params: Optional[Dict[str, Any]] = Field(default=None)
+    fields: list[str]
+    conflict_fields_signature: dict[str, Any]
+    resolution_signature: UniqueConstraintResolutionSignature | None = Field(default=None)
+    extra_query_params: dict[str, Any] | None = Field(default=None)
 
 
 class ReferenceInfo(FeatureByteBaseModel):
@@ -247,22 +246,22 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
     id: PydanticObjectId = Field(
         default_factory=ObjectId, alias="_id", frozen=True, description="Record identifier"
     )
-    user_id: Optional[PydanticObjectId] = Field(
+    user_id: PydanticObjectId | None = Field(
         default=None, frozen=True, description="User identifier"
     )
-    name: Optional[NameStr] = Field(default=None, description="Record name")
-    created_at: Optional[datetime] = Field(
+    name: NameStr | None = Field(default=None, description="Record name")
+    created_at: datetime | None = Field(
         default=None, frozen=True, description="Record creation time"
     )
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         default=None, frozen=True, description="Record last updated time"
     )
-    block_modification_by: List[ReferenceInfo] = Field(
+    block_modification_by: list[ReferenceInfo] = Field(
         default_factory=list,
         frozen=True,
         description="List of reference information that blocks modifications to the document",
     )
-    description: Optional[StrictStr] = Field(default=None, description="Record description")
+    description: StrictStr | None = Field(default=None, description="Record description")
     is_deleted: bool = Field(
         default=False,
         description="Flag to indicate if the record is deleted.",
@@ -300,7 +299,7 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         return cls.Settings.collection_name
 
     @classmethod
-    def unique_constraints(cls) -> List[UniqueValuesConstraint]:
+    def unique_constraints(cls) -> list[UniqueValuesConstraint]:
         """
         Retrieve unique_constraints
 
@@ -312,7 +311,7 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         return cls.Settings.unique_constraints
 
     @classmethod
-    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
+    def _get_remote_attribute_paths(cls, document_dict: dict[str, Any]) -> list[Path]:
         """
         Get remote attribute paths for a document
 
@@ -334,9 +333,9 @@ class FeatureByteBaseDocumentModel(FeatureByteBaseModel):
         """
 
         collection_name: str
-        unique_constraints: List[UniqueValuesConstraint]
+        unique_constraints: list[UniqueValuesConstraint]
 
-        indexes: List[Union[IndexModel, List[Tuple[str, str]]]] = [
+        indexes: list[IndexModel | list[tuple[str, str]]] = [
             IndexModel("user_id"),
             IndexModel("name"),
             IndexModel("created_at"),
@@ -357,10 +356,10 @@ class VersionIdentifier(BaseModel):
     """
 
     name: str
-    suffix: Optional[int] = Field(default=None)
+    suffix: int | None = Field(default=None)
 
     @classmethod
-    def create(cls) -> "VersionIdentifier":
+    def create(cls) -> VersionIdentifier:
         """
         Create a new VersionIdentifier object
 
@@ -436,4 +435,4 @@ class User(FeatureByteBaseModel):
     Skeleton user class to provide static user
     """
 
-    id: Optional[PydanticObjectId] = Field(default=None)
+    id: PydanticObjectId | None = Field(default=None)

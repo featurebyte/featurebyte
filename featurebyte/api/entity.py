@@ -4,7 +4,7 @@ Entity class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar
 
 from bson import ObjectId
 from pydantic import Field
@@ -34,17 +34,17 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
     _update_schema_class: ClassVar[Any] = EntityUpdate
     _list_schema: ClassVar[Any] = EntityModel
     _get_schema: ClassVar[Any] = EntityModel
-    _list_fields: ClassVar[List[str]] = ["name", "serving_names", "created_at"]
+    _list_fields: ClassVar[list[str]] = ["name", "serving_names", "created_at"]
 
     # pydantic instance variable (internal use)
-    internal_serving_names: List[str] = Field(alias="serving_names")
+    internal_serving_names: list[str] = Field(alias="serving_names")
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = EntityCreate(serving_name=self.serving_name, **self.model_dump(by_alias=True))
         return data.json_dict()
 
     @property
-    def serving_names(self) -> List[str]:
+    def serving_names(self) -> list[str]:
         """
         Lists the serving names of an Entity object.
 
@@ -110,7 +110,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
         return self.serving_names[0]
 
     @property
-    def parents(self) -> List[ParentEntity]:
+    def parents(self) -> list[ParentEntity]:
         """
         Displays a list of the entity parents along with their corresponding IDs and the table ID of the relation
         table that establishes the parent-child relationship.
@@ -134,7 +134,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
         return self.cached_model.parents
 
     @property
-    def ancestor_ids(self) -> List[ObjectId]:
+    def ancestor_ids(self) -> list[ObjectId]:
         """
         Get the list of ancestor entity ids. An ancestor entity is an entity that is a parent of the current entity,
         or a parent of a parent, and so on.
@@ -211,7 +211,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
 
     @classmethod
     @typechecked
-    def create(cls, name: str, serving_names: List[str]) -> Entity:
+    def create(cls, name: str, serving_names: list[str]) -> Entity:
         """
         Create a new entity.
 
@@ -240,7 +240,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
     def get_or_create(
         cls,
         name: str,
-        serving_names: List[str],
+        serving_names: list[str],
     ) -> Entity:
         """
         Get entity, or create one if we cannot find an entity with the given name.
@@ -274,7 +274,7 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
         except RecordRetrievalException:
             return Entity.create(name=name, serving_names=serving_names)
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of an Entity object. The dictionary contains
         the following keys:

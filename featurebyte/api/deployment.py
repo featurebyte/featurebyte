@@ -5,7 +5,7 @@ Deployment module
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar
 
 import pandas as pd
 from bson import ObjectId
@@ -55,14 +55,14 @@ class Deployment(DeletableApiObject):
     _list_schema: ClassVar[Any] = DeploymentModel
     _get_schema: ClassVar[Any] = DeploymentModel
     _update_schema_class: ClassVar[Any] = DeploymentUpdate
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "feature_list_name",
         "feature_list_version",
         "num_feature",
         "enabled",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_name", "name", True),
         ForeignKeyMapping("feature_list_id", FeatureList, "feature_list_version", "version", True),
         ForeignKeyMapping("feature_list_id", FeatureList, "num_feature", "num_feature", True),
@@ -133,7 +133,7 @@ class Deployment(DeletableApiObject):
         return FeatureList.get_by_id(self.feature_list_id)
 
     @property
-    def use_case(self) -> Optional[UseCase]:
+    def use_case(self) -> UseCase | None:
         """
         Use case object associated with this deployment
 
@@ -146,7 +146,7 @@ class Deployment(DeletableApiObject):
             return None
         return UseCase.get_by_id(use_case_id)
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of the deployment represented by the
         Deployment object.
@@ -422,8 +422,8 @@ class Deployment(DeletableApiObject):
     @classmethod
     def list(
         cls,
-        include_id: Optional[bool] = True,
-        feature_list_id: Optional[Union[ObjectId, str]] = None,
+        include_id: bool | None = True,
+        feature_list_id: ObjectId | str | None = None,
     ) -> pd.DataFrame:
         """
         Returns a DataFrame that lists the deployments by their names, feature list names, feature list versions,

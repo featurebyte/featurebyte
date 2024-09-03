@@ -4,10 +4,9 @@ TaskStatus API payload schema
 
 import datetime
 import uuid
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Annotated, Any, Optional, Union
 
 from pydantic import AfterValidator, Field
-from typing_extensions import Annotated
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
@@ -33,7 +32,7 @@ class TaskStatus(StrEnum):
     IGNORED = "IGNORED"
 
     @classmethod
-    def non_terminal(cls) -> Set[StrEnum]:
+    def non_terminal(cls) -> set[StrEnum]:
         """
         Non terminal status values
 
@@ -44,7 +43,7 @@ class TaskStatus(StrEnum):
         return {cls.PENDING, cls.RECEIVED, cls.STARTED, cls.RETRY}
 
     @classmethod
-    def terminal(cls) -> Set[StrEnum]:
+    def terminal(cls) -> set[StrEnum]:
         """
         Terminal status values
 
@@ -63,12 +62,12 @@ class Task(FeatureByteBaseModel):
     id: TaskId = Field(frozen=True)
     status: TaskStatus = Field(frozen=True)
     output_path: Optional[str] = Field(default=None)
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
     traceback: Optional[str] = Field(default=None)
     start_time: Optional[datetime.datetime] = Field(frozen=True, default=None)
     date_done: Optional[datetime.datetime] = Field(frozen=True, default=None)
-    progress: Optional[Dict[str, Any]] = Field(default=None)
-    child_task_ids: Optional[List[TaskId]] = Field(default=None)
+    progress: Optional[dict[str, Any]] = Field(default=None)
+    child_task_ids: Optional[list[TaskId]] = Field(default=None)
 
 
 class TaskList(PaginationMixin):
@@ -76,7 +75,7 @@ class TaskList(PaginationMixin):
     Paginated list of TaskStatus
     """
 
-    data: List[Task]
+    data: list[Task]
 
 
 class TaskUpdate(FeatureByteBaseModel):

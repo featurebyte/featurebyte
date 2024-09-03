@@ -4,7 +4,7 @@ Utilities for building SQLNode
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode
@@ -13,7 +13,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
 def prepare_binary_op_input_nodes(
     context: SQLNodeContext,
-) -> tuple[Optional[TableNode], ExpressionNode, ExpressionNode]:
+) -> tuple[TableNode | None, ExpressionNode, ExpressionNode]:
     """
     Perform common preparation on binary ops input nodes, such as constructing literal value
     expression and swapping left right operands when applicable
@@ -56,7 +56,7 @@ def prepare_binary_op_input_nodes(
 
 def prepare_unary_input_nodes(
     context: SQLNodeContext,
-) -> tuple[Optional[TableNode], ExpressionNode, dict[str, Any]]:
+) -> tuple[TableNode | None, ExpressionNode, dict[str, Any]]:
     """Extract TableNode and ExpressionNode in a unary operation
 
     Parameters

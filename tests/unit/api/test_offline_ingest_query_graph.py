@@ -516,7 +516,7 @@ def test_feature__input_has_ingest_query_graph_node(test_dir):
         test_dir,
         "fixtures/graph/TXN_IsWeekend_Representation_in_CARD_Cash_advance_Txn_Amount_90d.json",
     )
-    with open(fixture_path, "r") as file_handle:
+    with open(fixture_path) as file_handle:
         feature_dict = json_util.loads(file_handle.read())
 
     feature_model = FeatureModel(**feature_dict)
@@ -612,7 +612,7 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
     fixture_path = os.path.join(
         test_dir, "fixtures/feature/card_txn_description_representation.json"
     )
-    with open(fixture_path, "r") as file_handle:
+    with open(fixture_path) as file_handle:
         feature_dict = json_util.loads(file_handle.read())
         feature = FeatureModel(**feature_dict)
 

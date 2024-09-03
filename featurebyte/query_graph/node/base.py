@@ -6,16 +6,12 @@ Base classes required for constructing query graph nodes
 
 import copy
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import (
     Any,
     Callable,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Sequence,
-    Tuple,
-    Type,
     TypeVar,
     Union,
 )
@@ -98,7 +94,7 @@ class BaseNode(FeatureByteBaseModel):
     # window parameter field name used to normalize the window parameter
     _window_parameter_field_name: ClassVar[Optional[str]] = None
     # nested parameter field names to be normalized
-    _normalize_nested_parameter_field_names: ClassVar[Optional[List[str]]] = None
+    _normalize_nested_parameter_field_names: ClassVar[Optional[list[str]]] = None
 
     # pydantic model configuration
     model_config = ConfigDict(extra="forbid")
@@ -152,7 +148,7 @@ class BaseNode(FeatureByteBaseModel):
         return False
 
     @staticmethod
-    def _assert_no_info_dict(inputs: List[VarNameExpressionInfo]) -> List[VarNameExpressionStr]:
+    def _assert_no_info_dict(inputs: list[VarNameExpressionInfo]) -> list[VarNameExpressionStr]:
         """
         Assert there is no info dict in the given inputs & convert the type to VarNameExpressionStr
 
@@ -199,8 +195,8 @@ class BaseNode(FeatureByteBaseModel):
     def _extract_column_str_values(
         cls,
         values: Any,
-        column_str_type: Union[Type[InColumnStr], Type[OutColumnStr]],
-    ) -> List[str]:
+        column_str_type: Union[type[InColumnStr], type[OutColumnStr]],
+    ) -> list[str]:
         out = set()
         if isinstance(values, dict):
             for val in values.values():
@@ -217,7 +213,7 @@ class BaseNode(FeatureByteBaseModel):
         return list(out)
 
     def get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         """
         Get the required input column names for the given input based on this node parameters.
@@ -245,7 +241,7 @@ class BaseNode(FeatureByteBaseModel):
 
     @abstractmethod
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         """
         Helper method for get_required_input_columns
@@ -264,7 +260,7 @@ class BaseNode(FeatureByteBaseModel):
 
     def derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
@@ -295,12 +291,12 @@ class BaseNode(FeatureByteBaseModel):
     def _handle_statement_line_width(
         self,
         var_name_generator: VariableNameGenerator,
-        statements: List[StatementT],
+        statements: list[StatementT],
         var_name_expression_info: VarNameExpressionInfo,
         config: BaseCodeGenConfig,
         operation_structure: Optional[OperationStructure],
         variable_name_prefix: Optional[str],
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         assert (
             operation_structure or variable_name_prefix
         ), "Either operation_structure or variable_name_prefix should be provided"
@@ -331,12 +327,12 @@ class BaseNode(FeatureByteBaseModel):
 
     def derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         """
         Derive SDK codes based on the graph traversal from starting node(s) to this node
 
@@ -375,10 +371,10 @@ class BaseNode(FeatureByteBaseModel):
 
     def derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         """
         Derive Feast on demand feature view code based on the graph traversal from starting node(s) to this node
 
@@ -411,10 +407,10 @@ class BaseNode(FeatureByteBaseModel):
 
     def derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         """
         Derive DataBricks on demand function code based on the graph traversal from starting node(s) to this node
 
@@ -462,8 +458,8 @@ class BaseNode(FeatureByteBaseModel):
 
     def prune(
         self: NodeT,
-        target_node_input_order_pairs: Sequence[Tuple[NodeT, int]],
-        input_operation_structures: List[OperationStructure],
+        target_node_input_order_pairs: Sequence[tuple[NodeT, int]],
+        input_operation_structures: list[OperationStructure],
     ) -> NodeT:
         """
         Prune this node parameters based on target nodes
@@ -490,7 +486,7 @@ class BaseNode(FeatureByteBaseModel):
         node_output_category: NodeOutputCategory,
         to_associate_with_node_name: bool,
         variable_name_prefix: Optional[str] = None,
-    ) -> Tuple[List[StatementT], VariableNameStr]:
+    ) -> tuple[list[StatementT], VariableNameStr]:
         """
         Convert expression to variable
 
@@ -513,7 +509,7 @@ class BaseNode(FeatureByteBaseModel):
         -------
         VarNameStr
         """
-        statements: List[StatementT] = []
+        statements: list[StatementT] = []
         if isinstance(var_name_expression, ExpressionStr):
             if variable_name_prefix:
                 var_name = var_name_generator.convert_to_variable_name(
@@ -537,7 +533,7 @@ class BaseNode(FeatureByteBaseModel):
         operation_structure: OperationStructure,
         required_copy: bool,
         to_associate_with_node_name: bool,
-    ) -> Tuple[List[StatementT], VariableNameStr]:
+    ) -> tuple[list[StatementT], VariableNameStr]:
         """
         This method is used to convert variable name to proper variable name if the variable name is
         not a valid identifier.
@@ -560,7 +556,7 @@ class BaseNode(FeatureByteBaseModel):
         Tuple[List[StatementT], VariableNameStr]
         """
         output_var_name = var_name
-        statements: List[StatementT] = []
+        statements: list[StatementT] = []
         is_var_name_valid_identifier = var_name.isidentifier()
         if required_copy or not is_var_name_valid_identifier:
             output_var_name = var_name_generator.generate_variable_name(
@@ -581,7 +577,7 @@ class BaseNode(FeatureByteBaseModel):
     @abstractmethod
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
@@ -601,12 +597,12 @@ class BaseNode(FeatureByteBaseModel):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         """
         Derive SDK codes to be implemented at the concrete node class
 
@@ -636,10 +632,10 @@ class BaseNode(FeatureByteBaseModel):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         """
         Derive Feast on demand feature view code to be implemented at the concrete node class
 
@@ -667,10 +663,10 @@ class BaseNode(FeatureByteBaseModel):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         """
         Derive DataBricks on demand function code to be implemented at the concrete node class
 
@@ -748,7 +744,7 @@ class BaseNode(FeatureByteBaseModel):
 
     @staticmethod
     def _get_mapped_input_column(
-        column_name: str, input_node_column_mappings: List[Dict[str, str]]
+        column_name: str, input_node_column_mappings: list[dict[str, str]]
     ) -> str:
         for input_node_column_mapping in input_node_column_mappings:
             if column_name in input_node_column_mapping:
@@ -756,8 +752,8 @@ class BaseNode(FeatureByteBaseModel):
         return column_name
 
     def _normalize_nested_parameters(
-        self, nested_parameters: Dict[str, Any], input_node_column_mappings: List[Dict[str, str]]
-    ) -> Dict[str, Any]:
+        self, nested_parameters: dict[str, Any], input_node_column_mappings: list[dict[str, str]]
+    ) -> dict[str, Any]:
         output = copy.deepcopy(nested_parameters)
         for param_name, value in nested_parameters.items():
             if isinstance(value, InColumnStr):
@@ -772,9 +768,9 @@ class BaseNode(FeatureByteBaseModel):
 
     def normalize_and_recreate_node(
         self: NodeT,
-        input_node_hashes: List[str],
-        input_node_column_mappings: List[Dict[str, str]],
-    ) -> Tuple[NodeT, Dict[str, str]]:
+        input_node_hashes: list[str],
+        input_node_column_mappings: list[dict[str, str]],
+    ) -> tuple[NodeT, dict[str, str]]:
         """
         This method is used to recreate a normalized node for the construction of the feature definition hash.
         Normalized node means that the node parameters are normalized to a certain format. For example,
@@ -803,7 +799,7 @@ class BaseNode(FeatureByteBaseModel):
         input_node_column_mapping = input_node_column_mappings[0]
         input_nodes_hash = hash_input_node_hashes(input_node_hashes)
 
-        output_column_remap: Dict[str, str] = {}
+        output_column_remap: dict[str, str] = {}
         if self._inherit_first_input_column_name_mapping:
             output_column_remap.update(**input_node_column_mapping)
 
@@ -873,7 +869,7 @@ class SeriesOutputNodeOpStructMixin:
     output_type: NodeOutputType
 
     @abstractmethod
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         """
         Derive variable type from the input operation structures
 
@@ -889,7 +885,7 @@ class SeriesOutputNodeOpStructMixin:
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """
@@ -915,7 +911,7 @@ class SeriesOutputNodeOpStructMixin:
             columns.extend(inp.columns)
             aggregations.extend(inp.aggregations)
 
-        node_kwargs: Dict[str, Any] = {}
+        node_kwargs: dict[str, Any] = {}
         if output_category == NodeOutputCategory.VIEW:
             node_kwargs["columns"] = [
                 DerivedDataColumn.create(
@@ -976,11 +972,11 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
         return 2
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
+    def _reorder_operands(self, left_operand: str, right_operand: str) -> tuple[str, str]:
         _ = self
         return left_operand, right_operand
 
@@ -1039,14 +1035,14 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     def _derive_python_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         to_timestamp_func: Union[ClassEnum, str],
         generate_expression_func: Callable[[str, str], str],
-    ) -> Tuple[List[StatementT], ExpressionStr]:
+    ) -> tuple[list[StatementT], ExpressionStr]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_operand: str = input_var_name_expressions[0].as_input()
-        statements: List[StatementT] = []
+        statements: list[StatementT] = []
         right_operand: Union[str, VariableNameStr]
         if isinstance(self.parameters.value, TimestampValue):
             timestamp_var = var_name_generator.convert_to_variable_name(
@@ -1072,12 +1068,12 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         _ = operation_structure, config, context
         return self._derive_python_code(
             node_inputs, var_name_generator, ClassEnum.PD_TIMESTAMP, self.generate_expression
@@ -1099,10 +1095,10 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         _ = config
         generate_expression_func = self._generate_odfv_expression_with_null_value_handling
         if len(node_inputs) == 1:
@@ -1130,10 +1126,10 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         _ = config
         generate_expression_func = self._generate_udf_expression_with_null_value_handling
         if len(node_inputs) == 1:
@@ -1151,7 +1147,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 class BinaryOpWithBoolOutputNode(BaseSeriesOutputWithAScalarParamNode):
     """BinaryLogicalOpNode class"""
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
 
     def _generate_odfv_expression_with_null_value_handling_for_single_input(
@@ -1178,13 +1174,13 @@ class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
 
     parameters: ValueWithRightOpNodeParameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         input_var_types = {inp.series_output_dtype for inp in inputs}
         if DBVarType.FLOAT in input_var_types:
             return DBVarType.FLOAT
         return inputs[0].series_output_dtype
 
-    def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
+    def _reorder_operands(self, left_operand: str, right_operand: str) -> tuple[str, str]:
         if self.parameters.right_op:
             return right_operand, left_operand
         return left_operand, right_operand
@@ -1195,7 +1191,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
 
     # class variable
     _derive_sdk_code_return_var_name_expression_type: ClassVar[
-        Union[Type[VariableNameStr], Type[ExpressionStr]]
+        Union[type[VariableNameStr], type[ExpressionStr]]
     ] = VariableNameStr
 
     @property
@@ -1203,7 +1199,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
         return 2
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
@@ -1254,12 +1250,12 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = input_var_name_expressions[0]
         return [], self._derive_sdk_code_return_var_name_expression_type(
@@ -1271,10 +1267,10 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = input_var_name_expressions[0]
         expr = self._generate_odfv_expression_with_null_value_handling(
@@ -1288,10 +1284,10 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = input_var_name_expressions[0]
         expr = self._generate_udf_expression_with_null_value_handling(
@@ -1304,7 +1300,7 @@ class BasePrunableNode(BaseNode):
     """Base class for node that can be pruned during query graph pruning"""
 
     @abstractmethod
-    def resolve_node_pruned(self, input_node_names: List[str]) -> str:
+    def resolve_node_pruned(self, input_node_names: list[str]) -> str:
         """
         Method used to resolve the situation when the node get pruned. As all the nodes only produce single
         output, we should only choose one node from the input nodes.

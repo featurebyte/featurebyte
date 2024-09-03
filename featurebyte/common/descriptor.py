@@ -3,7 +3,7 @@ This module contains descriptor class.
 """
 
 from functools import partial
-from typing import Any, Callable, Optional, Type, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 MethodT = Callable[..., Any]
 T = TypeVar("T")
@@ -18,7 +18,7 @@ class ClassInstanceMethodDescriptor:
         self._class_method = class_method
         self._instance_method = instance_method
 
-    def __get__(self, instance: Optional[T], owner: Type[T]) -> MethodT:
+    def __get__(self, instance: Optional[T], owner: type[T]) -> MethodT:
         if instance is None:
             # @classmethod decorated method should have __func__ attribute
             class_method = self._class_method.__func__  # type: ignore

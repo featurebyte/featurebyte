@@ -2,7 +2,7 @@
 Feature or target helper
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.graph import QueryGraph
@@ -25,11 +25,11 @@ class FeatureOrTargetHelper:
 
     async def get_primary_tables(
         self,
-        table_ids: List[PydanticObjectId],
+        table_ids: list[PydanticObjectId],
         catalog_id: PydanticObjectId,
         graph: QueryGraph,
         node_name: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Get primary tables
 

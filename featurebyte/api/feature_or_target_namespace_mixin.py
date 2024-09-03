@@ -2,7 +2,7 @@
 Base feature target namespace
 """
 
-from typing import Any, ClassVar, List
+from typing import Any, ClassVar
 
 from pydantic import Field
 
@@ -21,7 +21,7 @@ class FeatureOrTargetNamespaceMixin(ApiObject):
     _get_schema: ClassVar[Any] = BaseFeatureNamespaceModel
 
     # instance variables
-    internal_entity_ids: List[PydanticObjectId] = Field(default_factory=list, alias="entity_ids")
+    internal_entity_ids: list[PydanticObjectId] = Field(default_factory=list, alias="entity_ids")
 
     @property
     def default_version_mode(self) -> DefaultVersionMode:
@@ -35,7 +35,7 @@ class FeatureOrTargetNamespaceMixin(ApiObject):
         return self.cached_model.default_version_mode
 
     @property
-    def entity_ids(self) -> List[PydanticObjectId]:
+    def entity_ids(self) -> list[PydanticObjectId]:
         """
         List of entity IDs used by the namespace
 

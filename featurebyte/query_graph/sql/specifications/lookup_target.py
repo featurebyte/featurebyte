@@ -5,7 +5,6 @@ Lookup target spec
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -20,7 +19,7 @@ class LookupTargetSpec(BaseLookupSpec):
     LookupTargetSpec contains all information required to generate sql for a lookup target feature
     """
 
-    offset: Optional[str] = None
+    offset: str | None = None
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -31,8 +30,8 @@ class LookupTargetSpec(BaseLookupSpec):
         cls,
         node: Node,
         aggregation_source: AggregationSource,
-        serving_names_mapping: Optional[dict[str, str]],
-        graph: Optional[QueryGraphModel],
+        serving_names_mapping: dict[str, str] | None,
+        graph: QueryGraphModel | None,
         agg_result_name_include_serving_names: bool,
     ) -> list[LookupTargetSpec]:
         assert isinstance(node, LookupTargetNode)

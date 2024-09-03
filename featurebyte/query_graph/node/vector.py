@@ -3,7 +3,7 @@ Vector node module
 """
 
 import textwrap
-from typing import List, Sequence, Tuple
+from collections.abc import Sequence
 
 from typing_extensions import Literal
 
@@ -31,7 +31,7 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
 
     type: Literal[NodeType.VECTOR_COSINE_SIMILARITY] = NodeType.VECTOR_COSINE_SIMILARITY
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
 
     @property
@@ -39,18 +39,18 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
         return 2
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
         var_name_expression = var_name_expressions[0].as_input()
         other_operands = [val.as_input() for val in var_name_expressions[1:]]
@@ -62,8 +62,8 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
     @staticmethod
     def _get_vector_cosine_similarity_function_name(
         var_name_generator: VariableNameGenerator,
-    ) -> Tuple[List[StatementT], str]:
-        statements: List[StatementT] = []
+    ) -> tuple[list[StatementT], str]:
+        statements: list[StatementT] = []
         func_name = "vector_cosine_similarity"
         if var_name_generator.should_insert_function(function_name=func_name):
             func_string = f"""
@@ -86,10 +86,10 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         statements, func_name = self._get_vector_cosine_similarity_function_name(
             var_name_generator=var_name_generator
         )
@@ -101,10 +101,10 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         statements, func_name = self._get_vector_cosine_similarity_function_name(
             var_name_generator=var_name_generator
         )

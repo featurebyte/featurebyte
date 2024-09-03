@@ -8,7 +8,9 @@ import collections
 import datetime
 import json
 import logging
-from typing import Any, AsyncGenerator, OrderedDict
+from collections import OrderedDict
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import pandas as pd
 import pyarrow as pa

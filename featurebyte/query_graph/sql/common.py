@@ -4,9 +4,10 @@ Common helpers and data structures for feature SQL generation
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Optional, Sequence, Tuple, Union
+from typing import Union
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -20,7 +21,7 @@ REQUEST_TABLE_NAME = "REQUEST_TABLE"
 # related operations which discard missing keys by default.
 MISSING_VALUE_REPLACEMENT = "__MISSING__"
 
-CteStatement = Tuple[Union[str, Expression], Expression]
+CteStatement = tuple[Union[str, Expression], Expression]
 CteStatements = Sequence[CteStatement]
 
 
@@ -92,7 +93,7 @@ def get_qualified_column_identifier(
 
 
 def get_fully_qualified_table_name(
-    table_details_dict: Union[Dict[str, str], Dict[str, str | None]], alias: Optional[str] = None
+    table_details_dict: dict[str, str] | dict[str, str | None], alias: str | None = None
 ) -> Expression:
     """
     Get an expression for fully qualified table name
@@ -157,7 +158,7 @@ def get_fully_qualified_function_call(
 
 def get_column_expr_and_name(
     col_expr: expressions.Column,
-) -> Tuple[expressions.Expression, Optional[str]]:
+) -> tuple[expressions.Expression, str | None]:
     """
     Get the inner expression and name given a Column expression. Typically used when rewriting a
     select statement.
@@ -267,9 +268,9 @@ class EventTableTimestampFilter:
 
     timestamp_column_name: str
     event_table_id: ObjectId
-    start_timestamp_placeholder_name: Optional[str] = None
-    end_timestamp_placeholder_name: Optional[str] = None
-    to_cast_placeholders: Optional[bool] = True
+    start_timestamp_placeholder_name: str | None = None
+    end_timestamp_placeholder_name: str | None = None
+    to_cast_placeholders: bool | None = True
 
 
 @dataclass

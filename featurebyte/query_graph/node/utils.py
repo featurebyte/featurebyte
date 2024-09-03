@@ -2,7 +2,7 @@
 Utility functions for query graph node module
 """
 
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def subset_frame_column_expr(frame_name: str, column_name: str) -> str:

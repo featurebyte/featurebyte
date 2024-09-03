@@ -3,7 +3,7 @@ Customized smart_open WebHDFS client to support Kerberos authentication
 """
 
 from http import HTTPStatus
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 import requests_kerberos
@@ -97,7 +97,7 @@ def webhdfs_delete(http_uri: str, kerberos: bool = False, ssl: bool = False) -> 
         raise WebHdfsException(msg=response.text, status_code=response.status_code)
 
 
-def _get_request_params(kerberos: bool = False) -> Dict[str, Any]:
+def _get_request_params(kerberos: bool = False) -> dict[str, Any]:
     """
     Get request parameters for webhdfs
 
@@ -181,7 +181,7 @@ class BufferedOutput(BufferedOutputBase):
         self._kerberos = kerberos
         self.name = uri.split("/")[-1]
         self.min_part_size = min_part_size
-        self.lines: List[bytes] = []
+        self.lines: list[bytes] = []
         self.parts = 0
         self.chunk_bytes = 0
         self.total_size = 0

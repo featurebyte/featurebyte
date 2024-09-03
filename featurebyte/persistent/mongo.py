@@ -8,8 +8,9 @@ import asyncio
 import copy
 from asyncio import iscoroutine
 from collections import OrderedDict
+from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, cast
+from typing import Any, cast
 
 import pymongo
 from bson import ObjectId
@@ -125,8 +126,8 @@ class MongoDB(Persistent):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        projection: Optional[dict[str, Any]] = None,
-    ) -> Optional[Document]:
+        projection: dict[str, Any] | None = None,
+    ) -> Document | None:
         """
         Find one record from collection
 
@@ -144,7 +145,7 @@ class MongoDB(Persistent):
         Optional[DocumentType]
             Retrieved document
         """
-        result: Optional[Document] = await self._db[collection_name].find_one(
+        result: Document | None = await self._db[collection_name].find_one(
             filter=query_filter, projection=projection, session=self._session
         )
         return result
@@ -153,8 +154,8 @@ class MongoDB(Persistent):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        projection: dict[str, Any] | None = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
         page: int = 1,
         page_size: int = 0,
     ) -> tuple[Iterable[Document], int]:
@@ -198,9 +199,9 @@ class MongoDB(Persistent):
         self,
         collection_name: str,
         query_filter: QueryFilter,
-        pipeline: Optional[list[dict[str, Any]]] = None,
-        projection: Optional[dict[str, Any]] = None,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        pipeline: list[dict[str, Any]] | None = None,
+        projection: dict[str, Any] | None = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
     ) -> AsyncIterator[Document]:
         """
         Get iterator on records from collection
@@ -376,7 +377,7 @@ class MongoDB(Persistent):
         return result.deleted_count
 
     async def list_collection_names(self) -> list[str]:
-        return cast(List[str], await self._db.list_collection_names())
+        return cast(list[str], await self._db.list_collection_names())
 
     async def _rename_collection(self, collection_name: str, new_collection_name: str) -> None:
         """
@@ -413,13 +414,13 @@ class MongoDB(Persistent):
     async def aggregate_find(
         self,
         collection_name: str,
-        pipeline: List[Dict[str, Any]],
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        pipeline: list[dict[str, Any]],
+        sort_by: list[tuple[str, SortDir]] | None = None,
         page: int = 1,
         page_size: int = 0,
         **kwargs: Any,
-    ) -> Tuple[Iterable[Document], int]:
-        output_pipeline: List[Dict[str, Any]] = []
+    ) -> tuple[Iterable[Document], int]:
+        output_pipeline: list[dict[str, Any]] = []
 
         if sort_by:
             sort = {

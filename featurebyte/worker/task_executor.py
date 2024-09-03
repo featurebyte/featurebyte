@@ -8,9 +8,10 @@ import asyncio
 import os
 import time
 from abc import abstractmethod
+from collections.abc import Coroutine
 from concurrent.futures import TimeoutError as ConcurrentTimeoutError
 from datetime import datetime
-from typing import Any, Coroutine, Optional, Set
+from typing import Any
 from uuid import UUID
 
 from bson import ObjectId
@@ -34,14 +35,12 @@ from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 logger = get_logger(__name__)
 
 
-PENDING_TASKS: Set[UUID] = set()
+PENDING_TASKS: set[UUID] = set()
 EXECUTION_LATENCY_THRESHOLD = 10  # max delay allowed for task execution in seconds
 WORKER_TERMINATED = False
 
 
-def run_async(
-    coro: Coroutine[Any, Any, Any], request_id: UUID, timeout: Optional[int] = None
-) -> Any:
+def run_async(coro: Coroutine[Any, Any, Any], request_id: UUID, timeout: int | None = None) -> Any:
     """
     Run async function in both async and non-async context
     Parameters

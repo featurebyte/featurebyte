@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 import string
-from typing import List, Optional, cast
+from typing import cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Identifier, Select, alias_, select
@@ -65,7 +65,7 @@ class SnowflakeAdapter(BaseAdapter):
 
     @classmethod
     def str_trim(
-        cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
+        cls, expr: Expression, character: str | None, side: Literal["left", "right", "both"]
     ) -> Expression:
         expression_class = {
             "left": fb_expressions.LTrim,
@@ -322,10 +322,10 @@ class SnowflakeAdapter(BaseAdapter):
     def group_by(
         cls,
         input_expr: Select,
-        select_keys: List[Expression],
-        agg_exprs: List[Expression],
-        keys: List[Expression],
-        vector_aggregate_columns: Optional[List[VectorAggColumn]] = None,
+        select_keys: list[Expression],
+        agg_exprs: list[Expression],
+        keys: list[Expression],
+        vector_aggregate_columns: list[VectorAggColumn] | None = None,
         quote_vector_agg_aliases: bool = True,
     ) -> Select:
         """
@@ -514,7 +514,7 @@ class SnowflakeAdapter(BaseAdapter):
     def alter_table_add_columns(
         cls,
         table: expressions.Table,
-        columns: List[expressions.ColumnDef],
+        columns: list[expressions.ColumnDef],
     ) -> str:
         alter_table_sql = f"ALTER TABLE {sql_to_string(table, source_type=cls.source_type)}"
         first = sql_to_string(columns[0], source_type=cls.source_type)

@@ -4,8 +4,6 @@ This module contains simple aggregator related class
 
 from __future__ import annotations
 
-from typing import List, Optional, Type, Union
-
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
 from featurebyte.api.feature import Feature
@@ -26,7 +24,7 @@ class SimpleAggregator(BaseAggregator):
     """
 
     @property
-    def supported_views(self) -> List[Type[View]]:
+    def supported_views(self) -> list[type[View]]:
         return [ItemView]
 
     @property
@@ -34,16 +32,16 @@ class SimpleAggregator(BaseAggregator):
         return "aggregate"
 
     @property
-    def not_supported_aggregation_methods(self) -> Optional[List[AggFunc]]:
+    def not_supported_aggregation_methods(self) -> list[AggFunc] | None:
         return [AggFunc.LATEST]
 
     def aggregate(
         self,
-        value_column: Optional[str],
-        method: Union[AggFunc, str],
+        value_column: str | None,
+        method: AggFunc | str,
         feature_name: str,
         fill_value: OptionalScalar = None,
-        skip_fill_na: Optional[bool] = None,
+        skip_fill_na: bool | None = None,
     ) -> Feature:
         """
         Aggregate given value_column for each group specified in keys, without time windows

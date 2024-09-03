@@ -7,7 +7,7 @@ from __future__ import annotations
 import collections
 import os
 import sqlite3
-from typing import Optional, OrderedDict
+from collections import OrderedDict
 
 import pandas as pd
 
@@ -29,7 +29,7 @@ class SQLiteSession(BaseSession):
     filename: str
     source_type: SourceType = SourceType.SQLITE
 
-    def initializer(self) -> Optional[BaseSchemaInitializer]:
+    def initializer(self) -> BaseSchemaInitializer | None:
         return None
 
     def _initialize_connection(self) -> None:

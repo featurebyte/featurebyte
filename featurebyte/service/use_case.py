@@ -4,7 +4,7 @@ UseCaseService class
 
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from bson import ObjectId
 from redis import Redis
@@ -30,7 +30,7 @@ class UseCaseService(BaseDocumentService[UseCaseModel, UseCaseCreate, UseCaseUpd
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         context_service: ContextService,
         historical_feature_table_service: HistoricalFeatureTableService,
         block_modification_handler: BlockModificationHandler,

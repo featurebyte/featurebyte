@@ -5,7 +5,7 @@ TaskManager service is responsible to submit task message
 from __future__ import annotations
 
 import datetime
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from bson import ObjectId
@@ -37,7 +37,7 @@ class TaskManager:
         user: Any,
         persistent: Persistent,
         celery: Celery,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         storage: Storage,
         redis: Redis[Any],
     ) -> None:
@@ -70,7 +70,7 @@ class TaskManager:
         self,
         payload: BaseTaskPayload,
         mark_as_scheduled_task: bool = False,
-        parent_task_id: Optional[str] = None,
+        parent_task_id: str | None = None,
     ) -> str:
         """
         Submit task to celery
@@ -266,9 +266,9 @@ class TaskManager:
         name: str,
         payload: BaseTaskPayload,
         interval: Interval,
-        time_modulo_frequency_second: Optional[int] = None,
-        start_after: Optional[datetime.datetime] = None,
-        time_limit: Optional[int] = None,
+        time_modulo_frequency_second: int | None = None,
+        start_after: datetime.datetime | None = None,
+        time_limit: int | None = None,
     ) -> ObjectId:
         """
         Schedule task to run periodically
@@ -325,8 +325,8 @@ class TaskManager:
         name: str,
         payload: BaseTaskPayload,
         crontab: Crontab,
-        start_after: Optional[datetime.datetime] = None,
-        time_limit: Optional[int] = None,
+        start_after: datetime.datetime | None = None,
+        time_limit: int | None = None,
     ) -> ObjectId:
         """
         Schedule task to run on cron setting
@@ -377,7 +377,7 @@ class TaskManager:
         """
         return await self.periodic_task_service.get_document(document_id=periodic_task_id)
 
-    async def get_periodic_task_by_name(self, name: str) -> Optional[PeriodicTask]:
+    async def get_periodic_task_by_name(self, name: str) -> PeriodicTask | None:
         """
         Retrieve periodic task
 

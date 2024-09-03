@@ -2,7 +2,7 @@
 This module contains graph pruning related classes.
 """
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Optional
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType
@@ -53,10 +53,10 @@ def map_and_resolve_node_name(
 def prune_query_graph(
     graph: QueryGraphModel,
     node: Node,
-    target_columns: Optional[List[str]] = None,
-    proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
+    target_columns: Optional[list[str]] = None,
+    proxy_input_operation_structures: Optional[list[OperationStructure]] = None,
     operation_structure_info: Optional[OperationStructureInfo] = None,
-) -> Tuple[QueryGraphModel, NodeNameMap, str]:
+) -> tuple[QueryGraphModel, NodeNameMap, str]:
     """
     Prune the query graph given target node. In addition to the removing unused nodes, this function
     further prune the graph by removing the node parameters that do not contribute to final output.
@@ -123,7 +123,7 @@ class NodeParametersPruningGlobalState(OperationStructureInfo):
         target_node_name: str,
         graph: Optional[QueryGraphModel] = None,
         node_name_map: Optional[NodeNameMap] = None,
-        target_columns: Optional[List[str]] = None,
+        target_columns: Optional[list[str]] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -148,7 +148,7 @@ class NodeParametersPruningExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: NodeParametersPruningGlobalState,
         node: Node,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         skip_post: bool,
     ) -> OperationStructure:
         if node.name in global_state.node_name_map:
@@ -168,7 +168,7 @@ class NodeParametersPruningExtractor(
             # For the graph node, the pruning happens in GraphStructurePruningExtractor.
             # Prepare target nodes (nodes that consider current node as an input node) & input operation
             # structures to the node. Use these 2 info to perform the actual node parameters pruning.
-            target_node_input_order_pairs: List[Tuple[Node, int]] = []
+            target_node_input_order_pairs: list[tuple[Node, int]] = []
             if node.name == global_state.target_node_name and global_state.target_columns:
                 # create a temporary project node if
                 # - current node name equals to target_node_name
@@ -210,11 +210,11 @@ class NodeParametersPruningExtractor(
     def extract(  # type: ignore[override]
         self,
         node: Node,
-        proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
-        target_columns: Optional[List[str]] = None,
+        proxy_input_operation_structures: Optional[list[OperationStructure]] = None,
+        target_columns: Optional[list[str]] = None,
         **kwargs: Any,
     ) -> GraphNodeNameMap:
-        state_params: Dict[str, Any] = {"target_node_name": node.name}
+        state_params: dict[str, Any] = {"target_node_name": node.name}
         if proxy_input_operation_structures:
             state_params["proxy_input_operation_structures"] = proxy_input_operation_structures
 
@@ -236,11 +236,11 @@ class GraphPruningGlobalState(OperationStructureInfo):
 
     def __init__(
         self,
-        node_names: Set[str],
+        node_names: set[str],
         target_node_name: str,
         graph: Optional[QueryGraphModel] = None,
         node_name_map: Optional[NodeNameMap] = None,
-        target_columns: Optional[List[str]] = None,
+        target_columns: Optional[list[str]] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -278,8 +278,8 @@ class GraphStructurePruningExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: GraphPruningGlobalState,
         node: Node,
-        input_node_names: List[str],
-    ) -> Tuple[List[str], bool]:
+        input_node_names: list[str],
+    ) -> tuple[list[str], bool]:
         if isinstance(node, BasePrunableNode) and node.name not in global_state.node_names:
             if isinstance(node, BaseGraphNode) and not node.is_prunable:
                 # graph node is not prunable
@@ -303,7 +303,7 @@ class GraphStructurePruningExtractor(
 
     def _prepare_target_columns(
         self, node: Node, global_state: GraphPruningGlobalState
-    ) -> Optional[List[str]]:
+    ) -> Optional[list[str]]:
         if node.name == global_state.target_node_name:
             # since the target node doesn't have the output node,
             # we use the target columns in the global state
@@ -322,8 +322,8 @@ class GraphStructurePruningExtractor(
     def _prune_nested_graph(
         cls,
         node: BaseGraphNode,
-        target_columns: Optional[List[str]],
-        proxy_input_operation_structures: List[OperationStructure],
+        target_columns: Optional[list[str]],
+        proxy_input_operation_structures: list[OperationStructure],
     ) -> Node:
         output_node_name = node.parameters.output_node_name
         graph = node.parameters.graph
@@ -355,7 +355,7 @@ class GraphStructurePruningExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: GraphPruningGlobalState,
         node: Node,
-        inputs: List[Any],
+        inputs: list[Any],
         skip_post: bool,
     ) -> None:
         if skip_post:
@@ -405,8 +405,8 @@ class GraphStructurePruningExtractor(
     def extract(
         self,
         node: Node,
-        target_columns: Optional[List[str]] = None,
-        proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
+        target_columns: Optional[list[str]] = None,
+        proxy_input_operation_structures: Optional[list[OperationStructure]] = None,
         **kwargs: Any,
     ) -> GraphNodeNameMap:
         if self.operation_structure_info is None:

@@ -5,7 +5,7 @@ SQL generation for non-tile window aggregation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple, cast
+from typing import Any, Optional, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
@@ -35,8 +35,8 @@ from featurebyte.query_graph.sql.specifications.non_tile_window_aggregate import
 WindowType = int
 OffsetType = Optional[int]
 FeatureJobSettingsType = FeatureJobSetting
-EntityIDsType = Tuple[str, ...]
-RequestTableKeyType = Tuple[WindowType, OffsetType, FeatureJobSettingsType, EntityIDsType]
+EntityIDsType = tuple[str, ...]
+RequestTableKeyType = tuple[WindowType, OffsetType, FeatureJobSettingsType, EntityIDsType]
 
 
 @dataclass
@@ -55,7 +55,7 @@ class NonTileRequestTablePlan:
     """
 
     def __init__(self, source_info: SourceInfo) -> None:
-        self.processed_request_tables: Dict[RequestTableKeyType, ProcessedRequestTable] = {}
+        self.processed_request_tables: dict[RequestTableKeyType, ProcessedRequestTable] = {}
         self.adapter = get_sql_adapter(source_info)
 
     def add_aggregation_spec(self, aggregation_spec: NonTileWindowAggregateSpec) -> None:
@@ -204,7 +204,7 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.request_table_plan = NonTileRequestTablePlan(self.source_info)
-        self.aggregation_source_views: Dict[str, Select] = {}
+        self.aggregation_source_views: dict[str, Select] = {}
 
     def additional_update(self, aggregation_spec: NonTileWindowAggregateSpec) -> None:
         self.request_table_plan.add_aggregation_spec(aggregation_spec)

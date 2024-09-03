@@ -3,7 +3,7 @@ This module contains mixins used in node classes
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Set
+from typing import Optional
 
 from pydantic import Field
 
@@ -25,12 +25,12 @@ from featurebyte.query_graph.node.metadata.operation import (
 class BaseGroupbyParameters(FeatureByteBaseModel):
     """Common parameters related to groupby operation"""
 
-    keys: List[InColumnStr]
+    keys: list[InColumnStr]
     parent: Optional[InColumnStr] = Field(default=None)
     agg_func: AggFunc
     value_by: Optional[InColumnStr] = Field(default=None)
-    serving_names: List[str]
-    entity_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    serving_names: list[str]
+    entity_ids: Optional[list[PydanticObjectId]] = Field(default=None)
 
 
 class AggregationOpStructMixin(BaseNode, ABC):
@@ -39,11 +39,11 @@ class AggregationOpStructMixin(BaseNode, ABC):
     @abstractmethod
     def _get_aggregations(
         self,
-        columns: List[ViewDataColumn],
+        columns: list[ViewDataColumn],
         node_name: str,
-        other_node_names: Set[str],
+        other_node_names: set[str],
         output_var_type: DBVarType,
-    ) -> List[AggregationColumn]:
+    ) -> list[AggregationColumn]:
         """
         Construct aggregations based on node parameters
 
@@ -64,7 +64,7 @@ class AggregationOpStructMixin(BaseNode, ABC):
         """
 
     @abstractmethod
-    def _exclude_source_columns(self) -> List[str]:
+    def _exclude_source_columns(self) -> list[str]:
         """
         Exclude column to be include in source columns
 
@@ -83,7 +83,7 @@ class AggregationOpStructMixin(BaseNode, ABC):
         bool
         """
 
-    def _get_parent_columns(self, columns: List[ViewDataColumn]) -> Optional[List[ViewDataColumn]]:
+    def _get_parent_columns(self, columns: list[ViewDataColumn]) -> Optional[list[ViewDataColumn]]:
         """
         Get the table column used for aggregation
 
@@ -119,7 +119,7 @@ class AggregationOpStructMixin(BaseNode, ABC):
 
     def _derive_node_operation_info(
         self,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         """

@@ -9,7 +9,7 @@ import os
 import time
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 from unittest.mock import patch
 
 import pandas as pd
@@ -65,8 +65,8 @@ class RequestColumnsMetadata:
     Metadata about the request columns
     """
 
-    updated_request_data: List[Dict[str, Any]]
-    df_extra_columns: Optional[pd.DataFrame]
+    updated_request_data: list[dict[str, Any]]
+    df_extra_columns: pd.DataFrame | None
 
 
 class OnlineServingService:
@@ -101,9 +101,9 @@ class OnlineServingService:
     async def get_online_features_from_feature_list(
         self,
         feature_list: FeatureListModel,
-        request_data: Union[List[Dict[str, Any]], BatchRequestTableModel],
-        output_table_details: Optional[TableDetails] = None,
-    ) -> Optional[OnlineFeaturesResponseModel]:
+        request_data: list[dict[str, Any]] | BatchRequestTableModel,
+        output_table_details: TableDetails | None = None,
+    ) -> OnlineFeaturesResponseModel | None:
         """
         Get online features for a Feature List given a list of entity serving names
 
@@ -176,7 +176,7 @@ class OnlineServingService:
         feature_list: FeatureListModel,
         deployment: DeploymentModel,
         feast_store: FeastFeatureStore,
-        request_data: List[Dict[str, Any]],
+        request_data: list[dict[str, Any]],
     ) -> OnlineFeaturesResponseModel:
         """
         Get online features for a Feature List via feast online store
@@ -268,9 +268,9 @@ class OnlineServingService:
         self,
         feast_store: FeastFeatureStore,
         feast_service_name: str,
-        feature_id_to_versioned_name: Dict[PydanticObjectId, str],
-        request_data: List[Dict[str, Any]],
-        point_in_time_value: Optional[str],
+        feature_id_to_versioned_name: dict[PydanticObjectId, str],
+        request_data: list[dict[str, Any]],
+        point_in_time_value: str | None,
     ) -> pd.DataFrame:
         """
         Perform additional handling on the request data:
@@ -433,7 +433,6 @@ class OnlineServingService:
         # populate template
         with open(
             file=template_file_path,
-            mode="r",
             encoding="utf-8",
         ) as file_object:
             template = Template(file_object.read())

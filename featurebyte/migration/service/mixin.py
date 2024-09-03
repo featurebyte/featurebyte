@@ -5,7 +5,7 @@ MigrationServiceMixin class
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 from celery import Celery
 
@@ -51,7 +51,7 @@ class BaseMigrationServiceMixin:
         """
 
     @abstractmethod
-    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
+    async def migrate_record(self, document: Document, version: int | None) -> None:
         """
         Perform migration for a Document
 
@@ -65,10 +65,10 @@ class BaseMigrationServiceMixin:
 
     async def migrate_all_records(
         self,
-        query_filter: Optional[QueryFilter] = None,
+        query_filter: QueryFilter | None = None,
         page_size: int = DEFAULT_PAGE_SIZE,
-        version: Optional[int] = None,
-        batch_preprocess_document_func: Optional[Any] = None,
+        version: int | None = None,
+        batch_preprocess_document_func: Any | None = None,
     ) -> None:
         """
         Migrate all records in this service's collection & audit collection
@@ -166,7 +166,7 @@ class BaseMongoCollectionMigration(BaseMigrationServiceMixin, ABC):
         document_class = self.delegate_service.document_class
         return dict(document_class(**record).model_dump(by_alias=True))
 
-    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
+    async def migrate_record(self, document: Document, version: int | None) -> None:
         _ = version
         await self.persistent.migrate_record(
             collection_name=self.collection_name,
@@ -175,7 +175,7 @@ class BaseMongoCollectionMigration(BaseMigrationServiceMixin, ABC):
             skip_audit=self.skip_audit_migration,
         )
 
-    async def get_total_record(self, query_filter: Dict[str, Any]) -> int:
+    async def get_total_record(self, query_filter: dict[str, Any]) -> int:
         """
         Get the total number of records given the query filter
 
@@ -260,7 +260,7 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
         """
         self.celery = celery
 
-    async def migrate_record(self, document: Document, version: Optional[int]) -> None:
+    async def migrate_record(self, document: Document, version: int | None) -> None:
         # Data warehouse migration requires version to be provided when calling migrate_all_records
         # so that the warehouse metadata can be updated accordingly
         assert version is not None

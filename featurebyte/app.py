@@ -2,7 +2,8 @@
 FastAPI Application
 """
 
-from typing import Any, Callable, Coroutine, List, Optional
+from collections.abc import Coroutine
+from typing import Any, Callable, Optional
 
 import redis.asyncio as redis
 import uvicorn
@@ -138,7 +139,7 @@ def get_app() -> FastAPI:
     _app = FastAPI()
 
     # Register routers that are not catalog-specific
-    non_catalog_specific_routers: List[BaseRouter] = [
+    non_catalog_specific_routers: list[BaseRouter] = [
         CatalogRouter(),
         CredentialRouter(),
         FeatureStoreRouter(),
@@ -156,7 +157,7 @@ def get_app() -> FastAPI:
         )
 
     # Register routes that are catalog-specific
-    catalog_specific_routers: List[BaseRouter] = [
+    catalog_specific_routers: list[BaseRouter] = [
         BatchFeatureTableRouter(),
         BatchRequestTableRouter(),
         ContextRouter(),

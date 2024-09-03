@@ -5,7 +5,7 @@ This module contains FeatureJobSettingAnalysis related models
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import pymongo
 from pydantic import Field
@@ -34,8 +34,8 @@ class BlindSpotSearchResult(FeatureByteBaseModel):
     optimal_blind_spot: int
     results: str
     plot: str
-    thresholds: List[Tuple[float, int]]
-    warnings: List[str]
+    thresholds: list[tuple[float, int]]
+    warnings: list[str]
 
 
 class AnalysisResult(FeatureByteBaseModel):
@@ -43,7 +43,7 @@ class AnalysisResult(FeatureByteBaseModel):
     Analysis results
     """
 
-    stats_on_wh_jobs: Dict[str, Any]
+    stats_on_wh_jobs: dict[str, Any]
     recommended_feature_job_setting: FeatureJobSetting
 
 
@@ -52,10 +52,10 @@ class AnalysisPlots(FeatureByteBaseModel):
     Analysis plots
     """
 
-    wh_job_time_modulo_frequency_hist: Dict[str, Any]
-    wh_intervals_hist: Optional[Dict[str, Any]] = Field(default=None)
-    wh_intervals_exclude_missing_jobs_hist: Optional[Dict[str, Any]] = Field(default=None)
-    affected_jobs_record_age: Optional[Dict[str, Any]] = Field(default=None)
+    wh_job_time_modulo_frequency_hist: dict[str, Any]
+    wh_intervals_hist: dict[str, Any] | None = Field(default=None)
+    wh_intervals_exclude_missing_jobs_hist: dict[str, Any] | None = Field(default=None)
+    affected_jobs_record_age: dict[str, Any] | None = Field(default=None)
 
 
 class BackTestSummary(FeatureByteBaseModel):
@@ -64,7 +64,7 @@ class BackTestSummary(FeatureByteBaseModel):
     """
 
     output_document_id: PydanticObjectId
-    user_id: Optional[PydanticObjectId] = Field(default=None)
+    user_id: PydanticObjectId | None = Field(default=None)
     created_at: datetime
     feature_job_setting: FeatureJobSetting
     total_pct_late_data: float
@@ -76,13 +76,13 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     FeatureJobSettingAnalysis persistent model
     """
 
-    event_table_id: Optional[PydanticObjectId] = Field(default=None)
-    event_table_candidate: Optional[EventTableCandidate] = Field(default=None)
+    event_table_id: PydanticObjectId | None = Field(default=None)
+    event_table_candidate: EventTableCandidate | None = Field(default=None)
     analysis_options: AnalysisOptions
     analysis_parameters: AnalysisParameters
     analysis_result: AnalysisResult
     analysis_report: str
-    backtest_summaries: Optional[List[BackTestSummary]] = Field(default_factory=list)
+    backtest_summaries: list[BackTestSummary] | None = Field(default_factory=list)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -90,7 +90,7 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "feature_job_setting_analysis"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
@@ -113,8 +113,8 @@ class BacktestResult(FeatureByteBaseModel):
 
     results: str
     job_with_issues_count: int
-    warnings: List[str]
-    plot: Optional[str] = Field(default=None)
+    warnings: list[str]
+    plot: str | None = Field(default=None)
 
 
 class EventLandingTimeResult(FeatureByteBaseModel):
@@ -124,8 +124,8 @@ class EventLandingTimeResult(FeatureByteBaseModel):
 
     results: str
     plot: str
-    thresholds: List[Tuple[int, float, int]]
-    warnings: List[str]
+    thresholds: list[tuple[int, float, int]]
+    warnings: list[str]
 
 
 class AnalysisResultsData(FeatureByteBaseModel):
@@ -134,7 +134,7 @@ class AnalysisResultsData(FeatureByteBaseModel):
     """
 
     blind_spot_search_result: BlindSpotSearchResult
-    blind_spot_search_exc_missing_jobs_result: Optional[BlindSpotSearchResult] = Field(default=None)
+    blind_spot_search_exc_missing_jobs_result: BlindSpotSearchResult | None = Field(default=None)
     event_landing_time_result: EventLandingTimeResult
     backtest_result: BacktestResult
 
@@ -145,11 +145,11 @@ class MissingJobsInfo(FeatureByteBaseModel):
     """
 
     normal_age_max: float
-    late_job_index: Optional[str] = Field(default=None)
-    late_event_index: Optional[str] = Field(default=None)
+    late_job_index: str | None = Field(default=None)
+    late_event_index: str | None = Field(default=None)
     jobs_after_missing_jobs_index: str
     affected_jobs_index: str
-    affected_event_index: Optional[str] = Field(default=None)
+    affected_event_index: str | None = Field(default=None)
 
 
 class AnalysisData(FeatureByteBaseModel):
@@ -167,6 +167,6 @@ class FeatureJobSettingAnalysisData(FeatureByteBaseModel):
     Store large objects from the analysis
     """
 
-    analysis_plots: Optional[AnalysisPlots] = Field(default=None)
-    analysis_data: Optional[AnalysisData] = Field(default=None)
+    analysis_plots: AnalysisPlots | None = Field(default=None)
+    analysis_data: AnalysisData | None = Field(default=None)
     analysis_result: AnalysisResultsData

@@ -4,8 +4,9 @@ Mixin class containing common methods for feature or target classes
 
 import time
 from abc import ABC
+from collections.abc import Sequence
 from http import HTTPStatus
-from typing import Any, Sequence, Union, cast
+from typing import Any, Union, cast
 
 import pandas as pd
 from bson import ObjectId

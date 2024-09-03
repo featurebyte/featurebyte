@@ -2,7 +2,7 @@
 This module contains Feature Table Cache related models
 """
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import pymongo
 from pydantic import BaseModel, Field, model_validator
@@ -53,7 +53,7 @@ class FeatureTableCacheMetadataModel(FeatureByteCatalogBaseDocumentModel):
 
     observation_table_id: PydanticObjectId
     table_name: str
-    feature_definitions: List[CachedFeatureDefinition]
+    feature_definitions: list[CachedFeatureDefinition]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -61,7 +61,7 @@ class FeatureTableCacheMetadataModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "feature_table_cache_metadata"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

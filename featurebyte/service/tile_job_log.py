@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import datetime
 from collections import defaultdict
-from typing import Any, List
+from typing import Any
 
 import pandas as pd
 
@@ -72,7 +72,7 @@ class TileJobLogService(
 
     async def get_feature_job_logs(
         self,
-        features: List[ExtendedFeatureModel],
+        features: list[ExtendedFeatureModel],
         hour_limit: int,
     ) -> dict[str, Any]:
         """
@@ -103,7 +103,7 @@ class TileJobLogService(
         return dataframe_to_json(self._summarize_logs(result, features))
 
     @staticmethod
-    def _summarize_logs(logs: pd.DataFrame, features: List[ExtendedFeatureModel]) -> pd.DataFrame:
+    def _summarize_logs(logs: pd.DataFrame, features: list[ExtendedFeatureModel]) -> pd.DataFrame:
         """
         Summarize logs by session
 

@@ -5,7 +5,7 @@ Info related schema
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 
 from pydantic import Field, RootModel, field_validator, model_validator
 
@@ -54,7 +54,7 @@ class EntityBriefInfo(BaseBriefInfo):
     Entity brief info schema
     """
 
-    serving_names: List[str]
+    serving_names: list[str]
     catalog_name: str
 
 
@@ -69,7 +69,7 @@ class EntityBriefInfoList(RootModel[Any]):
     Paginated list of entity brief info
     """
 
-    root: List[EntityBriefInfo]
+    root: list[EntityBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EntityBriefInfoList:
@@ -103,7 +103,7 @@ class TableBriefInfoList(RootModel[Any]):
     Paginated list of table brief info
     """
 
-    root: List[TableBriefInfo]
+    root: list[TableBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> TableBriefInfoList:
@@ -128,7 +128,7 @@ class EventTableBriefInfoList(RootModel[Any]):
     Paginated list of event table brief info
     """
 
-    root: List[TableBriefInfo]
+    root: list[TableBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> EventTableBriefInfoList:
@@ -168,10 +168,10 @@ class TableColumnInfo(FeatureByteBaseModel):
 
     name: NameStr
     dtype: DBVarType
-    entity: Optional[str] = Field(default=None)
-    semantic: Optional[str] = Field(default=None)
-    critical_data_info: Optional[CriticalDataInfo] = Field(default=None)
-    description: Optional[str] = Field(default=None)
+    entity: str | None = Field(default=None)
+    semantic: str | None = Field(default=None)
+    critical_data_info: CriticalDataInfo | None = Field(default=None)
+    description: str | None = Field(default=None)
 
 
 class TableInfo(TableBriefInfo, BaseInfo):
@@ -179,12 +179,12 @@ class TableInfo(TableBriefInfo, BaseInfo):
     Table info schema
     """
 
-    record_creation_timestamp_column: Optional[str] = Field(default=None)
+    record_creation_timestamp_column: str | None = Field(default=None)
     table_details: TableDetails
     entities: EntityBriefInfoList
-    semantics: List[str]
+    semantics: list[str]
     column_count: int
-    columns_info: Optional[List[TableColumnInfo]] = Field(default=None)
+    columns_info: list[TableColumnInfo] | None = Field(default=None)
 
 
 class EventTableInfo(TableInfo):
@@ -194,7 +194,7 @@ class EventTableInfo(TableInfo):
 
     event_timestamp_column: str
     event_id_column: str
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    default_feature_job_setting: FeatureJobSetting | None = Field(default=None)
 
 
 class ItemTableInfo(TableInfo):
@@ -222,9 +222,9 @@ class SCDTableInfo(TableInfo):
 
     natural_key_column: str
     effective_timestamp_column: str
-    surrogate_key_column: Optional[str] = Field(default=None)
-    end_timestamp_column: Optional[str] = Field(default=None)
-    current_flag_column: Optional[str] = Field(default=None)
+    surrogate_key_column: str | None = Field(default=None)
+    end_timestamp_column: str | None = Field(default=None)
+    current_flag_column: str | None = Field(default=None)
 
 
 class NamespaceInfo(BaseInfo):
@@ -260,9 +260,9 @@ class FeatureInfo(FeatureNamespaceInfo):
     readiness: ReadinessComparison
     table_feature_job_setting: TableFeatureJobSettingComparison
     table_cleaning_operation: TableCleaningOperationComparison
-    versions_info: Optional[FeatureBriefInfoList] = Field(default=None)
+    versions_info: FeatureBriefInfoList | None = Field(default=None)
     metadata: Any
-    namespace_description: Optional[str] = Field(default=None)
+    namespace_description: str | None = Field(default=None)
 
 
 class FeatureListBriefInfo(FeatureByteBaseModel):
@@ -273,10 +273,10 @@ class FeatureListBriefInfo(FeatureByteBaseModel):
     version: VersionIdentifier
     readiness_distribution: FeatureReadinessDistribution
     created_at: datetime
-    production_ready_fraction: Optional[float] = Field(default=None)
+    production_ready_fraction: float | None = Field(default=None)
 
     @model_validator(mode="after")
-    def _derive_production_ready_fraction(self) -> "FeatureListBriefInfo":
+    def _derive_production_ready_fraction(self) -> FeatureListBriefInfo:
         # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
         # validate_assign=True in model_config.
         self.__dict__["production_ready_fraction"] = (
@@ -290,7 +290,7 @@ class FeatureListBriefInfoList(RootModel[Any]):
     Paginated list of feature brief info
     """
 
-    root: List[FeatureListBriefInfo]
+    root: list[FeatureListBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> FeatureListBriefInfoList:
@@ -317,7 +317,7 @@ class BaseFeatureListNamespaceInfo(NamespaceInfo):
     BaseFeatureListNamespace info schema
     """
 
-    dtype_distribution: List[FeatureTypeFeatureCount]
+    dtype_distribution: list[FeatureTypeFeatureCount]
     default_feature_list_id: PydanticObjectId
     status: FeatureListStatus
     feature_count: int
@@ -328,8 +328,8 @@ class FeatureListNamespaceInfo(BaseFeatureListNamespaceInfo):
     FeatureListNamespace info schema
     """
 
-    feature_namespace_ids: List[PydanticObjectId]
-    default_feature_ids: List[PydanticObjectId]
+    feature_namespace_ids: list[PydanticObjectId]
+    default_feature_ids: list[PydanticObjectId]
 
 
 class DefaultFeatureFractionComparison(FeatureByteBaseModel):
@@ -349,9 +349,9 @@ class FeatureListInfo(BaseFeatureListNamespaceInfo):
     version: VersionComparison
     production_ready_fraction: ProductionReadyFractionComparison
     default_feature_fraction: DefaultFeatureFractionComparison
-    versions_info: Optional[FeatureListBriefInfoList] = Field(default=None)
+    versions_info: FeatureListBriefInfoList | None = Field(default=None)
     deployed: bool
-    namespace_description: Optional[str] = Field(default=None)
+    namespace_description: str | None = Field(default=None)
 
 
 class FeatureJobSettingAnalysisInfo(FeatureByteBaseModel):
@@ -377,8 +377,8 @@ class CatalogInfo(CatalogBriefInfo, BaseInfo):
     Catalog info schema
     """
 
-    feature_store_name: Optional[str] = Field(default=None)
-    online_store_name: Optional[str] = Field(default=None)
+    feature_store_name: str | None = Field(default=None)
+    online_store_name: str | None = Field(default=None)
 
 
 class CredentialBriefInfo(BaseBriefInfo):
@@ -386,8 +386,8 @@ class CredentialBriefInfo(BaseBriefInfo):
     Credential brief info schema
     """
 
-    database_credential_type: Optional[DatabaseCredentialType] = Field(default=None)
-    storage_credential_type: Optional[StorageCredentialType] = Field(default=None)
+    database_credential_type: DatabaseCredentialType | None = Field(default=None)
+    storage_credential_type: StorageCredentialType | None = Field(default=None)
 
 
 class CredentialInfo(CredentialBriefInfo, BaseInfo):
@@ -406,7 +406,7 @@ class ObservationTableInfo(BaseInfo):
     type: RequestInputType
     feature_store_name: str
     table_details: TableDetails
-    target_name: Optional[str]
+    target_name: str | None
 
 
 class BaseFeatureOrTargetTableInfo(BaseInfo):
@@ -414,7 +414,7 @@ class BaseFeatureOrTargetTableInfo(BaseInfo):
     BaseFeatureOrTargetTable info schema
     """
 
-    observation_table_name: Optional[str]
+    observation_table_name: str | None
     table_details: TableDetails
 
 
@@ -423,8 +423,8 @@ class HistoricalFeatureTableInfo(BaseFeatureOrTargetTableInfo):
     Schema for historical feature table info
     """
 
-    feature_list_name: Optional[str]
-    feature_list_version: Optional[str]
+    feature_list_name: str | None
+    feature_list_version: str | None
 
 
 class TargetTableInfo(BaseFeatureOrTargetTableInfo):
@@ -444,8 +444,8 @@ class DeploymentInfo(BaseInfo):
     feature_list_version: str
     num_feature: int
     enabled: bool
-    serving_endpoint: Optional[str]
-    use_case_name: Optional[str]
+    serving_endpoint: str | None
+    use_case_name: str | None
 
 
 class DeploymentRequestCodeTemplate(FeatureByteBaseModel):
@@ -502,11 +502,11 @@ class UserDefinedFunctionInfo(BaseInfo):
     """
 
     sql_function_name: str
-    function_parameters: List[FunctionParameter]
+    function_parameters: list[FunctionParameter]
     signature: str
     output_dtype: DBVarType
     feature_store_name: str
-    used_by_features: List[UserDefinedFunctionFeatureInfo]
+    used_by_features: list[UserDefinedFunctionFeatureInfo]
 
 
 class UseCaseInfo(BaseInfo):
@@ -514,12 +514,12 @@ class UseCaseInfo(BaseInfo):
     Use Case Info schema
     """
 
-    author: Optional[str] = None
+    author: str | None = None
     primary_entities: EntityBriefInfoList
     context_name: str
     target_name: str
-    default_eda_table: Optional[str] = None
-    default_preview_table: Optional[str] = None
+    default_eda_table: str | None = None
+    default_preview_table: str | None = None
 
 
 class ContextInfo(BaseInfo):
@@ -527,11 +527,11 @@ class ContextInfo(BaseInfo):
     Context Info schema
     """
 
-    author: Optional[str] = None
+    author: str | None = None
     primary_entities: EntityBriefInfoList
-    default_eda_table: Optional[str] = None
-    default_preview_table: Optional[str] = None
-    associated_use_cases: Optional[List[str]] = None
+    default_eda_table: str | None = None
+    default_preview_table: str | None = None
+    associated_use_cases: list[str] | None = None
 
 
 class OnlineStoreInfo(BaseInfo):
@@ -540,7 +540,7 @@ class OnlineStoreInfo(BaseInfo):
     """
 
     details: OnlineStoreDetails
-    catalogs: List[CatalogBriefInfo]
+    catalogs: list[CatalogBriefInfo]
 
     @field_validator("details", mode="after")
     @classmethod

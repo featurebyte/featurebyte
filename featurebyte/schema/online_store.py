@@ -3,7 +3,7 @@ OnlineStore API payload schema
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, field_validator
@@ -69,4 +69,4 @@ class OnlineStoreList(PaginationMixin):
     Paginated list of OnlineStore
     """
 
-    data: List[OnlineStoreRead]
+    data: list[OnlineStoreRead]

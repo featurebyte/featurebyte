@@ -5,7 +5,7 @@ RequestInput is the base class for all request input types.
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Dict, List, Literal, Optional, cast
+from typing import Any, Literal, cast
 
 from pydantic import Field, PrivateAttr, StrictStr
 from sqlglot import expressions
@@ -46,8 +46,8 @@ class BaseRequestInput(FeatureByteBaseModel):
     BaseRequestInput is the base class for all RequestInput types
     """
 
-    columns: Optional[List[str]] = Field(default=None)
-    columns_rename_mapping: Optional[Dict[str, str]] = Field(default=None)
+    columns: list[str] | None = Field(default=None)
+    columns_rename_mapping: dict[str, str] | None = Field(default=None)
 
     @abstractmethod
     def get_query_expr(self, source_info: SourceInfo) -> Select:
@@ -123,7 +123,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         self,
         session: BaseSession,
         destination: TableDetails,
-        sample_rows: Optional[int],
+        sample_rows: int | None,
     ) -> None:
         """
         Materialize the request input table
@@ -191,7 +191,7 @@ class ViewRequestInput(BaseRequestInput):
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
     internal_graph: Any = Field(alias="graph", default=None)
-    _graph: Optional[QueryGraphModel] = PrivateAttr(default=None)
+    _graph: QueryGraphModel | None = PrivateAttr(default=None)
 
     @property
     def graph(self) -> QueryGraphModel:
@@ -213,11 +213,11 @@ class ViewRequestInput(BaseRequestInput):
     def get_query_expr(self, source_info: SourceInfo) -> Select:
         return get_view_expr(graph=self.graph, node_name=self.node_name, source_info=source_info)
 
-    async def get_column_names(self, session: BaseSession) -> List[str]:
+    async def get_column_names(self, session: BaseSession) -> list[str]:
         node = self.graph.get_node_by_name(self.node_name)
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
         op_struct = op_struct_info.operation_structure_map[node.name]
-        return cast(List[str], [column.name for column in op_struct.columns])
+        return cast(list[str], [column.name for column in op_struct.columns])
 
 
 class SourceTableRequestInput(BaseRequestInput):

@@ -2,7 +2,7 @@
 Context API payload schema
 """
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from bson import ObjectId
 from pydantic import BaseModel, Field, StrictStr, model_validator
@@ -20,7 +20,7 @@ class ContextCreate(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    primary_entity_ids: List[PydanticObjectId]
+    primary_entity_ids: list[PydanticObjectId]
     description: Optional[StrictStr] = Field(default=None)
 
 
@@ -29,7 +29,7 @@ class ContextList(PaginationMixin):
     Paginated list of context
     """
 
-    data: List[ContextModel]
+    data: list[ContextModel]
 
 
 class ContextUpdate(BaseDocumentServiceUpdateSchema):

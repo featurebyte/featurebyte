@@ -4,8 +4,6 @@ SQL generation for lookup targets
 
 from __future__ import annotations
 
-from typing import Optional
-
 from sqlglot.expressions import Select
 
 from featurebyte.query_graph.node.generic import SCDLookupParameters
@@ -32,5 +30,5 @@ class LookupTargetAggregator(BaseLookupAggregator[LookupTargetSpec]):
             offset_direction=OffsetDirection.FORWARD,
         )
 
-    def get_forward_point_in_time_offset(self, base_lookup_spec: LookupTargetSpec) -> Optional[str]:
+    def get_forward_point_in_time_offset(self, base_lookup_spec: LookupTargetSpec) -> str | None:
         return base_lookup_spec.offset

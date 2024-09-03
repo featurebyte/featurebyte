@@ -5,7 +5,7 @@ This module contains groupby related class
 from __future__ import annotations
 
 import warnings
-from typing import ClassVar, List, Optional, Union
+from typing import ClassVar
 
 from typeguard import typechecked
 
@@ -83,9 +83,9 @@ class GroupBy:
     @typechecked
     def __init__(
         self,
-        obj: Union[EventView, ItemView, ChangeView, SCDView],
-        keys: Union[str, List[str]],
-        category: Optional[str] = None,
+        obj: EventView | ItemView | ChangeView | SCDView,
+        keys: str | list[str],
+        category: str | None = None,
     ):
         keys_value = []
         if isinstance(keys, str):
@@ -128,15 +128,15 @@ class GroupBy:
     @typechecked
     def aggregate_over(
         self,
-        value_column: Optional[str],
-        method: Union[AggFunc, str],
-        windows: List[Optional[str]],
-        feature_names: List[str],
-        timestamp_column: Optional[str] = None,
-        feature_job_setting: Optional[FeatureJobSetting] = None,
+        value_column: str | None,
+        method: AggFunc | str,
+        windows: list[str | None],
+        feature_names: list[str],
+        timestamp_column: str | None = None,
+        feature_job_setting: FeatureJobSetting | None = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: Optional[bool] = None,
-        offset: Optional[str] = None,
+        skip_fill_na: bool | None = None,
+        offset: str | None = None,
     ) -> FeatureGroup:
         """
         The aggregate_over method of a GroupBy instance returns a FeatureGroup containing Aggregate Over a Window
@@ -257,13 +257,13 @@ class GroupBy:
     @typechecked
     def aggregate_asat(
         self,
-        value_column: Optional[str],
-        method: Union[AggFunc, str],
+        value_column: str | None,
+        method: AggFunc | str,
         feature_name: str,
-        offset: Optional[str] = None,
+        offset: str | None = None,
         backward: bool = True,
         fill_value: OptionalScalar = None,
-        skip_fill_na: Optional[bool] = None,
+        skip_fill_na: bool | None = None,
     ) -> Feature:
         """
         The aggregate_asat method of a GroupBy instance returns an Aggregate ""as at"" Feature object. The object
@@ -371,11 +371,11 @@ class GroupBy:
     @typechecked
     def aggregate(
         self,
-        value_column: Optional[str],
-        method: Union[AggFunc, str],
+        value_column: str | None,
+        method: AggFunc | str,
         feature_name: str,
         fill_value: OptionalScalar = None,
-        skip_fill_na: Optional[bool] = None,
+        skip_fill_na: bool | None = None,
     ) -> Feature:
         """
         The aggregate method of a GroupBy class instance returns a Simple Aggregate Feature object. This object
@@ -439,13 +439,13 @@ class GroupBy:
 
     def forward_aggregate(
         self,
-        value_column: Optional[str],
-        method: Union[AggFunc, str],
+        value_column: str | None,
+        method: AggFunc | str,
         window: str,
         target_name: str,
         fill_value: OptionalScalar = None,
-        skip_fill_na: Optional[bool] = None,
-        offset: Optional[str] = None,
+        skip_fill_na: bool | None = None,
+        offset: str | None = None,
     ) -> Target:
         """
         The forward_aggregate method of a GroupBy class instance returns a Forward Aggregated Target object. This object
@@ -515,12 +515,12 @@ class GroupBy:
     @typechecked
     def forward_aggregate_asat(
         self,
-        value_column: Optional[str],
-        method: Union[AggFunc, str],
+        value_column: str | None,
+        method: AggFunc | str,
         target_name: str,
-        offset: Optional[str] = None,
+        offset: str | None = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: Optional[bool] = None,
+        skip_fill_na: bool | None = None,
     ) -> Target:
         """
         The forward_aggregate_asat method of a GroupBy instance returns an Aggregate ""as at""

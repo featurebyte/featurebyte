@@ -3,7 +3,7 @@ On demand feature view (for Feast) related classes and functions.
 """
 
 import textwrap
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from pydantic import Field
 
@@ -30,7 +30,7 @@ class OnDemandFeatureViewGlobalState(FeatureByteBaseModel):
     On demand feature view global state
     """
 
-    node_name_to_post_compute_output: Dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
+    node_name_to_post_compute_output: dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
     code_generation_config: OnDemandViewCodeGenConfig = Field(
         default_factory=OnDemandViewCodeGenConfig
     )
@@ -54,8 +54,8 @@ class OnDemandFeatureViewExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureViewGlobalState,
         node: Node,
-        input_node_names: List[str],
-    ) -> Tuple[List[str], bool]:
+        input_node_names: list[str],
+    ) -> tuple[list[str], bool]:
         return input_node_names, False
 
     def _in_compute(
@@ -72,7 +72,7 @@ class OnDemandFeatureViewExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureViewGlobalState,
         node: Node,
-        inputs: List[Any],
+        inputs: list[Any],
         skip_post: bool,
     ) -> VarNameExpressionInfo:
         if node.name in global_state.node_name_to_post_compute_output:

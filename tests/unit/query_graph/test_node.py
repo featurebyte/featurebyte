@@ -2,7 +2,7 @@
 Unit tests for featurebyte/query_graph/node/base.py
 """
 
-from typing import Any, List
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -23,16 +23,16 @@ def node_fixture():
 
     class NestedNodeParams(BaseModel):
         in_name: InColumnStr
-        in_names: List[InColumnStr]
+        in_names: list[InColumnStr]
         out_name: OutColumnStr
-        out_names: List[OutColumnStr]
+        out_names: list[OutColumnStr]
 
     class Node(BaseNode):
         class NodeParams(BaseModel):
             in_name: InColumnStr
-            in_names: List[InColumnStr]
+            in_names: list[InColumnStr]
             out_name: OutColumnStr
-            out_names: List[OutColumnStr]
+            out_names: list[OutColumnStr]
             nested_params: NestedNodeParams
             anything: Any
 
@@ -42,7 +42,7 @@ def node_fixture():
         def max_input_count(self) -> int:
             return 4
 
-        def _get_required_input_columns(self, input_index: int, available_column_names: List[str]):
+        def _get_required_input_columns(self, input_index: int, available_column_names: list[str]):
             _ = input_index
             return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
 

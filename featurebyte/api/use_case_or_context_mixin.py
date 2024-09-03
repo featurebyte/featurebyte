@@ -2,7 +2,7 @@
 Base UseCase and Context mixin
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import pandas as pd
 from pydantic import Field
@@ -165,7 +165,7 @@ class UseCaseOrContextMixin(ApiObject):
         self.default_preview_table_id = None
 
     @typechecked
-    def _construct_table_result_df(self, result_dict: List[Dict[str, Any]]) -> pd.DataFrame:
+    def _construct_table_result_df(self, result_dict: list[dict[str, Any]]) -> pd.DataFrame:
         """
         Construct a pandas DataFrame from the result_dict returned by the API.
 
@@ -179,7 +179,7 @@ class UseCaseOrContextMixin(ApiObject):
         pd.DataFrame
             The pandas DataFrame constructed from the result_dict.
         """
-        dataframe_dict: Dict[str, Any] = {"id": [], "name": [], "description": []}
+        dataframe_dict: dict[str, Any] = {"id": [], "name": [], "description": []}
         for r_dict in result_dict:
             dataframe_dict["id"].append(r_dict["_id"])
             dataframe_dict["name"].append(r_dict["name"])

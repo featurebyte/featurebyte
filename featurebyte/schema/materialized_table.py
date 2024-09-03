@@ -2,7 +2,7 @@
 Schemas common to materialized table
 """
 
-from typing import Any, Tuple
+from typing import Any
 
 from pydantic import BaseModel, model_validator
 
@@ -14,7 +14,7 @@ class BaseMaterializedTableListRecord(FeatureByteBaseDocumentModel):
     This model determines the schema when listing tables.
     """
 
-    shape: Tuple[int, int]
+    shape: tuple[int, int]
 
     @model_validator(mode="before")
     @classmethod

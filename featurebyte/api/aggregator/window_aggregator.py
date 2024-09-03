@@ -5,7 +5,7 @@ This module contains window aggregator related class
 from __future__ import annotations
 
 import os
-from typing import Any, List, Optional, Type, cast
+from typing import Any, cast
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.change_view import ChangeView
@@ -32,7 +32,7 @@ class WindowAggregator(BaseAggregator):
     """
 
     @property
-    def supported_views(self) -> List[Type[View]]:
+    def supported_views(self) -> list[type[View]]:
         return [EventView, ItemView, ChangeView]
 
     @property
@@ -41,15 +41,15 @@ class WindowAggregator(BaseAggregator):
 
     def aggregate_over(
         self,
-        value_column: Optional[str],
+        value_column: str | None,
         method: str,
-        windows: List[Optional[str]],
-        feature_names: List[str],
-        timestamp_column: Optional[str] = None,
-        feature_job_setting: Optional[FeatureJobSetting] = None,
+        windows: list[str | None],
+        feature_names: list[str],
+        timestamp_column: str | None = None,
+        feature_job_setting: FeatureJobSetting | None = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: Optional[bool] = None,
-        offset: Optional[str] = None,
+        skip_fill_na: bool | None = None,
+        offset: str | None = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -131,14 +131,14 @@ class WindowAggregator(BaseAggregator):
 
     def _validate_parameters(
         self,
-        value_column: Optional[str],
+        value_column: str | None,
         method: str,
-        windows: list[Optional[str]],
+        windows: list[str | None],
         feature_names: list[str],
-        feature_job_setting: Optional[FeatureJobSetting],
+        feature_job_setting: FeatureJobSetting | None,
         fill_value: OptionalScalar,
         skip_fill_na: bool,
-        offset: Optional[str],
+        offset: str | None,
     ) -> None:
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
@@ -178,7 +178,7 @@ class WindowAggregator(BaseAggregator):
             validate_window(offset, parsed_feature_job_setting.period)
 
     def _get_job_setting_params(
-        self, feature_job_setting: Optional[FeatureJobSetting]
+        self, feature_job_setting: FeatureJobSetting | None
     ) -> FeatureJobSetting:
         if feature_job_setting is not None:
             return feature_job_setting
@@ -194,14 +194,14 @@ class WindowAggregator(BaseAggregator):
 
     def _prepare_node_parameters(
         self,
-        value_column: Optional[str],
-        method: Optional[str],
-        windows: Optional[list[Optional[str]]],
-        offset: Optional[str],
-        feature_names: Optional[list[str]],
-        timestamp_column: Optional[str] = None,
-        value_by_column: Optional[str] = None,
-        feature_job_setting: Optional[FeatureJobSetting] = None,
+        value_column: str | None,
+        method: str | None,
+        windows: list[str | None] | None,
+        offset: str | None,
+        feature_names: list[str] | None,
+        timestamp_column: str | None = None,
+        value_by_column: str | None = None,
+        feature_job_setting: FeatureJobSetting | None = None,
     ) -> dict[str, Any]:
         parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
         tile_id_version = int(os.environ.get("FEATUREBYTE_TILE_ID_VERSION", "2"))

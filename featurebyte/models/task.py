@@ -3,7 +3,7 @@ Task document model
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from uuid import UUID, uuid4
 
 import pymongo
@@ -21,16 +21,16 @@ class Task(FeatureByteBaseDocumentModel):
     status: str
     result: str
     traceback: Optional[str] = Field(default=None)
-    children: List[str]
+    children: list[str]
     start_time: Optional[datetime] = Field(default=None)
     date_done: datetime
     name: str
-    args: List[Any]
-    kwargs: Dict[str, Any]
+    args: list[Any]
+    kwargs: dict[str, Any]
     worker: str
     retries: int
     queue: str
-    progress: Optional[Dict[str, Any]] = Field(default=None)
+    progress: Optional[dict[str, Any]] = Field(default=None)
 
     class Settings:
         """

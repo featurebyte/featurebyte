@@ -5,10 +5,11 @@ FeatureMaterializeService class
 from __future__ import annotations
 
 import textwrap
+from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Tuple, cast
+from typing import Any, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -67,14 +68,14 @@ class MaterializedFeatures:
     """
 
     materialized_table_name: str
-    column_names: List[str]
-    data_types: List[str]
-    serving_names: List[str]
+    column_names: list[str]
+    data_types: list[str]
+    serving_names: list[str]
     feature_timestamp: datetime
     source_type: SourceType
 
     @property
-    def serving_names_and_column_names(self) -> List[str]:
+    def serving_names_and_column_names(self) -> list[str]:
         """
         Returns serving names and column names in a combined list
 
@@ -100,8 +101,8 @@ class MaterializedFeaturesSet:
     for the offline store feature table.
     """
 
-    all_materialized_features: Dict[str, MaterializedFeatures]
-    table_name_to_feature_table: Dict[str, OfflineStoreFeatureTableModel]
+    all_materialized_features: dict[str, MaterializedFeatures]
+    table_name_to_feature_table: dict[str, OfflineStoreFeatureTableModel]
 
     @classmethod
     def create(
@@ -149,7 +150,7 @@ class MaterializedFeaturesSet:
 
     def iterate_materialized_features(
         self,
-    ) -> Iterator[Tuple[OfflineStoreFeatureTableModel, MaterializedFeatures]]:
+    ) -> Iterator[tuple[OfflineStoreFeatureTableModel, MaterializedFeatures]]:
         """
         Iterate over materialized features
 
@@ -199,8 +200,8 @@ class FeatureMaterializeService:
     async def materialize_features(
         self,
         feature_table_model: OfflineStoreFeatureTableModel,
-        selected_columns: Optional[List[str]] = None,
-        session: Optional[BaseSession] = None,
+        selected_columns: list[str] | None = None,
+        session: BaseSession | None = None,
         use_last_materialized_timestamp: bool = True,
     ) -> AsyncIterator[MaterializedFeaturesSet]:
         """
@@ -352,7 +353,7 @@ class FeatureMaterializeService:
 
     async def _get_precomputed_lookup_feature_tables(
         self, feature_table_model: OfflineStoreFeatureTableModel
-    ) -> List[OfflineStoreFeatureTableModel]:
+    ) -> list[OfflineStoreFeatureTableModel]:
         return [
             doc
             async for doc in self.offline_store_feature_table_service.list_precomputed_lookup_feature_tables_from_source(
@@ -367,10 +368,10 @@ class FeatureMaterializeService:
         feature_table_model: OfflineStoreFeatureTableModel,
         feature_timestamp: datetime,
         materialized_feature_table_name: str,
-        column_names: List[str],
-        column_dtypes: List[DBVarType],
+        column_names: list[str],
+        column_dtypes: list[DBVarType],
         use_last_materialized_timestamp: bool,
-    ) -> List[Tuple[OfflineStoreFeatureTableModel, MaterializedFeatures]]:
+    ) -> list[tuple[OfflineStoreFeatureTableModel, MaterializedFeatures]]:
         precomputed_lookup_feature_tables = await self._get_precomputed_lookup_feature_tables(
             feature_table_model
         )
@@ -398,10 +399,10 @@ class FeatureMaterializeService:
         adapter: BaseAdapter,
         feature_timestamp: datetime,
         materialized_feature_table_name: str,
-        column_names: List[str],
-        column_dtypes: List[DBVarType],
+        column_names: list[str],
+        column_dtypes: list[DBVarType],
         use_last_materialized_timestamp: bool,
-        source_feature_table_serving_names: List[str],
+        source_feature_table_serving_names: list[str],
         lookup_feature_table: OfflineStoreFeatureTableModel,
     ) -> MaterializedFeatures:
         # Construct a lookup universe table with both the child and parent entities to be joined
@@ -440,7 +441,7 @@ class FeatureMaterializeService:
         serving_name_exprs = {}
         join_conditions = []
         for source_serving_name in source_feature_table_serving_names:
-            lookup_serving_name: Optional[str]
+            lookup_serving_name: str | None
             if lookup_info.lookup_mapping is None:
                 lookup_serving_name = source_serving_name  # backward compatibility
             else:
@@ -545,7 +546,7 @@ class FeatureMaterializeService:
     async def scheduled_materialize_features(
         self,
         feature_table_model: OfflineStoreFeatureTableModel,
-        feature_materialize_run_id: Optional[ObjectId] = None,
+        feature_materialize_run_id: ObjectId | None = None,
     ) -> None:
         """
         Materialize features for the provided offline store feature table. This method is expected
@@ -681,7 +682,7 @@ class FeatureMaterializeService:
     async def initialize_precomputed_lookup_feature_table(
         self,
         source_feature_table_id: PydanticObjectId,
-        lookup_feature_tables: List[OfflineStoreFeatureTableModel],
+        lookup_feature_tables: list[OfflineStoreFeatureTableModel],
     ) -> None:
         """
         Initialize a precomputed lookup feature table by creating it and backfill using the source
@@ -866,11 +867,11 @@ class FeatureMaterializeService:
         self,
         session: BaseSession,
         feature_table_name: str,
-        feature_table_column_names: List[str],
-        feature_table_column_dtypes: List[DBVarType],
-        feature_table_serving_names: List[str],
+        feature_table_column_names: list[str],
+        feature_table_column_dtypes: list[DBVarType],
+        feature_table_serving_names: list[str],
         materialized_features: MaterializedFeatures,
-    ) -> Optional[Tuple[List[str], datetime, bool]]:
+    ) -> tuple[list[str], datetime, bool] | None:
         num_rows_in_feature_table = await self._num_rows_in_feature_table(
             session, feature_table_name
         )
@@ -919,7 +920,7 @@ class FeatureMaterializeService:
     async def _initialize_new_columns_online(
         self,
         feature_table: OfflineStoreFeatureTableModel,
-        column_names: List[str],
+        column_names: list[str],
         end_date: datetime,
     ) -> None:
         # Feast online materialize. Start date is not set because these are new columns.
@@ -981,7 +982,7 @@ class FeatureMaterializeService:
             )
 
     async def drop_columns(
-        self, feature_table_model: OfflineStoreFeatureTableModel, column_names: List[str]
+        self, feature_table_model: OfflineStoreFeatureTableModel, column_names: list[str]
     ) -> None:
         """
         Remove columns from the feature table. This is expected to be called when some features in
@@ -1032,9 +1033,9 @@ class FeatureMaterializeService:
         self,
         feature_store: FeastFeatureStore,
         feature_table: OfflineStoreFeatureTableModel,
-        columns: List[str],
+        columns: list[str],
         end_date: datetime,
-        start_date: Optional[datetime] = None,
+        start_date: datetime | None = None,
     ) -> None:
         """
         Calls materialize_partial and also updates online store last materialized at
@@ -1075,7 +1076,7 @@ class FeatureMaterializeService:
         )
 
     async def _get_session(self, feature_table_model: OfflineStoreFeatureTableModel) -> BaseSession:
-        feature_store_id: Optional[PydanticObjectId]
+        feature_store_id: PydanticObjectId | None
         if feature_table_model.feature_cluster is not None:
             feature_store_id = feature_table_model.feature_cluster.feature_store_id
         else:
@@ -1104,7 +1105,7 @@ class FeatureMaterializeService:
         cls,
         session: BaseSession,
         feature_table_name: str,
-        feature_table_serving_names: List[str],
+        feature_table_serving_names: list[str],
         materialized_features: MaterializedFeatures,
     ) -> None:
         await session.create_table_as(
@@ -1135,7 +1136,7 @@ class FeatureMaterializeService:
 
     @classmethod
     async def _add_primary_key_constraint_if_necessary(
-        cls, session: BaseSession, feature_table_name: str, feature_table_serving_names: List[str]
+        cls, session: BaseSession, feature_table_name: str, feature_table_serving_names: list[str]
     ) -> None:
         # Only needed for Databricks with Unity catalog for now
         if session.source_type != SourceType.DATABRICKS_UNITY:
@@ -1223,7 +1224,7 @@ class FeatureMaterializeService:
     async def _merge_into_feature_table(
         session: BaseSession,
         feature_table_name: str,
-        feature_table_serving_names: List[str],
+        feature_table_serving_names: list[str],
         materialized_features: MaterializedFeatures,
         feature_timestamp_value: str,
         to_specify_merge_conditions: bool,
@@ -1308,7 +1309,7 @@ class FeatureMaterializeService:
         cls,
         session: BaseSession,
         feature_table_name: str,
-    ) -> Optional[int]:
+    ) -> int | None:
         try:
             query = sql_to_string(
                 expressions.select(expressions.Count(this=expressions.Star())).from_(
@@ -1326,8 +1327,8 @@ class FeatureMaterializeService:
         cls,
         session: BaseSession,
         feature_table_name: str,
-        feature_table_column_names: List[str],
-    ) -> List[str]:
+        feature_table_column_names: list[str],
+    ) -> list[str]:
         existing_columns = [
             c.upper()
             for c in (
@@ -1343,9 +1344,9 @@ class FeatureMaterializeService:
         cls,
         session: BaseSession,
         feature_table_name: str,
-        feature_table_column_names: List[str],
-        feature_table_column_dtypes: List[DBVarType],
-    ) -> List[str]:
+        feature_table_column_names: list[str],
+        feature_table_column_dtypes: list[DBVarType],
+    ) -> list[str]:
         assert len(feature_table_column_names) == len(feature_table_column_dtypes)
 
         new_columns = await cls._get_column_names_not_in_warehouse(
@@ -1371,11 +1372,11 @@ class FeatureMaterializeService:
 
     @staticmethod
     def _get_column_defs(
-        column_names: List[str],
-        column_dtypes: List[DBVarType],
-        columns: List[str],
+        column_names: list[str],
+        column_dtypes: list[DBVarType],
+        columns: list[str],
         adapter: BaseAdapter,
-    ) -> List[expressions.ColumnDef]:
+    ) -> list[expressions.ColumnDef]:
         columns_and_types = {}
         for column_name, column_data_type in zip(column_names, column_dtypes):
             if column_name in columns:

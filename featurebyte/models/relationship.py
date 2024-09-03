@@ -2,7 +2,7 @@
 This module contains Relation mixin model
 """
 
-from typing import List, Optional
+from typing import Optional
 
 import pymongo
 from bson import ObjectId
@@ -33,8 +33,8 @@ class Relationship(FeatureByteBaseDocumentModel):
     Catalog-agnostic relationship model
     """
 
-    parents: List[Parent] = Field(default_factory=list, frozen=True)
-    ancestor_ids: List[PydanticObjectId] = Field(default_factory=list, frozen=True)
+    parents: list[Parent] = Field(default_factory=list, frozen=True)
+    ancestor_ids: list[PydanticObjectId] = Field(default_factory=list, frozen=True)
 
     # pydantic validators
     _sort_ids_validator = field_validator("ancestor_ids")(construct_sort_validator())
@@ -100,7 +100,7 @@ class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name = "relationship_info"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

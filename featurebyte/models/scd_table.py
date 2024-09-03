@@ -4,7 +4,7 @@ This module contains SCD table related models
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional, Tuple, Type, Union
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -38,8 +38,8 @@ class SCDTableModel(SCDTableData, TableModel):
         The current status of the table.
     """
 
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
-    _table_data_class: ClassVar[Type[SCDTableData]] = SCDTableData
+    default_feature_job_setting: FeatureJobSetting | None = Field(default=None)
+    _table_data_class: ClassVar[type[SCDTableData]] = SCDTableData
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -68,11 +68,11 @@ class SCDTableModel(SCDTableData, TableModel):
         return values
 
     @property
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         return [self.natural_key_column]
 
     @property
-    def special_columns(self) -> List[str]:
+    def special_columns(self) -> list[str]:
         cols = [
             self.natural_key_column,
             self.surrogate_key_column,
@@ -86,9 +86,9 @@ class SCDTableModel(SCDTableData, TableModel):
     def create_view_graph_node(
         self,
         input_node: InputNode,
-        metadata: Union[ViewMetadata, ChangeViewMetadata],
+        metadata: ViewMetadata | ChangeViewMetadata,
         **kwargs: Any,
-    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+    ) -> tuple[GraphNode, list[ColumnInfo]]:
         table_data = SCDTableData(**self.model_dump(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations,
         )

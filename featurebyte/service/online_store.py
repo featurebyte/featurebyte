@@ -4,7 +4,7 @@ OnlineStoreService class
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Type
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -29,13 +29,13 @@ class OnlineStoreService(
     OnlineStoreService class
     """
 
-    document_class: Type[OnlineStoreModel] = OnlineStoreModel
+    document_class: type[OnlineStoreModel] = OnlineStoreModel
 
     def __init__(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         catalog_service: CatalogService,
         block_modification_handler: BlockModificationHandler,
         storage: Storage,
@@ -105,9 +105,9 @@ class OnlineStoreService(
         document_id: ObjectId,
         exception_detail: str | None = None,
         use_raw_query_filter: bool = False,
-        projection: Optional[Dict[str, Any]] = None,
+        projection: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         document_dict = await super().get_document_as_dict(
             document_id=document_id,
             exception_detail=exception_detail,
@@ -124,9 +124,9 @@ class OnlineStoreService(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
         use_raw_query_filter: bool = False,
-        projection: Optional[Dict[str, Any]] = None,
+        projection: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         sort_by = sort_by or [("created_at", "desc")]
@@ -148,8 +148,8 @@ class OnlineStoreService(
     async def _update_document(
         self,
         document: OnlineStoreModel,
-        update_dict: Dict[str, Any],
-        update_document_class: Optional[Type[DocumentUpdateSchema]],
+        update_dict: dict[str, Any],
+        update_document_class: type[DocumentUpdateSchema] | None,
         skip_block_modification_check: bool = False,
     ) -> None:
         # encrypt credential if present in update_dict

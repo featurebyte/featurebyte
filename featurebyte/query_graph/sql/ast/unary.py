@@ -5,7 +5,7 @@ Module for unary operations sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union, cast
+from typing import cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -25,7 +25,7 @@ class UnaryOp(ExpressionNode):
     """
 
     expr: ExpressionNode
-    operation: Union[type[expressions.Expression], str]
+    operation: type[expressions.Expression] | str
 
     node_type_to_expression_cls = {
         NodeType.SQRT: expressions.Sqrt,
@@ -58,7 +58,7 @@ class UnaryOp(ExpressionNode):
         input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
         table_node = input_expr_node.table_node
         node_type = context.query_node.type
-        expr_cls: Union[type[expressions.Expression], str]
+        expr_cls: type[expressions.Expression] | str
         if node_type in cls.node_type_to_expression_cls:
             expr_cls = cls.node_type_to_expression_cls[node_type]
         else:

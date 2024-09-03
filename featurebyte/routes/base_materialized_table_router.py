@@ -2,7 +2,7 @@
 Base materialized table router
 """
 
-from typing import Generic, Type, TypeVar
+from typing import Generic, TypeVar
 
 from fastapi import APIRouter, Request
 
@@ -20,7 +20,7 @@ class BaseMaterializedTableRouter(Generic[MaterializedTableModelT], BaseRouter):
     This class contains all the routes that are common between base materialized tables.
     """
 
-    table_model: Type[MaterializedTableModelT]
+    table_model: type[MaterializedTableModelT]
     controller: str
 
     def __init__(self, prefix: str):

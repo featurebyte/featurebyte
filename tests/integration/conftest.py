@@ -15,7 +15,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from pprint import pprint
-from typing import Dict, List, cast
+from typing import cast
 from unittest import mock
 from unittest.mock import Mock, patch
 from uuid import UUID, uuid4
@@ -901,7 +901,7 @@ async def datasets_registration_helper_fixture(
         """
 
         def __init__(self):
-            self.datasets: Dict[str, pd.DataFrame] = {}
+            self.datasets: dict[str, pd.DataFrame] = {}
 
         def add_table(self, table_name: str, df: pd.DataFrame):
             """
@@ -929,7 +929,7 @@ async def datasets_registration_helper_fixture(
                 await session.register_table(table_name, df)
 
         @property
-        def table_names(self) -> List[str]:
+        def table_names(self) -> list[str]:
             """
             List of table names registered
 

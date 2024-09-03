@@ -4,7 +4,7 @@ ItemView class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Optional
+from typing import Any, ClassVar
 
 from pydantic import Field
 
@@ -66,7 +66,7 @@ class ItemView(View, GroupByMixin, RawMixin):
         "of the Event Table related to the Item "
         "view.",
     )
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+    default_feature_job_setting: FeatureJobSetting | None = Field(
         frozen=True,
         description="Returns the default feature job setting for the view.\n\n"
         "The Default Feature Job Setting establishes the default setting used "
@@ -79,12 +79,12 @@ class ItemView(View, GroupByMixin, RawMixin):
     )
     event_view: EventView = Field(frozen=True)
     timestamp_column_name: str = Field(frozen=True)
-    timestamp_timezone_offset_column_name: Optional[str] = Field(frozen=True, default=None)
+    timestamp_timezone_offset_column_name: str | None = Field(frozen=True, default=None)
 
     def join_event_table_attributes(
         self,
         columns: list[str],
-        event_suffix: Optional[str] = None,
+        event_suffix: str | None = None,
     ) -> ItemView:
         """
         Joins additional attributes from the related EventTable. This operation returns a new ItemView object.
@@ -154,7 +154,7 @@ class ItemView(View, GroupByMixin, RawMixin):
         return self.timestamp_column_name
 
     @property
-    def timestamp_timezone_offset_column(self) -> Optional[str]:
+    def timestamp_timezone_offset_column(self) -> str | None:
         """
         Event timezone offset column
 
@@ -205,9 +205,7 @@ class ItemView(View, GroupByMixin, RawMixin):
     def _get_create_joined_view_parameters(self) -> dict[str, Any]:
         return {"event_view": self.event_view}
 
-    def validate_aggregate_over_parameters(
-        self, keys: list[str], value_column: Optional[str]
-    ) -> None:
+    def validate_aggregate_over_parameters(self, keys: list[str], value_column: str | None) -> None:
         """
         Check whether aggregate_over parameters are valid for ItemView.
 
@@ -232,7 +230,7 @@ class ItemView(View, GroupByMixin, RawMixin):
         self._assert_not_all_columns_are_from_event_table(keys, value_column)
 
     def validate_simple_aggregate_parameters(
-        self, keys: list[str], value_column: Optional[str]
+        self, keys: list[str], value_column: str | None
     ) -> None:
         """
         Check whether aggregation parameters are valid for ItemView
@@ -263,7 +261,7 @@ class ItemView(View, GroupByMixin, RawMixin):
         self._assert_not_all_columns_are_from_event_table(keys, value_column)
 
     def _assert_not_all_columns_are_from_event_table(
-        self, keys: list[str], value_column: Optional[str]
+        self, keys: list[str], value_column: str | None
     ) -> None:
         """
         Helper method to validate whether columns are from event table.
@@ -290,7 +288,7 @@ class ItemView(View, GroupByMixin, RawMixin):
                 " EventView"
             )
 
-    def _are_columns_derived_only_from_event_table(self, column_names: List[str]) -> bool:
+    def _are_columns_derived_only_from_event_table(self, column_names: list[str]) -> bool:
         """
         Check if column is derived using only EventTable's columns
 
@@ -326,7 +324,7 @@ class ItemView(View, GroupByMixin, RawMixin):
     def get_join_column(self) -> str:
         return self.item_id_column
 
-    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_additional_lookup_parameters(self, offset: str | None = None) -> dict[str, Any]:
         _ = offset
         return {
             "event_parameters": {

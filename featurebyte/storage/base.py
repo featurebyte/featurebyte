@@ -10,8 +10,9 @@ import os
 import shutil
 import tempfile
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import Any, AsyncGenerator, Optional
+from typing import Any
 
 import aiofiles
 import pandas as pd
@@ -148,9 +149,7 @@ class Storage(ABC):
         except FileNotFoundError:
             pass
 
-    async def get(
-        self, remote_path: Path, local_path: Path, cache_key: Optional[str] = None
-    ) -> None:
+    async def get(self, remote_path: Path, local_path: Path, cache_key: str | None = None) -> None:
         """
         Download file from storage to local path with caching if cache_key is provided
 
@@ -207,7 +206,7 @@ class Storage(ABC):
         bytes
             Byte chunk
         """
-        yield bytes()
+        yield b""
 
     async def put_object(self, data: BaseModel, remote_path: Path) -> None:
         """
@@ -254,7 +253,7 @@ class Storage(ABC):
             await file_obj.flush()
             await self.put(Path(str(file_obj.name)), remote_path)
 
-    async def get_text(self, remote_path: Path, cache_key: Optional[str] = None) -> str:
+    async def get_text(self, remote_path: Path, cache_key: str | None = None) -> str:
         """
         Download text content from storage text file
 

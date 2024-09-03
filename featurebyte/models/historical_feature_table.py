@@ -4,8 +4,6 @@ HistoricalFeatureTableModel
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import pymongo
 from pydantic import Field
 
@@ -28,11 +26,11 @@ class HistoricalFeatureTableModel(BaseFeatureOrTargetTableModel):
 
     # Id of the feature list used to compute the historical feature table. None if the feature list
     # was not saved.
-    feature_list_id: Optional[PydanticObjectId]
-    features_info: Optional[List[FeatureInfo]] = Field(default=None)
+    feature_list_id: PydanticObjectId | None
+    features_info: list[FeatureInfo] | None = Field(default=None)
 
     @property
-    def feature_names(self) -> Optional[List[str]]:
+    def feature_names(self) -> list[str] | None:
         """
         List of feature names associated with the historical feature table.
 
@@ -45,7 +43,7 @@ class HistoricalFeatureTableModel(BaseFeatureOrTargetTableModel):
         return [feature_info.feature_name for feature_info in self.features_info]
 
     @property
-    def feature_ids(self) -> Optional[List[PydanticObjectId]]:
+    def feature_ids(self) -> list[PydanticObjectId] | None:
         """
         List of feature IDs associated with the historical feature table.
 

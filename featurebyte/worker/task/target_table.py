@@ -4,7 +4,7 @@ TargetTable creation task
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
@@ -137,7 +137,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 )
             )
 
-            purpose: Optional[Purpose] = None
+            purpose: Purpose | None = None
             if isinstance(observation_set, ObservationTableModel):
                 purpose = observation_set.purpose
 

@@ -5,7 +5,7 @@ FeatureStore class
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import ClassVar, List, Optional, cast
+from typing import ClassVar, cast
 
 from typeguard import typechecked
 
@@ -54,7 +54,7 @@ class DataSource:
         return self._feature_store.type
 
     @typechecked
-    def list_databases(self) -> List[str]:
+    def list_databases(self) -> list[str]:
         """
         Lists the databases in the data source.
 
@@ -77,11 +77,11 @@ class DataSource:
         client = Configurations().get_client()
         response = client.post(url="/feature_store/database", json=self._feature_store.json_dict())
         if response.status_code == HTTPStatus.OK:
-            return cast(List[str], response.json())
+            return cast(list[str], response.json())
         raise RecordRetrievalException(response)
 
     @typechecked
-    def list_schemas(self, database_name: Optional[str] = None) -> List[str]:
+    def list_schemas(self, database_name: str | None = None) -> list[str]:
         """
         Lists the schemas present in a particular database of the data source.
 
@@ -112,15 +112,15 @@ class DataSource:
             json=self._feature_store.json_dict(),
         )
         if response.status_code == HTTPStatus.OK:
-            return cast(List[str], response.json())
+            return cast(list[str], response.json())
         raise RecordRetrievalException(response)
 
     @typechecked
     def list_source_tables(
         self,
-        database_name: Optional[str] = None,
-        schema_name: Optional[str] = None,
-    ) -> List[str]:
+        database_name: str | None = None,
+        schema_name: str | None = None,
+    ) -> list[str]:
         """
         Lists the tables present in a particular database schema of the data source.
 
@@ -158,15 +158,15 @@ class DataSource:
             json=self._feature_store.json_dict(),
         )
         if response.status_code == HTTPStatus.OK:
-            return cast(List[str], response.json())
+            return cast(list[str], response.json())
         raise RecordRetrievalException(response)
 
     def _construct_columns_info(
         self,
         table_name: str,
-        database_name: Optional[str] = None,
-        schema_name: Optional[str] = None,
-    ) -> List[ColumnInfo]:
+        database_name: str | None = None,
+        schema_name: str | None = None,
+    ) -> list[ColumnInfo]:
         client = Configurations().get_client()
         response = client.post(
             url=(
@@ -188,8 +188,8 @@ class DataSource:
     def get_source_table(
         self,
         table_name: str,
-        database_name: Optional[str] = None,
-        schema_name: Optional[str] = None,
+        database_name: str | None = None,
+        schema_name: str | None = None,
     ) -> SourceTable:
         """
         Gets a SourceTable object by specifying the table name, along with details about the database and database

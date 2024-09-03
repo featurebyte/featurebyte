@@ -3,7 +3,7 @@ This module contains base class used in query graph transform directory.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, Generic, List, Tuple, TypeVar
+from typing import Any, Generic, TypeVar
 
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -19,7 +19,7 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
 
     def __init__(self, graph: QueryGraphT):
         self.graph = graph
-        self._input_node_map_cache: Dict[str, OutputT] = {}
+        self._input_node_map_cache: dict[str, OutputT] = {}
 
     @abstractmethod
     def _pre_compute(
@@ -27,8 +27,8 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
         branch_state: BranchStateT,
         global_state: GlobalStateT,
         node: Node,
-        input_node_names: List[str],
-    ) -> Tuple[List[str], bool]:
+        input_node_names: list[str],
+    ) -> tuple[list[str], bool]:
         """
         Computation step before input node traversal & return list of input nodes to traverse
 
@@ -81,7 +81,7 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
         branch_state: BranchStateT,
         global_state: GlobalStateT,
         node: Node,
-        inputs: List[Any],
+        inputs: list[Any],
         skip_post: bool,
     ) -> Any:
         """
@@ -110,7 +110,7 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
         node: Node,
         branch_state: BranchStateT,
         global_state: GlobalStateT,
-        topological_order_map: Dict[str, int],
+        topological_order_map: dict[str, int],
     ) -> Any:
         input_node_names, skip_post = self._pre_compute(
             branch_state=branch_state,
@@ -118,7 +118,7 @@ class BaseGraphExtractor(Generic[OutputT, BranchStateT, GlobalStateT]):
             node=node,
             input_node_names=self.graph.get_input_node_names(node),
         )
-        input_node_map: Dict[str, Any] = {}
+        input_node_map: dict[str, Any] = {}
         for input_node_name in sorted(
             input_node_names, key=lambda x: topological_order_map[x], reverse=True
         ):

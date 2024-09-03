@@ -5,7 +5,7 @@ EventView class
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from bson import ObjectId
 from pydantic import Field
@@ -57,7 +57,7 @@ class EventView(View, GroupByMixin, RawMixin):
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.EVENT_VIEW
 
     # pydantic instance variables
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+    default_feature_job_setting: FeatureJobSetting | None = Field(
         frozen=True,
         description="Returns the default feature job setting for the view.\n\n"
         "The Default Feature Job Setting establishes the default setting used by "
@@ -67,7 +67,7 @@ class EventView(View, GroupByMixin, RawMixin):
         "using the Default Feature Job Setting simplifies the process of setting "
         "up the Feature Job Setting for each feature.",
     )
-    event_id_column: Optional[str] = Field(
+    event_id_column: str | None = Field(
         frozen=True,
         description="Returns the name of the column representing the event key of the Event view.",
     )
@@ -84,7 +84,7 @@ class EventView(View, GroupByMixin, RawMixin):
         return self._get_event_table_node_parameters().timestamp_column  # type: ignore
 
     @property
-    def timestamp_timezone_offset_column(self) -> Optional[str]:
+    def timestamp_timezone_offset_column(self) -> str | None:
         """
         Timestamp timezone offset column of the event table
 
@@ -95,7 +95,7 @@ class EventView(View, GroupByMixin, RawMixin):
         return self._get_event_table_node_parameters().event_timestamp_timezone_offset_column
 
     @property
-    def timestamp_timezone_offset(self) -> Optional[str]:
+    def timestamp_timezone_offset(self) -> str | None:
         """
         Timestamp timezone of the event table
 
@@ -155,7 +155,7 @@ class EventView(View, GroupByMixin, RawMixin):
         assert self.event_id_column is not None
         return self.event_id_column
 
-    def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
+    def get_additional_lookup_parameters(self, offset: str | None = None) -> dict[str, Any]:
         _ = offset
         return {
             "event_parameters": {
@@ -212,7 +212,7 @@ class EventView(View, GroupByMixin, RawMixin):
                 )
 
     def _validate_feature_addition(
-        self, new_column_name: str, feature: Feature, entity_col_override: Optional[str]
+        self, new_column_name: str, feature: Feature, entity_col_override: str | None
     ) -> None:
         """
         Validates feature addition
@@ -307,7 +307,7 @@ class EventView(View, GroupByMixin, RawMixin):
             )
         return entity_ids[0]
 
-    def _get_col_with_entity_id(self, entity_id: ObjectId) -> Optional[str]:
+    def _get_col_with_entity_id(self, entity_id: ObjectId) -> str | None:
         """
         Tries to find a single column with the matching entity ID.
 
@@ -335,7 +335,7 @@ class EventView(View, GroupByMixin, RawMixin):
             return None
         return column_name_to_use
 
-    def _get_view_entity_column(self, feature: Feature, entity_column: Optional[str]) -> str:
+    def _get_view_entity_column(self, feature: Feature, entity_column: str | None) -> str:
         """
         Get the view entity column.
 
@@ -373,7 +373,7 @@ class EventView(View, GroupByMixin, RawMixin):
         )
 
     def add_feature(
-        self, new_column_name: str, feature: Feature, entity_column: Optional[str] = None
+        self, new_column_name: str, feature: Feature, entity_column: str | None = None
     ) -> EventView:
         """
         Adds a simple aggregate feature obtained from an Item View to the corresponding Event View. Once the feature

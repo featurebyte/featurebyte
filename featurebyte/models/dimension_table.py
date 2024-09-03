@@ -4,7 +4,7 @@ This module contains DimensionTable related models
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Tuple, Type
+from typing import Any, ClassVar
 
 from pydantic import model_validator
 
@@ -26,7 +26,7 @@ class DimensionTableModel(DimensionTableData, TableModel):
         The primary key of the dimension table in the DWH
     """
 
-    _table_data_class: ClassVar[Type[DimensionTableData]] = DimensionTableData
+    _table_data_class: ClassVar[type[DimensionTableData]] = DimensionTableData
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -40,11 +40,11 @@ class DimensionTableModel(DimensionTableData, TableModel):
     )
 
     @property
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         return [self.dimension_id_column]
 
     @property
-    def special_columns(self) -> List[str]:
+    def special_columns(self) -> list[str]:
         cols = [
             self.dimension_id_column,
             self.record_creation_timestamp_column,
@@ -53,7 +53,7 @@ class DimensionTableModel(DimensionTableData, TableModel):
 
     def create_view_graph_node(
         self, input_node: InputNode, metadata: ViewMetadata, **kwargs: Any
-    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+    ) -> tuple[GraphNode, list[ColumnInfo]]:
         table_data = DimensionTableData(**self.model_dump(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations
         )

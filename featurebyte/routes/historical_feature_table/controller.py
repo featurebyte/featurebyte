@@ -4,7 +4,7 @@ HistoricalTable API route controller
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 from bson import ObjectId
@@ -78,7 +78,7 @@ class HistoricalFeatureTableController(
     async def get_payload(
         self,
         table_create: HistoricalFeatureTableCreate,
-        observation_set_dataframe: Optional[pd.DataFrame],
+        observation_set_dataframe: pd.DataFrame | None,
     ) -> HistoricalFeatureTableTaskPayload:
         return await self.service.get_historical_feature_table_task_payload(
             data=table_create, observation_set_dataframe=observation_set_dataframe

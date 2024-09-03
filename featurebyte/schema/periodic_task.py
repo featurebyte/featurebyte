@@ -2,8 +2,6 @@
 Periodic task schema
 """
 
-from typing import List
-
 from featurebyte.models.periodic_task import PeriodicTask
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
@@ -21,4 +19,4 @@ class PeriodicTaskList(PaginationMixin):
     Schema for periodic task list
     """
 
-    data: List[PeriodicTask]
+    data: list[PeriodicTask]

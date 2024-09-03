@@ -5,7 +5,7 @@ FeaturePreviewService class
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import pandas as pd
 
@@ -86,8 +86,8 @@ class FeaturePreviewService(PreviewService):
         self,
         preview_observation_set: PreviewObservationSet,
         is_time_based: bool,
-        serving_names_mapping: Optional[Dict[str, str]],
-    ) -> Tuple[list[Dict[str, Any]], bool]:
+        serving_names_mapping: dict[str, str] | None,
+    ) -> tuple[list[dict[str, Any]], bool]:
         """
         Helper method to update point in time if needed.
 
@@ -341,7 +341,7 @@ class FeaturePreviewService(PreviewService):
             featurelist_preview.serving_names_mapping,
         )
 
-        result: Optional[pd.DataFrame] = None
+        result: pd.DataFrame | None = None
         group_join_keys = list(point_in_time_and_serving_name_list[0].keys())
         for feature_cluster in feature_clusters:
             request_column_names = set(group_join_keys)

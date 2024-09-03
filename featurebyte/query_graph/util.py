@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 from bson import json_util
 
@@ -16,9 +16,9 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 
 def hash_node(
     node_type: NodeType,
-    node_params: Dict[str, Any],
+    node_params: dict[str, Any],
     node_output_type: NodeOutputType,
-    input_node_refs: List[str],
+    input_node_refs: list[str],
 ) -> str:
     """
     Hash the node related parameters for generating the node signature.
@@ -53,7 +53,7 @@ def hash_node(
     return hash_result
 
 
-def hash_input_node_hashes(input_node_hashes: List[str]) -> str:
+def hash_input_node_hashes(input_node_hashes: list[str]) -> str:
     """
     Hash the input node hashes for generating the input node(s) signature.
 
@@ -234,7 +234,7 @@ def append_to_lineage(lineage: tuple[str, ...], node_name: str) -> tuple[str, ..
     return tuple(output)
 
 
-def sort_lists_by_first_list(by_list: List[Any], *lists: List[Any]) -> List[List[Any]]:
+def sort_lists_by_first_list(by_list: list[Any], *lists: list[Any]) -> list[list[Any]]:
     """
     Sorts multiple lists by the first list
 

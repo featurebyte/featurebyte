@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import time
 from abc import abstractmethod
+from collections.abc import Iterable
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Optional, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 import pandas as pd
 from pydantic import BaseModel, PrivateAttr, StrictStr
@@ -153,7 +154,7 @@ class HasColumnVarTypeMap(Protocol):
     Class with column_var_type_map attribute / property
     """
 
-    column_var_type_map: Dict[StrictStr, DBVarType]
+    column_var_type_map: dict[StrictStr, DBVarType]
 
 
 class GetAttrMixin:
@@ -204,7 +205,7 @@ class HasExtractPrunedGraphAndNode(Protocol):
         """
 
     @property
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         """
         Timestamp column to be used for datetime filtering during sampling
 

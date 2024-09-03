@@ -11,9 +11,9 @@ import re
 import sys
 import tempfile
 import textwrap
+from collections.abc import Generator
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import Generator
 from unittest.mock import Mock
 
 import numpy as np
@@ -286,7 +286,7 @@ def check_sdk_code_generation(
             with open(fixture_path, mode="w", encoding="utf-8") as file_handle:
                 file_handle.write(formatted_sdk_code)
         else:
-            with open(fixture_path, mode="r", encoding="utf-8") as file_handle:
+            with open(fixture_path, encoding="utf-8") as file_handle:
                 expected = file_handle.read().format(
                     sdk_version=get_version(),
                     feature_store_id=feature_store_id,
@@ -794,7 +794,7 @@ def check_on_demand_feature_code_generation(
             with open(sql_fixture_path, mode="w", encoding="utf-8") as file_handle:
                 file_handle.write(udf_codes)
         else:
-            with open(sql_fixture_path, mode="r", encoding="utf-8") as file_handle:
+            with open(sql_fixture_path, encoding="utf-8") as file_handle:
                 expected = file_handle.read()
                 assert expected.strip() == udf_codes.strip(), udf_codes
 

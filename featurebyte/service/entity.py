@@ -4,7 +4,7 @@ EntityService class
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -30,7 +30,7 @@ class EntityService(BaseDocumentService[EntityModel, EntityCreate, EntityService
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         catalog_name_injector: CatalogNameInjector,
         block_modification_handler: BlockModificationHandler,
         storage: Storage,

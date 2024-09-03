@@ -5,8 +5,9 @@ Base class for feature or target computer
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Coroutine
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, Generic, List, Optional, TypeVar, Union
+from typing import Any, Callable, Generic, TypeVar
 
 import pandas as pd
 
@@ -34,15 +35,15 @@ class BasicExecutorParams:
     """
 
     # Observation set
-    observation_set: Union[pd.DataFrame, ObservationTableModel]
+    observation_set: pd.DataFrame | ObservationTableModel
     # Session to use to make queries
     session: BaseSession
     # Output table details to write the results to
     output_table_details: TableDetails
     # Preparation required for serving parent features
-    parent_serving_preparation: Optional[ParentServingPreparation]
+    parent_serving_preparation: ParentServingPreparation | None
     # Optional progress callback function)
-    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
+    progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]] | None
 
 
 @dataclass
@@ -54,12 +55,12 @@ class ExecutorParams(BasicExecutorParams):
     # Query graph
     graph: QueryGraph
     # List of query graph node
-    nodes: List[Node]
+    nodes: list[Node]
     # Feature store. We need the feature store id and source type information.
     feature_store: FeatureStoreModel
     # Optional serving names mapping if the observations set has different serving name columns
     # than those defined in Entities
-    serving_names_mapping: Optional[dict[str, str]] = None
+    serving_names_mapping: dict[str, str] | None = None
 
 
 ExecutorParamsT = TypeVar("ExecutorParamsT", bound=ExecutorParams)
@@ -157,7 +158,7 @@ class Computer(Generic[ComputeRequestT, ExecutorParamsT]):
 
     async def compute(
         self,
-        observation_set: Union[pd.DataFrame, ObservationTableModel],
+        observation_set: pd.DataFrame | ObservationTableModel,
         compute_request: ComputeRequestT,
         output_table_details: TableDetails,
     ) -> ExecutionResult:

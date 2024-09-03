@@ -4,7 +4,7 @@ BatchRequestTable API route controller
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any
 
 from bson import ObjectId
 
@@ -70,7 +70,7 @@ class BatchRequestTableController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [
             (self.batch_feature_table_service, {"batch_request_table_id": document_id}),
         ]

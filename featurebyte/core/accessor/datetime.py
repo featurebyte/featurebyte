@@ -4,7 +4,8 @@ This module contains datetime accessor class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Iterable, Optional, Union, cast
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_timezone_offset_string
@@ -86,9 +87,7 @@ class DatetimeAccessor:
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Series")
 
-    def __init__(
-        self, obj: FrozenSeries, timezone_offset: Optional[Union[str, FrozenSeries]] = None
-    ):
+    def __init__(self, obj: FrozenSeries, timezone_offset: str | FrozenSeries | None = None):
         if obj.is_datetime:
             self._node_type = NodeType.DT_EXTRACT
             self._property_node_params_map = {
@@ -118,7 +117,7 @@ class DatetimeAccessor:
             )
         self._obj = obj
 
-        self._timezone_offset: Optional[Union[str, FrozenSeries]] = None
+        self._timezone_offset: str | FrozenSeries | None = None
 
         # Optional timezone offset override
         if timezone_offset is not None:
@@ -139,7 +138,7 @@ class DatetimeAccessor:
         # provide datetime extraction lookup and completion for __getattr__
         return self._property_node_params_map.keys()
 
-    def tz_offset(self, timezone_offset: Union[str, FrozenSeries]) -> DatetimeAccessor:
+    def tz_offset(self, timezone_offset: str | FrozenSeries) -> DatetimeAccessor:
         """
         Returns a DatetimeAccessor object with the specified timezone offset.
 
@@ -489,7 +488,7 @@ class DatetimeAccessor:
             node_params=node_params,
         )
 
-    def _infer_timezone_offset(self, series: FrozenSeries) -> Optional[Union[FrozenSeries, str]]:
+    def _infer_timezone_offset(self, series: FrozenSeries) -> FrozenSeries | str | None:
         """
         Infer the timezone offset for the given series.
 
@@ -535,7 +534,7 @@ class DatetimeAccessor:
             params = cast(EventTableInputNodeParameters, input_node_parameters)
             if params.timestamp_column == source_timestamp_column.name:
                 # The series is an event timestamp column. Retrieve timezone offset if available.
-                result: Optional[Union[FrozenSeries, str]] = None
+                result: FrozenSeries | str | None = None
                 if params.event_timestamp_timezone_offset_column is not None:
                     result = self._get_offset_series_from_frame(
                         series.parent,
@@ -552,7 +551,7 @@ class DatetimeAccessor:
     def _get_source_timestamp_column(
         cls,
         operation_structure: OperationStructure,
-    ) -> Optional[SourceDataColumn]:
+    ) -> SourceDataColumn | None:
         """
         Get a SourceDataColumn corresponding to timestamp column of interest
 
@@ -611,8 +610,8 @@ class DatetimeAccessor:
 
     @classmethod
     def _get_offset_series_from_frame(
-        cls, frame: Frame, offset_column_name: str, table_id: Optional[PydanticObjectId]
-    ) -> Optional[FrozenSeries]:
+        cls, frame: Frame, offset_column_name: str, table_id: PydanticObjectId | None
+    ) -> FrozenSeries | None:
         """
         Get a series from a frame that corresponds to the timezone offset column
 
@@ -661,7 +660,7 @@ class DatetimeAccessor:
     def _is_valid_timezone_offset_column_if_derived_column(
         cls,
         opstruct_column: DerivedDataColumn,
-        table_id: Optional[PydanticObjectId],
+        table_id: PydanticObjectId | None,
         offset_column_name: str,
     ) -> bool:
         """

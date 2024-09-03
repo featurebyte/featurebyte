@@ -5,7 +5,7 @@ Entity lookup feature table construction
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.event_table import EventTableModel
@@ -31,7 +31,7 @@ class EntityLookupGraphResult:
     lookup_node: Node
     feature_node_name: str
     feature_dtype: DBVarType
-    feature_job_setting: Optional[FeatureJobSetting]
+    feature_job_setting: FeatureJobSetting | None
 
 
 def get_entity_lookup_graph(
@@ -58,7 +58,7 @@ def get_entity_lookup_graph(
         node=relation_table.construct_input_node(feature_store_details=feature_store),
         input_nodes=[],
     )
-    additional_params: Dict[str, Any]
+    additional_params: dict[str, Any]
     if relation_table.type == TableDataType.SCD_TABLE:
         assert isinstance(relation_table, SCDTableModel)
         additional_params = {

@@ -2,7 +2,7 @@
 Context module
 """
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Optional
 
 import pandas as pd
 from bson import ObjectId
@@ -33,17 +33,17 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
     _list_schema: ClassVar[Any] = ContextModel
     _get_schema: ClassVar[Any] = ContextModel
     _update_schema_class: ClassVar[Any] = ContextUpdate
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "primary_entity_ids",
         "description",
     ]
 
     # pydantic instance variable (public)
-    primary_entity_ids: List[PydanticObjectId]
+    primary_entity_ids: list[PydanticObjectId]
 
     @property
-    def primary_entities(self) -> List[Entity]:
+    def primary_entities(self) -> list[Entity]:
         """
         Returns the list of primary Entity objects from the context.
 
@@ -69,7 +69,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
     def create(
         cls,
         name: str,
-        primary_entity: List[str],
+        primary_entity: list[str],
         description: Optional[str] = None,
     ) -> "Context":
         """
@@ -124,7 +124,7 @@ class Context(SavableApiObject, UseCaseOrContextMixin):
         observation_table.update(update_payload={"context_id": self.id}, allow_update_local=False)
 
     @typechecked
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of a Context object. The dictionary
         contains the following keys:

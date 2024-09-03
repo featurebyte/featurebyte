@@ -6,10 +6,11 @@ from __future__ import annotations
 
 import asyncio
 from asyncio import Future
-from typing import Any, Coroutine, List
+from collections.abc import Coroutine
+from typing import Any
 
 
-def asyncio_gather(*coros: Coroutine[Any, Any, Any], max_concurrency: int = 0) -> Future[List[Any]]:
+def asyncio_gather(*coros: Coroutine[Any, Any, Any], max_concurrency: int = 0) -> Future[list[Any]]:
     """
     Run coroutines with a optional concurrency limit
 

@@ -7,7 +7,8 @@ from __future__ import annotations
 import os
 import subprocess
 import tempfile
-from typing import Any, AsyncGenerator, Optional, Union, cast
+from collections.abc import AsyncGenerator
+from typing import Annotated, Any, Union, cast
 
 import pandas as pd
 import pyarrow as pa
@@ -15,7 +16,6 @@ from pyarrow import ArrowTypeError, Schema
 from pydantic import Field, PrivateAttr
 from pyhive.exc import OperationalError
 from thrift.transport.TTransport import TTransportException
-from typing_extensions import Annotated
 
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import SourceType, StorageType
@@ -55,7 +55,7 @@ class SparkSession(BaseSparkSession):
     """
 
     _no_schema_error = OperationalError
-    _connection: Optional[HiveConnection] = PrivateAttr(None)
+    _connection: HiveConnection | None = PrivateAttr(None)
     _storage: SimpleStorage = PrivateAttr()
 
     storage_type: StorageType
@@ -64,8 +64,8 @@ class SparkSession(BaseSparkSession):
     use_http_transport: bool
     use_ssl: bool
     source_type: SourceType = SourceType.SPARK
-    database_credential: Optional[SparkDatabaseCredential] = Field(default=None)
-    storage_credential: Optional[StorageCredential] = Field(default=None)
+    database_credential: SparkDatabaseCredential | None = Field(default=None)
+    storage_credential: StorageCredential | None = Field(default=None)
 
     def _initialize_connection(self) -> None:
         auth = None

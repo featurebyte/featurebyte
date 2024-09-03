@@ -3,7 +3,7 @@ Join utils class
 """
 
 import copy
-from typing import List, Optional, Set
+from typing import Optional
 
 from featurebyte.query_graph.model.column_info import ColumnInfo
 
@@ -34,8 +34,8 @@ def apply_modifiers_to_column_name(
 
 
 def apply_column_name_modifiers_columns_info(
-    column_infos: List[ColumnInfo], rsuffix: Optional[str], rprefix: Optional[str]
-) -> List[ColumnInfo]:
+    column_infos: list[ColumnInfo], rsuffix: Optional[str], rprefix: Optional[str]
+) -> list[ColumnInfo]:
     """
     Updates the column infos by appending the rsuffix to the column names.
 
@@ -64,7 +64,7 @@ def apply_column_name_modifiers_columns_info(
     return updated_column_info
 
 
-def filter_columns(columns: List[str], exclude_columns: List[str]) -> List[str]:
+def filter_columns(columns: list[str], exclude_columns: list[str]) -> list[str]:
     """
     Filters a list of columns. This is used to remove columns such as the join key from the other
     view's columns so that we don't duplicate information in the resulting view.
@@ -86,8 +86,8 @@ def filter_columns(columns: List[str], exclude_columns: List[str]) -> List[str]:
 
 
 def apply_column_name_modifiers(
-    columns: List[str], rsuffix: Optional[str], rprefix: Optional[str]
-) -> List[str]:
+    columns: list[str], rsuffix: Optional[str], rprefix: Optional[str]
+) -> list[str]:
     """
     Appends the rsuffix to columns if a rsuffix is provided.
 
@@ -112,7 +112,7 @@ def apply_column_name_modifiers(
     ]
 
 
-def filter_columns_info(col_info: List[ColumnInfo], exclude_columns: List[str]) -> List[ColumnInfo]:
+def filter_columns_info(col_info: list[ColumnInfo], exclude_columns: list[str]) -> list[ColumnInfo]:
     """
     Filters out column info that matches the join key.
 
@@ -133,8 +133,8 @@ def filter_columns_info(col_info: List[ColumnInfo], exclude_columns: List[str]) 
 
 
 def combine_column_info_of_views(
-    columns_a: List[ColumnInfo], columns_b: List[ColumnInfo], filter_set: Optional[Set[str]] = None
-) -> List[ColumnInfo]:
+    columns_a: list[ColumnInfo], columns_b: list[ColumnInfo], filter_set: Optional[set[str]] = None
+) -> list[ColumnInfo]:
     """
     Combine two column info views.
 
@@ -162,7 +162,7 @@ def combine_column_info_of_views(
     return joined_columns_info
 
 
-def is_column_name_in_columns(column_name: str, columns_info: List[ColumnInfo]) -> bool:
+def is_column_name_in_columns(column_name: str, columns_info: list[ColumnInfo]) -> bool:
     """
     Checks to see if a column name is in the list of ColumnInfo's provided.
 

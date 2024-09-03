@@ -4,8 +4,6 @@ FeatureNamespace API pyaload schema
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from bson import ObjectId
 from pydantic import Field
 
@@ -24,15 +22,15 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     Feature Namespace Creation Schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     dtype: DBVarType
-    feature_ids: List[PydanticObjectId] = Field(default_factory=list)
+    feature_ids: list[PydanticObjectId] = Field(default_factory=list)
     readiness: FeatureReadiness
     default_feature_id: PydanticObjectId
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
-    entity_ids: List[PydanticObjectId]
-    table_ids: List[PydanticObjectId]
+    entity_ids: list[PydanticObjectId]
+    table_ids: list[PydanticObjectId]
 
 
 class FeatureNamespaceModelResponse(FeatureNamespaceModel):
@@ -40,8 +38,8 @@ class FeatureNamespaceModelResponse(FeatureNamespaceModel):
     Extended FeatureNamespace model
     """
 
-    primary_entity_ids: List[PydanticObjectId]
-    primary_table_ids: List[PydanticObjectId]
+    primary_entity_ids: list[PydanticObjectId]
+    primary_table_ids: list[PydanticObjectId]
 
 
 class FeatureNamespaceList(PaginationMixin):
@@ -49,7 +47,7 @@ class FeatureNamespaceList(PaginationMixin):
     Paginated list of FeatureNamespace
     """
 
-    data: List[FeatureNamespaceModelResponse]
+    data: list[FeatureNamespaceModelResponse]
 
 
 class FeatureNamespaceUpdate(BaseDocumentServiceUpdateSchema, FeatureByteBaseModel):
@@ -57,8 +55,8 @@ class FeatureNamespaceUpdate(BaseDocumentServiceUpdateSchema, FeatureByteBaseMod
     FeatureNamespace update schema - exposed to client
     """
 
-    default_version_mode: Optional[DefaultVersionMode] = Field(default=None)
-    default_feature_id: Optional[PydanticObjectId] = Field(default=None)
+    default_version_mode: DefaultVersionMode | None = Field(default=None)
+    default_feature_id: PydanticObjectId | None = Field(default=None)
 
 
 class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):
@@ -66,7 +64,7 @@ class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):
     FeatureNamespace service update schema - used by server side only, not exposed to client
     """
 
-    feature_ids: Optional[List[PydanticObjectId]] = Field(default=None)
-    online_enabled_feature_ids: Optional[List[PydanticObjectId]] = Field(default=None)
-    readiness: Optional[FeatureReadiness] = Field(default=None)
-    default_feature_id: Optional[PydanticObjectId] = Field(default=None)
+    feature_ids: list[PydanticObjectId] | None = Field(default=None)
+    online_enabled_feature_ids: list[PydanticObjectId] | None = Field(default=None)
+    readiness: FeatureReadiness | None = Field(default=None)
+    default_feature_id: PydanticObjectId | None = Field(default=None)

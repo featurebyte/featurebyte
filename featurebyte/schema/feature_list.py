@@ -4,7 +4,7 @@ FeatureList API payload schema
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Annotated, Any, ClassVar
 
 import numpy as np
 from bson import ObjectId
@@ -18,7 +18,6 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from typing_extensions import Annotated
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import version_validator
@@ -55,9 +54,9 @@ class FeatureListCreate(FeatureByteBaseModel):
     Feature List Creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    feature_ids: List[PydanticObjectId] = Field(min_length=1)
+    feature_ids: list[PydanticObjectId] = Field(min_length=1)
 
 
 class FeatureListCreateJob(FeatureByteBaseModel):
@@ -65,12 +64,12 @@ class FeatureListCreateJob(FeatureByteBaseModel):
     Feature List Job Creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    features: Union[
-        Annotated[List[FeatureParameters], Tag("feature_params")],
-        Annotated[List[PydanticObjectId], Tag("feature_ids")],
-    ] = Field(discriminator=Discriminator(feature_params_discriminator), min_length=1)
+    features: (
+        Annotated[list[FeatureParameters], Tag("feature_params")]
+        | Annotated[list[PydanticObjectId], Tag("feature_ids")]
+    ) = Field(discriminator=Discriminator(feature_params_discriminator), min_length=1)
     features_conflict_resolution: ConflictResolution
 
 
@@ -79,7 +78,7 @@ class FeatureListServiceCreate(FeatureListCreate):
     Feature List Service Creation schema
     """
 
-    feature_list_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+    feature_list_namespace_id: PydanticObjectId | None = Field(default_factory=ObjectId)
 
 
 class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
@@ -88,7 +87,7 @@ class FeatureListCreateWithBatchFeatureCreationMixin(FeatureByteBaseModel):
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     conflict_resolution: ConflictResolution
-    features: List[BatchFeatureItem]
+    features: list[BatchFeatureItem]
     skip_batch_feature_creation: bool = Field(default=False)
 
     @model_validator(mode="before")
@@ -115,7 +114,7 @@ class FeatureListCreateWithBatchFeatureCreationPayload(
     Feature List Creation with Batch Feature Creation schema (used by the client to prepare the payload)
     """
 
-    features: List[BatchFeatureItem]
+    features: list[BatchFeatureItem]
 
 
 class FeatureListCreateWithBatchFeatureCreation(
@@ -125,7 +124,7 @@ class FeatureListCreateWithBatchFeatureCreation(
     Feature List Creation with Batch Feature Creation schema (used by the featurebyte server side)
     """
 
-    features: List[BatchFeatureItem]
+    features: list[BatchFeatureItem]
 
 
 class FeatureVersionInfo(FeatureByteBaseModel):
@@ -158,7 +157,7 @@ class FeatureListNewVersionCreate(FeatureByteBaseModel):
     """
 
     source_feature_list_id: PydanticObjectId
-    features: List[FeatureVersionInfo]
+    features: list[FeatureVersionInfo]
     allow_unchanged_feature_list_version: bool = Field(default=False)
 
     # pydantic validators
@@ -181,7 +180,7 @@ class FeatureListPaginatedItem(FeatureListModelResponse):
     """
 
     # exclude this field from the response
-    internal_feature_clusters: Optional[List[Any]] = Field(
+    internal_feature_clusters: list[Any] | None = Field(
         alias="feature_clusters", default=None, exclude=True
     )
 
@@ -191,7 +190,7 @@ class FeatureListPaginatedList(PaginationMixin):
     Paginated list of Entity
     """
 
-    data: List[FeatureListPaginatedItem]
+    data: list[FeatureListPaginatedItem]
 
 
 class FeatureListUpdate(FeatureByteBaseModel):
@@ -199,8 +198,8 @@ class FeatureListUpdate(FeatureByteBaseModel):
     FeatureList update schema
     """
 
-    make_production_ready: Optional[bool] = Field(default=None)
-    ignore_guardrails: Optional[bool] = Field(default=None)
+    make_production_ready: bool | None = Field(default=None)
+    ignore_guardrails: bool | None = Field(default=None)
 
 
 class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdate):
@@ -208,9 +207,9 @@ class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdat
     FeatureList service update schema
     """
 
-    deployed: Optional[bool] = Field(default=None)
-    online_enabled_feature_ids: Optional[List[PydanticObjectId]] = Field(default=None)
-    readiness_distribution: Optional[FeatureReadinessDistribution] = Field(default=None)
+    deployed: bool | None = Field(default=None)
+    online_enabled_feature_ids: list[PydanticObjectId] | None = Field(default=None)
+    readiness_distribution: FeatureReadinessDistribution | None = Field(default=None)
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):
@@ -227,7 +226,7 @@ class FeatureListSQL(FeatureByteBaseModel):
     FeatureList SQL schema
     """
 
-    feature_clusters: List[FeatureCluster]
+    feature_clusters: list[FeatureCluster]
 
 
 class FeatureListGetHistoricalFeatures(ComputeRequest):
@@ -235,11 +234,11 @@ class FeatureListGetHistoricalFeatures(ComputeRequest):
     FeatureList get historical features schema
     """
 
-    feature_clusters: Optional[List[FeatureCluster]] = Field(default=None)
-    feature_list_id: Optional[PydanticObjectId] = Field(default=None)
+    feature_clusters: list[FeatureCluster] | None = Field(default=None)
+    feature_list_id: PydanticObjectId | None = Field(default=None)
 
     @model_validator(mode="after")
-    def _validate_feature_clusters(self) -> "FeatureListGetHistoricalFeatures":
+    def _validate_feature_clusters(self) -> FeatureListGetHistoricalFeatures:
         if not self.feature_clusters and not self.feature_list_id:
             raise ValueError("Either feature_clusters or feature_list_id must be set")
         return self
@@ -250,14 +249,14 @@ class PreviewObservationSet(FeatureByteBaseModel):
     Preview observation set schema
     """
 
-    point_in_time_and_serving_name_list: Optional[List[Dict[str, Any]]] = Field(
+    point_in_time_and_serving_name_list: list[dict[str, Any]] | None = Field(
         min_length=1, max_length=FEATURE_PREVIEW_ROW_LIMIT, default=None
     )
-    observation_table_id: Optional[PydanticObjectId] = Field(default=None)
+    observation_table_id: PydanticObjectId | None = Field(default=None)
 
     @field_serializer("point_in_time_and_serving_name_list", when_used="json")
     def _serialize_point_in_time_and_serving_name_list(
-        self, value: Optional[List[Dict[str, Any]]]
+        self, value: list[dict[str, Any]] | None
     ) -> Any:
         if isinstance(value, list):
             output = []
@@ -272,7 +271,7 @@ class PreviewObservationSet(FeatureByteBaseModel):
         return value
 
     @model_validator(mode="after")
-    def _validate_observation_set(self) -> "PreviewObservationSet":
+    def _validate_observation_set(self) -> PreviewObservationSet:
         if not self.point_in_time_and_serving_name_list and not self.observation_table_id:
             raise ValueError(
                 "Either point_in_time_and_serving_name_list or observation_table_id must be set"
@@ -299,7 +298,7 @@ class OnlineFeaturesRequestPayload(FeatureByteBaseModel):
     FeatureList get online features schema
     """
 
-    entity_serving_names: List[Dict[str, Any]] = Field(
+    entity_serving_names: list[dict[str, Any]] = Field(
         min_length=1, max_length=ONLINE_FEATURE_REQUEST_ROW_LIMIT
     )
 
@@ -309,7 +308,7 @@ class SampleEntityServingNames(FeatureByteBaseModel):
     Schema for sample entity serving names
     """
 
-    entity_serving_names: List[Dict[str, str]]
+    entity_serving_names: list[dict[str, str]]
 
     # model configuration
     model_config = ConfigDict(coerce_numbers_to_str=True)

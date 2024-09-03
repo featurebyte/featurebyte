@@ -5,7 +5,6 @@ FeatureQuerySet related classes
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Union
 
 from sqlglot.expressions import Expression
 
@@ -16,7 +15,7 @@ class FeatureQuery:
     FeatureQuery represents a sql query that materializes a temporary table for a set of features
     """
 
-    sql: Union[str, Expression]
+    sql: str | Expression
     table_name: str
     feature_names: list[str]
 
@@ -29,7 +28,7 @@ class FeatureQuerySet:
     """
 
     feature_queries: list[FeatureQuery]
-    output_query: Union[str, Expression]
-    output_table_name: Optional[str]
+    output_query: str | Expression
+    output_table_name: str | None
     progress_message: str
     validate_output_row_index: bool = False

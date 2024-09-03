@@ -2,7 +2,7 @@
 Observation table utils
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from featurebyte.common.utils import get_version
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -19,11 +19,11 @@ def get_definition_for_obs_table_creation_from_view(
     node: Node,
     name: str,
     sample_rows: Optional[int] = None,
-    columns: Optional[List[str]] = None,
-    columns_rename_mapping: Optional[Dict[str, str]] = None,
+    columns: Optional[list[str]] = None,
+    columns_rename_mapping: Optional[dict[str, str]] = None,
     context_name: Optional[str] = None,
     skip_entity_validation_checks: Optional[bool] = False,
-    primary_entities: Optional[List[str]] = None,
+    primary_entities: Optional[list[str]] = None,
 ) -> str:
     """
     Helper method to get the definition for creating an observation table from a view.
@@ -54,7 +54,7 @@ def get_definition_for_obs_table_creation_from_view(
     str
     """
 
-    def last_statement_callback(output_var: Any, var_name: Any) -> List[Tuple[Any, ObjectClass]]:
+    def last_statement_callback(output_var: Any, var_name: Any) -> list[tuple[Any, ObjectClass]]:
         expression = get_object_class_from_function_call(
             callable_name=f"{var_name}.create_observation_table",
             name=name,

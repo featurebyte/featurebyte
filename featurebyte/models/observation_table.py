@@ -5,12 +5,12 @@ ObservationTableModel models
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, List, Optional, Union
+from typing import Annotated, Union
 
 import pymongo
 from bson import ObjectId
 from pydantic import Field, StrictStr, field_validator
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
@@ -31,7 +31,7 @@ class ViewObservationInput(ViewRequestInput):
     ViewObservationInput is a ViewRequestInput that is used to create an ObservationTableModel
     """
 
-    definition: Optional[str] = Field(default=None)
+    definition: str | None = Field(default=None)
 
 
 class SourceTableObservationInput(SourceTableRequestInput):
@@ -45,15 +45,15 @@ class TargetInput(FeatureByteBaseModel):
     TargetInput is an input from a target that can be used to create an ObservationTableModel
     """
 
-    target_id: Optional[PydanticObjectId] = Field(default=None)
-    observation_table_id: Optional[PydanticObjectId] = Field(default=None)
+    target_id: PydanticObjectId | None = Field(default=None)
+    observation_table_id: PydanticObjectId | None = Field(default=None)
     type: Literal[RequestInputType.OBSERVATION_TABLE, RequestInputType.DATAFRAME]
 
     async def materialize(
         self,
         session: BaseSession,
         destination: TableDetails,
-        sample_rows: Optional[int],
+        sample_rows: int | None,
     ) -> None:
         """
         No-op materialize. This method isn't needed for TargetInput since we materialize the target separately.
@@ -78,13 +78,13 @@ class UploadedFileInput(FeatureByteBaseModel):
     """
 
     type: Literal[RequestInputType.UPLOADED_FILE]
-    file_name: Optional[str] = Field(default=None)
+    file_name: str | None = Field(default=None)
 
     async def materialize(
         self,
         session: BaseSession,
         destination: TableDetails,
-        sample_rows: Optional[int],
+        sample_rows: int | None,
     ) -> None:
         """
         No-op materialize. This method isn't needed for UploadedFileInput since there is nothing to materialize/compute.
@@ -138,22 +138,22 @@ class ObservationTableModel(MaterializedTableModel):
 
     request_input: ObservationInput
     most_recent_point_in_time: StrictStr
-    context_id: Optional[PydanticObjectId] = Field(default=None)
-    use_case_ids: List[PydanticObjectId] = Field(default_factory=list)
-    purpose: Optional[Purpose] = Field(default=None)
-    least_recent_point_in_time: Optional[StrictStr] = Field(default=None)
-    entity_column_name_to_count: Optional[Dict[str, int]] = Field(default_factory=dict)
-    min_interval_secs_between_entities: Optional[float] = Field(default=None)
-    primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
-    has_row_index: Optional[bool] = Field(default=False)
-    target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
+    context_id: PydanticObjectId | None = Field(default=None)
+    use_case_ids: list[PydanticObjectId] = Field(default_factory=list)
+    purpose: Purpose | None = Field(default=None)
+    least_recent_point_in_time: StrictStr | None = Field(default=None)
+    entity_column_name_to_count: dict[str, int] | None = Field(default_factory=dict)
+    min_interval_secs_between_entities: float | None = Field(default=None)
+    primary_entity_ids: list[PydanticObjectId] | None = Field(default_factory=list)
+    has_row_index: bool | None = Field(default=False)
+    target_namespace_id: PydanticObjectId | None = Field(default=None)
 
     _sort_primary_entity_ids_validator = field_validator("primary_entity_ids")(
         construct_sort_validator()
     )
 
     @property
-    def target_id(self) -> Optional[ObjectId]:
+    def target_id(self) -> ObjectId | None:
         """
         The target id associated with the observation table
 
@@ -168,7 +168,7 @@ class ObservationTableModel(MaterializedTableModel):
 
     @field_validator("most_recent_point_in_time", "least_recent_point_in_time")
     @classmethod
-    def _validate_most_recent_point_in_time(cls, value: Optional[str]) -> Optional[str]:
+    def _validate_most_recent_point_in_time(cls, value: str | None) -> str | None:
         if value is None:
             return None
         # Check that most_recent_point_in_time is a valid ISO 8601 datetime

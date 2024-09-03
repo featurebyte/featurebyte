@@ -2,7 +2,7 @@
 Production ready validator
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from featurebyte import ColumnCleaningOperation
 from featurebyte.exception import DocumentUpdateError, NoChangesInFeatureVersionError
@@ -82,7 +82,7 @@ class ProductionReadyValidator:
 
     @staticmethod
     def _raise_error_if_diffs_present(
-        feature_job_setting_diff: Dict[str, Any], cleaning_ops_diff: Dict[str, Any]
+        feature_job_setting_diff: dict[str, Any], cleaning_ops_diff: dict[str, Any]
     ) -> None:
         """
         Raise an error if diffs are present.
@@ -174,7 +174,7 @@ class ProductionReadyValidator:
         table_source_node: Node,
         table_source_graph: QueryGraph,
         promoted_feature_graph: QueryGraphModel,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get feature job setting diffs between the feature version created from source table, and the promoted feature
         version that the user is trying to promote to PRODUCTION_READY.
@@ -212,7 +212,7 @@ class ProductionReadyValidator:
     @staticmethod
     def _get_cleaning_operations_from_view_graph_node(
         view_graph_node: Node,
-    ) -> List[ColumnCleaningOperation]:
+    ) -> list[ColumnCleaningOperation]:
         """
         Get cleaning operations from view graph node.
 
@@ -233,7 +233,7 @@ class ProductionReadyValidator:
 
     async def _get_cleaning_operations_diff_table_source_vs_promoted_feature(
         self, table_source_feature_graph: QueryGraph, promoted_feature_graph: QueryGraphModel
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get cleaning operation diffs between the feature version created from source table, and the promoted feature
         version that the user is trying to promote to PRODUCTION_READY.

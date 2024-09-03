@@ -2,7 +2,7 @@
 Target namespace controller
 """
 
-from typing import Any, List, Tuple
+from typing import Any
 
 from bson import ObjectId
 
@@ -62,7 +62,7 @@ class TargetNamespaceController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [
             (self.target_service, {"target_namespace_id": document_id}),
             (self.use_case_service, {"target_namespace_id": document_id}),

@@ -4,8 +4,9 @@ OfflineStoreFeatureTableCommentService
 
 from __future__ import annotations
 
+from collections.abc import Coroutine, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable
 
 from featurebyte.logging import get_logger
 from featurebyte.models.entity import EntityModel
@@ -59,8 +60,8 @@ class OfflineStoreFeatureTableCommentService:
     async def apply_comments(
         self,
         feature_store: FeatureStoreModel,
-        comments: Sequence[Union[TableComment, ColumnComment]],
-        update_progress: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        comments: Sequence[TableComment | ColumnComment],
+        update_progress: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """
         Add the provided table or column comments in the data warehouse
@@ -138,8 +139,8 @@ class OfflineStoreFeatureTableCommentService:
         return TableComment(table_name=feature_table_model.name, comment=comment)
 
     async def generate_column_comments(
-        self, feature_models: List[FeatureModel]
-    ) -> List[ColumnComment]:
+        self, feature_models: list[FeatureModel]
+    ) -> list[ColumnComment]:
         """
         Generate comments for columns in offline feature tables corresponding to the features
 
@@ -153,7 +154,7 @@ class OfflineStoreFeatureTableCommentService:
         List[ColumnComment]
         """
         # Mapping to from table name and column name to comments
-        comments: Dict[Tuple[str, str], str] = {}
+        comments: dict[tuple[str, str], str] = {}
 
         for feature in feature_models:
             feature_description = (

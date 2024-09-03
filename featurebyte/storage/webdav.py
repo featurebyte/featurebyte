@@ -3,9 +3,9 @@ Webdav storage class (rclone)
 """
 
 import re
+from collections.abc import AsyncGenerator
 from http import HTTPStatus
 from pathlib import Path
-from typing import AsyncGenerator
 
 import httpx
 

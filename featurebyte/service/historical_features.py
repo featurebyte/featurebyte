@@ -5,7 +5,6 @@ HistoricalFeaturesService
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from pydantic import Field
 
@@ -44,7 +43,7 @@ class HistoricalFeatureExecutorParams(ExecutorParams):
     # tables would have already been back-filled and there is no need to check and calculate tiles
     # on demand.
     is_feature_list_deployed: bool = False
-    feature_list_id: Optional[PydanticObjectId] = Field(default=None)
+    feature_list_id: PydanticObjectId | None = Field(default=None)
 
 
 class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):

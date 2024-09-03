@@ -5,7 +5,7 @@ Entity API routes
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import List, Optional, cast
+from typing import cast
 
 from fastapi import APIRouter, Request
 
@@ -65,10 +65,10 @@ async def list_entities(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
+    sort_by: str | None = SortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
+    name: str | None = NameQuery,
 ) -> EntityList:
     """
     List Entity
@@ -107,9 +107,9 @@ async def list_entity_audit_logs(
     entity_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
+    sort_by: str | None = AuditLogSortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
 ) -> AuditDocumentList:
     """
     List Entity audit logs
@@ -127,12 +127,12 @@ async def list_entity_audit_logs(
 
 @router.get(
     "/history/name/{entity_id}",
-    response_model=List[EntityNameHistoryEntry],
+    response_model=list[EntityNameHistoryEntry],
 )
 async def list_name_history(
     request: Request,
     entity_id: PyObjectId,
-) -> List[EntityNameHistoryEntry]:
+) -> list[EntityNameHistoryEntry]:
     """
     List Entity name history
     """

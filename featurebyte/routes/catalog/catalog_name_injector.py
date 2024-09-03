@@ -4,7 +4,7 @@ Catalog name injector
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.service.catalog import CatalogService
@@ -19,8 +19,8 @@ class CatalogNameInjector:
         self.catalog_service = catalog_service
 
     async def add_name(
-        self, catalog_id: PydanticObjectId, documents: List[dict[str, Any]]
-    ) -> Tuple[str, List[dict[str, Any]]]:
+        self, catalog_id: PydanticObjectId, documents: list[dict[str, Any]]
+    ) -> tuple[str, list[dict[str, Any]]]:
         """
         Add catalog name to the documents.
 

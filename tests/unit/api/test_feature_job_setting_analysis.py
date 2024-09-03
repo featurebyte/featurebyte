@@ -28,7 +28,7 @@ async def saved_analysis_fixture(mock_get_persistent, saved_event_table, catalog
     """
     persistent = mock_get_persistent()
     _ = saved_event_table
-    with open("tests/fixtures/feature_job_setting_analysis/result.json", "r") as file_handle:
+    with open("tests/fixtures/feature_job_setting_analysis/result.json") as file_handle:
         analysis = FeatureJobSettingAnalysisModel(**json.load(file_handle))
     analysis.event_table_id = saved_event_table.id
     analysis.catalog_id = catalog.id

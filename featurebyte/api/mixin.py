@@ -7,7 +7,7 @@ from __future__ import annotations
 import time
 from datetime import datetime
 from http import HTTPStatus
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 import pandas as pd
 from alive_progress import alive_bar
@@ -124,7 +124,7 @@ class AsyncMixin(FeatureByteBaseModel):
         retrieve_result: bool = True,
         has_output_url: bool = True,
         is_payload_json: bool = True,
-        files: Optional[dict[str, Any]] = None,
+        files: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Post async task to the worker & retrieve the results (blocking)
@@ -276,7 +276,7 @@ class SampleMixin(AsyncMixin):
         return dataframe_from_json(response.json())
 
     @property
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         """
         Timestamp column to be used for datetime filtering during sampling
 
@@ -288,8 +288,8 @@ class SampleMixin(AsyncMixin):
 
     def _get_sample_payload(
         self,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         **kwargs: Any,
     ) -> FeatureStoreSample:
         # construct sample payload
@@ -308,7 +308,7 @@ class SampleMixin(AsyncMixin):
 
     @perf_logging
     @typechecked
-    def shape(self, **kwargs: Any) -> Tuple[int, int]:
+    def shape(self, **kwargs: Any) -> tuple[int, int]:
         """
         Return the shape of the view / column.
 
@@ -351,8 +351,8 @@ class SampleMixin(AsyncMixin):
         self,
         size: int = 10,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         **kwargs: Any,
     ) -> pd.DataFrame:
         """
@@ -419,8 +419,8 @@ class SampleMixin(AsyncMixin):
         self,
         size: int = 0,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         **kwargs: Any,
     ) -> pd.DataFrame:
         """

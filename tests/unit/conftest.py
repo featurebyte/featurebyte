@@ -2199,7 +2199,7 @@ def api_object_to_id_fixture():
     output = {}
     for obj_name in object_names:
         filename = f"{base_path}/{obj_name}.json"
-        with open(filename, "r") as fhandle:
+        with open(filename) as fhandle:
             output[obj_name] = json.load(fhandle)["_id"]
     return output
 

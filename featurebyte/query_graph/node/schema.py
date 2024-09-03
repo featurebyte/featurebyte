@@ -5,7 +5,7 @@ This module contains feature store & table schemas that are used in node paramet
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, ClassVar, Optional, Union
+from typing import Any, ClassVar, Union
 
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
@@ -385,14 +385,14 @@ class InputNodeFeatureStoreDetails(FeatureByteBaseModel):
     """FeatureStoreDetails for input node"""
 
     type: SourceType
-    details: Optional[DatabaseDetails] = Field(default=None)
+    details: DatabaseDetails | None = Field(default=None)
 
 
 class TableDetails(FeatureByteBaseModel):
     """Table details"""
 
-    database_name: Optional[NameStr] = Field(default=None)
-    schema_name: Optional[NameStr] = Field(default=None)
+    database_name: NameStr | None = Field(default=None)
+    schema_name: NameStr | None = Field(default=None)
     table_name: NameStr
 
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -28,8 +28,8 @@ class BaseLookupSpec(NonTileBasedAggregationSpec, ABC):
     input_column_name: str
     entity_column: str
     serving_names: list[str]
-    scd_parameters: Optional[SCDLookupParameters]
-    event_parameters: Optional[EventLookupParameters]
+    scd_parameters: SCDLookupParameters | None
+    event_parameters: EventLookupParameters | None
     is_parent_lookup: bool = False
 
     @property

@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 import pyarrow
@@ -93,7 +92,7 @@ class QueryCacheManagerService:
         feature_store_id: ObjectId,
         query: str,
         allow_long_running: bool = True,
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         """
         Get a dataframe from the cache corresponding to query if available. Otherwise, execute the
         query and cache the resulting dataframe.
@@ -123,7 +122,7 @@ class QueryCacheManagerService:
         logger.info("Using cached dataframe for query", extra={"query": truncate_query(query)})
         return cached_df
 
-    async def get_cached_table(self, feature_store_id: ObjectId, query: str) -> Optional[str]:
+    async def get_cached_table(self, feature_store_id: ObjectId, query: str) -> str | None:
         """
         Get the name of the cached table corresponding to the query if available
 
@@ -171,7 +170,7 @@ class QueryCacheManagerService:
 
     async def get_cached_dataframe(
         self, feature_store_id: ObjectId, query: str
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         """
         Get the cached dataframe corresponding to the query if available
 
@@ -240,7 +239,7 @@ class QueryCacheManagerService:
         await self.query_cache_document_service.create_document(cache_model)
         await self.query_cache_cleanup_scheduler_service.start_job_if_not_exist(feature_store_id)
 
-    async def _get_document_by_key(self, key: str) -> Optional[QueryCacheModel]:
+    async def _get_document_by_key(self, key: str) -> QueryCacheModel | None:
         query_filter = {"cache_key": key}
         query_filter.update(self.query_cache_document_service.get_cache_validity_filter())
         async for doc in self.query_cache_document_service.list_documents_iterator(
@@ -260,7 +259,7 @@ class QueryCacheManagerService:
     @classmethod
     async def _execute_query(
         cls, session: BaseSession, query: str, allow_long_running: bool
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         if allow_long_running:
             result = await session.execute_query_long_running(query)
         else:

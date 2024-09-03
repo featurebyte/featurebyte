@@ -4,7 +4,8 @@ Entity related helpers
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Any
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -16,7 +17,7 @@ DUMMY_ENTITY_COLUMN_NAME = "__featurebyte_dummy_entity"
 DUMMY_ENTITY_VALUE = "0"
 
 
-def get_combined_serving_names(serving_names: List[str]) -> str:
+def get_combined_serving_names(serving_names: list[str]) -> str:
     """
     Get column name of the combined serving names
 
@@ -34,8 +35,8 @@ def get_combined_serving_names(serving_names: List[str]) -> str:
 
 
 def get_combined_serving_names_expr(
-    serving_names: Sequence[Union[str, Expression]],
-    serving_names_table_alias: Optional[str] = None,
+    serving_names: Sequence[str | Expression],
+    serving_names_table_alias: str | None = None,
 ) -> Expression:
     """
     Get an expression for the concatenated serving names
@@ -53,7 +54,7 @@ def get_combined_serving_names_expr(
     Expression
     """
     assert len(serving_names) > 0
-    parts: List[Expression] = []
+    parts: list[Expression] = []
     for serving_name in serving_names:
         if isinstance(serving_name, str):
             if serving_names_table_alias is not None:
@@ -74,7 +75,7 @@ def get_combined_serving_names_expr(
     return combined_serving_names_expr
 
 
-def get_combined_serving_names_python(serving_name_cols: List[Any]) -> str:
+def get_combined_serving_names_python(serving_name_cols: list[Any]) -> str:
     """
     Construct concatenated serving names for a row
 

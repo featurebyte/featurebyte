@@ -5,7 +5,8 @@ Session related helper functions
 from __future__ import annotations
 
 import os
-from typing import Any, Callable, Coroutine, List, Optional, Union
+from collections.abc import Coroutine
+from typing import Any, Callable
 
 import pandas as pd
 from sqlglot import expressions
@@ -25,7 +26,7 @@ logger = get_logger(__name__)
 MAX_QUERY_CONCURRENCY = int(os.getenv("MAX_QUERY_CONCURRENCY", "10"))
 
 
-def _to_query_str(query: Union[str, Expression], source_type: SourceType) -> str:
+def _to_query_str(query: str | Expression, source_type: SourceType) -> str:
     if isinstance(query, str):
         return query
     assert isinstance(query, Expression)
@@ -72,7 +73,7 @@ async def validate_output_row_index(session: BaseSession, output_table_name: str
         raise ValueError("Row index column is invalid in the output table")
 
 
-async def run_coroutines(coroutines: List[Coroutine[Any, Any, Any]]) -> List[Any]:
+async def run_coroutines(coroutines: list[Coroutine[Any, Any, Any]]) -> list[Any]:
     """
     Execute the provided list of coroutines
 
@@ -116,8 +117,8 @@ async def execute_feature_query(
 async def execute_feature_query_set(
     session: BaseSession,
     feature_query_set: FeatureQuerySet,
-    progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-) -> Optional[pd.DataFrame]:
+    progress_callback: Callable[[int, str | None], Coroutine[Any, Any, None]] | None = None,
+) -> pd.DataFrame | None:
     """
     Execute the feature queries to materialize features
 

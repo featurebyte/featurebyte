@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Set, Tuple
+from typing import Any
 
 from featurebyte.common.model_util import convert_version_string_to_dict, parse_duration_string
 from featurebyte.enum import DBVarType
@@ -11,7 +11,7 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 
 def construct_data_model_validator(
     columns_info_key: str,
-    expected_column_field_name_type_pairs: List[Tuple[str, Optional[Set[DBVarType]]]],
+    expected_column_field_name_type_pairs: list[tuple[str, set[DBVarType] | None]],
 ) -> Any:
     """
     Construct table model model_validator used to validate model input table
@@ -64,7 +64,7 @@ def construct_data_model_validator(
     return _model_validator
 
 
-def construct_sort_validator(field: Optional[str] = None) -> Any:
+def construct_sort_validator(field: str | None = None) -> Any:
     """
     Construct a sort validator function which will sort the input list & return
 
@@ -82,7 +82,7 @@ def construct_sort_validator(field: Optional[str] = None) -> Any:
         assert isinstance(field, str)
         return getattr(elem, field)
 
-    def _sort_validator(cls: Any, value: List[Any]) -> List[Any]:
+    def _sort_validator(cls: Any, value: list[Any]) -> list[Any]:
         _ = cls
         if field:
             return sorted(value, key=_extract_key)
@@ -91,9 +91,7 @@ def construct_sort_validator(field: Optional[str] = None) -> Any:
     return _sort_validator
 
 
-def columns_info_validator(
-    cls: Any, values: Optional[List[ColumnInfo]]
-) -> Optional[List[ColumnInfo]]:
+def columns_info_validator(cls: Any, values: list[ColumnInfo] | None) -> list[ColumnInfo] | None:
     """
     Validate columns info list (check column name uniqueness)
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 from abc import abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -25,7 +25,7 @@ class BaseTaskTestSuite:
 
     # class variables to be set at metaclass
     task_class: BaseTask = None
-    payload: Optional[Dict[str, Any]] = None
+    payload: dict[str, Any] | None = None
 
     @staticmethod
     def load_payload(filename):

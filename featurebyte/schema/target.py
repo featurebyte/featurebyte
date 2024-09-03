@@ -5,7 +5,7 @@ Target API payload schema
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 
 from bson import ObjectId
 from pydantic import Field, StrictStr
@@ -31,7 +31,7 @@ class TargetCreate(FeatureByteBaseModel):
     Target creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     graph: QueryGraph
     node_name: str
@@ -43,7 +43,7 @@ class TargetList(PaginationMixin):
     Paginated list of Target
     """
 
-    data: List[TargetModel]
+    data: list[TargetModel]
 
 
 class TargetInfo(FeatureByteBaseModel):
@@ -54,14 +54,14 @@ class TargetInfo(FeatureByteBaseModel):
     id: PydanticObjectId
     target_name: str
     entities: EntityBriefInfoList
-    window: Optional[str] = Field(default=None)
+    window: str | None = Field(default=None)
     has_recipe: bool
     created_at: datetime
-    updated_at: Optional[datetime] = Field(default=None)
+    updated_at: datetime | None = Field(default=None)
     primary_table: TableBriefInfoList
     metadata: Any
-    namespace_description: Optional[str] = Field(default=None)
-    description: Optional[str] = Field(default=None)
+    namespace_description: str | None = Field(default=None)
+    description: str | None = Field(default=None)
 
 
 class ComputeTargetRequest(ComputeRequest):
@@ -71,11 +71,11 @@ class ComputeTargetRequest(ComputeRequest):
 
     feature_store_id: PydanticObjectId
     graph: QueryGraph
-    node_names: List[StrictStr]
-    target_id: Optional[PydanticObjectId] = Field(default=None)
+    node_names: list[StrictStr]
+    target_id: PydanticObjectId | None = Field(default=None)
 
     @property
-    def nodes(self) -> List[Node]:
+    def nodes(self) -> list[Node]:
         """
         Get feature nodes
 
@@ -91,14 +91,14 @@ class TargetServiceUpdate(BaseDocumentServiceUpdateSchema):
     Target service update schema
     """
 
-    name: Optional[NameStr] = Field(default=None)
+    name: NameStr | None = Field(default=None)
 
     class Settings(BaseDocumentServiceUpdateSchema.Settings):
         """
         Unique constraints checking
         """
 
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("name",),
                 conflict_fields_signature={"name": ["name"]},

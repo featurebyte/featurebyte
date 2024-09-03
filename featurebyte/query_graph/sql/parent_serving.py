@@ -5,7 +5,6 @@ SQL generation for looking up parent entities
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, select
@@ -42,17 +41,17 @@ class ParentEntityLookupResult:
     """
 
     table_expr: Select
-    parent_entity_columns: List[str]
+    parent_entity_columns: list[str]
     new_request_table_name: str
-    new_request_table_columns: List[str]
+    new_request_table_columns: list[str]
 
 
 def construct_request_table_with_parent_entities(
-    request_table_name: Optional[str],
+    request_table_name: str | None,
     request_table_columns: list[str],
     join_steps: list[EntityLookupStep],
     feature_store_details: FeatureStoreDetails,
-    request_table_details: Optional[TableDetails] = None,
+    request_table_details: TableDetails | None = None,
 ) -> ParentEntityLookupResult:
     """
     Construct a query to join parent entities into the request table

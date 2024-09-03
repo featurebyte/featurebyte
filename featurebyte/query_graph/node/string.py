@@ -5,7 +5,7 @@ This module contains string operation related node classes
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 import textwrap
 from abc import ABC
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from pydantic import Field
 from typing_extensions import Literal
@@ -49,7 +49,7 @@ class LengthNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.LENGTH] = NodeType.LENGTH
     parameters: FeatureByteBaseModel = Field(default_factory=FeatureByteBaseModel)
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.INT
 
     def generate_expression(self, operand: str) -> str:
@@ -74,7 +74,7 @@ class TrimNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.TRIM] = NodeType.TRIM
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
     def generate_expression(self, operand: str) -> str:
@@ -120,7 +120,7 @@ class ReplaceNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.REPLACE] = NodeType.REPLACE
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
     def generate_expression(self, operand: str) -> str:
@@ -152,7 +152,7 @@ class PadNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.PAD] = NodeType.PAD
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
     def generate_expression(self, operand: str) -> str:
@@ -170,8 +170,8 @@ class PadNode(BaseStringAccessorOpNode):
     @staticmethod
     def _get_pad_string_function_name(
         var_name_generator: VariableNameGenerator,
-    ) -> Tuple[List[StatementT], str]:
-        statements: List[StatementT] = []
+    ) -> tuple[list[StatementT], str]:
+        statements: list[StatementT] = []
         func_name = "pad_string"
         if var_name_generator.should_insert_function(function_name=func_name):
             func_string = """
@@ -193,10 +193,10 @@ class PadNode(BaseStringAccessorOpNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         statements, func_name = self._get_pad_string_function_name(
             var_name_generator=var_name_generator
         )
@@ -220,7 +220,7 @@ class StringCaseNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.STR_CASE] = NodeType.STR_CASE
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
     def generate_expression(self, operand: str) -> str:
@@ -247,7 +247,7 @@ class StringContainsNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.STR_CONTAINS] = NodeType.STR_CONTAINS
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
 
     def generate_expression(self, operand: str) -> str:
@@ -277,7 +277,7 @@ class SubStringNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.SUBSTRING] = NodeType.SUBSTRING
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
     def generate_expression(self, operand: str) -> str:
@@ -305,7 +305,7 @@ class ConcatNode(BinaryArithmeticOpNode):
     type: Literal[NodeType.CONCAT] = NodeType.CONCAT
     parameters: ValueWithRightOpNodeParameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.VARCHAR
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:

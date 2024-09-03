@@ -7,7 +7,7 @@ from __future__ import annotations
 import inspect
 import textwrap
 from dataclasses import dataclass
-from typing import Any, Callable, List, Tuple, Type, Union
+from typing import Any, Callable, Union
 
 from typeguard import check_type
 
@@ -66,8 +66,8 @@ class FunctionAccessor:
     """
 
 
-FuncOutputType = Union[Type[ViewColumn], Type[Feature]]
-FuncInputSeriesList = List[Union[ViewColumn, Feature]]
+FuncOutputType = Union[type[ViewColumn], type[Feature]]
+FuncInputSeriesList = list[Union[ViewColumn, Feature]]
 
 
 @dataclass
@@ -76,8 +76,8 @@ class FunctionParameterProcessorOutput:
     FunctionParameterProcessOutput class contains the output of the function parameter processor.
     """
 
-    node_function_parameters: List[FunctionParameterInput]
-    input_node_names: List[str]
+    node_function_parameters: list[FunctionParameterInput]
+    input_node_names: list[str]
     feature_store: FeatureStoreModel
     tabular_source: TabularSource
     output_type: FuncOutputType
@@ -88,13 +88,13 @@ class FunctionParameterProcessor:
     FunctionParameterProcessor class contains logic to process function parameters.
     """
 
-    def __init__(self, function_parameters: List[FunctionParameter]):
+    def __init__(self, function_parameters: list[FunctionParameter]):
         self.function_parameters = function_parameters
 
     @staticmethod
     def _extract_parameter_value(
         pos: int, func_param: FunctionParameter, *args: Any, **kwargs: Any
-    ) -> Tuple[Any, Any]:
+    ) -> tuple[Any, Any]:
         if pos < len(args):
             value = args[pos]
         else:
@@ -108,7 +108,7 @@ class FunctionParameterProcessor:
         return value, kwargs
 
     @staticmethod
-    def _validate_feature_inputs(feature_inputs: List[Feature]) -> None:
+    def _validate_feature_inputs(feature_inputs: list[Feature]) -> None:
         for index, feat in enumerate(feature_inputs, start=1):
             if feat.used_request_column:
                 raise ValueError(
@@ -144,7 +144,7 @@ class FunctionParameterProcessor:
 
     def _extract_node_parameters(
         self, *args: Any, **kwargs: Any
-    ) -> Tuple[List[FunctionParameterInput], FuncInputSeriesList]:
+    ) -> tuple[list[FunctionParameterInput], FuncInputSeriesList]:
         if len(args) > len(self.function_parameters):
             raise ValueError(
                 f"Too many arguments. Expected {len(self.function_parameters)} but got {len(args)}."
@@ -234,8 +234,8 @@ class UserDefinedFunctionInjector:
 
     @staticmethod
     def _insert_generic_function_node(
-        function_parameters: List[FunctionParameterInput],
-        input_node_names: List[str],
+        function_parameters: list[FunctionParameterInput],
+        input_node_names: list[str],
         udf: UserDefinedFunctionModel,
     ) -> Node:
         node_params = GenericFunctionNodeParameters(
@@ -283,7 +283,7 @@ class UserDefinedFunctionInjector:
         return textwrap.dedent(docstring_template).strip()
 
     @classmethod
-    def create(cls, udf: UserDefinedFunctionModel) -> Callable[..., Union[ViewColumn, Feature]]:
+    def create(cls, udf: UserDefinedFunctionModel) -> Callable[..., ViewColumn | Feature]:
         """
         Create a dynamic method based on the user defined function.
 
@@ -298,7 +298,7 @@ class UserDefinedFunctionInjector:
             A dynamic method containing the logic to generate a new column or new feature
         """
 
-        def _user_defined_function(*args: Any, **kwargs: Any) -> Union[ViewColumn, Feature]:
+        def _user_defined_function(*args: Any, **kwargs: Any) -> ViewColumn | Feature:
             param_processor = FunctionParameterProcessor(udf.function_parameters)
             extracted_params = param_processor.process(*args, **kwargs)
             node = cls._insert_generic_function_node(

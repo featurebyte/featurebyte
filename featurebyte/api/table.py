@@ -4,7 +4,7 @@ Table class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict
+from typing import Any, ClassVar
 
 from bson import ObjectId
 
@@ -43,7 +43,7 @@ class Table(TableListMixin):
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Table")
     _get_schema: ClassVar[Any] = ProxyTableModel
-    _data_type_to_cls_mapping: ClassVar[Dict[TableDataType, Any]] = {
+    _data_type_to_cls_mapping: ClassVar[dict[TableDataType, Any]] = {
         TableDataType.EVENT_TABLE: EventTable,
         TableDataType.ITEM_TABLE: ItemTable,
         TableDataType.SCD_TABLE: SCDTable,
@@ -88,7 +88,7 @@ class Table(TableListMixin):
         data_class = cls._data_type_to_cls_mapping[data.cached_model.type]
         return data_class.get_by_id(id)
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of a Table object, depending on its type.
         The dictionary contains the following common keys:

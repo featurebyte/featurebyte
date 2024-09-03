@@ -5,7 +5,7 @@ Base models for task and task payload
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 from redis import Redis
 
@@ -25,16 +25,16 @@ class BaseTask(Generic[TaskT]):
     Base class for Task
     """
 
-    payload_class: Type[TaskT]
+    payload_class: type[TaskT]
 
     def __init__(self, task_manager: TaskManager):
         self.task_manager = task_manager
 
         # track the task ID
-        self._task_id: Optional[TaskId] = None
+        self._task_id: TaskId | None = None
 
     @property
-    def task_id(self) -> Optional[TaskId]:
+    def task_id(self) -> TaskId | None:
         """
         Task ID
 
@@ -189,7 +189,7 @@ class BaseLockTask(BaseTask[TaskT]):
 
     @property
     @abstractmethod
-    def lock_timeout(self) -> Optional[int]:
+    def lock_timeout(self) -> int | None:
         """
         Lock timeout in seconds (optional). The lock will be released after the timeout.
 

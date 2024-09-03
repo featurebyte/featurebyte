@@ -8,14 +8,14 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, get_type_hints
+from typing import Any, Callable, get_type_hints
 
 from featurebyte.models.base import CAMEL_CASE_TO_SNAKE_CASE_PATTERN
 
 ARGS_AND_KWARGS = {"args", "kwargs"}
 
 
-def _get_class_name(class_name: str, name_override: Optional[str] = None) -> str:
+def _get_class_name(class_name: str, name_override: str | None = None) -> str:
     """
     Helper method to get a class name.
 
@@ -44,8 +44,8 @@ def _get_class_name(class_name: str, name_override: Optional[str] = None) -> str
 
 
 def _get_constructor_params_from_class(
-    class_: type, dependency_override: Optional[dict[str, str]] = None
-) -> List[str]:
+    class_: type, dependency_override: dict[str, str] | None = None
+) -> list[str]:
     """
     Helper method to get constructor params from class.
 
@@ -89,8 +89,8 @@ class ClassDefinition:
     # This allows us to provide overrides to the names, and also allows us to better support multiple classes with
     # the same name.
     name: str
-    getter: Union[type, Callable[..., Any]]
-    dependencies: List[str]
+    getter: type | Callable[..., Any]
+    dependencies: list[str]
 
 
 class AppContainerConfig:
@@ -99,10 +99,10 @@ class AppContainerConfig:
     """
 
     def __init__(self) -> None:
-        self.classes_with_deps: List[ClassDefinition] = []
-        self.dependency_mapping: Dict[str, ClassDefinition] = {}
+        self.classes_with_deps: list[ClassDefinition] = []
+        self.dependency_mapping: dict[str, ClassDefinition] = {}
 
-    def get_class_def_mapping(self) -> Dict[str, ClassDefinition]:
+    def get_class_def_mapping(self) -> dict[str, ClassDefinition]:
         """
         Get class definitions, keyed by name.
         """
@@ -116,7 +116,7 @@ class AppContainerConfig:
         return self.dependency_mapping
 
     def register_factory_method(
-        self, factory_method: Callable[..., Any], name_override: Optional[str] = None
+        self, factory_method: Callable[..., Any], name_override: str | None = None
     ) -> None:
         """
         Register a factory method. The name of the dependency will be based the name of the class that the factory
@@ -149,8 +149,8 @@ class AppContainerConfig:
     def register_class(
         self,
         class_: type,
-        dependency_override: Optional[Dict[str, str]] = None,
-        name_override: Optional[str] = None,
+        dependency_override: dict[str, str] | None = None,
+        name_override: str | None = None,
         force_no_deps: bool = False,
     ) -> None:
         """
@@ -212,7 +212,7 @@ class AppContainerConfig:
         visited_nodes: dict[str, bool],
         recursive_stack: dict[str, bool],
         class_def_mapping: dict[str, ClassDefinition],
-    ) -> Tuple[bool, list[str]]:
+    ) -> tuple[bool, list[str]]:
         """
         DFS helper function to detect circular dependencies.
 

@@ -2,7 +2,7 @@
 Target namespace module
 """
 
-from typing import List, Optional
+from typing import Optional
 
 import pymongo
 from pydantic import Field, field_validator
@@ -43,7 +43,7 @@ class TargetNamespaceModel(BaseFeatureNamespaceModel):
     window: Optional[str] = Field(default=None)
 
     # list of IDs attached to this feature namespace or target namespace
-    target_ids: List[PydanticObjectId] = Field(frozen=True)
+    target_ids: list[PydanticObjectId] = Field(frozen=True)
     default_target_id: Optional[PydanticObjectId] = Field(default=None, frozen=True)
 
     # pydantic validators

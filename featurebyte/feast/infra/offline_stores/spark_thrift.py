@@ -4,8 +4,9 @@ Spark Thrift Server Offline Store
 
 import json
 from abc import abstractmethod
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, Callable, Iterable, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -58,7 +59,7 @@ class BaseSparkThriftOfflineStoreConfig(FeastConfigBaseModel):
     def get_table_column_names_and_types(
         self,
         table_name: str,
-    ) -> Iterable[Tuple[str, str]]:
+    ) -> Iterable[tuple[str, str]]:
         """
         Get the column names and types of a table
 
@@ -105,8 +106,8 @@ class SparkThriftOfflineStore(OfflineStore):
     def pull_latest_from_table_or_query(
         config: RepoConfig,
         data_source: DataSource,
-        join_key_columns: List[str],
-        feature_name_columns: List[str],
+        join_key_columns: list[str],
+        feature_name_columns: list[str],
         timestamp_field: str,
         created_timestamp_column: Optional[str],
         start_date: datetime,
@@ -201,8 +202,8 @@ class SparkThriftOfflineStore(OfflineStore):
     def pull_all_from_table_or_query(
         config: RepoConfig,
         data_source: DataSource,
-        join_key_columns: List[str],
-        feature_name_columns: List[str],
+        join_key_columns: list[str],
+        feature_name_columns: list[str],
         timestamp_field: str,
         start_date: datetime,
         end_date: datetime,
@@ -212,8 +213,8 @@ class SparkThriftOfflineStore(OfflineStore):
     @staticmethod
     def get_historical_features(
         config: RepoConfig,
-        feature_views: List[FeatureView],
-        feature_refs: List[str],
+        feature_views: list[FeatureView],
+        feature_refs: list[str],
         entity_df: Union[pd.DataFrame, str],
         registry: BaseRegistry,
         project: str,
@@ -242,7 +243,7 @@ class SparkThriftRetrievalJob(RetrievalJob):
         query: str,
         full_feature_names: bool,
         config: RepoConfig,
-        on_demand_feature_views: Optional[List[OnDemandFeatureView]] = None,
+        on_demand_feature_views: Optional[list[OnDemandFeatureView]] = None,
         metadata: Optional[RetrievalMetadata] = None,
     ):
         super().__init__()
@@ -258,7 +259,7 @@ class SparkThriftRetrievalJob(RetrievalJob):
         return self._full_feature_names
 
     @property
-    def on_demand_feature_views(self) -> List[OnDemandFeatureView]:
+    def on_demand_feature_views(self) -> list[OnDemandFeatureView]:
         return self._on_demand_feature_views
 
     def _to_df_internal(self, timeout: Optional[int] = None) -> pd.DataFrame:

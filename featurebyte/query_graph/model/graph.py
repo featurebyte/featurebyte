@@ -3,7 +3,8 @@ This model contains query graph internal model structures
 """
 
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, cast
+from collections.abc import Iterator
+from typing import Any, Optional, cast
 
 from pydantic import Field, PrivateAttr, field_validator, model_validator
 
@@ -34,24 +35,24 @@ class QueryGraphModel(FeatureByteBaseModel):
     - graph update (node insertion, edge insertion)
     """
 
-    edges: List[Edge] = Field(default_factory=list)
-    nodes: List[Node] = Field(default_factory=list)
+    edges: list[Edge] = Field(default_factory=list)
+    nodes: list[Node] = Field(default_factory=list)
 
     # non-serialized attributes (will be derived during deserialization)
     # NEVER store a non-serialized attributes that CAN'T BE DERIVED from serialized attributes
-    nodes_map: Dict[str, Node] = Field(default_factory=dict, exclude=True)
-    edges_map: DefaultDict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
-    backward_edges_map: DefaultDict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
-    node_type_counter: DefaultDict[str, int] = Field(default=defaultdict(int), exclude=True)
-    node_name_to_ref: Dict[str, str] = Field(default_factory=dict, exclude=True)
-    ref_to_node_name: Dict[str, str] = Field(default_factory=dict, exclude=True)
+    nodes_map: dict[str, Node] = Field(default_factory=dict, exclude=True)
+    edges_map: defaultdict[str, list[str]] = Field(default=defaultdict(list), exclude=True)
+    backward_edges_map: defaultdict[str, list[str]] = Field(default=defaultdict(list), exclude=True)
+    node_type_counter: defaultdict[str, int] = Field(default=defaultdict(int), exclude=True)
+    node_name_to_ref: dict[str, str] = Field(default_factory=dict, exclude=True)
+    ref_to_node_name: dict[str, str] = Field(default_factory=dict, exclude=True)
 
     # private attributes used for caching and internal computation
     _total_node_num: Optional[int] = PrivateAttr(default=None)
-    _sorted_node_names_by_ref: List[str] = PrivateAttr(default_factory=list)
-    _sorted_edges_map_by_ref: Dict[str, List[str]] = PrivateAttr(default=defaultdict(list))
-    _sorted_node_names: List[str] = PrivateAttr(default_factory=list)
-    _node_topological_order_map: Dict[str, Any] = PrivateAttr(default_factory=dict)
+    _sorted_node_names_by_ref: list[str] = PrivateAttr(default_factory=list)
+    _sorted_edges_map_by_ref: dict[str, list[str]] = PrivateAttr(default=defaultdict(list))
+    _sorted_node_names: list[str] = PrivateAttr(default_factory=list)
+    _node_topological_order_map: dict[str, Any] = PrivateAttr(default_factory=dict)
 
     def __repr__(self) -> str:
         return self.model_dump_json(by_alias=True, indent=4)
@@ -110,7 +111,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         self._total_node_num = len(self.nodes)
 
     @property
-    def sorted_node_names_by_ref(self) -> List[str]:
+    def sorted_node_names_by_ref(self) -> list[str]:
         """
         Sorted node names by reference
 
@@ -123,7 +124,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         return self._sorted_node_names_by_ref
 
     @property
-    def sorted_node_names(self) -> List[str]:
+    def sorted_node_names(self) -> list[str]:
         """
         Topologically sorted node names
 
@@ -136,7 +137,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         return self._sorted_node_names
 
     @property
-    def sorted_edges_map_by_ref(self) -> Dict[str, List[str]]:
+    def sorted_edges_map_by_ref(self) -> dict[str, list[str]]:
         """
         Sorted edges map by reference
 
@@ -149,7 +150,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         return self._sorted_edges_map_by_ref
 
     @property
-    def node_topological_order_map(self) -> Dict[str, int]:
+    def node_topological_order_map(self) -> dict[str, int]:
         """
         Node name to topological sort order index mapping. This mapping is used to sort the nodes in the graph.
 
@@ -163,8 +164,8 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     @staticmethod
     def _derive_nodes_map(
-        nodes: List[Node], nodes_map: Optional[Dict[str, Node]]
-    ) -> Dict[str, Node]:
+        nodes: list[Node], nodes_map: Optional[dict[str, Node]]
+    ) -> dict[str, Node]:
         if nodes_map is None:
             nodes_map = {}
         for node in nodes:
@@ -173,8 +174,8 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     @staticmethod
     def _derive_edges_map(
-        edges: List[Edge], edges_map: Optional[defaultdict[str, List[str]]]
-    ) -> defaultdict[str, List[str]]:
+        edges: list[Edge], edges_map: Optional[defaultdict[str, list[str]]]
+    ) -> defaultdict[str, list[str]]:
         if edges_map is None:
             edges_map = defaultdict(list)
         for edge in edges:
@@ -183,8 +184,8 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     @staticmethod
     def _derive_backward_edges_map(
-        edges: List[Edge], backward_edges_map: Optional[defaultdict[str, List[str]]]
-    ) -> defaultdict[str, List[str]]:
+        edges: list[Edge], backward_edges_map: Optional[defaultdict[str, list[str]]]
+    ) -> defaultdict[str, list[str]]:
         if backward_edges_map is None:
             backward_edges_map = defaultdict(list)
         for edge in edges:
@@ -193,7 +194,7 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     @staticmethod
     def _derive_node_type_counter(
-        nodes: List[Node], node_type_counter: Optional[defaultdict[str, int]]
+        nodes: list[Node], node_type_counter: Optional[defaultdict[str, int]]
     ) -> defaultdict[str, int]:
         if node_type_counter is None:
             node_type_counter = defaultdict(int)
@@ -202,7 +203,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         return node_type_counter
 
     @staticmethod
-    def _get_node_parameter_for_compute_node_hash(node: Node) -> Dict[str, Any]:
+    def _get_node_parameter_for_compute_node_hash(node: Node) -> dict[str, Any]:
         """
         Get node parameters for computing node hash. If the node is a graph node, the output node hash of the
         nested graph is used to represent the graph parameters. Without doing this, the graph node's hash will
@@ -246,11 +247,11 @@ class QueryGraphModel(FeatureByteBaseModel):
     @classmethod
     def _derive_node_name_to_ref(
         cls,
-        nodes_map: Dict[str, Node],
-        edges_map: Dict[str, List[str]],
-        backward_edges_map: Dict[str, List[str]],
-        node_name_to_ref: Optional[Dict[str, str]],
-    ) -> Dict[str, str]:
+        nodes_map: dict[str, Node],
+        edges_map: dict[str, list[str]],
+        backward_edges_map: dict[str, list[str]],
+        node_name_to_ref: Optional[dict[str, str]],
+    ) -> dict[str, str]:
         if node_name_to_ref is None:
             node_name_to_ref = {}
         sorted_node_names = topological_sort(list(nodes_map), edges_map)
@@ -270,8 +271,8 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     @staticmethod
     def _derive_ref_to_node_name(
-        node_name_to_ref: Dict[str, str], ref_to_node_name: Optional[Dict[str, str]]
-    ) -> Dict[str, str]:
+        node_name_to_ref: dict[str, str], ref_to_node_name: Optional[dict[str, str]]
+    ) -> dict[str, str]:
         if ref_to_node_name is None:
             ref_to_node_name = {}
         for node_name, ref in node_name_to_ref.items():
@@ -320,14 +321,14 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     @field_validator("edges_map", "backward_edges_map")
     @classmethod
-    def _make_default_dict_list(cls, value: Dict[str, Any]) -> Dict[str, Any]:
+    def _make_default_dict_list(cls, value: dict[str, Any]) -> dict[str, Any]:
         # make sure the output is default dict to list
         updated_dict = defaultdict(list, value)
         return updated_dict
 
     @field_validator("node_type_counter")
     @classmethod
-    def _make_default_dict_int(cls, value: Dict[str, Any]) -> Dict[str, Any]:
+    def _make_default_dict_int(cls, value: dict[str, Any]) -> dict[str, Any]:
         # make sure the output is default dict to int
         updated_dict = defaultdict(int, value)
         return updated_dict
@@ -396,7 +397,7 @@ class QueryGraphModel(FeatureByteBaseModel):
                     return in_node
         return input_node
 
-    def get_input_node_names(self, node: Node) -> List[str]:
+    def get_input_node_names(self, node: Node) -> list[str]:
         """
         Get the input node names of the given node
 
@@ -414,9 +415,9 @@ class QueryGraphModel(FeatureByteBaseModel):
     def get_target_nodes_required_column_names(
         self,
         node_name: str,
-        keep_target_node_names: Optional[Set[str]],
-        available_column_names: List[str],
-    ) -> List[str]:
+        keep_target_node_names: Optional[set[str]],
+        available_column_names: list[str],
+    ) -> list[str]:
         """
         Get the target required column names of the given node.
         Current node output must have these columns, otherwise it will trigger error in processing the graph.
@@ -509,7 +510,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         target_node: Node,
         node_type: Optional[NodeType],
         skip_node_type: Optional[NodeType] = None,
-        skip_node_names: Optional[Set[str]] = None,
+        skip_node_names: Optional[set[str]] = None,
     ) -> Iterator[Node]:
         """
         Iterate all specified nodes in this query graph
@@ -540,7 +541,7 @@ class QueryGraphModel(FeatureByteBaseModel):
                     yield node
 
     def iterate_sorted_graph_nodes(
-        self, graph_node_types: Set[GraphNodeType]
+        self, graph_node_types: set[GraphNodeType]
     ) -> Iterator[BaseGraphNode]:
         """
         Iterate all specified nodes in this query graph in a topologically sorted order
@@ -561,10 +562,9 @@ class QueryGraphModel(FeatureByteBaseModel):
                 if node.parameters.type in graph_node_types:
                     yield node
                 else:
-                    for graph_node in node.parameters.graph.iterate_sorted_graph_nodes(
+                    yield from node.parameters.graph.iterate_sorted_graph_nodes(
                         graph_node_types=graph_node_types
-                    ):
-                        yield graph_node
+                    )
 
     def iterate_sorted_nodes(self) -> Iterator[Node]:
         """
@@ -617,7 +617,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         self.nodes_map[node.name] = node
         return node
 
-    def add_operation_node(self, node: Node, input_nodes: List[Node]) -> Node:
+    def add_operation_node(self, node: Node, input_nodes: list[Node]) -> Node:
         """
         Add operation node to the query graph.
 
@@ -654,9 +654,9 @@ class QueryGraphModel(FeatureByteBaseModel):
     def add_operation(
         self,
         node_type: NodeType,
-        node_params: Dict[str, Any],
+        node_params: dict[str, Any],
         node_output_type: NodeOutputType,
-        input_nodes: List[Node],
+        input_nodes: list[Node],
     ) -> Node:
         """
         Add operation to the query graph.
@@ -687,5 +687,5 @@ class QueryGraphModel(FeatureByteBaseModel):
         return self.add_operation_node(node=temp_node, input_nodes=input_nodes)
 
 
-NodeNameMap = Dict[str, str]
-GraphNodeNameMap = Tuple[QueryGraphModel, NodeNameMap]
+NodeNameMap = dict[str, str]
+GraphNodeNameMap = tuple[QueryGraphModel, NodeNameMap]

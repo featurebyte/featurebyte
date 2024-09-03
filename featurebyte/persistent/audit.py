@@ -5,7 +5,7 @@ Audit logging for persistent operations
 from __future__ import annotations
 
 from functools import wraps
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -114,9 +114,9 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
         persistent: Any,
         collection_name: str,
         async_execution: Any,
-        query_filter: Optional[QueryFilter] = None,
+        query_filter: QueryFilter | None = None,
         **kwargs: Any,
-    ) -> Tuple[Any, int, List[Document]]:
+    ) -> tuple[Any, int, list[Document]]:
         """
         Execute persistent transaction and return affected records prior to transaction
 
@@ -173,7 +173,7 @@ def audit_transaction(mode: AuditTransactionMode, action_type: AuditActionType) 
         persistent: Any,
         collection_name: str,
         action_type: AuditActionType,
-        original_docs: List[Document],
+        original_docs: list[Document],
         **kwargs: str,
     ) -> None:
         """

@@ -5,7 +5,6 @@ Migration service for data warehouse working schema
 from __future__ import annotations
 
 import textwrap
-from typing import Optional
 
 import pandas as pd
 from snowflake.connector.errors import ProgrammingError
@@ -33,7 +32,7 @@ class TileColumnTypeExtractor:
 
     def __init__(self, feature_service: FeatureService):
         self.feature_service = feature_service
-        self.tile_column_name_to_type: Optional[dict[str, str]] = None
+        self.tile_column_name_to_type: dict[str, str] | None = None
 
     async def setup(self) -> None:
         """
@@ -240,7 +239,7 @@ class DataWarehouseMigrationServiceV3(DataWarehouseMigrationMixin):
         self.working_schema_service = working_schema_service
 
     @migrate(version=3, description="Reset working schema from scratch")
-    async def reset_working_schema(self, query_filter: Optional[QueryFilter] = None) -> None:
+    async def reset_working_schema(self, query_filter: QueryFilter | None = None) -> None:
         """
         Reset working schema from scratch
 

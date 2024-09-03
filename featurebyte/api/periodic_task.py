@@ -4,7 +4,7 @@ PeriodicTask class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List
+from typing import Any, ClassVar
 
 from featurebyte.api.savable_api_object import SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
@@ -21,7 +21,7 @@ class PeriodicTask(PeriodicTaskModel, SavableApiObject):
     _route: ClassVar[str] = "/periodic_task"
     _list_schema: ClassVar[Any] = PeriodicTaskModel
     _get_schema: ClassVar[Any] = PeriodicTaskModel
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "created_at",
         "interval",

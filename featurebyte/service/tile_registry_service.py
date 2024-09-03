@@ -5,7 +5,6 @@ TileRegistryService class
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.tile import TileType
@@ -28,7 +27,7 @@ class TileRegistryService(BaseDocumentService[TileModel, TileModel, TileUpdate])
     document_class = TileModel
     document_update_class = TileUpdate
 
-    async def get_tile_model(self, tile_id: str, aggregation_id: str) -> Optional[TileModel]:
+    async def get_tile_model(self, tile_id: str, aggregation_id: str) -> TileModel | None:
         """
         Get the tile entry of a tile id
 

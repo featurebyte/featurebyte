@@ -4,8 +4,6 @@ FeatureStoreService class
 
 from __future__ import annotations
 
-from typing import Type
-
 from bson import ObjectId
 
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -22,7 +20,7 @@ class FeatureStoreService(
     FeatureStoreService class
     """
 
-    document_class: Type[FeatureStoreModel] = FeatureStoreModel
+    document_class: type[FeatureStoreModel] = FeatureStoreModel
 
     async def get_feature_store_info(
         self, document_id: ObjectId, verbose: bool

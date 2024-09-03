@@ -5,7 +5,7 @@ Tile Generate Schedule script
 import time
 import traceback
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import dateutil.parser
 
@@ -215,7 +215,7 @@ class TileTaskExecutor:
             online_store_compute_query_service=self.online_store_compute_query_service,
         )
 
-        step_specs: List[Dict[str, Any]] = [
+        step_specs: list[dict[str, Any]] = [
             {
                 "name": "tile_monitor",
                 "trigger": tile_monitor_ins,

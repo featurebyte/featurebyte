@@ -4,7 +4,7 @@ BaseMaterializedTableService contains common functionality for materialized tabl
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -48,7 +48,7 @@ class BaseMaterializedTableService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
         entity_service: EntityService,
@@ -120,8 +120,8 @@ class BaseMaterializedTableService(
         return location
 
     async def _get_column_name_to_entity_ids(
-        self, column_names: List[str], serving_names_remapping: Optional[Dict[str, str]]
-    ) -> Dict[str, PydanticObjectId]:
+        self, column_names: list[str], serving_names_remapping: dict[str, str] | None
+    ) -> dict[str, PydanticObjectId]:
         serving_names_remapping = {} if serving_names_remapping is None else serving_names_remapping
         serving_names_reverse_lookup = {
             value: key for key, value in serving_names_remapping.items()
@@ -147,8 +147,8 @@ class BaseMaterializedTableService(
         self,
         db_session: BaseSession,
         table_details: TableDetails,
-        serving_names_remapping: Optional[Dict[str, str]] = None,
-    ) -> Tuple[List[ColumnSpecWithEntityId], int]:
+        serving_names_remapping: dict[str, str] | None = None,
+    ) -> tuple[list[ColumnSpecWithEntityId], int]:
         """
         Get the columns info and number of rows from a materialized table
 

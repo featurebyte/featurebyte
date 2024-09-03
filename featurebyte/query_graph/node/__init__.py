@@ -3,10 +3,9 @@ Query graph node related classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Annotated, Union
 
 from pydantic import Field
-from typing_extensions import Annotated
 
 from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.common.path_util import import_submodules

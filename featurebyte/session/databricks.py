@@ -3,8 +3,9 @@ DatabricksSession class
 """
 
 import os
+from collections.abc import AsyncGenerator
 from io import BytesIO
-from typing import Any, AsyncGenerator, BinaryIO, Optional
+from typing import Any, BinaryIO, Optional
 
 import pandas as pd
 import pyarrow as pa

@@ -4,8 +4,6 @@ MaterializedTable model
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import pymongo
 from pydantic import Field
 
@@ -26,7 +24,7 @@ class ColumnSpecWithEntityId(ColumnSpec):
     We only add entity ID here so that we don't have to add it to all other callers which use ColumnSpec too.
     """
 
-    entity_id: Optional[PydanticObjectId] = Field(default=None)
+    entity_id: PydanticObjectId | None = Field(default=None)
 
 
 class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
@@ -43,7 +41,7 @@ class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     location: TabularSource
-    columns_info: List[ColumnSpecWithEntityId]
+    columns_info: list[ColumnSpecWithEntityId]
     num_rows: int
     is_view: bool = Field(default=False)
 
@@ -52,7 +50,7 @@ class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
         MongoDB settings
         """
 
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

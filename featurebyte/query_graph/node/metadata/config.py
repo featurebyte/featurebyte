@@ -4,7 +4,7 @@ Code generation config is used to control the code generating style.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
@@ -201,10 +201,10 @@ class SDKCodeGenConfig(BaseCodeGenConfig):
     # feature store ID & name
     feature_store_id: PydanticObjectId = Field(default_factory=ObjectId)
     feature_store_name: str = Field(default="feature_store")
-    database_details: Optional[DatabaseDetails] = Field(default=None)
+    database_details: DatabaseDetails | None = Field(default=None)
 
     # table ID to table info (name, record_creation_timestamp_column, etc)
-    table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]] = Field(default_factory=dict)
+    table_id_to_info: dict[PydanticObjectId, dict[str, Any]] = Field(default_factory=dict)
 
     # output variable name used to store the final output
     final_output_name: str = Field(default="output")

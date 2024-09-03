@@ -4,7 +4,6 @@ Entity Relationship Combiner Service
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Set, Tuple
 
 from bson import ObjectId
 
@@ -22,7 +21,7 @@ class AncestorData:
     """
 
     ancestor_id: ObjectId
-    feature_names: Tuple[str, ...]
+    feature_names: tuple[str, ...]
 
 
 class FeatureListEntityRelationshipValidator:
@@ -33,7 +32,7 @@ class FeatureListEntityRelationshipValidator:
 
     def __init__(self, entity_service: EntityService) -> None:
         self.entity_service = entity_service
-        self._id_to_ancestors: Dict[ObjectId, Set[AncestorData]] = defaultdict(set)
+        self._id_to_ancestors: dict[ObjectId, set[AncestorData]] = defaultdict(set)
 
     def _update_ancestor_mapping(
         self, relationship: EntityRelationshipInfo, feature_name: str
@@ -101,7 +100,7 @@ class FeatureListEntityRelationshipValidator:
 
     async def _validate(
         self,
-        relationships: List[EntityRelationshipInfo],
+        relationships: list[EntityRelationshipInfo],
         feature_name: str,
     ) -> None:
         """
@@ -117,7 +116,7 @@ class FeatureListEntityRelationshipValidator:
         for relationship in relationships:
             await self._validate_relationship(relationship=relationship, feature_name=feature_name)
 
-    async def validate(self, features: List[FeatureModel]) -> None:
+    async def validate(self, features: list[FeatureModel]) -> None:
         """
         Validate entity relationships of features
 

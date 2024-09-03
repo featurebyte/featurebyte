@@ -13,9 +13,11 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from asyncio import events
+from collections import OrderedDict
+from collections.abc import AsyncGenerator
 from io import BytesIO
 from random import randint
-from typing import Any, AsyncGenerator, ClassVar, Dict, Literal, Optional, OrderedDict, Type
+from typing import Any, ClassVar, Literal
 
 import aiofiles
 import pandas as pd
@@ -83,7 +85,7 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
     loop = events.get_running_loop()
     ctx = contextvars.copy_context()
 
-    def _func_wrapper(func: Any, thread_info: Dict[str, Any], *args: Any, **kwargs: Any) -> Any:
+    def _func_wrapper(func: Any, thread_info: dict[str, Any], *args: Any, **kwargs: Any) -> Any:
         thread_info["tid"] = threading.get_ident()
         return func(*args, **kwargs)
 
@@ -97,7 +99,7 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
         if res:
             logger.debug("Raised exception in thread")
 
-    thread_info: Dict[str, int] = {}
+    thread_info: dict[str, int] = {}
     func_call = functools.partial(ctx.run, _func_wrapper, func, thread_info, *args, **kwargs)
 
     try:
@@ -119,7 +121,7 @@ class BaseSession(BaseModel):
     schema_name: str = ""
     _connection: Any = PrivateAttr(default=None)
     _cache_key: Any = PrivateAttr(default=None)
-    _no_schema_error: ClassVar[Type[Exception]] = Exception
+    _no_schema_error: ClassVar[type[Exception]] = Exception
 
     def __init__(self, **data: Any) -> None:
         super().__init__(**data)
@@ -178,7 +180,7 @@ class BaseSession(BaseModel):
         return new_session
 
     @property
-    def no_schema_error(self) -> Type[Exception]:
+    def no_schema_error(self) -> type[Exception]:
         """
         Exception to raise when schema is not found
 
@@ -222,7 +224,7 @@ class BaseSession(BaseModel):
             await initializer.initialize()
 
     @abstractmethod
-    def initializer(self) -> Optional[BaseSchemaInitializer]:
+    def initializer(self) -> BaseSchemaInitializer | None:
         """
         Returns an instance of schema initializer
         """

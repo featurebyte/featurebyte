@@ -2,7 +2,7 @@
 This module contains context related models.
 """
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import pymongo
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -29,7 +29,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
 
     # TODO: make graph attribute lazy
 
-    primary_entity_ids: List[PydanticObjectId]
+    primary_entity_ids: list[PydanticObjectId]
     graph: Optional[QueryGraph] = Field(default=None)
     node_name: Optional[str] = Field(default=None)
 
@@ -57,7 +57,7 @@ class ContextModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "context"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

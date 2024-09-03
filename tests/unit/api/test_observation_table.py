@@ -2,7 +2,7 @@
 Unit tests for ObservationTable class
 """
 
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import call, patch
 
 import pytest
@@ -22,7 +22,7 @@ class TestObservationTable(BaseMaterializedTableApiTest):
 
     table_type = ObservationTable
 
-    def assert_info_dict(self, info_dict: Dict[str, Any]) -> None:
+    def assert_info_dict(self, info_dict: dict[str, Any]) -> None:
         assert info_dict["table_details"]["table_name"].startswith("OBSERVATION_TABLE_")
         assert info_dict == {
             "name": "observation_table_from_source_table",

@@ -1,6 +1,6 @@
 """This module constains validator used for model input validation by classes in query_graph directory."""
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 
 def construct_unique_name_validator(field: str) -> Any:
@@ -21,7 +21,7 @@ def construct_unique_name_validator(field: str) -> Any:
         assert isinstance(field, str)
         return getattr(elem, field)
 
-    def _unique_name_validator(cls: Any, value: Optional[List[Any]]) -> Optional[List[Any]]:
+    def _unique_name_validator(cls: Any, value: Optional[list[Any]]) -> Optional[list[Any]]:
         _ = cls
         if not isinstance(value, list):
             return value

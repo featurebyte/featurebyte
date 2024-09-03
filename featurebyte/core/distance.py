@@ -2,7 +2,7 @@
 Module for distance related operations
 """
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from typeguard import typechecked
 
@@ -13,7 +13,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 
 
-def _validate_series(series_list: List[Series]) -> None:
+def _validate_series(series_list: list[Series]) -> None:
     """
     Validate that:
     - all series are numeric

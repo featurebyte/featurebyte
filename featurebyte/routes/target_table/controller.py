@@ -4,7 +4,7 @@ Target API route controller
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 from fastapi import UploadFile
@@ -71,7 +71,7 @@ class TargetTableController(
         self.target_namespace_service = target_namespace_service
 
     async def get_payload(
-        self, table_create: TargetTableCreate, observation_set_dataframe: Optional[pd.DataFrame]
+        self, table_create: TargetTableCreate, observation_set_dataframe: pd.DataFrame | None
     ) -> TargetTableTaskPayload:
         return await self.service.get_target_table_task_payload(
             data=table_create, observation_set_dataframe=observation_set_dataframe
@@ -122,6 +122,6 @@ class TargetTableController(
     async def create_table(
         self,
         data: TargetTableCreate,
-        observation_set: Optional[UploadFile],
+        observation_set: UploadFile | None,
     ) -> Task:
         return await super().create_table(data=data, observation_set=observation_set)

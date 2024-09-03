@@ -5,7 +5,7 @@ This module contains mixin class(es) used in the service directory.
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 from bson import ObjectId
 
@@ -68,7 +68,7 @@ class OpsServiceMixin:
         return sorted(set(ObjectId(doc_id) for doc_id in document_ids if doc_id != document_id))
 
     @staticmethod
-    def conditional_return(document: GeneralT, condition: bool) -> Optional[GeneralT]:
+    def conditional_return(document: GeneralT, condition: bool) -> GeneralT | None:
         """
         Return output only if condition is True
 
@@ -93,8 +93,8 @@ class GetOrCreateMixin(Generic[Document, DocumentCreateSchema]):
     CreateOrGetMixin class contains method to create a new document if it does not exist when retrieving a document
     """
 
-    document_class: Type[Document]
-    document_create_class: Type[DocumentCreateSchema]
+    document_class: type[Document]
+    document_create_class: type[DocumentCreateSchema]
 
     @abstractmethod
     async def create_document(self, data: DocumentCreateSchema) -> Document:

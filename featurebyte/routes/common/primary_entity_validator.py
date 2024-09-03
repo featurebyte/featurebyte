@@ -2,8 +2,6 @@
 Primary entity validator
 """
 
-from typing import List
-
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.service.entity import EntityService
@@ -23,7 +21,7 @@ class PrimaryEntityValidator:
         self.derive_primary_entity_helper = derive_primary_entity_helper
 
     async def validate_entities_are_primary_entities(
-        self, entity_ids: List[PydanticObjectId]
+        self, entity_ids: list[PydanticObjectId]
     ) -> None:
         """
         Validate that all entities provided in the list of entity IDs are primary entities.

@@ -125,7 +125,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
                 file_obj.write(analysis_plot)
         else:
             # check report
-            with open(report_fixture_path, "r") as file_obj:
+            with open(report_fixture_path) as file_obj:
                 expected_plot = file_obj.read()
             assert analysis_plot == expected_plot
 

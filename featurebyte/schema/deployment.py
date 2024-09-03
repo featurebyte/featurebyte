@@ -5,7 +5,7 @@ Pydantic schemas for handling API payloads for deployment routes
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from bson import ObjectId
 from pydantic import Field
@@ -21,10 +21,10 @@ class DeploymentCreate(FeatureByteBaseModel):
     Schema for deployment creation
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    name: Optional[NameStr] = Field(default=None)
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
+    name: NameStr | None = Field(default=None)
     feature_list_id: PydanticObjectId
-    use_case_id: Optional[PydanticObjectId] = Field(default=None)
+    use_case_id: PydanticObjectId | None = Field(default=None)
 
 
 class DeploymentList(PaginationMixin):
@@ -32,7 +32,7 @@ class DeploymentList(PaginationMixin):
     Paginated list of Deployment
     """
 
-    data: List[DeploymentModel]
+    data: list[DeploymentModel]
 
 
 class DeploymentUpdate(BaseDocumentServiceUpdateSchema):
@@ -40,7 +40,7 @@ class DeploymentUpdate(BaseDocumentServiceUpdateSchema):
     Schema for deployment update
     """
 
-    enabled: Optional[bool] = Field(default=None)
+    enabled: bool | None = Field(default=None)
 
 
 class DeploymentServiceUpdate(DeploymentUpdate):
@@ -48,7 +48,7 @@ class DeploymentServiceUpdate(DeploymentUpdate):
     Schema for deployment service update
     """
 
-    registry_info: Optional[FeastRegistryInfo] = Field(default=None)
+    registry_info: FeastRegistryInfo | None = Field(default=None)
 
 
 class DeploymentSummary(FeatureByteBaseModel):
@@ -78,7 +78,7 @@ class AllDeploymentList(PaginationMixin):
     Paginated list of Deployment
     """
 
-    data: List[AllDeploymentListRecord]
+    data: list[AllDeploymentListRecord]
 
 
 class OnlineFeaturesResponseModel(FeatureByteBaseModel):
@@ -86,7 +86,7 @@ class OnlineFeaturesResponseModel(FeatureByteBaseModel):
     Response model for online features
     """
 
-    features: List[Dict[str, Any]]
+    features: list[dict[str, Any]]
 
 
 class FeatureTableJobRun(FeatureByteBaseModel):
@@ -95,10 +95,10 @@ class FeatureTableJobRun(FeatureByteBaseModel):
     """
 
     scheduled_ts: datetime
-    completion_ts: Optional[datetime]
-    completion_status: Optional[CompletionStatus]
-    duration_seconds: Optional[int]
-    incomplete_tile_tasks_count: Optional[int]
+    completion_ts: datetime | None
+    completion_status: CompletionStatus | None
+    duration_seconds: int | None
+    incomplete_tile_tasks_count: int | None
 
 
 class FeatureTableJobRuns(FeatureByteBaseModel):
@@ -107,8 +107,8 @@ class FeatureTableJobRuns(FeatureByteBaseModel):
     """
 
     feature_table_id: PydanticObjectId
-    feature_table_name: Optional[str]
-    runs: List[FeatureTableJobRun]
+    feature_table_name: str | None
+    runs: list[FeatureTableJobRun]
 
 
 class DeploymentJobHistory(FeatureByteBaseModel):
@@ -116,4 +116,4 @@ class DeploymentJobHistory(FeatureByteBaseModel):
     Schema for deployment job history
     """
 
-    feature_table_history: List[FeatureTableJobRuns]
+    feature_table_history: list[FeatureTableJobRuns]

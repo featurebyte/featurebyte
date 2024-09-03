@@ -4,7 +4,7 @@ StaticSourceTableService class
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from bson import ObjectId
 
@@ -66,7 +66,7 @@ class StaticSourceTableService(
 
     async def validate_materialized_table_and_get_metadata(
         self, db_session: BaseSession, table_details: TableDetails
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate and get additional metadata for the materialized static source table.
 

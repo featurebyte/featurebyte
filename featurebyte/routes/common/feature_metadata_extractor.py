@@ -4,7 +4,7 @@ Feature metadata extractor
 
 from __future__ import annotations
 
-from typing import Any, Optional, Type, TypeVar, Union
+from typing import Any, TypeVar
 
 from bson import ObjectId
 
@@ -30,7 +30,7 @@ ObjectT = TypeVar("ObjectT")
 async def _get_list_object(
     service: BaseDocumentService[Document, DocumentCreateSchema, DocumentUpdateSchema],
     document_ids: list[PydanticObjectId],
-    list_object_class: Type[ObjectT],
+    list_object_class: type[ObjectT],
 ) -> ObjectT:
     """
     Retrieve object through list route & deserialize the records
@@ -97,9 +97,11 @@ class FeatureOrTargetMetadataExtractor:
     @classmethod
     def _reference_key_func(
         cls,
-        col: Optional[
-            Union[SourceDataColumn, DerivedDataColumn, AggregationColumn, PostAggregationColumn]
-        ],
+        col: SourceDataColumn
+        | DerivedDataColumn
+        | AggregationColumn
+        | PostAggregationColumn
+        | None,
     ) -> str:
         # helper function to generate reference key used in the reference map (_extract function)
         # As the col contains other attribute like filter to track whether the column has been applied
@@ -142,7 +144,7 @@ class FeatureOrTargetMetadataExtractor:
         )
 
         # prepare column mapping
-        column_map: dict[tuple[Optional[ObjectId], str], Any] = {}
+        column_map: dict[tuple[ObjectId | None, str], Any] = {}
         semantic_map = {semantic.id: semantic.name for semantic in semantic_list.data}
         for table in table_list.data:
             for column in table.columns_info:

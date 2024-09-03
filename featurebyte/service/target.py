@@ -4,7 +4,7 @@ Target class
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -45,7 +45,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         block_modification_handler: BlockModificationHandler,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
@@ -119,7 +119,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         })
 
     @staticmethod
-    def derive_window(document: TargetModel, namespace: TargetNamespaceModel) -> Optional[str]:
+    def derive_window(document: TargetModel, namespace: TargetNamespaceModel) -> str | None:
         """
         Derive the window from the target and namespace
 
@@ -238,7 +238,7 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
 
     async def get_sample_entity_serving_names(
         self, target_id: ObjectId, count: int
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """
         Get sample entity serving names for a target
 

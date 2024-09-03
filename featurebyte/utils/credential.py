@@ -5,7 +5,7 @@ Utility functions for credential management
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 from bson import ObjectId
 
@@ -48,8 +48,8 @@ class MongoBackedCredentialProvider(CredentialProvider):
         self.persistent = persistent
 
     async def get_credential(
-        self, user_id: Optional[ObjectId], feature_store_name: str
-    ) -> Optional[CredentialModel]:
+        self, user_id: ObjectId | None, feature_store_name: str
+    ) -> CredentialModel | None:
         feature_store = await self.persistent.find_one(
             collection_name=FeatureStoreModel.collection_name(),
             query_filter={"name": feature_store_name},

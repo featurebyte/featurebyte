@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
-from typing import List, Optional
 
 from bson import ObjectId
 
@@ -70,7 +69,7 @@ class FeatureMaterializeSyncService:
 
     async def initialize_prerequisite(
         self, offline_store_feature_table_id: ObjectId
-    ) -> Optional[FeatureMaterializePrerequisite]:
+    ) -> FeatureMaterializePrerequisite | None:
         """
         Create a FeatureMaterializePrerequisite document for a feature store table at the current
         job cycle
@@ -233,9 +232,9 @@ class FeatureMaterializeSyncService:
     @classmethod
     def get_incomplete_tile_tasks(
         cls,
-        feature_table_aggregation_ids: List[str],
+        feature_table_aggregation_ids: list[str],
         prerequisite_model: FeatureMaterializePrerequisite,
-    ) -> List[IncompleteTileTask]:
+    ) -> list[IncompleteTileTask]:
         """
         Get incomplete tile tasks
 
@@ -281,7 +280,7 @@ class FeatureMaterializeSyncService:
 
     async def _get_scheduled_job_ts_for_feature_table(
         self, offline_store_feature_table_id: ObjectId
-    ) -> Optional[datetime]:
+    ) -> datetime | None:
         feature_table_dict = await self.offline_store_feature_table_service.get_document_as_dict(
             offline_store_feature_table_id,
             projection={"feature_job_setting": 1},

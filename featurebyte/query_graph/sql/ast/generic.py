@@ -5,7 +5,7 @@ Module for generic operations sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression
@@ -85,8 +85,8 @@ class Conditional(ExpressionNode):
 
     series_node: ExpressionNode
     mask: ExpressionNode
-    value: Optional[Any]
-    value_series: Optional[ExpressionNode]
+    value: Any | None
+    value_series: ExpressionNode | None
     query_node_type = NodeType.CONDITIONAL
 
     @property
@@ -184,7 +184,7 @@ def make_assign_node(context: SQLNodeContext) -> TableNode:
     return sql_node
 
 
-def resolve_project_node(expr_node: ExpressionNode) -> Optional[ExpressionNode]:
+def resolve_project_node(expr_node: ExpressionNode) -> ExpressionNode | None:
     """Resolves a Project node to the original ExpressionNode due to assignment
 
     This is needed when we need additional information tied to original ExpressionNode than just the

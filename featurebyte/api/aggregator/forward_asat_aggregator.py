@@ -4,7 +4,7 @@ This module contains forward as at aggregator related class
 
 from __future__ import annotations
 
-from typing import List, Optional, Type, cast
+from typing import cast
 
 from typeguard import typechecked
 
@@ -25,7 +25,7 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
     """
 
     @property
-    def supported_views(self) -> List[Type[View]]:
+    def supported_views(self) -> list[type[View]]:
         return [SCDView]
 
     @property
@@ -39,12 +39,12 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
     @typechecked
     def forward_aggregate_asat(
         self,
-        value_column: Optional[str],
+        value_column: str | None,
         method: str,
         target_name: str,
-        offset: Optional[str] = None,
+        offset: str | None = None,
         fill_value: OptionalScalar = None,
-        skip_fill_na: Optional[bool] = None,
+        skip_fill_na: bool | None = None,
     ) -> Target:
         """
         Aggregate a column in SlowlyChangingView as at a point in time to produce a Target

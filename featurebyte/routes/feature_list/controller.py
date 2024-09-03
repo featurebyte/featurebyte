@@ -5,8 +5,9 @@ FeatureList API route controller
 from __future__ import annotations
 
 import copy
+from collections.abc import Coroutine
 from http import HTTPStatus
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable
 
 from bson import ObjectId, json_util
 from fastapi import UploadFile
@@ -117,7 +118,7 @@ class FeatureListController(
 
     async def submit_feature_list_create_with_batch_feature_create_task(
         self, data: FeatureListCreateWithBatchFeatureCreation
-    ) -> Optional[Task]:
+    ) -> Task | None:
         """
         Submit feature list creation with batch feature creation task
 
@@ -140,7 +141,7 @@ class FeatureListController(
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_manager.get_task(task_id=str(task_id))
 
-    async def submit_feature_list_create_job(self, data: FeatureListCreateJob) -> Optional[Task]:
+    async def submit_feature_list_create_job(self, data: FeatureListCreateJob) -> Task | None:
         """
         Submit feature list creation task
 
@@ -176,8 +177,8 @@ class FeatureListController(
 
     async def create_feature_list(
         self,
-        data: Union[FeatureListCreate, FeatureListNewVersionCreate],
-        progress_callback: Optional[Callable[..., Coroutine[Any, Any, None]]] = None,
+        data: FeatureListCreate | FeatureListNewVersionCreate,
+        progress_callback: Callable[..., Coroutine[Any, Any, None]] | None = None,
     ) -> FeatureListModelResponse:
         """
         Create FeatureList at persistent (GitDB or MongoDB)
@@ -223,7 +224,7 @@ class FeatureListController(
         self,
         feature_list_id: ObjectId,
         data: FeatureListUpdate,
-    ) -> Union[FeatureListModelResponse, Task]:
+    ) -> FeatureListModelResponse | Task:
         """
         Update FeatureList at persistent
 
@@ -302,7 +303,7 @@ class FeatureListController(
             List of documents fulfilled the filtering condition
         """
 
-        params: Dict[str, Any] = {"search": search, "name": name}
+        params: dict[str, Any] = {"search": search, "name": name}
         if version:
             params["version"] = VersionIdentifier.from_str(version).model_dump()
 
@@ -395,16 +396,16 @@ class FeatureListController(
         InfoDocument
         """
 
-        def _to_version_str(version_dict: Optional[Dict[str, Any]]) -> Optional[str]:
+        def _to_version_str(version_dict: dict[str, Any] | None) -> str | None:
             if not version_dict:
                 return None
             return VersionIdentifier(**version_dict).to_str()
 
-        def _to_prod_ready_fraction(readiness_dist: List[Dict[str, Any]]) -> float:
+        def _to_prod_ready_fraction(readiness_dist: list[dict[str, Any]]) -> float:
             return FeatureReadinessDistribution(readiness_dist).derive_production_ready_fraction()
 
         def _to_default_feature_fraction(
-            feature_ids: List[ObjectId], default_feat_ids: Set[ObjectId]
+            feature_ids: list[ObjectId], default_feat_ids: set[ObjectId]
         ) -> float:
             count = 0
             for feat_id in feature_ids:
@@ -600,7 +601,7 @@ class FeatureListController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [
             (self.deployment_service, {"feature_list_id": document_id}),
             (self.historical_feature_table_service, {"feature_list_id": document_id}),

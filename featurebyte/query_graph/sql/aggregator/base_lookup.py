@@ -5,8 +5,9 @@ SQL generation for lookup features
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any, Iterable, Optional, Sequence, Tuple, TypeVar
+from typing import Any, TypeVar
 
 import pandas as pd
 from sqlglot import expressions
@@ -37,8 +38,8 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
     SubqueryWithPointInTimeCutoff for lookup features
     """
 
-    event_timestamp_column: Optional[str]
-    forward_point_in_time_offset: Optional[str]
+    event_timestamp_column: str | None
+    forward_point_in_time_offset: str | None
     adapter: BaseAdapter
 
     def get_expression_for_column(
@@ -144,7 +145,7 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
             if not is_scd and not requires_scd_join:
                 yield specs
 
-    def get_forward_point_in_time_offset(self, base_lookup_spec: LookupSpecT) -> Optional[str]:
+    def get_forward_point_in_time_offset(self, base_lookup_spec: LookupSpecT) -> str | None:
         """
         Get the forward point in time offset for the lookup if it is provided.
 
@@ -269,7 +270,7 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
         table_expr: Select,
         point_in_time_column: str,
         current_columns: list[str],
-    ) -> Tuple[Select, list[str]]:
+    ) -> tuple[Select, list[str]]:
         """
         Generates sql for SCD lookup and returns the updated table and added columns
 

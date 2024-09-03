@@ -5,7 +5,7 @@ Feature API route controller
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 from bson import ObjectId
 from fastapi.exceptions import HTTPException
@@ -81,7 +81,7 @@ class FeatureController(
         self.feature_or_target_metadata_extractor = feature_or_target_metadata_extractor
         self.tile_job_log_service = tile_job_log_service
 
-    async def submit_batch_feature_create_task(self, data: BatchFeatureCreate) -> Optional[Task]:
+    async def submit_batch_feature_create_task(self, data: BatchFeatureCreate) -> Task | None:
         """
         Submit Feature Create Task
 
@@ -107,7 +107,7 @@ class FeatureController(
         return await self.task_controller.task_manager.get_task(task_id=str(task_id))
 
     async def create_feature(
-        self, data: Union[FeatureCreate, FeatureNewVersionCreate]
+        self, data: FeatureCreate | FeatureNewVersionCreate
     ) -> FeatureModelResponse:
         """
         Create Feature at persistent (GitDB or MongoDB)
@@ -223,7 +223,7 @@ class FeatureController(
             List of documents fulfilled the filtering condition
         """
 
-        params: Dict[str, Any] = {"search": search, "name": name}
+        params: dict[str, Any] = {"search": search, "name": name}
         if version:
             params["version"] = VersionIdentifier.from_str(version).model_dump()
 

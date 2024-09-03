@@ -5,7 +5,7 @@ This module contains EventTable related models
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, ClassVar, List, Optional, Tuple, Type
+from typing import Any, ClassVar
 
 from pydantic import Field, model_validator
 
@@ -32,7 +32,7 @@ class FeatureJobSettingHistoryEntry(FeatureByteBaseModel):
     """
 
     created_at: datetime
-    setting: Optional[FeatureJobSetting] = Field(default=None)
+    setting: FeatureJobSetting | None = Field(default=None)
 
 
 class EventTableModel(EventTableData, TableModel):
@@ -61,8 +61,8 @@ class EventTableModel(EventTableData, TableModel):
         Datetime when the EventTable object was last updated
     """
 
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
-    _table_data_class: ClassVar[Type[EventTableData]] = EventTableData
+    default_feature_job_setting: FeatureJobSetting | None = Field(default=None)
+    _table_data_class: ClassVar[type[EventTableData]] = EventTableData
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -78,13 +78,13 @@ class EventTableModel(EventTableData, TableModel):
     )
 
     @property
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         if self.event_id_column:
             return [self.event_id_column]
         return []  # DEV-556: event_id_column should not be empty
 
     @property
-    def special_columns(self) -> List[str]:
+    def special_columns(self) -> list[str]:
         cols = [
             self.event_timestamp_column,
             self.event_id_column,
@@ -95,7 +95,7 @@ class EventTableModel(EventTableData, TableModel):
 
     def create_view_graph_node(
         self, input_node: InputNode, metadata: ViewMetadata, **kwargs: Any
-    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+    ) -> tuple[GraphNode, list[ColumnInfo]]:
         table_data = EventTableData(**self.model_dump(by_alias=True)).clone(
             column_cleaning_operations=metadata.column_cleaning_operations
         )

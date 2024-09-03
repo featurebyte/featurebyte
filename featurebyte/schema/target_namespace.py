@@ -2,7 +2,7 @@
 Target namespace schema
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from bson import ObjectId
 from pydantic import Field
@@ -26,10 +26,10 @@ class TargetNamespaceCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     dtype: DBVarType
-    target_ids: List[PydanticObjectId] = Field(default_factory=list)
+    target_ids: list[PydanticObjectId] = Field(default_factory=list)
     default_target_id: Optional[PydanticObjectId] = Field(default=None)
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO)
-    entity_ids: List[PydanticObjectId] = Field(default_factory=list)
+    entity_ids: list[PydanticObjectId] = Field(default_factory=list)
     window: Optional[str] = Field(default=None)
 
 
@@ -48,7 +48,7 @@ class TargetNamespaceServiceUpdate(TargetNamespaceUpdate):
     TargetNamespaceService update schema - used by server side only, not exposed to client
     """
 
-    target_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    target_ids: Optional[list[PydanticObjectId]] = Field(default=None)
 
 
 class TargetNamespaceList(PaginationMixin):
@@ -56,7 +56,7 @@ class TargetNamespaceList(PaginationMixin):
     Paginated list of TargetNamespace
     """
 
-    data: List[TargetNamespaceModel]
+    data: list[TargetNamespaceModel]
 
 
 class TargetNamespaceInfo(BaseInfo):

@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Union
 
 import pymongo
 from bson import ObjectId
@@ -59,13 +59,13 @@ class PrecomputedLookupFeatureTableInfo(FeatureByteBaseModel):
     precomputed lookup using a related entity
     """
 
-    lookup_steps: List[EntityRelationshipInfo]
-    source_feature_table_id: Optional[PydanticObjectId] = Field(default=None)
-    lookup_mapping: Optional[List[PrecomputedLookupMapping]] = Field(default=None)
+    lookup_steps: list[EntityRelationshipInfo]
+    source_feature_table_id: PydanticObjectId | None = Field(default=None)
+    lookup_mapping: list[PrecomputedLookupMapping] | None = Field(default=None)
 
     def get_lookup_feature_table_serving_name(
         self, source_feature_table_serving_name: str
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Returns the corresponding serving name in the precomputed lookup feature table given a
         serving name in the source feature table, if available.
@@ -92,37 +92,35 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     name: str
-    base_name: Optional[str] = Field(default=None)
-    name_prefix: Optional[str] = Field(default=None)
-    name_suffix: Optional[str] = Field(default=None)
-    feature_ids: List[PydanticObjectId]
-    primary_entity_ids: List[PydanticObjectId]
-    serving_names: List[str]
-    feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    base_name: str | None = Field(default=None)
+    name_prefix: str | None = Field(default=None)
+    name_suffix: str | None = Field(default=None)
+    feature_ids: list[PydanticObjectId]
+    primary_entity_ids: list[PydanticObjectId]
+    serving_names: list[str]
+    feature_job_setting: FeatureJobSetting | None = Field(default=None)
     has_ttl: bool
-    last_materialized_at: Optional[datetime] = Field(default=None)
-    online_stores_last_materialized_at: List[OnlineStoreLastMaterializedAt] = Field(
+    last_materialized_at: datetime | None = Field(default=None)
+    online_stores_last_materialized_at: list[OnlineStoreLastMaterializedAt] = Field(
         default_factory=list
     )
 
-    feature_cluster_path: Optional[str] = Field(default=None)
-    feature_cluster: Optional[FeatureCluster] = Field(default=None)
+    feature_cluster_path: str | None = Field(default=None)
+    feature_cluster: FeatureCluster | None = Field(default=None)
 
-    output_column_names: List[str]
-    output_dtypes: List[DBVarType]
-    internal_entity_universe: Optional[Dict[str, Any]] = Field(
-        alias="entity_universe", default=None
-    )
-    entity_lookup_info: Optional[EntityRelationshipInfo] = Field(default=None)  # Note: deprecated
-    precomputed_lookup_feature_table_info: Optional[PrecomputedLookupFeatureTableInfo] = Field(
+    output_column_names: list[str]
+    output_dtypes: list[DBVarType]
+    internal_entity_universe: dict[str, Any] | None = Field(alias="entity_universe", default=None)
+    entity_lookup_info: EntityRelationshipInfo | None = Field(default=None)  # Note: deprecated
+    precomputed_lookup_feature_table_info: PrecomputedLookupFeatureTableInfo | None = Field(
         default=None
     )
-    feature_store_id: Optional[PydanticObjectId] = Field(default=None)
-    deployment_ids: List[PydanticObjectId] = Field(default_factory=list)
-    aggregation_ids: List[str] = Field(default_factory=list)
+    feature_store_id: PydanticObjectId | None = Field(default=None)
+    deployment_ids: list[PydanticObjectId] = Field(default_factory=list)
+    aggregation_ids: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def _set_feature_store_id(self) -> "OfflineStoreFeatureTableModel":
+    def _set_feature_store_id(self) -> OfflineStoreFeatureTableModel:
         """
         Set feature_store_id
 
@@ -135,7 +133,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         return self
 
     @classmethod
-    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
+    def _get_remote_attribute_paths(cls, document_dict: dict[str, Any]) -> list[Path]:
         paths = []
         feature_cluster_path = document_dict.get("feature_cluster_path")
         if feature_cluster_path:
@@ -143,7 +141,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         return paths
 
     @property
-    def table_signature(self) -> Dict[str, Any]:
+    def table_signature(self) -> dict[str, Any]:
         """
         Get table signature
 
@@ -191,7 +189,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
 
     @staticmethod
     def get_serving_names_for_table_name(
-        serving_names: List[str],
+        serving_names: list[str],
         max_serv_name_len: int = 19,
         max_serv_num: int = 2,
     ) -> str:
@@ -283,9 +281,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
             full_name += "_" + self.name_suffix
         return full_name
 
-    def get_online_store_last_materialized_at(
-        self, online_store_id: ObjectId
-    ) -> Optional[datetime]:
+    def get_online_store_last_materialized_at(self, online_store_id: ObjectId) -> datetime | None:
         """
         Get the last materialized at timestamp for an online store. Returns None if this offline
         store table has never been materialized to the online store.
@@ -305,7 +301,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
                     return entry.value
         return None
 
-    def get_output_dtypes_for_columns(self, column_names: List[str]) -> List[DBVarType]:
+    def get_output_dtypes_for_columns(self, column_names: list[str]) -> list[DBVarType]:
         """
         Get a list DBVarType corresponding to the provided column names
 
@@ -327,7 +323,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "offline_store_feature_table"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
@@ -355,13 +351,13 @@ class FeaturesUpdate(BaseDocumentServiceUpdateSchema):
     FeaturesUpdate class to be used when updating features related fields
     """
 
-    feature_ids: List[PydanticObjectId]
-    feature_cluster: Optional[FeatureCluster] = Field(default=None)
-    feature_cluster_path: Optional[str] = Field(default=None)
-    output_column_names: List[str]
-    output_dtypes: List[DBVarType]
+    feature_ids: list[PydanticObjectId]
+    feature_cluster: FeatureCluster | None = Field(default=None)
+    feature_cluster_path: str | None = Field(default=None)
+    output_column_names: list[str]
+    output_dtypes: list[DBVarType]
     entity_universe: EntityUniverseModel
-    aggregation_ids: List[str]
+    aggregation_ids: list[str]
 
 
 class OfflineLastMaterializedAtUpdate(BaseDocumentServiceUpdateSchema):
@@ -377,7 +373,7 @@ class OnlineStoresLastMaterializedAtUpdate(BaseDocumentServiceUpdateSchema):
     Schema to be used when updating online_stores_last_materialized_at field
     """
 
-    online_stores_last_materialized_at: List[OnlineStoreLastMaterializedAt]
+    online_stores_last_materialized_at: list[OnlineStoreLastMaterializedAt]
 
 
 OfflineStoreFeatureTableUpdate = Union[
@@ -394,17 +390,17 @@ class OfflineIngestGraphMetadata:
     """
 
     feature_cluster: FeatureCluster
-    output_column_names: List[str]
-    output_dtypes: List[DBVarType]
-    aggregation_ids: List[str]
-    offline_ingest_graphs: List[Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]]
+    output_column_names: list[str]
+    output_dtypes: list[DBVarType]
+    aggregation_ids: list[str]
+    offline_ingest_graphs: list[tuple[OfflineStoreIngestQueryGraph, list[EntityRelationshipInfo]]]
 
 
 def get_combined_ingest_graph(
-    features: List[FeatureModel],
-    primary_entities: List[EntityModel],
+    features: list[FeatureModel],
+    primary_entities: list[EntityModel],
     has_ttl: bool,
-    feature_job_setting: Optional[FeatureJobSetting],
+    feature_job_setting: FeatureJobSetting | None,
 ) -> OfflineIngestGraphMetadata:
     """
     Returns a combined ingest graph and related information for all features belonging to a

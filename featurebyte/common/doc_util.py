@@ -2,7 +2,7 @@
 This module contains utility functions related to documentation
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -47,7 +47,7 @@ class FBAutoDoc(BaseModel):
     FeatureByte Auto Documentation parameters
     """
 
-    skipped_members: List[str] = Field(default=COMMON_SKIPPED_ATTRIBUTES)
+    skipped_members: list[str] = Field(default=COMMON_SKIPPED_ATTRIBUTES)
     proxy_class: Optional[str] = Field(default=None)
     # Setting this to True will skip the rendering of the parameters, and the signature, in the documentation for the
     # class. This is typically used for class level parameters that should not be initialized directly, compared to say

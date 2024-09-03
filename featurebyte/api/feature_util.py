@@ -2,7 +2,7 @@
 Feature util module.
 """
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import pandas as pd
 
@@ -32,8 +32,8 @@ FEATURE_LIST_FOREIGN_KEYS = [
 
 def filter_feature_list(
     feature_list: pd.DataFrame,
-    primary_entity: Optional[Union[str, List[str]]] = None,
-    primary_table: Optional[Union[str, List[str]]] = None,
+    primary_entity: Optional[Union[str, list[str]]] = None,
+    primary_table: Optional[Union[str, list[str]]] = None,
 ) -> pd.DataFrame:
     """
     Filter a feature list based on a primary entity and/or primary table.

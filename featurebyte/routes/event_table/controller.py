@@ -4,7 +4,7 @@ EventTable API route controller
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any
 
 from bson import ObjectId
 
@@ -106,7 +106,7 @@ class EventTableController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return await super().service_and_query_pairs_for_checking_reference(
             document_id=document_id
         ) + [

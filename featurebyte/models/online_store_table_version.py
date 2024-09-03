@@ -4,8 +4,6 @@ OnlineStoreTableVersion model
 
 from __future__ import annotations
 
-from typing import List
-
 import pymongo
 from pydantic import StrictStr
 
@@ -26,7 +24,7 @@ class OnlineStoreTableVersion(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "online_store_table_version"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

@@ -4,7 +4,7 @@ FeatureStore API route controller
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 from bson import ObjectId
 
@@ -173,8 +173,8 @@ class FeatureStoreController(
     async def list_databases(
         self,
         feature_store: FeatureStoreModel,
-        get_credential: Optional[Any] = None,
-    ) -> List[str]:
+        get_credential: Any | None = None,
+    ) -> list[str]:
         """
         List databases accessible by the feature store
 
@@ -198,7 +198,7 @@ class FeatureStoreController(
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         List schemas in feature store
 
@@ -224,7 +224,7 @@ class FeatureStoreController(
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         List tables in feature store
 
@@ -255,7 +255,7 @@ class FeatureStoreController(
         database_name: str,
         schema_name: str,
         table_name: str,
-    ) -> List[ColumnSpecWithDescription]:
+    ) -> list[ColumnSpecWithDescription]:
         """
         List columns in database table
 
@@ -433,7 +433,7 @@ class FeatureStoreController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [(self.all_catalog_service, {"default_feature_store_ids": document_id})]
 
     async def get_info(

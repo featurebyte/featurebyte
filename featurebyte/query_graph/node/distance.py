@@ -3,7 +3,7 @@ Distance node module
 """
 
 import textwrap
-from typing import List, Sequence, Tuple
+from collections.abc import Sequence
 
 from typing_extensions import Literal
 
@@ -42,23 +42,23 @@ class HaversineNode(BaseSeriesOutputNode):
         return 4
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
-        statements: List[StatementT] = []
+        statements: list[StatementT] = []
         var_name = var_name_generator.generate_variable_name(
             node_output_type=operation_structure.output_type,
             node_output_category=operation_structure.output_category,
@@ -75,10 +75,10 @@ class HaversineNode(BaseSeriesOutputNode):
 
     def _derive_on_demand_view_or_function_code_helper(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        statements: List[StatementT] = []
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
+        statements: list[StatementT] = []
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         func_name = "haversine_distance"
         if var_name_generator.should_insert_function(function_name=func_name):
@@ -105,20 +105,20 @@ class HaversineNode(BaseSeriesOutputNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         return self._derive_on_demand_view_or_function_code_helper(
             node_inputs=node_inputs, var_name_generator=var_name_generator
         )
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         return self._derive_on_demand_view_or_function_code_helper(
             node_inputs=node_inputs, var_name_generator=var_name_generator
         )

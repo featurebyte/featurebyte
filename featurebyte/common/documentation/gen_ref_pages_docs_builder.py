@@ -8,9 +8,10 @@ import importlib
 import inspect
 import json
 import os
+from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 from mkdocs_gen_files import Nav  # type: ignore[attr-defined]
 
@@ -78,7 +79,7 @@ class DocGroupKey:
     class_name: Optional[str] = None
     attribute_name: Optional[str] = None
 
-    def _get_path_to_join(self) -> List[str]:
+    def _get_path_to_join(self) -> list[str]:
         path_to_join = [self.module_path]
         if self.class_name:
             path_to_join.append(self.class_name)
@@ -137,7 +138,7 @@ class AccessorMetadata:
     """
 
     # This will be a list of API paths to classes that use the accessor.
-    classes_using_accessor: List[str]
+    classes_using_accessor: list[str]
     # This will be the property name that the classes above use to access the accessor. Eg. str, cd.
     property_name: str
 
@@ -204,10 +205,10 @@ def get_classes_for_module(module_str: str) -> Generator[Any, Any, Any]:
 
 
 def add_class_to_doc_group(
-    doc_groups: Dict[DocGroupKey, DocGroupValue],
+    doc_groups: dict[DocGroupKey, DocGroupValue],
     autodoc_config: FBAutoDoc,
     class_obj: Any,
-) -> Tuple[Dict[DocGroupKey, DocGroupValue], Optional[str], Optional[List[str]]]:
+) -> tuple[dict[DocGroupKey, DocGroupValue], Optional[str], Optional[list[str]]]:
     """
     Adds a class to the doc_groups dictionary.
 
@@ -246,12 +247,12 @@ def add_class_to_doc_group(
 
 
 def add_class_attributes_to_doc_groups(
-    doc_groups: Dict[DocGroupKey, DocGroupValue],
+    doc_groups: dict[DocGroupKey, DocGroupValue],
     class_obj: Any,
     autodoc_config: FBAutoDoc,
     proxy_path: Optional[str],
-    class_doc_group: Optional[List[str]],
-) -> Dict[DocGroupKey, DocGroupValue]:
+    class_doc_group: Optional[list[str]],
+) -> dict[DocGroupKey, DocGroupValue]:
     """
     Add class attributes to doc groups.
 
@@ -303,7 +304,7 @@ def add_class_attributes_to_doc_groups(
     return doc_groups
 
 
-def should_skip_path(components: List[str]) -> bool:
+def should_skip_path(components: list[str]) -> bool:
     """
     Check whether to skip path.
 
@@ -337,7 +338,7 @@ def should_skip_path(components: List[str]) -> bool:
     return False
 
 
-def get_accessor_to_classes_using() -> Dict[str, Any]:
+def get_accessor_to_classes_using() -> dict[str, Any]:
     """
     Return a dict mapping an accessor to its metadata.
 
@@ -468,7 +469,7 @@ def infer_api_path_from_obj_path(obj_path: str) -> str:
     return obj_path
 
 
-def get_paths_to_document() -> Dict[str, str]:
+def get_paths_to_document() -> dict[str, str]:
     """
     Get all the object paths that we want to document.
 
@@ -534,8 +535,8 @@ def _get_accessor_metadata(doc_path: str) -> Optional[AccessorMetadata]:
 
 
 def _add_pure_methods_to_doc_groups(
-    doc_groups: Dict[DocGroupKey, DocGroupValue],
-) -> Dict[DocGroupKey, DocGroupValue]:
+    doc_groups: dict[DocGroupKey, DocGroupValue],
+) -> dict[DocGroupKey, DocGroupValue]:
     """
     Add pure methods to the doc groups.
 
@@ -570,7 +571,7 @@ def _add_pure_methods_to_doc_groups(
     return doc_groups
 
 
-def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
+def get_doc_groups() -> dict[DocGroupKey, DocGroupValue]:
     """
     This returns a dictionary of doc groups.
 
@@ -579,7 +580,7 @@ def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
     Dict[DocGroupKey, DocGroupValue]
         A dictionary of doc groups.
     """
-    doc_groups: Dict[DocGroupKey, DocGroupValue] = {}
+    doc_groups: dict[DocGroupKey, DocGroupValue] = {}
     for module_str in get_featurebyte_python_files():
         try:
             for class_obj in get_classes_for_module(module_str):
@@ -605,8 +606,8 @@ def get_doc_groups() -> Dict[DocGroupKey, DocGroupValue]:
 
 
 def generate_documentation_for_docs(
-    doc_groups: Dict[DocGroupKey, DocGroupValue],
-) -> Tuple[Dict[str, str], DocItems]:
+    doc_groups: dict[DocGroupKey, DocGroupValue],
+) -> tuple[dict[str, str], DocItems]:
     """
     This function generates the documentation for the docs.
 
@@ -713,7 +714,7 @@ def generate_documentation_for_docs(
 
 
 def _get_markdown_file_path_for_doc_layout_item(
-    item: DocLayoutItem, proxied_path_to_markdown_path: Dict[str, str]
+    item: DocLayoutItem, proxied_path_to_markdown_path: dict[str, str]
 ) -> str:
     """
     This function gets the markdown file path for a doc layout item.
@@ -751,7 +752,7 @@ class DocsBuilder:
         self,
         gen_files_open: Any,
         set_edit_path: Any,
-        doc_overrides: Optional[List[DocLayoutItem]] = None,
+        doc_overrides: Optional[list[DocLayoutItem]] = None,
     ):
         self.gen_files_open = gen_files_open
         self.set_edit_path = set_edit_path
@@ -862,7 +863,7 @@ class DocsBuilder:
             value = doc_items.get(key)
             self._build_and_write_to_file(value.markdown_file_metadata)
 
-    def _populate_nav_for_core_objects(self, nav: Nav, core_objects: List[DocLayoutItem]) -> Nav:
+    def _populate_nav_for_core_objects(self, nav: Nav, core_objects: list[DocLayoutItem]) -> Nav:
         for core_object in core_objects:
             assert core_object.core_doc_path_override is not None
             doc_path = core_object.core_doc_path_override
@@ -876,18 +877,18 @@ class DocsBuilder:
             # Try to read from the doc_path provided
             full_doc_path = os.path.join(doc_path)
             if os.path.exists(full_doc_path):
-                with open(full_doc_path, "r") as f:
+                with open(full_doc_path) as f:
                     content_to_write = f.read()
             elif PATH_TO_DOCS_REPO:
                 # Retrieve file from docs repo if PATH_TO_DOCS_REPO is specified
                 full_doc_path = os.path.join(PATH_TO_DOCS_REPO, "core", doc_path)
-                with open(full_doc_path, "r") as f:
+                with open(full_doc_path) as f:
                     content_to_write = f.read()
             self.write_to_file(f"reference/{doc_path}", doc_path, content_to_write)
             nav[header] = doc_path
         return nav
 
-    def populate_nav(self, nav: Nav, proxied_path_to_markdown_path: Dict[str, str]) -> Nav:
+    def populate_nav(self, nav: Nav, proxied_path_to_markdown_path: dict[str, str]) -> Nav:
         """
         Populate the nav with the markdown paths.
 

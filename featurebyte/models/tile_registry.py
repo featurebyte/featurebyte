@@ -5,7 +5,7 @@ TileModel document model
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 
 import pymongo
 from pydantic import BaseModel, Field, StrictStr, model_validator
@@ -67,17 +67,17 @@ class TileModel(FeatureByteCatalogBaseDocumentModel):
     aggregation_id: StrictStr
 
     tile_sql: StrictStr
-    entity_column_names: List[StrictStr]
-    value_column_names: List[StrictStr]
-    value_column_types: List[StrictStr]
+    entity_column_names: list[StrictStr]
+    value_column_names: list[StrictStr]
+    value_column_types: list[StrictStr]
 
     frequency_minute: int = Field(gt=0)
     time_modulo_frequency_second: int = Field(ge=0)
     blind_spot_second: int = Field(ge=0)
 
-    last_run_metadata_online: Optional[LastRunMetadata] = Field(default=None)
-    last_run_metadata_offline: Optional[LastRunMetadata] = Field(default=None)
-    backfill_metadata: Optional[BackfillMetadata] = Field(default=None)
+    last_run_metadata_online: LastRunMetadata | None = Field(default=None)
+    last_run_metadata_offline: LastRunMetadata | None = Field(default=None)
+    backfill_metadata: BackfillMetadata | None = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -85,7 +85,7 @@ class TileModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "tile"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
@@ -114,6 +114,6 @@ class TileUpdate(BaseDocumentServiceUpdateSchema):
     Schema for TileUpdate
     """
 
-    last_run_metadata_online: Optional[LastRunMetadata] = Field(default=None)
-    last_run_metadata_offline: Optional[LastRunMetadata] = Field(default=None)
-    backfill_metadata: Optional[BackfillMetadata] = Field(default=None)
+    last_run_metadata_online: LastRunMetadata | None = Field(default=None)
+    last_run_metadata_offline: LastRunMetadata | None = Field(default=None)
+    backfill_metadata: BackfillMetadata | None = Field(default=None)

@@ -4,11 +4,10 @@ BatchRequestTable models
 
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Annotated, Union
 
 import pymongo
 from pydantic import Field
-from typing_extensions import Annotated
 
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.materialized_table import MaterializedTableModel
@@ -43,7 +42,7 @@ class BatchRequestTableModel(MaterializedTableModel):
     """
 
     request_input: BatchRequestInput
-    context_id: Optional[PydanticObjectId] = Field(default=None)
+    context_id: PydanticObjectId | None = Field(default=None)
 
     class Settings(MaterializedTableModel.Settings):
         """

@@ -4,7 +4,7 @@ Helpers to filter a table by entity
 
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
@@ -16,8 +16,8 @@ from featurebyte.query_graph.sql.common import get_qualified_column_identifier, 
 def get_table_filtered_by_entity(
     input_expr: Select,
     entity_column_names: list[str],
-    table_column_names: Optional[list[str]] = None,
-    timestamp_column: Optional[str] = None,
+    table_column_names: list[str] | None = None,
+    timestamp_column: str | None = None,
     inject_entity_table_placeholder: bool = False,
     distinct: bool = False,
 ) -> Select:

@@ -2,7 +2,8 @@
 Feature Offline Store Info Initialization Service
 """
 
-from typing import Dict, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Optional
 
 from bson import ObjectId
 
@@ -61,7 +62,7 @@ class OfflineStoreInfoInitializationService:
         has_ttl: bool,
         catalog_id: ObjectId,
         table_name_prefix: str,
-        entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
+        entity_id_to_serving_name: Optional[dict[ObjectId, str]] = None,
     ) -> str:
         """
         Create offline store feature table name
@@ -107,9 +108,9 @@ class OfflineStoreInfoInitializationService:
         node_name: str,
         catalog_id: ObjectId,
         table_name_prefix: str,
-        entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
+        entity_id_to_serving_name: Optional[dict[ObjectId, str]] = None,
         dry_run: bool = False,
-    ) -> Tuple[QueryGraphModel, str]:
+    ) -> tuple[QueryGraphModel, str]:
         """
         Reconstruct decomposed graph
 
@@ -135,7 +136,7 @@ class OfflineStoreInfoInitializationService:
         """
         query_graph = QueryGraph(**graph.model_dump(by_alias=True))
 
-        node_name_to_repl_node: Dict[str, BaseNode] = {}
+        node_name_to_repl_node: dict[str, BaseNode] = {}
         for node in query_graph.iterate_sorted_graph_nodes(
             graph_node_types={GraphNodeType.OFFLINE_STORE_INGEST_QUERY}
         ):
@@ -167,8 +168,8 @@ class OfflineStoreInfoInitializationService:
         return new_graph, node_name_map[node_name]
 
     async def get_offline_store_feature_tables_entity_ids(
-        self, feature: FeatureModel, entity_id_to_serving_name: Dict[ObjectId, str]
-    ) -> List[List[PydanticObjectId]]:
+        self, feature: FeatureModel, entity_id_to_serving_name: dict[ObjectId, str]
+    ) -> list[list[PydanticObjectId]]:
         """
         Get the primary entity of the offline feature tables for the feature. This doesn't require
         offline_store_info to be initialized beforehand.
@@ -202,7 +203,7 @@ class OfflineStoreInfoInitializationService:
         self,
         feature: FeatureModel,
         table_name_prefix: str,
-        entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
+        entity_id_to_serving_name: Optional[dict[ObjectId, str]] = None,
         dry_run: bool = False,
     ) -> OfflineStoreInfo:
         """
@@ -332,8 +333,8 @@ class OfflineStoreInfoInitializationService:
         return offline_store_info
 
     async def get_entity_join_steps_for_feature_table(
-        self, feature: FeatureModel, entity_id_to_serving_name: Dict[ObjectId, str]
-    ) -> List[EntityRelationshipInfo]:
+        self, feature: FeatureModel, entity_id_to_serving_name: dict[ObjectId, str]
+    ) -> list[EntityRelationshipInfo]:
         """
         Get entity join steps for feature table
 

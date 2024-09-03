@@ -4,7 +4,8 @@ Target API object
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Sequence, Union, cast
+from collections.abc import Sequence
+from typing import Any, ClassVar, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -147,12 +148,12 @@ class Target(
 
     @property
     @substitute_docstring(doc_template=ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def entities(self) -> List[Entity]:
+    def entities(self) -> list[Entity]:
         return self._get_entities()
 
     @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def primary_entity(self) -> List[Entity]:
+    def primary_entity(self) -> list[Entity]:
         return self._get_primary_entity()
 
     @property
@@ -187,7 +188,7 @@ class Target(
         return super().notnull()
 
     @property
-    def window(self) -> Optional[str]:
+    def window(self) -> str | None:
         """
         Returns the window of this target.
 
@@ -228,12 +229,12 @@ class Target(
     @typechecked
     def preview(
         self,
-        observation_set: Union[ObservationTable, pd.DataFrame],
+        observation_set: ObservationTable | pd.DataFrame,
     ) -> pd.DataFrame:
         return self._preview(observation_set=observation_set, url="/target/preview")
 
     @typechecked
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of an Target object. The dictionary
         contains the following keys:
@@ -269,8 +270,8 @@ class Target(
     @typechecked
     def compute_targets(
         self,
-        observation_table: Union[ObservationTable, pd.DataFrame],
-        serving_names_mapping: Optional[Dict[str, str]] = None,
+        observation_table: ObservationTable | pd.DataFrame,
+        serving_names_mapping: dict[str, str] | None = None,
         skip_entity_validation_checks: bool = False,
     ) -> pd.DataFrame:
         """
@@ -320,9 +321,9 @@ class Target(
     @typechecked
     def compute_target_table(
         self,
-        observation_table: Union[ObservationTable, pd.DataFrame],
+        observation_table: ObservationTable | pd.DataFrame,
         observation_table_name: str,
-        serving_names_mapping: Optional[Dict[str, str]] = None,
+        serving_names_mapping: dict[str, str] | None = None,
         skip_entity_validation_checks: bool = False,
     ) -> ObservationTable:
         """
@@ -389,7 +390,7 @@ class Target(
     @classmethod
     def list(
         cls,
-        include_id: Optional[bool] = False,
+        include_id: bool | None = False,
     ) -> pd.DataFrame:
         """
         List saved targets.
@@ -419,7 +420,7 @@ class Target(
         return TargetNamespace.get_by_id(id=target_namespace_id)
 
     @typechecked
-    def update_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: str | None) -> None:
         """
         Update target description
 
@@ -431,7 +432,7 @@ class Target(
         self.target_namespace.update_description(description=description)
 
     @typechecked
-    def update_version_description(self, description: Optional[str]) -> None:
+    def update_version_description(self, description: str | None) -> None:
         """
         Update target version description
 

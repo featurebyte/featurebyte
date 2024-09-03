@@ -5,7 +5,7 @@ This module contains as at aggregator base class
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import List, Optional, Type, cast
+from typing import cast
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.scd_view import SCDView
@@ -21,7 +21,7 @@ class BaseAsAtAggregator(BaseAggregator):
     """
 
     @property
-    def supported_views(self) -> List[Type[View]]:
+    def supported_views(self) -> list[type[View]]:
         return [SCDView]
 
     @property
@@ -36,14 +36,14 @@ class BaseAsAtAggregator(BaseAggregator):
         """
 
     @property
-    def not_supported_aggregation_methods(self) -> Optional[List[AggFunc]]:
+    def not_supported_aggregation_methods(self) -> list[AggFunc] | None:
         return [AggFunc.LATEST]
 
     def _validate_parameters(
         self,
         method: str,
-        value_column: Optional[str],
-        offset: Optional[str],
+        value_column: str | None,
+        offset: str | None,
         fill_value: OptionalScalar,
         skip_fill_na: bool,
     ) -> None:

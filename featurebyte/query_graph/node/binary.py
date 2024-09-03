@@ -3,7 +3,8 @@ This module contains binary operation node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
-from typing import ClassVar, List, Sequence, Tuple
+from collections.abc import Sequence
+from typing import ClassVar
 
 from typing_extensions import Literal
 
@@ -149,7 +150,7 @@ class DivideNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.DIV] = NodeType.DIV
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         _ = inputs
         return DBVarType.FLOAT
 
@@ -177,7 +178,7 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
 
     type: Literal[NodeType.POWER] = NodeType.POWER
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.FLOAT
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
@@ -197,11 +198,11 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
         return 2
 
     def _get_required_input_columns(
-        self, input_index: int, available_column_names: List[str]
+        self, input_index: int, available_column_names: list[str]
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: list[OperationStructure]) -> DBVarType:
         return DBVarType.BOOL
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
@@ -212,10 +213,10 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         input_var_name_expressions = self._assert_no_info_dict(node_inputs)
         left_op: str = input_var_name_expressions[0].as_input()
         if len(node_inputs) == 1:
@@ -235,10 +236,10 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: list[VarNameExpressionInfo],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
-    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+    ) -> tuple[list[StatementT], VarNameExpressionInfo]:
         if len(node_inputs) == 1:
             return super()._derive_user_defined_function_code(
                 node_inputs, var_name_generator, config

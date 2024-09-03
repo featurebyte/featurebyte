@@ -5,7 +5,7 @@ Generic function related SQLNode
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List, cast
+from typing import Any, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -22,7 +22,7 @@ class GenericFunctionNode(ExpressionNode):
 
     query_node_type = NodeType.GENERIC_FUNCTION
     function_name: str
-    function_parameters: List[Any]
+    function_parameters: list[Any]
 
     @property
     def sql(self) -> Expression:

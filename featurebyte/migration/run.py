@@ -7,7 +7,8 @@ from __future__ import annotations
 import asyncio
 import importlib
 import inspect
-from typing import Any, AsyncGenerator, Callable, Iterator, Optional, Set, cast
+from collections.abc import AsyncGenerator, Iterator
+from typing import Any, Callable, cast
 
 from celery import Celery
 from redis import Redis
@@ -78,8 +79,7 @@ def import_migration_modules() -> Iterator[Any]:
     # import migration service first so that submodules can be imported properly
     def _import_migration_modules(migration_service_dir: str) -> Iterator[Any]:
         importlib.import_module(migration_service_dir)
-        for mod in import_submodules(migration_service_dir).values():
-            yield mod
+        yield from import_submodules(migration_service_dir).values()
 
     yield from _import_migration_modules(f"{__name__.rsplit('.', 1)[0]}.service")
     additional_services_location = (
@@ -141,7 +141,7 @@ async def catalog_specific_migration_method_constructor(
     migrate_method_name: str,
     migration_marker: MigrationInfo,
     max_concurrency: int = 10,
-    app_container_config: Optional[AppContainerConfig] = None,
+    app_container_config: AppContainerConfig | None = None,
 ) -> Callable[[], Any]:
     """
     Decorator for catalog specific migration method. This decorator will loop through all the catalogs
@@ -173,7 +173,7 @@ async def catalog_specific_migration_method_constructor(
     """
 
     async def decorated_migrate_method() -> None:
-        tasks: Set[Any] = set()
+        tasks: set[Any] = set()
 
         # use raw query filter to retrieve all the catalogs (including deleted ones)
         with all_catalog_service.allow_use_raw_query_filter():
@@ -257,7 +257,7 @@ async def migrate_method_generator(
     temp_storage: Storage,
     schema_metadata: SchemaMetadataModel,
     include_data_warehouse_migrations: bool,
-    app_container_config: Optional[AppContainerConfig] = None,
+    app_container_config: AppContainerConfig | None = None,
 ) -> AsyncGenerator[tuple[BaseMigrationServiceMixin, Callable[..., Any]], None]:
     """
     Migrate method generator
@@ -372,7 +372,7 @@ async def run_migration(
     temp_storage: Storage,
     redis: Redis[Any],
     include_data_warehouse_migrations: bool = True,
-    app_container_config: Optional[AppContainerConfig] = None,
+    app_container_config: AppContainerConfig | None = None,
 ) -> None:
     """
     Run database migration

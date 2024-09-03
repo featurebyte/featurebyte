@@ -2,7 +2,7 @@
 FeatureListNamespace API payload scheme
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import Field
 
@@ -18,10 +18,10 @@ class FeatureListNamespaceModelResponse(FeatureListNamespaceModel):
     """
 
     readiness_distribution: FeatureReadinessDistribution
-    dtype_distribution: List[FeatureTypeFeatureCount]
-    primary_entity_ids: List[PydanticObjectId]
-    entity_ids: List[PydanticObjectId]
-    table_ids: List[PydanticObjectId]
+    dtype_distribution: list[FeatureTypeFeatureCount]
+    primary_entity_ids: list[PydanticObjectId]
+    entity_ids: list[PydanticObjectId]
+    table_ids: list[PydanticObjectId]
 
 
 class FeatureListNamespaceList(PaginationMixin):
@@ -29,7 +29,7 @@ class FeatureListNamespaceList(PaginationMixin):
     Paginated list of FeatureListNamespace
     """
 
-    data: List[FeatureListNamespaceModelResponse]
+    data: list[FeatureListNamespaceModelResponse]
 
 
 class FeatureListNamespaceUpdate(FeatureByteBaseModel):
@@ -47,6 +47,6 @@ class FeatureListNamespaceServiceUpdate(
     FeatureListNamespace service update schema
     """
 
-    feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
-    deployed_feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    feature_list_ids: Optional[list[PydanticObjectId]] = Field(default=None)
+    deployed_feature_list_ids: Optional[list[PydanticObjectId]] = Field(default=None)
     default_feature_list_id: Optional[PydanticObjectId] = Field(default=None)

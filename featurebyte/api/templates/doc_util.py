@@ -4,7 +4,7 @@ Utility functions for docstring templating
 
 import textwrap
 from functools import wraps
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from featurebyte.typing import Func
 
@@ -17,7 +17,7 @@ def substitute_docstring(
     raises: Optional[str] = None,
     examples: Optional[str] = None,
     see_also: Optional[str] = None,
-    format_kwargs: Optional[Dict[str, str]] = None,
+    format_kwargs: Optional[dict[str, str]] = None,
 ) -> Func:
     """
     Decorator to substitute the docstring of a function

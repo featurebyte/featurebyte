@@ -2,7 +2,7 @@
 Test view class
 """
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -33,7 +33,7 @@ class SimpleTestView(View):
 
     _series_class: ClassVar[Any] = SimpleTestViewColumn
 
-    columns_info: List[ColumnInfo] = []
+    columns_info: list[ColumnInfo] = []
     node_name: str = "random_node"
     tabular_source: TabularSource = TabularSource(
         feature_store_id=PydanticObjectId(ObjectId("6332f9651050ee7d1234660d")),
@@ -52,7 +52,7 @@ class SimpleTestView(View):
     )
 
     join_col: str = ""
-    excluded_columns_override: Optional[List[str]] = None
+    excluded_columns_override: Optional[list[str]] = None
 
     @property
     def node(self):
@@ -62,13 +62,13 @@ class SimpleTestView(View):
             return node
         return super().node
 
-    def protected_attributes(self) -> List[str]:
+    def protected_attributes(self) -> list[str]:
         return []
 
     def get_join_column(self) -> str:
         return self.join_col
 
-    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
         if "exclude" in kwargs:
             return {}
         return super().model_dump(**kwargs)

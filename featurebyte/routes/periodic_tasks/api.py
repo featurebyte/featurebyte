@@ -4,8 +4,6 @@ Periodic Task API routes
 
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import APIRouter, Request
 
 from featurebyte.models.periodic_task import PeriodicTask
@@ -64,10 +62,10 @@ class PeriodicTaskRouter(BaseRouter):
         request: Request,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
-        sort_by: Optional[str] = SortByQuery,
-        sort_dir: Optional[SortDir] = SortDirQuery,
-        search: Optional[str] = SearchQuery,
-        name: Optional[str] = NameQuery,
+        sort_by: str | None = SortByQuery,
+        sort_dir: SortDir | None = SortDirQuery,
+        search: str | None = SearchQuery,
+        name: str | None = NameQuery,
     ) -> PeriodicTaskList:
         """
         List Periodic Tasks

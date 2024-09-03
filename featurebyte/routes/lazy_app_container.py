@@ -4,7 +4,7 @@ Lazy app container functions the same as the app_container, but only initializes
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any
 
 from bson import ObjectId
 from celery import Celery
@@ -21,8 +21,8 @@ from featurebyte.storage import Storage
 
 def get_or_build_instance(
     key: str,
-    class_def_mapping: Dict[str, ClassDefinition],
-    instance_map: Dict[str, Any],
+    class_def_mapping: dict[str, ClassDefinition],
+    instance_map: dict[str, Any],
 ) -> Any:
     """
     Get or build an instance for a given key.
@@ -53,7 +53,7 @@ def get_or_build_instance(
     return instance
 
 
-def build_class_with_deps(class_definition: ClassDefinition, instance_map: Dict[str, Any]) -> Any:
+def build_class_with_deps(class_definition: ClassDefinition, instance_map: dict[str, Any]) -> Any:
     """
     Build a class with the given dependencies.
 
@@ -90,20 +90,20 @@ class LazyAppContainer:
     def __init__(
         self,
         app_container_config: AppContainerConfig,
-        user: Optional[Any] = None,
-        temp_storage: Optional[Storage] = None,
-        celery: Optional[Celery] = None,
-        redis: Optional[Redis[Any]] = None,
-        storage: Optional[Storage] = None,
-        catalog_id: Optional[ObjectId] = None,
-        persistent: Optional[Persistent] = None,
-        instance_map: Optional[Dict[str, Any]] = None,
+        user: Any | None = None,
+        temp_storage: Storage | None = None,
+        celery: Celery | None = None,
+        redis: Redis[Any] | None = None,
+        storage: Storage | None = None,
+        catalog_id: ObjectId | None = None,
+        persistent: Persistent | None = None,
+        instance_map: dict[str, Any] | None = None,
     ):
         self.app_container_config = app_container_config
 
         # Used to cache instances if they've already been built.
         # Pre-load with some default deps if they're not provided.
-        self.instance_map: Dict[str, Any] = (
+        self.instance_map: dict[str, Any] = (
             {
                 "catalog_id": catalog_id,
                 "celery": celery,
@@ -138,12 +138,12 @@ class LazyAppContainer:
         return instance
 
     @staticmethod
-    def _get_key_to_use(key: Union[str, Type[Any]]) -> str:
+    def _get_key_to_use(key: str | type[Any]) -> str:
         if isinstance(key, str):
             return key
         return _get_class_name(key.__name__)
 
-    def get(self, key: Union[str, Type[Any]]) -> Any:
+    def get(self, key: str | type[Any]) -> Any:
         """
         Get an instance from the container.
 
@@ -172,7 +172,7 @@ class LazyAppContainer:
         """
         self.override_instances_for_test({key: instance})
 
-    def override_instances_for_test(self, instances_to_update: Dict[str, Any]) -> None:
+    def override_instances_for_test(self, instances_to_update: dict[str, Any]) -> None:
         """
         Override multiple instances for testing purposes.
 
@@ -183,7 +183,7 @@ class LazyAppContainer:
         """
         self.instance_map.update(instances_to_update)
 
-    def invalidate_dep_for_test(self, key: Union[str, Type[Any]]) -> None:
+    def invalidate_dep_for_test(self, key: str | type[Any]) -> None:
         """
         Invalidate a dependency for testing purposes. This will remove the dependency from the instance map, and
         force the dep to be re-created when it's next invoked. This is useful after we have overridden an instance

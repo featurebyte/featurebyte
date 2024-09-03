@@ -2,8 +2,6 @@
 Feature list migration service
 """
 
-from typing import Dict, List
-
 from bson import ObjectId
 
 from featurebyte.logging import get_logger
@@ -53,7 +51,7 @@ class FeatureListMigrationServiceV5(BaseFeatureListMigrationService):
     - primary_entity_ids
     """
 
-    async def batch_preprocess_document(self, documents: List[Document]) -> List[Document]:
+    async def batch_preprocess_document(self, documents: list[Document]) -> list[Document]:
         """
         Preprocess the documents before migration
 
@@ -71,7 +69,7 @@ class FeatureListMigrationServiceV5(BaseFeatureListMigrationService):
             all_feature_ids.update(document["feature_ids"])
 
         # get all feature first to reduce the number of queries
-        features: List[FeatureModel] = [
+        features: list[FeatureModel] = [
             feature_model
             async for feature_model in self.feature_service.list_documents_iterator(
                 query_filter={"_id": {"$in": list(all_feature_ids)}}
@@ -130,7 +128,7 @@ class FeatureListMigrationServiceV6(BaseFeatureListMigrationService):
     - entity_ids
     """
 
-    async def batch_preprocess_document(self, documents: List[Document]) -> List[Document]:
+    async def batch_preprocess_document(self, documents: list[Document]) -> list[Document]:
         """
         Preprocess the documents before migration
 
@@ -148,7 +146,7 @@ class FeatureListMigrationServiceV6(BaseFeatureListMigrationService):
             all_feature_ids.update(document["feature_ids"])
 
         # get all feature first to reduce the number of queries
-        feature_id_to_feature: Dict[ObjectId, FeatureModel] = {
+        feature_id_to_feature: dict[ObjectId, FeatureModel] = {
             feature.id: feature
             async for feature in self.feature_service.list_documents_iterator(
                 query_filter={"_id": {"$in": list(all_feature_ids)}}

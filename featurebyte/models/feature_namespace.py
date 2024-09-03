@@ -4,8 +4,6 @@ This module contains FeatureNamespace related models
 
 from __future__ import annotations
 
-from typing import List
-
 import pymongo
 from pydantic import Field, field_validator
 
@@ -47,14 +45,14 @@ class BaseFeatureNamespaceModel(FeatureByteCatalogBaseDocumentModel):
     """
 
     default_version_mode: DefaultVersionMode = Field(default=DefaultVersionMode.AUTO, frozen=True)
-    entity_ids: List[PydanticObjectId] = Field(frozen=True)
+    entity_ids: list[PydanticObjectId] = Field(frozen=True)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
         """
 
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},
@@ -110,10 +108,10 @@ class FeatureNamespaceModel(BaseFeatureNamespaceModel):
     readiness: FeatureReadiness = Field(frozen=True)
 
     # list of IDs attached to this feature namespace or target namespace
-    feature_ids: List[PydanticObjectId] = Field(frozen=True)
+    feature_ids: list[PydanticObjectId] = Field(frozen=True)
     default_feature_id: PydanticObjectId = Field(frozen=True)
-    online_enabled_feature_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
-    table_ids: List[PydanticObjectId] = Field(frozen=True)
+    online_enabled_feature_ids: list[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    table_ids: list[PydanticObjectId] = Field(frozen=True)
 
     # pydantic validators
     _sort_ids_validator = field_validator("feature_ids", "entity_ids", "table_ids")(

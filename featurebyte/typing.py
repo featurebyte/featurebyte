@@ -2,7 +2,8 @@
 Common utilities related to typing
 """
 
-from typing import Any, Callable, Optional, Sequence, Type, Union, cast
+from collections.abc import Sequence
+from typing import Any, Callable, Optional, Union, cast
 
 import pandas as pd
 from pandas.api.types import is_scalar as pd_is_scalar
@@ -95,7 +96,7 @@ def get_or_default(value: Optional[Any], default_value: Any) -> Any:
     return default_value
 
 
-def validate_type_is(obj: Any, obj_name: str, expected_type: Type[Any]) -> None:
+def validate_type_is(obj: Any, obj_name: str, expected_type: type[Any]) -> None:
     """
     Check that obj is of type expected_type. If not, raise a TypeError.
 

@@ -2,8 +2,6 @@
 Test utils for materialized tables
 """
 
-from typing import List
-
 from sqlglot import parse_one
 
 from featurebyte import SourceType
@@ -46,7 +44,7 @@ def check_location_valid(table_details: TableDetails, session: BaseSession):
     }
 
 
-def check_materialized_table_preview_methods(table, expected_columns: List[str], number_of_rows=15):
+def check_materialized_table_preview_methods(table, expected_columns: list[str], number_of_rows=15):
     """
     Check that preview, sample and describe methods work on materialized tables
     """

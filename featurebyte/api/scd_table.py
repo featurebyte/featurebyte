@@ -4,7 +4,7 @@ SCDTable class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, model_validator
@@ -67,24 +67,24 @@ class SCDTable(TableApiObject):
     _update_schema_class: ClassVar[Any] = SCDTableUpdate
     _create_schema_class: ClassVar[Any] = SCDTableCreate
     _get_schema: ClassVar[Any] = SCDTableModel
-    _table_data_class: ClassVar[Type[AllTableDataT]] = SCDTableData
+    _table_data_class: ClassVar[type[AllTableDataT]] = SCDTableData
 
     # pydantic instance variable (public)
     type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
 
     # pydantic instance variable (internal use)
-    internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+    internal_default_feature_job_setting: FeatureJobSetting | None = Field(
         alias="default_feature_job_setting", default=None
     )
     internal_natural_key_column: StrictStr = Field(alias="natural_key_column")
     internal_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
-    internal_surrogate_key_column: Optional[StrictStr] = Field(
+    internal_surrogate_key_column: StrictStr | None = Field(
         alias="surrogate_key_column", default=None
     )
-    internal_end_timestamp_column: Optional[StrictStr] = Field(
+    internal_end_timestamp_column: StrictStr | None = Field(
         alias="end_timestamp_column", default=None
     )
-    internal_current_flag_column: Optional[StrictStr] = Field(
+    internal_current_flag_column: StrictStr | None = Field(
         alias="current_flag_column", default=None
     )
 
@@ -109,8 +109,8 @@ class SCDTable(TableApiObject):
     def get_view(
         self,
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
-        drop_column_names: Optional[List[str]] = None,
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
+        drop_column_names: list[str] | None = None,
+        column_cleaning_operations: list[ColumnCleaningOperation] | None = None,
     ) -> SCDView:
         """
         Gets an SCDView object from a SCDTable object that represents a Slowly Changing Dimension (SCD) table.
@@ -230,11 +230,11 @@ class SCDTable(TableApiObject):
     def get_change_view(
         self,
         track_changes_column: str,
-        default_feature_job_setting: Optional[FeatureJobSetting] = None,
-        prefixes: Optional[Tuple[Optional[str], Optional[str]]] = None,
+        default_feature_job_setting: FeatureJobSetting | None = None,
+        prefixes: tuple[str | None, str | None] | None = None,
         view_mode: Literal[ViewMode.AUTO, ViewMode.MANUAL] = ViewMode.AUTO,
-        drop_column_names: Optional[List[str]] = None,
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
+        drop_column_names: list[str] | None = None,
+        column_cleaning_operations: list[ColumnCleaningOperation] | None = None,
     ) -> ChangeView:
         """
         Gets a ChangeView from a Slowly Changing Dimension (SCD) table. The view offers a method to examine alterations
@@ -365,7 +365,7 @@ class SCDTable(TableApiObject):
         )
 
     @property
-    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+    def default_feature_job_setting(self) -> FeatureJobSetting | None:
         """
         Returns the default feature job setting for the SCDTable.
 
@@ -409,7 +409,7 @@ class SCDTable(TableApiObject):
             return self.internal_effective_timestamp_column
 
     @property
-    def surrogate_key_column(self) -> Optional[str]:
+    def surrogate_key_column(self) -> str | None:
         """
         Returns the name of the column representing the surrogate key of a Slowly Changing Dimension (SCD) table.
         The column is an artificial key assigned by the system and is used as a unique identifier assigned to each
@@ -426,7 +426,7 @@ class SCDTable(TableApiObject):
             return self.internal_surrogate_key_column
 
     @property
-    def end_timestamp_column(self) -> Optional[str]:
+    def end_timestamp_column(self) -> str | None:
         """
         Returns the name of the column representing the end (or expiration) timestamp of a Slowly Changing Dimension
         (SCD) table. This column is used to indicate when a row stopped to be active. As the column is not intended to
@@ -442,7 +442,7 @@ class SCDTable(TableApiObject):
             return self.internal_end_timestamp_column
 
     @property
-    def current_flag_column(self) -> Optional[str]:
+    def current_flag_column(self) -> str | None:
         """
         Returns the name of the column representing the current flag of a Slowly Changing Dimension (SCD) table.
         This column is used to indicate if a row is currently active in the Data Warehouse. As the column is not
@@ -459,7 +459,7 @@ class SCDTable(TableApiObject):
             return self.internal_current_flag_column
 
     @property
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         """
         Timestamp column name of the SCDTable
 

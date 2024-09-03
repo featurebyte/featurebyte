@@ -5,7 +5,6 @@ OfflineStoreIngestQuery object stores the offline store ingest query for a featu
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import Dict, List, Optional, Tuple
 
 from bson import ObjectId
 from pydantic import Field, field_validator
@@ -66,7 +65,7 @@ class OfflineStoreInfoMetadata(OfflineStoreMetadata):
     """
 
     output_column_name: str
-    primary_entity_ids: List[PydanticObjectId]
+    primary_entity_ids: list[PydanticObjectId]
 
 
 class OfflineStoreEntityInfo(ColumnSpec):
@@ -88,8 +87,8 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # aggregation nodes info of the offline store ingest query graph
     graph: QueryGraphModel
     node_name: str
-    ref_node_name: Optional[str] = Field(default=None)
-    aggregation_nodes_info: List[AggregationNodeInfo]
+    ref_node_name: str | None = Field(default=None)
+    aggregation_nodes_info: list[AggregationNodeInfo]
 
     # table related info
     offline_store_table_name: str
@@ -100,9 +99,9 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # primary entity ids of the offline store ingest query graph
     # feature job setting of the offline store ingest query graph
     # whether the offline store ingest query graph has time-to-live (TTL) component
-    primary_entity_ids: List[PydanticObjectId]
-    primary_entity_dtypes: List[DBVarType]
-    feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    primary_entity_ids: list[PydanticObjectId]
+    primary_entity_dtypes: list[DBVarType]
+    feature_job_setting: FeatureJobSetting | None = Field(default=None)
     has_ttl: bool
 
     # pydantic validators
@@ -177,8 +176,8 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
         )
 
     def get_primary_entity_info(
-        self, entity_id_to_serving_name: Dict[PydanticObjectId, str]
-    ) -> List[OfflineStoreEntityInfo]:
+        self, entity_id_to_serving_name: dict[PydanticObjectId, str]
+    ) -> list[OfflineStoreEntityInfo]:
         """
         Get primary entity info of the offline store ingest query graph
 
@@ -204,7 +203,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
             )
         return output
 
-    def ingest_graph_and_node(self) -> Tuple[QueryGraphModel, Node]:
+    def ingest_graph_and_node(self) -> tuple[QueryGraphModel, Node]:
         """
         Construct graph and node for generating offline store ingest SQL query
 
@@ -268,7 +267,7 @@ class UserDefinedFunctionInfo(FeatureByteBaseModel):
     function_name: str
     input_var_prefix: str
     request_input_var_prefix: str
-    sql_inputs_info: List[SQLInputArgumentInfo] = Field(default_factory=list)
+    sql_inputs_info: list[SQLInputArgumentInfo] = Field(default_factory=list)
     codes: str = Field(default="")
 
 
@@ -284,21 +283,21 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
 
     # map the original node name to the decomposed node name
     node_name: str
-    node_name_map: Dict[str, str]
+    node_name_map: dict[str, str]
     is_decomposed: bool
 
     # if the feature's or target's query graph is not decomposed, metadata will be populated.
-    metadata: Optional[OfflineStoreInfoMetadata] = Field(default=None)
+    metadata: OfflineStoreInfoMetadata | None = Field(default=None)
 
     # list of on demand feature codes that are used by the feature or target when the feature is online-enabled
-    serving_names_info: List[ServingNameInfo] = Field(default_factory=list)
-    time_to_live_in_secs: Optional[int] = Field(default=None)
-    null_filling_value: Optional[Scalar] = Field(default=None)
-    odfv_info: Optional[OnDemandFeatureViewInfo] = Field(default=None)
-    udf_info: Optional[UserDefinedFunctionInfo] = Field(default=None)
+    serving_names_info: list[ServingNameInfo] = Field(default_factory=list)
+    time_to_live_in_secs: int | None = Field(default=None)
+    null_filling_value: Scalar | None = Field(default=None)
+    odfv_info: OnDemandFeatureViewInfo | None = Field(default=None)
+    udf_info: UserDefinedFunctionInfo | None = Field(default=None)
 
     @property
-    def time_to_live_delta(self) -> Optional[timedelta]:
+    def time_to_live_delta(self) -> timedelta | None:
         """
         Time-to-live (TTL) in timedelta
 
@@ -315,10 +314,10 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         self,
         feature_versioned_name: str,
         feature_dtype: DBVarType,
-        feature_job_settings: List[FeatureJobSetting],
+        feature_job_settings: list[FeatureJobSetting],
         feature_id: ObjectId,
         has_ttl: bool,
-        null_filling_value: Optional[Scalar] = None,
+        null_filling_value: Scalar | None = None,
     ) -> None:
         """
         Initialize offline store info by populating the on demand feature view info and user defined function info
@@ -387,7 +386,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             udf_info.codes = udf_code_state.generate_code(to_sql=True)
             self.udf_info = udf_info
 
-    def extract_offline_store_ingest_query_graphs(self) -> List[OfflineStoreIngestQueryGraph]:
+    def extract_offline_store_ingest_query_graphs(self) -> list[OfflineStoreIngestQueryGraph]:
         """
         Extract offline store ingest query graphs from the feature or target query graph
 
@@ -426,7 +425,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         input_df_name: str = "inputs",
         output_df_name: str = "df",
         function_name: str = "on_demand_feature_view",
-        ttl_seconds: Optional[int] = None,
+        ttl_seconds: int | None = None,
     ) -> str:
         """
         Extract on demand view graphs from the feature or target query graph

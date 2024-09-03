@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import operator
 from http import HTTPStatus
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Callable, ClassVar, TypeVar
 
 import pandas as pd
 from bson import ObjectId
@@ -44,7 +44,7 @@ logger = get_logger(__name__)
 
 
 def _get_cache_collection_name(
-    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel, Type[ApiObjectT]],
+    obj: ApiObjectT | FeatureByteBaseDocumentModel | type[ApiObjectT],
 ) -> str:
     if hasattr(obj, "_get_schema"):
         collection_name = obj._get_schema.Settings.collection_name
@@ -54,7 +54,7 @@ def _get_cache_collection_name(
 
 
 def get_api_object_cache_key(
-    obj: Union[ApiObjectT, FeatureByteBaseDocumentModel], *args: Any, **kwargs: Any
+    obj: ApiObjectT | FeatureByteBaseDocumentModel, *args: Any, **kwargs: Any
 ) -> Any:
     """
     Construct cache key for a given document model object
@@ -84,11 +84,11 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
     # class variables
     _route: ClassVar[str] = ""
-    _update_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
+    _update_schema_class: ClassVar[type[FeatureByteBaseModel] | None] = None
     _list_schema: ClassVar[Any] = FeatureByteBaseDocumentModel
     _get_schema: ClassVar[Any] = FeatureByteBaseDocumentModel
     _list_fields: ClassVar[Any] = ["name", "created_at"]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = []
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = []
     _cache: ClassVar[Any] = TTLCache(maxsize=1024, ttl=1)  # share cache across all the subclasses
 
     def _repr_html_(self) -> str:
@@ -182,10 +182,10 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
     @classmethod
     def _get_object_dict_by_name(
-        cls: Type[ApiObjectT],
+        cls: type[ApiObjectT],
         name: str,
-        other_params: Optional[dict[str, Any]] = None,
-        select_func: Optional[Callable[[list[dict[str, Any]]], dict[str, Any]]] = None,
+        other_params: dict[str, Any] | None = None,
+        select_func: Callable[[list[dict[str, Any]]], dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         client = Configurations().get_client()
         other_params = other_params or {}
@@ -204,14 +204,14 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         raise RecordRetrievalException(response, "Failed to retrieve the specified object.")
 
     @classmethod
-    def _get_object_dict_by_id(cls: Type[ApiObjectT], id_value: ObjectId) -> dict[str, Any]:
+    def _get_object_dict_by_id(cls: type[ApiObjectT], id_value: ObjectId) -> dict[str, Any]:
         object_dict = get_api_object_by_id(route=cls._route, id_value=id_value)
         cls._update_cache(object_dict)
         return object_dict
 
     @classmethod
     def _get(
-        cls: Type[ApiObjectT], name: str, other_params: Optional[dict[str, Any]] = None
+        cls: type[ApiObjectT], name: str, other_params: dict[str, Any] | None = None
     ) -> ApiObjectT:
         return cls(
             **cls._get_object_dict_by_name(name=name, other_params=other_params),
@@ -220,7 +220,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         )
 
     @classmethod
-    def get(cls: Type[ApiObjectT], name: str) -> ApiObjectT:
+    def get(cls: type[ApiObjectT], name: str) -> ApiObjectT:
         """
         Retrieve the object from the persistent data store given the object's name.
 
@@ -264,7 +264,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
     @classmethod
     def from_persistent_object_dict(
-        cls: Type[ApiObjectT], object_dict: dict[str, Any]
+        cls: type[ApiObjectT], object_dict: dict[str, Any]
     ) -> ApiObjectT:
         """
         Construct the object from dictionary stored at the persistent
@@ -283,7 +283,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
     @classmethod
     def _get_by_id(
-        cls: Type[ApiObjectT],
+        cls: type[ApiObjectT],
         id: ObjectId,
         use_cache: bool = True,
     ) -> ApiObjectT:
@@ -297,7 +297,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
     @classmethod
     def get_by_id(
-        cls: Type[ApiObjectT],
+        cls: type[ApiObjectT],
         id: ObjectId,
     ) -> ApiObjectT:
         """
@@ -347,7 +347,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         return cls._get_by_id(id)
 
     @classmethod
-    def list(cls, include_id: Optional[bool] = True) -> DataFrame:
+    def list(cls, include_id: bool | None = True) -> DataFrame:
         """
         List objects name stored in the persistent data store.
 
@@ -390,7 +390,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
 
     @classmethod
     def _list(
-        cls, include_id: Optional[bool] = False, params: Optional[Dict[str, Any]] = None
+        cls, include_id: bool | None = False, params: dict[str, Any] | None = None
     ) -> DataFrame:
         """
         List the object name store at the persistent
@@ -412,10 +412,10 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
     @typechecked
     def update(
         self,
-        update_payload: Dict[str, Any],
+        update_payload: dict[str, Any],
         allow_update_local: bool,
         add_internal_prefix: bool = False,
-        url: Optional[str] = None,
+        url: str | None = None,
         skip_update_schema_check: bool = False,
     ) -> None:
         """
@@ -476,7 +476,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
             raise RecordUpdateException(response=response)
 
     @staticmethod
-    def _prepare_audit_record(record: Dict[str, Any]) -> pd.DataFrame:
+    def _prepare_audit_record(record: dict[str, Any]) -> pd.DataFrame:
         field_name = "field_name"
         previous = pd.json_normalize(record["previous_values"]).melt(var_name=field_name)
         current = pd.json_normalize(record["current_values"]).melt(var_name=field_name)
@@ -514,7 +514,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         return pd.concat(audit_records).reset_index(drop=True)
 
     @typechecked
-    def _get_audit_history(self, field_name: str) -> List[Dict[str, Any]]:
+    def _get_audit_history(self, field_name: str) -> list[dict[str, Any]]:
         """
         Retrieve field audit history
 
@@ -540,7 +540,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         raise RecordRetrievalException(response)
 
     @typechecked
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Construct summary info of the object. This method is only available for objects that are saved in the
         persistent data store.
@@ -569,7 +569,7 @@ class ApiObject(FeatureByteBaseDocumentModel, AsyncMixin):
         raise RecordRetrievalException(response, "Failed to retrieve object info.")
 
     @typechecked
-    def update_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: str | None) -> None:
         """
         Update description of an object
 

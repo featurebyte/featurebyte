@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Anonymous, Expression
@@ -68,7 +67,7 @@ class TilingAggregator(ABC):
         """Whether the aggregation depends on the ordering of values in the data"""
 
     @abstractmethod
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         """Construct the expressions required for computing tiles
 
         Parameters
@@ -172,7 +171,7 @@ class OrderDependentAggregator(TilingAggregator, ABC):
 class CountAggregator(OrderIndependentAggregator):
     """Aggregator that computes the row count"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         _ = col
         return [
             self.construct_numeric_tile_spec(
@@ -188,7 +187,7 @@ class CountAggregator(OrderIndependentAggregator):
 class AvgAggregator(OrderIndependentAggregator):
     """Aggregator that computes the average"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         assert col is not None
         tile_specs = [
             self.construct_numeric_tile_spec(
@@ -212,7 +211,7 @@ class AvgAggregator(OrderIndependentAggregator):
 class SumAggregator(OrderIndependentAggregator):
     """Aggregator that computes the sum"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         assert col is not None
         return [
             self.construct_numeric_tile_spec(
@@ -228,7 +227,7 @@ class SumAggregator(OrderIndependentAggregator):
 class MinAggregator(OrderIndependentAggregator):
     """Aggregator that computes the minimum value"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         assert col is not None
         return [
             self.construct_numeric_tile_spec(
@@ -244,7 +243,7 @@ class MinAggregator(OrderIndependentAggregator):
 class MaxAggregator(OrderIndependentAggregator):
     """Aggregator that computes the maximum value"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         assert col is not None
         return [
             self.construct_numeric_tile_spec(
@@ -260,7 +259,7 @@ class MaxAggregator(OrderIndependentAggregator):
 class NACountAggregator(OrderIndependentAggregator):
     """Aggregator that counts the number of missing values"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         assert col is not None
         col_is_null = expressions.Is(
             this=quoted_identifier(col.name), expression=expressions.Null()
@@ -280,7 +279,7 @@ class NACountAggregator(OrderIndependentAggregator):
 class StdAggregator(OrderIndependentAggregator):
     """Aggregator that computes the standard deviation"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         assert col is not None
         col_expr = quoted_identifier(col.name)
         sum_value_squared = expressions.Sum(
@@ -309,7 +308,7 @@ class StdAggregator(OrderIndependentAggregator):
 class VectorMaxAggregator(OrderIndependentAggregator):
     """Aggregator the max of a vector"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         assert col is not None
         max_expression = expressions.Anonymous(
             this="VECTOR_AGGREGATE_MAX", expressions=[quoted_identifier(col.name)]
@@ -324,7 +323,7 @@ class VectorMaxAggregator(OrderIndependentAggregator):
 class VectorAvgAggregator(OrderIndependentAggregator):
     """Aggregator the average of a vector"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         assert col is not None
         sum_expression = expressions.Anonymous(
             this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
@@ -346,7 +345,7 @@ class VectorAvgAggregator(OrderIndependentAggregator):
 class VectorSumAggregator(OrderIndependentAggregator):
     """Aggregator the sum of a vector"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         assert col is not None
         sum_expression = expressions.Anonymous(
             this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
@@ -363,7 +362,7 @@ class VectorSumAggregator(OrderIndependentAggregator):
 class LatestValueAggregator(OrderDependentAggregator):
     """Aggregator that computes the latest value"""
 
-    def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
+    def tile(self, col: InputColumn | None, agg_id: str) -> list[TileSpec]:
         assert col is not None
         return [
             TileSpec(
@@ -380,7 +379,7 @@ class LatestValueAggregator(OrderDependentAggregator):
 
 
 def get_aggregator(
-    agg_name: AggFunc, adapter: BaseAdapter, parent_dtype: Optional[DBVarType]
+    agg_name: AggFunc, adapter: BaseAdapter, parent_dtype: DBVarType | None
 ) -> TilingAggregator:
     """
     Retrieves an aggregator class given the aggregation name.

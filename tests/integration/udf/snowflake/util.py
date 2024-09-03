@@ -2,12 +2,12 @@
 Snowflake UDF test util
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import numpy as np
 
 
-def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
+def to_object(obj_dict: Optional[dict[Any, Any]]) -> str:
     """
     Returns an expression converts the dict to an object in Snowflake
 
@@ -36,7 +36,7 @@ def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
     return f"OBJECT_CONSTRUCT_KEEP_NULL({', '.join(args)})"
 
 
-def to_array(array_obj: Optional[List[Any]]) -> str:
+def to_array(array_obj: Optional[list[Any]]) -> str:
     """
     Returns an expression converts the list to an array in Snowflake
 

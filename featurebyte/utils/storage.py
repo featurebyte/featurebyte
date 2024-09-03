@@ -5,9 +5,9 @@ Utility functions for file storage
 from __future__ import annotations
 
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator
 
 from aiobotocore.client import AioBaseClient
 from aiobotocore.session import get_session

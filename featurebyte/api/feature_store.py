@@ -4,7 +4,7 @@ FeatureStore class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar
 
 from bson import ObjectId
 from pandas import DataFrame
@@ -34,17 +34,17 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
     _route: ClassVar[str] = "/feature_store"
     _list_schema: ClassVar[Any] = FeatureStoreModel
     _get_schema: ClassVar[Any] = FeatureStoreModel
-    _list_fields: ClassVar[List[str]] = ["name", "type", "created_at"]
+    _list_fields: ClassVar[list[str]] = ["name", "type", "created_at"]
 
     # optional credential parameters
-    database_credential: Optional[DatabaseCredential] = None
-    storage_credential: Optional[StorageCredential] = None
+    database_credential: DatabaseCredential | None = None
+    storage_credential: StorageCredential | None = None
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = FeatureStoreCreate(**self.model_dump(by_alias=True))
         return data.json_dict()
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of the feature store represented by the
         FeatureStore object. The dictionary contains the following keys:
@@ -78,8 +78,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         name: str,
         source_type: SourceType,
         details: DatabaseDetails,
-        database_credential: Optional[DatabaseCredential] = None,
-        storage_credential: Optional[StorageCredential] = None,
+        database_credential: DatabaseCredential | None = None,
+        storage_credential: StorageCredential | None = None,
     ) -> FeatureStore:
         """
         Creates and saves a Feature Store object to enable FeatureByte to work with a data warehouse. FeatureByte
@@ -141,8 +141,8 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         name: str,
         source_type: SourceType,
         details: DatabaseDetails,
-        database_credential: Optional[DatabaseCredential] = None,
-        storage_credential: Optional[StorageCredential] = None,
+        database_credential: DatabaseCredential | None = None,
+        storage_credential: StorageCredential | None = None,
     ) -> FeatureStore:
         """
         Create and return an instance of a feature store. If a feature store with the same name already exists,
@@ -255,7 +255,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         return cls._get_by_id(id=id)
 
     @classmethod
-    def list(cls, include_id: Optional[bool] = True) -> DataFrame:
+    def list(cls, include_id: bool | None = True) -> DataFrame:
         """
         Returns a DataFrame that lists the feature stores by their names, types and creation dates.
 
@@ -310,9 +310,7 @@ class FeatureStore(FeatureStoreModel, SavableApiObject, DeletableApiObject):
         """
         self._delete()
 
-    def update_details(
-        self, http_path: Optional[str] = None, warehouse: Optional[str] = None
-    ) -> None:
+    def update_details(self, http_path: str | None = None, warehouse: str | None = None) -> None:
         """
         Updates the details of the feature store.
 

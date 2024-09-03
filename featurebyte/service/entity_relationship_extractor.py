@@ -4,8 +4,9 @@ Entity Relationship Extractor Service
 
 import itertools
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence
+from typing import Optional
 
 from bson import ObjectId
 
@@ -39,7 +40,7 @@ class ServingEntityEnumeration:
     entity_ancestor_descendant_mapper: EntityAncestorDescendantMapper
 
     @classmethod
-    def create(cls, relationships_info: List[EntityRelationshipInfo]) -> "ServingEntityEnumeration":
+    def create(cls, relationships_info: list[EntityRelationshipInfo]) -> "ServingEntityEnumeration":
         """
         Create serving entity enumeration from entity relationships info
 
@@ -58,7 +59,7 @@ class ServingEntityEnumeration:
             )
         )
 
-    def reduce_entity_ids(self, entity_ids: Sequence[ObjectId]) -> List[ObjectId]:
+    def reduce_entity_ids(self, entity_ids: Sequence[ObjectId]) -> list[ObjectId]:
         """
         Reduce entity IDs to only contain the given entity IDs that are not ancestors of any other entity IDs
 
@@ -73,7 +74,7 @@ class ServingEntityEnumeration:
         """
         return self.entity_ancestor_descendant_mapper.reduce_entity_ids(entity_ids=entity_ids)
 
-    def generate(self, entity_ids: List[ObjectId]) -> List[List[ObjectId]]:
+    def generate(self, entity_ids: list[ObjectId]) -> list[list[ObjectId]]:
         """
         Enumerate all serving entity IDs from the given entity IDs
 
@@ -122,7 +123,7 @@ class EntityRelationshipExtractorService:
 
     async def _extract_ancestors_or_descendants(
         self, entity_ids: Sequence[ObjectId], is_ancestor: bool
-    ) -> List[ObjectId]:
+    ) -> list[ObjectId]:
         """
         Extract ancestors or descendants of the given entity IDs
 
@@ -149,8 +150,8 @@ class EntityRelationshipExtractorService:
         return list(output_entity_ids)
 
     async def _extract_relationship_map(
-        self, anchored_entity_ids: List[ObjectId], to_descendant: bool
-    ) -> Dict[ObjectId, List[EntityRelationshipData]]:
+        self, anchored_entity_ids: list[ObjectId], to_descendant: bool
+    ) -> dict[ObjectId, list[EntityRelationshipData]]:
         """
         Extract parent-child or child-parent entity relationship map from anchored entity IDs
         to its ancestors or descendants. If to_descendant is True, the parent-child relationship map
@@ -168,7 +169,7 @@ class EntityRelationshipExtractorService:
         -------
         Dict[ObjectId, List[EntityRelationshipData]]
         """
-        output_map: Dict[ObjectId, List[EntityRelationshipData]] = defaultdict(list)
+        output_map: dict[ObjectId, list[EntityRelationshipData]] = defaultdict(list)
         entity_id_key = "entity_id" if to_descendant else "related_entity_id"
         async for relationship in self.relationship_info_service.list_documents_iterator(
             query_filter={entity_id_key: {"$in": anchored_entity_ids}},
@@ -187,11 +188,11 @@ class EntityRelationshipExtractorService:
     @classmethod
     def _extract_entity_relationship_paths(
         cls,
-        relationship_map: Dict[ObjectId, List[EntityRelationshipData]],
-        path_map: Dict[ObjectId, List[ObjectId]],
+        relationship_map: dict[ObjectId, list[EntityRelationshipData]],
+        path_map: dict[ObjectId, list[ObjectId]],
         entity_id: ObjectId,
-        relationship_ids: List[ObjectId],
-    ) -> Dict[ObjectId, List[ObjectId]]:
+        relationship_ids: list[ObjectId],
+    ) -> dict[ObjectId, list[ObjectId]]:
         """
         Extract entity ID to list of relationship IDs mapping.
 
@@ -225,8 +226,8 @@ class EntityRelationshipExtractorService:
         return path_map
 
     async def _get_entity_relationships(
-        self, relationship_ids: List[ObjectId]
-    ) -> List[EntityRelationshipInfo]:
+        self, relationship_ids: list[ObjectId]
+    ) -> list[EntityRelationshipInfo]:
         """
         Get entity relationships from relationship IDs
 
@@ -247,8 +248,8 @@ class EntityRelationshipExtractorService:
         return output
 
     async def get_entity_id_to_entity(
-        self, entity_ids: List[ObjectId]
-    ) -> Dict[ObjectId, EntityModel]:
+        self, entity_ids: list[ObjectId]
+    ) -> dict[ObjectId, EntityModel]:
         """
         Construct entity ID to entity dictionary mapping
 
@@ -262,7 +263,7 @@ class EntityRelationshipExtractorService:
         Dict[ObjectId, EntityModel]
             Dictionary mapping entity ID to entity model
         """
-        entity_id_to_entity: Dict[ObjectId, EntityModel] = {}
+        entity_id_to_entity: dict[ObjectId, EntityModel] = {}
         async for entity in self.entity_service.list_documents_iterator(
             query_filter={"_id": {"$in": entity_ids}}
         ):
@@ -271,9 +272,9 @@ class EntityRelationshipExtractorService:
 
     async def extract_relationship_from_primary_entity(
         self,
-        entity_ids: List[ObjectId],
-        primary_entity_ids: Optional[List[ObjectId]] = None,
-    ) -> List[EntityRelationshipInfo]:
+        entity_ids: list[ObjectId],
+        primary_entity_ids: Optional[list[ObjectId]] = None,
+    ) -> list[EntityRelationshipInfo]:
         """
         Extract relationships between entity ids and primary entity ids. This method is used to
         capture the entity relationships during feature creation.
@@ -300,7 +301,7 @@ class EntityRelationshipExtractorService:
         child_to_parent_map = await self._extract_relationship_map(
             anchored_entity_ids=ancestor_entity_ids, to_descendant=False
         )
-        path_map: Dict[ObjectId, List[ObjectId]] = defaultdict(list)
+        path_map: dict[ObjectId, list[ObjectId]] = defaultdict(list)
         for entity_id in primary_entity_ids:
             path_map = self._extract_entity_relationship_paths(
                 relationship_map=child_to_parent_map,
@@ -320,7 +321,7 @@ class EntityRelationshipExtractorService:
     async def extract_primary_entity_descendant_relationship(
         self,
         primary_entity_ids: Sequence[ObjectId],
-    ) -> List[EntityRelationshipInfo]:
+    ) -> list[EntityRelationshipInfo]:
         """
         Extract relationships between primary entity ids and their descendants. This method is used
         to capture the entity relationships during feature list creation.
@@ -340,7 +341,7 @@ class EntityRelationshipExtractorService:
         parent_to_child_map = await self._extract_relationship_map(
             anchored_entity_ids=descendant_entity_ids, to_descendant=True
         )
-        path_map: Dict[ObjectId, List[ObjectId]] = defaultdict(list)
+        path_map: dict[ObjectId, list[ObjectId]] = defaultdict(list)
         for entity_id in primary_entity_ids:
             path_map = self._extract_entity_relationship_paths(
                 relationship_map=parent_to_child_map,

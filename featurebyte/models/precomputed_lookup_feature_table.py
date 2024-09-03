@@ -4,7 +4,7 @@ Classes to support precomputed lookup feature tables
 
 import hashlib
 import json
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Optional, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
@@ -37,7 +37,7 @@ from featurebyte.query_graph.sql.common import construct_cte_sql, quoted_identif
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 
 
-def get_lookup_steps_unique_identifier(lookup_steps: List[EntityRelationshipInfo]) -> str:
+def get_lookup_steps_unique_identifier(lookup_steps: list[EntityRelationshipInfo]) -> str:
     """
     Get a short unique identifier for a list of lookup steps
 
@@ -58,8 +58,8 @@ def get_lookup_steps_unique_identifier(lookup_steps: List[EntityRelationshipInfo
 
 def get_precomputed_lookup_feature_table_name(
     source_feature_table_name: str,
-    serving_names: List[str],
-    lookup_steps: List[EntityRelationshipInfo],
+    serving_names: list[str],
+    lookup_steps: list[EntityRelationshipInfo],
 ) -> str:
     """
     Construct the name of a precomputed lookup feature table
@@ -85,14 +85,14 @@ def get_precomputed_lookup_feature_table_name(
 
 
 def get_precomputed_lookup_feature_table(
-    primary_entity_ids: List[PydanticObjectId],
-    feature_ids: List[PydanticObjectId],
+    primary_entity_ids: list[PydanticObjectId],
+    feature_ids: list[PydanticObjectId],
     feature_list: FeatureListModel,
-    full_serving_entity_ids: List[PydanticObjectId],
+    full_serving_entity_ids: list[PydanticObjectId],
     feature_table_name: str,
     feature_table_has_ttl: bool,
-    entity_id_to_serving_name: Dict[PydanticObjectId, str],
-    entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
+    entity_id_to_serving_name: dict[PydanticObjectId, str],
+    entity_lookup_steps_mapping: dict[PydanticObjectId, EntityLookupStep],
     feature_store_model: FeatureStoreModel,
     feature_table_id: Optional[PydanticObjectId] = None,
 ) -> Optional[OfflineStoreFeatureTableModel]:
@@ -187,11 +187,11 @@ def get_precomputed_lookup_feature_table(
 
 
 def _get_lookup_steps_and_mapping(
-    primary_entity_ids: List[PydanticObjectId],
-    serving_entity_ids: List[PydanticObjectId],
-    entity_id_to_serving_name: Dict[PydanticObjectId, str],
-    relationships_info: List[EntityRelationshipInfo],
-) -> Tuple[List[EntityRelationshipInfo], List[PrecomputedLookupMapping]]:
+    primary_entity_ids: list[PydanticObjectId],
+    serving_entity_ids: list[PydanticObjectId],
+    entity_id_to_serving_name: dict[PydanticObjectId, str],
+    relationships_info: list[EntityRelationshipInfo],
+) -> tuple[list[EntityRelationshipInfo], list[PrecomputedLookupMapping]]:
     """
     Get the entity lookup steps information required to map a serving_entity_ids to
     primary_entity_ids using available relationships
@@ -237,8 +237,8 @@ def _get_lookup_steps_and_mapping(
 
 
 def get_child_entity_universe_template(
-    lookup_steps: List[EntityRelationshipInfo],
-    entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
+    lookup_steps: list[EntityRelationshipInfo],
+    entity_lookup_steps_mapping: dict[PydanticObjectId, EntityLookupStep],
     feature_store: FeatureStoreModel,
 ) -> Expression:
     """
@@ -315,8 +315,8 @@ def get_child_entity_universe_template(
 
 
 def _get_feature_lists_to_relationships_info(
-    feature_lists: List[FeatureListModel],
-) -> Dict[PydanticObjectId, List[EntityRelationshipInfo]]:
+    feature_lists: list[FeatureListModel],
+) -> dict[PydanticObjectId, list[EntityRelationshipInfo]]:
     """
     Get a mapping from feature list id to the feature list's available relationships info
 
@@ -331,7 +331,7 @@ def _get_feature_lists_to_relationships_info(
     """
     feature_lists_relationships_info = {}
     for feature_list in feature_lists:
-        combined_lookup_steps: List[EntityRelationshipInfo] = []
+        combined_lookup_steps: list[EntityRelationshipInfo] = []
         if feature_list.features_entity_lookup_info:
             for info in feature_list.features_entity_lookup_info:
                 for step in info.join_steps:

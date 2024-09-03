@@ -4,7 +4,7 @@ Helpers to perform range join between two tables
 
 from __future__ import annotations
 
-from typing import Any, List, Set
+from typing import Any
 
 from pydantic import ConfigDict, Field
 from sqlglot import expressions
@@ -24,7 +24,7 @@ class BaseTable(FeatureByteBaseModel):
     alias: str
     join_keys: list[str]
     columns: list[str]
-    disable_quote_columns: Set[str] = Field(default_factory=set)
+    disable_quote_columns: set[str] = Field(default_factory=set)
 
     # pydantic model configuration
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
@@ -48,7 +48,7 @@ class BaseTable(FeatureByteBaseModel):
         )
 
     @property
-    def qualified_join_keys(self) -> List[Expression]:
+    def qualified_join_keys(self) -> list[Expression]:
         """
         Get expressions for the qualified join keys
 
@@ -59,7 +59,7 @@ class BaseTable(FeatureByteBaseModel):
         return [self.get_qualified_column(key) for key in self.join_keys]
 
     @property
-    def qualified_columns(self) -> List[Expression]:
+    def qualified_columns(self) -> list[Expression]:
         """
         Get expressions for the qualified columns
 

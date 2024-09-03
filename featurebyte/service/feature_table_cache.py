@@ -2,7 +2,8 @@
 Module for managing physical feature table cache as well as metadata storage.
 """
 
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, cast
+from collections.abc import Coroutine
+from typing import Any, Callable, Optional, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -69,8 +70,8 @@ class FeatureTableCacheService:
     async def definition_hashes_for_nodes(
         self,
         graph: QueryGraph,
-        nodes: List[Node],
-    ) -> List[str]:
+        nodes: list[Node],
+    ) -> list[str]:
         """
         Compute definition hashes for list of nodes
 
@@ -109,9 +110,9 @@ class FeatureTableCacheService:
     async def get_feature_definition_hashes(
         self,
         graph: QueryGraph,
-        nodes: List[Node],
+        nodes: list[Node],
         feature_list_id: Optional[ObjectId],
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Get definition hashes for list of nodes. Retrieve the result from feature list if available.
 
@@ -151,10 +152,10 @@ class FeatureTableCacheService:
     def _get_column_exprs(
         self,
         graph: QueryGraph,
-        nodes: List[Node],
-        hashes: List[str],
-        cached_features: Dict[str, str],
-    ) -> List[expressions.Alias]:
+        nodes: list[Node],
+        hashes: list[str],
+        cached_features: dict[str, str],
+    ) -> list[expressions.Alias]:
         return [
             expressions.alias_(
                 quoted_identifier(cached_features[definition_hash]),
@@ -167,9 +168,9 @@ class FeatureTableCacheService:
     async def get_non_cached_nodes(
         self,
         feature_table_cache_metadata: FeatureTableCacheMetadataModel,
-        nodes: List[Node],
-        hashes: List[str],
-    ) -> List[Tuple[Node, CachedFeatureDefinition]]:
+        nodes: list[Node],
+        hashes: list[str],
+    ) -> list[tuple[Node, CachedFeatureDefinition]]:
         """
         Given an observation table, graph and set of nodes
             - compute nodes definition hashes
@@ -213,9 +214,9 @@ class FeatureTableCacheService:
         db_session: BaseSession,
         intermediate_table_name: str,
         graph: QueryGraph,
-        nodes: List[Tuple[Node, CachedFeatureDefinition]],
+        nodes: list[tuple[Node, CachedFeatureDefinition]],
         is_target: bool = False,
-        serving_names_mapping: Optional[Dict[str, str]] = None,
+        serving_names_mapping: Optional[dict[str, str]] = None,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -268,9 +269,9 @@ class FeatureTableCacheService:
         cache_metadata: FeatureTableCacheMetadataModel,
         db_session: BaseSession,
         graph: QueryGraph,
-        non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
+        non_cached_nodes: list[tuple[Node, CachedFeatureDefinition]],
         is_target: bool = False,
-        serving_names_mapping: Optional[Dict[str, str]] = None,
+        serving_names_mapping: Optional[dict[str, str]] = None,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -398,14 +399,14 @@ class FeatureTableCacheService:
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
         graph: QueryGraph,
-        nodes: List[Node],
+        nodes: list[Node],
         is_target: bool = False,
         feature_list_id: Optional[PydanticObjectId] = None,
-        serving_names_mapping: Optional[Dict[str, str]] = None,
+        serving_names_mapping: Optional[dict[str, str]] = None,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
-    ) -> Tuple[List[str], BaseSession]:
+    ) -> tuple[list[str], BaseSession]:
         """
         Create or update feature table cache
 
@@ -507,8 +508,8 @@ class FeatureTableCacheService:
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
         graph: QueryGraph,
-        nodes: List[Node],
-        columns: Optional[List[str]] = None,
+        nodes: list[Node],
+        columns: Optional[list[str]] = None,
     ) -> pd.DataFrame:
         """
         Given the graph and set of nodes, read respective cached features from feature table cache.
@@ -550,7 +551,7 @@ class FeatureTableCacheService:
             feature_store=feature_store
         )
         columns_expr = self._get_column_exprs(
-            graph, nodes, hashes, cast(Dict[str, str], cached_features)
+            graph, nodes, hashes, cast(dict[str, str], cached_features)
         )
         additional_columns_expr = [quoted_identifier(col) for col in columns] if columns else []
         select_expr = (
@@ -574,11 +575,11 @@ class FeatureTableCacheService:
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
         graph: QueryGraph,
-        nodes: List[Node],
+        nodes: list[Node],
         output_view_details: TableDetails,
         is_target: bool,
         feature_list_id: Optional[PydanticObjectId] = None,
-        serving_names_mapping: Optional[Dict[str, str]] = None,
+        serving_names_mapping: Optional[dict[str, str]] = None,
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
@@ -641,7 +642,7 @@ class FeatureTableCacheService:
         request_column_names = [col.name for col in observation_table.columns_info]
         request_columns = [quoted_identifier(col) for col in request_column_names]
         columns_expr = self._get_column_exprs(
-            graph, nodes, hashes, cast(Dict[str, str], cached_features)
+            graph, nodes, hashes, cast(dict[str, str], cached_features)
         )
         select_expr = (
             expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))

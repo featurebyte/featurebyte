@@ -2,7 +2,7 @@
 Use Case API payload schema
 """
 
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
@@ -82,4 +82,4 @@ class UseCaseList(PaginationMixin):
     Paginated list of use case
     """
 
-    data: List[UseCaseModel]
+    data: list[UseCaseModel]

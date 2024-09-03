@@ -2,8 +2,6 @@
 This module contains all the enums used for query graph.
 """
 
-from typing import Set
-
 from featurebyte.enum import StrEnum
 
 
@@ -145,7 +143,7 @@ class GraphNodeType(StrEnum):
     OFFLINE_STORE_INGEST_QUERY = "offline_store_ingest_query"
 
     @classmethod
-    def view_graph_node_types(cls) -> Set["GraphNodeType"]:
+    def view_graph_node_types(cls) -> set["GraphNodeType"]:
         """
         Returns all the view graph node types
 

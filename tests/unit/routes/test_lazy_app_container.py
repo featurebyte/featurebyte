@@ -2,7 +2,7 @@
 Test lazy app container module
 """
 
-from typing import Any, List
+from typing import Any
 
 import pytest
 from bson import ObjectId
@@ -220,7 +220,7 @@ def test_construction__service_with_invalid_constructor(app_container_constructo
     assert "test_service" in str(exc)
 
 
-def get_class_def(key: str, deps: List[str]) -> ClassDefinition:
+def get_class_def(key: str, deps: list[str]) -> ClassDefinition:
     """
     Helper method to get class def
     """

@@ -4,8 +4,6 @@ Catalog API route controller
 
 from __future__ import annotations
 
-from typing import Optional
-
 from bson import ObjectId
 
 from featurebyte.exception import DocumentDeletionError
@@ -107,7 +105,7 @@ class CatalogController(
         self,
         catalog_id: ObjectId,
         data: CatalogOnlineStoreUpdate,
-    ) -> Optional[Task]:
+    ) -> Task | None:
         """
         Update Catalog online store by triggering a CATALOG_ONLINE_STORE_UPDATE task
 

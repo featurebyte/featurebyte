@@ -5,7 +5,7 @@ Feature API payload schema
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 
 from bson import ObjectId
 from pydantic import Field, RootModel, field_validator
@@ -35,7 +35,7 @@ class FeatureCreate(FeatureByteBaseModel):
     Feature Creation schema
     """
 
-    id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: PydanticObjectId | None = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     graph: QueryGraph
     node_name: str
@@ -47,7 +47,7 @@ class FeatureServiceCreate(FeatureCreate):
     Feature Service Creation schema
     """
 
-    feature_namespace_id: Optional[PydanticObjectId] = Field(default_factory=ObjectId)
+    feature_namespace_id: PydanticObjectId | None = Field(default_factory=ObjectId)
 
 
 class BatchFeatureItem(FeatureByteBaseModel):
@@ -70,7 +70,7 @@ class BatchFeatureCreatePayload(FeatureByteBaseModel):
     # since their serialization output is the same, QueryGraphModel is used here to avoid
     # additional serialization/deserialization
     graph: QueryGraphModel
-    features: List[BatchFeatureItem] = Field(max_length=MAX_BATCH_FEATURE_ITEM_COUNT)
+    features: list[BatchFeatureItem] = Field(max_length=MAX_BATCH_FEATURE_ITEM_COUNT)
     conflict_resolution: ConflictResolution = Field(default="raise")
 
 
@@ -90,8 +90,8 @@ class FeatureNewVersionCreate(FeatureByteBaseModel):
     """
 
     source_feature_id: PydanticObjectId
-    table_feature_job_settings: Optional[List[TableFeatureJobSetting]] = Field(default=None)
-    table_cleaning_operations: Optional[List[TableCleaningOperation]] = Field(default=None)
+    table_feature_job_settings: list[TableFeatureJobSetting] | None = Field(default=None)
+    table_cleaning_operations: list[TableCleaningOperation] | None = Field(default=None)
 
     # pydantic validators
     _validate_unique_feat_job_data_name = field_validator("table_feature_job_settings")(
@@ -115,7 +115,7 @@ class FeaturePaginatedList(PaginationMixin):
     Paginated list of features
     """
 
-    data: List[FeatureModelResponse]
+    data: list[FeatureModelResponse]
 
 
 class FeatureUpdate(FeatureByteBaseModel):
@@ -123,8 +123,8 @@ class FeatureUpdate(FeatureByteBaseModel):
     Feature update schema
     """
 
-    readiness: Optional[FeatureReadiness] = Field(default=None)
-    ignore_guardrails: Optional[bool] = Field(default=None)
+    readiness: FeatureReadiness | None = Field(default=None)
+    ignore_guardrails: bool | None = Field(default=None)
 
 
 class FeatureServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureUpdate):
@@ -132,9 +132,9 @@ class FeatureServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureUpdate):
     Feature service update schema
     """
 
-    online_enabled: Optional[bool] = Field(default=None)
-    feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
-    deployed_feature_list_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    online_enabled: bool | None = Field(default=None)
+    feature_list_ids: list[PydanticObjectId] | None = Field(default=None)
+    deployed_feature_list_ids: list[PydanticObjectId] | None = Field(default=None)
 
 
 class ReadinessComparison(FeatureByteBaseModel):
@@ -180,8 +180,8 @@ class TableFeatureJobSettingComparison(FeatureByteBaseModel):
     Table feature job setting comparison schema
     """
 
-    this: List[TableFeatureJobSetting]
-    default: List[TableFeatureJobSetting]
+    this: list[TableFeatureJobSetting]
+    default: list[TableFeatureJobSetting]
 
 
 class TableCleaningOperationComparison(FeatureByteBaseModel):
@@ -189,8 +189,8 @@ class TableCleaningOperationComparison(FeatureByteBaseModel):
     Table cleaning operation comparison schema
     """
 
-    this: List[TableCleaningOperation]
-    default: List[TableCleaningOperation]
+    this: list[TableCleaningOperation]
+    default: list[TableCleaningOperation]
 
 
 class FeatureBriefInfo(FeatureByteBaseModel):
@@ -208,7 +208,7 @@ class FeatureBriefInfoList(RootModel[Any]):
     Paginated list of feature brief info
     """
 
-    root: List[FeatureBriefInfo]
+    root: list[FeatureBriefInfo]
 
     @classmethod
     def from_paginated_data(cls, paginated_data: dict[str, Any]) -> FeatureBriefInfoList:

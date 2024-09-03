@@ -4,7 +4,7 @@ DimensionTable API payload schema
 
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import Literal
 
 from pydantic import StrictStr, field_validator
 
@@ -33,7 +33,7 @@ class DimensionTableList(PaginationMixin):
     Paginated list of DimensionTable
     """
 
-    data: List[DimensionTableModel]
+    data: list[DimensionTableModel]
 
 
 class DimensionTableUpdate(TableUpdate):

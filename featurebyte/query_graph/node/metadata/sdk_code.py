@@ -9,7 +9,7 @@ import json
 import os
 from collections import defaultdict
 from enum import Enum
-from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Union
 
 from black import FileMode, format_str
 from bson import ObjectId
@@ -115,7 +115,7 @@ class CommentStr(str):
 
 
 # module import path str pair
-ImportPathPair = Tuple[str, str]
+ImportPathPair = tuple[str, str]
 
 
 class ObjectClass(FeatureByteBaseModel):
@@ -125,14 +125,14 @@ class ObjectClass(FeatureByteBaseModel):
     - import objects
     """
 
-    module_path: Optional[str] = Field(default=None)
-    class_name: Optional[str] = Field(default=None)
-    positional_args: List[Any]
-    keyword_args: Dict[str, Any]
-    callable_name: Optional[str] = Field(default=None)
+    module_path: str | None = Field(default=None)
+    class_name: str | None = Field(default=None)
+    positional_args: list[Any]
+    keyword_args: dict[str, Any]
+    callable_name: str | None = Field(default=None)
 
     def __str__(self) -> str:
-        params: List[Union[VariableNameStr, ExpressionStr, ValueStr, str]] = []
+        params: list[VariableNameStr | ExpressionStr | ValueStr | str] = []
         for elem in self.positional_args:
             if not isinstance(elem, VariableNameStr) and not isinstance(elem, ExpressionStr):
                 params.append(ValueStr.create(elem))
@@ -161,7 +161,7 @@ class ObjectClass(FeatureByteBaseModel):
         return str(self)
 
     @classmethod
-    def _extract_import_helper(cls, obj: Any) -> Set[Tuple[str, str]]:
+    def _extract_import_helper(cls, obj: Any) -> set[tuple[str, str]]:
         output = set()
         if isinstance(obj, ObjectClass):
             output.update(cls._extract_import(obj))
@@ -174,7 +174,7 @@ class ObjectClass(FeatureByteBaseModel):
         return output
 
     @classmethod
-    def _extract_import(cls, obj: ObjectClass) -> Set[ImportPathPair]:
+    def _extract_import(cls, obj: ObjectClass) -> set[ImportPathPair]:
         if obj.module_path is not None:
             assert obj.class_name is not None
             output = {(obj.module_path, obj.class_name)}
@@ -186,7 +186,7 @@ class ObjectClass(FeatureByteBaseModel):
             output.update(cls._extract_import_helper(val_arg))
         return output
 
-    def extract_import(self) -> Set[ImportPathPair]:
+    def extract_import(self) -> set[ImportPathPair]:
         """
         Extract set of required (module_path, class_name) tuple for this object
 
@@ -250,9 +250,7 @@ class ClassEnum(Enum):
     USER_DEFINED_FUNCTION = ("featurebyte", "UserDefinedFunction")
     HAVERSINE = ("featurebyte", "haversine")
 
-    def __call__(
-        self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
-    ) -> ObjectClass:
+    def __call__(self, *args: Any, _method_name: str | None = None, **kwargs: Any) -> ObjectClass:
         module_path, class_name = self.value
         return ObjectClass(
             module_path=module_path,
@@ -303,7 +301,7 @@ def get_object_class_from_function_call(
 VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
 VarNameExpressionInfo = Union[VariableNameStr, ExpressionStr, InfoDict]
 RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
-StatementT = Union[StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]]
+StatementT = Union[StatementStr, CommentStr, tuple[VariableNameStr, RightHandSide]]
 
 
 class CodeGenerationContext(FeatureByteBaseModel):
@@ -329,16 +327,16 @@ class VariableNameGenerator(FeatureByteBaseModel):
     value to be stored.
     """
 
-    var_name_counter: DefaultDict[str, int] = Field(default_factory=lambda: defaultdict(int))
-    node_name_to_var_name: Dict[str, VariableNameStr] = Field(default_factory=dict)
-    func_id_to_var_name: Dict[PydanticObjectId, VariableNameStr] = Field(default_factory=dict)
+    var_name_counter: defaultdict[str, int] = Field(default_factory=lambda: defaultdict(int))
+    node_name_to_var_name: dict[str, VariableNameStr] = Field(default_factory=dict)
+    func_id_to_var_name: dict[PydanticObjectId, VariableNameStr] = Field(default_factory=dict)
     one_based: bool = Field(default=False)
 
     def generate_variable_name(
         self,
         node_output_type: NodeOutputType,
         node_output_category: NodeOutputCategory,
-        node_name: Optional[str],
+        node_name: str | None,
     ) -> VariableNameStr:
         """
         Generate a valid variable name (no name collision) based on node output type (series or frame) &
@@ -378,8 +376,8 @@ class VariableNameGenerator(FeatureByteBaseModel):
     def convert_to_variable_name(
         self,
         variable_name_prefix: str,
-        node_name: Optional[str],
-        function_id: Optional[PydanticObjectId] = None,
+        node_name: str | None,
+        function_id: PydanticObjectId | None = None,
     ) -> VariableNameStr:
         """
         Convert an input variable name into a valid variable name (no name collision).
@@ -472,8 +470,8 @@ class UnusedVariableFinder(ast.NodeVisitor):
     """UnusedVariableFinder class is used to find the unused variables in the generated SDK code."""
 
     def __init__(self) -> None:
-        self.variables: Set[str] = set()
-        self.used_variables: Set[str] = set()
+        self.variables: set[str] = set()
+        self.used_variables: set[str] = set()
 
     def visit_Name(self, node: ast.Name) -> None:
         """
@@ -491,7 +489,7 @@ class UnusedVariableFinder(ast.NodeVisitor):
             # add variable to set of used variables
             self.used_variables.add(node.id)
 
-    def get_unused_variables(self) -> Set[str]:
+    def get_unused_variables(self) -> set[str]:
         """
         Get the unused variables found in the ast.
 
@@ -513,15 +511,15 @@ class CodeGenerator(FeatureByteBaseModel):
         b) Tuple[VariableName, Expression]: (VariableName("col"), Expression("event_view['amount']"))
     """
 
-    statements: List[StatementT] = Field(default_factory=list)
+    statements: list[StatementT] = Field(default_factory=list)
     template: str = Field(default="sdk_code.tpl")
 
     def _get_template(self) -> Template:
         template_path = os.path.join(os.path.dirname(__file__), f"templates/{self.template}")
-        with open(template_path, mode="r", encoding="utf-8") as file_handle:
+        with open(template_path, encoding="utf-8") as file_handle:
             return Template(file_handle.read())
 
-    def add_statements(self, statements: List[StatementT]) -> None:
+    def add_statements(self, statements: list[StatementT]) -> None:
         """
         Add statement to the list of statements
 
@@ -533,8 +531,8 @@ class CodeGenerator(FeatureByteBaseModel):
         self.statements.extend(statements)
 
     def _generate(
-        self, unused_variables: Optional[Set[str]] = None
-    ) -> Tuple[str, Set[ImportPathPair]]:
+        self, unused_variables: set[str] | None = None
+    ) -> tuple[str, set[ImportPathPair]]:
         # process statements & extract required imports
         statement_lines = []
         import_pairs = set()
@@ -556,7 +554,7 @@ class CodeGenerator(FeatureByteBaseModel):
     def generate(
         self,
         to_format: bool = False,
-        output_var_name: Optional[str] = None,
+        output_var_name: str | None = None,
         remove_unused_variables: bool = True,
         **kwargs: Any,
     ) -> str:

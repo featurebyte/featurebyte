@@ -83,7 +83,7 @@ def test_feature_list_info_dict_formatting(update_fixtures):
             file_obj.write(feature_list_info_html)
     else:
         # check report
-        with open(feature_list_info_fixture_path, "r") as file_obj:
+        with open(feature_list_info_fixture_path) as file_obj:
             expected_html = file_obj.read()
         assert feature_list_info_html == expected_html
 
@@ -206,6 +206,6 @@ def test_feature_info_dict_formatting(update_fixtures):
             file_obj.write(feature_info_html)
     else:
         # check report
-        with open(feature_info_fixture_path, "r") as file_obj:
+        with open(feature_info_fixture_path) as file_obj:
             expected_html = file_obj.read()
         assert feature_info_html == expected_html

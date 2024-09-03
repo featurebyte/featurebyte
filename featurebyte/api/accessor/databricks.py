@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import os
 from types import ModuleType
-from typing import Any, List, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -71,14 +71,14 @@ class DataBricksAccessor:
     def __init__(
         self,
         store_info: DataBricksUnityStoreInfo,
-        target_name: Optional[str],
-        target_dtype: Optional[DBVarType] = None,
+        target_name: str | None,
+        target_dtype: DBVarType | None = None,
     ):
         self._store_info = store_info
         self._target_name = target_name
         self._target_dtype = target_dtype
 
-    def list_feature_table_names(self) -> List[str]:
+    def list_feature_table_names(self) -> list[str]:
         """
         List feature table names used by this deployment.
 
@@ -96,7 +96,7 @@ class DataBricksAccessor:
     def get_feature_specs_definition(
         self,
         include_log_model: bool = True,
-        skip_exclude_columns: Optional[List[str]] = None,
+        skip_exclude_columns: list[str] | None = None,
     ) -> str:
         """
         Get DataBricks feature specs definition code
@@ -124,7 +124,7 @@ class DataBricksAccessor:
         return feature_specs
 
     def _exec_feature_spec_definition(
-        self, print_feature_specs: bool, skip_exclude_columns: Optional[List[str]]
+        self, print_feature_specs: bool, skip_exclude_columns: list[str] | None
     ) -> dict[str, Any]:
         exec_locals: dict[str, Any] = {}
         feature_specs_definition = self.get_feature_specs_definition(
@@ -140,7 +140,7 @@ class DataBricksAccessor:
         return exec_locals
 
     def get_feature_specs(
-        self, print_feature_specs: bool = True, skip_exclude_columns: Optional[List[str]] = None
+        self, print_feature_specs: bool = True, skip_exclude_columns: list[str] | None = None
     ) -> Any:
         """
         Execute the feature specs definition and return the feature specs
@@ -169,7 +169,7 @@ class DataBricksAccessor:
         flavor: ModuleType,
         registered_model_name: str,
         print_feature_specs: bool = True,
-        skip_exclude_columns: Optional[List[str]] = None,
+        skip_exclude_columns: list[str] | None = None,
         **kwargs: Any,
     ) -> None:
         """

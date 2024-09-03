@@ -4,8 +4,6 @@ Table API routes
 
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import APIRouter, Request
 
 from featurebyte.models.proxy_table import TableModel
@@ -39,10 +37,10 @@ async def list_table(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
+    sort_by: str | None = SortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
+    name: str | None = NameQuery,
 ) -> TableList:
     """
     List Table

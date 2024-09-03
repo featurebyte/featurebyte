@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import copy
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 from unittest.mock import patch
 
 from cachetools import TTLCache
@@ -22,7 +22,7 @@ DEFAULT_MATERIALIZE_START_DATE = datetime(1970, 1, 1)
 feast_snowflake_session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=3600)
 
 
-def _filter_by_name(obj_list: List[Any], columns: List[str]) -> List[Any]:
+def _filter_by_name(obj_list: list[Any], columns: list[str]) -> list[Any]:
     """
     Filter a list of objects by the name attribute
 
@@ -43,9 +43,9 @@ def _filter_by_name(obj_list: List[Any], columns: List[str]) -> List[Any]:
 async def materialize_partial(
     feature_store: FeatureStore,
     feature_view: FeatureView,
-    columns: List[str],
+    columns: list[str],
     end_date: datetime,
-    start_date: Optional[datetime] = None,
+    start_date: datetime | None = None,
     with_feature_timestamp: bool = False,
 ) -> None:
     """

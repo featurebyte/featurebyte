@@ -3,8 +3,9 @@ This module contains entity relationship info related classes.
 """
 
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Set
+from typing import Optional
 
 from bson import ObjectId
 from pydantic import Field
@@ -51,14 +52,14 @@ class FeatureEntityLookupInfo(FeatureByteBaseModel):
 
     # Lookup steps to retrieve feature's primary entity based on feature list's primary entity.
     # Based on relationships defined in feature_list.relationships.info
-    feature_list_to_feature_primary_entity_join_steps: List[EntityRelationshipInfo]
+    feature_list_to_feature_primary_entity_join_steps: list[EntityRelationshipInfo]
 
     # Lookup steps to retrieve feature's internally required entity (based on ingest graphs' primary
     # entity ids). Based on relationships defined in feature.relationships_info
-    feature_internal_entity_join_steps: List[EntityRelationshipInfo]
+    feature_internal_entity_join_steps: list[EntityRelationshipInfo]
 
     @property
-    def join_steps(self) -> List[EntityRelationshipInfo]:
+    def join_steps(self) -> list[EntityRelationshipInfo]:
         """
         Return the join steps required to convert feature list's primary entity to feature's
         internally required entity
@@ -79,13 +80,13 @@ class EntityAncestorDescendantMapper:
     EntityAncestorDescendantMapper class is used to construct entity to ancestor/descendant mapping
     """
 
-    entity_id_to_ancestor_ids: Dict[ObjectId, Set[ObjectId]]
-    entity_id_to_descendant_ids: Dict[ObjectId, Set[ObjectId]]
+    entity_id_to_ancestor_ids: dict[ObjectId, set[ObjectId]]
+    entity_id_to_descendant_ids: dict[ObjectId, set[ObjectId]]
 
     @staticmethod
     def _get_relation_map(
-        relationships_info: List[EntityRelationshipInfo], parent_to_child: bool
-    ) -> Dict[ObjectId, Set[ObjectId]]:
+        relationships_info: list[EntityRelationshipInfo], parent_to_child: bool
+    ) -> dict[ObjectId, set[ObjectId]]:
         """
         Construct relation map
 
@@ -101,7 +102,7 @@ class EntityAncestorDescendantMapper:
         Dict[ObjectId, Set[ObjectId]]
             Relation map
         """
-        relation_map: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
+        relation_map: dict[ObjectId, set[ObjectId]] = defaultdict(set)
         for relationship_info in relationships_info:
             child_entity_id = relationship_info.entity_id
             parent_entity_id = relationship_info.related_entity_id
@@ -114,10 +115,10 @@ class EntityAncestorDescendantMapper:
     @classmethod
     def _depth_first_search(
         cls,
-        ancestors_or_descendants_map: Dict[ObjectId, Set[ObjectId]],
-        relation_map: Dict[ObjectId, Set[ObjectId]],
+        ancestors_or_descendants_map: dict[ObjectId, set[ObjectId]],
+        relation_map: dict[ObjectId, set[ObjectId]],
         entity_id: ObjectId,
-        ancestor_or_descendant_ids: Set[ObjectId],
+        ancestor_or_descendant_ids: set[ObjectId],
         depth: int,
         max_depth: int,
     ) -> None:
@@ -138,9 +139,9 @@ class EntityAncestorDescendantMapper:
     @classmethod
     def get_entity_id_to_ancestor_ids(
         cls,
-        relationships_info: List[EntityRelationshipInfo],
+        relationships_info: list[EntityRelationshipInfo],
         max_depth: int = ENTITY_RELATIONSHIP_MAX_DEPTH,
-    ) -> Dict[ObjectId, Set[ObjectId]]:
+    ) -> dict[ObjectId, set[ObjectId]]:
         """
         Get entity id to ancestor ids mapping
 
@@ -157,7 +158,7 @@ class EntityAncestorDescendantMapper:
             Entity id to ancestor ids mapping
         """
         parent_to_child_entity_ids = cls._get_relation_map(relationships_info, parent_to_child=True)
-        entity_id_to_ancestor_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
+        entity_id_to_ancestor_ids: dict[ObjectId, set[ObjectId]] = defaultdict(set)
         for entity_id in list(parent_to_child_entity_ids):
             cls._depth_first_search(
                 ancestors_or_descendants_map=entity_id_to_ancestor_ids,
@@ -173,9 +174,9 @@ class EntityAncestorDescendantMapper:
     @classmethod
     def get_entity_id_to_descendant_ids(
         cls,
-        relationships_info: List[EntityRelationshipInfo],
+        relationships_info: list[EntityRelationshipInfo],
         max_depth: int = ENTITY_RELATIONSHIP_MAX_DEPTH,
-    ) -> Dict[ObjectId, Set[ObjectId]]:
+    ) -> dict[ObjectId, set[ObjectId]]:
         """
         Get entity id to descendant ids mapping
 
@@ -194,7 +195,7 @@ class EntityAncestorDescendantMapper:
         child_to_parent_entity_ids = cls._get_relation_map(
             relationships_info, parent_to_child=False
         )
-        entity_id_to_descendant_ids: Dict[ObjectId, Set[ObjectId]] = defaultdict(set)
+        entity_id_to_descendant_ids: dict[ObjectId, set[ObjectId]] = defaultdict(set)
         for entity_id in list(child_to_parent_entity_ids):
             cls._depth_first_search(
                 ancestors_or_descendants_map=entity_id_to_descendant_ids,
@@ -209,7 +210,7 @@ class EntityAncestorDescendantMapper:
 
     @classmethod
     def create(
-        cls, relationships_info: List[EntityRelationshipInfo]
+        cls, relationships_info: list[EntityRelationshipInfo]
     ) -> "EntityAncestorDescendantMapper":
         """
         Create a new EntityAncestorDescendantMapper object from the given relationships info
@@ -228,7 +229,7 @@ class EntityAncestorDescendantMapper:
             entity_id_to_descendant_ids=cls.get_entity_id_to_descendant_ids(relationships_info),
         )
 
-    def reduce_entity_ids(self, entity_ids: Sequence[ObjectId]) -> List[ObjectId]:
+    def reduce_entity_ids(self, entity_ids: Sequence[ObjectId]) -> list[ObjectId]:
         """
         Reduce entity IDs to only contain the given entity IDs that are not ancestors of any other entity IDs
 
@@ -255,7 +256,7 @@ class EntityAncestorDescendantMapper:
         self,
         entity_ids_to_filter: Sequence[ObjectId],
         filter_by: Sequence[ObjectId],
-    ) -> List[ObjectId]:
+    ) -> list[ObjectId]:
         """
         Filter a list of entity ids to include only entity ids that are related to filter_by
 

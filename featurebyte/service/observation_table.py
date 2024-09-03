@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -103,7 +103,7 @@ class ObservationTableStats:
     """
 
     point_in_time_stats: PointInTimeStats
-    entity_columns_stats: List[EntityColumnStats]
+    entity_columns_stats: list[EntityColumnStats]
 
     @property
     def column_name_to_count(self) -> dict[str, int]:
@@ -119,7 +119,7 @@ class ObservationTableStats:
         }
 
     def get_columns_with_missing_values(
-        self, entity_ids_to_check: Optional[list[PydanticObjectId]]
+        self, entity_ids_to_check: list[PydanticObjectId] | None
     ) -> list[str]:
         """
         Return list of column names with missing values
@@ -155,10 +155,10 @@ def _convert_ts_to_str(timestamp_str: str) -> str:
 
 
 def validate_columns_info(
-    columns_info: List[ColumnSpecWithEntityId],
-    primary_entity_ids: Optional[List[PydanticObjectId]] = None,
+    columns_info: list[ColumnSpecWithEntityId],
+    primary_entity_ids: list[PydanticObjectId] | None = None,
     skip_entity_validation_checks: bool = False,
-    target_namespace: Optional[TargetNamespaceModel] = None,
+    target_namespace: TargetNamespaceModel | None = None,
 ) -> None:
     """
     Validate column info.
@@ -242,7 +242,7 @@ class ObservationTableService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
         entity_service: EntityService,
@@ -282,10 +282,10 @@ class ObservationTableService(
 
     async def _validate_columns(
         self,
-        available_columns: List[str],
-        primary_entity_ids: Optional[List[PydanticObjectId]],
-        target_column: Optional[str],
-    ) -> Optional[ObjectId]:
+        available_columns: list[str],
+        primary_entity_ids: list[PydanticObjectId] | None,
+        target_column: str | None,
+    ) -> ObjectId | None:
         # Check if required column names are provided
         missing_columns = []
 
@@ -459,7 +459,7 @@ class ObservationTableService(
 
     @staticmethod
     def get_minimum_iet_sql_expr(
-        entity_column_names: List[str], table_details: TableDetails, adapter: BaseAdapter
+        entity_column_names: list[str], table_details: TableDetails, adapter: BaseAdapter
     ) -> Expression:
         """
         Get the SQL expression to compute the minimum interval in seconds for each entity.
@@ -524,9 +524,9 @@ class ObservationTableService(
     async def _get_min_interval_secs_between_entities(
         self,
         db_session: BaseSession,
-        columns_info: List[ColumnSpecWithEntityId],
+        columns_info: list[ColumnSpecWithEntityId],
         table_details: TableDetails,
-    ) -> Optional[float]:
+    ) -> float | None:
         """
         Get the entity column name to minimum interval mapping.
 
@@ -563,7 +563,7 @@ class ObservationTableService(
         self,
         feature_store: FeatureStoreModel,
         table_details: TableDetails,
-        columns_info: List[ColumnSpecWithEntityId],
+        columns_info: list[ColumnSpecWithEntityId],
     ) -> ObservationTableStats:
         """
         Get statistics of point in time and entity columns
@@ -641,11 +641,11 @@ class ObservationTableService(
         db_session: BaseSession,
         table_details: TableDetails,
         feature_store: FeatureStoreModel,
-        serving_names_remapping: Optional[Dict[str, str]] = None,
+        serving_names_remapping: dict[str, str] | None = None,
         skip_entity_validation_checks: bool = False,
-        primary_entity_ids: Optional[List[PydanticObjectId]] = None,
-        target_namespace_id: Optional[PydanticObjectId] = None,
-    ) -> Dict[str, Any]:
+        primary_entity_ids: list[PydanticObjectId] | None = None,
+        target_namespace_id: PydanticObjectId | None = None,
+    ) -> dict[str, Any]:
         """
         Validate and get additional metadata for the materialized observation table.
 
@@ -729,7 +729,7 @@ class ObservationTableService(
 
     async def update_observation_table(
         self, observation_table_id: ObjectId, data: ObservationTableServiceUpdate
-    ) -> Optional[ObservationTableModel]:
+    ) -> ObservationTableModel | None:
         """
         Update ObservationTable
 
@@ -840,7 +840,7 @@ class ObservationTableService(
                     f"Cannot remove Context {data.context_id_to_remove} as it is not associated with ObservationTable {observation_table_id}."
                 )
 
-        result: Optional[ObservationTableModel] = await self.update_document(
+        result: ObservationTableModel | None = await self.update_document(
             document_id=observation_table_id, data=data, return_document=True
         )
 

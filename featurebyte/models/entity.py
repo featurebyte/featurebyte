@@ -5,7 +5,6 @@ This module contains Entity related models
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List
 
 import pymongo
 from pydantic import Field, StrictStr
@@ -60,7 +59,7 @@ class EntityRelationship(CatalogRelationship):
         Parent entities of this entity
     """
 
-    parents: List[ParentEntity] = Field(default_factory=list, frozen=True)  # type: ignore
+    parents: list[ParentEntity] = Field(default_factory=list, frozen=True)  # type: ignore
 
 
 class EntityModel(EntityRelationship):
@@ -83,9 +82,9 @@ class EntityModel(EntityRelationship):
         ID of table with primary key columns associated to the entity
     """
 
-    serving_names: List[NameStr] = Field(frozen=True)
-    table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
-    primary_table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    serving_names: list[NameStr] = Field(frozen=True)
+    table_ids: list[PydanticObjectId] = Field(frozen=True, default_factory=list)
+    primary_table_ids: list[PydanticObjectId] = Field(frozen=True, default_factory=list)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -93,7 +92,7 @@ class EntityModel(EntityRelationship):
         """
 
         collection_name: str = "entity"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

@@ -4,7 +4,7 @@ This module contains string accessor class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Optional, TypeVar
+from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from typeguard import typechecked
 
@@ -151,7 +151,7 @@ class StringAccessor:
         )
 
     @typechecked
-    def strip(self, to_strip: Optional[str] = None) -> FrozenSeries:
+    def strip(self, to_strip: str | None = None) -> FrozenSeries:
         """
         Removes leading and trailing characters (whitespaces by default) from each string element.
 
@@ -188,7 +188,7 @@ class StringAccessor:
         )
 
     @typechecked
-    def lstrip(self, to_strip: Optional[str] = None) -> FrozenSeries:
+    def lstrip(self, to_strip: str | None = None) -> FrozenSeries:
         """
         Removes leading characters (whitespaces by default) from each string element.
 
@@ -225,7 +225,7 @@ class StringAccessor:
         )
 
     @typechecked
-    def rstrip(self, to_strip: Optional[str] = None) -> FrozenSeries:
+    def rstrip(self, to_strip: str | None = None) -> FrozenSeries:
         """
         Removes trailing characters (whitespaces by default) from each string element.
 
@@ -381,7 +381,7 @@ class StringAccessor:
 
     @typechecked
     def slice(
-        self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None
+        self, start: int | None = None, stop: int | None = None, step: int | None = None
     ) -> FrozenSeries:
         """
         Slices substring from each string element.

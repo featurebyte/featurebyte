@@ -5,7 +5,6 @@ Semantic API routes
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Optional
 
 from fastapi import Request
 
@@ -91,9 +90,9 @@ class SemanticRouter(
         semantic_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
-        sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[SortDir] = SortDirQuery,
-        search: Optional[str] = SearchQuery,
+        sort_by: str | None = AuditLogSortByQuery,
+        sort_dir: SortDir | None = SortDirQuery,
+        search: str | None = SearchQuery,
     ) -> AuditDocumentList:
         return await super().list_audit_logs(
             request,

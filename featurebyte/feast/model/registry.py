@@ -3,7 +3,7 @@ Feast registry model
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import pymongo
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
@@ -26,7 +26,7 @@ class FeastRegistryModel(FeatureByteCatalogBaseDocumentModel):
     deployment_id: Optional[PydanticObjectId] = Field(default=None)
 
     @classmethod
-    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
+    def _get_remote_attribute_paths(cls, document_dict: dict[str, Any]) -> list[Path]:
         paths = []
         registry_path = document_dict.get("registry_path")
         if registry_path:

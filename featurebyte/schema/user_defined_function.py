@@ -2,7 +2,7 @@
 UserDefinedFunction API payload schema
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, field_validator, model_validator
@@ -23,7 +23,7 @@ class UserDefinedFunctionCreateBase(FeatureByteBaseModel):
     name: NameStr
     description: Optional[StrictStr] = Field(default=None)
     sql_function_name: NameStr
-    function_parameters: List[FunctionParameter]
+    function_parameters: list[FunctionParameter]
     output_dtype: DBVarType
 
     # pydantic validator
@@ -55,7 +55,7 @@ class UserDefinedFunctionUpdate(FeatureByteBaseModel):
     """
 
     sql_function_name: Optional[NameStr] = Field(default=None)
-    function_parameters: Optional[List[FunctionParameter]] = Field(default=None)
+    function_parameters: Optional[list[FunctionParameter]] = Field(default=None)
     output_dtype: Optional[DBVarType] = Field(default=None)
 
     # pydanctic validator
@@ -92,4 +92,4 @@ class UserDefinedFunctionList(PaginationMixin):
     Paginated list of UserDefinedFunction
     """
 
-    data: List[UserDefinedFunctionResponse]
+    data: list[UserDefinedFunctionResponse]

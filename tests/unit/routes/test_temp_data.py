@@ -29,7 +29,7 @@ class TestTempDataApi:
         assert response.status_code == HTTPStatus.OK
         assert response.headers["content-type"] == "text/html; charset=utf-8"
 
-        with open(source_file, "r") as file_obj:
+        with open(source_file) as file_obj:
             expected_content = file_obj.read()
         assert response.content.decode("utf-8") == expected_content
 

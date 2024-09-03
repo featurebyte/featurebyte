@@ -2,10 +2,10 @@
 FeatureList Deploy Task Payload schema
 """
 
-from typing import ClassVar, Optional, Union
+from typing import Annotated, ClassVar, Optional, Union
 
 from pydantic import Field
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal
 
 from featurebyte.enum import StrEnum, WorkerCommand
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId

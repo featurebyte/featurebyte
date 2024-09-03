@@ -2,8 +2,6 @@
 Feature migration service
 """
 
-from typing import Dict, List
-
 from bson import ObjectId
 
 from featurebyte.logging import get_logger
@@ -52,7 +50,7 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
     def delegate_service(self) -> BaseDocumentServiceT:
         return self.feature_service  # type: ignore[return-value]
 
-    async def batch_preprocess_document(self, documents: List[Document]) -> List[Document]:
+    async def batch_preprocess_document(self, documents: list[Document]) -> list[Document]:
         """
         Preprocess the documents before migration
 
@@ -70,7 +68,7 @@ class FeatureMigrationServiceV4(BaseMongoCollectionMigration):
             all_entity_ids.update(document["entity_ids"])
 
         # get all entity first to reduce the number of queries
-        entity_id_to_entity: Dict[ObjectId, EntityModel] = {
+        entity_id_to_entity: dict[ObjectId, EntityModel] = {
             entity.id: entity
             async for entity in self.entity_service.list_documents_iterator(
                 query_filter={"_id": {"$in": list(all_entity_ids)}}

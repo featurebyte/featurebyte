@@ -5,7 +5,8 @@ TileManagerService class
 from __future__ import annotations
 
 import time
-from typing import Any, Callable, Coroutine, List, Optional, Tuple
+from collections.abc import Coroutine
+from typing import Any, Callable
 
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
@@ -47,8 +48,8 @@ class TileManagerService:
     async def generate_tiles_on_demand(
         self,
         session: BaseSession,
-        tile_inputs: List[Tuple[TileSpec, str]],
-        progress_callback: Optional[Callable[[int, str], Coroutine[Any, Any, None]]] = None,
+        tile_inputs: list[tuple[TileSpec, str]],
+        progress_callback: Callable[[int, str], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         """
         Generate Tiles and update tile entity checking table
@@ -91,7 +92,7 @@ class TileManagerService:
         session: BaseSession,
         tile_spec: TileSpec,
         entity_table: str,
-        progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
+        progress_callback: Callable[[], Coroutine[Any, Any, None]] | None = None,
     ) -> None:
         tic = time.time()
         session = await session.clone_if_not_threadsafe()
@@ -171,9 +172,9 @@ class TileManagerService:
         session: BaseSession,
         tile_spec: TileSpec,
         tile_type: TileType,
-        start_ts_str: Optional[str],
-        end_ts_str: Optional[str],
-        last_tile_start_ts_str: Optional[str] = None,
+        start_ts_str: str | None,
+        end_ts_str: str | None,
+        last_tile_start_ts_str: str | None = None,
     ) -> None:
         """
         Manually trigger tile generation
@@ -260,7 +261,7 @@ class TileManagerService:
         self,
         tile_spec: TileSpec,
         monitor_periods: int = 10,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Schedule online tiles
 
@@ -287,7 +288,7 @@ class TileManagerService:
         self,
         tile_spec: TileSpec,
         offline_minutes: int = 1440,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Schedule offline tiles
 
@@ -317,7 +318,7 @@ class TileManagerService:
         tile_type: TileType,
         offline_minutes: int = 1440,
         monitor_periods: int = 10,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Common tile schedule method
 

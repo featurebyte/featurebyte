@@ -5,10 +5,10 @@ Preview mixin for Graph Interpreter
 from __future__ import annotations
 
 from collections import OrderedDict
+from collections import OrderedDict as OrderedDictT
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, List, Optional, Set, Tuple, cast
-from typing import OrderedDict as OrderedDictT
+from typing import Any, Callable, cast
 
 from sqlglot import expressions
 
@@ -54,8 +54,8 @@ class DescribeQuery:
     """
 
     expr: expressions.Select
-    row_names: List[str]
-    columns: List[ViewDataColumn]
+    row_names: list[str]
+    columns: list[ViewDataColumn]
 
 
 @dataclass
@@ -65,8 +65,8 @@ class DescribeQueries:
     """
 
     data: DataQuery
-    queries: List[DescribeQuery]
-    type_conversions: dict[Optional[str], DBVarType]
+    queries: list[DescribeQuery]
+    type_conversions: dict[str | None, DBVarType]
 
 
 @dataclass
@@ -86,7 +86,7 @@ class ValueCountsQueries:
     """
 
     data: DataQuery
-    queries: List[ValueCountsQuery]
+    queries: list[ValueCountsQuery]
 
 
 @dataclass
@@ -121,8 +121,8 @@ class PreviewMixin(BaseGraphInterpreter):
 
     @staticmethod
     def _apply_type_conversions(
-        sql_tree: expressions.Select, columns: List[ViewDataColumn]
-    ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
+        sql_tree: expressions.Select, columns: list[ViewDataColumn]
+    ) -> tuple[expressions.Select, dict[str | None, DBVarType]]:
         """
         Apply type conversions for data retrieval
 
@@ -211,8 +211,8 @@ class PreviewMixin(BaseGraphInterpreter):
         sample_on_primary_table: bool,
         target_node_name: str,
         seed: int,
-        sample_row_num: Optional[int] = None,
-        total_num_rows: Optional[int] = None,
+        sample_row_num: int | None = None,
+        total_num_rows: int | None = None,
     ) -> tuple[QueryGraph, bool]:
         """
         Get query graph with sample row number set on primary input nodes
@@ -259,14 +259,14 @@ class PreviewMixin(BaseGraphInterpreter):
         node_name: str,
         num_rows: int = 10,
         seed: int = 1234,
-        from_timestamp: Optional[datetime] = None,
-        to_timestamp: Optional[datetime] = None,
-        timestamp_column: Optional[str] = None,
+        from_timestamp: datetime | None = None,
+        to_timestamp: datetime | None = None,
+        timestamp_column: str | None = None,
         skip_conversion: bool = False,
-        total_num_rows: Optional[int] = None,
+        total_num_rows: int | None = None,
         clip_timestamp_columns: bool = False,
         sample_on_primary_table: bool = False,
-    ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
+    ) -> tuple[expressions.Select, dict[str | None, DBVarType]]:
         """Construct SQL to sample data from a given node
 
         Parameters
@@ -330,7 +330,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
         # apply type conversions
         if skip_conversion:
-            type_conversions: dict[Optional[str], DBVarType] = {}
+            type_conversions: dict[str | None, DBVarType] = {}
         else:
             sql_tree, type_conversions = self._apply_type_conversions(
                 sql_tree=sql_tree, columns=operation_structure.columns
@@ -338,7 +338,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
         # apply timestamp filtering
         if timestamp_column:
-            filter_conditions: List[expressions.Expression] = []
+            filter_conditions: list[expressions.Expression] = []
             if from_timestamp:
                 filter_conditions.append(
                     expressions.GTE(
@@ -380,7 +380,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
     def construct_preview_sql(
         self, node_name: str, num_rows: int = 10, clip_timestamp_columns: bool = False
-    ) -> Tuple[str, dict[Optional[str], DBVarType]]:
+    ) -> tuple[str, dict[str | None, DBVarType]]:
         """Construct SQL to preview data from a given node
 
         Parameters
@@ -410,11 +410,11 @@ class PreviewMixin(BaseGraphInterpreter):
         node_name: str,
         num_rows: int = 10,
         seed: int = 1234,
-        from_timestamp: Optional[datetime] = None,
-        to_timestamp: Optional[datetime] = None,
-        timestamp_column: Optional[str] = None,
-        total_num_rows: Optional[int] = None,
-    ) -> Tuple[str, dict[Optional[str], DBVarType]]:
+        from_timestamp: datetime | None = None,
+        to_timestamp: datetime | None = None,
+        timestamp_column: str | None = None,
+        total_num_rows: int | None = None,
+    ) -> tuple[str, dict[str | None, DBVarType]]:
         """Construct SQL to sample data from a given node
 
         Parameters
@@ -454,7 +454,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
     @classmethod
     def _clip_timestamp_columns(
-        cls, sql_tree: expressions.Select, column_dtype_mapping: dict[Optional[str], DBVarType]
+        cls, sql_tree: expressions.Select, column_dtype_mapping: dict[str | None, DBVarType]
     ) -> None:
         """
         Clip timestamp columns to valid range
@@ -477,7 +477,7 @@ class PreviewMixin(BaseGraphInterpreter):
 
     @classmethod
     def _cast_string_columns(
-        cls, sql_tree: expressions.Select, column_dtype_mapping: dict[Optional[str], DBVarType]
+        cls, sql_tree: expressions.Select, column_dtype_mapping: dict[str | None, DBVarType]
     ) -> None:
         """
         Cast string columns to string type that has no length constraints
@@ -606,9 +606,9 @@ class PreviewMixin(BaseGraphInterpreter):
         self,
     ) -> OrderedDictT[
         str,
-        Tuple[
-            Optional[Callable[[expressions.Expression, int, DBVarType], expressions.Expression]],
-            Optional[Set[DBVarType]],
+        tuple[
+            Callable[[expressions.Expression, int, DBVarType], expressions.Expression] | None,
+            set[DBVarType] | None,
         ],
     ]:
         """
@@ -630,7 +630,7 @@ class PreviewMixin(BaseGraphInterpreter):
             ],
         ]
         """
-        stats_expressions: OrderedDictT[str, Tuple[Any, Optional[Set[DBVarType]]]] = OrderedDict()
+        stats_expressions: OrderedDictT[str, tuple[Any, set[DBVarType] | None]] = OrderedDict()
         stats_expressions["unique"] = (
             lambda col_expr, _, col_dtype: expressions.Count(
                 this=expressions.Distinct(
@@ -747,7 +747,7 @@ class PreviewMixin(BaseGraphInterpreter):
         return stats_expressions
 
     @staticmethod
-    def _is_dtype_supported(dtype: DBVarType, supported_dtypes: Optional[Set[DBVarType]]) -> bool:
+    def _is_dtype_supported(dtype: DBVarType, supported_dtypes: set[DBVarType] | None) -> bool:
         """
         Whether dtype is in supported dtypes
 
@@ -891,7 +891,7 @@ class PreviewMixin(BaseGraphInterpreter):
         self,
         sql_tree: expressions.Expression,
         input_table_name: str,
-        columns_info: dict[Optional[str], ViewDataColumn],
+        columns_info: dict[str | None, ViewDataColumn],
     ) -> CteStatement:
         # get subquery with columns casted to string to compute value counts
         casted_columns = []
@@ -946,9 +946,9 @@ class PreviewMixin(BaseGraphInterpreter):
         self,
         input_table_name: str,
         sql_tree: expressions.Select,
-        columns: List[ViewDataColumn],
-        stats_names: Optional[List[str]] = None,
-    ) -> Tuple[expressions.Select, List[str], List[ViewDataColumn]]:
+        columns: list[ViewDataColumn],
+        stats_names: list[str] | None = None,
+    ) -> tuple[expressions.Select, list[str], list[ViewDataColumn]]:
         """
         Construct sql to retrieve statistics for an SQL view
 
@@ -981,7 +981,7 @@ class PreviewMixin(BaseGraphInterpreter):
             if stats_names is None or stats_name in stats_names:
                 required_stats_expressions[stats_name] = stats_values
 
-        cte_statements: List[CteStatement] = []
+        cte_statements: list[CteStatement] = []
         stats_selections = []
         count_tables = []
         final_selections = []
@@ -1093,8 +1093,8 @@ class PreviewMixin(BaseGraphInterpreter):
 
     @staticmethod
     def _join_all_tables(
-        cte_statements: List[CteStatement],
-        tables: List[str],
+        cte_statements: list[CteStatement],
+        tables: list[str],
     ) -> expressions.Select:
         if not tables:
             return expressions.select()
@@ -1155,12 +1155,12 @@ class PreviewMixin(BaseGraphInterpreter):
         node_name: str,
         num_rows: int = 10,
         seed: int = 1234,
-        from_timestamp: Optional[datetime] = None,
-        to_timestamp: Optional[datetime] = None,
-        timestamp_column: Optional[str] = None,
-        stats_names: Optional[List[str]] = None,
-        columns_batch_size: Optional[int] = None,
-        total_num_rows: Optional[int] = None,
+        from_timestamp: datetime | None = None,
+        to_timestamp: datetime | None = None,
+        timestamp_column: str | None = None,
+        stats_names: list[str] | None = None,
+        columns_batch_size: int | None = None,
+        total_num_rows: int | None = None,
         sample_on_primary_table: bool = False,
     ) -> DescribeQueries:
         """Construct SQL to describe data from a given node
@@ -1239,7 +1239,7 @@ class PreviewMixin(BaseGraphInterpreter):
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
-        total_num_rows: Optional[int] = None,
+        total_num_rows: int | None = None,
     ) -> ValueCountsQueries:
         """
         Construct SQL to get value counts for a given node.
@@ -1299,9 +1299,9 @@ class PreviewMixin(BaseGraphInterpreter):
     def construct_row_count_sql(
         self,
         node_name: str,
-        from_timestamp: Optional[datetime] = None,
-        to_timestamp: Optional[datetime] = None,
-        timestamp_column: Optional[str] = None,
+        from_timestamp: datetime | None = None,
+        to_timestamp: datetime | None = None,
+        timestamp_column: str | None = None,
     ) -> str:
         """
         Construct SQL to get row counts for a given node.

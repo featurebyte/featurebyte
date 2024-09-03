@@ -4,7 +4,7 @@ OnlineStoreComputeQueryService class
 
 from __future__ import annotations
 
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel

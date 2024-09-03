@@ -5,8 +5,9 @@ This module contains the implementation of feature job setting validation
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Callable, Sequence, Tuple
+from typing import Any, Callable
 
 import pandas as pd
 from pydantic import BaseModel, TypeAdapter
@@ -66,7 +67,7 @@ def validate_offset_string(offset_string: str) -> None:
 @typechecked
 def validate_job_setting_parameters(
     period: str, offset: str, blind_spot: str
-) -> Tuple[int, int, int]:
+) -> tuple[int, int, int]:
     """Validate that job setting parameters are correct
 
     Parameters

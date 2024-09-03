@@ -4,7 +4,7 @@ Support for asynchronous messaging via Redis and web sockets
 
 import json
 import os
-from typing import Any, Dict, Optional, cast
+from typing import Any, Optional, cast
 from uuid import UUID
 
 import redis
@@ -34,7 +34,7 @@ class Progress:
         self._redis = redis.from_url(redis_uri)
         self._channel = f"task_{user_id}_{task_id}_progress"
 
-    def put(self, message: Dict[str, Any]) -> None:
+    def put(self, message: dict[str, Any]) -> None:
         """
         Publish to channel
 
@@ -45,7 +45,7 @@ class Progress:
         """
         self._redis.publish(self._channel, json.dumps(message))
 
-    def get(self) -> Optional[Dict[str, Any]]:
+    def get(self) -> Optional[dict[str, Any]]:
         """
         Get message from channel
 
@@ -56,4 +56,4 @@ class Progress:
         message = self._redis.get(self._channel)
         if message is None:
             return None
-        return cast(Dict[str, Any], json.loads(message))
+        return cast(dict[str, Any], json.loads(message))

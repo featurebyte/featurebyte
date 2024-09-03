@@ -5,7 +5,7 @@ FeatureMaterializeRunModel class
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Literal
 
 from pydantic import Field
 from pymongo import IndexModel
@@ -37,14 +37,14 @@ class FeatureMaterializeRun(FeatureByteCatalogBaseDocumentModel):
     """
 
     offline_store_feature_table_id: PydanticObjectId
-    offline_store_feature_table_name: Optional[str] = Field(default=None)
+    offline_store_feature_table_name: str | None = Field(default=None)
     scheduled_job_ts: datetime
-    feature_materialize_ts: Optional[datetime] = Field(default=None)
-    completion_ts: Optional[datetime] = Field(default=None)
-    completion_status: Optional[CompletionStatus] = Field(default=None)
-    duration_from_scheduled_seconds: Optional[float] = Field(default=None)
-    incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default=None)
-    deployment_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    feature_materialize_ts: datetime | None = Field(default=None)
+    completion_ts: datetime | None = Field(default=None)
+    completion_status: CompletionStatus | None = Field(default=None)
+    duration_from_scheduled_seconds: float | None = Field(default=None)
+    incomplete_tile_tasks: list[IncompleteTileTask] | None = Field(default=None)
+    deployment_ids: list[PydanticObjectId] | None = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -52,7 +52,7 @@ class FeatureMaterializeRun(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "feature_materialize_run"
-        unique_constraints: List[UniqueValuesConstraint] = []
+        unique_constraints: list[UniqueValuesConstraint] = []
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             IndexModel("offline_store_feature_table_id"),
             IndexModel("scheduled_job_ts"),
@@ -66,8 +66,8 @@ class FeatureMaterializeRunUpdate(BaseDocumentServiceUpdateSchema):
     FeatureMaterializeRun update schema
     """
 
-    feature_materialize_ts: Optional[datetime] = Field(default=None)
-    completion_ts: Optional[datetime] = Field(default=None)
-    completion_status: Optional[CompletionStatus] = Field(default=None)
-    duration_from_scheduled_seconds: Optional[float] = Field(default=None)
-    incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default=None)
+    feature_materialize_ts: datetime | None = Field(default=None)
+    completion_ts: datetime | None = Field(default=None)
+    completion_status: CompletionStatus | None = Field(default=None)
+    duration_from_scheduled_seconds: float | None = Field(default=None)
+    incomplete_tile_tasks: list[IncompleteTileTask] | None = Field(default=None)

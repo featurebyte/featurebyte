@@ -4,7 +4,7 @@ Tile Generate online store Job Script
 
 import textwrap
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import ConfigDict, Field
 
@@ -129,7 +129,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
             else:
                 await self.online_store_table_version_service.update_version(f_name, next_version)
 
-    async def _retrieve_online_store_compute_queries(self) -> List[OnlineStoreComputeQueryModel]:
+    async def _retrieve_online_store_compute_queries(self) -> list[OnlineStoreComputeQueryModel]:
         if self.aggregation_result_name is not None:
             # Retrieve compute queries for a specific result name (e.g. sum_30d)
             iterator = self.online_store_compute_query_service.list_by_result_names([

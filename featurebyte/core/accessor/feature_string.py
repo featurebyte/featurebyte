@@ -4,7 +4,7 @@ Feature string accessor module.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Optional, TypeVar
+from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.core.accessor.string import StringAccessor
@@ -98,7 +98,7 @@ class FeatureStringAccessor(StringAccessor):
         """
         return super().upper()  # type: ignore[return-value]
 
-    def strip(self, to_strip: Optional[str] = None) -> Feature:
+    def strip(self, to_strip: str | None = None) -> Feature:
         """
         Removes leading and trailing characters (whitespaces by default) from each string element.
 
@@ -122,7 +122,7 @@ class FeatureStringAccessor(StringAccessor):
         """
         return super().strip(to_strip=to_strip)  # type: ignore[return-value]
 
-    def lstrip(self, to_strip: Optional[str] = None) -> Feature:
+    def lstrip(self, to_strip: str | None = None) -> Feature:
         """
         Removes leading characters (whitespaces by default) from each string element.
 
@@ -146,7 +146,7 @@ class FeatureStringAccessor(StringAccessor):
         """
         return super().lstrip(to_strip=to_strip)  # type: ignore[return-value]
 
-    def rstrip(self, to_strip: Optional[str] = None) -> Feature:
+    def rstrip(self, to_strip: str | None = None) -> Feature:
         """
         Removes leading characters (whitespaces by default) from each string element.
 
@@ -252,7 +252,7 @@ class FeatureStringAccessor(StringAccessor):
         return super().contains(pat=pat, case=case)  # type: ignore[return-value]
 
     def slice(
-        self, start: Optional[int] = None, stop: Optional[int] = None, step: Optional[int] = None
+        self, start: int | None = None, stop: int | None = None, step: int | None = None
     ) -> Feature:
         """
         Slices substring from each string element.

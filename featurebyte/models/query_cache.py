@@ -4,11 +4,10 @@ Data warehouse query cache related models
 
 from __future__ import annotations
 
-from typing import List, Literal, Union
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 from pymongo import IndexModel
-from typing_extensions import Annotated
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import (
@@ -66,7 +65,7 @@ class QueryCacheModel(FeatureByteBaseDocumentModel):
     feature_store_id: PydanticObjectId
     query: str
     cache_key: str
-    cached_object: Annotated[Union[CachedTable, CachedDataFrame], Field(discriminator="type")]
+    cached_object: Annotated[CachedTable | CachedDataFrame, Field(discriminator="type")]
 
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """
@@ -74,7 +73,7 @@ class QueryCacheModel(FeatureByteBaseDocumentModel):
         """
 
         collection_name: str = "query_cache"
-        unique_constraints: List[UniqueValuesConstraint] = []
+        unique_constraints: list[UniqueValuesConstraint] = []
         indexes = FeatureByteBaseDocumentModel.Settings.indexes + [
             IndexModel("feature_store_id"),
             IndexModel("cache_key"),

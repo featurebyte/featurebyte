@@ -4,7 +4,7 @@ UseCase module
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar
 
 import pandas as pd
 from bson import ObjectId
@@ -43,13 +43,13 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
     _list_schema: ClassVar[Any] = UseCaseModel
     _get_schema: ClassVar[Any] = UseCaseModel
     _update_schema_class: ClassVar[Any] = UseCaseUpdate
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "default_preview_table_name",
         "default_eda_table_name",
         "description",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping(
             "default_preview_table_id", ObservationTable, "default_preview_table_name", "name"
         ),
@@ -59,12 +59,12 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
     ]
 
     # pydantic instance variable (public)
-    target_id: Optional[PydanticObjectId]
+    target_id: PydanticObjectId | None
     target_namespace_id: PydanticObjectId
     context_id: PydanticObjectId
 
     @property
-    def target(self) -> Optional[Target]:
+    def target(self) -> Target | None:
         """
         Returns the target object of the UseCase.
 
@@ -96,7 +96,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         name: str,
         target_name: str,
         context_name: str,
-        description: Optional[str] = None,
+        description: str | None = None,
     ) -> UseCase:
         """
         Create a new UseCase.
@@ -196,7 +196,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         )
 
     @typechecked
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of a UseCase object. The dictionary
         contains the following keys:
@@ -251,7 +251,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         return super().get(name)
 
     @classmethod
-    def list(cls, include_id: Optional[bool] = True) -> DataFrame:
+    def list(cls, include_id: bool | None = True) -> DataFrame:
         """
         Returns a DataFrame that lists the use cases by their names, types and creation dates.
 
@@ -274,7 +274,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         return super().list(include_id=include_id)
 
     @property
-    def default_eda_table(self) -> Optional[ObservationTable]:
+    def default_eda_table(self) -> ObservationTable | None:
         """
         Returns the EDA table of the use case.
 
@@ -291,7 +291,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         return super().default_eda_table
 
     @property
-    def default_preview_table(self) -> Optional[ObservationTable]:
+    def default_preview_table(self) -> ObservationTable | None:
         """
         Returns the preview table object of the use case.
 
@@ -342,7 +342,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         super().update_default_eda_table(observation_table_name)
 
     @typechecked
-    def update_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: str | None) -> None:
         """
         Update description for the use case.
 
@@ -413,7 +413,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
         return super().list_observation_tables()
 
     @classmethod
-    def get_by_id(cls, id: ObjectId) -> "UseCase":
+    def get_by_id(cls, id: ObjectId) -> UseCase:
         """
         Returns a UseCase object by its unique identifier (ID).
 
@@ -437,7 +437,7 @@ class UseCase(SavableApiObject, DeletableApiObject, UseCaseOrContextMixin):
 
     @typechecked
     def save(
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+        self, conflict_resolution: ConflictResolution = "raise", _id: ObjectId | None = None
     ) -> None:
         """
         Adds a UseCase object to the catalog.

@@ -29,7 +29,7 @@ def offline_store_feature_table_dict_fixture(test_dir, service, user_id):
     path = os.path.join(
         test_dir, "fixtures/offline_store_feature_table/feature_cluster_one_feature.json"
     )
-    with open(path, "r") as file:
+    with open(path) as file:
         feature_cluster = FeatureCluster(**json_util.loads(file.read()))
 
     return {
@@ -60,7 +60,7 @@ def feature_cluster_two_features_fixture(test_dir):
     path = os.path.join(
         test_dir, "fixtures/offline_store_feature_table/feature_cluster_two_features.json"
     )
-    with open(path, "r") as file:
+    with open(path) as file:
         return FeatureCluster(**json_util.loads(file.read()))
 
 
@@ -178,7 +178,7 @@ async def test_update_document(
     # check the feature cluster file is updated
     cluster_path = os.path.join(storage.base_path, updated_doc.feature_cluster_path)
     assert os.path.exists(cluster_path)
-    with open(cluster_path, "r") as file:
+    with open(cluster_path) as file:
         cluster = FeatureCluster(**json_util.loads(file.read()))
         assert cluster == feature_cluster_two_features
 

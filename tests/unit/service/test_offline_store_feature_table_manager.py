@@ -5,7 +5,6 @@ Tests for OfflineStoreFeatureTableManagerService
 import os
 import pickle
 import textwrap
-from typing import Dict
 from unittest.mock import patch
 
 import pytest
@@ -541,7 +540,7 @@ def document_service(app_container):
     return app_container.offline_store_feature_table_service
 
 
-async def get_all_feature_tables(document_service) -> Dict[str, OfflineStoreFeatureTableModel]:
+async def get_all_feature_tables(document_service) -> dict[str, OfflineStoreFeatureTableModel]:
     """
     Helper function to get all feature tables keyed by feature table name
     """

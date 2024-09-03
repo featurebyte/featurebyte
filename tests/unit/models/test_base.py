@@ -2,8 +2,6 @@
 Tests FeatureByteBaseModel
 """
 
-from typing import List
-
 import pytest
 from bson.objectid import ObjectId
 from pydantic import StrictStr, ValidationError
@@ -24,7 +22,7 @@ def test_featurebyte_base_model__error_message():
     class Basket(FeatureByteBaseModel):
         """Basket class"""
 
-        items: List[StrictStr]
+        items: list[StrictStr]
 
     with pytest.raises(ValidationError) as exc:
         Basket(items="hello")
@@ -45,7 +43,7 @@ def test_featurebyte_base_model__pydantic_model_type_error_message():
     class Items(FeatureByteBaseModel):
         """Items class"""
 
-        data: List[StrictStr]
+        data: list[StrictStr]
 
     class Basket(FeatureByteBaseModel):
         """Basket class"""

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, cast
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -99,8 +99,8 @@ class DataFrameObservationSet(ObservationSet):
         self.dataframe = convert_point_in_time_dtype_if_needed(dataframe)
 
     @property
-    def columns(self) -> List[str]:
-        return cast(List[str], self.dataframe.columns.tolist())
+    def columns(self) -> list[str]:
+        return cast(list[str], self.dataframe.columns.tolist())
 
     @property
     def most_recent_point_in_time(self) -> pd.Timestamp:
@@ -255,8 +255,8 @@ def get_historical_features_expr(
     request_table_columns: list[str],
     source_info: SourceInfo,
     serving_names_mapping: dict[str, str] | None = None,
-    parent_serving_preparation: Optional[ParentServingPreparation] = None,
-) -> Tuple[expressions.Select, list[str]]:
+    parent_serving_preparation: ParentServingPreparation | None = None,
+) -> tuple[expressions.Select, list[str]]:
     """Construct the SQL code that extracts historical features
 
     Parameters
@@ -308,7 +308,7 @@ def get_historical_features_query_set(
     output_table_details: TableDetails,
     output_feature_names: list[str],
     serving_names_mapping: dict[str, str] | None = None,
-    parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    parent_serving_preparation: ParentServingPreparation | None = None,
     output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
 ) -> FeatureQuerySet:

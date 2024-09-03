@@ -2,7 +2,8 @@
 Custom MySQL online store implementation for Feast.
 """
 
-from typing import Literal, Sequence
+from collections.abc import Sequence
+from typing import Literal
 
 from feast import Entity, FeatureView, RepoConfig
 from feast.infra.online_stores.contrib.mysql_online_store.mysql import (

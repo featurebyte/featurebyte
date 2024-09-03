@@ -5,7 +5,6 @@ This module contains Catalog related models
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
 
 import pymongo
 from pydantic import Field, StrictStr, field_validator
@@ -48,11 +47,11 @@ class CatalogModel(FeatureByteBaseDocumentModel):
         Datetime when the Catalog object was last updated
     """
 
-    default_feature_store_ids: List[PydanticObjectId] = Field(
+    default_feature_store_ids: list[PydanticObjectId] = Field(
         default_factory=list,
         description="List of default feature store IDs that are associated with the catalog.",
     )
-    online_store_id: Optional[PydanticObjectId] = Field(
+    online_store_id: PydanticObjectId | None = Field(
         default=None,
         description="Online store ID that is associated with the catalog.",
     )
@@ -66,7 +65,7 @@ class CatalogModel(FeatureByteBaseDocumentModel):
         """
 
         collection_name: str = "catalog"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

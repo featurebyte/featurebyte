@@ -3,7 +3,8 @@ This module contains common table related models.
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
+from collections.abc import Iterable
+from typing import Any, Optional, TypeVar, cast
 
 from pydantic import Field, field_validator
 from typing_extensions import Literal
@@ -52,7 +53,7 @@ class BaseTableData(FeatureByteBaseModel):
         description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table"
     )
 
-    columns_info: List[ColumnInfo]
+    columns_info: list[ColumnInfo]
     tabular_source: TabularSource
 
     # pydantic validators
@@ -68,7 +69,7 @@ class BaseTableData(FeatureByteBaseModel):
             SPECIFIC_DATA_TABLES.append(cls)
 
     @property
-    def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+    def column_cleaning_operations(self) -> list[ColumnCleaningOperation]:
         """
         Get column cleaning operations from column info's critical data info
 
@@ -85,7 +86,7 @@ class BaseTableData(FeatureByteBaseModel):
         ]
 
     def clone(
-        self: TableDataT, column_cleaning_operations: List[ColumnCleaningOperation]
+        self: TableDataT, column_cleaning_operations: list[ColumnCleaningOperation]
     ) -> TableDataT:
         """
         Create a new table with the specified column cleaning operations
@@ -114,7 +115,7 @@ class BaseTableData(FeatureByteBaseModel):
             columns_info.append(col)
         return type(self)(**{**self.model_dump(by_alias=True), "columns_info": columns_info})
 
-    def _get_common_input_node_parameters(self) -> Dict[str, Any]:
+    def _get_common_input_node_parameters(self) -> dict[str, Any]:
         return {
             "type": self.type,
             "columns": [ColumnSpec(**col.model_dump()) for col in self.columns_info],
@@ -137,7 +138,7 @@ class BaseTableData(FeatureByteBaseModel):
 
     @staticmethod
     def _add_cleaning_operations(
-        cleaning_operations: List[CleaningOperation],
+        cleaning_operations: list[CleaningOperation],
         graph_node: GraphNode,
         frame_node: Node,
         project_node: ProjectNode,
@@ -180,7 +181,7 @@ class BaseTableData(FeatureByteBaseModel):
         )
 
     def construct_cleaning_recipe_node(
-        self, input_node: InputNode, skip_column_names: List[str]
+        self, input_node: InputNode, skip_column_names: list[str]
     ) -> Optional[GraphNode]:
         """
         Construct cleaning recipe graph node
@@ -197,7 +198,7 @@ class BaseTableData(FeatureByteBaseModel):
         Optional[GraphNode]
         """
         graph_node: Optional[GraphNode] = None
-        proxy_input_nodes: List[BaseNode] = []
+        proxy_input_nodes: list[BaseNode] = []
         frame_node: Node
         for col_info in self._iterate_column_info_with_cleaning_operations():
             if col_info.name in skip_column_names:
@@ -232,7 +233,7 @@ class BaseTableData(FeatureByteBaseModel):
 
         return graph_node
 
-    def prepare_view_columns_info(self, drop_column_names: List[str]) -> List[ColumnInfo]:
+    def prepare_view_columns_info(self, drop_column_names: list[str]) -> list[ColumnInfo]:
         """
         Prepare view columns info
 
@@ -245,7 +246,7 @@ class BaseTableData(FeatureByteBaseModel):
         -------
         List[ColumnInfo]
         """
-        columns_info: List[ColumnInfo] = []
+        columns_info: list[ColumnInfo] = []
         unwanted_column_names = set(drop_column_names)
         for col_info in self.columns_info:
             if col_info.name not in unwanted_column_names:
@@ -256,10 +257,10 @@ class BaseTableData(FeatureByteBaseModel):
         self,
         graph_node_type: GraphNodeType,
         data_node: InputNode,
-        other_input_nodes: List[Node],
-        drop_column_names: List[str],
+        other_input_nodes: list[Node],
+        drop_column_names: list[str],
         metadata: ViewMetadata,
-    ) -> Tuple[GraphNode, List[Node]]:
+    ) -> tuple[GraphNode, list[Node]]:
         """
         Construct view graph node from table. The output of any view should be a single graph node
         that is based on a single table node and optionally other input node(s). By using graph node, we can add
@@ -285,7 +286,7 @@ class BaseTableData(FeatureByteBaseModel):
         Tuple[GraphNode, List[Node]]
         """
         # prepare graph node's inputs
-        view_graph_input_nodes: List[Node] = [data_node]
+        view_graph_input_nodes: list[Node] = [data_node]
         if other_input_nodes:
             view_graph_input_nodes.extend(other_input_nodes)
 
@@ -323,13 +324,13 @@ class BaseTableData(FeatureByteBaseModel):
         # first input node is the cleaning graph node output node (apply cleaning recipe)
         # other input nodes are the proxy input nodes (used to construct additional proxy input nodes
         # in the nested graph)
-        nested_input_nodes: List[Node] = [view_graph_node.output_node, *proxy_input_nodes[1:]]
+        nested_input_nodes: list[Node] = [view_graph_node.output_node, *proxy_input_nodes[1:]]
         assert len(proxy_input_nodes) == len(nested_input_nodes)
         return view_graph_node, nested_input_nodes
 
     @property
     @abstractmethod
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         """
         List of primary key columns of the table
 

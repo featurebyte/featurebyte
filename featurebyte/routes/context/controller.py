@@ -4,7 +4,7 @@ Context API route controller
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import Any
 
 from bson import ObjectId
 
@@ -167,7 +167,7 @@ class ContextController(BaseDocumentController[ContextModel, ContextService, Con
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [
             (self.use_case_service, {"context_id": document_id}),
             (self.observation_table_service, {"context_id": document_id}),

@@ -4,7 +4,7 @@ This module contains class used to transform or extract dictionary like object
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from pydantic import Field
 from typeguard import typechecked
@@ -45,7 +45,7 @@ class DictProject(FeatureByteBaseModel):
         return input_value
 
     @typechecked
-    def project(self, input_value: Dict[str, Any]) -> Any:
+    def project(self, input_value: dict[str, Any]) -> Any:
         """
         Extract value based on given projection rule applied on the given dictionary
 
@@ -69,7 +69,7 @@ class DictTransform(FeatureByteBaseModel):
     rule: Any = Field(default=None)
 
     @classmethod
-    def _transform(cls, transform_rule: Any, input_value: Any, verbose: bool) -> Dict[str, Any]:
+    def _transform(cls, transform_rule: Any, input_value: Any, verbose: bool) -> dict[str, Any]:
         output = {}
         for key, value in transform_rule.items():
             if isinstance(value, DictProject):
@@ -87,7 +87,7 @@ class DictTransform(FeatureByteBaseModel):
                 output[key] = sub_output
         return output
 
-    def transform(self, input_value: Dict[str, Any], verbose: bool = True) -> Dict[str, Any]:
+    def transform(self, input_value: dict[str, Any], verbose: bool = True) -> dict[str, Any]:
         """
         Transform a given dictionary based on given transform rule
 

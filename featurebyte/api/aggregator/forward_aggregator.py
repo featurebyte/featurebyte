@@ -4,7 +4,7 @@ Forward aggregator module
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Type, cast
+from typing import Any, cast
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
@@ -26,7 +26,7 @@ class ForwardAggregator(BaseAggregator):
     """
 
     @property
-    def supported_views(self) -> List[Type[View]]:
+    def supported_views(self) -> list[type[View]]:
         return [EventView, ItemView, ChangeView]
 
     @property
@@ -34,18 +34,18 @@ class ForwardAggregator(BaseAggregator):
         return "forward_aggregate"
 
     @property
-    def not_supported_aggregation_methods(self) -> Optional[List[AggFunc]]:
+    def not_supported_aggregation_methods(self) -> list[AggFunc] | None:
         return [AggFunc.LATEST]
 
     def forward_aggregate(
         self,
-        value_column: Optional[str],
+        value_column: str | None,
         method: str,
         window: str,
         target_name: str,
         fill_value: OptionalScalar = None,
-        skip_fill_na: Optional[bool] = None,
-        offset: Optional[str] = None,
+        skip_fill_na: bool | None = None,
+        offset: str | None = None,
     ) -> Target:
         """
         Aggregate given value_column for each group specified in keys over a time window.
@@ -111,12 +111,12 @@ class ForwardAggregator(BaseAggregator):
 
     def _prepare_node_parameters(
         self,
-        value_column: Optional[str],
+        value_column: str | None,
         method: str,
-        window: Optional[str],
-        target_name: Optional[str],
-        timestamp_col: Optional[str],
-        offset: Optional[str],
+        window: str | None,
+        target_name: str | None,
+        timestamp_col: str | None,
+        offset: str | None,
     ) -> dict[str, Any]:
         """
         Helper function to prepare node parameters.
@@ -155,11 +155,11 @@ class ForwardAggregator(BaseAggregator):
 
     def _validate_parameters(
         self,
-        value_column: Optional[str],
+        value_column: str | None,
         method: str,
-        window: Optional[str] = None,
-        target_name: Optional[str] = None,
-        offset: Optional[str] = None,
+        window: str | None = None,
+        target_name: str | None = None,
+        offset: str | None = None,
     ) -> None:
         """
         Helper function to validate parameters.

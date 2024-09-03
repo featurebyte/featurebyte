@@ -3,7 +3,6 @@ Task registry
 """
 
 from enum import Enum
-from typing import Dict, Type
 
 from featurebyte.enum import WorkerCommand
 from featurebyte.worker.task.base import BaseTask, TaskT
@@ -38,7 +37,7 @@ from featurebyte.worker.task.test_task import TestIOTask, TestTask
 from featurebyte.worker.task.tile_task import TileTask
 
 # TASK_REGISTRY_MAP contains a mapping of the worker command to the task.
-TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-type]
+TASK_REGISTRY_MAP: dict[Enum, type[BaseTask[TaskT]]] = {  # type: ignore[valid-type]
     WorkerCommand.FEATURE_JOB_SETTING_ANALYSIS_CREATE: FeatureJobSettingAnalysisTask,
     WorkerCommand.FEATURE_JOB_SETTING_ANALYSIS_BACKTEST: FeatureJobSettingAnalysisBacktestTask,
     WorkerCommand.HISTORICAL_FEATURE_TABLE_CREATE: HistoricalFeatureTableTask,

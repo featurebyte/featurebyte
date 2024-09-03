@@ -4,7 +4,7 @@ Credential module
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar
 
 from pydantic import Field
 from typeguard import typechecked
@@ -33,20 +33,20 @@ class Credential(DeletableApiObject, SavableApiObject):
     _update_schema_class: ClassVar[Any] = CredentialUpdate
     _list_schema: ClassVar[Any] = CredentialRead
     _get_schema: ClassVar[Any] = CredentialRead
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "feature_store",
         "created_at",
         "updated_at",
         "database_credential",
         "storage_credential",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store"),
     ]
 
     # pydantic instance variable (internal use)
-    internal_database_credential: Optional[DatabaseCredential] = Field(alias="database_credential")
-    internal_storage_credential: Optional[StorageCredential] = Field(alias="storage_credential")
+    internal_database_credential: DatabaseCredential | None = Field(alias="database_credential")
+    internal_storage_credential: StorageCredential | None = Field(alias="storage_credential")
 
     # pydantic instance variable (public)
     feature_store_id: PydanticObjectId = Field(
@@ -54,12 +54,12 @@ class Credential(DeletableApiObject, SavableApiObject):
         description="Id of the feature store that the credential is associated with.",
     )
 
-    def _get_create_payload(self) -> Dict[str, Any]:
+    def _get_create_payload(self) -> dict[str, Any]:
         data = CredentialCreate(**self.model_dump(by_alias=True))
         return data.json_dict()
 
     @property
-    def database_credential(self) -> Optional[DatabaseCredential]:
+    def database_credential(self) -> DatabaseCredential | None:
         """
         Get the database credential type.
 
@@ -71,7 +71,7 @@ class Credential(DeletableApiObject, SavableApiObject):
         return self.cached_model.database_credential
 
     @property
-    def storage_credential(self) -> Optional[StorageCredential]:
+    def storage_credential(self) -> StorageCredential | None:
         """
         Get the storage credential type.
 
@@ -86,8 +86,8 @@ class Credential(DeletableApiObject, SavableApiObject):
     def create(
         cls,
         feature_store_name: str,
-        database_credential: Optional[DatabaseCredential] = None,
-        storage_credential: Optional[StorageCredential] = None,
+        database_credential: DatabaseCredential | None = None,
+        storage_credential: StorageCredential | None = None,
     ) -> Credential:
         """
         Create and return an instance of a credential.
@@ -149,8 +149,8 @@ class Credential(DeletableApiObject, SavableApiObject):
 
     def update_credentials(
         self,
-        database_credential: Optional[DatabaseCredential] = None,
-        storage_credential: Optional[StorageCredential] = None,
+        database_credential: DatabaseCredential | None = None,
+        storage_credential: StorageCredential | None = None,
     ) -> None:
         """
         Update credential details.

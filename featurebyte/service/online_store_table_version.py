@@ -4,8 +4,6 @@ OnlineStoreTableVersionService class
 
 from __future__ import annotations
 
-from typing import Dict, Optional
-
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.online_store_table_version import (
     OnlineStoreTableVersion,
@@ -29,7 +27,7 @@ class OnlineStoreTableVersionService(
     document_class = OnlineStoreTableVersion
     document_update_class = OnlineStoreTableVersionUpdate
 
-    async def get_version(self, aggregation_result_name: str) -> Optional[int]:
+    async def get_version(self, aggregation_result_name: str) -> int | None:
         """
         Get the version of an aggregation result name
 
@@ -50,7 +48,7 @@ class OnlineStoreTableVersionService(
             return int(doc["version"])
         return None
 
-    async def get_versions(self, aggregation_result_names: list[str]) -> Dict[str, int]:
+    async def get_versions(self, aggregation_result_names: list[str]) -> dict[str, int]:
         """
         Get the versions for a list of aggregation result names
 

@@ -5,14 +5,14 @@ Test fixtures for persistent tests
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 from bson import ObjectId
 
 
 @pytest.fixture(name="test_document")
-def test_document_fixture() -> Dict[str, Any]:
+def test_document_fixture() -> dict[str, Any]:
     """
     Test document to be used for testing
 
@@ -35,7 +35,7 @@ def test_document_fixture() -> Dict[str, Any]:
 
 
 @pytest.fixture(name="test_documents")
-def test_documents_fixture(test_document) -> List[Dict[str, Any]]:
+def test_documents_fixture(test_document) -> list[dict[str, Any]]:
     """
     Test documents to be used for testing
 

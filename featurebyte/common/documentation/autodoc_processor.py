@@ -5,7 +5,7 @@ Autodoc Processor
 from __future__ import annotations
 
 import re
-from typing import Any, List, Optional
+from typing import Any
 from xml.etree import ElementTree as etree
 
 from markdown import Markdown
@@ -25,10 +25,10 @@ class ParameterDetails(BaseModel):
     Pydantic model to capture parameter details
     """
 
-    name: Optional[str]
-    type: Optional[str]
-    default: Optional[str]
-    description: Optional[str]
+    name: str | None
+    type: str | None
+    default: str | None
+    description: str | None
 
 
 class ExceptionDetails(BaseModel):
@@ -36,12 +36,12 @@ class ExceptionDetails(BaseModel):
     Pydantic model to capture exception details
     """
 
-    type: Optional[str]
-    description: Optional[str]
+    type: str | None
+    description: str | None
 
 
 def _render_list_item_with_multiple_paragraphs(
-    title: Optional[str], other_paragraphs: List[str]
+    title: str | None, other_paragraphs: list[str]
 ) -> str:
     """
     Helper method to render a list item with multiple paragraphs.
@@ -68,7 +68,7 @@ def _render_list_item_with_multiple_paragraphs(
 
 
 def _get_parameters_content(
-    parameters: List[ParameterDetails], should_skip_keyword_params: bool = False
+    parameters: list[ParameterDetails], should_skip_keyword_params: bool = False
 ) -> str:
     """
     Helper method to get the content for parameters.
@@ -132,7 +132,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
         self._md = Markdown(extensions=self.md.registeredExtensions)
 
     @staticmethod
-    def insert_param_type(elem: etree.Element, param_type_str: Optional[str]) -> None:
+    def insert_param_type(elem: etree.Element, param_type_str: str | None) -> None:
         if param_type_str:
             colon_elem = etree.SubElement(elem, "span")
             colon_elem.text = ": "
@@ -381,7 +381,7 @@ class FBAutoDocProcessor(AutoDocProcessor):
         self,
         elem: etree.Element,
         resource_details: ResourceDetails,
-        members: Optional[List[str]] = None,
+        members: list[str] | None = None,
     ) -> None:
         """
         Render members in a class resource

@@ -7,7 +7,8 @@ We split this into a separate service, as these typically require a session obje
 from __future__ import annotations
 
 import os
-from typing import Any, AsyncGenerator, List, Optional, Tuple
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix
@@ -76,8 +77,8 @@ class FeatureStoreWarehouseService:
         await db_session.check_user_defined_function(user_defined_function=user_defined_function)
 
     async def list_databases(
-        self, feature_store: FeatureStoreModel, get_credential: Optional[Any]
-    ) -> List[str]:
+        self, feature_store: FeatureStoreModel, get_credential: Any | None
+    ) -> list[str]:
         """
         List databases in feature store
 
@@ -102,7 +103,7 @@ class FeatureStoreWarehouseService:
         self,
         feature_store: FeatureStoreModel,
         database_name: str,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         List schemas in feature store
 
@@ -167,7 +168,7 @@ class FeatureStoreWarehouseService:
         feature_store: FeatureStoreModel,
         database_name: str,
         schema_name: str,
-    ) -> List[TableSpec]:
+    ) -> list[TableSpec]:
         """
         List tables in feature store
 
@@ -214,7 +215,7 @@ class FeatureStoreWarehouseService:
         database_name: str,
         schema_name: str,
         table_name: str,
-    ) -> List[ColumnSpecWithDescription]:
+    ) -> list[ColumnSpecWithDescription]:
         """
         List columns in database table
 
@@ -300,7 +301,7 @@ class FeatureStoreWarehouseService:
 
     async def _get_table_shape(
         self, location: TabularSource, db_session: BaseSession
-    ) -> Tuple[Tuple[int, int], bool, list[str]]:
+    ) -> tuple[tuple[int, int], bool, list[str]]:
         # check size of the table
         sql_expr = get_source_count_expr(source=location.table_details)
         sql = sql_to_string(
@@ -383,7 +384,7 @@ class FeatureStoreWarehouseService:
     async def download_table(
         self,
         location: TabularSource,
-    ) -> Optional[AsyncGenerator[bytes, None]]:
+    ) -> AsyncGenerator[bytes, None] | None:
         """
         Download table from location.
 

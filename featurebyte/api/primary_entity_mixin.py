@@ -3,7 +3,7 @@ Primary entity mixin
 """
 
 from abc import abstractmethod
-from typing import List, Sequence
+from collections.abc import Sequence
 
 from bson import ObjectId
 
@@ -45,7 +45,7 @@ class PrimaryEntityMixin(ApiObject):
 
     @property
     @abstractmethod
-    def primary_entity(self) -> List[Entity]:
+    def primary_entity(self) -> list[Entity]:
         """
         Returns the primary entity of the object.
 
@@ -54,10 +54,10 @@ class PrimaryEntityMixin(ApiObject):
         List[Entity]
         """
 
-    def _get_entities(self) -> List[Entity]:
+    def _get_entities(self) -> list[Entity]:
         return [Entity.get_by_id(entity_id) for entity_id in self.entity_ids]
 
-    def _get_primary_entity(self) -> List[Entity]:
+    def _get_primary_entity(self) -> list[Entity]:
         try:
             return [
                 Entity.get_by_id(entity_id) for entity_id in self.cached_model.primary_entity_ids

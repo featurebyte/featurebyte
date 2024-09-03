@@ -4,11 +4,10 @@ StaticSourceTableModel models
 
 from __future__ import annotations
 
-from typing import Union
+from typing import Annotated, Union
 
 import pymongo
 from pydantic import Field
-from typing_extensions import Annotated
 
 from featurebyte.models.materialized_table import MaterializedTableModel
 from featurebyte.models.request_input import SourceTableRequestInput, ViewRequestInput

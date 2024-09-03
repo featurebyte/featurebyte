@@ -5,7 +5,7 @@ Base aggregate asat spec
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List, Optional, cast
+from typing import Any, cast
 
 from bson import ObjectId
 
@@ -27,7 +27,7 @@ class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
     """
 
     parameters: AggregateAsAtParameters
-    parent_dtype: Optional[DBVarType]
+    parent_dtype: DBVarType | None
 
     @property
     def agg_result_name(self) -> str:
@@ -66,8 +66,8 @@ class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
         cls,
         node: Node,
         aggregation_source: AggregationSource,
-        serving_names_mapping: Optional[dict[str, str]],
-        graph: Optional[QueryGraphModel],
+        serving_names_mapping: dict[str, str] | None,
+        graph: QueryGraphModel | None,
         agg_result_name_include_serving_names: bool,
     ) -> list[BaseAggregateAsAtSpec]:
         assert isinstance(node, (AggregateAsAtNode, ForwardAggregateAsAtNode))
@@ -78,7 +78,7 @@ class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
                 parameters=node.parameters,
                 parent_dtype=cls.get_parent_dtype_from_graph(graph, node.parameters.parent, node),
                 aggregation_source=aggregation_source,
-                entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
+                entity_ids=cast(list[ObjectId], node.parameters.entity_ids),
                 serving_names=node.parameters.serving_names,
                 serving_names_mapping=serving_names_mapping,
                 agg_result_name_include_serving_names=agg_result_name_include_serving_names,

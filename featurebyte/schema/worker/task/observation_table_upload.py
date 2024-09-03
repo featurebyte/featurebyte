@@ -4,7 +4,7 @@ ObservationTableUploadTaskPayload schema
 
 from __future__ import annotations
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import Field
 
@@ -29,4 +29,4 @@ class ObservationTableUploadTaskPayload(BaseTaskPayload, ObservationTableUpload)
     observation_set_storage_path: str
     file_format: UploadFileFormat
     uploaded_file_name: str  # the name of the file that was uploaded by the user
-    target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
+    target_namespace_id: PydanticObjectId | None = Field(default=None)

@@ -4,18 +4,13 @@ FeatureListVersion class
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from http import HTTPStatus
 from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -125,7 +120,7 @@ class FeatureListNamespace(ApiObject):
     _update_schema_class: ClassVar[Any] = FeatureListNamespaceUpdate
     _list_schema: ClassVar[Any] = FeatureListNamespaceModelResponse
     _get_schema: ClassVar[Any] = FeatureListNamespaceModelResponse
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "num_feature",
         "status",
@@ -137,14 +132,14 @@ class FeatureListNamespace(ApiObject):
         "primary_entity",
         "created_at",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("entity_ids", Entity, "entities"),
         ForeignKeyMapping("table_ids", TableApiObject, "tables"),
         ForeignKeyMapping("primary_entity_ids", Entity, "primary_entity"),
     ]
 
     @property
-    def feature_list_ids(self) -> List[PydanticObjectId]:
+    def feature_list_ids(self) -> list[PydanticObjectId]:
         """
         List of feature list IDs from the same feature list namespace
 
@@ -155,7 +150,7 @@ class FeatureListNamespace(ApiObject):
         return self.cached_model.feature_list_ids
 
     @property
-    def deployed_feature_list_ids(self) -> List[PydanticObjectId]:
+    def deployed_feature_list_ids(self) -> list[PydanticObjectId]:
         """
         List of deployed feature list IDs from the same feature list namespace
 
@@ -216,10 +211,10 @@ class FeatureListNamespace(ApiObject):
     @classmethod
     def list(
         cls,
-        include_id: Optional[bool] = False,
-        primary_entity: Optional[Union[str, List[str]]] = None,
-        entity: Optional[str] = None,
-        table: Optional[str] = None,
+        include_id: bool | None = False,
+        primary_entity: str | list[str] | None = None,
+        entity: str | None = None,
+        table: str | None = None,
     ) -> pd.DataFrame:
         """
         List saved feature lists
@@ -302,7 +297,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     _update_schema_class: ClassVar[Any] = FeatureListUpdate
     _list_schema: ClassVar[Any] = FeatureListModelResponse
     _get_schema: ClassVar[Any] = FeatureListModelResponse
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "version",
         "num_feature",
@@ -316,10 +311,10 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     internal_catalog_id: PydanticObjectId = Field(
         default_factory=get_active_catalog_id, alias="catalog_id"
     )
-    internal_feature_ids: List[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
+    internal_feature_ids: list[PydanticObjectId] = Field(alias="feature_ids", default_factory=list)
 
     @model_validator(mode="after")
-    def _initialize_feature_list_parameters(self) -> "FeatureList":
+    def _initialize_feature_list_parameters(self) -> FeatureList:
         # set the following values if it is empty (used mainly by the SDK constructed feature list)
         # for the feature list constructed during serialization, following codes should be skipped
         # assign to __dict__ to avoid infinite recursion due to model_validator(mode="after") call with
@@ -381,7 +376,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     @substitute_docstring(
         doc_template=PRIMARY_ENTITY_DOC, format_kwargs={"class_name": "FeatureList"}
     )
-    def primary_entity(self) -> List[Entity]:
+    def primary_entity(self) -> list[Entity]:
         if self.saved:
             primary_entity_ids = self.cached_model.primary_entity_ids  # type: ignore
             return [Entity.get_by_id(entity_id) for entity_id in primary_entity_ids]
@@ -390,7 +385,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     def _get_init_params_from_object(self) -> dict[str, Any]:
         return {"items": self.items}
 
-    def _get_feature_tiles_specs(self) -> List[Tuple[str, List[TileSpec]]]:
+    def _get_feature_tiles_specs(self) -> list[tuple[str, list[TileSpec]]]:
         feature_tile_specs = []
         for feature in self.feature_objects.values():
             tile_specs = ExtendedFeatureModel(**feature.model_dump(by_alias=True)).tile_specs
@@ -435,7 +430,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
             job_history_window=job_history_window, job_duration_tolerance=job_duration_tolerance
         )
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of an FeatureList object. The dictionary
         contains the following keys:
@@ -589,7 +584,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return {"items": []}
 
     @classmethod
-    def get(cls, name: str, version: Optional[str] = None) -> FeatureList:
+    def get(cls, name: str, version: str | None = None) -> FeatureList:
         """
         Retrieve the FeatureList from the persistent data store given the object's name, and version.
 
@@ -647,7 +642,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return Deployment.list(feature_list_id=self.id)
 
     def save(
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+        self, conflict_resolution: ConflictResolution = "raise", _id: ObjectId | None = None
     ) -> None:
         """
         Adds a FeatureList object to the catalog.
@@ -701,7 +696,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         self._delete()
 
     @typechecked
-    def drop(self, items: List[str]) -> FeatureGroup:
+    def drop(self, items: list[str]) -> FeatureGroup:
         """
         Drops feature(s) from the original FeatureList and returns a new FeatureGroup object.
 
@@ -742,9 +737,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     @typechecked
     def preview(
         self,
-        observation_set: Union[ObservationTable, pd.DataFrame],
-        serving_names_mapping: Optional[Dict[str, str]] = None,
-    ) -> Optional[pd.DataFrame]:
+        observation_set: ObservationTable | pd.DataFrame,
+        serving_names_mapping: dict[str, str] | None = None,
+    ) -> pd.DataFrame | None:
         """
         Materializes a FeatureList using a small observation set of up to 50 rows. Unlike compute_historical_features,
         this method does not store partial aggregations (tiles) to speed up future computation. Instead, it computes
@@ -820,7 +815,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return FeatureListNamespace.get_by_id(id=feature_list_namespace_id)
 
     @property
-    def online_enabled_feature_ids(self) -> List[PydanticObjectId]:
+    def online_enabled_feature_ids(self) -> list[PydanticObjectId]:
         """
         List of online enabled feature IDs of this feature list
 
@@ -935,7 +930,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         )
 
     @classmethod
-    def _list_versions(cls, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def _list_versions(cls, include_id: bool | None = True) -> pd.DataFrame:
         """
         Returns a DataFrame that presents a summary of the feature list versions belonging to the namespace of the
         FeatureList object. The DataFrame contains multiple attributes of the feature list versions, such as their
@@ -1005,10 +1000,10 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     @classmethod
     def list(
         cls,
-        include_id: Optional[bool] = False,
-        primary_entity: Optional[Union[str, List[str]]] = None,
-        entity: Optional[str] = None,
-        table: Optional[str] = None,
+        include_id: bool | None = False,
+        primary_entity: str | list[str] | None = None,
+        entity: str | None = None,
+        table: str | None = None,
     ) -> pd.DataFrame:
         """
         List saved feature lists
@@ -1065,7 +1060,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     def get_historical_features_sql(
         self,
         observation_set: pd.DataFrame,
-        serving_names_mapping: Optional[Dict[str, str]] = None,
+        serving_names_mapping: dict[str, str] | None = None,
     ) -> str:
         """
         Retrieve partial SQL statements used to retrieved historical features (for debugging / understanding purposes).
@@ -1115,7 +1110,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     def compute_historical_features(
         self,
         observation_set: pd.DataFrame,
-        serving_names_mapping: Optional[Dict[str, str]] = None,
+        serving_names_mapping: dict[str, str] | None = None,
     ) -> pd.DataFrame:
         """
         Returns a DataFrame with feature values for analysis, model training, or evaluation. The historical features
@@ -1214,9 +1209,9 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     @typechecked
     def compute_historical_feature_table(
         self,
-        observation_set: Union[ObservationTable, pd.DataFrame],
+        observation_set: ObservationTable | pd.DataFrame,
         historical_feature_table_name: str,
-        serving_names_mapping: Optional[Dict[str, str]] = None,
+        serving_names_mapping: dict[str, str] | None = None,
     ) -> HistoricalFeatureTable:
         """
         Materialize feature list using an observation table asynchronously. The historical features
@@ -1286,9 +1281,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return HistoricalFeatureTable.get_by_id(historical_feature_table_doc["_id"])
 
     @typechecked
-    def create_new_version(
-        self, features: Optional[List[FeatureVersionInfo]] = None
-    ) -> FeatureList:
+    def create_new_version(self, features: list[FeatureVersionInfo] | None = None) -> FeatureList:
         """
         Creates a new feature version from a FeatureList object. The current default version of the features within the
         feature list is employed to create the new version, except when specific versions are indicated by the
@@ -1391,7 +1384,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         return FeatureList(**response.json(), **self._get_init_params())
 
     @typechecked
-    def update_status(self, status: Union[FeatureListStatus, str]) -> None:
+    def update_status(self, status: FeatureListStatus | str) -> None:
         """
         A FeatureList can have one of five statuses:
 
@@ -1429,10 +1422,10 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     @typechecked
     def deploy(
         self,
-        deployment_name: Optional[str] = None,
+        deployment_name: str | None = None,
         make_production_ready: bool = False,
         ignore_guardrails: bool = False,
-        use_case_name: Optional[str] = None,
+        use_case_name: str | None = None,
     ) -> Deployment:
         """
         Create a deployment of a feature list. With a deployment, you can serve the feature list in production by
@@ -1502,7 +1495,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
     )
 
     @typechecked
-    def update_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: str | None) -> None:
         """
         Update feature list description
 
@@ -1514,7 +1507,7 @@ class FeatureList(BaseFeatureGroup, DeletableApiObject, SavableApiObject, Featur
         self.feature_list_namespace.update_description(description=description)
 
     @typechecked
-    def update_version_description(self, description: Optional[str]) -> None:
+    def update_version_description(self, description: str | None) -> None:
         """
         Update feature list version description
 

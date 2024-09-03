@@ -4,7 +4,7 @@ OnlineStore API routes
 
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import cast
 
 from bson import ObjectId
 from fastapi import Request
@@ -82,9 +82,9 @@ class OnlineStoreRouter(
         online_store_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
-        sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[SortDir] = SortDirQuery,
-        search: Optional[str] = SearchQuery,
+        sort_by: str | None = AuditLogSortByQuery,
+        sort_dir: SortDir | None = SortDirQuery,
+        search: str | None = SearchQuery,
     ) -> AuditDocumentList:
         return await super().list_audit_logs(
             request,

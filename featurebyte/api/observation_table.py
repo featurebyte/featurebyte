@@ -5,8 +5,9 @@ ObservationTable class
 from __future__ import annotations
 
 import os
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, ClassVar, List, Optional, Sequence, Union
+from typing import Any, ClassVar
 
 import pandas as pd
 from bson import ObjectId
@@ -52,19 +53,19 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
     _list_schema: ClassVar[Any] = ObservationTableListRecord
     _get_schema: ClassVar[Any] = ObservationTableModel
     _update_schema_class: ClassVar[Any] = ObservationTableUpdate
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "type",
         "shape",
         "feature_store_name",
         "created_at",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
 
     @property
-    def entity_ids(self) -> List[PydanticObjectId]:
+    def entity_ids(self) -> list[PydanticObjectId]:
         """
         Returns the entity ids of the observation table.
 
@@ -90,16 +91,16 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
 
     @property
     @substitute_docstring(doc_template=ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def entities(self) -> List[Entity]:
+    def entities(self) -> list[Entity]:
         return self._get_entities()
 
     @property
     @substitute_docstring(doc_template=PRIMARY_ENTITY_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
-    def primary_entity(self) -> List[Entity]:
+    def primary_entity(self) -> list[Entity]:
         return [Entity.get_by_id(entity_id) for entity_id in self.primary_entity_ids]
 
     @property
-    def target_namespace(self) -> Optional[TargetNamespace]:
+    def target_namespace(self) -> TargetNamespace | None:
         """
         Returns the target namespace associated to the observation table.
 
@@ -114,7 +115,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         return TargetNamespace.get_by_id(target_namespace_id)
 
     @property
-    def target(self) -> Optional[Any]:
+    def target(self) -> Any | None:
         """
         Returns the target associated to the observation table.
 
@@ -192,7 +193,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         return self.cached_model.most_recent_point_in_time
 
     @property
-    def least_recent_point_in_time(self) -> Optional[str]:
+    def least_recent_point_in_time(self) -> str | None:
         """
         Returns the least recent point in time of the observation table.
 
@@ -204,7 +205,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         return self.cached_model.least_recent_point_in_time
 
     @property
-    def min_interval_secs_between_entities(self) -> Optional[float]:
+    def min_interval_secs_between_entities(self) -> float | None:
         """
         Returns the minimum interval in seconds between events within entities of the observation table.
 
@@ -216,7 +217,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         return self.cached_model.min_interval_secs_between_entities
 
     @property
-    def entity_column_name_to_count(self) -> Optional[dict[str, int]]:
+    def entity_column_name_to_count(self) -> dict[str, int] | None:
         """
         Returns the entity column name to unique entity count mapping of the observation table.
 
@@ -330,7 +331,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         """
         return super().describe(size=size, seed=seed)
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download(self, output_path: str | Path | None = None) -> Path:
         """
         Downloads the observation table from the database.
 
@@ -384,7 +385,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         super().delete()
 
     @typechecked
-    def update_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: str | None) -> None:
         """
         Update description for the observation table.
 
@@ -401,7 +402,7 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         super().update_description(description)
 
     @typechecked
-    def update_purpose(self, purpose: Union[Purpose, str]) -> None:
+    def update_purpose(self, purpose: Purpose | str) -> None:
         """
         Update purpose for the observation table.
 
@@ -426,11 +427,11 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
     @classmethod
     def upload(
         cls,
-        file_path: Union[str, Path],
+        file_path: str | Path,
         name: str,
-        purpose: Optional[Purpose] = None,
-        primary_entities: Optional[List[str]] = None,
-        target_column: Optional[str] = None,
+        purpose: Purpose | None = None,
+        primary_entities: list[str] | None = None,
+        target_column: str | None = None,
     ) -> ObservationTable:
         """
         Upload a file to create an observation table. This file can either be a CSV or Parquet file.

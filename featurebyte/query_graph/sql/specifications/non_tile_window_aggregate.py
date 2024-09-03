@@ -5,7 +5,7 @@ NonTileWindowAggregateSpec
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List, Optional, cast
+from typing import Any, cast
 
 from bson import ObjectId
 
@@ -31,9 +31,9 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
     """
 
     parameters: NonTileWindowAggregateParameters
-    parent_dtype: Optional[DBVarType]
+    parent_dtype: DBVarType | None
     window: int
-    offset: Optional[int]
+    offset: int | None
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -77,8 +77,8 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
         cls,
         node: Node,
         aggregation_source: AggregationSource,
-        serving_names_mapping: Optional[dict[str, str]],
-        graph: Optional[QueryGraphModel],
+        serving_names_mapping: dict[str, str] | None,
+        graph: QueryGraphModel | None,
         agg_result_name_include_serving_names: bool,
     ) -> list[NonTileWindowAggregateSpec]:
         assert isinstance(node, NonTileWindowAggregateNode)
@@ -94,7 +94,7 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
                         graph, node.parameters.parent, node
                     ),
                     aggregation_source=aggregation_source,
-                    entity_ids=cast(List[ObjectId], node.parameters.entity_ids),
+                    entity_ids=cast(list[ObjectId], node.parameters.entity_ids),
                     serving_names=node.parameters.serving_names,
                     serving_names_mapping=serving_names_mapping,
                     agg_result_name_include_serving_names=agg_result_name_include_serving_names,

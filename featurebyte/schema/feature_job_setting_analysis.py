@@ -2,13 +2,13 @@
 FeatureJobSettingAnalysis API payload schema
 """
 
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Literal, Optional, Sequence, Union
+from typing import Annotated, Any, Literal, Optional, Union
 
 from bson import ObjectId
 from pandas import Timestamp
 from pydantic import AfterValidator, BaseModel, Field, StrictStr, field_validator, model_validator
-from typing_extensions import Annotated
 
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,

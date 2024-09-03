@@ -5,7 +5,7 @@ FeatureJobSettingAnalysis API routes response
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Optional, cast
+from typing import cast
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -66,11 +66,11 @@ async def list_feature_job_setting_analysis(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
-    event_table_id: Optional[PyObjectId] = None,
+    sort_by: str | None = SortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
+    name: str | None = NameQuery,
+    event_table_id: PyObjectId | None = None,
 ) -> FeatureJobSettingAnalysisList:
     """
     List Feature Job Setting Analysis
@@ -145,9 +145,9 @@ async def list_feature_job_setting_analysis_audit_logs(
     feature_job_setting_analysis_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
+    sort_by: str | None = AuditLogSortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
 ) -> AuditDocumentList:
     """
     List Feature Job Setting Analysis audit logs

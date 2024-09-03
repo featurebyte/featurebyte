@@ -5,7 +5,7 @@ Target API routes
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Any, Dict, Optional
+from typing import Any
 
 from bson import ObjectId
 from fastapi import APIRouter, Query, Request
@@ -58,10 +58,10 @@ async def list_target(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
+    sort_by: str | None = SortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
+    name: str | None = NameQuery,
 ) -> TargetList:
     """
     List Target's
@@ -108,9 +108,9 @@ async def list_target_audit_logs(
     target_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
+    sort_by: str | None = AuditLogSortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
 ) -> AuditDocumentList:
     """
     List target audit logs
@@ -126,11 +126,11 @@ async def list_target_audit_logs(
     return audit_doc_list
 
 
-@router.post("/preview", response_model=Dict[str, Any])
+@router.post("/preview", response_model=dict[str, Any])
 async def get_target_preview(
     request: Request,
     target_preview: TargetPreview,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Retrieve Target preview
     """

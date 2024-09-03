@@ -4,7 +4,7 @@ Extract documentation into a CSV file.
 
 import csv
 from dataclasses import dataclass
-from typing import Dict, List, Literal
+from typing import Literal
 
 from featurebyte.common.documentation.doc_types import DocItems, ResourceDetails
 from featurebyte.common.documentation.documentation_layout import get_overall_layout
@@ -73,7 +73,7 @@ def get_resource_details_for_path(path: str, is_pure_method: bool) -> ResourceDe
     return get_resource_details(f"{class_description}::{split_path[-1]}")
 
 
-def extract_details_for_rendering(resource_details: ResourceDetails) -> Dict[str, str]:
+def extract_details_for_rendering(resource_details: ResourceDetails) -> dict[str, str]:
     """
     Extract the details for rendering.
 
@@ -97,7 +97,7 @@ def extract_details_for_rendering(resource_details: ResourceDetails) -> Dict[str
     }
 
 
-def _write_items_to_csv(file_name: str, all_doc_items_to_generate: List[DocItemToRender]) -> None:
+def _write_items_to_csv(file_name: str, all_doc_items_to_generate: list[DocItemToRender]) -> None:
     """
     Write the items to a CSV file.
 
@@ -137,7 +137,7 @@ def _write_items_to_csv(file_name: str, all_doc_items_to_generate: List[DocItemT
         logger.info(f"Success - done writing rows to {file_name}")
 
 
-def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
+def _generate_items_to_render(doc_items: DocItems) -> list[DocItemToRender]:
     """
     Generate the items to render.
 
@@ -152,7 +152,7 @@ def _generate_items_to_render(doc_items: DocItems) -> List[DocItemToRender]:
         The items to render
     """
     logger.info("Building items to generate")
-    all_doc_items_to_generate: List[DocItemToRender] = []
+    all_doc_items_to_generate: list[DocItemToRender] = []
     for layout_item in get_overall_layout():
         doc_path_override = layout_item.get_doc_path_override()
         if doc_path_override is not None:

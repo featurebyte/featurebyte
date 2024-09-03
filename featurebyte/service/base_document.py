@@ -5,10 +5,11 @@ BaseService class
 from __future__ import annotations
 
 import copy
+from collections.abc import AsyncIterator, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, Generic, Iterator, List, Optional, Type, TypeVar, Union
+from typing import Any, Generic, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -75,9 +76,9 @@ class UniqueConstraintData:
     """
 
     query_filter: QueryFilter
-    projection: Dict[str, Any]
-    conflict_signature: Dict[str, Any]
-    resolution_signature: Optional[UniqueConstraintResolutionSignature]
+    projection: dict[str, Any]
+    conflict_signature: dict[str, Any]
+    resolution_signature: UniqueConstraintResolutionSignature | None
 
 
 def as_object_id(object_id: Any) -> ObjectId:
@@ -108,14 +109,14 @@ class BaseDocumentService(
     reading from the persistent.
     """
 
-    document_class: Type[Document]
+    document_class: type[Document]
     _remote_attribute_cache: Any = LRUCache(maxsize=1024)
 
     def __init__(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         block_modification_handler: BlockModificationHandler,
         storage: Storage,
         redis: Redis[Any],
@@ -254,7 +255,7 @@ class BaseDocumentService(
         assert insert_id == document_dict["_id"]
         return await self.get_document(document_id=insert_id)
 
-    async def create_many(self, data_list: List[DocumentCreateSchema]) -> None:
+    async def create_many(self, data_list: list[DocumentCreateSchema]) -> None:
         """
         Create multiple documents in the persistent
 
@@ -279,7 +280,7 @@ class BaseDocumentService(
         )
         assert set(insert_ids) == {doc["_id"] for doc in documents}
 
-    async def _get_document_dict_to_insert(self, data: DocumentCreateSchema) -> Dict[str, Any]:
+    async def _get_document_dict_to_insert(self, data: DocumentCreateSchema) -> dict[str, Any]:
         kwargs = self._extract_additional_creation_kwargs(data)
         if self.is_catalog_specific:
             kwargs = {**kwargs, "catalog_id": self.catalog_id}
@@ -343,9 +344,9 @@ class BaseDocumentService(
         document_id: ObjectId,
         exception_detail: str | None = None,
         use_raw_query_filter: bool = False,
-        projection: Optional[Dict[str, Any]] = None,
+        projection: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Retrieve document dictionary given document id
 
@@ -432,7 +433,7 @@ class BaseDocumentService(
     async def delete_document(
         self,
         document_id: ObjectId,
-        exception_detail: Optional[str] = None,
+        exception_detail: str | None = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> int:
@@ -528,7 +529,7 @@ class BaseDocumentService(
 
         return int(num_of_records_deleted)
 
-    async def _delete_remote_attributes_in_storage(self, document_dict: Dict[str, Any]) -> None:
+    async def _delete_remote_attributes_in_storage(self, document_dict: dict[str, Any]) -> None:
         for remote_path in self.document_class._get_remote_attribute_paths(document_dict):
             await self.storage.try_delete_if_exists(remote_path)
 
@@ -568,7 +569,7 @@ class BaseDocumentService(
 
     def construct_list_query_filter(
         self,
-        query_filter: Optional[QueryFilter] = None,
+        query_filter: QueryFilter | None = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
@@ -625,9 +626,9 @@ class BaseDocumentService(
         self,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
         use_raw_query_filter: bool = False,
-        projection: Optional[Dict[str, Any]] = None,
+        projection: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """
@@ -677,11 +678,11 @@ class BaseDocumentService(
 
     async def list_documents_as_dict_iterator(
         self,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
         use_raw_query_filter: bool = False,
-        projection: Optional[Dict[str, Any]] = None,
+        projection: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> AsyncIterator[Dict[str, Any]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         List documents iterator to retrieve all the results based on given document service & query filter
 
@@ -761,7 +762,7 @@ class BaseDocumentService(
             yield document
 
     def _construct_list_audit_query_filter(
-        self, query_filter: Optional[QueryFilter], **kwargs: Any
+        self, query_filter: QueryFilter | None, **kwargs: Any
     ) -> QueryFilter:
         """
         Construct query filter used in list audit route
@@ -786,10 +787,10 @@ class BaseDocumentService(
     async def list_document_audits(
         self,
         document_id: ObjectId,
-        query_filter: Optional[QueryFilter] = None,
+        query_filter: QueryFilter | None = None,
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
-        sort_by: Optional[list[tuple[str, SortDir]]] = None,
+        sort_by: list[tuple[str, SortDir]] | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
         """
@@ -828,8 +829,8 @@ class BaseDocumentService(
 
     @classmethod
     def _get_field_history(
-        cls, field: str, audit_docs: List[Dict[str, Any]]
-    ) -> List[FieldValueHistory]:
+        cls, field: str, audit_docs: list[dict[str, Any]]
+    ) -> list[FieldValueHistory]:
         """
         Construct list of audit history given field
 
@@ -844,7 +845,7 @@ class BaseDocumentService(
         -------
         List[FieldValueHistory]
         """
-        history: List[FieldValueHistory] = []
+        history: list[FieldValueHistory] = []
         for doc in audit_docs:
             if doc["action_type"] not in {AuditActionType.INSERT, AuditActionType.UPDATE}:
                 # skip action_type other than insert & update
@@ -908,7 +909,7 @@ class BaseDocumentService(
         self,
         conflict_doc: dict[str, Any],
         conflict_signature: dict[str, Any],
-        resolution_signature: Optional[UniqueConstraintResolutionSignature],
+        resolution_signature: UniqueConstraintResolutionSignature | None,
     ) -> str:
         """
         Get the conflict error message
@@ -951,7 +952,7 @@ class BaseDocumentService(
     async def _check_document_unique_constraint(
         self,
         query_filter: QueryFilter,
-        projection: Dict[str, Any],
+        projection: dict[str, Any],
         conflict_signature: dict[str, Any],
         resolution_signature: UniqueConstraintResolutionSignature | None,
     ) -> None:
@@ -994,8 +995,8 @@ class BaseDocumentService(
     @staticmethod
     def _get_unique_constraints(
         document: FeatureByteBaseDocumentModel,
-        document_class: Union[Type[Document], Type[DocumentUpdateSchema]],
-        original_document: Optional[FeatureByteBaseDocumentModel],
+        document_class: type[Document] | type[DocumentUpdateSchema],
+        original_document: FeatureByteBaseDocumentModel | None,
     ) -> Iterator[UniqueConstraintData]:
         """
         Generator used to extract uniqueness constraints from document model setting
@@ -1053,8 +1054,8 @@ class BaseDocumentService(
     async def _check_document_unique_constraints(
         self,
         document: FeatureByteBaseDocumentModel,
-        document_class: Optional[Union[Type[Document], Type[DocumentUpdateSchema]]] = None,
-        original_document: Optional[FeatureByteBaseDocumentModel] = None,
+        document_class: type[Document] | type[DocumentUpdateSchema] | None = None,
+        original_document: FeatureByteBaseDocumentModel | None = None,
     ) -> None:
         """
         Check document uniqueness constraints given document
@@ -1080,7 +1081,7 @@ class BaseDocumentService(
                 resolution_signature=unique_constraint.resolution_signature,
             )
 
-    def _check_document_modifiable(self, document: Dict[str, Any]) -> None:
+    def _check_document_modifiable(self, document: dict[str, Any]) -> None:
         if self.block_modification_handler.block_modification and document.get(
             "block_modification_by"
         ):
@@ -1095,8 +1096,8 @@ class BaseDocumentService(
     async def _update_document(
         self,
         document: Document,
-        update_dict: Dict[str, Any],
-        update_document_class: Optional[Type[DocumentUpdateSchema]],
+        update_dict: dict[str, Any],
+        update_document_class: type[DocumentUpdateSchema] | None,
         skip_block_modification_check: bool = False,
     ) -> None:
         """
@@ -1144,11 +1145,11 @@ class BaseDocumentService(
         document_id: ObjectId,
         data: DocumentUpdateSchema,
         exclude_none: bool = True,
-        document: Optional[Document] = None,
+        document: Document | None = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
-    ) -> Optional[Document]:
+    ) -> Document | None:
         """
         Update document at persistent
 
@@ -1236,7 +1237,7 @@ class BaseDocumentService(
 
     async def historical_document_generator(
         self, document_id: ObjectId
-    ) -> AsyncIterator[Optional[Document]]:
+    ) -> AsyncIterator[Document | None]:
         """
         Reconstruct documents of older history
 
@@ -1307,7 +1308,7 @@ class BaseDocumentService(
     async def update_document_description(
         self,
         document_id: ObjectId,
-        description: Optional[str],
+        description: str | None,
     ) -> None:
         """
         Update document at persistent

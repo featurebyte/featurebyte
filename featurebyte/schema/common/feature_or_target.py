@@ -2,7 +2,7 @@
 Feature or target schema
 """
 
-from typing import Dict, Optional
+from typing import Optional
 
 from bson import ObjectId
 from pydantic import Field
@@ -26,4 +26,4 @@ class ComputeRequest(FeatureByteBaseModel):
     Compute request
     """
 
-    serving_names_mapping: Optional[Dict[str, str]] = Field(default=None)
+    serving_names_mapping: Optional[dict[str, str]] = Field(default=None)

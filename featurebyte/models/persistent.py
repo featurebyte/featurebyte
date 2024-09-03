@@ -2,8 +2,9 @@
 Pydantic Model for persistent storage
 """
 
+from collections.abc import Mapping
 from datetime import datetime
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Optional
 
 from bson import ObjectId
 from pydantic import Field, field_serializer
@@ -14,8 +15,8 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.utils import serialize_obj
 from featurebyte.schema.common.base import PaginationMixin
 
-Document = Dict[str, Any]
-QueryFilter = Dict[str, Any]
+Document = dict[str, Any]
+QueryFilter = dict[str, Any]
 DocumentUpdate = Mapping[str, Any]
 
 
@@ -50,8 +51,8 @@ class AuditDocument(FeatureByteBaseModel):
     document_id: Any = Field(default=None)
     action_at: datetime = Field(default_factory=get_utc_now)
     action_type: AuditActionType
-    previous_values: Dict[str, Any]
-    current_values: Dict[str, Any]
+    previous_values: dict[str, Any]
+    current_values: dict[str, Any]
 
     @field_serializer("previous_values", "current_values", when_used="json")
     @staticmethod
@@ -69,7 +70,7 @@ class AuditDocumentList(PaginationMixin):
     Paginated list of Event Data
     """
 
-    data: List[AuditDocument]
+    data: list[AuditDocument]
 
 
 class FieldValueHistory(FeatureByteBaseModel):

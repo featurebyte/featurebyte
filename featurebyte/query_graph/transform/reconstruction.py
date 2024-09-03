@@ -3,7 +3,7 @@ This module contains graph reconstruction (by replacing certain nodes) related c
 """
 
 from abc import abstractmethod
-from typing import Any, Dict, Optional, Type, TypeVar, cast
+from typing import Any, Optional, TypeVar, cast
 
 from pydantic import Field
 
@@ -25,7 +25,7 @@ from featurebyte.query_graph.util import (
     get_tile_table_identifier_v2,
 )
 
-PRUNING_SENSITIVE_NODE_MAP: Dict[NodeType, Type[BaseNode]] = {}
+PRUNING_SENSITIVE_NODE_MAP: dict[NodeType, type[BaseNode]] = {}
 
 
 class BasePruningSensitiveNode(BaseNode):
@@ -51,7 +51,7 @@ class BasePruningSensitiveNode(BaseNode):
         temp_node: "BasePruningSensitiveNode",
         pruned_graph: QueryGraphModel,
         pruned_input_node_name: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Derive additional parameters that should be based on pruned graph
 
@@ -95,7 +95,7 @@ class GroupByNode(BaseGroupbyNode, BasePruningSensitiveNode):
         temp_node: BasePruningSensitiveNode,
         pruned_graph: QueryGraphModel,
         pruned_input_node_name: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # tile_id & aggregation_id should be based on pruned graph to improve tile reuse
         row_index_lineage_hash = cls._get_row_index_lineage_hash(
             pruned_graph=pruned_graph, pruned_input_node_name=pruned_input_node_name
@@ -133,7 +133,7 @@ class ItemGroupbyNode(BaseItemGroupbyNode, BasePruningSensitiveNode):
         temp_node: BasePruningSensitiveNode,
         pruned_graph: QueryGraphModel,
         pruned_input_node_name: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         # TODO: derive aggregation id from input node hash and node parameters
         return {}
 
@@ -143,8 +143,8 @@ PruningSensitiveNodeT = TypeVar("PruningSensitiveNodeT", bound=BasePruningSensit
 
 def add_pruning_sensitive_operation(
     graph: QueryGraphT,
-    node_cls: Type[PruningSensitiveNodeT],
-    node_params: Dict[str, Any],
+    node_cls: type[PruningSensitiveNodeT],
+    node_params: dict[str, Any],
     input_node: NodeT,
     operation_structure_info: Optional[OperationStructureInfo] = None,
 ) -> PruningSensitiveNodeT:
@@ -220,11 +220,11 @@ def add_pruning_sensitive_operation(
 class GraphReconstructionGlobalState(FeatureByteBaseModel):
     """GraphReconstructionGlobalState class"""
 
-    node_name_to_replacement_node: Dict[str, Node]
+    node_name_to_replacement_node: dict[str, Node]
     regenerate_groupby_hash: bool
 
     graph: QueryGraphModel = Field(default_factory=QueryGraphModel)
-    node_name_map: Dict[str, str] = Field(
+    node_name_map: dict[str, str] = Field(
         default_factory=dict
     )  # node_name => reconstructed node_name
 
@@ -261,7 +261,7 @@ class GraphReconstructionTransformer(
         global_state.node_name_map[node.name] = inserted_node.name
 
     def transform(
-        self, node_name_to_replacement_node: Dict[str, NodeT], regenerate_groupby_hash: bool
+        self, node_name_to_replacement_node: dict[str, NodeT], regenerate_groupby_hash: bool
     ) -> GraphNodeNameMap:
         """
         Transform the graph by replacing all the nodes specified in the node replacement dictionary

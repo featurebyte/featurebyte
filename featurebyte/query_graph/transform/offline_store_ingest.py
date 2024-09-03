@@ -3,7 +3,7 @@ This module contains offline store ingest query extraction related classes.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph_node.base import GraphNode
@@ -69,7 +69,7 @@ class OfflineStoreIngestQueryGraphGlobalState:
 
     # decomposed graph output
     graph: QueryGraphModel
-    node_name_map: Dict[str, str]
+    node_name_map: dict[str, str]
 
     # variables used to decompose the graph
     target_node_name: str
@@ -117,7 +117,7 @@ class OfflineStoreIngestQueryGraphGlobalState:
         )
 
     def add_operation_to_graph(
-        self, node: Node, input_nodes: List[Node], original_node_names: Optional[List[str]] = None
+        self, node: Node, input_nodes: list[Node], original_node_names: Optional[list[str]] = None
     ) -> Node:
         """
         Add operation to the graph
@@ -172,7 +172,7 @@ class OfflineStoreIngestQueryGraphOutput:
     """OfflineStoreIngestQueryGraphOutput class"""
 
     graph: QueryGraphModel
-    node_name_map: Dict[str, str]
+    node_name_map: dict[str, str]
     is_decomposed: bool
 
 
@@ -194,11 +194,11 @@ class OfflineStoreIngestQueryGraphTransformer(
     def _prepare_offline_store_ingest_query_specific_node_parameters(
         subgraph: QueryGraphModel,
         subgraph_output_node: Node,
-        node_name_to_subgraph_node_name: Dict[str, str],
-        aggregation_node_names: Set[str],
+        node_name_to_subgraph_node_name: dict[str, str],
+        aggregation_node_names: set[str],
         aggregation_info: AggregationInfo,
         operation_structure: OperationStructure,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         agg_nodes_info = []
         feature_job_settings = []
         agg_node_names = [agg.node_name for agg in operation_structure.iterate_aggregations()]
@@ -337,7 +337,7 @@ class OfflineStoreIngestQueryGraphTransformer(
     def transform(
         self,
         target_node: Node,
-        relationships_info: List[EntityRelationshipInfo],
+        relationships_info: list[EntityRelationshipInfo],
         feature_name: str,
         feature_version: str,
     ) -> OfflineStoreIngestQueryGraphOutput:

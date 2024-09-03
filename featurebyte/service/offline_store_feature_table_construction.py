@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import os
 import pickle
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
 
 import aiofiles
 from bson import ObjectId
@@ -65,12 +65,12 @@ class OfflineStoreFeatureTableConstructionService:
     async def get_dummy_offline_store_feature_table_model(
         self,
         primary_entity_ids: Sequence[ObjectId],
-        feature_job_setting: Optional[FeatureJobSetting],
+        feature_job_setting: FeatureJobSetting | None,
         has_ttl: bool,
         feature_store_id: ObjectId,
         catalog_id: ObjectId,
         table_name_prefix: str,
-        entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
+        entity_id_to_serving_name: dict[ObjectId, str] | None = None,
     ) -> OfflineStoreFeatureTableModel:
         """
         Returns a dummy OfflineStoreFeatureTableModel for a feature table
@@ -127,10 +127,10 @@ class OfflineStoreFeatureTableConstructionService:
     async def get_offline_store_feature_table_model(
         self,
         feature_table_name: str,
-        features: List[FeatureModel],
-        primary_entities: List[EntityModel],
+        features: list[FeatureModel],
+        primary_entities: list[EntityModel],
         has_ttl: bool,
-        feature_job_setting: Optional[FeatureJobSetting],
+        feature_job_setting: FeatureJobSetting | None,
         source_info: SourceInfo,
     ) -> OfflineStoreFeatureTableModel:
         """
@@ -215,8 +215,8 @@ class OfflineStoreFeatureTableConstructionService:
 
     async def get_entity_universe_model(
         self,
-        offline_ingest_graphs: List[
-            Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]
+        offline_ingest_graphs: list[
+            tuple[OfflineStoreIngestQueryGraph, list[EntityRelationshipInfo]]
         ],
         source_info: SourceInfo,
         feature_table_name: str,
@@ -288,8 +288,8 @@ class OfflineStoreFeatureTableConstructionService:
 
     @staticmethod
     def _get_non_primary_entity_ids(
-        node: Node, offline_ingest_graph_primary_entity_ids: List[PydanticObjectId]
-    ) -> List[PydanticObjectId]:
+        node: Node, offline_ingest_graph_primary_entity_ids: list[PydanticObjectId]
+    ) -> list[PydanticObjectId]:
         node_entity_ids = None
         if isinstance(node.parameters, BaseGroupbyParameters):
             node_entity_ids = node.parameters.entity_ids

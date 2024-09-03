@@ -4,7 +4,7 @@ Module for tiles related utilities
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, cast
+from typing import Any, cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression
@@ -21,11 +21,11 @@ from featurebyte.query_graph.sql.interpreter import TileGenSql
 def calculate_first_and_last_tile_indices(
     adapter: BaseAdapter,
     point_in_time_expr: Expression,
-    window_size: Optional[int],
-    offset: Optional[int],
+    window_size: int | None,
+    offset: int | None,
     frequency: int,
     time_modulo_frequency: int,
-) -> Tuple[Optional[Expression], Expression]:
+) -> tuple[Expression | None, Expression]:
     """
     Calculate the first (inclusive) and last (exclusive) tile indices required to compute a feature,
     given:
@@ -77,7 +77,7 @@ def calculate_last_tile_index_expr(
     point_in_time_expr: Expression,
     frequency: int,
     time_modulo_frequency: int,
-    offset: Optional[int],
+    offset: int | None,
 ) -> Expression:
     """
     Calculate the last tile index (exclusive) required to compute a feature

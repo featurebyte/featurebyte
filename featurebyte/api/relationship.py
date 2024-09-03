@@ -2,7 +2,7 @@
 Relationships API object
 """
 
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Optional, Union
 
 import pandas as pd
 from pydantic import Field
@@ -43,7 +43,7 @@ class Relationship(ApiObject):
     _update_schema_class: ClassVar[Any] = RelationshipInfoUpdate
     _get_schema: ClassVar[Any] = RelationshipInfoModel
     _list_schema: ClassVar[Any] = RelationshipInfoModel
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "relationship_type",
         "entity",
         "related_entity",
@@ -53,7 +53,7 @@ class Relationship(ApiObject):
         "created_at",
         "updated_at",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("entity_id", Entity, "entity"),
         ForeignKeyMapping("related_entity_id", Entity, "related_entity"),
         ForeignKeyMapping("relation_table_id", TableApiObject, "relation_table"),
@@ -214,7 +214,7 @@ class Relationship(ApiObject):
         """
         self.update({"enabled": False}, allow_update_local=True, add_internal_prefix=True)
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of the relationship represented by the
         Relationship object. The dictionary contains the following keys:

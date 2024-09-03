@@ -4,7 +4,8 @@ Feature list creation with batch feature creation task
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from bson import ObjectId
 

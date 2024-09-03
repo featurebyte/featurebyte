@@ -4,7 +4,7 @@ OnlineStore API route controller
 
 from __future__ import annotations
 
-from typing import Any, List, Tuple, cast
+from typing import Any, cast
 
 from bson import ObjectId
 
@@ -59,7 +59,7 @@ class OnlineStoreController(
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
-    ) -> List[Tuple[Any, QueryFilter]]:
+    ) -> list[tuple[Any, QueryFilter]]:
         return [(self.all_catalog_service, {"online_store_id": document_id})]
 
     async def get_info(

@@ -4,7 +4,7 @@ CredentialService
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from bson import ObjectId
 from cryptography.fernet import InvalidToken
@@ -37,7 +37,7 @@ class CredentialService(
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
         block_modification_handler: BlockModificationHandler,
@@ -68,7 +68,7 @@ class CredentialService(
 
     def construct_list_query_filter(
         self,
-        query_filter: Optional[QueryFilter] = None,
+        query_filter: QueryFilter | None = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
@@ -142,11 +142,11 @@ class CredentialService(
         document_id: ObjectId,
         data: CredentialServiceUpdate,
         exclude_none: bool = True,
-        document: Optional[CredentialModel] = None,
+        document: CredentialModel | None = None,
         return_document: bool = True,
         skip_block_modification_check: bool = False,
         populate_remote_attributes: bool = True,
-    ) -> Optional[CredentialModel]:
+    ) -> CredentialModel | None:
         """
         Update document at persistent
 

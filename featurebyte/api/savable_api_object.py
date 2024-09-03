@@ -5,7 +5,7 @@ SavableApiObject class
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Any, Optional
+from typing import Any
 
 from bson import ObjectId
 from typeguard import typechecked
@@ -45,7 +45,7 @@ class SavableApiObject(ApiObject):
 
     @typechecked
     def save(
-        self, conflict_resolution: ConflictResolution = "raise", _id: Optional[ObjectId] = None
+        self, conflict_resolution: ConflictResolution = "raise", _id: ObjectId | None = None
     ) -> None:
         """
         Save an object to the persistent data store.

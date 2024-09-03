@@ -3,7 +3,8 @@ Database Migration
 """
 
 import functools
-from typing import Any, Awaitable, Callable, TypeVar, cast
+from collections.abc import Awaitable
+from typing import Any, Callable, TypeVar, cast
 
 from pydantic import BaseModel
 

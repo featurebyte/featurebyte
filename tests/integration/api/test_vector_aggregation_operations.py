@@ -4,7 +4,6 @@ Test vector aggregation operations module
 
 import json
 import os
-from typing import List
 
 import numpy as np
 import pandas as pd
@@ -97,7 +96,7 @@ def scd_data_with_array_fixture():
 
 def get_expected_dataframe(
     input_vector_data: pd.DataFrame,
-    groupby_columns: List[str],
+    groupby_columns: list[str],
     vector_column: str,
     agg_func: AggFunc,
 ) -> pd.DataFrame:

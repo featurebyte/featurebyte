@@ -4,7 +4,7 @@ Catalog module
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar
 
 import pandas as pd
 from bson import ObjectId
@@ -70,18 +70,16 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     _update_schema_class: ClassVar[Any] = CatalogUpdate
     _list_schema: ClassVar[Any] = CatalogModel
     _get_schema: ClassVar[Any] = CatalogModel
-    _list_fields: ClassVar[List[str]] = ["name", "created_at", "active"]
+    _list_fields: ClassVar[list[str]] = ["name", "created_at", "active"]
 
     # pydantic instance variable (internal use)
-    internal_default_feature_store_ids: List[PydanticObjectId] = Field(
+    internal_default_feature_store_ids: list[PydanticObjectId] = Field(
         alias="default_feature_store_ids"
     )
-    internal_online_store_id: Optional[PydanticObjectId] = Field(
-        default=None, alias="online_store_id"
-    )
+    internal_online_store_id: PydanticObjectId | None = Field(default=None, alias="online_store_id")
 
     @property
-    def default_feature_store_ids(self) -> List[PydanticObjectId]:
+    def default_feature_store_ids(self) -> list[PydanticObjectId]:
         """
         Feature store IDs associated with the catalog. This should only have one ID, until we support multiple
         feature stores at a later point.
@@ -97,7 +95,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             return self.internal_default_feature_store_ids
 
     @property
-    def online_store_id(self) -> Optional[PydanticObjectId]:
+    def online_store_id(self) -> PydanticObjectId | None:
         """
         Returns the online store ID associated with the catalog.
 
@@ -128,11 +126,11 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             raise ValueError("Catalog does not have an associated online store.")
         return OnlineStore.get_by_id(self.online_store_id)
 
-    def _get_create_payload(self) -> Dict[str, Any]:
+    def _get_create_payload(self) -> dict[str, Any]:
         data = CatalogCreate(**self.model_dump(by_alias=True))
         return data.json_dict()
 
-    def info(self, verbose: bool = False) -> Dict[str, Any]:
+    def info(self, verbose: bool = False) -> dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of a Catalog object. The dictionary includes
         the following keys:
@@ -200,7 +198,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         cls,
         name: str,
         feature_store_name: str,
-        online_store_name: Optional[str] = None,
+        online_store_name: str | None = None,
     ) -> Catalog:
         """
         Creates a Catalog object that allows team members to easily add, search, retrieve, and reuse tables,
@@ -249,7 +247,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         cls,
         name: str,
         feature_store_name: str,
-        online_store_name: Optional[str] = None,
+        online_store_name: str | None = None,
     ) -> Catalog:
         """
         Create and return an instance of a catalog. If a catalog with the same name already exists,
@@ -293,7 +291,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
             )
 
     @classmethod
-    def get_active(cls) -> Optional[Catalog]:
+    def get_active(cls) -> Catalog | None:
         """
         Gets the currently active catalog.
 
@@ -345,7 +343,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         self.update(update_payload={"name": name}, allow_update_local=True)
 
     @typechecked
-    def update_online_store(self, online_store_name: Optional[str]) -> None:
+    def update_online_store(self, online_store_name: str | None) -> None:
         """
         Updates online store for the catalog.
 
@@ -375,7 +373,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         self._get_by_id(self.id, use_cache=False)
 
     @property
-    def name_history(self) -> List[Dict[str, Any]]:
+    def name_history(self) -> list[dict[str, Any]]:
         """
         List of name history entries
 
@@ -432,7 +430,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return super().get_by_id(id=id)
 
     @classmethod
-    def list(cls, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list(cls, include_id: bool | None = True) -> pd.DataFrame:
         """
         Returns a DataFrame containing information on catalogs such as their names, creation dates, and active status.
 
@@ -455,7 +453,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return super().list(include_id=include_id)
 
     @update_and_reset_catalog
-    def create_entity(self, name: str, serving_names: List[str]) -> Entity:
+    def create_entity(self, name: str, serving_names: list[str]) -> Entity:
         """
         Registers a new Entity object in the catalog.
 
@@ -494,9 +492,9 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def list_features(
         self,
-        include_id: Optional[bool] = True,
-        primary_entity: Optional[Union[str, List[str]]] = None,
-        primary_table: Optional[Union[str, List[str]]] = None,
+        include_id: bool | None = True,
+        primary_entity: str | list[str] | None = None,
+        primary_table: str | list[str] | None = None,
     ) -> pd.DataFrame:
         """
         Generates a DataFrame that contains various attributes of the registered features, such as their names,
@@ -542,10 +540,10 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def list_feature_lists(
         self,
-        include_id: Optional[bool] = True,
-        primary_entity: Optional[Union[str, List[str]]] = None,
-        entity: Optional[str] = None,
-        table: Optional[str] = None,
+        include_id: bool | None = True,
+        primary_entity: str | list[str] | None = None,
+        entity: str | None = None,
+        table: str | None = None,
     ) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered feature lists. These attributes
@@ -586,7 +584,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
 
     @update_and_reset_catalog
     def list_tables(
-        self, include_id: Optional[bool] = True, entity: Optional[str] = None
+        self, include_id: bool | None = True, entity: str | None = None
     ) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered tables in the catalog, such as their
@@ -613,7 +611,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Table.list(include_id=include_id, entity=entity)
 
     @update_and_reset_catalog
-    def list_targets(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_targets(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered targets in the catalog
 
@@ -634,7 +632,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Target.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_use_cases(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_use_cases(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered use cases in the catalog
 
@@ -655,7 +653,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return UseCase.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_contexts(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_contexts(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the registered contexts in the catalog
 
@@ -679,8 +677,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def list_relationships(
         self,
-        include_id: Optional[bool] = True,
-        relationship_type: Optional[Union[RelationshipType, str]] = None,
+        include_id: bool | None = True,
+        relationship_type: RelationshipType | str | None = None,
     ) -> pd.DataFrame:
         """
         List all relationships that exist in your FeatureByte instance, or filtered by relationship type.
@@ -732,8 +730,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def list_feature_job_setting_analyses(
         self,
-        include_id: Optional[bool] = True,
-        event_table_id: Optional[ObjectId] = None,
+        include_id: bool | None = True,
+        event_table_id: ObjectId | None = None,
     ) -> pd.DataFrame:
         """
         List saved feature job setting analyses.
@@ -759,7 +757,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return FeatureJobSettingAnalysis.list(include_id=include_id, event_table_id=event_table_id)
 
     @update_and_reset_catalog
-    def list_feature_stores(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_feature_stores(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         List saved feature stores.
 
@@ -782,7 +780,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return FeatureStore.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_online_stores(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_online_stores(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         List saved online stores.
 
@@ -805,7 +803,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return OnlineStore.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_entities(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_entities(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         Returns a DataFrame that contains various attributes of the entities registered in the catalog, such as
         their names, serving names and creation dates.
@@ -827,7 +825,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Entity.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_periodic_tasks(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_periodic_tasks(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         List saved periodic tasks.
 
@@ -850,7 +848,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return PeriodicTask.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_observation_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_observation_tables(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         List saved observation tables.
 
@@ -873,7 +871,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return ObservationTable.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_historical_feature_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_historical_feature_tables(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         List saved historical feature tables.
 
@@ -896,7 +894,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return HistoricalFeatureTable.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_batch_request_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_batch_request_tables(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         List saved batch request tables.
 
@@ -919,7 +917,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return BatchRequestTable.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_batch_feature_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_batch_feature_tables(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         List saved batch feature tables.
 
@@ -942,7 +940,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return BatchFeatureTable.list(include_id=include_id)
 
     @update_and_reset_catalog
-    def list_static_source_tables(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_static_source_tables(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         List saved static source tables.
 
@@ -967,8 +965,8 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
     @update_and_reset_catalog
     def list_deployments(
         self,
-        include_id: Optional[bool] = True,
-        feature_list_id: Optional[Union[ObjectId, str]] = None,
+        include_id: bool | None = True,
+        feature_list_id: ObjectId | str | None = None,
     ) -> pd.DataFrame:
         """
         List saved deployments.
@@ -994,7 +992,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Deployment.list(include_id=include_id, feature_list_id=feature_list_id)
 
     @update_and_reset_catalog
-    def list_user_defined_functions(self, include_id: Optional[bool] = True) -> pd.DataFrame:
+    def list_user_defined_functions(self, include_id: bool | None = True) -> pd.DataFrame:
         """
         List saved user defined functions.
 
@@ -1062,7 +1060,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return table.get_view()  # type: ignore[no-any-return]
 
     @update_and_reset_catalog
-    def get_feature(self, name: str, version: Optional[str] = None) -> Feature:
+    def get_feature(self, name: str, version: str | None = None) -> Feature:
         """
         Gets a Feature object from the catalog using the feature's name and optionally its version name. If no
         version name is provided, the default version of the feature is returned.
@@ -1097,7 +1095,7 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         return Feature.get(name=name, version=version)
 
     @update_and_reset_catalog
-    def get_feature_list(self, name: str, version: Optional[str] = None) -> FeatureList:
+    def get_feature_list(self, name: str, version: str | None = None) -> FeatureList:
         """
         Gets a FeatureList object from the catalog by specifying the feature list's name and, optionally,
         its version name. If the version name is not provided, the default version of the feature list will

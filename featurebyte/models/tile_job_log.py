@@ -4,8 +4,6 @@ TileJobStatus model
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import pymongo
 from pydantic import Field, StrictStr
 
@@ -26,8 +24,8 @@ class TileJobLogModel(FeatureByteCatalogBaseDocumentModel):
     session_id: StrictStr
     status: StrictStr
     message: StrictStr
-    traceback: Optional[StrictStr] = Field(default=None)
-    duration: Optional[float] = Field(default=None)
+    traceback: StrictStr | None = Field(default=None)
+    duration: float | None = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -35,7 +33,7 @@ class TileJobLogModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "tile_job_log"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

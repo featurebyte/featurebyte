@@ -2,7 +2,7 @@
 This module contains operation structure extraction related classes.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
@@ -25,8 +25,8 @@ class OperationStructureExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: OperationStructureInfo,
         node: Node,
-        input_node_names: List[str],
-    ) -> Tuple[List[str], bool]:
+        input_node_names: list[str],
+    ) -> tuple[list[str], bool]:
         return input_node_names, False
 
     def _in_compute(
@@ -43,7 +43,7 @@ class OperationStructureExtractor(
     def _prepare_operation_structure(
         node: BaseGraphNode,
         operation_structure: OperationStructure,
-        proxy_input_operation_structures: List[OperationStructure],
+        proxy_input_operation_structures: list[OperationStructure],
     ) -> OperationStructure:
         # find the proxy input nodes from the nested graph to create proxy node name to outer node names mapping
         # (to remap the proxy node name in the nested graph back to outer graph)
@@ -83,7 +83,7 @@ class OperationStructureExtractor(
     def _derive_nested_graph_operation_structure(
         self,
         node: BaseGraphNode,
-        input_operation_structures: List[OperationStructure],
+        input_operation_structures: list[OperationStructure],
         global_state: OperationStructureInfo,
     ) -> OperationStructure:
         # extract operation_structure of the nested graph
@@ -112,7 +112,7 @@ class OperationStructureExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: OperationStructureInfo,
         node: Node,
-        inputs: List[OperationStructure],
+        inputs: list[OperationStructure],
         skip_post: bool,
     ) -> OperationStructure:
         if node.name in global_state.operation_structure_map:
@@ -136,10 +136,10 @@ class OperationStructureExtractor(
     def extract(
         self,
         node: Node,
-        proxy_input_operation_structures: Optional[List[OperationStructure]] = None,
+        proxy_input_operation_structures: Optional[list[OperationStructure]] = None,
         **kwargs: Any,
     ) -> OperationStructureInfo:
-        state_params: Dict[str, Any] = {"keep_all_source_columns": True}
+        state_params: dict[str, Any] = {"keep_all_source_columns": True}
         if "keep_all_source_columns" in kwargs:
             # if this parameter is set, then the operation structure will keep all the source columns
             # even if they are not directly used in the operation (for example, event timestamp & entity columns

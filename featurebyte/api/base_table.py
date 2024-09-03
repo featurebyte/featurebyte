@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from http import HTTPStatus
-from typing import Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import Any, ClassVar, TypeVar, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -70,7 +70,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         return cast(ColumnInfo, column_info)
 
     @property
-    def description(self) -> Optional[str]:
+    def description(self) -> str | None:
         """
         Description of the column.
 
@@ -81,7 +81,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         return self.info.description
 
     @property
-    def cleaning_operations(self) -> List[CleaningOperation]:
+    def cleaning_operations(self) -> list[CleaningOperation]:
         """
         Cleaning operations applied to the column of the table.
 
@@ -112,7 +112,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         """
         for column_cleaning_operations in self.parent.column_cleaning_operations:
             if column_cleaning_operations.column_name == self.name:
-                return cast(List[CleaningOperation], column_cleaning_operations.cleaning_operations)
+                return cast(list[CleaningOperation], column_cleaning_operations.cleaning_operations)
         return []
 
     @property
@@ -127,7 +127,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         return cast(FeatureStoreModel, self.parent.feature_store)
 
     @typechecked
-    def as_entity(self, entity_name: Optional[str]) -> None:
+    def as_entity(self, entity_name: str | None) -> None:
         """
         Tags an entity to a column that represents the entity in the table, providing further context and organization
         to facilitate feature engineering.
@@ -147,7 +147,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         self.parent.update_column_entity(self.info.name, entity_name)
 
     @typechecked
-    def update_critical_data_info(self, cleaning_operations: List[CleaningOperation]) -> None:
+    def update_critical_data_info(self, cleaning_operations: list[CleaningOperation]) -> None:
         """
         Associates metadata with the column such as default cleaning operations that automatically apply when views
         are created from a table. These operations help ensure data consistency and accuracy.
@@ -206,7 +206,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         self.parent.update_column_critical_data_info(self.info.name, critical_data_info)
 
     @typechecked
-    def update_description(self, description: Optional[str]) -> None:
+    def update_description(self, description: str | None) -> None:
         """
         Update description of a column in the table.
 
@@ -309,7 +309,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         return self.parent.preview(limit=limit, after_cleaning=after_cleaning)[[self.info.name]]
 
     @typechecked
-    def shape(self, after_cleaning: bool = False) -> Tuple[int, int]:
+    def shape(self, after_cleaning: bool = False) -> tuple[int, int]:
         """
         Return the shape of the table column.
 
@@ -335,8 +335,8 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         self,
         size: int = 10,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
         """
@@ -396,8 +396,8 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         self,
         size: int = 0,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
         """
@@ -464,13 +464,13 @@ class TableListMixin(ApiObject):
     # class variables
     _route: ClassVar[str] = "/table"
     _list_schema: ClassVar[Any] = ProxyTableModel
-    _list_fields: ClassVar[List[str]] = ["name", "type", "status", "entities", "created_at"]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_fields: ClassVar[list[str]] = ["name", "type", "status", "entities", "created_at"]
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("columns_info.entity_id", Entity, "entities"),
     ]
 
     @classmethod
-    def list(cls, include_id: Optional[bool] = False, entity: Optional[str] = None) -> DataFrame:
+    def list(cls, include_id: bool | None = False, entity: str | None = None) -> DataFrame:
         """
         List saved table sources
 
@@ -501,7 +501,7 @@ class TableApiObject(
 
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Table")
-    _create_schema_class: ClassVar[Optional[Type[FeatureByteBaseModel]]] = None
+    _create_schema_class: ClassVar[type[FeatureByteBaseModel] | None] = None
 
     # pydantic instance variables
     type: Literal[
@@ -515,12 +515,12 @@ class TableApiObject(
     )
 
     # pydantic instance variable (internal use)
-    internal_record_creation_timestamp_column: Optional[str] = Field(
+    internal_record_creation_timestamp_column: str | None = Field(
         alias="record_creation_timestamp_column"
     )
 
     @property
-    def entity_ids(self) -> List[PydanticObjectId]:
+    def entity_ids(self) -> list[PydanticObjectId]:
         """
         Returns the list of entity IDs that are represented in the table.
 
@@ -546,7 +546,7 @@ class TableApiObject(
             return self._table_data_class(**self.model_dump(by_alias=True))
 
     @property
-    def columns_info(self) -> List[ColumnInfo]:
+    def columns_info(self) -> list[ColumnInfo]:
         """
         Provides information about the columns in the table such as column name, column type, entity ID associated
         with the column, semantic ID associated with the column, and the critical data information associated with
@@ -589,7 +589,7 @@ class TableApiObject(
         return self.cached_model.catalog_id
 
     @property
-    def primary_key_columns(self) -> List[str]:
+    def primary_key_columns(self) -> list[str]:
         """
         List of primary key columns of the table.
 
@@ -619,7 +619,7 @@ class TableApiObject(
             return TableStatus.PUBLIC_DRAFT
 
     @property
-    def record_creation_timestamp_column(self) -> Optional[str]:
+    def record_creation_timestamp_column(self) -> str | None:
         """
         Returns the name of the column in the table that represents the timestamp for record creation. This
         information is utilized to analyze feature job settings, and the identified column is treated as a special
@@ -637,7 +637,7 @@ class TableApiObject(
             return self.internal_record_creation_timestamp_column
 
     @property
-    def column_cleaning_operations(self) -> List[ColumnCleaningOperation]:
+    def column_cleaning_operations(self) -> list[ColumnCleaningOperation]:
         """
         List of column cleaning operations associated with this table. Column cleaning operation is a list of
         cleaning operations to be applied to a column of this table.
@@ -692,11 +692,11 @@ class TableApiObject(
     @classmethod
     @typechecked
     def create(
-        cls: Type[SourceTableApiObjectT],
+        cls: type[SourceTableApiObjectT],
         source_table: SourceTable,
         name: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
+        record_creation_timestamp_column: str | None = None,
+        _id: ObjectId | None = None,
         **kwargs: Any,
     ) -> SourceTableApiObjectT:
         """
@@ -762,11 +762,11 @@ class TableApiObject(
     @classmethod
     @typechecked
     def get_or_create(
-        cls: Type[SourceTableApiObjectT],
+        cls: type[SourceTableApiObjectT],
         source_table: SourceTable,
         name: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
+        record_creation_timestamp_column: str | None = None,
+        _id: ObjectId | None = None,
         **kwargs: Any,
     ) -> SourceTableApiObjectT:
         """
@@ -809,8 +809,8 @@ class TableApiObject(
         self,
         size: int = 0,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
         """
@@ -955,7 +955,7 @@ class TableApiObject(
         )
 
     @typechecked
-    def update_status(self, status: Union[TableStatus, str]) -> None:
+    def update_status(self, status: TableStatus | str) -> None:
         """
         Update table status
 
@@ -977,11 +977,11 @@ class TableApiObject(
     @staticmethod
     def _validate_view_mode_params(
         view_mode: ViewMode,
-        drop_column_names: Optional[List[str]],
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]],
-        event_drop_column_names: Optional[List[str]] = None,
-        event_column_cleaning_operations: Optional[List[ColumnCleaningOperation]] = None,
-        event_join_column_names: Optional[List[str]] = None,
+        drop_column_names: list[str] | None,
+        column_cleaning_operations: list[ColumnCleaningOperation] | None,
+        event_drop_column_names: list[str] | None = None,
+        event_column_cleaning_operations: list[ColumnCleaningOperation] | None = None,
+        event_join_column_names: list[str] | None = None,
     ) -> None:
         """
         Validate parameters passed from_*_data method
@@ -1022,9 +1022,9 @@ class TableApiObject(
     @staticmethod
     def _prepare_table_data_and_column_cleaning_operations(
         table_data: TableDataT,
-        column_cleaning_operations: Optional[List[ColumnCleaningOperation]],
+        column_cleaning_operations: list[ColumnCleaningOperation] | None,
         view_mode: ViewMode,
-    ) -> Tuple[TableDataT, List[ColumnCleaningOperation]]:
+    ) -> tuple[TableDataT, list[ColumnCleaningOperation]]:
         column_cleaning_operations = column_cleaning_operations or []
         if view_mode == ViewMode.MANUAL:
             table_data = table_data.clone(column_cleaning_operations=column_cleaning_operations)
@@ -1040,7 +1040,7 @@ class TableApiObject(
         return table_data, column_cleaning_operations
 
     @typechecked
-    def update_column_entity(self, column_name: str, entity_name: Optional[str]) -> None:
+    def update_column_entity(self, column_name: str, entity_name: str | None) -> None:
         """
         Update column entity
 
@@ -1092,7 +1092,7 @@ class TableApiObject(
         )
 
     @typechecked
-    def update_column_description(self, column_name: str, description: Optional[str]) -> None:
+    def update_column_description(self, column_name: str, description: str | None) -> None:
         """
         Update column description
 

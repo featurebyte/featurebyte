@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import tempfile
 from collections import defaultdict
+from collections.abc import Sequence
 from datetime import timedelta
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, cast
+from typing import Any, cast
 from unittest.mock import patch
 
 from feast import Entity as FeastEntity
@@ -62,7 +63,7 @@ class EntityFeatureChecker:
     """
 
     @staticmethod
-    def check_missing_entities(entities: List[EntityModel], features: List[FeatureModel]) -> None:
+    def check_missing_entities(entities: list[EntityModel], features: list[FeatureModel]) -> None:
         """
         Checks if all entities have been provided
 
@@ -88,7 +89,7 @@ class EntityFeatureChecker:
 
     @staticmethod
     def check_missing_features(
-        features: List[FeatureModel], feature_lists: List[FeatureListModel]
+        features: list[FeatureModel], feature_lists: list[FeatureListModel]
     ) -> None:
         """
         Checks if all features have been provided
@@ -123,15 +124,15 @@ class OfflineStoreTable(FeatureByteBaseModel):
     """
 
     table_name: str
-    feature_job_setting: Optional[FeatureJobSetting] = PydanticField(default=None)
+    feature_job_setting: FeatureJobSetting | None = PydanticField(default=None)
     has_ttl: bool
-    output_column_names: List[str]
-    output_dtypes: List[DBVarType]
-    primary_entity_info: List[OfflineStoreEntityInfo]
-    source_feature_table_name: Optional[str] = PydanticField(default=None)
+    output_column_names: list[str]
+    output_dtypes: list[DBVarType]
+    primary_entity_info: list[OfflineStoreEntityInfo]
+    source_feature_table_name: str | None = PydanticField(default=None)
 
     @property
-    def primary_entity_ids(self) -> Tuple[PydanticObjectId, ...]:
+    def primary_entity_ids(self) -> tuple[PydanticObjectId, ...]:
         """
         Get primary entity ids
 
@@ -146,8 +147,8 @@ class OfflineStoreTable(FeatureByteBaseModel):
     def create(
         cls,
         table_name: str,
-        ingest_query_graphs: List[OfflineStoreIngestQueryGraph],
-        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+        ingest_query_graphs: list[OfflineStoreIngestQueryGraph],
+        entity_id_to_serving_name: dict[PydanticObjectId, str],
     ) -> OfflineStoreTable:
         """
         Create offline store table
@@ -292,13 +293,13 @@ class OfflineStoreTableBuilder:
 
     @staticmethod
     def create_offline_store_tables(
-        features: List[FeatureModel],
-        feature_lists: List[FeatureListModel],
-        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+        features: list[FeatureModel],
+        feature_lists: list[FeatureListModel],
+        entity_id_to_serving_name: dict[PydanticObjectId, str],
         feature_store: FeatureStoreModel,
-        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
-        serving_entity_ids: Optional[List[PydanticObjectId]],
-    ) -> List[OfflineStoreTable]:
+        entity_lookup_steps_mapping: dict[PydanticObjectId, EntityLookupStep],
+        serving_entity_ids: list[PydanticObjectId] | None,
+    ) -> list[OfflineStoreTable]:
         """
         Group each offline store ingest query graphs of features into list of offline store tables
 
@@ -371,13 +372,13 @@ class OfflineStoreTableBuilder:
     @staticmethod
     def _get_precomputed_lookup_feature_table(
         offline_store_table: OfflineStoreTable,
-        full_serving_entity_ids: List[PydanticObjectId],
+        full_serving_entity_ids: list[PydanticObjectId],
         feature_list: FeatureListModel,
-        entity_id_to_serving_name: Dict[PydanticObjectId, str],
-        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
+        entity_id_to_serving_name: dict[PydanticObjectId, str],
+        entity_lookup_steps_mapping: dict[PydanticObjectId, EntityLookupStep],
         feature_store: FeatureStoreModel,
-        offline_table_key_to_feature_ids: Dict[str, Set[PydanticObjectId]],
-    ) -> Optional[OfflineStoreTable]:
+        offline_table_key_to_feature_ids: dict[str, set[PydanticObjectId]],
+    ) -> OfflineStoreTable | None:
         """
         Get a precomputed lookup feature table corresponding to offline_store_table that can be
         readily served using serving_entity_ids
@@ -429,8 +430,8 @@ class FeastAssetCreator:
 
     @staticmethod
     def create_feast_name_to_request_source(
-        features: List[FeatureModel],
-    ) -> Dict[str, FeastRequestSource]:
+        features: list[FeatureModel],
+    ) -> dict[str, FeastRequestSource]:
         """
         Create feast request source based on the features
 
@@ -444,7 +445,7 @@ class FeastAssetCreator:
         Dict[str, FeastRequestSource]
             Mapping from feast request source name to feast request source
         """
-        name_to_feast_request_source: Dict[str, FeastRequestSource] = {}
+        name_to_feast_request_source: dict[str, FeastRequestSource] = {}
         for feature in features:
             for req_col_node in feature.extract_request_column_nodes():
                 req_col_name = req_col_node.parameters.column_name
@@ -478,10 +479,10 @@ class FeastAssetCreator:
 
     @staticmethod
     def create_feast_on_demand_feature_views(
-        features: List[FeatureModel],
-        name_to_feast_feature_view: Dict[str, FeastFeatureView],
-        name_to_feast_request_source: Dict[str, FeastRequestSource],
-    ) -> List[FeastOnDemandFeatureView]:
+        features: list[FeatureModel],
+        name_to_feast_feature_view: dict[str, FeastFeatureView],
+        name_to_feast_request_source: dict[str, FeastRequestSource],
+    ) -> list[FeastOnDemandFeatureView]:
         """
         Create feast on demand feature views based on the features
 
@@ -499,7 +500,7 @@ class FeastAssetCreator:
         List[FeastOnDemandFeatureView]
             List of feast on demand feature views
         """
-        on_demand_feature_views: List[FeastOnDemandFeatureView] = []
+        on_demand_feature_views: list[FeastOnDemandFeatureView] = []
         for feature in features:
             if not feature.offline_store_info.is_decomposed:
                 assert feature.offline_store_info.metadata is not None
@@ -516,11 +517,11 @@ class FeastAssetCreator:
 
     @staticmethod
     def create_feast_feature_services(
-        feature_lists: List[FeatureListModel],
-        features: List[FeatureModel],
-        feast_feature_views: List[FeastFeatureView],
-        feast_on_demand_feature_views: List[FeastOnDemandFeatureView],
-    ) -> List[FeastFeatureService]:
+        feature_lists: list[FeatureListModel],
+        features: list[FeatureModel],
+        feast_feature_views: list[FeastFeatureView],
+        feast_on_demand_feature_views: list[FeastOnDemandFeatureView],
+    ) -> list[FeastFeatureService]:
         """
         Create feast feature services based on the feature lists
 
@@ -610,8 +611,8 @@ class FeastRegistryBuilder:
 
     @staticmethod
     def get_online_store_config(
-        online_store: Optional[OnlineStoreModel],
-    ) -> Optional[FeastConfigBaseModel]:
+        online_store: OnlineStoreModel | None,
+    ) -> FeastConfigBaseModel | None:
         """
         Get the online store configuration
 
@@ -636,9 +637,9 @@ class FeastRegistryBuilder:
     def create_repo_config(
         project_name: str,
         registry_file_path: str,
-        offline_store_config: Optional[Any] = None,
-        online_store_config: Optional[Any] = None,
-        registry_store_type: Optional[str] = None,
+        offline_store_config: Any | None = None,
+        online_store_config: Any | None = None,
+        registry_store_type: str | None = None,
     ) -> RepoConfig:
         """
         Create a RepoConfig object for the feast registry construction
@@ -687,8 +688,8 @@ class FeastRegistryBuilder:
     def create_feast_registry_proto_from_repo_content(
         cls,
         project_name: str,
-        offline_store_config: Optional[Any],
-        online_store: Optional[OnlineStoreModel],
+        offline_store_config: Any | None,
+        online_store: OnlineStoreModel | None,
         repo_content: RepoContents,
     ) -> RegistryProto:
         """
@@ -736,14 +737,14 @@ class FeastRegistryBuilder:
     @classmethod
     def _create_feast_registry_proto(
         cls,
-        project_name: Optional[str],
-        online_store: Optional[OnlineStoreModel],
-        feast_data_sources: List[FeastDataSource],
-        primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity],
-        feast_request_sources: List[FeastRequestSource],
-        feast_feature_views: List[FeastFeatureView],
-        feast_on_demand_feature_views: List[FeastOnDemandFeatureView],
-        feast_feature_services: List[FeastFeatureService],
+        project_name: str | None,
+        online_store: OnlineStoreModel | None,
+        feast_data_sources: list[FeastDataSource],
+        primary_entity_ids_to_feast_entity: dict[tuple[PydanticObjectId, ...], FeastEntity],
+        feast_request_sources: list[FeastRequestSource],
+        feast_feature_views: list[FeastFeatureView],
+        feast_on_demand_feature_views: list[FeastOnDemandFeatureView],
+        feast_feature_services: list[FeastFeatureService],
     ) -> RegistryProto:
         project_name = project_name or DEFAULT_REGISTRY_PROJECT_NAME
 
@@ -779,13 +780,13 @@ class FeastRegistryBuilder:
     def create(
         cls,
         feature_store: FeatureStoreModel,
-        online_store: Optional[OnlineStoreModel],
-        entities: List[EntityModel],
-        features: List[FeatureModel],
-        feature_lists: List[FeatureListModel],
-        entity_lookup_steps_mapping: Dict[PydanticObjectId, EntityLookupStep],
-        serving_entity_ids: Optional[List[PydanticObjectId]],
-        project_name: Optional[str] = None,
+        online_store: OnlineStoreModel | None,
+        entities: list[EntityModel],
+        features: list[FeatureModel],
+        feature_lists: list[FeatureListModel],
+        entity_lookup_steps_mapping: dict[PydanticObjectId, EntityLookupStep],
+        serving_entity_ids: list[PydanticObjectId] | None,
+        project_name: str | None = None,
     ) -> RegistryProto:
         """
         Create a feast RegistryProto from featurebyte asset models
@@ -823,9 +824,9 @@ class FeastRegistryBuilder:
             entity_lookup_steps_mapping=entity_lookup_steps_mapping,
             serving_entity_ids=serving_entity_ids,
         )
-        primary_entity_ids_to_feast_entity: Dict[Tuple[PydanticObjectId, ...], FeastEntity] = {}
+        primary_entity_ids_to_feast_entity: dict[tuple[PydanticObjectId, ...], FeastEntity] = {}
         feast_data_sources = []
-        name_to_feast_feature_view: Dict[str, FeastFeatureView] = {}
+        name_to_feast_feature_view: dict[str, FeastFeatureView] = {}
         all_feast_feature_views = []
         feature_store_details = FeatureStoreDetailsWithFeastConfiguration(
             **feature_store.get_feature_store_details().model_dump()
@@ -889,9 +890,9 @@ class FeastRegistryBuilder:
     @classmethod
     def create_feast_registry_proto_for_feature_materialization(
         cls,
-        project_name: Optional[str],
+        project_name: str | None,
         offline_store_config: Any,
-        online_store: Optional[OnlineStoreModel],
+        online_store: OnlineStoreModel | None,
         feature_table_name: str,
         feast_stores: Sequence[FeastFeatureStore],
     ) -> RegistryProto:

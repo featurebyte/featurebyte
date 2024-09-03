@@ -2,7 +2,7 @@
 Use Case model
 """
 
-from typing import List, Optional
+from typing import Optional
 
 import pymongo
 from pydantic import Field
@@ -43,7 +43,7 @@ class UseCaseModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "use_case"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

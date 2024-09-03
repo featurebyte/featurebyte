@@ -4,11 +4,12 @@ This module contains cleaning operation related classes.
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Sequence, Set, Union
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Optional, Union
 
 import pandas as pd
 from pydantic import Field, field_validator
-from typing_extensions import Annotated, Literal
+from typing_extensions import Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import construct_serialize_function
@@ -45,7 +46,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
     )
 
     # support all data types by default (if None)
-    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = None
+    supported_dtypes: ClassVar[Optional[set[DBVarType]]] = None
 
     def __str__(self) -> str:
         class_name = self.__class__.__name__
@@ -249,7 +250,7 @@ class DisguisedValueImputation(BaseCleaningOperation):
         description="List of values that need to be replaced."
     )
 
-    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
+    supported_dtypes: ClassVar[Optional[set[DBVarType]]] = DBVarType.primitive_types()
 
     @field_validator("disguised_values")
     @classmethod
@@ -309,7 +310,7 @@ class UnexpectedValueImputation(BaseCleaningOperation):
         description="List of values that are expected to be present."
     )
 
-    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = DBVarType.primitive_types()
+    supported_dtypes: ClassVar[Optional[set[DBVarType]]] = DBVarType.primitive_types()
 
     @field_validator("expected_values")
     @classmethod
@@ -394,7 +395,7 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
     )
     end_point: Scalar = Field(description="The value that marks the boundary.")
 
-    supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = {
+    supported_dtypes: ClassVar[Optional[set[DBVarType]]] = {
         DBVarType.INT,
         DBVarType.FLOAT,
         DBVarType.DATE,
@@ -593,7 +594,7 @@ class TableCleaningOperation(FeatureByteBaseModel):
         description="Name of the table that requires cleaning. The cleaning operations specified in the second "
         "parameter will be applied to this table."
     )
-    column_cleaning_operations: List[ColumnCleaningOperation] = Field(
+    column_cleaning_operations: list[ColumnCleaningOperation] = Field(
         description="List of cleaning operations that need to be performed on the columns of the table. The "
         "relationship between each column and its respective cleaning operations is established using the "
         "ColumnCleaningOperation constructor. This constructor takes two inputs: the name of the column and the "
@@ -612,7 +613,7 @@ class TableIdCleaningOperation(FeatureByteBaseModel):
     """
 
     table_id: PydanticObjectId
-    column_cleaning_operations: List[ColumnCleaningOperation]
+    column_cleaning_operations: list[ColumnCleaningOperation]
 
     # pydantic validators
     _validate_unique_column_name = field_validator("column_cleaning_operations")(

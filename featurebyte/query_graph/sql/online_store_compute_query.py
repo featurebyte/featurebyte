@@ -5,7 +5,7 @@ SQL generation for online store compute queries
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, cast
+from typing import cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, alias_, select
@@ -37,7 +37,7 @@ class OnlineStoreUniverse:
     """
 
     expr: expressions.Select
-    columns: List[str]
+    columns: list[str]
 
 
 @dataclass
@@ -107,7 +107,7 @@ class OnlineStorePrecomputePlan:
 
     def _get_first_and_last_indices(
         self, agg_spec: TileBasedAggregationSpec
-    ) -> Tuple[Optional[Expression], Expression]:
+    ) -> tuple[Expression | None, Expression]:
         """
         Get the first and last tile indices required to compute the feature
 

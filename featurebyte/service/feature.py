@@ -5,7 +5,7 @@ FeatureService class
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from bson import ObjectId
 from redis import Redis
@@ -51,7 +51,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         self,
         user: Any,
         persistent: Persistent,
-        catalog_id: Optional[ObjectId],
+        catalog_id: ObjectId | None,
         block_modification_handler: BlockModificationHandler,
         entity_relationship_extractor_service: EntityRelationshipExtractorService,
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
@@ -328,7 +328,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
         )
 
     async def update_offline_store_info(
-        self, document_id: ObjectId, store_info: Dict[str, Any]
+        self, document_id: ObjectId, store_info: dict[str, Any]
     ) -> None:
         """
         Update offline store info for a feature
@@ -376,7 +376,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
 
     async def get_sample_entity_serving_names(
         self, feature_id: ObjectId, count: int
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """
         Get sample entity serving names for a feature
 
@@ -400,7 +400,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             count=count,
         )
 
-    async def get_online_disabled_feature_ids(self) -> List[ObjectId]:
+    async def get_online_disabled_feature_ids(self) -> list[ObjectId]:
         """
         Get the ids of the features that are online disabled
 

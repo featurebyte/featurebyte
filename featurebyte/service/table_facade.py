@@ -2,7 +2,7 @@
 Table  Facade Service which is responsible for handling high level table operations
 """
 
-from typing import List, Optional
+from typing import Optional
 
 from bson import ObjectId
 
@@ -70,7 +70,7 @@ class TableFacadeService:
     async def update_table_columns_info(
         self,
         table_id: ObjectId,
-        columns_info: List[ColumnInfo],
+        columns_info: list[ColumnInfo],
         service: Optional[TableDocumentService] = None,
         skip_semantic_check: bool = False,
         skip_block_modification_check: bool = False,
@@ -105,7 +105,7 @@ class TableFacadeService:
     async def update_table_column_cleaning_operations(
         self,
         table_id: ObjectId,
-        column_cleaning_operations: List[ColumnCleaningOperation],
+        column_cleaning_operations: list[ColumnCleaningOperation],
         service: Optional[TableDocumentService] = None,
     ) -> None:
         """

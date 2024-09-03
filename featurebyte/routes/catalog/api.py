@@ -5,7 +5,7 @@ Catalog API routes
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import List, Optional
+from typing import Optional
 
 from bson import ObjectId
 from fastapi import Query, Request, Response
@@ -96,7 +96,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
             "/history/name/{catalog_id}",
             self.list_name_history,
             methods=["GET"],
-            response_model=List[CatalogNameHistoryEntry],
+            response_model=list[CatalogNameHistoryEntry],
         )
 
     async def get_object(self, request: Request, catalog_id: PyObjectId) -> CatalogModel:
@@ -108,9 +108,9 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         catalog_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
-        sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[SortDir] = SortDirQuery,
-        search: Optional[str] = SearchQuery,
+        sort_by: str | None = AuditLogSortByQuery,
+        sort_dir: SortDir | None = SortDirQuery,
+        search: str | None = SearchQuery,
     ) -> AuditDocumentList:
         return await super().list_audit_logs(
             request, catalog_id, page, page_size, sort_by, sort_dir, search
@@ -185,7 +185,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         catalog_id: PyObjectId,
         data: CatalogOnlineStoreUpdate,
         response: Response,
-    ) -> Optional[Task]:
+    ) -> Task | None:
         """
         Update catalog online store
         """
@@ -228,7 +228,7 @@ class CatalogRouter(BaseApiRouter[CatalogModel, CatalogList, CatalogCreate, Cata
         self,
         request: Request,
         catalog_id: PyObjectId,
-    ) -> List[CatalogNameHistoryEntry]:
+    ) -> list[CatalogNameHistoryEntry]:
         """
         List catalog name history
         """

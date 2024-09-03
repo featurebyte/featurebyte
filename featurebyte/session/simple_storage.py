@@ -6,7 +6,7 @@ import os
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal, Optional
 
 import boto3
 from azure.core.credentials import AzureNamedKeyCredential
@@ -48,7 +48,7 @@ class SimpleStorage(ABC):
         self.storage_credential = storage_credential
         self.base_url: str = ""
 
-    def _get_transport_params(self) -> Dict[str, Any]:
+    def _get_transport_params(self) -> dict[str, Any]:
         """
         Get transport parameters
 
@@ -156,7 +156,7 @@ class S3SimpleStorage(SimpleStorage):
         self.session = boto3.Session(**session_params)
         self.client = self.session.client("s3", endpoint_url=endpoint_url)
 
-    def _get_transport_params(self) -> Dict[str, Any]:
+    def _get_transport_params(self) -> dict[str, Any]:
         return {"client": self.client}
 
     def delete_object(self, path: str) -> None:
@@ -193,7 +193,7 @@ class GCSStorage(SimpleStorage):
             self.key_prefix = ""
             self.base_url = f"gs://{self.bucket}"
 
-    def _get_transport_params(self) -> Dict[str, Any]:
+    def _get_transport_params(self) -> dict[str, Any]:
         return {"client": self.client}
 
     def delete_object(self, path: str) -> None:
@@ -235,7 +235,7 @@ class AzureBlobStorage(SimpleStorage):
             self.key_prefix = ""
             self.base_url = f"azure://{self.container}"
 
-    def _get_transport_params(self) -> Dict[str, Any]:
+    def _get_transport_params(self) -> dict[str, Any]:
         return {"client": self.client}
 
     def delete_object(self, path: str) -> None:

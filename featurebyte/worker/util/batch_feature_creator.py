@@ -5,9 +5,10 @@ Batch feature creator
 import asyncio
 import concurrent
 import os
+from collections.abc import Coroutine, Iterator, Sequence
 from contextlib import ExitStack, contextmanager
 from functools import wraps
-from typing import Any, Callable, Coroutine, Dict, Iterator, List, Sequence, Set, Union
+from typing import Any, Callable, Union
 from unittest.mock import patch
 
 from bson import ObjectId
@@ -105,7 +106,7 @@ def set_environment_variable(variable: str, value: Any) -> Iterator[None]:
 
 
 @contextmanager
-def set_environment_variables(variables: Dict[str, Any]) -> Iterator[None]:
+def set_environment_variables(variables: dict[str, Any]) -> Iterator[None]:
     """
     Set multiple environment variables within the context
 
@@ -119,7 +120,7 @@ def set_environment_variables(variables: Dict[str, Any]) -> Iterator[None]:
     Iterator[None]
         The context manager
     """
-    ctx_managers: List[Any] = []
+    ctx_managers: list[Any] = []
 
     for key, value in variables.items():
         ctx_managers.append(set_environment_variable(key, value))
@@ -200,7 +201,7 @@ class BatchFeatureCreator:
         """
         return int(os.getenv("FEATUREBYTE_GRAPH_CLEAR_PERIOD", "1"))
 
-    async def identify_saved_feature_ids(self, feature_ids: Sequence[ObjectId]) -> Set[ObjectId]:
+    async def identify_saved_feature_ids(self, feature_ids: Sequence[ObjectId]) -> set[ObjectId]:
         """
         Identify saved feature ids
 
@@ -223,8 +224,8 @@ class BatchFeatureCreator:
         return saved_feature_ids
 
     async def get_conflict_to_resolution_feature_id_mapping(
-        self, conflict_resolution: ConflictResolution, feature_names: List[str]
-    ) -> Dict[str, PydanticObjectId]:
+        self, conflict_resolution: ConflictResolution, feature_names: list[str]
+    ) -> dict[str, PydanticObjectId]:
         """
         Get conflict feature to resolution feature id mapping. This is used to resolve conflicts when
         creating features. If the conflict resolution is "retrieve", then the default feature id of the
@@ -409,7 +410,7 @@ class BatchFeatureCreator:
         )
         await ranged_progress_update(0, "Started saving features")
 
-        output_feature_ids: List[PydanticObjectId] = []
+        output_feature_ids: list[PydanticObjectId] = []
         inconsistent_feature_names = []
         created_feat_count = 0
         for i, feature_item in enumerate(payload.features):

@@ -5,7 +5,7 @@ HistoricalFeatureTableService class
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 from bson import ObjectId
@@ -71,7 +71,7 @@ class HistoricalFeatureTableService(
     async def get_historical_feature_table_task_payload(
         self,
         data: HistoricalFeatureTableCreate,
-        observation_set_dataframe: Optional[pd.DataFrame],
+        observation_set_dataframe: pd.DataFrame | None,
     ) -> HistoricalFeatureTableTaskPayload:
         """
         Validate and convert a HistoricalFeatureTableCreate schema to a HistoricalFeatureTableTaskPayload schema

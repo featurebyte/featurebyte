@@ -6,10 +6,11 @@ import json
 import os
 import ssl
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Union, cast
+from typing import Any, Optional, Union, cast
 
 import requests
 import websocket
@@ -128,7 +129,7 @@ class ProfileList(BaseModel):
     List of Profile entries
     """
 
-    profiles: List[Profile]
+    profiles: list[Profile]
 
 
 class BaseAPIClient(requests.Session):
@@ -295,7 +296,7 @@ class WebsocketClient:
                 self._reconnect()
         raise TimeoutError("No message received from websocket server")
 
-    def receive_json(self) -> Optional[Dict[str, Any]]:
+    def receive_json(self) -> Optional[dict[str, Any]]:
         """
         Receive message from websocket server as json
 
@@ -306,10 +307,10 @@ class WebsocketClient:
         """
         message_bytes = self.receive_bytes()
         if message_bytes:
-            return cast(Dict[str, Any], json.loads(message_bytes.decode("utf8")))
+            return cast(dict[str, Any], json.loads(message_bytes.decode("utf8")))
         return None
 
-    def _get_sslopt(self) -> Dict[str, Any]:
+    def _get_sslopt(self) -> dict[str, Any]:
         """
         Return ssl options for websocket connection
 
@@ -366,7 +367,7 @@ class Configurations:
             self.storage: LocalStorageSettings = LocalStorageSettings()
             self.default_profile_name: Optional[str] = None
             self._profile: Optional[Profile] = None
-            self.profiles: List[Profile] = []
+            self.profiles: list[Profile] = []
             self.logging: LoggingSettings = LoggingSettings()
 
             # create config file if it does not exist
@@ -454,7 +455,7 @@ class Configurations:
                 self._profile = profile_map.get(self.default_profile_name)
 
     @classmethod
-    def check_sdk_versions(cls) -> Dict[str, str]:
+    def check_sdk_versions(cls) -> dict[str, str]:
         """
         Check SDK versions of client and server for the active profile
 

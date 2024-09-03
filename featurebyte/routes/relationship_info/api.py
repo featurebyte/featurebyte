@@ -4,7 +4,7 @@ RelationshipInfo API routes
 
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import cast
 
 from fastapi import APIRouter, Request
 
@@ -46,10 +46,10 @@ async def list_relationship_info(
     request: Request,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = SortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
-    name: Optional[str] = NameQuery,
+    sort_by: str | None = SortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
+    name: str | None = NameQuery,
 ) -> RelationshipInfoList:
     """
     List RelationshipInfo's
@@ -116,9 +116,9 @@ async def list_relationship_info_audit_logs(
     relationship_info_id: PyObjectId,
     page: int = PageQuery,
     page_size: int = PageSizeQuery,
-    sort_by: Optional[str] = AuditLogSortByQuery,
-    sort_dir: Optional[SortDir] = SortDirQuery,
-    search: Optional[str] = SearchQuery,
+    sort_by: str | None = AuditLogSortByQuery,
+    sort_dir: SortDir | None = SortDirQuery,
+    search: str | None = SearchQuery,
 ) -> AuditDocumentList:
     """
     List relationship_info audit logs

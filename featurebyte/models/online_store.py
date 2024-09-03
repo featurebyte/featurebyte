@@ -2,11 +2,10 @@
 This module contains Online Store related models
 """
 
-from typing import ClassVar, List, Literal, Optional, Union
+from typing import Annotated, ClassVar, Literal, Optional, Union
 
 import pymongo
 from pydantic import Field, StrictStr
-from typing_extensions import Annotated
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import OnlineStoreType, RedisType
@@ -129,7 +128,7 @@ class OnlineStoreModel(FeatureByteBaseDocumentModel):
         """
 
         collection_name: str = "online_store"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

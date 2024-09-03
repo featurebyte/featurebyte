@@ -4,7 +4,7 @@ Reused types
 
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal, Optional
 
 from docstring_parser import DocstringMeta
 from docstring_parser.common import Docstring as BaseDocstring
@@ -30,7 +30,7 @@ class DocGroupValue:
     )
     """
 
-    doc_group: List[str]
+    doc_group: list[str]
     obj_type: str
     proxy_path: str
 
@@ -57,7 +57,7 @@ class MarkdownFileMetadata:
     doc_group_value: DocGroupValue
     api_to_use: str
     doc_path: str
-    path_components: List[str]
+    path_components: list[str]
 
 
 class ParameterDetails(BaseModel):
@@ -149,16 +149,16 @@ class ResourceDetails(BaseModel):
     path: str
     proxy_path: Optional[str]
     type: Literal["class", "property", "method"]
-    base_classes: Optional[List[Any]]
+    base_classes: Optional[list[Any]]
     method_type: Optional[Literal["async"]]
     short_description: Optional[str]
     long_description: Optional[str]
-    parameters: Optional[List[ParameterDetails]]
+    parameters: Optional[list[ParameterDetails]]
     returns: ParameterDetails
-    raises: Optional[List[ExceptionDetails]]
-    examples: Optional[List[str]]
+    raises: Optional[list[ExceptionDetails]]
+    examples: Optional[list[str]]
     see_also: Optional[str]
-    enum_values: Optional[List[ParameterDetails]]
+    enum_values: Optional[list[ParameterDetails]]
 
     # Setting this param to True will not render the parameters for the class in the documentation.
     should_skip_params_in_class_docs: bool
@@ -281,7 +281,7 @@ class DocItems:
     """
 
     def __init__(self) -> None:
-        self.doc_items: Dict[str, DocItem] = {}
+        self.doc_items: dict[str, DocItem] = {}
 
     def add(self, key: str, value: DocItem) -> None:
         if not key.startswith("featurebyte."):
@@ -295,7 +295,7 @@ class DocItems:
             return self.doc_items.get(key.lower())
         return None
 
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         return list(self.doc_items.keys())
 
 

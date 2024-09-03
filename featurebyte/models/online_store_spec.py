@@ -2,7 +2,7 @@
 This module contains Tile related models
 """
 
-from typing import List, cast
+from typing import cast
 
 from pydantic import model_validator
 
@@ -35,7 +35,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
     """
 
     feature: ExtendedFeatureModel
-    precompute_queries: List[OnlineStoreComputeQueryModel] = []
+    precompute_queries: list[OnlineStoreComputeQueryModel] = []
 
     @model_validator(mode="after")
     def _generate_precompute_queries(self) -> "OnlineFeatureSpec":
@@ -54,7 +54,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         return self
 
     @property
-    def tile_ids(self) -> List[str]:
+    def tile_ids(self) -> list[str]:
         """
         Derived tile_ids property from tile_specs
 
@@ -69,7 +69,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         return list(tile_ids_set)
 
     @property
-    def aggregation_ids(self) -> List[str]:
+    def aggregation_ids(self) -> list[str]:
         """
         Derive aggregation_ids property from tile_specs
 
@@ -84,7 +84,7 @@ class OnlineFeatureSpec(FeatureByteBaseModel):
         return list(out)
 
     @property
-    def event_table_ids(self) -> List[str]:
+    def event_table_ids(self) -> list[str]:
         """
         derived event_table_ids from graph
 

@@ -3,7 +3,7 @@ Base router
 """
 
 from http import HTTPStatus
-from typing import Dict, Generic, List, Optional, Type, TypeVar, Union, cast
+from typing import Generic, Optional, TypeVar, Union, cast
 
 from bson import ObjectId
 from fastapi import APIRouter, Request
@@ -51,7 +51,7 @@ class BaseRouter:
         """
         self.router.routes.extend(router.routes)
 
-    def remove_routes(self, unwanted_path_to_method: Dict[str, List[str]]) -> None:
+    def remove_routes(self, unwanted_path_to_method: dict[str, list[str]]) -> None:
         """
         Remove routes from router
 
@@ -60,7 +60,7 @@ class BaseRouter:
         unwanted_path_to_method: Dict[str, List[str]]
             Dictionary of paths to methods to be removed from the router
         """
-        routes_to_keep: List[BaseRoute] = []
+        routes_to_keep: list[BaseRoute] = []
         for route in self.router.routes:
             route = cast(APIRoute, route)
             if set(route.methods).issubset(unwanted_path_to_method.get(route.path, [])):
@@ -78,10 +78,10 @@ class BaseApiRouter(
     This class contains basic CRUD operations for a given model.
     """
 
-    object_model: Type[ObjectModelT]
-    list_object_model: Type[ListObjectModelT]
-    create_object_schema: Type[CreateObjectSchemaT]
-    controller: Union[Type[ControllerT], str]
+    object_model: type[ObjectModelT]
+    list_object_model: type[ListObjectModelT]
+    create_object_schema: type[CreateObjectSchemaT]
+    controller: Union[type[ControllerT], str]
 
     def __init__(self, prefix: str, skip_id_prefix: bool = False):
         super().__init__(router=APIRouter(prefix=prefix))

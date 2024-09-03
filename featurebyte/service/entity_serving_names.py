@@ -2,7 +2,8 @@
 Entity serving names service
 """
 
-from typing import Any, Dict, List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any, Optional
 
 from bson import ObjectId
 
@@ -38,7 +39,7 @@ class EntityServingNamesService:
         table: TableModel,
         column_name: str,
         num_rows: int,
-    ) -> List[Any]:
+    ) -> list[Any]:
         """
         Get unique values for a column in a table
 
@@ -71,12 +72,12 @@ class EntityServingNamesService:
         )
         result = await db_session.execute_query(unique_values_sql)
         assert result is not None
-        unique_values: List[Any] = result[column_name].to_list()
+        unique_values: list[Any] = result[column_name].to_list()
         return unique_values
 
     async def get_sample_entity_serving_names(
         self, entity_ids: Sequence[ObjectId], table_ids: Optional[Sequence[ObjectId]], count: int
-    ) -> List[Dict[str, str]]:
+    ) -> list[dict[str, str]]:
         """
         Get sample entity serving names for a list of entities and tables
 
@@ -101,7 +102,7 @@ class EntityServingNamesService:
                 )
             ]
         )
-        entities: Dict[ObjectId, Dict[str, List[str]]] = {
+        entities: dict[ObjectId, dict[str, list[str]]] = {
             entity.id: {"serving_name": entity.serving_names} for entity in primary_entity
         }
         if table_ids is None:
@@ -160,7 +161,7 @@ class EntityServingNamesService:
 
     async def get_entity_id_to_serving_name_for_offline_store(
         self, entity_ids: Sequence[ObjectId]
-    ) -> Dict[ObjectId, str]:
+    ) -> dict[ObjectId, str]:
         """
         Get entity id to serving name mapping for offline store
 

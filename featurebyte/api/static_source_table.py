@@ -5,7 +5,7 @@ StaticSourceTable class
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, ClassVar, List, Optional, Union
+from typing import Any, ClassVar
 
 import pandas as pd
 
@@ -28,14 +28,14 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
     _route: ClassVar[str] = "/static_source_table"
     _list_schema: ClassVar[Any] = StaticSourceTableListRecord
     _get_schema: ClassVar[Any] = StaticSourceTableModel
-    _list_fields: ClassVar[List[str]] = [
+    _list_fields: ClassVar[list[str]] = [
         "name",
         "type",
         "shape",
         "feature_store_name",
         "created_at",
     ]
-    _list_foreign_keys: ClassVar[List[ForeignKeyMapping]] = [
+    _list_foreign_keys: ClassVar[list[ForeignKeyMapping]] = [
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
     ]
 
@@ -142,7 +142,7 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
         """
         return super().describe(size=size, seed=seed)
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download(self, output_path: str | Path | None = None) -> Path:
         """
         Downloads the static source table from the database.
 

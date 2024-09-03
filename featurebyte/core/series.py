@@ -5,7 +5,7 @@ Series class
 from __future__ import annotations
 
 from functools import wraps
-from typing import Any, Callable, ClassVar, Optional, Type, TypeVar, Union
+from typing import Any, Callable, ClassVar, TypeVar
 
 import pandas as pd
 from pydantic import Field, StrictStr
@@ -129,7 +129,7 @@ class FrozenSeries(
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Series")
 
     # instance variables
-    name: Optional[StrictStr] = Field(default=None)
+    name: StrictStr | None = Field(default=None)
     dtype: DBVarType = Field(frozen=True, description="variable type of the series")
 
     def __repr__(self) -> str:
@@ -209,9 +209,7 @@ class FrozenSeries(
             )
 
     @staticmethod
-    def _is_a_series_of_var_type(
-        item: Any, var_type: Union[DBVarType, tuple[DBVarType, ...]]
-    ) -> bool:
+    def _is_a_series_of_var_type(item: Any, var_type: DBVarType | tuple[DBVarType, ...]) -> bool:
         """
         Check whether the input item is Series type and has any of the specified variable types
 
@@ -302,11 +300,11 @@ class FrozenSeries(
         return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
     @typechecked
-    def __and__(self: FrozenSeriesT, other: Union[bool, FrozenSeries]) -> FrozenSeriesT:
+    def __and__(self: FrozenSeriesT, other: bool | FrozenSeries) -> FrozenSeriesT:
         return self._binary_logical_op(other, NodeType.AND)
 
     @typechecked
-    def __or__(self: FrozenSeriesT, other: Union[bool, FrozenSeries]) -> FrozenSeriesT:
+    def __or__(self: FrozenSeriesT, other: bool | FrozenSeries) -> FrozenSeriesT:
         return self._binary_logical_op(other, NodeType.OR)
 
     def _binary_relational_op(
@@ -350,27 +348,27 @@ class FrozenSeries(
         return self._binary_op(other=other, node_type=node_type, output_var_type=DBVarType.BOOL)
 
     @typechecked
-    def __eq__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
+    def __eq__(self: FrozenSeriesT, other: Scalar | Timestamp | FrozenSeries) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.EQ)
 
     @typechecked
-    def __ne__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:  # type: ignore
+    def __ne__(self: FrozenSeriesT, other: Scalar | Timestamp | FrozenSeries) -> FrozenSeriesT:  # type: ignore
         return self._binary_relational_op(other, NodeType.NE)
 
     @typechecked
-    def __lt__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:
+    def __lt__(self: FrozenSeriesT, other: Scalar | Timestamp | FrozenSeries) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.LT)
 
     @typechecked
-    def __le__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:
+    def __le__(self: FrozenSeriesT, other: Scalar | Timestamp | FrozenSeries) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.LE)
 
     @typechecked
-    def __gt__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:
+    def __gt__(self: FrozenSeriesT, other: Scalar | Timestamp | FrozenSeries) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.GT)
 
     @typechecked
-    def __ge__(self: FrozenSeriesT, other: Union[Scalar, Timestamp, FrozenSeries]) -> FrozenSeriesT:
+    def __ge__(self: FrozenSeriesT, other: Scalar | Timestamp | FrozenSeries) -> FrozenSeriesT:
         return self._binary_relational_op(other, NodeType.GE)
 
     def _binary_arithmetic_op(
@@ -452,7 +450,7 @@ class FrozenSeries(
 
     @typechecked
     def _date_add_op(
-        self: FrozenSeriesT, other: Union[FrozenSeries, pd.Timedelta], right_op: bool = False
+        self: FrozenSeriesT, other: FrozenSeries | pd.Timedelta, right_op: bool = False
     ) -> FrozenSeriesT:
         """
         Increment date by timedelta
@@ -482,7 +480,7 @@ class FrozenSeries(
 
     @typechecked
     def __add__(
-        self: FrozenSeriesT, other: Union[int, float, str, pd.Timedelta, FrozenSeries]
+        self: FrozenSeriesT, other: int | float | str | pd.Timedelta | FrozenSeries
     ) -> FrozenSeriesT:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
@@ -499,7 +497,7 @@ class FrozenSeries(
 
     @typechecked
     def __radd__(
-        self: FrozenSeriesT, other: Union[int, float, str, pd.Timedelta, FrozenSeries]
+        self: FrozenSeriesT, other: int | float | str | pd.Timedelta | FrozenSeries
     ) -> FrozenSeriesT:
         is_other_string_like = isinstance(other, str)
         is_other_string_like |= isinstance(other, Series) and other.dtype in DBVarType.VARCHAR
@@ -517,37 +515,37 @@ class FrozenSeries(
         return self._binary_arithmetic_op(other, NodeType.ADD, right_op=True)
 
     @typechecked
-    def __sub__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
+    def __sub__(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         if self.is_datetime and isinstance(other, FrozenSeries) and other.is_datetime:
             return self._date_diff_op(other)
         return self._binary_arithmetic_op(other, NodeType.SUB)
 
     @typechecked
-    def __rsub__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
+    def __rsub__(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.SUB, right_op=True)
 
     @typechecked
-    def __mul__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
+    def __mul__(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MUL)
 
     @typechecked
-    def __rmul__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
+    def __rmul__(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MUL, right_op=True)
 
     @typechecked
-    def __truediv__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
+    def __truediv__(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.DIV)
 
     @typechecked
-    def __rtruediv__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
+    def __rtruediv__(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.DIV, right_op=True)
 
     @typechecked
-    def __mod__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
+    def __mod__(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MOD)
 
     @typechecked
-    def __rmod__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
+    def __rmod__(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         return self._binary_arithmetic_op(other, NodeType.MOD, right_op=True)
 
     def __invert__(self: FrozenSeriesT) -> FrozenSeriesT:
@@ -559,7 +557,7 @@ class FrozenSeries(
         )
 
     @typechecked
-    def __pow__(self: FrozenSeriesT, other: Union[int, float, FrozenSeries]) -> FrozenSeriesT:
+    def __pow__(self: FrozenSeriesT, other: int | float | FrozenSeries) -> FrozenSeriesT:
         return self.pow(other)
 
     @property
@@ -646,7 +644,7 @@ class FrozenSeries(
     @typechecked
     def astype(
         self: FrozenSeriesT,
-        new_type: Union[Type[int], Type[float], Type[str], Literal["int", "float", "str"]],
+        new_type: type[int] | type[float] | type[str] | Literal["int", "float", "str"],
     ) -> FrozenSeriesT:
         """
         Convert a Series to have a new type.
@@ -1105,7 +1103,7 @@ class FrozenSeries(
         return super().copy(*args, **kwargs, deep=True)
 
     @typechecked
-    def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
+    def isin(self: FrozenSeriesT, other: FrozenSeries | ScalarSequence) -> FrozenSeriesT:
         """
         Identifies if each element is contained in a sequence of values represented by the `other` parameter.
 
@@ -1201,7 +1199,7 @@ class Series(FrozenSeries):
 
     @typechecked
     def __setitem__(
-        self, key: FrozenSeries, value: Union[int, float, str, bool, None, FrozenSeries]
+        self, key: FrozenSeries, value: int | float | str | bool | None | FrozenSeries
     ) -> None:
         if isinstance(value, Series):
             if not self.validate_series_operation(value) or not value.validate_series_operation(

@@ -4,8 +4,6 @@ EntityLookupFeatureTableService class
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -35,8 +33,8 @@ class EntityLookupFeatureTableService:
         self.feature_store_service = feature_store_service
 
     async def get_entity_lookup_steps(
-        self, entity_relationships_info: List[EntityRelationshipInfo]
-    ) -> Dict[PydanticObjectId, EntityLookupStep]:
+        self, entity_relationships_info: list[EntityRelationshipInfo]
+    ) -> dict[PydanticObjectId, EntityLookupStep]:
         """
         Get mapping from relationship info id to EntityLookupStep. EntityLookupStep is an augmented
         EntityRelationshipInfo with id fields converted to models (e.g. EntityModel, TableModel)
@@ -58,8 +56,8 @@ class EntityLookupFeatureTableService:
         return out
 
     async def get_entity_lookup_steps_mapping(
-        self, feature_lists: List[FeatureListModel]
-    ) -> Dict[PydanticObjectId, EntityLookupStep]:
+        self, feature_lists: list[FeatureListModel]
+    ) -> dict[PydanticObjectId, EntityLookupStep]:
         """
         Helper function to get mapping from relationship info id to EntityLookupStep across
         all the feature lists
@@ -88,16 +86,16 @@ class EntityLookupFeatureTableService:
 
     async def get_precomputed_lookup_feature_table(
         self,
-        primary_entity_ids: List[PydanticObjectId],
-        feature_ids: List[PydanticObjectId],
+        primary_entity_ids: list[PydanticObjectId],
+        feature_ids: list[PydanticObjectId],
         feature_list: FeatureListModel,
-        full_serving_entity_ids: List[PydanticObjectId],
+        full_serving_entity_ids: list[PydanticObjectId],
         feature_table_name: str,
         feature_table_has_ttl: bool,
-        entity_id_to_serving_name: Dict[PydanticObjectId, str],
+        entity_id_to_serving_name: dict[PydanticObjectId, str],
         feature_store_model: FeatureStoreModel,
-        feature_table_id: Optional[PydanticObjectId],
-    ) -> Optional[OfflineStoreFeatureTableModel]:
+        feature_table_id: PydanticObjectId | None,
+    ) -> OfflineStoreFeatureTableModel | None:
         """
         Construct a precomputed lookup feature table for a given source feature table in order to
         support a specific deployment with a predetermined serving entity ids

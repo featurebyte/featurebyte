@@ -5,7 +5,7 @@ FeatureStore API routes
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from bson import ObjectId
 from fastapi import Query, Request
@@ -65,25 +65,25 @@ class FeatureStoreRouter(
             "/database",
             self.list_databases_in_feature_store,
             methods=["POST"],
-            response_model=List[str],
+            response_model=list[str],
         )
         self.router.add_api_route(
             "/schema",
             self.list_schemas_in_database,
             methods=["POST"],
-            response_model=List[str],
+            response_model=list[str],
         )
         self.router.add_api_route(
             "/table",
             self.list_tables_in_database_schema,
             methods=["POST"],
-            response_model=List[str],
+            response_model=list[str],
         )
         self.router.add_api_route(
             "/column",
             self.list_columns_in_database_table,
             methods=["POST"],
-            response_model=List[ColumnInfo],
+            response_model=list[ColumnInfo],
         )
         self.router.add_api_route(
             "/shape",
@@ -101,25 +101,25 @@ class FeatureStoreRouter(
             "/preview",
             self.get_data_preview,
             methods=["POST"],
-            response_model=Dict[str, Any],
+            response_model=dict[str, Any],
         )
         self.router.add_api_route(
             "/table_preview",
             self.get_table_preview,
             methods=["POST"],
-            response_model=Dict[str, Any],
+            response_model=dict[str, Any],
         )
         self.router.add_api_route(
             "/sample",
             self.get_data_sample,
             methods=["POST"],
-            response_model=Dict[str, Any],
+            response_model=dict[str, Any],
         )
         self.router.add_api_route(
             "/description",
             self.get_data_description,
             methods=["POST"],
-            response_model=Dict[str, Any],
+            response_model=dict[str, Any],
         )
         self.router.add_api_route(
             "/data_description",
@@ -155,9 +155,9 @@ class FeatureStoreRouter(
         feature_store_id: PyObjectId,
         page: int = PageQuery,
         page_size: int = PageSizeQuery,
-        sort_by: Optional[str] = AuditLogSortByQuery,
-        sort_dir: Optional[SortDir] = SortDirQuery,
-        search: Optional[str] = SearchQuery,
+        sort_by: str | None = AuditLogSortByQuery,
+        sort_dir: SortDir | None = SortDirQuery,
+        search: str | None = SearchQuery,
     ) -> AuditDocumentList:
         return await super().list_audit_logs(
             request,
@@ -205,7 +205,7 @@ class FeatureStoreRouter(
     async def list_databases_in_feature_store(
         request: Request,
         feature_store: FeatureStoreModel,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         List databases
         """
@@ -213,7 +213,7 @@ class FeatureStoreRouter(
         feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
             controller, feature_store
         )
-        result: List[str] = await controller.list_databases(
+        result: list[str] = await controller.list_databases(
             feature_store=feature_store,
         )
         return result
@@ -223,7 +223,7 @@ class FeatureStoreRouter(
         request: Request,
         database_name: str,
         feature_store: FeatureStoreModel,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         List schemas
         """
@@ -231,7 +231,7 @@ class FeatureStoreRouter(
         feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
             controller, feature_store
         )
-        result: List[str] = await controller.list_schemas(
+        result: list[str] = await controller.list_schemas(
             feature_store=feature_store,
             database_name=database_name,
         )
@@ -243,7 +243,7 @@ class FeatureStoreRouter(
         database_name: str,
         schema_name: str,
         feature_store: FeatureStoreModel,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         List schemas
         """
@@ -251,7 +251,7 @@ class FeatureStoreRouter(
         feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
             controller, feature_store
         )
-        result: List[str] = await controller.list_tables(
+        result: list[str] = await controller.list_tables(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
@@ -265,7 +265,7 @@ class FeatureStoreRouter(
         schema_name: str,
         table_name: str,
         feature_store: FeatureStoreModel,
-    ) -> List[ColumnSpecWithDescription]:
+    ) -> list[ColumnSpecWithDescription]:
         """
         List columns
         """
@@ -273,7 +273,7 @@ class FeatureStoreRouter(
         feature_store = await FeatureStoreRouter.try_retrieve_feature_store(
             controller, feature_store
         )
-        result: List[ColumnSpecWithDescription] = await controller.list_columns(
+        result: list[ColumnSpecWithDescription] = await controller.list_columns(
             feature_store=feature_store,
             database_name=database_name,
             schema_name=schema_name,
@@ -308,7 +308,7 @@ class FeatureStoreRouter(
         request: Request,
         preview: FeatureStorePreview,
         limit: int = Query(default=10, gt=0, le=10000),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Retrieve data preview for query graph node
         """
@@ -320,7 +320,7 @@ class FeatureStoreRouter(
         request: Request,
         location: TabularSource,
         limit: int = Query(default=10, gt=0, le=10000),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Retrieve data preview for tabular source
         """
@@ -333,7 +333,7 @@ class FeatureStoreRouter(
         sample: FeatureStoreSample,
         size: int = Query(default=10, gt=0, le=10000),
         seed: int = Query(default=1234),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Retrieve data sample for query graph node
         """
@@ -346,7 +346,7 @@ class FeatureStoreRouter(
         sample: FeatureStoreSample,
         size: int = Query(default=0, gte=0, le=1000000),
         seed: int = Query(default=1234),
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Retrieve data description for query graph node
         """

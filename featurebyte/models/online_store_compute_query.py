@@ -4,8 +4,6 @@ AggregationResult document model
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import pymongo
 from pydantic import Field, StrictStr
 
@@ -35,8 +33,8 @@ class OnlineStoreComputeQueryModel(FeatureByteCatalogBaseDocumentModel):
     result_type: str
     sql: str
     table_name: str
-    serving_names: List[StrictStr]
-    feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+    serving_names: list[StrictStr]
+    feature_store_id: PydanticObjectId | None = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
@@ -44,7 +42,7 @@ class OnlineStoreComputeQueryModel(FeatureByteCatalogBaseDocumentModel):
         """
 
         collection_name: str = "online_store_compute_query"
-        unique_constraints: List[UniqueValuesConstraint] = [
+        unique_constraints: list[UniqueValuesConstraint] = [
             UniqueValuesConstraint(
                 fields=("_id",),
                 conflict_fields_signature={"id": ["_id"]},

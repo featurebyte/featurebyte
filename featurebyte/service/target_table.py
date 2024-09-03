@@ -5,7 +5,7 @@ TargetTableService class
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 from bson import ObjectId
@@ -75,7 +75,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
 
     def construct_list_query_filter(
         self,
-        query_filter: Optional[QueryFilter] = None,
+        query_filter: QueryFilter | None = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
@@ -88,7 +88,7 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
     async def get_target_table_task_payload(
         self,
         data: TargetTableCreate,
-        observation_set_dataframe: Optional[pd.DataFrame],
+        observation_set_dataframe: pd.DataFrame | None,
     ) -> TargetTableTaskPayload:
         """
         Validate and convert a TargetTableCreate schema to a TargetTableTaskPayload schema

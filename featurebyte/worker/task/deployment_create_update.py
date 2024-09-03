@@ -4,7 +4,7 @@ Deployment Create & Update Task
 
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from redis import Redis
 
@@ -63,7 +63,7 @@ class DeploymentCreateUpdateTask(BaseLockTask[DeploymentCreateUpdateTaskPayload]
         return f"deployment:{payload.output_document_id}:create_update"
 
     @property
-    def lock_timeout(self) -> Optional[int]:
+    def lock_timeout(self) -> int | None:
         # set lock timeout to 24 hours
         return 24 * 60 * 60
 

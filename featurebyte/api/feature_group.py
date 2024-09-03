@@ -6,18 +6,13 @@ from __future__ import annotations
 
 import collections
 import time
+from collections import OrderedDict
+from collections.abc import Sequence
 from datetime import datetime
 from http import HTTPStatus
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    OrderedDict,
-    Sequence,
-    Set,
-    Tuple,
     Union,
     cast,
 )
@@ -116,10 +111,10 @@ class BaseFeatureGroup(AsyncMixin):
 
     @staticmethod
     def _initialize_items_and_feature_objects_from_persistent(
-        feature_list_id: ObjectId, feature_ids: List[str]
-    ) -> Tuple[Sequence[Item], FeatureObjects]:
+        feature_list_id: ObjectId, feature_ids: list[str]
+    ) -> tuple[Sequence[Item], FeatureObjects]:
         feature_id_to_object = {}
-        feature_store_map: Dict[ObjectId, FeatureStore] = {}
+        feature_store_map: dict[ObjectId, FeatureStore] = {}
         with alive_bar(
             total=len(feature_ids),
             title="Loading Feature(s)",
@@ -215,7 +210,7 @@ class BaseFeatureGroup(AsyncMixin):
         return list(self.feature_objects)
 
     @property
-    def primary_entity(self) -> List[Entity]:
+    def primary_entity(self) -> list[Entity]:
         """
         Returns the primary entity of the FeatureList object.
 
@@ -224,7 +219,7 @@ class BaseFeatureGroup(AsyncMixin):
         List[Entity]
             Primary entity
         """
-        entity_ids: Set[ObjectId] = set()
+        entity_ids: set[ObjectId] = set()
         for feature in self._features:
             entity_ids.update(feature.entity_ids)
         primary_entity = derive_primary_entity(  # type: ignore
@@ -239,13 +234,13 @@ class BaseFeatureGroup(AsyncMixin):
         return FeatureGroup([self.feature_objects[elem] for elem in columns])
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
+    def __getitem__(self, item: str | list[str]) -> Feature | FeatureGroup:
         if isinstance(item, str):
             return self._subset_single_column(item)
         return self._subset_list_of_columns(item)
 
     @typechecked
-    def drop(self, items: List[str]) -> FeatureGroup:
+    def drop(self, items: list[str]) -> FeatureGroup:
         """
         Drops feature(s) from the original FeatureGroup and returns a new FeatureGroup object.
 
@@ -272,7 +267,7 @@ class BaseFeatureGroup(AsyncMixin):
         ]
         return self._subset_list_of_columns(selected_feat_names)
 
-    def _get_feature_clusters(self) -> List[FeatureCluster]:
+    def _get_feature_clusters(self) -> list[FeatureCluster]:
         """
         Get groups of features in the feature lists that belong to the same feature store
 
@@ -289,9 +284,9 @@ class BaseFeatureGroup(AsyncMixin):
     @typechecked
     def preview(
         self,
-        observation_set: Union[ObservationTable, pd.DataFrame],
-        serving_names_mapping: Optional[Dict[str, str]] = None,
-    ) -> Optional[pd.DataFrame]:
+        observation_set: ObservationTable | pd.DataFrame,
+        serving_names_mapping: dict[str, str] | None = None,
+    ) -> pd.DataFrame | None:
         """
         Materializes a FeatureGroup object using a small observation set of up to 50 rows. Unlike
         compute_historical_features, this method does not store partial aggregations (tiles) to speed up future
@@ -354,7 +349,7 @@ class BaseFeatureGroup(AsyncMixin):
         """
         tic = time.time()
 
-        preview_parameters: Dict[str, Any] = {
+        preview_parameters: dict[str, Any] = {
             "feature_clusters": self._get_feature_clusters(),
             "serving_names_mapping": serving_names_mapping,
         }
@@ -407,9 +402,9 @@ class BaseFeatureGroup(AsyncMixin):
 
     def _get_batch_feature_create_payload(
         self,
-        feature_names: List[str],
+        feature_names: list[str],
         conflict_resolution: ConflictResolution,
-    ) -> Tuple[BatchFeatureCreatePayload, List[BatchFeatureItem]]:
+    ) -> tuple[BatchFeatureCreatePayload, list[BatchFeatureItem]]:
         pruned_graph, node_name_map = GlobalQueryGraph().quick_prune(
             target_node_names=[
                 self.feature_objects[feat_name].node_name for feat_name in feature_names
@@ -439,7 +434,7 @@ class BaseFeatureGroup(AsyncMixin):
     def _get_feature_list_create_job_payload(
         feature_list_id: ObjectId,
         feature_list_name: str,
-        features: List[BatchFeatureItem],
+        features: list[BatchFeatureItem],
         features_conflict_resolution: ConflictResolution,
     ) -> FeatureListCreateJob:
         return FeatureListCreateJob(
@@ -504,7 +499,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
     )
 
     @typechecked
-    def __getitem__(self, item: Union[str, List[str]]) -> Union[Feature, FeatureGroup]:
+    def __getitem__(self, item: str | list[str]) -> Feature | FeatureGroup:
         # Note: Feature can only modify FeatureGroup parent but not FeatureList parent.
         output = super().__getitem__(item)
         if isinstance(output, Feature):
@@ -512,9 +507,7 @@ class FeatureGroup(BaseFeatureGroup, ParentMixin):
         return output
 
     @typechecked
-    def __setitem__(
-        self, key: Union[str, Tuple[Feature, str]], value: Union[Feature, Union[Scalar, Series]]
-    ) -> None:
+    def __setitem__(self, key: str | tuple[Feature, str], value: Feature | Scalar | Series) -> None:
         if isinstance(key, tuple):
             if len(key) != 2:
                 raise ValueError(f"{len(key)} elements found, when we only expect 2.")

@@ -5,7 +5,7 @@ Utilities for SCD join / lookup
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Optional, cast
+from typing import Literal, cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -59,7 +59,7 @@ class Table:
 
     def as_subquery(
         self,
-        alias: Optional[str] = None,
+        alias: str | None = None,
         remove_missing_timestamp_values: bool = False,
     ) -> Expression:
         """
@@ -112,8 +112,8 @@ def get_scd_join_expr(
     right_table: Table,
     join_type: Literal["inner", "left"],
     adapter: BaseAdapter,
-    select_expr: Optional[Select] = None,
-    offset: Optional[str] = None,
+    select_expr: Select | None = None,
+    offset: str | None = None,
     offset_direction: OffsetDirection = OffsetDirection.BACKWARD,
     allow_exact_match: bool = True,
     quote_right_input_columns: bool = True,
@@ -252,7 +252,7 @@ def augment_table_with_effective_timestamp(
     left_table: Table,
     right_table: Table,
     adapter: BaseAdapter,
-    offset: Optional[str],
+    offset: str | None,
     offset_direction: OffsetDirection,
     allow_exact_match: bool = True,
     convert_timestamps_to_utc: bool = True,

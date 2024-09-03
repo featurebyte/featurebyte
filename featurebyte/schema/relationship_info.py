@@ -3,7 +3,7 @@ Relationship Info payload schema
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 from bson import ObjectId
 from pydantic import Field
@@ -35,7 +35,7 @@ class RelationshipInfoList(PaginationMixin):
     Paginated list of RelationshipInfo
     """
 
-    data: List[RelationshipInfoModel]
+    data: list[RelationshipInfoModel]
 
 
 class RelationshipInfoUpdate(BaseDocumentServiceUpdateSchema):

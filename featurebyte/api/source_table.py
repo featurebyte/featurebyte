@@ -7,7 +7,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import datetime
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -67,10 +67,10 @@ class TableDataFrame(BaseFrame, SampleMixin):
 
     # instance variables
     table_data: BaseTableData
-    int_timestamp_column: Optional[str] = Field(alias="timestamp_column")
+    int_timestamp_column: str | None = Field(alias="timestamp_column")
 
     @property
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         return self.int_timestamp_column
 
     def extract_pruned_graph_and_node(self, **kwargs: Any) -> tuple[QueryGraphModel, Node]:
@@ -94,14 +94,14 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
     """
 
     # class variables
-    _table_data_class: ClassVar[Type[AllTableDataT]]
+    _table_data_class: ClassVar[type[AllTableDataT]]
 
     # pydantic instance variable (public)
     tabular_source: TabularSource = Field(frozen=True)
     feature_store: FeatureStoreModel = Field(frozen=True, exclude=True)
 
     # pydantic instance variable (internal use)
-    internal_columns_info: List[ColumnInfo] = Field(alias="columns_info")
+    internal_columns_info: list[ColumnInfo] = Field(alias="columns_info")
 
     def __init__(self, **kwargs: Any):
         # construct feature_store based on the given input dictionary
@@ -244,7 +244,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         return self.frame.preview(limit=limit, after_cleaning=after_cleaning)
 
     @typechecked
-    def shape(self, after_cleaning: bool = False) -> Tuple[int, int]:
+    def shape(self, after_cleaning: bool = False) -> tuple[int, int]:
         """
         Return the shape of the view / column.
 
@@ -263,15 +263,15 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         >>> catalog.get_table("INVOICEITEMS").shape()
         (300450, 8)
         """
-        return cast(Tuple[int, int], self.frame.shape(after_cleaning=after_cleaning))
+        return cast(tuple[int, int], self.frame.shape(after_cleaning=after_cleaning))
 
     @typechecked
     def sample(
         self,
         size: int = 10,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
         """
@@ -342,8 +342,8 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
         self,
         size: int = 0,
         seed: int = 1234,
-        from_timestamp: Optional[Union[datetime, str]] = None,
-        to_timestamp: Optional[Union[datetime, str]] = None,
+        from_timestamp: datetime | str | None = None,
+        to_timestamp: datetime | str | None = None,
         after_cleaning: bool = False,
     ) -> pd.DataFrame:
         """
@@ -408,7 +408,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
 
     @property
     @abstractmethod
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         """
         Name of the timestamp column.
 
@@ -419,7 +419,7 @@ class AbstractTableData(ConstructGraphMixin, FeatureByteBaseModel, ABC):
 
     @property
     @abstractmethod
-    def columns_info(self) -> List[ColumnInfo]:
+    def columns_info(self) -> list[ColumnInfo]:
         """
         List of column information of the dataset. Each column contains column name, column type, entity ID
         associated with the column, semantic ID associated with the column.
@@ -437,14 +437,14 @@ class SourceTable(AbstractTableData):
 
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.SourceTable")
-    _table_data_class: ClassVar[Type[AllTableDataT]] = SourceTableData
+    _table_data_class: ClassVar[type[AllTableDataT]] = SourceTableData
 
     @property
-    def timestamp_column(self) -> Optional[str]:
+    def timestamp_column(self) -> str | None:
         return None
 
     @property
-    def columns_info(self) -> List[ColumnInfo]:
+    def columns_info(self) -> list[ColumnInfo]:
         return self.internal_columns_info
 
     @typechecked
@@ -453,11 +453,11 @@ class SourceTable(AbstractTableData):
         name: str,
         event_timestamp_column: str,
         event_id_column: str,
-        event_timestamp_timezone_offset: Optional[str] = None,
-        event_timestamp_timezone_offset_column: Optional[str] = None,
-        record_creation_timestamp_column: Optional[str] = None,
-        description: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
+        event_timestamp_timezone_offset: str | None = None,
+        event_timestamp_timezone_offset_column: str | None = None,
+        record_creation_timestamp_column: str | None = None,
+        description: str | None = None,
+        _id: ObjectId | None = None,
     ) -> EventTable:
         """
         Creates and adds to the catalog an EventTable object from a source table where each row indicates a specific
@@ -540,9 +540,9 @@ class SourceTable(AbstractTableData):
         event_id_column: str,
         item_id_column: str,
         event_table_name: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        description: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
+        record_creation_timestamp_column: str | None = None,
+        description: str | None = None,
+        _id: ObjectId | None = None,
     ) -> ItemTable:
         """
         Creates and adds to the catalog an ItemTable object from a source table containing in-depth details about
@@ -618,9 +618,9 @@ class SourceTable(AbstractTableData):
         self,
         name: str,
         dimension_id_column: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        description: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
+        record_creation_timestamp_column: str | None = None,
+        description: str | None = None,
+        _id: ObjectId | None = None,
     ) -> DimensionTable:
         """
         Creates and adds to the catalog a DimensionTable object from a source table that holds static descriptive
@@ -689,12 +689,12 @@ class SourceTable(AbstractTableData):
         name: str,
         natural_key_column: str,
         effective_timestamp_column: str,
-        end_timestamp_column: Optional[str] = None,
-        surrogate_key_column: Optional[str] = None,
-        current_flag_column: Optional[str] = None,
-        record_creation_timestamp_column: Optional[str] = None,
-        description: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
+        end_timestamp_column: str | None = None,
+        surrogate_key_column: str | None = None,
+        current_flag_column: str | None = None,
+        record_creation_timestamp_column: str | None = None,
+        description: str | None = None,
+        _id: ObjectId | None = None,
     ) -> SCDTable:
         """
         Creates and adds to the catalog a SCDTable object from a source table that contains data that changes slowly
@@ -788,9 +788,9 @@ class SourceTable(AbstractTableData):
         name: str,
         event_timestamp_column: str,
         event_id_column: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        description: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
+        record_creation_timestamp_column: str | None = None,
+        description: str | None = None,
+        _id: ObjectId | None = None,
     ) -> EventTable:
         """
         Get or create event table from this source table. Internally, this method calls `EventTable.get` by name,
@@ -837,9 +837,9 @@ class SourceTable(AbstractTableData):
         event_id_column: str,
         item_id_column: str,
         event_table_name: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        description: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
+        record_creation_timestamp_column: str | None = None,
+        description: str | None = None,
+        _id: ObjectId | None = None,
     ) -> ItemTable:
         """
         Get or create item from this source table. Internally, this method calls `ItemTable.get` by name,
@@ -889,9 +889,9 @@ class SourceTable(AbstractTableData):
         self,
         name: str,
         dimension_id_column: str,
-        record_creation_timestamp_column: Optional[str] = None,
-        description: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
+        record_creation_timestamp_column: str | None = None,
+        description: str | None = None,
+        _id: ObjectId | None = None,
     ) -> DimensionTable:
         """
         Get or create dimension table from this source table. Internally, this method calls `DimensionTable.get`
@@ -934,12 +934,12 @@ class SourceTable(AbstractTableData):
         name: str,
         natural_key_column: str,
         effective_timestamp_column: str,
-        end_timestamp_column: Optional[str] = None,
-        surrogate_key_column: Optional[str] = None,
-        current_flag_column: Optional[str] = None,
-        record_creation_timestamp_column: Optional[str] = None,
-        description: Optional[str] = None,
-        _id: Optional[ObjectId] = None,
+        end_timestamp_column: str | None = None,
+        surrogate_key_column: str | None = None,
+        current_flag_column: str | None = None,
+        record_creation_timestamp_column: str | None = None,
+        description: str | None = None,
+        _id: ObjectId | None = None,
     ) -> SCDTable:
         """
         Get or create SCD table from this source table. Internally, this method calls `SCDTable.get` by name,
@@ -992,13 +992,13 @@ class SourceTable(AbstractTableData):
     def create_observation_table(
         self,
         name: str,
-        sample_rows: Optional[int] = None,
-        columns: Optional[list[str]] = None,
-        columns_rename_mapping: Optional[dict[str, str]] = None,
-        context_name: Optional[str] = None,
-        skip_entity_validation_checks: Optional[bool] = False,
-        primary_entities: Optional[List[str]] = None,
-        target_column: Optional[str] = None,
+        sample_rows: int | None = None,
+        columns: list[str] | None = None,
+        columns_rename_mapping: dict[str, str] | None = None,
+        context_name: str | None = None,
+        skip_entity_validation_checks: bool | None = False,
+        primary_entities: list[str] | None = None,
+        target_column: str | None = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the SourceTable.
@@ -1089,8 +1089,8 @@ class SourceTable(AbstractTableData):
     def create_batch_request_table(
         self,
         name: str,
-        columns: Optional[list[str]] = None,
-        columns_rename_mapping: Optional[dict[str, str]] = None,
+        columns: list[str] | None = None,
+        columns_rename_mapping: dict[str, str] | None = None,
     ) -> BatchRequestTable:
         """
         Creates an BatchRequestTable from the SourceTable.
@@ -1147,9 +1147,9 @@ class SourceTable(AbstractTableData):
     def create_static_source_table(
         self,
         name: str,
-        sample_rows: Optional[int] = None,
-        columns: Optional[list[str]] = None,
-        columns_rename_mapping: Optional[dict[str, str]] = None,
+        sample_rows: int | None = None,
+        columns: list[str] | None = None,
+        columns_rename_mapping: dict[str, str] | None = None,
     ) -> StaticSourceTable:
         """
         Creates a StaticSourceTable from the SourceTable.
@@ -1251,7 +1251,7 @@ class SourceTable(AbstractTableData):
 
     @perf_logging
     @typechecked
-    def shape(self) -> Tuple[int, int]:
+    def shape(self) -> tuple[int, int]:
         """
         Return the shape of the source table
 

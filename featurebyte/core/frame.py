@@ -4,7 +4,7 @@ Frame class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Tuple, TypeVar, Union
+from typing import Any, ClassVar, TypeVar
 
 import pandas as pd
 from pydantic import Field, field_validator
@@ -29,7 +29,7 @@ class BaseFrame(QueryObject):
         List of column specifications that are contained in this frame.
     """
 
-    columns_info: List[ColumnInfo] = Field(description="List of columns specifications")
+    columns_info: list[ColumnInfo] = Field(description="List of columns specifications")
 
     # pydantic validator
     _validate_column_names = field_validator("columns_info", mode="after")(
@@ -128,9 +128,7 @@ class FrozenFrame(GetAttrMixin, BaseFrame, OpsMixin):
                 raise KeyError(f"Columns {not_found_columns} not found!")
 
     @typechecked
-    def __getitem__(
-        self, item: Union[str, List[str], FrozenSeries]
-    ) -> Union[FrozenSeries, FrozenFrame]:
+    def __getitem__(self, item: str | list[str] | FrozenSeries) -> FrozenSeries | FrozenFrame:
         """
         Extract column or perform row filtering on the table. When the item has a `str` or `list[str]` type,
         column(s) projection is expected. When the item has a boolean `Series` type, row filtering operation
@@ -204,8 +202,8 @@ class Frame(FrozenFrame):
     @typechecked
     def __setitem__(
         self,
-        key: Union[str, Tuple[FrozenSeries, str]],
-        value: Union[int, float, str, bool, FrozenSeries],
+        key: str | tuple[FrozenSeries, str],
+        value: int | float | str | bool | FrozenSeries,
     ) -> None:
         """
         Assign a scalar value or Series object of the same `dtype` to the `Frame` object
