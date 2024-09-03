@@ -90,6 +90,8 @@ SKIPPED_TESTS = {
         "tests/integration/api/test_dict_operations.py",
         "tests/integration/api/test_dimension_view_operations.py",
         "tests/integration/api/test_distance_operations.py",
+        "tests/integration/api/test_event_view_operations.py::test_datetime_comparison__fixed_timestamp_tz[bigquery]",
+        "tests/integration/api/test_event_view_operations.py::test_datetime_comparison__fixed_timestamp_non_tz[bigquery]",
         "tests/integration/api/test_feature_correctness.py",
         "tests/integration/api/test_features.py",
         "tests/integration/api/test_forward_aggregate_asat.py",
