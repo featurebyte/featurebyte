@@ -1175,7 +1175,7 @@ def test_scalar_timestamp__valid(
         f"""
         SELECT
           (
-            "TIMESTAMP" {expected_operator_str} CAST('2023-01-15T10:00:00' AS TIMESTAMPNTZ)
+            "TIMESTAMP" {expected_operator_str} CAST('2023-01-15T10:00:00' AS TIMESTAMP)
           )
         FROM "db"."public"."transaction"
         LIMIT 10
@@ -1197,7 +1197,7 @@ def test_scalar_timestamp__with_tz(timestamp_series, scalar_timestamp_tz):
         """
         SELECT
           (
-            "TIMESTAMP" > CAST('2023-01-15T02:00:00' AS TIMESTAMPNTZ)
+            "TIMESTAMP" > CAST('2023-01-15T02:00:00' AS TIMESTAMP)
           )
         FROM "db"."public"."transaction"
         LIMIT 10

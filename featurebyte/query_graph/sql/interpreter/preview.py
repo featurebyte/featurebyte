@@ -930,14 +930,16 @@ class PreviewMixin(BaseGraphInterpreter):
 
     @classmethod
     def _clip_timestamp_column(cls, col_expr: expressions.Expression) -> expressions.Expression:
-        col_expr = expressions.Cast(this=col_expr, to=expressions.DataType.build("TIMESTAMP"))
+        normalized_expr = expressions.Cast(
+            this=col_expr, to=expressions.DataType.build("TIMESTAMP")
+        )
         invalid_mask = expressions.or_(
             expressions.LT(
-                this=col_expr,
+                this=normalized_expr,
                 expression=make_literal_value("1900-01-01", cast_as_timestamp=True),
             ),
             expressions.GT(
-                this=col_expr,
+                this=normalized_expr,
                 expression=make_literal_value("2200-01-01", cast_as_timestamp=True),
             ),
         )

@@ -16,27 +16,36 @@ SELECT
   R."cust_id" AS "cust_id_joined",
   CASE
     WHEN (
-      EXTRACT(month FROM DATEADD(
-        second,
-        F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset_event_table"),
-        L."event_timestamp_event_table"
-      )) < EXTRACT(month FROM R."date_of_birth")
-    )
-    THEN (
-      (
-        EXTRACT(year FROM DATEADD(
+      DATE_PART(
+        month,
+        DATEADD(
           second,
           F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset_event_table"),
           L."event_timestamp_event_table"
-        )) - EXTRACT(year FROM R."date_of_birth")
+        )
+      ) < DATE_PART(month, R."date_of_birth")
+    )
+    THEN (
+      (
+        DATE_PART(
+          year,
+          DATEADD(
+            second,
+            F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset_event_table"),
+            L."event_timestamp_event_table"
+          )
+        ) - DATE_PART(year, R."date_of_birth")
       ) - 1
     )
     ELSE (
-      EXTRACT(year FROM DATEADD(
-        second,
-        F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset_event_table"),
-        L."event_timestamp_event_table"
-      )) - EXTRACT(year FROM R."date_of_birth")
+      DATE_PART(
+        year,
+        DATEADD(
+          second,
+          F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset_event_table"),
+          L."event_timestamp_event_table"
+        )
+      ) - DATE_PART(year, R."date_of_birth")
     )
   END AS "customer_age"
 FROM (

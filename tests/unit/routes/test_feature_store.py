@@ -506,22 +506,22 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                       "col_binary" AS "col_binary",
                       "col_boolean" AS "col_boolean",
                       IFF(
-                        "event_timestamp" < CAST('1900-01-01' AS TIMESTAMPNTZ)
-                        OR "event_timestamp" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+                        CAST("event_timestamp" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
+                        OR CAST("event_timestamp" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
                         NULL,
                         "event_timestamp"
                       ) AS "event_timestamp",
                       IFF(
-                        "created_at" < CAST('1900-01-01' AS TIMESTAMPNTZ)
-                        OR "created_at" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+                        CAST("created_at" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
+                        OR CAST("created_at" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
                         NULL,
                         "created_at"
                       ) AS "created_at",
                       CAST("cust_id" AS VARCHAR) AS "cust_id"
                     FROM "sf_database"."sf_schema"."sf_table"
                     WHERE
-                      "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMPNTZ)
-                      AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMPNTZ)
+                      "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMP)
+                      AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMP)
                   )
                 )
                 WHERE

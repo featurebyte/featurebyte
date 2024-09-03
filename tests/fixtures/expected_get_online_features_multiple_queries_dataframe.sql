@@ -34,7 +34,10 @@ WITH ONLINE_REQUEST_TABLE AS (
               "AGGREGATION_RESULT_NAME",
               "LATEST_VERSION"
             FROM (VALUES
-              ('_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64', _fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+              (
+                '_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64',
+                _fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64_VERSION_PLACEHOLDER
+              )) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
           ) AS L
           INNER JOIN online_store_e4d5f4dff76dea2d344a4cc284d7881e0b183981 AS R
             ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
@@ -42,7 +45,8 @@ WITH ONLINE_REQUEST_TABLE AS (
         )
         WHERE
           "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64')
-      )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64'))
+      )
+      PIVOT(MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64'))
     )
   ) AS T0
     ON TRUE
@@ -96,7 +100,10 @@ WITH ONLINE_REQUEST_TABLE AS (
               "AGGREGATION_RESULT_NAME",
               "LATEST_VERSION"
             FROM (VALUES
-              ('_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+              (
+                '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295',
+                _fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER
+              )) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
           ) AS L
           INNER JOIN online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c AS R
             ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
@@ -104,7 +111,8 @@ WITH ONLINE_REQUEST_TABLE AS (
         )
         WHERE
           "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
-      )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
+      )
+      PIVOT(MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
     )
   ) AS T0
     ON REQ."cust_id" = T0."cust_id"

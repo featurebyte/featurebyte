@@ -74,7 +74,8 @@ WITH `casted_data` AS (
     NULL AS `std__0`,
     MIN(
       IF(
-        `ts` < CAST('1900-01-01' AS DATETIME) OR `ts` > CAST('2200-01-01' AS DATETIME),
+        CAST(`ts` AS DATETIME) < CAST('1900-01-01' AS DATETIME)
+        OR CAST(`ts` AS DATETIME) > CAST('2200-01-01' AS DATETIME),
         NULL,
         `ts`
       )
@@ -84,7 +85,8 @@ WITH `casted_data` AS (
     NULL AS `75%__0`,
     MAX(
       IF(
-        `ts` < CAST('1900-01-01' AS DATETIME) OR `ts` > CAST('2200-01-01' AS DATETIME),
+        CAST(`ts` AS DATETIME) < CAST('1900-01-01' AS DATETIME)
+        OR CAST(`ts` AS DATETIME) > CAST('2200-01-01' AS DATETIME),
         NULL,
         `ts`
       )

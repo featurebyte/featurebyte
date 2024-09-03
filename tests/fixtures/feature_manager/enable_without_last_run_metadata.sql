@@ -30,12 +30,12 @@ FROM (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."sf_table"
       WHERE
-        "event_timestamp" >= CAST('2022-05-15T06:45:00.000000Z' AS TIMESTAMPNTZ)
-        AND "event_timestamp" < CAST('2022-06-15T09:45:00.000000Z' AS TIMESTAMPNTZ)
+        "event_timestamp" >= CAST('2022-05-15T06:45:00.000000Z' AS TIMESTAMP)
+        AND "event_timestamp" < CAST('2022-06-15T09:45:00.000000Z' AS TIMESTAMP)
     )
     WHERE
-      "event_timestamp" >= CAST('2022-05-15T06:45:00.000000Z' AS TIMESTAMPNTZ)
-      AND "event_timestamp" < CAST('2022-06-15T09:45:00.000000Z' AS TIMESTAMPNTZ)
+      "event_timestamp" >= CAST('2022-05-15T06:45:00.000000Z' AS TIMESTAMP)
+      AND "event_timestamp" < CAST('2022-06-15T09:45:00.000000Z' AS TIMESTAMP)
   )
 )
 GROUP BY
@@ -58,18 +58,18 @@ SELECT * FROM (SELECT
 FROM (
   WITH REQUEST_TABLE AS (
     SELECT DISTINCT
-      CAST('2022-06-15 10:15:00' AS TIMESTAMPNTZ) AS POINT_IN_TIME,
+      CAST('2022-06-15 10:15:00' AS TIMESTAMP) AS POINT_IN_TIME,
       "cust_id" AS "cust_id"
     FROM TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9
     WHERE
       INDEX >= FLOOR(
         (
-          DATE_PART(EPOCH_SECOND, CAST('2022-06-15 10:15:00' AS TIMESTAMPNTZ)) - 900
+          DATE_PART(EPOCH_SECOND, CAST('2022-06-15 10:15:00' AS TIMESTAMP)) - 900
         ) / 3600
       ) - 2
       AND INDEX < FLOOR(
         (
-          DATE_PART(EPOCH_SECOND, CAST('2022-06-15 10:15:00' AS TIMESTAMPNTZ)) - 900
+          DATE_PART(EPOCH_SECOND, CAST('2022-06-15 10:15:00' AS TIMESTAMP)) - 900
         ) / 3600
       )
   ), "REQUEST_TABLE_W7200_F3600_BS1800_M900_cust_id" AS (
@@ -78,10 +78,10 @@ FROM (
       "cust_id",
       FLOOR((
         DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 900
-      ) / 3600) AS "__FB_LAST_TILE_INDEX",
+      ) / 3600) AS __FB_LAST_TILE_INDEX,
       FLOOR((
         DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 900
-      ) / 3600) - 2 AS "__FB_FIRST_TILE_INDEX"
+      ) / 3600) - 2 AS __FB_FIRST_TILE_INDEX
     FROM (
       SELECT DISTINCT
         "POINT_IN_TIME",

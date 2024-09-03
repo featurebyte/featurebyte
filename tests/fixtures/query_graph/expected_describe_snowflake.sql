@@ -59,7 +59,8 @@ WITH "casted_data" AS (
     NULL AS "std__0",
     MIN(
       IFF(
-        "ts" < CAST('1900-01-01' AS TIMESTAMP) OR "ts" > CAST('2200-01-01' AS TIMESTAMP),
+        CAST("ts" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
+        OR CAST("ts" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
         NULL,
         "ts"
       )
@@ -69,7 +70,8 @@ WITH "casted_data" AS (
     NULL AS "75%__0",
     MAX(
       IFF(
-        "ts" < CAST('1900-01-01' AS TIMESTAMP) OR "ts" > CAST('2200-01-01' AS TIMESTAMP),
+        CAST("ts" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
+        OR CAST("ts" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
         NULL,
         "ts"
       )

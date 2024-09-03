@@ -53,13 +53,13 @@ def test_create_table_as(source_type, expected):
             textwrap.dedent(
                 """
                 ALTER TABLE my_database.my_schema.my_table ADD COLUMN "my_col_1" BIGINT,
-                "my_col_2" TIMESTAMPNTZ
+                "my_col_2" TIMESTAMP
                 """
             ).strip(),
         ),
         (
             SourceType.DATABRICKS,
-            "ALTER TABLE my_database.my_schema.my_table ADD COLUMNS (`my_col_1` LONG, `my_col_2` TIMESTAMP)",
+            "ALTER TABLE my_database.my_schema.my_table ADD COLUMNS (`my_col_1` BIGINT, `my_col_2` TIMESTAMP)'",
         ),
     ],
 )

@@ -202,8 +202,8 @@ def test_window_function(global_graph, input_node, source_info):
                 )
             )
             WHERE
-              "ts" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+              "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
           )
         )
         GROUP BY

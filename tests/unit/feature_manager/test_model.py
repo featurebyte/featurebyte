@@ -37,12 +37,12 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."sf_table"
               WHERE
-                "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-                AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+                "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+                AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
             )
             WHERE
-              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
           )
         )
         GROUP BY
@@ -85,7 +85,7 @@ def test_extended_feature_model__agg_per_category_feature(
           index,
           "cust_id",
           "col_int",
-          SUM("col_float") AS value_sum_{aggregation_id}
+          SUM("col_float") AS value_sum_254bde514925221168a524ba7467c9b6ef83685d
         FROM (
           SELECT
             *,
@@ -105,12 +105,12 @@ def test_extended_feature_model__agg_per_category_feature(
                 "cust_id" AS "cust_id"
               FROM "sf_database"."sf_schema"."sf_table"
               WHERE
-                "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-                AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+                "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+                AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
             )
             WHERE
-              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
           )
         )
         GROUP BY

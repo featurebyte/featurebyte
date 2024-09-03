@@ -2,6 +2,8 @@
 Test spark adapter module
 """
 
+import textwrap
+
 import pytest
 from sqlglot import expressions
 
@@ -17,6 +19,25 @@ class TestSparkAdapter(BaseAdapterTest):
     """
 
     adapter = get_sql_adapter_from_source_type(SourceType.SPARK)
+
+    @classmethod
+    def get_expected_haversine_sql(cls) -> str:
+        """
+        Get expected haversine SQL string
+        """
+        return textwrap.dedent(
+            """
+            2 * ASIN(
+              SQRT(
+                POWER(SIN((
+                  RADIANS(TABLE."lat1") - RADIANS(TABLE."lat2")
+                ) / 2)) + COS(RADIANS(TABLE."lat1")) * COS(RADIANS(TABLE."lat2")) * POWER(SIN((
+                  RADIANS(TABLE."lon1") - RADIANS(TABLE."lon2")
+                ) / 2))
+              )
+            ) * 6371
+        """
+        ).strip()
 
     def test_dateadd_seconds(self):
         """
