@@ -9,7 +9,6 @@ from sqlglot.expressions import select
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.sql.adapter import SnowflakeAdapter
-from featurebyte.query_graph.sql.common import sql_to_string
 from tests.unit.query_graph.sql.adapter.base_adapter_test import BaseAdapterTest
 from tests.util.helper import get_sql_adapter_from_source_type
 

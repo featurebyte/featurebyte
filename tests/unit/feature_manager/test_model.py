@@ -85,7 +85,7 @@ def test_extended_feature_model__agg_per_category_feature(
           index,
           "cust_id",
           "col_int",
-          SUM("col_float") AS value_sum_254bde514925221168a524ba7467c9b6ef83685d
+          SUM("col_float") AS value_sum_{aggregation_id}
         FROM (
           SELECT
             *,
