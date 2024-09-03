@@ -40,6 +40,9 @@ jobs:
           sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
       - name: Lint Checks
         run: task lint:pr
+      - name: pip-audit check [ONLY MAIN]
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: task lint:safety
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}

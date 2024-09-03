@@ -425,9 +425,9 @@ class BigQuerySession(BaseSession):
 
         def _detect_element_type(value: Any) -> SqlTypeNames:
             element_type = type(value)
-            if element_type == int:
+            if element_type is int:
                 return SqlTypeNames.INTEGER
-            elif element_type == float:
+            elif element_type is float:
                 return SqlTypeNames.FLOAT64
             return SqlTypeNames.STRING
 
