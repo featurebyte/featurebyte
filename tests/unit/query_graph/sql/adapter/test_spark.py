@@ -2,8 +2,6 @@
 Test spark adapter module
 """
 
-import textwrap
-
 import pytest
 from sqlglot import expressions
 

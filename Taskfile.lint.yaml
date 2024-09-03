@@ -33,6 +33,7 @@ tasks:
       - task: install
     cmds:
       - poetry run ruff check --select I --fix
+      - poetry run ruff check --fix
       - poetry run ruff format
       - poetry run toml-sort --in-place poetry.lock pyproject.toml
 
