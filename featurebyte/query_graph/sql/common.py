@@ -13,6 +13,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
 
@@ -179,29 +180,6 @@ def get_column_expr_and_name(
     else:
         name = None
     return col_expr, name
-
-
-def get_dialect_from_source_type(source_type: SourceType) -> str:
-    """
-    Get the dialect name given SourceType
-
-    Parameters
-    ----------
-    source_type : SourceType
-        Source type information
-
-    Returns
-    -------
-    str
-    """
-    if source_type in [SourceType.DATABRICKS_UNITY, SourceType.DATABRICKS, SourceType.SPARK]:
-        dialect = "spark"
-    elif source_type == SourceType.BIGQUERY:
-        dialect = "bigquery"
-    else:
-        assert source_type == SourceType.SNOWFLAKE
-        dialect = "snowflake"
-    return dialect
 
 
 def sql_to_string(sql_expr: Expression, source_type: SourceType) -> str:
