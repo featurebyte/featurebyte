@@ -4,7 +4,7 @@ SqlglotExpressionModel class
 
 from __future__ import annotations
 
-from typing import ClassVar, cast
+from typing import ClassVar
 
 import sqlglot
 from sqlglot.expressions import Expression
@@ -50,6 +50,4 @@ class SqlglotExpressionModel(FeatureByteBaseModel):
         -------
         Expression
         """
-        return cast(
-            Expression, sqlglot.parse_one(self.formatted_expression, read=self._DIALECT_FORMAT)
-        )
+        return sqlglot.parse_one(self.formatted_expression, read=self._DIALECT_FORMAT)

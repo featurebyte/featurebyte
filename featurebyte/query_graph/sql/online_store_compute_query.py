@@ -5,7 +5,7 @@ SQL generation for online store compute queries
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Tuple
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, alias_, select
@@ -252,9 +252,7 @@ class OnlineStorePrecomputePlan:
             select(
                 expressions.alias_(self._get_point_in_time_expr(), SpecialColumnName.POINT_IN_TIME),
                 *[
-                    expressions.alias_(
-                        quoted_identifier(key_col), quoted_identifier(serving_name_col)
-                    )
+                    expressions.alias_(quoted_identifier(key_col), serving_name_col, quoted=True)
                     for key_col, serving_name_col in zip(keys, serving_names)
                 ],
             )
@@ -301,10 +299,7 @@ class OnlineStorePrecomputePlan:
 
     @classmethod
     def _get_point_in_time_expr(cls) -> Expression:
-        return cast(
-            Expression,
-            parse_one(f"CAST({InternalName.POINT_IN_TIME_SQL_PLACEHOLDER} AS TIMESTAMP)"),
-        )
+        return parse_one(f"CAST({InternalName.POINT_IN_TIME_SQL_PLACEHOLDER} AS TIMESTAMP)")
 
 
 def get_online_store_precompute_queries(

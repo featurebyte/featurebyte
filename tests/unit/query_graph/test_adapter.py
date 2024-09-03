@@ -59,7 +59,7 @@ def test_create_table_as(source_type, expected):
         ),
         (
             SourceType.DATABRICKS,
-            "ALTER TABLE my_database.my_schema.my_table ADD COLUMNS (`my_col_1` BIGINT, `my_col_2` TIMESTAMP)'",
+            "ALTER TABLE my_database.my_schema.my_table ADD COLUMNS (`my_col_1` BIGINT, `my_col_2` TIMESTAMP)",
         ),
     ],
 )

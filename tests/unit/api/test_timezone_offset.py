@@ -241,7 +241,10 @@ def test_datetime_property_extraction__event_timestamp_in_item_view(
           R."event_timestamp" AS "event_timestamp_event_table",
           R."cust_id" AS "cust_id_event_table",
           CAST(R."tz_offset" AS VARCHAR) AS "tz_offset_event_table",
-          DATE_PART(hour, R."event_timestamp") AS "timestamp_hour"
+          DATE_PART(
+            hour,
+            DATEADD(second, F_TIMEZONE_OFFSET_TO_SECOND(R."tz_offset"), R."event_timestamp")
+          ) AS "timestamp_hour"
         FROM (
           SELECT
             "event_id_col" AS "event_id_col",

@@ -13,7 +13,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     CteStatements,

@@ -4,7 +4,7 @@ Module for tiles related utilities
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, cast
+from typing import Any, Optional, Tuple
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression
@@ -100,11 +100,8 @@ def calculate_last_tile_index_expr(
     Expression
     """
     point_in_time_epoch_expr = adapter.to_epoch_seconds(point_in_time_expr)
-    last_tile_index_expr = cast(
-        Expression,
-        parse_one(
-            f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"
-        ),
+    last_tile_index_expr = parse_one(
+        f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"
     )
     if offset is not None:
         offset_num_tiles = offset // frequency
@@ -202,7 +199,7 @@ def get_earliest_tile_start_date_expr(
     )
     return adapter.dateadd_microsecond(
         tile_boundaries_offset_microsecond,
-        cast(Expression, parse_one("CAST('1970-01-01' AS TIMESTAMP)")),
+        parse_one("CAST('1970-01-01' AS TIMESTAMP)"),
     )
 
 

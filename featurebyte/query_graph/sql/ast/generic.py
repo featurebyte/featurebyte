@@ -5,7 +5,7 @@ Module for generic operations sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression
@@ -23,7 +23,7 @@ class StrExpressionNode(ExpressionNode):
 
     @property
     def sql(self) -> Expression:
-        return cast(Expression, parse_one(self.expr))
+        return parse_one(self.expr)
 
 
 @dataclass

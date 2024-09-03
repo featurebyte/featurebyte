@@ -237,6 +237,7 @@ class TileBasedRequestTablePlan:
             frequency=frequency,
             time_modulo_frequency=time_modulo_frequency,
         )
+        assert first_tile_index_expr is not None
         expr = select(
             quoted_identifier(SpecialColumnName.POINT_IN_TIME),
             *quoted_serving_names,

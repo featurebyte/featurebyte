@@ -319,6 +319,7 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
                 )
             )
         else:
+            assert column.parent_expr is not None
             non_vector_agg_exprs.append(
                 alias_(
                     column.parent_expr,

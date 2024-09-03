@@ -4,9 +4,9 @@ Module for literal value handling
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
-from sqlglot import expressions, parse_one
+from sqlglot import expressions
 
 from featurebyte.query_graph.node.scalar import NonNativeValueType, TimestampValue
 from featurebyte.typing import is_scalar_nan
@@ -50,7 +50,10 @@ def make_literal_value_from_native_types(
     Expression
     """
     if cast_as_timestamp:
-        return cast(expressions.Expression, parse_one(f"CAST('{str(value)}' AS TIMESTAMP)"))
+        return expressions.Cast(
+            this=make_literal_value(str(value)),
+            to=expressions.DataType.build("TIMESTAMP"),
+        )
     if isinstance(value, str):
         return expressions.Literal.string(value)
     if isinstance(value, bool):
