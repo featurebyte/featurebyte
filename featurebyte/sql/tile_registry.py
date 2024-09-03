@@ -5,16 +5,16 @@ Tile Registry Job Script
 from typing import Optional
 
 from pydantic import Field
+from sqlglot import expressions
 
 from featurebyte.exception import DocumentConflictError
 from featurebyte.logging import get_logger
 from featurebyte.models.tile_registry import TileModel
 from featurebyte.service.tile_registry_service import TileRegistryService
+from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.sql.tile_common import TileCommon
 
 logger = get_logger(__name__)
-
-LIST_TABLE_SCHEMA_TIMEOUT_SECONDS = 10 * 60
 
 
 class TileRegistry(TileCommon):
@@ -82,24 +82,36 @@ class TileRegistry(TileCommon):
                         self.table_name,
                         self._session.database_name,
                         self._session.schema_name,
-                        timeout=LIST_TABLE_SCHEMA_TIMEOUT_SECONDS,
+                        timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
                     )
                 ).keys()
             ]
-            tile_add_sql = f"ALTER TABLE {self.table_name} ADD COLUMN\n"
+
+            table_expr = expressions.Table(this=expressions.Identifier(this=self.table_name))
             add_statements = []
             for i, input_column in enumerate(input_value_columns):
                 if input_column.upper() not in cols:
                     element_type = input_value_columns_types[i]
-                    add_statements.append(f"{input_column} {element_type}")
+                    column_def = expressions.ColumnDef(
+                        this=expressions.Identifier(this=input_column),
+                        kind=element_type,
+                    )
+                    add_statements.append(
+                        self.adapter.alter_table_add_columns(table_expr, [column_def])
+                    )
                     if "_MONITOR" in self.table_name:
                         add_statements.append(f"OLD_{input_column} {element_type}")
+                        column_def = expressions.ColumnDef(
+                            this=expressions.Identifier(this=f"OLD_{input_column}"),
+                            kind=element_type,
+                        )
+                        add_statements.append(
+                            self.adapter.alter_table_add_columns(table_expr, [column_def])
+                        )
 
-            if add_statements:
-                tile_add_sql += ",\n".join(add_statements)
-                logger.debug(f"tile_add_sql: {tile_add_sql}")
+            for query in add_statements:
                 try:
-                    await self._session.execute_query_long_running(tile_add_sql)
+                    await self._session.execute_query_long_running(query)
                 except self._session.no_schema_error:
                     # Can occur on concurrent tile tasks creating the same tile table
                     pass
