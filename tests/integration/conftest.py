@@ -96,7 +96,6 @@ SKIPPED_TESTS = {
         "tests/integration/feature_store_integration/test_feature_materialize.py",
         "tests/integration/migration/test_data_warehouse_migration.py",
         "tests/integration/query_graph/test_online_serving.py",
-        "tests/integration/service/test_feature_table_cache.py",
         "tests/integration/tile/test_generate_tile.py",
         "tests/integration/tile/test_tile_scheduler.py",
         "tests/integration/api/test_historical_features.py",
