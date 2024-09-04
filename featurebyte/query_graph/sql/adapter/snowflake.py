@@ -142,9 +142,8 @@ class SnowflakeAdapter(BaseAdapter):
         output_expr = expressions.Anonymous(this="IS_VARCHAR", expressions=[variant_expr])
         return output_expr
 
-    @classmethod
     def get_value_from_dictionary(
-        cls, dictionary_expression: Expression, key_expression: Expression
+        self, dictionary_expression: Expression, key_expression: Expression
     ) -> Expression:
         return expressions.Anonymous(
             this="GET", expressions=[dictionary_expression, key_expression]

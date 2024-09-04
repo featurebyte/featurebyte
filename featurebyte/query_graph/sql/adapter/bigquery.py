@@ -243,3 +243,42 @@ class BigQueryAdapter(SnowflakeAdapter):
     @classmethod
     def normalize_timestamp_before_comparison(cls, expr: Expression) -> Expression:
         return cls._ensure_datetime(expr)
+
+    @classmethod
+    def in_array(cls, input_expression: Expression, array_expression: Expression) -> Expression:
+        return expressions.Exists(
+            this=expressions.select(make_literal_value(1))
+            .from_(
+                expressions.Unnest(
+                    expressions=[array_expression],
+                    alias=expressions.TableAlias(columns=["element"]),
+                )
+            )
+            .where(expressions.EQ(this="element", expression=input_expression))
+        )
+
+    @classmethod
+    def object_keys(cls, dictionary_expression: Expression) -> Expression:
+        return Anonymous(
+            this="JSON_KEYS",
+            expressions=[dictionary_expression],
+        )
+
+    def get_value_from_dictionary(
+        self, dictionary_expression: Expression, key_expression: Expression
+    ) -> Expression:
+        # Cannot use the built-in JSON_VALUE because a dynamic expression like key_expression cannot
+        # be used as the JSONPath argument (only string literal is allowed).
+        return Anonymous(
+            this="LAX_FLOAT64",
+            expressions=[
+                Anonymous(
+                    this="PARSE_JSON",
+                    expressions=[
+                        self.call_udf(  # result here is the value in JSON formatted string
+                            "F_GET_VALUE", [dictionary_expression, key_expression]
+                        ),
+                    ],
+                )
+            ],
+        )

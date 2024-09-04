@@ -420,10 +420,9 @@ class BaseAdapter(ABC):
             Boolean column to indicate whether the value is string type or not
         """
 
-    @classmethod
     @abstractmethod
     def get_value_from_dictionary(
-        cls, dictionary_expression: Expression, key_expression: Expression
+        self, dictionary_expression: Expression, key_expression: Expression
     ) -> Expression:
         """
         Get the value from a dictionary based on a key provided.
