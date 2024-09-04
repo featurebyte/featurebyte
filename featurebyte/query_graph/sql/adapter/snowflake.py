@@ -13,12 +13,10 @@ from sqlglot.expressions import Expression, Identifier, Select, alias_, select
 from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
-from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter, VectorAggColumn
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
-    get_fully_qualified_table_name,
     get_qualified_column_identifier,
     quoted_identifier,
     sql_to_string,
@@ -163,47 +161,6 @@ class SnowflakeAdapter(BaseAdapter):
     def escape_quote_char(cls, query: str) -> str:
         # Snowflake sql escapes ' with ''. Use regex to make it safe to call this more than once.
         return re.sub("(?<!')'(?!')", "''", query)
-
-    @classmethod
-    def create_table_as(
-        cls,
-        table_details: TableDetails,
-        select_expr: Select | str,
-        kind: Literal["TABLE", "VIEW"] = "TABLE",
-        partition_keys: list[str] | None = None,
-        replace: bool = False,
-        exists: bool = False,
-    ) -> Expression:
-        """
-        Construct query to create a table using a select statement
-
-        Parameters
-        ----------
-        table_details: TableDetails
-            TableDetails of the table to be created
-        select_expr: Select | str
-            Select expression
-        kind: Literal["TABLE", "VIEW"]
-            Kind of table to create
-        partition_keys: list[str] | None
-            Partition keys
-        replace: bool
-            Whether to replace the table if exists
-        exists: bool
-            Whether to create the table only if it doesn't exist
-
-        Returns
-        -------
-        Expression
-        """
-        destination_expr = get_fully_qualified_table_name(table_details.model_dump())
-        return expressions.Create(
-            this=expressions.Table(this=destination_expr),
-            kind=kind,
-            expression=select_expr,
-            replace=replace,
-            exists=exists,
-        )
 
     @classmethod
     def online_store_pivot_prepare_value_column(

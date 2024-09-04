@@ -18,6 +18,7 @@ from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     MISSING_VALUE_REPLACEMENT,
+    get_fully_qualified_table_name,
     get_qualified_column_identifier,
     quoted_identifier,
     sql_to_string,
@@ -592,7 +593,6 @@ class BaseAdapter(ABC):
         """
 
     @classmethod
-    @abstractmethod
     def create_table_as(
         cls,
         table_details: TableDetails,
@@ -624,6 +624,14 @@ class BaseAdapter(ABC):
         -------
         Expression
         """
+        destination_expr = get_fully_qualified_table_name(table_details.model_dump())
+        return expressions.Create(
+            this=expressions.Table(this=destination_expr),
+            kind=kind,
+            expression=select_expr,
+            replace=replace,
+            exists=exists,
+        )
 
     @classmethod
     def filter_with_window_function(
@@ -808,8 +816,20 @@ class BaseAdapter(ABC):
         Expression
         """
 
-    @staticmethod
-    def _radian_expr(expr: Expression) -> Expression:
+    @classmethod
+    def radian_expr(cls, expr: Expression) -> Expression:
+        """
+        Construct an expression to convert degrees to radians
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing degrees
+
+        Returns
+        -------
+        Expression
+        """
         return expressions.Anonymous(this="RADIANS", expressions=[expr])
 
     @staticmethod
@@ -871,10 +891,10 @@ class BaseAdapter(ABC):
         -------
         Expression
         """
-        radian_lat_1_expr = cls._radian_expr(lat_expr_1)
-        radian_lon_1_expr = cls._radian_expr(lon_expr_1)
-        radian_lat_2_expr = cls._radian_expr(lat_expr_2)
-        radian_lon_2_expr = cls._radian_expr(lon_expr_2)
+        radian_lat_1_expr = cls.radian_expr(lat_expr_1)
+        radian_lon_1_expr = cls.radian_expr(lon_expr_1)
+        radian_lat_2_expr = cls.radian_expr(lat_expr_2)
+        radian_lon_2_expr = cls.radian_expr(lon_expr_2)
         pow_sin_lat_expr = cls._square_expr(
             expressions.Anonymous(
                 this="SIN",
