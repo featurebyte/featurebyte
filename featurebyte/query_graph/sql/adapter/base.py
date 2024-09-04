@@ -43,6 +43,8 @@ class BaseAdapter(ABC):
     Helper class to generate engine specific SQL expressions
     """
 
+    TABLESAMPLE_SUPPORTS_VIEW = True
+
     def __init__(self, source_info: SourceInfo):
         self.source_info = source_info
         self.source_type = source_info.source_type

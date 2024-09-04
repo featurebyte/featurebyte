@@ -6,6 +6,7 @@ import textwrap
 from functools import partial
 from unittest.mock import AsyncMock, Mock, call
 
+import pandas as pd
 import pytest
 
 from featurebyte import SourceType
@@ -15,6 +16,7 @@ from featurebyte.models.request_input import SourceTableRequestInput, ViewReques
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.snowflake import SnowflakeSession
+from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
 @pytest.fixture(name="session")
@@ -35,6 +37,7 @@ def session_fixture(adapter):
         adapter=adapter,
     )
     session.create_table_as = partial(SnowflakeSession.create_table_as, session)
+    session.execute_query_long_running.return_value = pd.DataFrame({"row_count": [1000]})
     return session
 
 
@@ -217,3 +220,33 @@ async def test_materialize__from_view_with_columns_and_renames(
         """
     ).strip()
     assert session.execute_query_long_running.call_args_list == [call(expected_query)]
+
+
+@pytest.mark.asyncio
+async def test_materialize__view_bigquery(
+    session, destination_table, snowflake_event_table, bigquery_source_info, update_fixtures
+):
+    """
+    Test materializing from view in bigquery
+    """
+    session.get_source_info.return_value = bigquery_source_info
+    session.source_type = SourceType.BIGQUERY
+    view = snowflake_event_table.get_view()
+    pruned_graph, mapped_node = view.extract_pruned_graph_and_node()
+    request_input = ViewRequestInput(
+        columns=["event_timestamp", "col_int"],
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+        graph=pruned_graph,
+        node_name=mapped_node.name,
+    )
+    await request_input.materialize(session, destination_table, 100)
+
+    # No need to query database to get column names
+    assert session.list_table_schema.call_args_list == []
+
+    queries = extract_session_executed_queries(session)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/request_input/materialize_bigquery.sql",
+        update_fixtures,
+    )

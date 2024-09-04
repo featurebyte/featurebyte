@@ -23,6 +23,8 @@ class BigQueryAdapter(SnowflakeAdapter):
 
     source_type = SourceType.BIGQUERY
 
+    TABLESAMPLE_SUPPORTS_VIEW = False
+
     class DataType(StrEnum):
         """
         Possible column types in BigQuery online store tables

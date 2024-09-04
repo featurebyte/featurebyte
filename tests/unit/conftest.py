@@ -2601,6 +2601,16 @@ def spark_source_info_fixture():
     )
 
 
+@pytest.fixture(name="bigquery_source_info")
+def bigquery_source_info_fixture():
+    """Fixture for a BigQuery SourceInfo object to use in tests"""
+    return SourceInfo(
+        database_name="my_db",
+        schema_name="my_schema",
+        source_type=SourceType.BIGQUERY,
+    )
+
+
 @pytest.fixture(name="adapter")
 def adapter_fixture(source_info):
     """Fixture for a default BaseAdapter object to use in tests"""

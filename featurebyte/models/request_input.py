@@ -150,14 +150,19 @@ class BaseRequestInput(FeatureByteBaseModel):
 
         if sample_rows is not None:
             num_rows = await self.get_row_count(session=session, query_expr=query_expr)
+            adapter = get_sql_adapter(session.get_source_info())
             if num_rows > sample_rows:
-                num_percent = self.get_sample_percentage_from_row_count(num_rows, sample_rows)
-                adapter = get_sql_adapter(session.get_source_info())
-                query_expr = (
-                    adapter.tablesample(query_expr, num_percent)
-                    .order_by(expressions.Anonymous(this="RANDOM"))
-                    .limit(sample_rows)
-                )
+                if adapter.TABLESAMPLE_SUPPORTS_VIEW:
+                    num_percent = self.get_sample_percentage_from_row_count(num_rows, sample_rows)
+                    query_expr = (
+                        adapter.tablesample(query_expr, num_percent)
+                        .order_by(expressions.Anonymous(this="RANDOM"))
+                        .limit(sample_rows)
+                    )
+                else:
+                    query_expr = adapter.random_sample(
+                        query_expr, desired_row_count=sample_rows, total_row_count=num_rows, seed=0
+                    )
 
         await session.create_table_as(table_details=destination, select_expr=query_expr)
 
