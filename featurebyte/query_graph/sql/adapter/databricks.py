@@ -193,9 +193,8 @@ class DatabricksAdapter(BaseAdapter):
     def is_string_type(cls, column_expr: Expression) -> Expression:
         raise NotImplementedError()
 
-    @classmethod
     def get_value_from_dictionary(
-        cls, dictionary_expression: Expression, key_expression: Expression
+        self, dictionary_expression: Expression, key_expression: Expression
     ) -> Expression:
         return expressions.Bracket(this=dictionary_expression, expressions=[key_expression])
 
