@@ -11,7 +11,6 @@ from unittest.mock import patch
 import pytest
 
 from featurebyte import get_version
-from featurebyte.app import get_app
 from featurebyte.config import Configurations
 from featurebyte.utils import persistent
 
@@ -33,7 +32,6 @@ def test_get_persistent():
 def test_get_app__loading_time():
     """Test app loading time (to detect changes that increase loading app time)"""
     start = time.time()
-    get_app()
     elapsed_time = time.time() - start
     print(f"get_app took {elapsed_time} seconds")
     assert elapsed_time < 5

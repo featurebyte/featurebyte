@@ -2,12 +2,13 @@
 FastAPI Application
 """
 
+import asyncio
+from contextlib import asynccontextmanager
 from typing import Any, Callable, Coroutine, List, Optional
 
 import redis.asyncio as redis
-import uvicorn
 from fastapi import Depends, FastAPI, Header, Request
-from starlette.websockets import WebSocket
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from featurebyte._overrides.typechecked_override import custom_typechecked
 from featurebyte.common.utils import get_version
@@ -126,17 +127,24 @@ def _get_api_deps_with_catalog() -> Callable[[Request], Coroutine[Any, Any, None
     return _wrapper
 
 
-def get_app() -> FastAPI:
+def config_routes(f_app: FastAPI) -> None:
     """
-    Get FastAPI object
+    Configure routes for the FastAPI application
+
+    Parameters
+    ----------
+    f_app: FastAPI
+        FastAPI application
 
     Returns
     -------
-    FastAPI
-        FastAPI object
-    """
-    _app = FastAPI()
+    None
 
+    Notes
+    -----
+    This function registers the routers for the FastAPI application.
+    It mutates the FastAPI application object, injecting routes into it.
+    """
     # Register routers that are not catalog-specific
     non_catalog_specific_routers: List[BaseRouter] = [
         CatalogRouter(),
@@ -149,7 +157,7 @@ def get_app() -> FastAPI:
     ]
     dependencies = _get_api_deps()
     for resource_api in non_catalog_specific_routers:
-        _app.include_router(
+        f_app.include_router(
             resource_api.router,
             dependencies=[Depends(dependencies)],
             tags=[resource_api.router.prefix[1:]],
@@ -185,62 +193,95 @@ def get_app() -> FastAPI:
     ]
     dependencies = _get_api_deps_with_catalog()
     for resource_api in catalog_specific_routers:
-        _app.include_router(
+        f_app.include_router(
             resource_api.router,
             dependencies=[Depends(dependencies)],
             tags=[resource_api.router.prefix[1:]],
         )
 
-    @_app.get("/status", description="Get API status.", response_model=APIServiceStatus)
-    async def get_status() -> APIServiceStatus:
-        """
-        Service alive health check.
 
-        Returns
-        -------
-        APIServiceStatus
-            APIServiceStatus object.
-        """
-        return APIServiceStatus(sdk_version=get_version())
+app = FastAPI()
 
-    @_app.websocket("/ws/{task_id}")
-    async def websocket_endpoint(
-        websocket: WebSocket,
-        task_id: TaskId,
-    ) -> None:
-        """
-        Websocket for getting task progress updates.
+# Middlewares
+app.add_middleware(ExceptionMiddleware)  # type: ignore
 
-        Parameters
-        ----------
-        websocket: WebSocket
-            Websocket object.
-        task_id: TaskId
-            Task ID.
-        """
-        await websocket.accept()
-        user = User()
-        channel = f"task_{user.id}_{task_id}_progress"
-
-        async with redis.from_url(REDIS_URI) as client:
-            async with client.pubsub() as pubsub:
-                logger.debug("Listening to channel", extra={"channel": channel})
-                await pubsub.subscribe(channel)
-                async for message in pubsub.listen():
-                    if message and isinstance(message, dict):
-                        data = message.get("data")
-                        if isinstance(data, bytes):
-                            await websocket.send_bytes(data)
-
-    # Add exception middleware
-    _app.add_middleware(ExceptionMiddleware)
-
-    return _app
+# Routes
+config_routes(app)
 
 
-app = get_app()
+@app.get("/status", description="Get API status.", response_model=APIServiceStatus)
+async def get_status() -> APIServiceStatus:
+    """
+    Service alive health check.
+
+    Returns
+    -------
+    APIServiceStatus
+        APIServiceStatus object.
+    """
+    return APIServiceStatus(sdk_version=get_version())
 
 
-if __name__ == "__main__":
-    # for debugging the api service
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+ws_connections = set()
+
+
+@app.websocket("/ws/{task_id}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    task_id: TaskId,
+) -> None:
+    """
+    Websocket for getting task progress updates.
+
+    Parameters
+    ----------
+    websocket: WebSocket
+        Websocket object.
+    task_id: TaskId
+        Task ID.
+    """
+
+    await websocket.accept()
+    user = User()
+    channel = f"task_{user.id}_{task_id}_progress"
+    ws_connections.add(websocket)
+
+    async with redis.from_url(REDIS_URI) as client:
+        async with client.pubsub() as pubsub:
+            logger.debug("Listening to channel", extra={"channel": channel})
+            await pubsub.subscribe(channel)
+
+            # Listen to the channel and forward the messages to the websocket
+            while True:
+                try:
+                    async for message in pubsub.listen():
+                        if message and isinstance(message, dict):
+                            data = message.get("data")
+                            if isinstance(data, bytes):
+                                await websocket.send_bytes(data)
+                # Client disconnected
+                except WebSocketDisconnect as e:
+                    logger.debug("Websocket disconnected", extra={"exception": e})
+                    ws_connections.remove(websocket)
+                    break
+
+
+async def close_ws_connections() -> None:
+    """
+    Close all websocket connections.
+    """
+    for ws in ws_connections:
+        await ws.close(code=1001)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Application Start hooks
+    # NIL
+    yield
+    # Application Shutdown hooks
+    # 1. Close all websocket connections
+    shutdown_tasks: list = []
+    shutdown_tasks.append(asyncio.create_task(close_ws_connections()))
+
+    await asyncio.gather(*shutdown_tasks)
