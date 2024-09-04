@@ -2,12 +2,14 @@
 FastAPI Application
 """
 
-from typing import Any, Callable, Coroutine, List, Optional
+import asyncio
+from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator, Callable, Coroutine, List, Optional
 
 import redis.asyncio as redis
-import uvicorn
 from fastapi import Depends, FastAPI, Header, Request
-from starlette.websockets import WebSocket
+from starlette import status
+from starlette.websockets import WebSocket, WebSocketDisconnect, WebSocketState
 
 from featurebyte._overrides.typechecked_override import custom_typechecked
 from featurebyte.common.utils import get_version
@@ -126,6 +128,75 @@ def _get_api_deps_with_catalog() -> Callable[[Request], Coroutine[Any, Any, None
     return _wrapper
 
 
+ws_connections: set[WebSocket] = set()
+
+
+async def close_ws_connections() -> None:
+    """
+    Close all websocket connections.
+    """
+    for ws in ws_connections:
+        await ws.close(code=status.WS_1001_GOING_AWAY)
+
+
+async def redis_to_websocket(websocket: WebSocket, channel: str) -> None:
+    """
+    Forward messages from Redis channel to Websocket
+
+    Parameters
+    ----------
+    websocket: WebSocket
+        Websocket object
+    channel: str
+        Channel name
+    """
+    async with redis.from_url(REDIS_URI) as client:
+        async with client.pubsub() as pubsub:
+            logger.debug("Listening to channel", extra={"channel": channel})
+            await pubsub.subscribe(channel)
+
+            # Listen to the channel and forward the messages to the websocket
+            try:
+                async for message in pubsub.listen():
+                    if message and isinstance(message, dict):
+                        data = message.get("data")
+                        if isinstance(data, bytes):
+                            await websocket.send_bytes(data)
+            # Client disconnected
+            except WebSocketDisconnect as e:
+                logger.debug("Websocket disconnected", extra={"exception": e})
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    await websocket.close(code=status.WS_1000_NORMAL_CLOSURE)
+            except Exception as e:
+                logger.error("Websocket connection error", extra={"exception": e})
+                # Close client connection if still active
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    await websocket.close(code=status.WS_1011_INTERNAL_ERROR)
+            finally:
+                ws_connections.remove(websocket)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+    # Application Start hooks
+    # NIL
+    startup_tasks: list[asyncio.Task[Any]] = []
+    logger.info("Running startup tasks")
+    await asyncio.gather(*startup_tasks)
+    logger.info("Completed startup tasks")
+
+    yield
+
+    # Application Shutdown hooks
+    # 1. Close all websocket connections
+    logger.info("Running Shutting down")
+    shutdown_tasks: list[asyncio.Task[Any]] = []
+    shutdown_tasks.append(asyncio.create_task(close_ws_connections()))
+
+    await asyncio.gather(*shutdown_tasks)
+    logger.info("Completed shutdown tasks")
+
+
 def get_app() -> FastAPI:
     """
     Get FastAPI object
@@ -135,7 +206,7 @@ def get_app() -> FastAPI:
     FastAPI
         FastAPI object
     """
-    _app = FastAPI()
+    _app = FastAPI(lifespan=lifespan)
 
     # Register routers that are not catalog-specific
     non_catalog_specific_routers: List[BaseRouter] = [
@@ -221,16 +292,9 @@ def get_app() -> FastAPI:
         await websocket.accept()
         user = User()
         channel = f"task_{user.id}_{task_id}_progress"
+        ws_connections.add(websocket)
 
-        async with redis.from_url(REDIS_URI) as client:
-            async with client.pubsub() as pubsub:
-                logger.debug("Listening to channel", extra={"channel": channel})
-                await pubsub.subscribe(channel)
-                async for message in pubsub.listen():
-                    if message and isinstance(message, dict):
-                        data = message.get("data")
-                        if isinstance(data, bytes):
-                            await websocket.send_bytes(data)
+        await redis_to_websocket(websocket, channel)
 
     # Add exception middleware
     _app.add_middleware(ExceptionMiddleware)
@@ -239,8 +303,3 @@ def get_app() -> FastAPI:
 
 
 app = get_app()
-
-
-if __name__ == "__main__":
-    # for debugging the api service
-    uvicorn.run(app, host="127.0.0.1", port=8000)

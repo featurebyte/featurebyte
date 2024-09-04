@@ -18,7 +18,6 @@ tasks:
     deps:
       - task: install
     cmds:
-      - task: format
       - task: pr
       - task: safety
 
@@ -32,10 +31,30 @@ tasks:
     deps:
       - task: install
     cmds:
-      - poetry run ruff check --select I --fix
-      - poetry run ruff check --fix
-      - poetry run ruff format
+      - task: format:toml
+      - task: format:ruff
+
+  format:toml:
+    desc: "Format the toml files"
+    sources:
+      - poetry.lock
+      - pyproject.toml
+    deps:
+      - task: install
+    cmds:
       - poetry run toml-sort --in-place poetry.lock pyproject.toml
+
+  format:ruff:
+    desc: "Format the toml files"
+    sources:
+      - featurebyte/**/*
+      - tests/**/*
+    deps:
+      - task: install
+    cmds:
+      - poetry run ruff check --select I --diff || poetry run ruff check --select I --fix
+      - poetry run ruff check --diff || poetry run ruff check --fix
+      - poetry run ruff format --diff || poetry run ruff format
 
   pr:
     desc: "Run the linter, but without the safety check. This is run on every PR. Safety check will be run on deploy."
@@ -54,10 +73,9 @@ tasks:
       - pyproject.toml
       - featurebyte/**/*
       - tests/**/*
-    deps:
+    cmds:
       - task: style-ruff
       - task: style-darglint
-    cmds:
       - poetry run toml-sort --check poetry.lock pyproject.toml    # Check if user been using pre-commit hook
 
   style-ruff:
