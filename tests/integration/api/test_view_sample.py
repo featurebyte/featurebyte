@@ -21,15 +21,19 @@ def maybe_tz_convert(ts: Any):
     return ts
 
 
-def test_event_table_sample(event_table):
+def test_event_table_sample(event_table, source_type):
     """
     Test event table sample & event table column sample
     """
     sample_kwargs = {"from_timestamp": "2001-01-01", "to_timestamp": "2001-02-01"}
     event_table_df = event_table.sample(**sample_kwargs)
+
     ts_col = "ËVENT_TIMESTAMP"
     ev_ts = event_table[ts_col].sample(**sample_kwargs)
-    pd.testing.assert_frame_equal(event_table_df[[ts_col]], ev_ts)
+
+    # bigquery view sample and series sample are not expected to produce the same result
+    if source_type != "bigquery":
+        pd.testing.assert_frame_equal(event_table_df[[ts_col]], ev_ts)
 
     # check the sample result
     assert ev_ts.shape[0] == 10
