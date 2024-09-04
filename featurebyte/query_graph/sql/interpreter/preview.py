@@ -1085,7 +1085,6 @@ class PreviewMixin(BaseGraphInterpreter):
         # check if data casted to string is used and if so add it to cte_statements
         used_casted_data = False
         for _, cte_expr in cte_statements:
-            # for cur_expr, _, _ in cte_expr.walk():
             for cur_expr in cte_expr.walk():
                 if isinstance(cur_expr, expressions.Identifier):
                     if cur_expr.alias_or_name == CASTED_DATA_TABLE_NAME:
