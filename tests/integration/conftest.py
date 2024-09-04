@@ -86,7 +86,6 @@ logger = get_logger(__name__)
 # types that are still in development.
 SKIPPED_TESTS = {
     "bigquery": [
-        "tests/integration/api/test_forward_aggregate_asat.py",
         "tests/integration/api/test_serving_parent_features.py",
         "tests/integration/api/test_target_correctness.py",
         "tests/integration/feature_store_integration/test_feature_materialize.py",
