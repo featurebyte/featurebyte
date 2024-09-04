@@ -32,7 +32,7 @@ from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSe
 from featurebyte.session.session_helper import run_coroutines
 from featurebyte.warning import QueryNoLimitWarning
 
-DEFAULT_COLUMNS_BATCH_SIZE = 50
+DEFAULT_COLUMNS_BATCH_SIZE = 15
 
 
 logger = get_logger(__name__)
@@ -171,7 +171,7 @@ class PreviewService:
             extra={"node_num": node_num, "edge_num": edge_num},
         ):
             shape_sql, num_cols = GraphInterpreter(
-                preview.graph, source_type=feature_store.type
+                preview.graph, source_info=feature_store.get_source_info()
             ).construct_shape_sql(node_name=preview.node_name)
 
         with timer(
@@ -219,7 +219,7 @@ class PreviewService:
             )
 
         preview_sql, type_conversions = GraphInterpreter(
-            preview.graph, source_type=feature_store.type
+            preview.graph, source_info=feature_store.get_source_info()
         ).construct_preview_sql(
             node_name=preview.node_name, num_rows=limit, clip_timestamp_columns=True
         )
@@ -276,7 +276,7 @@ class PreviewService:
             total_num_rows = None
 
         sample_sql, type_conversions = GraphInterpreter(
-            sample.graph, source_type=feature_store.type
+            sample.graph, source_info=feature_store.get_source_info()
         ).construct_sample_sql(
             node_name=sample.node_name,
             num_rows=size,
@@ -355,7 +355,7 @@ class PreviewService:
             total_num_rows = None
 
         describe_queries = GraphInterpreter(
-            sample.graph, source_type=feature_store.type
+            sample.graph, source_info=feature_store.get_source_info()
         ).construct_describe_queries(
             node_name=sample.node_name,
             num_rows=size,
@@ -456,7 +456,7 @@ class PreviewService:
             node_name=preview.node_name,
             feature_store_id=preview.feature_store_id,
         )
-        interpreter = GraphInterpreter(preview.graph, source_type=feature_store.type)
+        interpreter = GraphInterpreter(preview.graph, source_info=feature_store.get_source_info())
         op_struct = interpreter.extract_operation_structure_for_node(preview.node_name)
         column_dtype_mapping = {col.name: col.dtype for col in op_struct.columns}
 
@@ -577,7 +577,9 @@ class PreviewService:
         timestamp_column: Optional[str] = None,
         allow_long_running: bool = True,
     ) -> int:
-        query = GraphInterpreter(graph, source_type=session.source_type).construct_row_count_sql(
+        query = GraphInterpreter(
+            graph, source_info=session.get_source_info()
+        ).construct_row_count_sql(
             node_name=node_name,
             from_timestamp=from_timestamp,
             to_timestamp=to_timestamp,

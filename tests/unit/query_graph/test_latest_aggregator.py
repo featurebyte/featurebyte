@@ -8,15 +8,13 @@ import textwrap
 import pytest
 from sqlglot.expressions import select
 
-from featurebyte import SourceType
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture
-def agg_specs_no_window(global_graph, latest_value_without_window_feature_node):
+def agg_specs_no_window(global_graph, latest_value_without_window_feature_node, adapter):
     """
     Fixture of TileAggregationSpec without window
     """
@@ -26,13 +24,13 @@ def agg_specs_no_window(global_graph, latest_value_without_window_feature_node):
     return TileBasedAggregationSpec.from_groupby_query_node(
         global_graph,
         groupby_node,
-        adapter=get_sql_adapter(SourceType.SNOWFLAKE),
+        adapter=adapter,
         agg_result_name_include_serving_names=True,
     )
 
 
 @pytest.fixture
-def agg_specs_offset(global_graph, latest_value_offset_without_window_feature_node):
+def agg_specs_offset(global_graph, latest_value_offset_without_window_feature_node, adapter):
     """
     Fixture of TileAggregationSpec with unbounded window and offset
     """
@@ -44,36 +42,36 @@ def agg_specs_offset(global_graph, latest_value_offset_without_window_feature_no
     return TileBasedAggregationSpec.from_groupby_query_node(
         global_graph,
         groupby_node,
-        adapter=get_sql_adapter(SourceType.SNOWFLAKE),
+        adapter=adapter,
         agg_result_name_include_serving_names=True,
     )
 
 
-def create_latest_aggregator(agg_specs, **kwargs):
+def create_latest_aggregator(agg_specs, source_info, **kwargs):
     """
     Helper function to create a LatestAggregator
     """
-    aggregator = LatestAggregator(source_type=SourceType.SNOWFLAKE, **kwargs)
+    aggregator = LatestAggregator(source_info=source_info, **kwargs)
     for spec in agg_specs:
         aggregator.update(spec)
     return aggregator
 
 
-def test_get_required_serving_names(agg_specs_no_window):
+def test_get_required_serving_names(agg_specs_no_window, source_info):
     """
     Test get_required_serving_names method
     """
-    aggregator = LatestAggregator(source_type=SourceType.SNOWFLAKE)
+    aggregator = LatestAggregator(source_info=source_info)
     for spec in agg_specs_no_window:
         aggregator.update(spec)
     assert aggregator.get_required_serving_names() == {"CUSTOMER_ID", "BUSINESS_ID"}
 
 
-def test_latest_aggregator(agg_specs_no_window):
+def test_latest_aggregator(agg_specs_no_window, source_info):
     """
     Test LatestAggregator update_aggregation_table_expr
     """
-    aggregator = create_latest_aggregator(agg_specs_no_window)
+    aggregator = create_latest_aggregator(agg_specs_no_window, source_info=source_info)
     assert len(list(aggregator.specs_set.get_grouped_aggregation_specs())) == 1
 
     result = aggregator.update_aggregation_table_expr(
@@ -163,11 +161,11 @@ def test_latest_aggregator(agg_specs_no_window):
     assert result.updated_index == 0
 
 
-def test_latest_aggregator__no_specs():
+def test_latest_aggregator__no_specs(source_info):
     """
     Test calling update_aggregation_table_expr when there are no unbounded windows (no specs)
     """
-    aggregator = create_latest_aggregator([])
+    aggregator = create_latest_aggregator([], source_info=source_info)
     assert len(list(aggregator.specs_set.get_grouped_aggregation_specs())) == 0
 
     result = aggregator.update_aggregation_table_expr(
@@ -181,11 +179,13 @@ def test_latest_aggregator__no_specs():
     assert result.updated_index == 0
 
 
-def test_latest_aggregator__online_retrieval(agg_specs_no_window, update_fixtures):
+def test_latest_aggregator__online_retrieval(agg_specs_no_window, source_info, update_fixtures):
     """
     Test feature values should be calculated on demand from the tile table during online retrieval
     """
-    aggregator = create_latest_aggregator(agg_specs_no_window, is_online_serving=True)
+    aggregator = create_latest_aggregator(
+        agg_specs_no_window, source_info=source_info, is_online_serving=True
+    )
     assert len(list(aggregator.specs_set.get_grouped_aggregation_specs())) == 1
 
     result = aggregator.update_aggregation_table_expr(
@@ -205,11 +205,13 @@ def test_latest_aggregator__online_retrieval(agg_specs_no_window, update_fixture
     assert result.updated_index == 0
 
 
-def test_latest_aggregator_offset(agg_specs_offset, update_fixtures):
+def test_latest_aggregator_offset(agg_specs_offset, source_info, update_fixtures):
     """
     Test latest aggregation with offset
     """
-    aggregator = create_latest_aggregator(agg_specs_offset, is_online_serving=True)
+    aggregator = create_latest_aggregator(
+        agg_specs_offset, source_info=source_info, is_online_serving=True
+    )
     assert len(list(aggregator.specs_set.get_grouped_aggregation_specs())) == 1
 
     result = aggregator.update_aggregation_table_expr(

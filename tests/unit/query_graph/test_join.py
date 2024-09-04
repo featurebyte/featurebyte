@@ -7,7 +7,6 @@ import textwrap
 import pytest
 from pydantic import ValidationError
 
-from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.generic import JoinNode
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
@@ -64,12 +63,14 @@ def derived_expression_from_join_node(global_graph, item_table_join_event_table_
     return add_node
 
 
-def test_item_table_join_event_table_attributes(global_graph, item_table_join_event_table_node):
+def test_item_table_join_event_table_attributes(
+    global_graph, item_table_join_event_table_node, source_info
+):
     """
     Test SQL generation for ItemTable joined with EventTable
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
     )
     sql_tree = sql_graph.build(item_table_join_event_table_node).sql
     expected = textwrap.dedent(
@@ -112,13 +113,13 @@ def test_item_table_join_event_table_attributes(global_graph, item_table_join_ev
 
 
 def test_item_table_join_event_table_attributes_with_filter(
-    global_graph, item_table_join_event_table_filtered_node
+    global_graph, item_table_join_event_table_filtered_node, source_info
 ):
     """
     Test SQL generation for ItemTable joined with EventTable with filter
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
     )
     sql_tree = sql_graph.build(item_table_join_event_table_filtered_node).sql
     expected = textwrap.dedent(
@@ -165,12 +166,12 @@ def test_item_table_join_event_table_attributes_with_filter(
 
 
 def test_item_table_join_event_table_attributes_on_demand_tile_gen(
-    global_graph, item_table_joined_event_table_feature_node
+    global_graph, item_table_joined_event_table_feature_node, source_info
 ):
     """
     Test on-demand tile SQL generation for ItemView
     """
-    interpreter = GraphInterpreter(global_graph, SourceType.SNOWFLAKE)
+    interpreter = GraphInterpreter(global_graph, source_info)
     groupby_node_name = global_graph.get_input_node_names(
         item_table_joined_event_table_feature_node
     )[0]
@@ -243,12 +244,14 @@ def test_item_table_join_event_table_attributes_on_demand_tile_gen(
     assert tile_gen_sqls[0].sql == expected
 
 
-def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature_join_node):
+def test_item_groupby_feature_joined_event_view(
+    global_graph, order_size_feature_join_node, source_info
+):
     """
     Test SQL generation for non-time aware feature in ItemTable joined into EventView
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
     )
     sql_tree = sql_graph.build(order_size_feature_join_node).sql
     expected = textwrap.dedent(
@@ -298,12 +301,14 @@ def test_item_groupby_feature_joined_event_view(global_graph, order_size_feature
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_derived_expression_from_join_node(global_graph, derived_expression_from_join_node):
+def test_derived_expression_from_join_node(
+    global_graph, derived_expression_from_join_node, source_info
+):
     """
     Test derived expression from join node
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
     )
     sql_tree = sql_graph.build(derived_expression_from_join_node).sql_standalone
     expected = textwrap.dedent(
@@ -343,12 +348,12 @@ def test_derived_expression_from_join_node(global_graph, derived_expression_from
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
+def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph, source_info):
     """
     Test aggregating a non-time aware feature derived from ItemTable
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.BUILD_TILE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.BUILD_TILE, source_info=source_info
     )
     _, node = order_size_agg_by_cust_id_graph
     sql_tree = sql_graph.build(node).sql
@@ -421,12 +426,12 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph):
     assert sql_tree.sql(pretty=True) == expected
 
 
-def test_scd_join(global_graph, scd_join_node):
+def test_scd_join(global_graph, scd_join_node, source_info):
     """
     Test SQL generation for SCD join
     """
     sql_graph = SQLOperationGraph(
-        global_graph, sql_type=SQLType.MATERIALIZE, source_type=SourceType.SNOWFLAKE
+        global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
     )
     sql_tree = sql_graph.build(scd_join_node).sql
     expected = textwrap.dedent(

@@ -16,7 +16,6 @@ from featurebyte.models.feature_query_set import FeatureQuerySet
 from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
@@ -54,14 +53,6 @@ def feature_query_set_to_string(feature_query_set: FeatureQuerySet) -> str:
     return ";\n\n".join(all_queries)
 
 
-@pytest.fixture
-def adapter():
-    """
-    Fixture for a sql adapter
-    """
-    return get_sql_adapter(SourceType.SNOWFLAKE)
-
-
 @pytest.fixture(name="mocked_unique_identifier_generator", autouse=True)
 def mocked_unique_identifier_generator_fixture():
     """
@@ -72,22 +63,18 @@ def mocked_unique_identifier_generator_fixture():
         yield patched_object_id
 
 
-def get_aggregation_specs(graph, groupby_node) -> List[TileBasedAggregationSpec]:
-    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-        graph, groupby_node, get_sql_adapter(SourceType.SNOWFLAKE), True
-    )
+def get_aggregation_specs(graph, groupby_node, adapter) -> List[TileBasedAggregationSpec]:
+    agg_specs = TileBasedAggregationSpec.from_groupby_query_node(graph, groupby_node, adapter, True)
     return agg_specs
 
 
-def test_construct_universe_sql(query_graph_with_groupby):
+def test_construct_universe_sql(query_graph_with_groupby, adapter):
     """
     Test constructing universe sql for a simple point in time groupby
     """
     node = query_graph_with_groupby.get_node_by_name("groupby_1")
-    plan = OnlineStorePrecomputePlan(
-        query_graph_with_groupby, node, get_sql_adapter(SourceType.SNOWFLAKE), True
-    )
-    agg_specs = get_aggregation_specs(query_graph_with_groupby, node)
+    plan = OnlineStorePrecomputePlan(query_graph_with_groupby, node, adapter, True)
+    agg_specs = get_aggregation_specs(query_graph_with_groupby, node, adapter)
 
     # window size of 2h
     universe = plan._construct_online_store_universe(agg_specs[0])
@@ -136,15 +123,15 @@ def test_construct_universe_sql(query_graph_with_groupby):
     assert universe.expr.sql(pretty=True) == expected_sql
 
 
-def test_construct_universe_sql__category(query_graph_with_category_groupby):
+def test_construct_universe_sql__category(query_graph_with_category_groupby, adapter, source_info):
     """
     Test constructing universe sql for groupby with category (the category column should not be part
     of SELECT DISTINCT)
     """
     graph = query_graph_with_category_groupby
     node = graph.get_node_by_name("groupby_1")
-    plan = OnlineStorePrecomputePlan(graph, node, get_sql_adapter(SourceType.SNOWFLAKE), True)
-    agg_specs = get_aggregation_specs(graph, node)
+    plan = OnlineStorePrecomputePlan(graph, node, adapter, True)
+    agg_specs = get_aggregation_specs(graph, node, adapter)
     universe = plan._construct_online_store_universe(agg_specs[0])
     expected_sql = textwrap.dedent(
         """
@@ -169,7 +156,9 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby):
 
 
 def test_construct_universe_sql__unbounded_latest(
-    global_graph, latest_value_without_window_feature_node
+    global_graph,
+    latest_value_without_window_feature_node,
+    adapter,
 ):
     """
     Test constructing universe sql for groupby with category
@@ -177,10 +166,12 @@ def test_construct_universe_sql__unbounded_latest(
     plan = OnlineStorePrecomputePlan(
         global_graph,
         latest_value_without_window_feature_node,
-        get_sql_adapter(SourceType.SNOWFLAKE),
+        adapter,
         True,
     )
-    agg_specs = get_aggregation_specs(global_graph, global_graph.get_node_by_name("groupby_1"))
+    agg_specs = get_aggregation_specs(
+        global_graph, global_graph.get_node_by_name("groupby_1"), adapter
+    )
     universe = plan._construct_online_store_universe(agg_specs[0])
     expected_sql = textwrap.dedent(
         """
@@ -201,7 +192,9 @@ def test_construct_universe_sql__unbounded_latest(
 
 
 def test_construct_universe_sql__window_offset(
-    global_graph, window_aggregate_with_offset_feature_node
+    global_graph,
+    window_aggregate_with_offset_feature_node,
+    adapter,
 ):
     """
     Test constructing universe sql for window aggregate with offset
@@ -209,10 +202,12 @@ def test_construct_universe_sql__window_offset(
     plan = OnlineStorePrecomputePlan(
         global_graph,
         window_aggregate_with_offset_feature_node,
-        get_sql_adapter(SourceType.SNOWFLAKE),
+        adapter,
         True,
     )
-    agg_specs = get_aggregation_specs(global_graph, global_graph.get_node_by_name("groupby_1"))
+    agg_specs = get_aggregation_specs(
+        global_graph, global_graph.get_node_by_name("groupby_1"), adapter
+    )
     universe = plan._construct_online_store_universe(agg_specs[0])
     expected_sql = textwrap.dedent(
         """
@@ -236,13 +231,13 @@ def test_construct_universe_sql__window_offset(
     assert universe.expr.sql(pretty=True) == expected_sql
 
 
-def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtures):
+def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtures, adapter):
     """
     Test constructing feature sql for online store
     """
     graph = query_graph_with_groupby
     node = graph.get_node_by_name("groupby_1")
-    queries = get_online_store_precompute_queries(graph, node, SourceType.SNOWFLAKE, True)
+    queries = get_online_store_precompute_queries(graph, node, adapter, True)
     assert len(queries) == 2
     tile_id = "8502F6BC497F17F84385ABE4346FD392F2F56725"
     aggregation_id = "f37862722c21105449ad882409cf62a1ff7f5b35"
@@ -279,7 +274,7 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
     )
 
 
-def test_complex_features(complex_feature_query_graph, adapter, update_fixtures):
+def test_complex_features(complex_feature_query_graph, adapter, update_fixtures, source_info):
     """
     Test complex features with multiple tile tables
     """
@@ -293,9 +288,7 @@ def test_complex_features(complex_feature_query_graph, adapter, update_fixtures)
     pruned_node = pruned_graph.get_node_by_name(loaded_node_name_map[pruned_node.name])
 
     # Check precompute sqls
-    queries = get_online_store_precompute_queries(
-        pruned_graph, pruned_node, SourceType.SNOWFLAKE, True
-    )
+    queries = get_online_store_precompute_queries(pruned_graph, pruned_node, source_info, True)
     assert len(queries) == 2
     expected_query_params_tile_1 = {
         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
@@ -343,7 +336,7 @@ def test_complex_features(complex_feature_query_graph, adapter, update_fixtures)
         graph=pruned_graph,
         nodes=[pruned_node],
         current_timestamp_expr=adapter.current_timestamp(),
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
     assert_equal_with_expected_fixture(
         expr.sql(pretty=True),
@@ -354,7 +347,7 @@ def test_complex_features(complex_feature_query_graph, adapter, update_fixtures)
 
 
 def test_online_store_feature_retrieval_sql__all_eligible(
-    query_graph_with_groupby_and_feature_nodes, update_fixtures, adapter
+    query_graph_with_groupby_and_feature_nodes, update_fixtures, adapter, source_info
 ):
     """
     Test constructing feature retrieval sql for online store
@@ -366,7 +359,7 @@ def test_online_store_feature_retrieval_sql__all_eligible(
         graph=graph,
         nodes=nodes,
         current_timestamp_expr=adapter.current_timestamp(),
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
     assert_equal_with_expected_fixture(
         expr.sql(pretty=True),
@@ -377,7 +370,7 @@ def test_online_store_feature_retrieval_sql__all_eligible(
 
 
 def test_online_store_feature_retrieval_sql__mixed(
-    mixed_point_in_time_and_item_aggregations_features, adapter, update_fixtures
+    mixed_point_in_time_and_item_aggregations_features, adapter, update_fixtures, source_info
 ):
     """
     Test constructing feature retrieval sql for online store where some features cannot be looked up
@@ -390,7 +383,7 @@ def test_online_store_feature_retrieval_sql__mixed(
         graph=graph,
         nodes=nodes,
         current_timestamp_expr=adapter.current_timestamp(),
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
     assert_equal_with_expected_fixture(
         expr.sql(pretty=True),
@@ -401,7 +394,7 @@ def test_online_store_feature_retrieval_sql__mixed(
 
 
 def test_online_store_feature_retrieval_sql__request_subquery(
-    mixed_point_in_time_and_item_aggregations_features, adapter, update_fixtures
+    mixed_point_in_time_and_item_aggregations_features, adapter, update_fixtures, source_info
 ):
     """
     Test constructing feature retrieval sql for online store when request table is a subquery
@@ -416,7 +409,7 @@ def test_online_store_feature_retrieval_sql__request_subquery(
         graph=graph,
         nodes=nodes,
         current_timestamp_expr=adapter.current_timestamp(),
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
     assert_equal_with_expected_fixture(
         expr.sql(pretty=True),
@@ -427,7 +420,7 @@ def test_online_store_feature_retrieval_sql__request_subquery(
 
 
 def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column(
-    global_graph, scd_lookup_feature_node, adapter, update_fixtures
+    global_graph, scd_lookup_feature_node, adapter, update_fixtures, source_info
 ):
     """
     Test constructing feature retrieval sql for online store when request table is a subquery
@@ -441,7 +434,7 @@ def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column
         graph=global_graph,
         nodes=[scd_lookup_feature_node],
         current_timestamp_expr=adapter.current_timestamp(),
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
     assert_equal_with_expected_fixture(
         expr.sql(pretty=True),
@@ -452,7 +445,7 @@ def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column
 
 
 def test_online_store_feature_retrieval_sql__version_placeholders_filled(
-    mixed_point_in_time_and_item_aggregations_features, update_fixtures
+    mixed_point_in_time_and_item_aggregations_features, update_fixtures, source_info
 ):
     """
     Test retrieval sql with version placeholders filled (single
@@ -462,7 +455,7 @@ def test_online_store_feature_retrieval_sql__version_placeholders_filled(
         graph=graph,
         node_groups=[nodes],
         output_feature_names=get_feature_names(graph, nodes),
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         request_table_columns=["CUSTOMER_ID", "order_id"],
         request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
         request_table_name=None,
@@ -470,7 +463,7 @@ def test_online_store_feature_retrieval_sql__version_placeholders_filled(
     aggregation_result_names = get_aggregation_result_names(
         graph=graph,
         nodes=nodes,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
     versions_mapping = {k: i for (i, k) in enumerate(sorted(aggregation_result_names))}
     fill_version_placeholders_for_query_set(feature_query_set, versions_mapping)
@@ -483,7 +476,7 @@ def test_online_store_feature_retrieval_sql__version_placeholders_filled(
 
 
 def test_online_store_feature_retrieval_sql__multiple_groups(
-    mixed_point_in_time_and_item_aggregations_features, update_fixtures
+    mixed_point_in_time_and_item_aggregations_features, update_fixtures, source_info
 ):
     """
     Test retrieval sql with version placeholders filled
@@ -493,7 +486,7 @@ def test_online_store_feature_retrieval_sql__multiple_groups(
         graph=graph,
         node_groups=[nodes[:1], nodes[1:]],
         output_feature_names=get_feature_names(graph, nodes),
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         request_table_columns=["CUSTOMER_ID", "order_id"],
         request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
         request_table_name="REQUEST_TABLE_1234",
@@ -501,7 +494,7 @@ def test_online_store_feature_retrieval_sql__multiple_groups(
     aggregation_result_names = get_aggregation_result_names(
         graph=graph,
         nodes=nodes,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
     versions_mapping = {k: i for (i, k) in enumerate(sorted(aggregation_result_names))}
     fill_version_placeholders_for_query_set(feature_query_set, versions_mapping)

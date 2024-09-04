@@ -90,7 +90,6 @@ SKIPPED_TESTS = {
         "tests/integration/api/test_dict_operations.py",
         "tests/integration/api/test_dimension_view_operations.py",
         "tests/integration/api/test_distance_operations.py",
-        "tests/integration/api/test_event_view_operations.py",
         "tests/integration/api/test_feature_correctness.py",
         "tests/integration/api/test_features.py",
         "tests/integration/api/test_forward_aggregate_asat.py",
@@ -99,10 +98,8 @@ SKIPPED_TESTS = {
         "tests/integration/api/test_lookup_target_operations.py",
         "tests/integration/api/test_observation_table.py",
         "tests/integration/api/test_on_demand_features.py",
-        "tests/integration/api/test_scd_view_operations.py",
         "tests/integration/api/test_serving_parent_features.py",
         "tests/integration/api/test_target_correctness.py",
-        "tests/integration/api/test_view_describe.py",
         "tests/integration/api/test_view_sample.py",
         "tests/integration/feature_store_integration/test_feature_materialize.py",
         "tests/integration/migration/test_data_warehouse_migration.py",
@@ -110,16 +107,7 @@ SKIPPED_TESTS = {
         "tests/integration/service/test_feature_table_cache.py",
         "tests/integration/tile/test_generate_tile.py",
         "tests/integration/tile/test_tile_scheduler.py",
-        "tests/integration/udf/test_cosine_similarity.py",
-        "tests/integration/udf/test_count_dict_entropy.py",
-        "tests/integration/udf/test_count_dict_num_unique.py",
-        "tests/integration/udf/test_get_rank.py",
-        "tests/integration/udf/test_get_relative_frequency.py",
         "tests/integration/api/test_historical_features.py",
-        "tests/integration/udf/test_least_frequent.py",
-        "tests/integration/udf/test_most_frequent.py",
-        "tests/integration/udf/test_timestamp_to_index.py",
-        "tests/integration/udf/test_timezone_offset_to_second.py",
     ],
 }
 
@@ -183,7 +171,11 @@ def pytest_collection_modifyitems(config, items):
         for item in all_items:
             source_type = get_source_type_from_item(item)
             if source_type in SKIPPED_TESTS:
-                if item.location[0] in SKIPPED_TESTS[source_type]:
+                skipped_tests = SKIPPED_TESTS[source_type]
+                if (
+                    item.location[0] in skipped_tests
+                    or f"{item.location[0]}::{item.location[2]}" in skipped_tests
+                ):
                     continue
             filtered_items.append(item)
         return filtered_items

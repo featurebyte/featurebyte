@@ -40,6 +40,9 @@ jobs:
           sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
       - name: Lint Checks
         run: task lint:pr
+      - name: pip-audit check [ONLY MAIN]
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: task lint:safety
   slack:
     runs-on: ubuntu-latest
     if: ${{ always() }}
@@ -70,7 +73,7 @@ jobs:
       - name: Load REPOSITORY into env
         run: echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
         with:

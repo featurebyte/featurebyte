@@ -31,11 +31,9 @@ WITH REQUEST_TABLE AS (
               SELECT
                 "CUSTOMER_ID" AS "cust_id",
                 "BUSINESS_ID" AS "biz_id",
-                TO_TIMESTAMP(
-                  FLOOR((
-                    DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
-                  ) / 3600) * 3600 + 1800 - 900
-                ) AS "__FB_ENTITY_TABLE_END_DATE",
+                CAST(FLOOR((
+                  DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
+                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMPNTZ) AS "__FB_ENTITY_TABLE_END_DATE",
                 DATEADD(
                   microsecond,
                   (

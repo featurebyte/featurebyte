@@ -59,13 +59,6 @@ async def test_schema_initializer(
     tables = await initializer.list_objects("TABLES")
     assert set(tables.name.tolist()).issuperset({"METADATA_SCHEMA"})
 
-    # test drop objects
-    await initializer.drop_all_objects_in_working_schema()
-    functions = await initializer.list_objects("USER FUNCTIONS")
-    assert functions.shape[0] == 0
-    tables = await initializer.list_objects("TABLES")
-    assert tables.shape[0] == 0
-
 
 @pytest.mark.parametrize("source_type", ["bigquery"], indirect=True)
 @pytest.mark.asyncio

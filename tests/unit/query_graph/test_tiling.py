@@ -9,9 +9,8 @@ import pytest
 from featurebyte import FeatureJobSetting
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.tiling import AggFunc, InputColumn, get_aggregator
 
 
@@ -182,12 +181,12 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         ),
     ],
 )
-def test_tiling_aggregators(agg_func, parent_dtype, expected_tile_specs, expected_merge_expr):
+def test_tiling_aggregators(
+    agg_func, parent_dtype, expected_tile_specs, expected_merge_expr, adapter
+):
     """Test tiling aggregators produces expected expressions"""
     agg_id = "1234beef"
-    agg = get_aggregator(
-        agg_func, adapter=get_sql_adapter(SourceType.SNOWFLAKE), parent_dtype=parent_dtype
-    )
+    agg = get_aggregator(agg_func, adapter=adapter, parent_dtype=parent_dtype)
     input_column = InputColumn(name="a_column", dtype=DBVarType.VARCHAR)
     tile_specs = agg.tile(input_column, agg_id)
     merge_expr = agg.merge(agg_id)

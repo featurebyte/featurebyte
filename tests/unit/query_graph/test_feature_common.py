@@ -4,8 +4,7 @@ Tests for featurebyte.query_graph.feature_common
 
 from bson import ObjectId
 
-from featurebyte.enum import AggFunc, DBVarType, SourceType
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 
 
@@ -14,6 +13,7 @@ def test_aggregation_spec__from_groupby_query_node(
     groupby_node_aggregation_id,
     expected_pruned_graph_and_node_1,
     expected_pruned_graph_and_node_2,
+    adapter,
 ):
     """
     Test constructing list of AggregationSpec from groupby query graph node
@@ -22,7 +22,7 @@ def test_aggregation_spec__from_groupby_query_node(
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
         query_graph_with_groupby,
         groupby_node,
-        adapter=get_sql_adapter(SourceType.SNOWFLAKE),
+        adapter=adapter,
         agg_result_name_include_serving_names=True,
     )
     expected_agg_specs = [
@@ -93,6 +93,7 @@ def test_aggregation_spec__override_serving_names(
     groupby_node_aggregation_id,
     expected_pruned_graph_and_node_1,
     expected_pruned_graph_and_node_2,
+    adapter,
 ):
     """
     Test constructing list of AggregationSpec with serving names mapping provided
@@ -104,7 +105,7 @@ def test_aggregation_spec__override_serving_names(
     agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
         query_graph_with_groupby,
         groupby_node,
-        adapter=get_sql_adapter(SourceType.SNOWFLAKE),
+        adapter=adapter,
         serving_names_mapping=serving_names_mapping,
         agg_result_name_include_serving_names=True,
     )

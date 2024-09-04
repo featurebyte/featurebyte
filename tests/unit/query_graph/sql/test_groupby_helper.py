@@ -19,6 +19,7 @@ from featurebyte.query_graph.sql.groupby_helper import (
     get_vector_agg_column_snowflake,
     update_aggregation_expression_for_columns,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from tests.unit.query_graph.sql.fixtures.snowflake_double_vector_agg_only import (
     SNOWFLAKE_DOUBLE_VECTOR_AGG_ONLY_QUERY,
 )
@@ -50,11 +51,11 @@ from tests.unit.query_graph.sql.fixtures.snowflake_vector_agg_with_normal_agg im
         (AggFunc.AVG, "col", DBVarType.ARRAY, 'VECTOR_AGGREGATE_SIMPLE_AVERAGE("col")'),
     ],
 )
-def test_get_aggregation_expression(agg_func, input_column, parent_dtype, expected):
+def test_get_aggregation_expression(agg_func, input_column, parent_dtype, expected, adapter):
     """
     Test get_aggregation_expression
     """
-    expr = get_aggregation_expression(agg_func, input_column, parent_dtype)
+    expr = get_aggregation_expression(agg_func, input_column, parent_dtype, adapter)
     assert expr.sql(pretty=True) == expected
 
 
@@ -202,7 +203,9 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
         groupby_keys=[groupby_key, groupby_key_point_in_time],
         groupby_columns=groupby_columns,
         value_by=valueby_key,
-        adapter=get_sql_adapter(source_type),
+        adapter=get_sql_adapter(
+            SourceInfo(source_type=source_type, database_name="", schema_name="")
+        ),
     )
 
     result_0 = _maybe_wrap_in_variant(source_type, 'INNER_."result_0_inner"')
@@ -337,6 +340,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
     Test get_groupby_expr with multiple groupby columns
     """
     select_expr, groupby_key, groupby_key_point_in_time, value_by = common_params
+    adapter = get_sql_adapter(SourceInfo(source_type=source_type, database_name="", schema_name=""))
 
     groupby_columns = []
     i = 0
@@ -350,7 +354,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         )
         i += 1
         groupby_columns.append(groupby_column)
-    groupby_columns = update_aggregation_expression_for_columns(groupby_columns, source_type)
+    groupby_columns = update_aggregation_expression_for_columns(groupby_columns, adapter)
     if not use_value_by:
         value_by = None
     groupby_expr = get_groupby_expr(
@@ -358,7 +362,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         groupby_keys=[groupby_key, groupby_key_point_in_time],
         groupby_columns=groupby_columns,
         value_by=value_by,
-        adapter=get_sql_adapter(source_type),
+        adapter=adapter,
     )
     assert groupby_expr.sql(pretty=True) == result.strip()
 
@@ -372,7 +376,7 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         (AggFunc.MAX, DBVarType.ARRAY, "VECTOR_AGGREGATE_MAX"),
     ],
 )
-def test_get_groupby_expr(agg_func, parent_dtype, method, common_params):
+def test_get_groupby_expr(agg_func, parent_dtype, method, common_params, spark_source_info):
     """
     Test get_groupby_expr
     """
@@ -389,7 +393,7 @@ def test_get_groupby_expr(agg_func, parent_dtype, method, common_params):
         groupby_keys=[groupby_key, groupby_key_point_in_time],
         groupby_columns=[groupby_column],
         value_by=valueby_key,
-        adapter=get_sql_adapter(SourceType.SPARK),
+        adapter=get_sql_adapter(spark_source_info),
     )
     expected = textwrap.dedent(
         f"""

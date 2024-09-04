@@ -47,6 +47,7 @@ from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.transform.definition import (
     DefinitionHashExtractor,
     DefinitionHashOutput,
@@ -569,9 +570,9 @@ class FeatureModel(BaseFeatureModel):
             graph_dict = graph_dict.model_dump(by_alias=True)
         graph = QueryGraph(**graph_dict)
         node_name = self.node_name
-        feature_store_type = graph.get_input_node(node_name).parameters.feature_store_details.type
+        source_info = self.get_source_info()
 
-        interpreter = GraphInterpreter(graph, feature_store_type)
+        interpreter = GraphInterpreter(graph, source_info)
         node = graph.get_node_by_name(node_name)
 
         try:
@@ -598,7 +599,7 @@ class FeatureModel(BaseFeatureModel):
         for query in get_online_store_precompute_queries(
             graph,
             graph.get_node_by_name(node_name),
-            feature_store_type,
+            source_info,
             self.agg_result_name_include_serving_names,
         ):
             self.__dict__["aggregation_result_names"].append(query.result_name)
@@ -606,6 +607,22 @@ class FeatureModel(BaseFeatureModel):
         self.__dict__["online_store_table_names"] = sorted(online_store_table_names)
 
         return self
+
+    def get_source_info(self) -> SourceInfo:
+        """
+        Get source info corresponding to the feature store
+
+        Returns
+        -------
+        SourceInfo
+        """
+        return SourceInfo(
+            database_name=self.tabular_source.table_details.database_name or "",
+            schema_name=self.tabular_source.table_details.schema_name or "",
+            source_type=self.graph.get_input_node(
+                self.node_name
+            ).parameters.feature_store_details.type,
+        )
 
     @property
     def used_request_column(self) -> bool:

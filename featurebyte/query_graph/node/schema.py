@@ -4,6 +4,7 @@ This module contains feature store & table schemas that are used in node paramet
 
 from __future__ import annotations
 
+from abc import abstractmethod
 from typing import Any, ClassVar, Optional, Union
 
 from pydantic import BaseModel, Field, StrictStr, model_validator
@@ -11,6 +12,7 @@ from pydantic import BaseModel, Field, StrictStr, model_validator
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
 class BaseDatabaseDetails(FeatureByteBaseModel):
@@ -29,6 +31,15 @@ class BaseDatabaseDetails(FeatureByteBaseModel):
             Set of fields that can be updated
         """
         return set()
+
+    @abstractmethod
+    def get_source_info(self) -> SourceInfo:
+        """
+        Returns a SourceInfo object corresponding to the feature store
+
+        Returns
+        -------
+        """
 
 
 class SnowflakeDetails(BaseDatabaseDetails):
@@ -90,12 +101,26 @@ class SnowflakeDetails(BaseDatabaseDetails):
     def updatable_fields(self) -> set[str]:
         return {"warehouse"}
 
+    def get_source_info(self) -> SourceInfo:
+        return SourceInfo(
+            database_name=self.database_name,
+            schema_name=self.schema_name,
+            source_type=SourceType.SNOWFLAKE,
+        )
+
 
 class SQLiteDetails(BaseDatabaseDetails):
     """Model for SQLite data source information"""
 
     filename: StrictStr
     is_local_source: ClassVar[bool] = True
+
+    def get_source_info(self) -> SourceInfo:
+        return SourceInfo(
+            database_name="",
+            schema_name="",
+            source_type=SourceType.SQLITE,
+        )
 
 
 class BaseDatabricksDetails(BaseDatabaseDetails):
@@ -171,6 +196,13 @@ class DatabricksDetails(BaseDatabricksDetails):
             values["storage_path"] = storage_spark_url
         return values
 
+    def get_source_info(self) -> SourceInfo:
+        return SourceInfo(
+            database_name=self.catalog_name,
+            schema_name=self.schema_name,
+            source_type=SourceType.DATABRICKS,
+        )
+
 
 class DatabricksUnityDetails(BaseDatabricksDetails):
     """
@@ -204,6 +236,13 @@ class DatabricksUnityDetails(BaseDatabricksDetails):
     group_name: StrictStr = Field(
         description="The name of the group to use for creation of output tables."
     )
+
+    def get_source_info(self) -> SourceInfo:
+        return SourceInfo(
+            database_name=self.catalog_name,
+            schema_name=self.schema_name,
+            source_type=SourceType.DATABRICKS_UNITY,
+        )
 
 
 class SparkDetails(BaseDatabaseDetails):
@@ -273,6 +312,13 @@ class SparkDetails(BaseDatabaseDetails):
             values["storage_path"] = storage_spark_url
         return values
 
+    def get_source_info(self) -> SourceInfo:
+        return SourceInfo(
+            database_name=self.catalog_name,
+            schema_name=self.schema_name,
+            source_type=SourceType.SPARK,
+        )
+
 
 class BigQueryDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     """
@@ -293,9 +339,23 @@ class BigQueryDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
         description="The name of the dataset to use for creation of output tables."
     )
 
+    def get_source_info(self) -> SourceInfo:
+        return SourceInfo(
+            database_name=self.project_name,
+            schema_name=self.dataset_name,
+            source_type=SourceType.BIGQUERY,
+        )
+
 
 class TestDatabaseDetails(BaseDatabaseDetails):
     """Model for a no-op mock database details for use in tests"""
+
+    def get_source_info(self) -> SourceInfo:
+        return SourceInfo(
+            database_name="",
+            schema_name="",
+            source_type=SourceType.TEST,
+        )
 
 
 DatabaseDetails = Union[

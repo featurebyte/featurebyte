@@ -9,7 +9,7 @@ from typing import Any, Iterable, Optional, Tuple, cast
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import InternalName, SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
@@ -28,6 +28,7 @@ from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyKey,
     _split_agg_and_snowflake_vector_aggregation_columns,
 )
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_first_and_last_tile_indices
 
@@ -76,9 +77,9 @@ class TileBasedRequestTablePlan:
     -------------------------------------------------------------------
     """
 
-    def __init__(self, source_type: SourceType) -> None:
+    def __init__(self, source_info: SourceInfo) -> None:
         self.expanded_request_table_names: dict[TileIndicesIdType, str] = {}
-        self.adapter = get_sql_adapter(source_type)
+        self.adapter = get_sql_adapter(source_info)
 
     def add_aggregation_spec(self, agg_spec: TileBasedAggregationSpec) -> None:
         """
@@ -317,7 +318,7 @@ class WindowAggregator(TileBasedAggregator):
 
     Parameters
     ----------
-    source_type: SourceType
+    source_info: SourceInfo
         Source type information
     """
 
@@ -325,7 +326,7 @@ class WindowAggregator(TileBasedAggregator):
         super().__init__(*args, **kwargs)
         self.window_aggregation_spec_set = TileBasedAggregationSpecSet()
         self.request_table_plan: TileBasedRequestTablePlan = TileBasedRequestTablePlan(
-            source_type=self.source_type
+            source_info=self.adapter.source_info
         )
 
     def additional_update(self, aggregation_spec: TileBasedAggregationSpec) -> None:

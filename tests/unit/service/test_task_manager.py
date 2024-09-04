@@ -67,6 +67,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
                 "is_scheduled_task": False,
                 "is_revocable": True,
             },
+            parent_id=None,
         )
 
         # insert task into db manually since we are mocking celery
@@ -255,4 +256,5 @@ async def test_task_manager__submit_mark_as_scheduled_task(task_manager, celery,
             "is_scheduled_task": True,  # check this is set
             "is_revocable": True,
         },
+        parent_id=None,
     )

@@ -117,7 +117,7 @@ def _apply_join_step(
     # Use a LookupAggregator to join in the parent entity since the all the different types of
     # lookup logic dependent on the data type still apply (SCD lookup, time based event data lookup,
     # etc)
-    aggregator = LookupAggregator(source_type=feature_store_details.type)
+    aggregator = LookupAggregator(source_info=feature_store_details.details.get_source_info())
     spec = _get_lookup_spec_from_join_step(
         join_step=join_step,
         feature_store_details=feature_store_details,
@@ -158,7 +158,7 @@ def _get_lookup_spec_from_join_step(
     sql_input_node = SQLOperationGraph(
         query_graph=graph,
         sql_type=SQLType.AGGREGATION,
-        source_type=feature_store_details.type,
+        source_info=feature_store_details.details.get_source_info(),
         to_filter_scd_by_current_flag=to_filter_scd_by_current_flag,
     ).build(input_node)
     aggregation_source = AggregationSource(

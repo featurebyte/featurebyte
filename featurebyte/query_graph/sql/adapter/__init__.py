@@ -19,14 +19,16 @@ __all__ = [
     "get_sql_adapter",
 ]
 
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
-def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
+
+def get_sql_adapter(source_info: SourceInfo) -> BaseAdapter:
     """
     Factory that returns an engine specific adapter given source type
 
     Parameters
     ----------
-    source_type : SourceType
+    source_info : SourceInfo
         Source type information
 
     Returns
@@ -34,10 +36,11 @@ def get_sql_adapter(source_type: SourceType) -> BaseAdapter:
     BaseAdapter
         Instance of BaseAdapter
     """
+    source_type = source_info.source_type
     if source_type in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
-        return DatabricksAdapter()
+        return DatabricksAdapter(source_info)
     if source_type == SourceType.SPARK:
-        return SparkAdapter()
+        return SparkAdapter(source_info)
     if source_type == SourceType.BIGQUERY:
-        return BigQueryAdapter()
-    return SnowflakeAdapter()
+        return BigQueryAdapter(source_info)
+    return SnowflakeAdapter(source_info)

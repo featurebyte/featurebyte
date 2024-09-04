@@ -4,7 +4,8 @@ This module contains integration tests for F_TIMESTAMP_TO_INDEX UDF
 
 import pytest
 
-from featurebyte.session.base import BaseSession
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from tests.integration.udf.util import execute_query_with_udf
 
 
 @pytest.mark.asyncio
@@ -23,17 +24,16 @@ async def test_timestamp_to_index(
         tile_index,
     ) = timestamp_to_index_fixture
 
-    sql = f"""
-        SELECT F_TIMESTAMP_TO_INDEX(
-            CAST('{test_input}' AS TIMESTAMP),
-            {time_modulo_frequency_second},
-            {blind_spot_second},
-            {frequency_minute}
-        ) as INDEX
-        """
-    assert isinstance(session, BaseSession)
-    result = await session.execute_query(sql)
-    res = result["INDEX"].iloc[0]
+    res = await execute_query_with_udf(
+        session,
+        "F_TIMESTAMP_TO_INDEX",
+        [
+            f"CAST('{test_input}' AS TIMESTAMP)",
+            make_literal_value(time_modulo_frequency_second),
+            make_literal_value(blind_spot_second),
+            make_literal_value(frequency_minute),
+        ],
+    )
     assert res == tile_index
 
 
@@ -53,8 +53,14 @@ async def test_index_to_timestamp(
         time_stamp_str,
     ) = index_to_timestamp_fixture
 
-    sql = f"SELECT F_INDEX_TO_TIMESTAMP({tile_index}, {time_modulo_frequency_second}, {blind_spot_second}, {frequency_minute}) as TIMESTAMP"
-    assert isinstance(session, BaseSession)
-    result = await session.execute_query(sql)
-    res = result["TIMESTAMP"].iloc[0]
+    res = await execute_query_with_udf(
+        session,
+        "F_INDEX_TO_TIMESTAMP",
+        [
+            make_literal_value(tile_index),
+            make_literal_value(time_modulo_frequency_second),
+            make_literal_value(blind_spot_second),
+            make_literal_value(frequency_minute),
+        ],
+    )
     assert res == time_stamp_str

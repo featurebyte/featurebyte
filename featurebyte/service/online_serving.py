@@ -162,7 +162,7 @@ class OnlineServingService:
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_data=request_input,
-            source_type=feature_store.type,
+            source_info=feature_store.get_source_info(),
             parent_serving_preparation=parent_serving_preparation,
             output_table_details=output_table_details,
             online_store_table_version_service=self.online_store_table_version_service,

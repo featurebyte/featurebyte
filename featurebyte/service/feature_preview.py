@@ -11,13 +11,14 @@ import pandas as pd
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.exception import LimitExceededError, MissingPointInTimeColumnError
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from featurebyte.query_graph.sql.materialisation import get_source_expr
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.schema.feature import FeatureSQL
 from featurebyte.schema.feature_list import (
     FeatureListGetHistoricalFeatures,
@@ -226,7 +227,7 @@ class FeaturePreviewService(PreviewService):
             graph=graph,
             nodes=[feature_node],
             point_in_time_and_serving_name_list=point_in_time_and_serving_name_list,
-            source_type=feature_store.type,
+            source_info=feature_store.get_source_info(),
             parent_serving_preparation=parent_serving_preparation,
         )
         result = await session.execute_query(preview_sql)
@@ -361,7 +362,7 @@ class FeaturePreviewService(PreviewService):
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,
                 point_in_time_and_serving_name_list=point_in_time_and_serving_name_list,
-                source_type=feature_store.type,
+                source_info=feature_store.get_source_info(),
                 parent_serving_preparation=parent_serving_preparation,
             )
             _result = await db_session.execute_query(preview_sql)
@@ -401,7 +402,7 @@ class FeaturePreviewService(PreviewService):
             request_table_name=REQUEST_TABLE_NAME,
             graph=graph,
             nodes=[feature_node],
-            source_type=source_type,
+            source_info=self._get_dummy_source_info(source_type),
         )
         return preview_sql
 
@@ -429,7 +430,7 @@ class FeaturePreviewService(PreviewService):
                 request_table_name=REQUEST_TABLE_NAME,
                 graph=feature_cluster.graph,
                 nodes=feature_cluster.nodes,
-                source_type=source_type,
+                source_info=self._get_dummy_source_info(source_type),
             )
             preview_sqls.append(preview_sql)
 
@@ -479,7 +480,13 @@ class FeaturePreviewService(PreviewService):
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_table_columns=observation_set.columns.tolist(),
-            source_type=source_type,
+            source_info=self._get_dummy_source_info(source_type),
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
         )
         return sql_to_string(expr, source_type=source_type)
+
+    @classmethod
+    def _get_dummy_source_info(cls, source_type: SourceType) -> SourceInfo:
+        # This is used in places where the generated sql won't be executed (so the actual database
+        # name and schema name don't matter), and where we do not have that information.
+        return SourceInfo(database_name="", schema_name="", source_type=source_type)

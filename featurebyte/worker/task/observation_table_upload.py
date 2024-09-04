@@ -7,6 +7,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
+from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel, UploadedFileInput
 from featurebyte.models.request_input import RequestInputType
@@ -17,6 +20,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
@@ -34,6 +38,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
 
     def __init__(
         self,
+        task_manager: TaskManager,
         temp_storage: Storage,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
@@ -41,7 +46,7 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         catalog_service: CatalogService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.temp_storage = temp_storage
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -72,11 +77,12 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
             feature_store_id
         )
 
-        # Write the file to the warehouse
-        await db_session.register_table(location.table_details.table_name, uploaded_dataframe)
-        await self.observation_table_service.add_row_index_column(
-            db_session, location.table_details
+        # Write the file to the warehouse. Add row index to the DataFrame in memory to ensure that
+        # the row index follows the same order as the uploaded file.
+        uploaded_dataframe.insert(
+            0, InternalName.TABLE_ROW_INDEX.value, np.arange(1, len(uploaded_dataframe) + 1)
         )
+        await db_session.register_table(location.table_details.table_name, uploaded_dataframe)
 
         async with self.drop_table_on_error(db_session, location.table_details, payload):
             # Validate table and retrieve metadata about the table

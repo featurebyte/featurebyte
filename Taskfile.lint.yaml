@@ -33,6 +33,7 @@ tasks:
       - task: install
     cmds:
       - poetry run ruff check --select I --fix
+      - poetry run ruff check --fix
       - poetry run ruff format
       - poetry run toml-sort --in-place poetry.lock pyproject.toml
 
@@ -81,7 +82,7 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
-      - echo "${DARG_SOURCES}" | xargs -n16 -P {{ .CPU_CORES }} poetry run darglint
+      - echo "${DARG_SOURCES}" | xargs -n16 -P {{ .CPU_CORES }} poetry run darglint --docstring-style numpy --strictness full -v 2
 
   type:
     desc: "Run the linter[type]"

@@ -6,9 +6,10 @@ from typing import Any
 
 from pydantic import BaseModel, PrivateAttr
 
-from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.session.base import BaseSession
+from featurebyte.session.bigquery import BigQuerySession
 from featurebyte.session.snowflake import SnowflakeSession
 
 
@@ -42,7 +43,7 @@ class BaseSqlModel(BaseModel):
         -------
         BaseAdapter
         """
-        return get_sql_adapter(self._session.source_type)
+        return self._session.adapter
 
     def quote_column(self, col_val: str) -> str:
         """
@@ -76,6 +77,11 @@ class BaseSqlModel(BaseModel):
         """
         if isinstance(self._session, SnowflakeSession):
             return f"EQUAL_NULL({left_expr}, {right_expr})"
+        elif isinstance(self._session, BigQuerySession):
+            # There isn't a null-safe equal operator in BigQuery, so we just use the equal operator.
+            # This should be fine in most cases since we don't support missing values in entity
+            # column anyway.
+            return f"{left_expr} = {right_expr}"
 
         return f"{left_expr} <=> {right_expr}"
 

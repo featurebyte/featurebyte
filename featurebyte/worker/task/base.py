@@ -10,7 +10,9 @@ from typing import Any, Generic, Optional, Type, TypeVar
 from redis import Redis
 
 from featurebyte.logging import get_logger
+from featurebyte.schema.task import TaskId
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.task_manager import TaskManager
 
 logger = get_logger(__name__)
 
@@ -24,6 +26,59 @@ class BaseTask(Generic[TaskT]):
     """
 
     payload_class: Type[TaskT]
+
+    def __init__(self, task_manager: TaskManager):
+        self.task_manager = task_manager
+
+        # track the task ID
+        self._task_id: Optional[TaskId] = None
+
+    @property
+    def task_id(self) -> Optional[TaskId]:
+        """
+        Task ID
+
+        Returns
+        -------
+        Optional[TaskId]
+        """
+        return self._task_id
+
+    def set_task_id(self, task_id: TaskId) -> None:
+        """
+        Set task ID
+
+        Parameters
+        ----------
+        task_id: TaskId
+            Task ID
+        """
+        self._task_id = task_id
+
+    async def submit_child_task(
+        self, payload: BaseTaskPayload, mark_as_scheduled_task: bool = False
+    ) -> str:
+        """
+        Submit the task to the task manager
+
+        Parameters
+        ----------
+        payload: BaseTaskPayload
+            Task payload
+        mark_as_scheduled_task: bool
+            Whether to mark the task as a scheduled task
+
+        Returns
+        -------
+        str
+        """
+        assert self.task_id is not None, "Task ID is not set"
+        task_id = await self.task_manager.submit(
+            payload=payload,
+            mark_as_scheduled_task=mark_as_scheduled_task,
+            parent_task_id=str(self.task_id),
+        )
+        return task_id
 
     def get_payload_obj(self, payload_data: dict[str, Any]) -> TaskT:
         """
@@ -86,9 +141,10 @@ class BaseLockTask(BaseTask[TaskT]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         redis: Redis[Any],
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.redis = redis
 
     async def execute(self, payload: TaskT) -> Any:

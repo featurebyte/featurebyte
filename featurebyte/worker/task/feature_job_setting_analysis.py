@@ -24,6 +24,7 @@ from featurebyte.service.event_table import EventTableService
 from featurebyte.service.feature_job_setting_analysis import FeatureJobSettingAnalysisService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
@@ -40,6 +41,7 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
 
     def __init__(
         self,
+        task_manager: TaskManager,
         storage: Storage,
         event_table_service: EventTableService,
         feature_store_service: FeatureStoreService,
@@ -47,7 +49,7 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
         feature_job_setting_analysis_service: FeatureJobSettingAnalysisService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.storage = storage
         self.event_table_service = event_table_service
         self.feature_store_service = feature_store_service

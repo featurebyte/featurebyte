@@ -122,6 +122,39 @@ def get_fully_qualified_table_name(
     )
 
 
+def get_fully_qualified_function_call(
+    database_name: str,
+    schema_name: str,
+    function_name: str,
+    args: Sequence[Expression],
+) -> Expression:
+    """
+    Get an expression for calling a UDF function using fully qualified name
+
+    Parameters
+    ----------
+    database_name: str
+        Database name of the function
+    schema_name: str
+        Schema name of the function
+    function_name: str
+        Function name
+    args: Sequence[Expression]
+        Arguments to the function
+
+    Returns
+    -------
+    Expression
+    """
+    return expressions.Dot(
+        this=expressions.Dot(
+            this=expressions.Var(this=quoted_identifier(database_name)),
+            expression=expressions.Var(this=quoted_identifier(schema_name)),
+        ),
+        expression=expressions.Anonymous(this=function_name, expressions=args),
+    )
+
+
 def get_column_expr_and_name(
     col_expr: expressions.Column,
 ) -> Tuple[expressions.Expression, Optional[str]]:

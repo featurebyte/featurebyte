@@ -17,6 +17,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.feature_materialize import FeatureMaterializeService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
@@ -38,6 +39,7 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
 
     def __init__(
         self,
+        task_manager: TaskManager,
         feature_materialize_service: FeatureMaterializeService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         feast_registry_service: FeastRegistryService,
@@ -46,7 +48,7 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
         deployment_service: DeploymentService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.feature_materialize_service = feature_materialize_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.feast_registry_service = feast_registry_service

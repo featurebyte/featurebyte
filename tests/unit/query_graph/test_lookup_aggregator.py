@@ -9,52 +9,53 @@ from dataclasses import asdict
 
 import pytest
 
-from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 
 
 @pytest.fixture
-def dimension_lookup_specs(global_graph, lookup_node):
+def dimension_lookup_specs(global_graph, lookup_node, source_info):
     """
     Fixture for a list of LookupSpec derived from lookup_node
     """
     return LookupSpec.from_query_graph_node(
         lookup_node,
         graph=global_graph,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
 
 
 @pytest.fixture
-def event_lookup_specs(global_graph, event_lookup_node):
+def event_lookup_specs(global_graph, event_lookup_node, source_info):
     """
     Fixture for a list of LookupSpec derived from event_lookup_node
     """
     return LookupSpec.from_query_graph_node(
         event_lookup_node,
         graph=global_graph,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
     )
 
 
 @pytest.fixture
-def scd_lookup_specs_with_current_flag(global_graph, scd_lookup_node, is_online_serving):
+def scd_lookup_specs_with_current_flag(
+    global_graph, scd_lookup_node, is_online_serving, source_info
+):
     """
     Fixture for a list of LookupSpec derived from SCD lookup
     """
     return LookupSpec.from_query_graph_node(
         scd_lookup_node,
         graph=global_graph,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         is_online_serving=is_online_serving,
     )
 
 
 @pytest.fixture
 def scd_lookup_specs_without_current_flag(
-    global_graph, scd_lookup_without_current_flag_node, is_online_serving
+    global_graph, scd_lookup_without_current_flag_node, is_online_serving, source_info
 ):
     """
     Fixture for a list of LookupSpec derived from SCD lookup without current flag column
@@ -62,38 +63,40 @@ def scd_lookup_specs_without_current_flag(
     return LookupSpec.from_query_graph_node(
         scd_lookup_without_current_flag_node,
         graph=global_graph,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         is_online_serving=is_online_serving,
     )
 
 
 @pytest.fixture
-def scd_lookup_specs_with_offset(global_graph, scd_offset_lookup_node, is_online_serving):
+def scd_lookup_specs_with_offset(
+    global_graph, scd_offset_lookup_node, is_online_serving, source_info
+):
     """
     Fixture for a list of LookupSpec derived from SCD lookup with offset
     """
     return LookupSpec.from_query_graph_node(
         scd_offset_lookup_node,
         graph=global_graph,
-        source_type=SourceType.SNOWFLAKE,
+        source_info=source_info,
         is_online_serving=is_online_serving,
     )
 
 
 @pytest.fixture
-def offline_lookup_aggregator():
+def offline_lookup_aggregator(source_info):
     """
     Fixture for a LookupAggregator for serving offline features
     """
-    return LookupAggregator(source_type=SourceType.SNOWFLAKE, is_online_serving=False)
+    return LookupAggregator(source_info=source_info, is_online_serving=False)
 
 
 @pytest.fixture
-def online_lookup_aggregator():
+def online_lookup_aggregator(source_info):
     """
     Fixture for a LookupAggregator for serving online features
     """
-    return LookupAggregator(source_type=SourceType.SNOWFLAKE, is_online_serving=True)
+    return LookupAggregator(source_info=source_info, is_online_serving=True)
 
 
 def update_aggregator(aggregator, specs):

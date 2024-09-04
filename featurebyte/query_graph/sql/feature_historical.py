@@ -14,7 +14,7 @@ from bson import ObjectId
 from pandas.api.types import is_datetime64_any_dtype
 from sqlglot import expressions
 
-from featurebyte.enum import InternalName, SourceType, SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
@@ -32,6 +32,7 @@ from featurebyte.query_graph.sql.batch_helper import (
 )
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.session.base import BaseSession
 
 HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
@@ -252,7 +253,7 @@ def get_historical_features_expr(
     graph: QueryGraph,
     nodes: list[Node],
     request_table_columns: list[str],
-    source_type: SourceType,
+    source_info: SourceInfo,
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
 ) -> Tuple[expressions.Select, list[str]]:
@@ -268,8 +269,8 @@ def get_historical_features_expr(
         List of query graph node
     request_table_columns : list[str]
         List of column names in the training events
-    source_type : SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
     serving_names_mapping : dict[str, str] | None
         Optional mapping from original serving name to new serving name
     parent_serving_preparation: Optional[ParentServingPreparation]
@@ -283,7 +284,7 @@ def get_historical_features_expr(
     planner = FeatureExecutionPlanner(
         graph,
         serving_names_mapping=serving_names_mapping,
-        source_type=source_type,
+        source_info=source_info,
         is_online_serving=False,
         parent_serving_preparation=parent_serving_preparation,
     )
@@ -303,7 +304,7 @@ def get_historical_features_query_set(
     graph: QueryGraph,
     nodes: list[Node],
     request_table_columns: list[str],
-    source_type: SourceType,
+    source_info: SourceInfo,
     output_table_details: TableDetails,
     output_feature_names: list[str],
     serving_names_mapping: dict[str, str] | None = None,
@@ -323,8 +324,8 @@ def get_historical_features_query_set(
         List of query graph nodes
     request_table_columns : list[str]
         List of column names in the training events
-    source_type : SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
     output_table_details: TableDetails
         Output table details to write the results to
     output_feature_names : list[str]
@@ -354,16 +355,16 @@ def get_historical_features_query_set(
                 request_table_columns, output_include_row_index
             ),
             serving_names_mapping=serving_names_mapping,
-            source_type=source_type,
+            source_info=source_info,
             request_table_name=request_table_name,
             parent_serving_preparation=parent_serving_preparation,
         )
         output_query = sql_to_string(
-            get_sql_adapter(source_type).create_table_as(
+            get_sql_adapter(source_info).create_table_as(
                 table_details=output_table_details,
                 select_expr=sql_expr,
             ),
-            source_type=source_type,
+            source_type=source_info.source_type,
         )
         return FeatureQuerySet(
             feature_queries=[],
@@ -382,17 +383,17 @@ def get_historical_features_query_set(
             nodes=nodes_group,
             request_table_columns=[InternalName.TABLE_ROW_INDEX.value] + request_table_columns,
             serving_names_mapping=serving_names_mapping,
-            source_type=source_type,
+            source_info=source_info,
             request_table_name=request_table_name,
             parent_serving_preparation=parent_serving_preparation,
         )
         feature_set_table_name = f"{feature_set_table_name_prefix}_{i}"
         query = sql_to_string(
-            get_sql_adapter(source_type).create_table_as(
+            get_sql_adapter(source_info).create_table_as(
                 table_details=TableDetails(table_name=feature_set_table_name),
                 select_expr=feature_set_expr,
             ),
-            source_type,
+            source_info.source_type,
         )
         feature_queries.append(
             FeatureQuery(
@@ -409,11 +410,11 @@ def get_historical_features_query_set(
         output_include_row_index=output_include_row_index,
     )
     output_query = sql_to_string(
-        get_sql_adapter(source_type).create_table_as(
+        get_sql_adapter(source_info).create_table_as(
             table_details=output_table_details,
             select_expr=output_expr,
         ),
-        source_type=source_type,
+        source_type=source_info.source_type,
     )
     return FeatureQuerySet(
         feature_queries=feature_queries,

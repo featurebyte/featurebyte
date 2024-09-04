@@ -11,6 +11,7 @@ from featurebyte.schema.worker.task.feature_materialize_sync import (
     FeatureMaterializeSyncTaskPayload,
 )
 from featurebyte.service.feature_materialize_sync import FeatureMaterializeSyncService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 
 logger = get_logger(__name__)
@@ -25,9 +26,10 @@ class FeatureMaterializeSyncTask(BaseTask[FeatureMaterializeSyncTaskPayload]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         feature_materialize_sync_service: FeatureMaterializeSyncService,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.feature_materialize_sync_service = feature_materialize_sync_service
 
     async def get_task_description(self, payload: FeatureMaterializeSyncTaskPayload) -> str:

@@ -18,6 +18,7 @@ from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_helper.compute_target import TargetComputer
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
@@ -34,6 +35,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
 
     def __init__(
         self,
+        task_manager: TaskManager,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         observation_set_helper: ObservationSetHelper,
@@ -42,7 +44,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         derive_primary_entity_helper: DerivePrimaryEntityHelper,
         target_service: TargetService,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.observation_set_helper = observation_set_helper

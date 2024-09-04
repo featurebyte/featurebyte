@@ -455,7 +455,9 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             timestamp_column="event_timestamp",
         ).json_dict()
 
-    def test_sample_200(self, test_api_client_persistent, data_sample_payload, mock_get_session):
+    def test_sample_200(
+        self, test_api_client_persistent, data_sample_payload, mock_get_session, source_info
+    ):
         """Test table sample (success)"""
         test_api_client, _ = test_api_client_persistent
 
@@ -739,7 +741,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         assert_frame_equal(dataframe_from_json(response.json()), expected_df, check_dtype=False)
 
     def test_sample_empty_table(
-        self, test_api_client_persistent, data_sample_payload, mock_get_session
+        self, test_api_client_persistent, data_sample_payload, mock_get_session, source_info
     ):
         """Test table sample works with empty table"""
         test_api_client, _ = test_api_client_persistent

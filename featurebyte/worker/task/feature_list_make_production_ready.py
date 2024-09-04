@@ -11,6 +11,7 @@ from featurebyte.schema.worker.task.feature_list_make_production_ready import (
 )
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_facade import FeatureListFacadeService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
@@ -24,11 +25,12 @@ class FeatureListMakeProductionReadyTask(BaseTask[FeatureListMakeProductionReady
 
     def __init__(
         self,
+        task_manager: TaskManager,
         feature_list_service: FeatureListService,
         feature_list_facade_service: FeatureListFacadeService,
         task_progress_updater: TaskProgressUpdater,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.feature_list_service = feature_list_service
         self.feature_list_facade_service = feature_list_facade_service
         self.task_progress_updater = task_progress_updater

@@ -7,6 +7,8 @@ import json
 import numpy as np
 import pytest
 
+from tests.integration.udf.util import execute_query_with_udf
+
 
 @pytest.mark.parametrize(
     "counts, expected",
@@ -34,7 +36,5 @@ async def test_least_frequent_udf(session, to_object, counts, expected):
     """
 
     expr = to_object(counts)
-    query = f"SELECT F_COUNT_DICT_LEAST_FREQUENT({expr}) AS OUT"
-    df = await session.execute_query(query)
-    actual = df.iloc[0]["OUT"]
+    actual = await execute_query_with_udf(session, "F_COUNT_DICT_LEAST_FREQUENT", [expr])
     assert actual == expected

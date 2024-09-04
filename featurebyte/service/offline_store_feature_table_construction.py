@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import aiofiles
 from bson import ObjectId
 
-from featurebyte import FeatureJobSetting, SourceType
+from featurebyte import FeatureJobSetting
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.entity_universe import (
@@ -34,6 +34,7 @@ from featurebyte.query_graph.model.entity_relationship_info import EntityRelatio
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.exception import OfflineStoreFeatureTableBadStateError
@@ -130,7 +131,7 @@ class OfflineStoreFeatureTableConstructionService:
         primary_entities: List[EntityModel],
         has_ttl: bool,
         feature_job_setting: Optional[FeatureJobSetting],
-        source_type: SourceType,
+        source_info: SourceInfo,
     ) -> OfflineStoreFeatureTableModel:
         """
         Returns a OfflineStoreFeatureTableModel for a feature table
@@ -147,8 +148,8 @@ class OfflineStoreFeatureTableConstructionService:
             Whether the feature table has TTL
         feature_job_setting : Optional[FeatureJobSetting]
             Feature job setting of the feature table
-        source_type : SourceType
-            Source type information
+        source_info: SourceInfo
+            Source information
 
         Returns
         -------
@@ -169,7 +170,7 @@ class OfflineStoreFeatureTableConstructionService:
         try:
             entity_universe = await self.get_entity_universe_model(
                 offline_ingest_graphs=ingest_graph_metadata.offline_ingest_graphs,
-                source_type=source_type,
+                source_info=source_info,
                 feature_table_name=feature_table_name,
             )
         except OfflineStoreFeatureTableBadStateError:
@@ -217,7 +218,7 @@ class OfflineStoreFeatureTableConstructionService:
         offline_ingest_graphs: List[
             Tuple[OfflineStoreIngestQueryGraph, List[EntityRelationshipInfo]]
         ],
-        source_type: SourceType,
+        source_info: SourceInfo,
         feature_table_name: str,
     ) -> EntityUniverseModel:
         """
@@ -227,8 +228,8 @@ class OfflineStoreFeatureTableConstructionService:
         ----------
         offline_ingest_graphs: List[OfflineStoreIngestQueryGraph]
             The offline ingest graphs that the entity universe is to be constructed from
-        source_type: SourceType
-            Source type information
+        source_info: SourceInfo
+            Source information
         feature_table_name: str
             Name of the offline store feature table which the entity universe is for
 
@@ -276,7 +277,7 @@ class OfflineStoreFeatureTableConstructionService:
                         join_steps=join_steps,
                     )
                 )
-        universe_expr = get_combined_universe(params, source_type)
+        universe_expr = get_combined_universe(params, source_info)
 
         if universe_expr is None:
             raise OfflineStoreFeatureTableBadStateError(

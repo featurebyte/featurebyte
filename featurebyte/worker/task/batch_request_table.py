@@ -12,6 +12,7 @@ from featurebyte.schema.worker.task.batch_request_table import BatchRequestTable
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -27,11 +28,12 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
 
     def __init__(
         self,
+        task_manager: TaskManager,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         batch_request_table_service: BatchRequestTableService,
     ):
-        super().__init__()
+        super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.batch_request_table_service = batch_request_table_service

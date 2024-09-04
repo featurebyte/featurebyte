@@ -46,6 +46,7 @@ from featurebyte.query_graph.sql.entity import (
 )
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.online_serving_util import get_version_placeholder
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.base import BaseSession
@@ -57,7 +58,7 @@ PROGRESS_MESSAGE_COMPUTING_ONLINE_FEATURES = "Computing online features"
 
 
 def get_aggregation_result_names(
-    graph: QueryGraph, nodes: list[Node], source_type: SourceType
+    graph: QueryGraph, nodes: list[Node], source_info: SourceInfo
 ) -> list[str]:
     """
     Get a list of aggregation result names that correspond to the graph and nodes
@@ -68,7 +69,7 @@ def get_aggregation_result_names(
         Query graph
     nodes: list[Node]
         List of query graph nodes
-    source_type: SourceType
+    source_info: SourceInfo
         Source type information
 
     Returns
@@ -77,7 +78,7 @@ def get_aggregation_result_names(
     """
     planner = FeatureExecutionPlanner(
         graph,
-        source_type=source_type,
+        source_info=source_info,
         is_online_serving=True,
     )
     plan = planner.generate_plan(nodes)
@@ -174,7 +175,7 @@ def construct_request_table_query(
 def get_online_store_retrieval_expr(
     graph: QueryGraph,
     nodes: list[Node],
-    source_type: SourceType,
+    source_info: SourceInfo,
     current_timestamp_expr: Expression,
     request_table_columns: list[str],
     request_table_expr: Optional[expressions.Select] = None,
@@ -190,8 +191,8 @@ def get_online_store_retrieval_expr(
         Query graph
     nodes: list[Node]
         List of query graph nodes
-    source_type: SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
     request_table_columns: list[str]
         Request table columns
     current_timestamp_expr: Expression
@@ -209,7 +210,7 @@ def get_online_store_retrieval_expr(
     """
     planner = FeatureExecutionPlanner(
         graph,
-        source_type=source_type,
+        source_info=source_info,
         is_online_serving=True,
         parent_serving_preparation=parent_serving_preparation,
     )
@@ -237,7 +238,7 @@ def get_online_store_retrieval_expr(
 
 
 def get_current_timestamp_expr(
-    request_timestamp: Optional[datetime], source_type: SourceType
+    request_timestamp: Optional[datetime], source_info: SourceInfo
 ) -> Expression:
     """
     Get the sql expression to use for the current timestamp
@@ -246,14 +247,14 @@ def get_current_timestamp_expr(
     ----------
     request_timestamp: Optional[datetime]
         The timestamp value to use as the point-in-time
-    source_type: SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
 
     Returns
     -------
     Expression
     """
-    adapter = get_sql_adapter(source_type)
+    adapter = get_sql_adapter(source_info)
     if request_timestamp is None:
         current_timestamp_expr = adapter.current_timestamp()
     else:
@@ -315,7 +316,7 @@ def add_concatenated_serving_names(
 def get_online_features_query_set(
     graph: QueryGraph,
     node_groups: list[list[Node]],
-    source_type: SourceType,
+    source_info: SourceInfo,
     request_table_columns: list[str],
     output_feature_names: list[str],
     request_table_name: Optional[str],
@@ -338,8 +339,8 @@ def get_online_features_query_set(
         List of query graph nodes divided into batches
     request_table_columns : list[str]
         List of column names in the training events
-    source_type : SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
     output_table_details: TableDetails
         Output table details to write the results to
     output_feature_names : list[str]
@@ -363,7 +364,7 @@ def get_online_features_query_set(
     -------
     FeatureQuerySet
     """
-    current_timestamp_expr = get_current_timestamp_expr(request_timestamp, source_type)
+    current_timestamp_expr = get_current_timestamp_expr(request_timestamp, source_info)
 
     if len(node_groups) == 1:
         # Fallback to simpler non-batched query if there is only one group to avoid overhead
@@ -376,12 +377,14 @@ def get_online_features_query_set(
             ),
             request_table_expr=request_table_expr,
             request_table_details=request_table_details,
-            source_type=source_type,
+            source_info=source_info,
             parent_serving_preparation=parent_serving_preparation,
         )
-        sql_expr = add_concatenated_serving_names(sql_expr, concatenate_serving_names, source_type)
+        sql_expr = add_concatenated_serving_names(
+            sql_expr, concatenate_serving_names, source_info.source_type
+        )
         if output_table_details is not None:
-            output_query = get_sql_adapter(source_type).create_table_as(
+            output_query = get_sql_adapter(source_info).create_table_as(
                 table_details=output_table_details,
                 select_expr=sql_expr,
             )
@@ -407,13 +410,13 @@ def get_online_features_query_set(
             request_table_columns=[InternalName.TABLE_ROW_INDEX.value] + request_table_columns,
             request_table_expr=request_table_expr,
             request_table_details=request_table_details,
-            source_type=source_type,
+            source_info=source_info,
             parent_serving_preparation=parent_serving_preparation,
         )
         feature_set_table_name = f"{feature_set_table_name_prefix}_{i}"
         feature_queries.append(
             FeatureQuery(
-                sql=get_sql_adapter(source_type).create_table_as(
+                sql=get_sql_adapter(source_info).create_table_as(
                     table_details=TableDetails(table_name=feature_set_table_name),
                     select_expr=feature_set_expr,
                 ),
@@ -433,11 +436,11 @@ def get_online_features_query_set(
     output_expr = add_concatenated_serving_names(
         output_expr,
         concatenate_serving_names,
-        source_type,
+        source_info.source_type,
         serving_names_table_alias="REQ",
     )
     if output_table_details is not None:
-        output_expr = get_sql_adapter(source_type).create_table_as(  # type: ignore[assignment]
+        output_expr = get_sql_adapter(source_info).create_table_as(  # type: ignore[assignment]
             table_details=output_table_details,
             select_expr=output_expr,
         )
@@ -467,7 +470,7 @@ async def get_online_features(
     graph: QueryGraph,
     nodes: list[Node],
     request_data: Union[pd.DataFrame, BatchRequestTableModel, TemporaryBatchRequestTable],
-    source_type: SourceType,
+    source_info: SourceInfo,
     online_store_table_version_service: OnlineStoreTableVersionService,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     output_table_details: Optional[TableDetails] = None,
@@ -487,8 +490,8 @@ async def get_online_features(
         List of query graph nodes
     request_data: Union[pd.DataFrame, BatchRequestTableModel]
         Request data as a dataframe or a BatchRequestTableModel
-    source_type: SourceType
-        Source type information
+    source_info: SourceInfo
+        Source information
     online_store_table_version_service: OnlineStoreTableVersionService
         Online store table version service
     parent_serving_preparation: Optional[ParentServingPreparation]
@@ -537,12 +540,12 @@ async def get_online_features(
         request_table_name = None
 
     try:
-        aggregation_result_names = get_aggregation_result_names(graph, nodes, source_type)
+        aggregation_result_names = get_aggregation_result_names(graph, nodes, source_info)
         versions = await online_store_table_version_service.get_versions(aggregation_result_names)
         query_set = get_online_features_query_set(
             graph,
             node_groups,
-            source_type=source_type,
+            source_info=source_info,
             request_table_columns=request_table_columns,
             output_feature_names=get_feature_names(graph, nodes),
             request_table_name=request_table_name,

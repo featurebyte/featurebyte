@@ -16,6 +16,7 @@ import pyarrow as pa
 from google.api_core.exceptions import NotFound
 from google.api_core.gapic_v1.client_info import ClientInfo
 from google.auth.exceptions import DefaultCredentialsError, MalformedError
+from google.cloud import bigquery
 from google.cloud.bigquery import (
     DEFAULT_RETRY,
     Client,
@@ -153,6 +154,12 @@ class BigQuerySession(BaseSession):
     @classmethod
     def is_threadsafe(cls) -> bool:
         return True
+
+    def get_additional_execute_query_kwargs(self) -> dict[str, Any]:
+        job_config = bigquery.QueryJobConfig(
+            default_dataset=f"{self.database_name}.{self.schema_name}"
+        )
+        return {"job_config": job_config}
 
     async def list_databases(self) -> list[str]:
         """
@@ -418,9 +425,9 @@ class BigQuerySession(BaseSession):
 
         def _detect_element_type(value: Any) -> SqlTypeNames:
             element_type = type(value)
-            if element_type == int:
+            if element_type is int:
                 return SqlTypeNames.INTEGER
-            elif element_type == float:
+            elif element_type is float:
                 return SqlTypeNames.FLOAT64
             return SqlTypeNames.STRING
 
@@ -466,6 +473,7 @@ class BigQuerySession(BaseSession):
         types = {field.name: field.field_type for field in table_schema}
         # convert timestamps to timezone naive string, local timestamps are converted to UTC
         if dataframe.shape[0] > 0:
+            dataframe = dataframe.copy()
             for colname in dataframe.columns:
                 if types[colname] == SqlTypeNames.TIMESTAMP:
                     try:
