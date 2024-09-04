@@ -21,7 +21,7 @@ WITH ONLINE_REQUEST_TABLE AS (
     REQ."__FB_TABLE_ROW_INDEX",
     REQ."cust_id",
     REQ."another_key",
-    CAST('2022-01-01 00:00:00' AS TIMESTAMPNTZ) AS POINT_IN_TIME
+    CAST('2022-01-01 00:00:00' AS TIMESTAMP) AS POINT_IN_TIME
   FROM "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS REQ
 ), _FB_AGGREGATED AS (
   SELECT
@@ -55,7 +55,10 @@ WITH ONLINE_REQUEST_TABLE AS (
               "AGGREGATION_RESULT_NAME",
               "LATEST_VERSION"
             FROM (VALUES
-              ('_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c', _fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+              (
+                '_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c',
+                _fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c_VERSION_PLACEHOLDER
+              )) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
           ) AS L
           INNER JOIN online_store_39866085bbe5ca4054c0978e965930d2f26cc229 AS R
             ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
@@ -63,7 +66,8 @@ WITH ONLINE_REQUEST_TABLE AS (
         )
         WHERE
           "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c')
-      )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c'))
+      )
+      PIVOT(MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c'))
     )
   ) AS T0
     ON REQ."cust_id" = T0."cust_id" AND REQ."another_key" = T0."another_key"
@@ -85,7 +89,7 @@ WITH ONLINE_REQUEST_TABLE AS (
     REQ."__FB_TABLE_ROW_INDEX",
     REQ."cust_id",
     REQ."another_key",
-    CAST('2022-01-01 00:00:00' AS TIMESTAMPNTZ) AS POINT_IN_TIME
+    CAST('2022-01-01 00:00:00' AS TIMESTAMP) AS POINT_IN_TIME
   FROM "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS REQ
 ), _FB_AGGREGATED AS (
   SELECT
@@ -119,7 +123,10 @@ WITH ONLINE_REQUEST_TABLE AS (
               "AGGREGATION_RESULT_NAME",
               "LATEST_VERSION"
             FROM (VALUES
-              ('_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c', _fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c_VERSION_PLACEHOLDER)) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
+              (
+                '_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c',
+                _fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c_VERSION_PLACEHOLDER
+              )) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
           ) AS L
           INNER JOIN online_store_39866085bbe5ca4054c0978e965930d2f26cc229 AS R
             ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
@@ -127,7 +134,8 @@ WITH ONLINE_REQUEST_TABLE AS (
         )
         WHERE
           "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c')
-      )   PIVOT(  MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c'))
+      )
+      PIVOT(MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_another_key_window_w86400_sum_3d9184a92eb53a42a18b2fa8015e8dd8de52854c'))
     )
   ) AS T0
     ON REQ."cust_id" = T0."cust_id" AND REQ."another_key" = T0."another_key"

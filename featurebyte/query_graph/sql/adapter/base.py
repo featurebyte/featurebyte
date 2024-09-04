@@ -43,8 +43,6 @@ class BaseAdapter(ABC):
     Helper class to generate engine specific SQL expressions
     """
 
-    TABLESAMPLE_PERCENT_KEY = "percent"
-
     def __init__(self, source_info: SourceInfo):
         self.source_info = source_info
         self.source_type = source_info.source_type
@@ -276,7 +274,7 @@ class BaseAdapter(ABC):
         inner_agg_result_names : list[str]
             Column names of the intermediate aggregation result names (one value per category - this
             is to be used as the values in the aggregated key-value pairs)
-        inner_agg_expr : expressions.Subqueryable:
+        inner_agg_expr : expressions.Query:
             Query that produces the intermediate aggregation result
 
         Returns
@@ -520,15 +518,12 @@ class BaseAdapter(ABC):
         # Need to perform syntax tree surgery this way since TABLESAMPLE needs to be attached to the
         # FROM clause so that the result is still a SELECT expression. This way we can do things
         # like limit(), subquery() etc on the result.
-        params = {
-            cls.TABLESAMPLE_PERCENT_KEY: expressions.Literal(
+        table_sample_expr = expressions.TableSample(
+            percent=expressions.Literal(
                 this=format_float_positional(sample_percent, trim="-"), is_string=False
             )
-        }
-        tablesample_expr = expressions.TableSample(
-            this=nested_select_expr.args["from"].expressions[0], **params
         )
-        nested_select_expr.args["from"].set("expressions", [tablesample_expr])
+        nested_select_expr.args["from"].args["this"].set("sample", table_sample_expr)
 
         return nested_select_expr
 
@@ -818,7 +813,7 @@ class BaseAdapter(ABC):
 
     @staticmethod
     def _square_expr(expr: Expression) -> Expression:
-        return expressions.Pow(this=expr, power=make_literal_value(2))
+        return expressions.Pow(this=expr, expression=make_literal_value(2))
 
     @staticmethod
     def _asin_expr(expr: Expression) -> Expression:
@@ -1062,3 +1057,22 @@ class BaseAdapter(ABC):
         Expression
         """
         return expressions.Mod(this=expr1, expression=expr2)
+
+    @classmethod
+    def normalize_timestamp_before_comparison(cls, expr: Expression) -> Expression:
+        """
+        Normalize the timestamp before comparison
+
+        No op by default. This is to handle databases like BigQuery that have TIMESTAMP and DATETIME
+        types that cannot be directly compared.
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression to normalize
+
+        Returns
+        -------
+        Expression
+        """
+        return expr

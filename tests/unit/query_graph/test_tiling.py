@@ -107,7 +107,7 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
             None,
             [
                 make_expected_tile_spec(
-                    tile_expr='SUM(CAST("a_column" IS NULL AS INTEGER))',
+                    tile_expr='SUM(CAST("a_column" IS NULL AS INT))',
                     tile_column_name="value_1234beef",
                 )
             ],

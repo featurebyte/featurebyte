@@ -125,7 +125,7 @@ async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_e
     await session.create_table_as(
         table_details=table_name,
         select_expr=expressions.Select(expressions=[expressions.Star()]).from_(
-            expressions.Table(this="TEMP_TABLE")
+            expressions.Table(this=expressions.Identifier(this="TEMP_TABLE"))
         ),
     )
 

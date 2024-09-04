@@ -42,10 +42,17 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
     adapter: BaseAdapter
 
     def get_expression_for_column(
-        self, main_alias: str, join_alias: str, column_name: str
+        self,
+        main_alias: str,
+        join_alias: str,
+        column_name: str,
+        adapter: BaseAdapter,
     ) -> expressions.Expression:
         expr = super().get_expression_for_column(
-            main_alias=main_alias, join_alias=join_alias, column_name=column_name
+            main_alias=main_alias,
+            join_alias=join_alias,
+            column_name=column_name,
+            adapter=adapter,
         )
 
         # For lookup from EventData, set the looked up value to NA if the point in time is prior to
@@ -65,10 +72,13 @@ class SubqueryWithPointInTimeCutoff(LeftJoinableSubquery):
                     point_in_time_expr,
                 )
 
-            event_timestamp_expr = get_qualified_column_identifier(
-                self.event_timestamp_column,
-                join_alias,
-                quote_table=True,
+            point_in_time_expr = adapter.normalize_timestamp_before_comparison(point_in_time_expr)
+            event_timestamp_expr = adapter.normalize_timestamp_before_comparison(
+                get_qualified_column_identifier(
+                    self.event_timestamp_column,
+                    join_alias,
+                    quote_table=True,
+                )
             )
             is_point_in_time_prior_to_event_timestamp = expressions.LT(
                 this=point_in_time_expr, expression=event_timestamp_expr

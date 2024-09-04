@@ -202,7 +202,7 @@ def mock_snowflake_session_fixture(
 
     async def mock_execute_query_long_running(query):
         if "LIMIT 1" in query:
-            table_name = parse_one(query).args["from"].expressions[0].name
+            table_name = parse_one(query).args["from"].name
             async for doc in feature_table_cache_metadata_service.list_documents_iterator(
                 query_filter={"table_name": table_name}
             ):
@@ -349,15 +349,14 @@ async def test_update_feature_table_cache(
         sqls[2],
         f'ALTER TABLE "sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD COLUMN "FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" FLOAT',
     )
-    assert sqls[3] == (
-        "MERGE INTO "
-        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS '
-        "feature_table_cache USING "
-        '"sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS '
-        'partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = '
-        'partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET '
-        'feature_table_cache."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" = '
-        'partial_features."sum_30m"'
+    assert_sql_equal(
+        sqls[3],
+        f"""
+        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache
+        USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features
+        ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"
+        WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" = partial_features."sum_30m"
+        """,
     )
 
     mock_get_historical_features.reset_mock()
@@ -406,15 +405,14 @@ async def test_update_feature_table_cache(
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD '
         'COLUMN "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" FLOAT'
     )
-    assert sqls[2] == (
-        "MERGE INTO "
-        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS '
-        "feature_table_cache USING "
-        '"sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS '
-        'partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = '
-        'partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET '
-        'feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = '
-        'partial_features."sum_2h"'
+    assert_sql_equal(
+        sqls[2],
+        f"""
+        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache
+        USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features
+        ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"
+        WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = partial_features."sum_2h"
+        """,
     )
 
 
@@ -492,15 +490,14 @@ async def test_update_feature_table_cache__mix_cached_and_non_cached_features(
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD '
         'COLUMN "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" FLOAT'
     )
-    assert sqls[2] == (
-        "MERGE INTO "
-        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS '
-        "feature_table_cache USING "
-        '"sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS '
-        'partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = '
-        'partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET '
-        'feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = '
-        'partial_features."sum_2h"'
+    assert_sql_equal(
+        sqls[2],
+        f"""
+        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache
+        USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features
+        ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"
+        WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = partial_features."sum_2h"
+        """,
     )
 
 
@@ -573,7 +570,10 @@ async def test_create_view_from_cache__create_cache(
     assert_sql_equal(
         sqls[3],
         f"""
-        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" = partial_features."sum_30m", feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = partial_features."sum_2h"
+        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache
+        USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features
+        ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"
+        WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" = partial_features."sum_30m", feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = partial_features."sum_2h"
         """,
     )
     assert sqls[4] == (
@@ -658,15 +658,14 @@ async def test_create_view_from_cache__update_cache(
         f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" ADD '
         'COLUMN "FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" FLOAT'
     )
-    assert sqls[2] == (
-        "MERGE INTO "
-        f'"sf_db"."sf_schema"."{feature_table_cache.table_name}" AS '
-        "feature_table_cache USING "
-        '"sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS '
-        'partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = '
-        'partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET '
-        'feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = '
-        'partial_features."sum_2h"'
+    assert_sql_equal(
+        sqls[2],
+        f"""
+        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache
+        USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features
+        ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"
+        WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = partial_features."sum_2h"
+        """,
     )
     assert sqls[3] == (
         'CREATE VIEW "sf_db"."sf_schema"."result_view" AS\n'
@@ -750,7 +749,10 @@ async def test_create_view_from_cache__create_view_failed(
     assert_sql_equal(
         sqls[3],
         f"""
-        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" = partial_features."sum_30m", feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = partial_features."sum_2h"
+        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache
+        USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features
+        ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"
+        WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" = partial_features."sum_30m", feature_table_cache."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" = partial_features."sum_2h"
         """,
     )
     assert sqls[4] == (
@@ -815,7 +817,10 @@ async def test_create_feature_table_cache__with_target(
     assert_sql_equal(
         sql,
         f"""
-        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"   WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_8bf3807cdb51975c6e7460e4cd56ce3a38213996" = partial_features."float_target"
+        MERGE INTO "sf_db"."sf_schema"."{feature_table_cache.table_name}" AS feature_table_cache
+        USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features
+        ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"
+        WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_8bf3807cdb51975c6e7460e4cd56ce3a38213996" = partial_features."float_target"
         """,
     )
 

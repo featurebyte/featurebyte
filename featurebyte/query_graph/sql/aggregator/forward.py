@@ -161,7 +161,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
             .join(
                 spec.source_expr.subquery(alias="SOURCE_TABLE"),
                 join_type="inner",
-                on=expressions.and_(*join_conditions) if join_conditions else None,
+                on=expressions.and_(*join_conditions) if join_conditions else None,  # type: ignore[arg-type]
             )
         )
         # Create the forward aggregation expression

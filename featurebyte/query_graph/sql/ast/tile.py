@@ -103,6 +103,7 @@ class BuildTileNode(TableNode):
         """
         select_expr = select("*").from_(self.input_node.sql_nested())
         timestamp = quoted_identifier(self.timestamp).sql()
+        # TODO: also fix here
         start_cond = (
             f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
         )
@@ -123,6 +124,7 @@ class BuildTileNode(TableNode):
             entity_column_names=self.keys,
             timestamp_column=self.timestamp,
             inject_entity_table_placeholder=True,
+            adapter=self.adapter,
         )
 
     @staticmethod
@@ -186,7 +188,9 @@ class BuildTileNode(TableNode):
 
         window_exprs = [
             alias_(
-                _make_window_expr(expressions.Anonymous(this="ROW_NUMBER")), alias=self.ROW_NUMBER
+                _make_window_expr(expressions.Anonymous(this="ROW_NUMBER")),
+                alias=self.ROW_NUMBER,
+                quoted=True,
             ),
             *[
                 alias_(_make_window_expr(spec.tile_expr), alias=spec.tile_column_name)

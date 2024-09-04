@@ -363,8 +363,8 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
               FROM "db"."public"."event_table"
             )
             WHERE
-              "ts" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+              "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
           )
         )
         GROUP BY
@@ -1096,8 +1096,8 @@ def test_tile_sql_order_dependent_aggregation(
                 FROM "db"."public"."event_table"
               )
               WHERE
-                "ts" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-                AND "ts" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+                "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+                AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
             )
           )
         )
@@ -1118,8 +1118,8 @@ def test_graph_interpreter_sample(simple_graph, source_info):
         """
         SELECT
           IFF(
-            "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
-            OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+            CAST("ts" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
+            OR CAST("ts" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
             NULL,
             "ts"
           ) AS "ts",
@@ -1153,8 +1153,8 @@ def test_graph_interpreter_sample_date_range(simple_graph, source_info):
         """
         SELECT
           IFF(
-            "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
-            OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+            CAST("ts" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
+            OR CAST("ts" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
             NULL,
             "ts"
           ) AS "ts",
@@ -1164,8 +1164,8 @@ def test_graph_interpreter_sample_date_range(simple_graph, source_info):
           "a" AS "a_copy"
         FROM "db"."public"."event_table"
         WHERE
-          "ts" >= CAST('2020-01-01T00:00:00' AS TIMESTAMPNTZ)
-          AND "ts" < CAST('2020-01-03T00:00:00' AS TIMESTAMPNTZ)
+          "ts" >= CAST('2020-01-01T00:00:00' AS TIMESTAMP)
+          AND "ts" < CAST('2020-01-03T00:00:00' AS TIMESTAMP)
         ORDER BY
           RANDOM(10)
         LIMIT 10
@@ -1191,8 +1191,8 @@ def test_graph_interpreter_sample_date_range_no_timestamp_column(simple_graph, s
         """
         SELECT
           IFF(
-            "ts" < CAST('1900-01-01' AS TIMESTAMPNTZ)
-            OR "ts" > CAST('2200-01-01' AS TIMESTAMPNTZ),
+            CAST("ts" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
+            OR CAST("ts" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
             NULL,
             "ts"
           ) AS "ts",

@@ -338,11 +338,14 @@ class PreviewMixin(BaseGraphInterpreter):
 
         # apply timestamp filtering
         if timestamp_column:
+            normalized_timestamp_column = self.adapter.normalize_timestamp_before_comparison(
+                quoted_identifier(timestamp_column),
+            )
             filter_conditions: List[expressions.Expression] = []
             if from_timestamp:
                 filter_conditions.append(
                     expressions.GTE(
-                        this=quoted_identifier(timestamp_column),
+                        this=normalized_timestamp_column,
                         expression=make_literal_value(
                             from_timestamp.isoformat(), cast_as_timestamp=True
                         ),
@@ -351,7 +354,7 @@ class PreviewMixin(BaseGraphInterpreter):
             if to_timestamp:
                 filter_conditions.append(
                     expressions.LT(
-                        this=quoted_identifier(timestamp_column),
+                        this=normalized_timestamp_column,
                         expression=make_literal_value(
                             to_timestamp.isoformat(), cast_as_timestamp=True
                         ),
@@ -598,7 +601,7 @@ class PreviewMixin(BaseGraphInterpreter):
                     ),
                 ]
             ),
-            to="DECIMAL",
+            to=expressions.DataType.build("DECIMAL"),
         )
 
     @property
@@ -927,13 +930,16 @@ class PreviewMixin(BaseGraphInterpreter):
 
     @classmethod
     def _clip_timestamp_column(cls, col_expr: expressions.Expression) -> expressions.Expression:
+        normalized_expr = expressions.Cast(
+            this=col_expr, to=expressions.DataType.build("TIMESTAMP")
+        )
         invalid_mask = expressions.or_(
             expressions.LT(
-                this=col_expr,
+                this=normalized_expr,
                 expression=make_literal_value("1900-01-01", cast_as_timestamp=True),
             ),
             expressions.GT(
-                this=col_expr,
+                this=normalized_expr,
                 expression=make_literal_value("2200-01-01", cast_as_timestamp=True),
             ),
         )
@@ -1079,7 +1085,8 @@ class PreviewMixin(BaseGraphInterpreter):
         # check if data casted to string is used and if so add it to cte_statements
         used_casted_data = False
         for _, cte_expr in cte_statements:
-            for cur_expr, _, _ in cte_expr.walk():
+            # for cur_expr, _, _ in cte_expr.walk():
+            for cur_expr in cte_expr.walk():
                 if isinstance(cur_expr, expressions.Identifier):
                     if cur_expr.alias_or_name == CASTED_DATA_TABLE_NAME:
                         used_casted_data = True

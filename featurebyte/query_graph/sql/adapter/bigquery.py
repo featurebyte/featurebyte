@@ -130,25 +130,41 @@ class BigQueryAdapter(SnowflakeAdapter):
 
     @classmethod
     def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
-        return expressions.Cast(
-            this=Anonymous(
-                this="DATETIME", expressions=[timestamp_expr, make_literal_value("UTC")]
-            ),
-            to=expressions.DataType.build("TIMESTAMP"),
-        )
+        return cls._ensure_datetime(cls._ensure_timestamp_tz(timestamp_expr))
 
     @classmethod
     def from_epoch_seconds(cls, timestamp_epoch_expr: Expression) -> Expression:
-        return Anonymous(
-            this="TIMESTAMP_SECONDS",
-            expressions=[
-                expressions.Cast(this=timestamp_epoch_expr, to=expressions.DataType.build("BIGINT"))
-            ],
+        return cls._ensure_datetime(
+            Anonymous(
+                this="TIMESTAMP_SECONDS",
+                expressions=[
+                    expressions.Cast(
+                        this=timestamp_epoch_expr, to=expressions.DataType.build("BIGINT")
+                    )
+                ],
+            )
         )
 
     @classmethod
     def to_epoch_seconds(cls, timestamp_expr: Expression) -> Expression:
-        return Anonymous(this="UNIX_SECONDS", expressions=[timestamp_expr])
+        return Anonymous(
+            this="UNIX_SECONDS",
+            expressions=[
+                expressions.Cast(this=timestamp_expr, to=expressions.DataType.build("TIMESTAMPTZ"))
+            ],
+        )
+
+    @classmethod
+    def _ensure_datetime(cls, expr: Expression) -> Expression:
+        # Casts the expression to a BigQuery's DATETIME type (timestamp without timezone). It is
+        # represented in sqlglot's TIMESTAMP type.
+        return expressions.Cast(this=expr, to=expressions.DataType.build("TIMESTAMP"))
+
+    @classmethod
+    def _ensure_timestamp_tz(cls, expr: Expression) -> Expression:
+        # Casts the expression to a BigQuery's TIMESTAMP type (timestamp with UTC timezone). It is
+        # represented in sqlglot's TIMESTAMPTZ type.
+        return expressions.Cast(this=expr, to=expressions.DataType.build("TIMESTAMPTZ"))
 
     @classmethod
     def _dateadd_helper(
@@ -178,12 +194,8 @@ class BigQueryAdapter(SnowflakeAdapter):
     ) -> Expression:
         # Need to calculate timestamp_expr_2 - timestamp_expr_1
         return expressions.TimestampDiff(
-            this=expressions.Cast(
-                this=timestamp_expr_2, to=expressions.DataType.build("TIMESTAMP")
-            ),
-            expression=expressions.Cast(
-                this=timestamp_expr_1, to=expressions.DataType.build("TIMESTAMP")
-            ),
+            this=cls._ensure_datetime(timestamp_expr_2),
+            expression=cls._ensure_datetime(timestamp_expr_1),
             unit=expressions.Var(this="MICROSECOND"),
         )
 
@@ -227,3 +239,7 @@ class BigQueryAdapter(SnowflakeAdapter):
     def modulo(cls, expr1: Expression, expr2: Expression) -> Expression:
         # The % operator doesn't work in BigQuery
         return expressions.Anonymous(this="MOD", expressions=[expr1, expr2])
+
+    @classmethod
+    def normalize_timestamp_before_comparison(cls, expr: Expression) -> Expression:
+        return cls._ensure_datetime(expr)

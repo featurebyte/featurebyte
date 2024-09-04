@@ -1,7 +1,7 @@
 SELECT
   index,
   "cust_id",
-  SUM(CAST("latest_membership_status" IS NULL AS INTEGER)) AS value_na_count_5ef528c2ac76091ed296593418b125a615eb56e7
+  SUM(CAST("latest_membership_status" IS NULL AS INT)) AS value_na_count_5ef528c2ac76091ed296593418b125a615eb56e7
 FROM (
   SELECT
     *,

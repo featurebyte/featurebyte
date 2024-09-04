@@ -32,11 +32,6 @@ class SnowflakeAdapter(BaseAdapter):
 
     source_type = SourceType.SNOWFLAKE
 
-    # Snowflake does not support the PERCENT keyword. Setting the size parameter instead to
-    # prevent the generated SQL to have the PERCENT keyword. Ideally, this should be handled by
-    # sqlglot automatically but that is not the case yet.
-    TABLESAMPLE_PERCENT_KEY = "size"
-
     class SnowflakeDataType(StrEnum):
         """
         Possible column types in Snowflake online store tables
@@ -266,7 +261,7 @@ class SnowflakeAdapter(BaseAdapter):
         # quotes (") in some cases. This Alias removes them.
         if cls.will_pivoted_column_name_be_quoted(serving_name):
             return expressions.Alias(
-                this=quoted_identifier(f'""{serving_name}""'),
+                this=expressions.Column(this=quoted_identifier(f'"{serving_name}"')),
                 alias=quoted_identifier(serving_name),
             )
         return quoted_identifier(serving_name)

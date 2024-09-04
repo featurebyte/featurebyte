@@ -23,8 +23,8 @@ FROM (
       FROM "sf_database"."sf_schema"."sf_table"
     )
     WHERE
-      "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMPNTZ)
-      AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMPNTZ)
+      "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
+      AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
   )
 )
 GROUP BY

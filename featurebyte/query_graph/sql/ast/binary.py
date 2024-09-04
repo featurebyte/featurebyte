@@ -5,7 +5,6 @@ Module for binary operations sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import cast
 
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression
@@ -53,7 +52,7 @@ class BinaryOp(ExpressionNode):
         right_expr = self.right_node.sql
         if self.operation in {expressions.Div, expressions.Mod}:
             # Make 0 divisor null to prevent division-by-zero error
-            right_expr = cast(Expression, parse_one(f"NULLIF({right_expr.sql()}, 0)"))
+            right_expr = parse_one(f"NULLIF({right_expr.sql()}, 0)")
         if self.operation == fb_expressions.CosineSim:
             op_expr = self.context.adapter.call_udf(
                 "F_COUNT_DICT_COSINE_SIMILARITY",
@@ -61,8 +60,6 @@ class BinaryOp(ExpressionNode):
             )
         elif self.operation == fb_expressions.Concat:
             op_expr = self.operation(expressions=[self.left_node.sql, right_expr])
-        elif self.operation == expressions.Pow:
-            op_expr = self.operation(this=self.left_node.sql, power=right_expr)
         elif self.operation == expressions.Mod:
             op_expr = self.context.adapter.modulo(self.left_node.sql, right_expr)
         else:

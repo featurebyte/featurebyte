@@ -10,7 +10,7 @@ TBLPROPERTIES (
   'delta.minWriterVersion'='5'
 ) AS
 SELECT DISTINCT
-  CAST(`cust_id` AS LONG) AS `cust_id`
+  CAST(`cust_id` AS BIGINT) AS `cust_id`
 FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
 WHERE
   `AGGREGATION_RESULT_NAME` = '_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
@@ -67,7 +67,10 @@ WITH ONLINE_REQUEST_TABLE AS (
               `AGGREGATION_RESULT_NAME`,
               `LATEST_VERSION`
             FROM VALUES
-              ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295', _fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER) AS version_table(`AGGREGATION_RESULT_NAME`, `LATEST_VERSION`)
+              (
+                '_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295',
+                _fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER
+              ) AS version_table(`AGGREGATION_RESULT_NAME`, `LATEST_VERSION`)
           ) AS L
           INNER JOIN online_store_d2cb68c5431c0bedbc4f039bfaf8879897ce6817 AS R
             ON R.`AGGREGATION_RESULT_NAME` = L.`AGGREGATION_RESULT_NAME`
@@ -75,7 +78,8 @@ WITH ONLINE_REQUEST_TABLE AS (
         )
         WHERE
           `AGGREGATION_RESULT_NAME` IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
-      )   PIVOT(  FIRST(`VALUE`) FOR `AGGREGATION_RESULT_NAME` IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
+      )
+      PIVOT(FIRST(`VALUE`) FOR `AGGREGATION_RESULT_NAME` IN ('_fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
     )
   ) AS T0
     ON REQ.`cust_id` = T0.`cust_id`

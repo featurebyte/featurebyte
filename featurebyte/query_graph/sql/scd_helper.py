@@ -337,7 +337,7 @@ def augment_table_with_effective_timestamp(
     left_view_with_ts_and_key = select(
         alias_(left_ts_col, alias=TS_COL, quoted=True),
         *_alias_join_keys_as_key_cols(left_table.join_keys),
-        alias_(expressions.NULL, alias=EFFECTIVE_TS_COL, quoted=True),
+        alias_(expressions.Null(), alias=EFFECTIVE_TS_COL, quoted=True),
         alias_(
             make_literal_value(
                 TS_TIE_BREAKER_VALUE_ALLOW_EXACT_MATCH
@@ -375,7 +375,7 @@ def augment_table_with_effective_timestamp(
     # Include all columns specified for the right table, but simply set them as NULL.
     for column in left_table.output_columns:
         right_ts_and_key = right_ts_and_key.select(
-            alias_(expressions.NULL, alias=column, quoted=True), copy=False
+            alias_(expressions.Null(), alias=column, quoted=True), copy=False
         )
 
     # Merge the above two temporary tables into one
@@ -409,7 +409,7 @@ def augment_table_with_effective_timestamp(
     # Need to use a nested query for this filter due to the LAG window function
     filter_original_left_view_rows = expressions.Is(
         this=quoted_identifier(EFFECTIVE_TS_COL),
-        expression=expressions.NULL,
+        expression=expressions.Null(),
     )
 
     left_view_with_effective_timestamp_expr = (

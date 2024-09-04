@@ -94,7 +94,7 @@ class OnlineStoreCleanupService:
             .group_by(quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN))
         )
         merge_expr = expressions.Merge(
-            this=online_store_table_name,
+            this=expressions.Table(this=online_store_table_name),
             using=max_version_by_aggregation_result_name.subquery(),
             on=expressions.and_(
                 expressions.EQ(
@@ -109,10 +109,6 @@ class OnlineStoreCleanupService:
                     ),
                 ),
             ),
-            expressions=[
-                expressions.When(
-                    this=expressions.Identifier(this="MATCHED"), then=expressions.Var(this="DELETE")
-                )
-            ],
+            expressions=[expressions.When(matched=True, then=expressions.Var(this="DELETE"))],
         )
         return merge_expr

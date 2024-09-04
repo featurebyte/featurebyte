@@ -787,7 +787,6 @@ class FeatureMaterializeService:
                     for timestamp_col in timestamp_cols
                 ]
             ),
-            over=expressions.WindowSpec(),
         )
         select_fields = timestamp_cols + join_key_cols + feature_name_cols
 
@@ -801,7 +800,7 @@ class FeatureMaterializeService:
             .where(
                 expressions.EQ(
                     this=quoted_identifier("_row_number"),
-                    expression=expressions.Literal(this=1, is_string=False),
+                    expression=make_literal_value(1),
                 )
             )
         )
@@ -998,8 +997,9 @@ class FeatureMaterializeService:
             session = await self._get_session(feature_table_model)
             for column_name in column_names:
                 query = sql_to_string(
-                    expressions.AlterTable(
+                    expressions.Alter(
                         this=expressions.Table(this=quoted_identifier(feature_table_model.name)),
+                        kind="TABLE",
                         actions=[
                             expressions.Drop(
                                 this=quoted_identifier(column_name), kind="COLUMN", exists=True
@@ -1097,6 +1097,7 @@ class FeatureMaterializeService:
             logger.error(
                 "Unexpected error when attempting to modify offline store feature table",
                 extra={"method_name": method_name, "feature_table_id": str(feature_table_model.id)},
+                exc_info=True,
             )
 
     @classmethod
@@ -1287,16 +1288,8 @@ class FeatureMaterializeService:
             .subquery(alias="materialized_features"),
             on=expressions.and_(*merge_conditions) if merge_conditions else expressions.false(),
             expressions=[
-                expressions.When(
-                    this=expressions.Column(this=expressions.Identifier(this="MATCHED")),
-                    then=update_expr,
-                ),
-                expressions.When(
-                    this=expressions.Not(
-                        this=expressions.Column(this=expressions.Identifier(this="MATCHED"))
-                    ),
-                    then=insert_expr,
-                ),
+                expressions.When(matched=True, then=update_expr),
+                expressions.When(matched=False, then=insert_expr),
             ],
         )
         query = sql_to_string(merge_expr, source_type=session.source_type)

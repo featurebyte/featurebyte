@@ -73,21 +73,23 @@ WITH `casted_data` AS (
     NULL AS `mean__0`,
     NULL AS `std__0`,
     MIN(
-      CASE
-        WHEN `ts` < CAST('1900-01-01' AS TIMESTAMP) OR `ts` > CAST('2200-01-01' AS TIMESTAMP)
-        THEN NULL
-        ELSE `ts`
-      END
+      IF(
+        CAST(`ts` AS DATETIME) < CAST('1900-01-01' AS DATETIME)
+        OR CAST(`ts` AS DATETIME) > CAST('2200-01-01' AS DATETIME),
+        NULL,
+        `ts`
+      )
     ) AS `min__0`,
     NULL AS `25%__0`,
     NULL AS `50%__0`,
     NULL AS `75%__0`,
     MAX(
-      CASE
-        WHEN `ts` < CAST('1900-01-01' AS TIMESTAMP) OR `ts` > CAST('2200-01-01' AS TIMESTAMP)
-        THEN NULL
-        ELSE `ts`
-      END
+      IF(
+        CAST(`ts` AS DATETIME) < CAST('1900-01-01' AS DATETIME)
+        OR CAST(`ts` AS DATETIME) > CAST('2200-01-01' AS DATETIME),
+        NULL,
+        `ts`
+      )
     ) AS `max__0`,
     NULL AS `min TZ offset__0`,
     NULL AS `max TZ offset__0`,
@@ -113,9 +115,9 @@ WITH `casted_data` AS (
     AVG(CAST(`a` AS FLOAT64)) AS `mean__2`,
     STDDEV(CAST(`a` AS FLOAT64)) AS `std__2`,
     MIN(`a`) AS `min__2`,
-    APPROX_QUANTILES(`a`, 100)[OFFSET(25)] AS `25%__2`,
-    APPROX_QUANTILES(`a`, 100)[OFFSET(50)] AS `50%__2`,
-    APPROX_QUANTILES(`a`, 100)[OFFSET(75)] AS `75%__2`,
+    APPROX_QUANTILES(`a`, 100)[offset(25)] AS `25%__2`,
+    APPROX_QUANTILES(`a`, 100)[offset(50)] AS `50%__2`,
+    APPROX_QUANTILES(`a`, 100)[offset(75)] AS `75%__2`,
     MAX(`a`) AS `max__2`,
     NULL AS `min TZ offset__2`,
     NULL AS `max TZ offset__2`,
@@ -127,9 +129,9 @@ WITH `casted_data` AS (
     AVG(CAST(`b` AS FLOAT64)) AS `mean__3`,
     STDDEV(CAST(`b` AS FLOAT64)) AS `std__3`,
     MIN(`b`) AS `min__3`,
-    APPROX_QUANTILES(`b`, 100)[OFFSET(25)] AS `25%__3`,
-    APPROX_QUANTILES(`b`, 100)[OFFSET(50)] AS `50%__3`,
-    APPROX_QUANTILES(`b`, 100)[OFFSET(75)] AS `75%__3`,
+    APPROX_QUANTILES(`b`, 100)[offset(25)] AS `25%__3`,
+    APPROX_QUANTILES(`b`, 100)[offset(50)] AS `50%__3`,
+    APPROX_QUANTILES(`b`, 100)[offset(75)] AS `75%__3`,
     MAX(`b`) AS `max__3`,
     NULL AS `min TZ offset__3`,
     NULL AS `max TZ offset__3`,
@@ -141,9 +143,9 @@ WITH `casted_data` AS (
     AVG(CAST(`a_copy` AS FLOAT64)) AS `mean__4`,
     STDDEV(CAST(`a_copy` AS FLOAT64)) AS `std__4`,
     MIN(`a_copy`) AS `min__4`,
-    APPROX_QUANTILES(`a_copy`, 100)[OFFSET(25)] AS `25%__4`,
-    APPROX_QUANTILES(`a_copy`, 100)[OFFSET(50)] AS `50%__4`,
-    APPROX_QUANTILES(`a_copy`, 100)[OFFSET(75)] AS `75%__4`,
+    APPROX_QUANTILES(`a_copy`, 100)[offset(25)] AS `25%__4`,
+    APPROX_QUANTILES(`a_copy`, 100)[offset(50)] AS `50%__4`,
+    APPROX_QUANTILES(`a_copy`, 100)[offset(75)] AS `75%__4`,
     MAX(`a_copy`) AS `max__4`,
     NULL AS `min TZ offset__4`,
     NULL AS `max TZ offset__4`

@@ -18,8 +18,8 @@ FROM (
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."scd_table"
     WHERE
-      "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
-      AND "effective_timestamp" < CAST('2022-01-01 00:00:00' AS TIMESTAMPNTZ)
+      "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMP)
+      AND "effective_timestamp" < CAST('2022-01-01 00:00:00' AS TIMESTAMP)
   )
   WHERE
     NOT "col_boolean" IS NULL
@@ -43,8 +43,8 @@ FROM (
     "cust_id" AS "cust_id"
   FROM "sf_database"."sf_schema"."scd_table"
   WHERE
-    "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
-    AND "effective_timestamp" < CAST('2022-01-01 00:00:00' AS TIMESTAMPNTZ)
+    "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMP)
+    AND "effective_timestamp" < CAST('2022-01-01 00:00:00' AS TIMESTAMP)
 )
 WHERE
   NOT "col_text" IS NULL;
@@ -59,7 +59,7 @@ CREATE TABLE "sf_db"."sf_schema"."TEMP_FEATURE_TABLE_000000000000000000000000" A
 WITH ONLINE_REQUEST_TABLE AS (
   SELECT
     REQ."cust_id",
-    CAST('2022-01-01 00:00:00' AS TIMESTAMPNTZ) AS POINT_IN_TIME
+    CAST('2022-01-01 00:00:00' AS TIMESTAMP) AS POINT_IN_TIME
   FROM "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS REQ
 ), JOINED_PARENTS_ONLINE_REQUEST_TABLE AS (
   SELECT

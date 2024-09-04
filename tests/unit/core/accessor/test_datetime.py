@@ -13,22 +13,22 @@ from tests.util.helper import get_preview_sql_for_series
 @pytest.mark.parametrize(
     "accessor_func, exp_expression",
     [
-        (lambda s: s.dt.year, 'EXTRACT(year FROM "TIMESTAMP")'),
-        (lambda s: s.dt.quarter, 'EXTRACT(quarter FROM "TIMESTAMP")'),
-        (lambda s: s.dt.month, 'EXTRACT(month FROM "TIMESTAMP")'),
-        (lambda s: s.dt.week, 'EXTRACT(week FROM "TIMESTAMP")'),
-        (lambda s: s.dt.day, 'EXTRACT(day FROM "TIMESTAMP")'),
+        (lambda s: s.dt.year, 'DATE_PART(year, "TIMESTAMP")'),
+        (lambda s: s.dt.quarter, 'DATE_PART(quarter, "TIMESTAMP")'),
+        (lambda s: s.dt.month, 'DATE_PART(month, "TIMESTAMP")'),
+        (lambda s: s.dt.week, 'DATE_PART(week, "TIMESTAMP")'),
+        (lambda s: s.dt.day, 'DATE_PART(day, "TIMESTAMP")'),
         (
             lambda s: s.dt.day_of_week,
             """
             (
-              EXTRACT(dayofweek FROM "TIMESTAMP") + 6
+              DATE_PART(dayofweek, "TIMESTAMP") + 6
             ) % 7
             """,
         ),
-        (lambda s: s.dt.hour, 'EXTRACT(hour FROM "TIMESTAMP")'),
-        (lambda s: s.dt.minute, 'EXTRACT(minute FROM "TIMESTAMP")'),
-        (lambda s: s.dt.second, 'FLOOR(EXTRACT(second FROM "TIMESTAMP"))'),
+        (lambda s: s.dt.hour, 'DATE_PART(hour, "TIMESTAMP")'),
+        (lambda s: s.dt.minute, 'DATE_PART(minute, "TIMESTAMP")'),
+        (lambda s: s.dt.second, 'FLOOR(DATE_PART(second, "TIMESTAMP"))'),
     ],
 )
 def test_datetime_property_extraction__timestamp(

@@ -493,7 +493,8 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
             REQ."POINT_IN_TIME",
             REQ."serving_key_1"
         ) AS T0
-          ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME" AND REQ."serving_key_1" = T0."serving_key_1"
+          ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
+          AND REQ."serving_key_1" = T0."serving_key_1"
         LEFT JOIN (
           SELECT
             REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
@@ -516,7 +517,8 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
             REQ."POINT_IN_TIME",
             REQ."serving_key_2"
         ) AS T1
-          ON REQ."POINT_IN_TIME" = T1."POINT_IN_TIME" AND REQ."serving_key_2" = T1."serving_key_2"
+          ON REQ."POINT_IN_TIME" = T1."POINT_IN_TIME"
+          AND REQ."serving_key_2" = T1."serving_key_2"
         """
     ).strip()
     assert result.updated_table_expr.sql(pretty=True) == expected

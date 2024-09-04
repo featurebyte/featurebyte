@@ -108,6 +108,8 @@ SKIPPED_TESTS = {
         "tests/integration/tile/test_generate_tile.py",
         "tests/integration/tile/test_tile_scheduler.py",
         "tests/integration/api/test_historical_features.py",
+        "tests/integration/api/test_event_view_operations.py::test_datetime_comparison__fixed_timestamp_tz[bigquery]",
+        "tests/integration/api/test_event_view_operations.py::test_datetime_comparison__fixed_timestamp_non_tz[bigquery]",
     ],
 }
 

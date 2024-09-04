@@ -25,7 +25,7 @@ WHERE
 CREATE TABLE "sf_db"."sf_schema"."TEMP_LOOKUP_UNIVERSE_TABLE_000000000000000000000000" AS
 WITH ENTITY_UNIVERSE AS (
   SELECT
-    CAST('2022-01-05 00:00:00' AS TIMESTAMPNTZ) AS "POINT_IN_TIME",
+    CAST('2022-01-05 00:00:00' AS TIMESTAMP) AS "POINT_IN_TIME",
     "cust_id"
   FROM (
     SELECT DISTINCT
@@ -45,8 +45,8 @@ WITH ENTITY_UNIVERSE AS (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."scd_table"
       WHERE
-        "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMPNTZ)
-        AND "effective_timestamp" < CAST('2022-01-05 00:00:00' AS TIMESTAMPNTZ)
+        "effective_timestamp" >= CAST('1970-01-01 00:00:00' AS TIMESTAMP)
+        AND "effective_timestamp" < CAST('2022-01-05 00:00:00' AS TIMESTAMP)
     )
     WHERE
       NOT "col_text" IS NULL
@@ -76,7 +76,7 @@ WITH ENTITY_UNIVERSE AS (
           "__FB_EFFECTIVE_TS_COL"
         FROM (
           SELECT
-            CAST(CONVERT_TIMEZONE('UTC', "POINT_IN_TIME") AS TIMESTAMPNTZ) AS "__FB_TS_COL",
+            CAST(CONVERT_TIMEZONE('UTC', "POINT_IN_TIME") AS TIMESTAMP) AS "__FB_TS_COL",
             "cust_id" AS "__FB_KEY_COL_0",
             NULL AS "__FB_EFFECTIVE_TS_COL",
             2 AS "__FB_TS_TIE_BREAKER_COL",
@@ -90,7 +90,7 @@ WITH ENTITY_UNIVERSE AS (
           )
           UNION ALL
           SELECT
-            CAST(CONVERT_TIMEZONE('UTC', "effective_timestamp") AS TIMESTAMPNTZ) AS "__FB_TS_COL",
+            CAST(CONVERT_TIMEZONE('UTC', "effective_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
             "col_text" AS "__FB_KEY_COL_0",
             "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
             1 AS "__FB_TS_TIE_BREAKER_COL",
@@ -175,7 +175,7 @@ FROM "cat1_gender_1d_via_cust_id_000000";
 
 CREATE TABLE "sf_db"."sf_schema"."cat1_gender_1d_via_cust_id_000000" AS
 SELECT
-  CAST('2022-01-05T00:00:00' AS TIMESTAMPNTZ) AS "__feature_timestamp",
+  CAST('2022-01-05T00:00:00' AS TIMESTAMP) AS "__feature_timestamp",
   "cust_id",
   "__feature_requiring_parent_serving_V220101__part1"
 FROM "TEMP_LOOKUP_FEATURE_TABLE_000000000000000000000000";
