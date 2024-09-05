@@ -17,7 +17,7 @@ from featurebyte.query_graph.sql.common import sql_to_string
 @pytest.fixture(name="feature_list")
 def feature_list_fixture(event_view, feature_group, feature_group_per_category):
     """Feature List fixture"""
-    feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    feature_group["COUNT_2h DIV COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     count_2h_duplicate = event_view.groupby("ÜSER ID").aggregate_over(
         value_column=None,
         method="count",
@@ -28,7 +28,7 @@ def feature_list_fixture(event_view, feature_group, feature_group_per_category):
         [
             feature_group["COUNT_2h"],
             feature_group["COUNT_24h"],
-            feature_group["COUNT_2h / COUNT_24h"],
+            feature_group["COUNT_2h DIV COUNT_24h"],
             feature_group_per_category["COUNT_BY_ACTION_24h"],
             feature_group_per_category["ENTROPY_BY_ACTION_24h"],
             feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
@@ -46,11 +46,11 @@ def feature_list_fixture(event_view, feature_group, feature_group_per_category):
 @pytest.fixture(name="two_feature_lists")
 def two_feature_lists_fixure(feature_group, feature_group_per_category):
     """Two Feature Lists fixture"""
-    feature_group["COUNT_2h / COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    feature_group["COUNT_2h DIV COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
     feature_list_1 = FeatureList(
         [
             feature_group["COUNT_2h"],
-            feature_group["COUNT_2h / COUNT_24h"],
+            feature_group["COUNT_2h DIV COUNT_24h"],
             feature_group_per_category["ENTROPY_BY_ACTION_24h"],
             feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
             feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
@@ -61,7 +61,7 @@ def two_feature_lists_fixure(feature_group, feature_group_per_category):
 
     feature_list_2 = FeatureList(
         [
-            feature_group["COUNT_2h / COUNT_24h"],
+            feature_group["COUNT_2h DIV COUNT_24h"],
             feature_group["COUNT_24h"],
             feature_group_per_category["COUNT_BY_ACTION_24h"],
             feature_group_per_category["MOST_FREQUENT_ACTION_24h"],

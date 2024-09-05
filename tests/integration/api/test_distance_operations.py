@@ -87,9 +87,9 @@ def test_haversine_operation(event_table_with_distances):
     )
     feature_name = "haversine_feature"
     haversine_feature = event_view["haversine"].as_feature(feature_name=feature_name)
-    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "distance_order_id": "1000"}
+    preview_params = {"POINT_IN_TIME": "2022-06-06 00:58:00", "distance_order_id": 1000}
     feature_preview = haversine_feature.preview(pd.DataFrame([preview_params]))
     assert feature_preview.shape[0] == 1
     feature_values = feature_preview.iloc[0].to_dict()
     assert feature_values[feature_name] == pytest.approx(3936.3850)
-    assert feature_values["distance_order_id"] == "1000"
+    assert feature_values["distance_order_id"] == 1000

@@ -86,24 +86,17 @@ logger = get_logger(__name__)
 # types that are still in development.
 SKIPPED_TESTS = {
     "bigquery": [
-        "tests/integration/api/test_distance_operations.py",
-        "tests/integration/api/test_features.py",
-        "tests/integration/api/test_forward_aggregate_asat.py",
-        "tests/integration/api/test_item_view_operations.py",
-        "tests/integration/api/test_lookup_feature_operations.py",
-        "tests/integration/api/test_lookup_target_operations.py",
-        "tests/integration/api/test_on_demand_features.py",
         "tests/integration/api/test_serving_parent_features.py",
-        "tests/integration/api/test_target_correctness.py",
         "tests/integration/feature_store_integration/test_feature_materialize.py",
         "tests/integration/migration/test_data_warehouse_migration.py",
         "tests/integration/query_graph/test_online_serving.py",
-        "tests/integration/service/test_feature_table_cache.py",
         "tests/integration/tile/test_generate_tile.py",
         "tests/integration/tile/test_tile_scheduler.py",
         "tests/integration/api/test_historical_features.py",
         "tests/integration/api/test_event_view_operations.py::test_datetime_comparison__fixed_timestamp_tz[bigquery]",
         "tests/integration/api/test_event_view_operations.py::test_datetime_comparison__fixed_timestamp_non_tz[bigquery]",
+        "tests/integration/api/test_features.py::test_features_without_entity[bigquery]",  # mainly checks for deployment
+        "tests/integration/api/test_features.py::test_relative_frequency_with_non_string_keys[bigquery]",
     ],
 }
 
@@ -1854,3 +1847,12 @@ def mock_graph_clear_period_fixture():
         # mock graph clear period to high value to clearing graph in tests
         # clearing graph in tests will cause test failures as the task & client sharing the same process space
         yield
+
+
+@pytest.fixture(name="skip_deployment_checks_for_bigquery")
+def skip_deployment_checks_for_bigquery_fixture(source_type):
+    """
+    Determine whether to skip deployment checks for bigquery in integration tests. Temporary helper
+    fixture for greppability since this should be removed eventually.
+    """
+    return source_type == "bigquery"

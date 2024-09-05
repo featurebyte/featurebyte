@@ -4,19 +4,22 @@ BigQueryAdapter class
 
 from __future__ import annotations
 
+import re
 from typing import List, Optional
 
 from sqlglot import expressions
 from sqlglot.expressions import Anonymous, Expression
+from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, SourceType, StrEnum
-from featurebyte.query_graph.sql.adapter.snowflake import SnowflakeAdapter
+from featurebyte.query_graph.sql import expression as fb_expressions
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_function_call, sql_to_string
 from featurebyte.typing import DatetimeSupportedPropertyType
 
 
-class BigQueryAdapter(SnowflakeAdapter):
+class BigQueryAdapter(BaseAdapter):
     """
     Helper class to generate BigQuery specific SQL expressions
     """
@@ -283,4 +286,40 @@ class BigQueryAdapter(SnowflakeAdapter):
                     ],
                 )
             ],
+        )
+
+    @classmethod
+    def is_string_type(cls, column_expr: Expression) -> Expression:
+        raise NotImplementedError()
+
+    @classmethod
+    def current_timestamp(cls) -> Expression:
+        return cls._ensure_datetime(expressions.Anonymous(this="CURRENT_TIMESTAMP"))
+
+    @classmethod
+    def escape_quote_char(cls, query: str) -> str:
+        # Databricks sql escapes ' with \'. Use regex to make it safe to call this more than once.
+        return re.sub(r"(?<!\\)'", "\\'", query)
+
+    @classmethod
+    def str_trim(
+        cls, expr: Expression, character: Optional[str], side: Literal["left", "right", "both"]
+    ) -> Expression:
+        expression_class = {
+            "left": fb_expressions.LTrim,
+            "right": fb_expressions.RTrim,
+            "both": fb_expressions.make_trim_expression,
+        }[side]
+        if character:
+            return expression_class(this=expr, character=make_literal_value(character))  # type: ignore
+        return expression_class(this=expr)  # type: ignore
+
+    @classmethod
+    def radian_expr(cls, expr: Expression) -> Expression:
+        return expressions.Div(
+            this=expressions.Mul(
+                this=Anonymous(this="ACOS", expressions=[make_literal_value(-1)]),
+                expression=expr,
+            ),
+            expression=make_literal_value(180),
         )

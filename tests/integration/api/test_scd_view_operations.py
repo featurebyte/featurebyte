@@ -550,7 +550,9 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
     pd.testing.assert_frame_equal(df, expected, check_dtype=False)
 
 
-def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type):
+def test_aggregate_asat__no_entity(
+    scd_table, scd_dataframe, config, source_type, skip_deployment_checks_for_bigquery
+):
     """
     Test aggregate_asat aggregation on SCDView without entity
     """
@@ -594,7 +596,7 @@ def test_aggregate_asat__no_entity(scd_table, scd_dataframe, config, source_type
     pd.testing.assert_frame_equal(df, expected, check_dtype=False)
 
     # Note: temporary
-    if source_type == "bigquery":
+    if skip_deployment_checks_for_bigquery:
         return
 
     # check online serving
