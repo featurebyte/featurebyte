@@ -12,6 +12,7 @@ from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.online_store_table_version import OnlineStoreTableVersion
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.sql.base import BaseSqlModel
@@ -95,7 +96,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
                     """
                 )
                 await self._session.create_table_as(
-                    table_details=fs_table,
+                    table_details=TableDetails(table_name=fs_table),
                     select_expr=query,
                     partition_keys=[InternalName.ONLINE_STORE_RESULT_NAME_COLUMN],
                 )
