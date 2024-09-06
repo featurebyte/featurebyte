@@ -33,6 +33,7 @@ from featurebyte.query_graph.model.entity_relationship_info import (
     EntityAncestorDescendantMapper,
     EntityRelationshipInfo,
 )
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.common import construct_cte_sql, quoted_identifier
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 
@@ -280,7 +281,8 @@ def get_child_entity_universe_template(
         )
     else:
         initial_universe_expr = get_item_relation_table_lookup_universe(
-            entity_lookup_steps[0].table
+            entity_lookup_steps[0].table,
+            adapter=get_sql_adapter(feature_store.get_source_info()),
         )
     request_table_name = "ENTITY_UNIVERSE"
     request_table_columns = [
