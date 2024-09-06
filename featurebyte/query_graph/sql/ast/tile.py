@@ -102,12 +102,19 @@ class BuildTileNode(TableNode):
         Select
         """
         select_expr = select("*").from_(self.input_node.sql_nested())
-        timestamp = quoted_identifier(self.timestamp).sql()
-        # TODO: also fix here
-        start_cond = (
-            f"{timestamp} >= CAST({InternalName.TILE_START_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
+        timestamp_expr = self.adapter.normalize_timestamp_before_comparison(
+            quoted_identifier(self.timestamp)
         )
-        end_cond = f"{timestamp} < CAST({InternalName.TILE_END_DATE_SQL_PLACEHOLDER} AS TIMESTAMP)"
+        start_expr = expressions.Cast(
+            this=expressions.Identifier(this=InternalName.TILE_START_DATE_SQL_PLACEHOLDER),
+            to=expressions.DataType.build("TIMESTAMP"),
+        )
+        end_expr = expressions.Cast(
+            this=expressions.Identifier(this=InternalName.TILE_END_DATE_SQL_PLACEHOLDER),
+            to=expressions.DataType.build("TIMESTAMP"),
+        )
+        start_cond = expressions.GTE(this=timestamp_expr, expression=start_expr)
+        end_cond = expressions.LT(this=timestamp_expr, expression=end_expr)
         select_expr = select_expr.where(start_cond, end_cond, copy=False)
         return select_expr
 
