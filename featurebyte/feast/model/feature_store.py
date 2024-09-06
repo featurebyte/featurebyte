@@ -349,7 +349,7 @@ class FeastBigQueryDetails(AbstractDatabaseDetailsForFeast, BigQueryDetails):
             BigQuerySource(
                 name=name,
                 timestamp_field=timestamp_field,
-                table=f"{self.project_name}:{self.dataset_name}:{table_name}",
+                table=f"{self.project_name}.{self.dataset_name}.{table_name}",
                 created_timestamp_column=created_timestamp_column,
             ),
         )
