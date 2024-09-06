@@ -288,7 +288,7 @@ def test_deployment_with_unbounded_window(
         "_fb_internal_cust_id_window_w604800_latest_ac7aa941d28f489e56c9ab50a583a8c6c88eebe5"
     ]
     assert feat_latest_combined_model.online_store_table_names == [
-        "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
+        "ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C"
     ]
 
     offline_store_info = feat_latest.cached_model.offline_store_info

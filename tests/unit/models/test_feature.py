@@ -133,7 +133,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
         "agg_result_name_include_serving_names": False,
         "description": None,
         "definition_hash": None,
-        "online_store_table_names": ["online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"],
+        "online_store_table_names": ["ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C"],
         "last_updated_by_scheduled_task_at": None,
         "is_deleted": False,
     }

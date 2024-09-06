@@ -178,7 +178,7 @@ def expected_online_feature_query_fixture():
                         _fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER
                       )) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
                   ) AS L
-                  INNER JOIN online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c AS R
+                  INNER JOIN ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C AS R
                     ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
                     AND R."VERSION" = L."LATEST_VERSION"
                 )
@@ -339,7 +339,7 @@ async def test_feature_list_deployed_with_batch_request_table(
                         _fb_internal_cust_id_window_w1800_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER
                       )) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
                   ) AS L
-                  INNER JOIN online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c AS R
+                  INNER JOIN ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C AS R
                     ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
                     AND R."VERSION" = L."LATEST_VERSION"
                 )
