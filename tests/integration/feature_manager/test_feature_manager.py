@@ -171,7 +171,7 @@ async def test_online_enabled_feature_spec(
     """
     assert session.source_type == "snowflake"
 
-    expected_online_store_table_name = "online_store_43c2b44924994bbe375c05427ac312cb1008a469"
+    expected_online_store_table_name = "ONLINE_STORE_43C2B44924994BBE375C05427AC312CB1008A469"
     expected_aggregation_id = online_enabled_feature_sum_30h.aggregation_ids[0]
 
     # check if the tile task is scheduled

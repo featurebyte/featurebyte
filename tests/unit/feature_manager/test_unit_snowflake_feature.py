@@ -102,7 +102,7 @@ async def test_online_enable(
 
     # 1. Check if online store table exists (execute_query)
     mock_snowflake_session.table_exists.assert_called_once_with(
-        "online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c"
+        "ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C"
     )
 
     # 2. Compute online store values and store in a temporary table
@@ -111,7 +111,7 @@ async def test_online_enable(
 
     # 3. Insert into online store table (execute_query_long_running)
     args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[1]
-    assert args[0].strip().startswith("INSERT INTO online_store_")
+    assert args[0].strip().startswith("INSERT INTO ONLINE_STORE_")
 
 
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.schedule_online_tiles")

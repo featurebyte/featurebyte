@@ -32,7 +32,7 @@ def get_online_store_table_name(entity_ids_set: set[ObjectId], result_type: str)
     hasher.update(json.dumps(sorted(map(str, entity_ids_set))).encode("utf-8"))
     hasher.update(result_type.encode("utf-8"))
     identifier = hasher.hexdigest(20)
-    online_store_table_name = f"online_store_{identifier}"
+    online_store_table_name = f"online_store_{identifier}".upper()
     return online_store_table_name
 
 

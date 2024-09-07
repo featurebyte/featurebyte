@@ -729,7 +729,7 @@ async def test_feature_table_one_feature_deployed(
                     """
                     SELECT DISTINCT
                       CAST("cust_id" AS BIGINT) AS "cust_id"
-                    FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                    FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
                       AND "cust_id" IS NOT NULL
@@ -876,7 +876,7 @@ async def test_feature_table_two_features_deployed(
                     """
                     SELECT DISTINCT
                       CAST("cust_id" AS BIGINT) AS "cust_id"
-                    FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                    FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
                       AND "cust_id" IS NOT NULL
@@ -979,7 +979,7 @@ async def test_feature_table_undeploy(
                     """
                     SELECT DISTINCT
                       CAST("cust_id" AS BIGINT) AS "cust_id"
-                    FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                    FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
                       AND "cust_id" IS NOT NULL
@@ -1119,7 +1119,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                     """
                     SELECT DISTINCT
                       CAST("cust_id" AS BIGINT) AS "cust_id"
-                    FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                    FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
                       AND "cust_id" IS NOT NULL
@@ -1172,7 +1172,7 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                     """
                     SELECT DISTINCT
                       CAST("cust_id" AS BIGINT) AS "cust_id"
-                    FROM online_store_377553e5920dd2db8b17f21ddd52f8b1194a780c
+                    FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
                       AND "cust_id" IS NOT NULL
@@ -1869,7 +1869,7 @@ async def test_item_view_window_aggregate(
                     """
                     SELECT DISTINCT
                       "item_type"
-                    FROM online_store_22f02bbc16545d0e730d39effc50176c1d1f6299
+                    FROM ONLINE_STORE_22F02BBC16545D0E730D39EFFC50176C1D1F6299
                     WHERE
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_item_type_window_w86400_sum_2e4057b32df81d547bde013cd755a1189af7e615'
                       AND "item_type" IS NOT NULL

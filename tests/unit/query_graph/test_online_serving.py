@@ -244,7 +244,7 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
     expected_query_params = {
         "tile_id": f"TILE_F3600_M1800_B900_{tile_id}",
         "aggregation_id": f"avg_{aggregation_id}",
-        "table_name": "online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc",
+        "table_name": "online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc".upper(),
         "result_type": "FLOAT",
         "serving_names": ["CUSTOMER_ID"],
     }
@@ -293,14 +293,14 @@ def test_complex_features(complex_feature_query_graph, adapter, update_fixtures,
     expected_query_params_tile_1 = {
         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "aggregation_id": "avg_f37862722c21105449ad882409cf62a1ff7f5b35",
-        "table_name": "online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc",
+        "table_name": "online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc".upper(),
         "result_type": "FLOAT",
         "serving_names": ["CUSTOMER_ID"],
     }
     expected_query_params_tile_2 = {
         "tile_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
         "aggregation_id": "sum_d5ebb5711120ac12cb84f6136654c6dba7e21774",
-        "table_name": "online_store_51064268424bf868a2ea2dc2f5789e7cb4df29bf",
+        "table_name": "online_store_51064268424bf868a2ea2dc2f5789e7cb4df29bf".upper(),
         "result_type": "FLOAT",
         "serving_names": ["BUSINESS_ID"],
     }
