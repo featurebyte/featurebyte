@@ -131,7 +131,13 @@ class GetRelativeFrequencyNode(ExpressionNode):
     def sql(self) -> Expression:
         return self.context.adapter.call_udf(
             "F_GET_RELATIVE_FREQUENCY",
-            [self.dictionary_node.sql, self.lookup_key_node.sql],
+            [
+                self.dictionary_node.sql,
+                self.context.adapter.cast_to_string(
+                    self.lookup_key_node.sql,
+                    None,
+                ),
+            ],
         )
 
     @classmethod
@@ -160,7 +166,7 @@ class GetRankNode(ExpressionNode):
             "F_GET_RANK",
             [
                 self.dictionary_node.sql,
-                self.lookup_key_node.sql,
+                self.context.adapter.cast_to_string(self.lookup_key_node.sql, None),
                 make_literal_value(self.descending),
             ],
         )

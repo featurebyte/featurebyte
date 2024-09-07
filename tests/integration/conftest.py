@@ -96,7 +96,6 @@ SKIPPED_TESTS = {
         "tests/integration/api/test_event_view_operations.py::test_datetime_comparison__fixed_timestamp_tz[bigquery]",
         "tests/integration/api/test_event_view_operations.py::test_datetime_comparison__fixed_timestamp_non_tz[bigquery]",
         "tests/integration/api/test_features.py::test_features_without_entity[bigquery]",  # mainly checks for deployment
-        "tests/integration/api/test_features.py::test_relative_frequency_with_non_string_keys[bigquery]",
     ],
 }
 

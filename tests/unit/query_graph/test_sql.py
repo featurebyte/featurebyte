@@ -335,8 +335,8 @@ def test_get_value_node(input_node):
 @pytest.mark.parametrize(
     "parameters, expected",
     [
-        ({"descending": True}, "F_GET_RANK(dictionary, lookup, TRUE)"),
-        ({"descending": False}, "F_GET_RANK(dictionary, lookup, FALSE)"),
+        ({"descending": True}, "F_GET_RANK(dictionary, CAST(lookup AS VARCHAR), TRUE)"),
+        ({"descending": False}, "F_GET_RANK(dictionary, CAST(lookup AS VARCHAR), FALSE)"),
     ],
 )
 def test_get_rank_node(parameters, expected, input_node):
@@ -367,7 +367,7 @@ def test_get_relative_frequency_node(input_node):
             input_sql_nodes=[dictionary_node, lookup_node],
         )
     )
-    assert node.sql.sql() == "F_GET_RELATIVE_FREQUENCY(dictionary, lookup)"
+    assert node.sql.sql() == "F_GET_RELATIVE_FREQUENCY(dictionary, CAST(lookup AS VARCHAR))"
 
 
 def test_is_in_node(input_node):
