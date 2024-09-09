@@ -64,7 +64,7 @@ class EventTableData(BaseTableData):
     type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     event_timestamp_column: StrictStr
-    event_id_column: StrictStr
+    event_id_column: Optional[StrictStr]
     event_timestamp_timezone_offset: Optional[StrictStr] = Field(default=None)
     event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(default=None)
 
@@ -127,12 +127,12 @@ class ItemTableData(BaseTableData):
     type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
     event_id_column: StrictStr
-    item_id_column: StrictStr
+    item_id_column: Optional[StrictStr]
     event_table_id: PydanticObjectId
 
     @property
     def primary_key_columns(self) -> List[str]:
-        return [self.item_id_column]
+        return [self.item_id_column] if self.item_id_column else []
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
@@ -413,7 +413,7 @@ class SCDTableData(BaseTableData):
 
     type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
     id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
-    natural_key_column: StrictStr
+    natural_key_column: Optional[StrictStr]
     effective_timestamp_column: StrictStr
     surrogate_key_column: Optional[StrictStr]
     end_timestamp_column: Optional[StrictStr] = Field(default=None)
@@ -421,7 +421,7 @@ class SCDTableData(BaseTableData):
 
     @property
     def primary_key_columns(self) -> List[str]:
-        return [self.natural_key_column]
+        return [self.natural_key_column] if self.natural_key_column else []
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(

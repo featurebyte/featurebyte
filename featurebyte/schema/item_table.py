@@ -2,7 +2,7 @@
 ItemTable API payload schema
 """
 
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from pydantic import StrictStr, field_validator
 
@@ -20,7 +20,7 @@ class ItemTableCreate(TableCreate):
 
     type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
     event_id_column: StrictStr
-    item_id_column: StrictStr
+    item_id_column: Optional[StrictStr]
     event_table_id: PydanticObjectId
 
     # pydantic validators

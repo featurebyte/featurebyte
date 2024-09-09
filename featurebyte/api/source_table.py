@@ -452,7 +452,7 @@ class SourceTable(AbstractTableData):
         self,
         name: str,
         event_timestamp_column: str,
-        event_id_column: str,
+        event_id_column: Optional[str] = None,
         event_timestamp_timezone_offset: Optional[str] = None,
         event_timestamp_timezone_offset_column: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
@@ -478,10 +478,10 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             The desired name for the new table.
-        event_id_column: str
-            The column that represents the unique identfier for each event.
         event_timestamp_column: str
             The column that contains the timestamp of the associated event.
+        event_id_column: Optional[str]
+            The column that represents the unique identfier for each event.
         event_timestamp_timezone_offset: Optional[str]
             Timezone offset for the event timestamp column. Supported format is "(+|-)HH:mm".
             Specify this if the timezone offset is a fixed value. Examples: "+08:00" or "-05:00".
@@ -538,7 +538,7 @@ class SourceTable(AbstractTableData):
         self,
         name: str,
         event_id_column: str,
-        item_id_column: str,
+        item_id_column: Optional[str],
         event_table_name: str,
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
@@ -563,7 +563,7 @@ class SourceTable(AbstractTableData):
         event_id_column: str
             The column that represents the unique identifier for the associated event. This column will be used to join
             the item table with the event table.
-        item_id_column: str
+        item_id_column: Optional[str]
             The column that represents the unique identifier for each item.
         event_table_name: str
             The name of the event table that the item table will be associated with. This is used to ensure that the
@@ -687,7 +687,7 @@ class SourceTable(AbstractTableData):
     def create_scd_table(
         self,
         name: str,
-        natural_key_column: str,
+        natural_key_column: Optional[str],
         effective_timestamp_column: str,
         end_timestamp_column: Optional[str] = None,
         surrogate_key_column: Optional[str] = None,
@@ -725,7 +725,7 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             The desired name for the new table.
-        natural_key_column: str
+        natural_key_column: Optional[str]
             The column that uniquely identifies active records at a given point-in-time.
         effective_timestamp_column: str
             The column that represents when the record becomes effective (i.e., active).
@@ -835,7 +835,7 @@ class SourceTable(AbstractTableData):
         self,
         name: str,
         event_id_column: str,
-        item_id_column: str,
+        item_id_column: Optional[str],
         event_table_name: str,
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
@@ -851,7 +851,7 @@ class SourceTable(AbstractTableData):
             Item table name.
         event_id_column: str
             Event ID column from the given source table.
-        item_id_column: str
+        item_id_column: Optional[str]
             Item ID column from the given source table.
         event_table_name: str
             Name of the EventTable associated with this ItemTable.

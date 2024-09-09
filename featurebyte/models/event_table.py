@@ -47,7 +47,7 @@ class EventTableModel(EventTableData, TableModel):
         Data warehouse connection information & table name tuple
     columns_info: List[ColumnInfo]
         List of event table columns
-    event_id_column: str
+    event_id_column: Optional[str]
         Event ID column name
     event_timestamp_column: str
         Event timestamp column name

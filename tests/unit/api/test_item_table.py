@@ -515,3 +515,59 @@ def test_sdk_code_generation_on_saved_data(saved_item_table, update_fixtures):
         update_fixtures=update_fixtures,
         table_id=saved_item_table.id,
     )
+
+
+def test_create_item_table_without_item_id_column(
+    snowflake_database_table_item_table, item_table_dict, saved_event_table
+):
+    """
+    Test ItemTable creation using tabular source without item_id_column
+    """
+    _ = saved_event_table
+    item_table = snowflake_database_table_item_table.create_item_table(
+        name="sf_item_table",
+        event_id_column="event_id_col",
+        item_id_column=None,
+        event_table_name="sf_event_table",
+        record_creation_timestamp_column="created_at",
+    )
+
+    # check that node parameter is set properly
+    node_params = item_table.frame.node.parameters
+    assert node_params.id == item_table.id
+    assert node_params.type == TableDataType.ITEM_TABLE
+
+    output = item_table.model_dump(by_alias=True)
+    assert output["item_id_column"] is None
+
+    # expect lookup feature to be unsuccessful
+    item_view = item_table.get_view()
+    with pytest.raises(AssertionError) as exc:
+        item_view.item_type.as_feature("some feature")
+    assert "Item ID column is not available." in str(exc.value)
+
+
+def test_create_item_table_without_item_id_column_event_table_no_event_id_column(
+    snowflake_database_table, snowflake_database_table_item_table, item_table_dict
+):
+    """
+    Test ItemTable creation using tabular source without item_id_column and using an event table without event_id_column
+    """
+
+    # create event table without event_id_column
+    snowflake_database_table.create_event_table(
+        name="sf_event_table",
+        event_timestamp_column="event_timestamp",
+        record_creation_timestamp_column="created_at",
+        description="Some description",
+    )
+
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_database_table_item_table.create_item_table(
+            name="sf_item_table",
+            event_id_column="event_id_col",
+            item_id_column=None,
+            event_table_name="sf_event_table",
+            record_creation_timestamp_column="created_at",
+        )
+    assert "Event ID column is not available for the event table: sf_event_table" in str(exc.value)
