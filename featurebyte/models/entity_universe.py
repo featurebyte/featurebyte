@@ -685,6 +685,8 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
     assert isinstance(item_table_model, ItemTableModel)
     event_table_model = item_table_model.event_table_model
     assert event_table_model is not None
+    assert event_table_model.event_id_column is not None
+    assert item_table_model.item_id_column is not None
     filtered_event_table_expr = (
         expressions.select(quoted_identifier(event_table_model.event_id_column))
         .from_(

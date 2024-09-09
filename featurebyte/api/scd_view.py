@@ -51,7 +51,7 @@ class SCDView(View, GroupByMixin, RawMixin):
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.SCD_VIEW
 
     # pydantic instance variables
-    natural_key_column: str = Field(frozen=True)
+    natural_key_column: Optional[str] = Field(frozen=True)
     effective_timestamp_column: str = Field(frozen=True)
     surrogate_key_column: Optional[str] = Field(frozen=True)
     end_timestamp_column: Optional[str] = Field(frozen=True)
@@ -120,6 +120,7 @@ class SCDView(View, GroupByMixin, RawMixin):
             raise JoinViewMismatchError
 
     def get_join_column(self) -> str:
+        assert self.natural_key_column is not None, "Natural key column is not available."
         return self.natural_key_column
 
     def get_common_scd_parameters(self) -> SCDBaseParameters:

@@ -76,7 +76,7 @@ class SCDTable(TableApiObject):
     internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         alias="default_feature_job_setting", default=None
     )
-    internal_natural_key_column: StrictStr = Field(alias="natural_key_column")
+    internal_natural_key_column: Optional[StrictStr] = Field(alias="natural_key_column")
     internal_effective_timestamp_column: StrictStr = Field(alias="effective_timestamp_column")
     internal_surrogate_key_column: Optional[StrictStr] = Field(
         alias="surrogate_key_column", default=None
@@ -379,14 +379,14 @@ class SCDTable(TableApiObject):
             return self.internal_default_feature_job_setting
 
     @property
-    def natural_key_column(self) -> str:
+    def natural_key_column(self) -> Optional[str]:
         """
         Returns the name of the column representing the natural key of a Slowly Changing Dimension (SCD) table. This
         column is used to distinguish each active row and facilitate tracking of changes over time.
 
         Returns
         -------
-        str
+        Optional[str]
         """
         try:
             return self.cached_model.natural_key_column

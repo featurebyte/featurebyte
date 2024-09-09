@@ -25,7 +25,7 @@ class SCDTableModel(SCDTableData, TableModel):
 
     default_feature_job_setting : Optional[FeatureJobSetting]
         Default feature job setting
-    natural_key_column: str
+    natural_key_column: Optional[str]
         The column for the natural key (key for which there is one unique active record) in the DWH.
     surrogate_key_column: str
         The column for the surrogate key (the primary key of the SCD) in the DWH.
@@ -69,7 +69,7 @@ class SCDTableModel(SCDTableData, TableModel):
 
     @property
     def primary_key_columns(self) -> List[str]:
-        return [self.natural_key_column]
+        return [self.natural_key_column] if self.natural_key_column else []
 
     @property
     def special_columns(self) -> List[str]:

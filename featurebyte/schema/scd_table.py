@@ -22,7 +22,7 @@ class SCDTableCreate(TableCreate):
     """
 
     type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
-    natural_key_column: StrictStr
+    natural_key_column: Optional[StrictStr]
     surrogate_key_column: Optional[StrictStr] = Field(default=None)
     effective_timestamp_column: StrictStr
     end_timestamp_column: Optional[StrictStr] = Field(default=None)
