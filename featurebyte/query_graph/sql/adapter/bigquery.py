@@ -27,6 +27,7 @@ class BigQueryAdapter(BaseAdapter):
     source_type = SourceType.BIGQUERY
 
     TABLESAMPLE_SUPPORTS_VIEW = False
+    UNIFORM_DISTRIBUTION_SUPPORTS_SEED = False
 
     class DataType(StrEnum):
         """

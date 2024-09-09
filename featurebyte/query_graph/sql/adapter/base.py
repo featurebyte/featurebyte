@@ -45,6 +45,7 @@ class BaseAdapter(ABC):
     """
 
     TABLESAMPLE_SUPPORTS_VIEW = True
+    UNIFORM_DISTRIBUTION_SUPPORTS_SEED = True
 
     def __init__(self, source_info: SourceInfo):
         self.source_info = source_info
@@ -564,7 +565,7 @@ class BaseAdapter(ABC):
             quoted=True,
         )
         sampled_expr_with_prob = select(prob_expr, *original_cols).from_(select_expr.subquery())
-        return (
+        output = (
             select(*original_cols)
             .from_(sampled_expr_with_prob.subquery())
             .where(
@@ -573,8 +574,10 @@ class BaseAdapter(ABC):
                 )
             )
             .limit(desired_row_count)
-            .order_by(quoted_identifier("prob"))
         )
+        if cls.UNIFORM_DISTRIBUTION_SUPPORTS_SEED:
+            output = output.order_by(quoted_identifier("prob"))
+        return output
 
     @classmethod
     @abstractmethod
