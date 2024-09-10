@@ -111,18 +111,18 @@ class PreviewService:
         session: BaseSession,
         params: FeatureStorePreview,
         table_expr: Select,
-    ) -> str:
+    ) -> Tuple[str, bool]:
         if params.feature_store_id is None or params.enable_query_cache is False:
             # No caching possible without feature_store_id
             table_name = f"__FB_TEMPORARY_TABLE_{ObjectId()}".upper()
             await session.create_table_as(table_details=table_name, select_expr=table_expr)
-            return table_name
+            return table_name, False
 
         return await self.query_cache_manager_service.get_or_cache_table(
             session=session,
             feature_store_id=params.feature_store_id,
             table_expr=table_expr,
-        )
+        ), True
 
     async def _get_or_cache_dataframe(
         self,
@@ -371,8 +371,7 @@ class PreviewService:
             total_num_rows=total_num_rows,
             sample_on_primary_table=sample_on_primary_table,
         )
-        feature_store_id = sample.feature_store_id
-        input_table_name = await self._get_or_cache_table(
+        input_table_name, is_table_cached = await self._get_or_cache_table(
             session=session,
             params=sample,
             table_expr=describe_queries.data.expr,
@@ -411,7 +410,7 @@ class PreviewService:
                 )
                 df_queries.append(df_query)
         finally:
-            if not feature_store_id:
+            if not is_table_cached:
                 # Need to cleanup as the table is not managed by query cache
                 await session.drop_table(
                     table_name=input_table_name,
@@ -486,7 +485,7 @@ class PreviewService:
             seed=seed,
             total_num_rows=total_num_rows,
         )
-        input_table_name = await self._get_or_cache_table(
+        input_table_name, is_table_cached = await self._get_or_cache_table(
             session=session,
             params=preview,
             table_expr=value_counts_queries.data.expr,
@@ -529,7 +528,7 @@ class PreviewService:
                 )
             results = await run_coroutines(coroutines)
         finally:
-            if not preview.feature_store_id:
+            if not is_table_cached:
                 # Need to cleanup as the table is not managed by query cache
                 await session.drop_table(
                     table_name=input_table_name,
