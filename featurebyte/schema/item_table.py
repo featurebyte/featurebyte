@@ -19,7 +19,7 @@ class ItemTableCreate(TableCreate):
     """
 
     type: Literal[TableDataType.ITEM_TABLE] = TableDataType.ITEM_TABLE
-    event_id_column: StrictStr
+    event_id_column: Optional[StrictStr]
     item_id_column: Optional[StrictStr]
     event_table_id: PydanticObjectId
 

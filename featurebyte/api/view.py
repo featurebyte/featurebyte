@@ -957,7 +957,9 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         """
         additional_columns = self._get_additional_inherited_columns()
         try:
-            return {self.get_join_column()}.union(self._get_additional_inherited_columns())
+            return {self.get_join_column()}.union(additional_columns)
+        except AssertionError:
+            return additional_columns
         except ChangeViewNoJoinColumnError:
             return additional_columns
 

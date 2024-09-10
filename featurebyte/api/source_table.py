@@ -537,7 +537,7 @@ class SourceTable(AbstractTableData):
     def create_item_table(
         self,
         name: str,
-        event_id_column: str,
+        event_id_column: Optional[str],
         item_id_column: Optional[str],
         event_table_name: str,
         record_creation_timestamp_column: Optional[str] = None,
@@ -560,7 +560,7 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             The desired name for the new table.
-        event_id_column: str
+        event_id_column: Optional[str]
             The column that represents the unique identifier for the associated event. This column will be used to join
             the item table with the event table.
         item_id_column: Optional[str]
@@ -787,7 +787,7 @@ class SourceTable(AbstractTableData):
         self,
         name: str,
         event_timestamp_column: str,
-        event_id_column: str,
+        event_id_column: Optional[str],
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
@@ -800,7 +800,7 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             The desired name for the new table.
-        event_id_column: str
+        event_id_column: Optional[str]
             The column that represents the unique identifier for each event.
         event_timestamp_column: str
             The column that contains the timestamp of the associated event.
@@ -834,7 +834,7 @@ class SourceTable(AbstractTableData):
     def get_or_create_item_table(
         self,
         name: str,
-        event_id_column: str,
+        event_id_column: Optional[str],
         item_id_column: Optional[str],
         event_table_name: str,
         record_creation_timestamp_column: Optional[str] = None,
@@ -849,7 +849,7 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             Item table name.
-        event_id_column: str
+        event_id_column: Optional[str]
             Event ID column from the given source table.
         item_id_column: Optional[str]
             Item ID column from the given source table.
