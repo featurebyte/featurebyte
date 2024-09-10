@@ -6,6 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, PrivateAttr
 
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.session.base import BaseSession
@@ -98,4 +99,4 @@ class BaseSqlModel(BaseModel):
         -------
             True if table exists, False otherwise
         """
-        return await self._session.table_exists(table_name)
+        return await self._session.table_exists(TableDetails(table_name=table_name.upper()))

@@ -871,14 +871,14 @@ class BaseSession(BaseModel):
 
         return None
 
-    async def table_exists(self, table_name: str) -> bool:
+    async def table_exists(self, table_details: NodeTableDetails) -> bool:
         """
         Check if table exists
 
         Parameters
         ----------
-        table_name: str
-            input table name
+        table_details: NodeTableDetails
+            Table to check
 
         Returns
         -------
@@ -887,7 +887,7 @@ class BaseSession(BaseModel):
         try:
             expr = (
                 expressions.Select(expressions=[expressions.Star()])
-                .from_(quoted_identifier(table_name.upper()))
+                .from_(get_fully_qualified_table_name(table_details.dict()))
                 .limit(1)
             )
             await self.execute_query_long_running(
@@ -974,7 +974,11 @@ class BaseSession(BaseModel):
             if exists:
                 # Some connectors like Snowflake raise error even though CREATE TABLE IF EXISTS
                 # statement succeeded when there is an existing table.
-                return None
+                if await self.table_exists(table_details):
+                    # Exit without raising an error if the table already exists
+                    return None
+                # Otherwise, this is a legitimate error causing the table creation to fail
+                raise
             raise
 
 
