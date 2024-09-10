@@ -193,7 +193,7 @@ class EventTableInfo(TableInfo):
     """
 
     event_timestamp_column: str
-    event_id_column: str
+    event_id_column: Optional[str]
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
 
 
@@ -203,7 +203,7 @@ class ItemTableInfo(TableInfo):
     """
 
     event_id_column: str
-    item_id_column: str
+    item_id_column: Optional[str]
     event_table_name: str
 
 

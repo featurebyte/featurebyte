@@ -152,7 +152,11 @@ class EventView(View, GroupByMixin, RawMixin):
     def get_join_column(self) -> str:
         # This is potentially none for backwards compatibility.
         # We can remove this once DEV-556 is done.
-        assert self.event_id_column is not None
+        join_column = self._get_join_column()
+        assert join_column is not None, "Event ID column is not available."
+        return join_column
+
+    def _get_join_column(self) -> Optional[str]:
         return self.event_id_column
 
     def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:

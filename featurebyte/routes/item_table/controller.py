@@ -7,6 +7,8 @@ from __future__ import annotations
 from bson import ObjectId
 
 from featurebyte.enum import SemanticType
+from featurebyte.exception import ColumnNotFoundError
+from featurebyte.models import EventTableModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
 from featurebyte.schema.info import ItemTableInfo
@@ -73,7 +75,13 @@ class ItemTableController(
 
     async def create_table(self, data: ItemTableCreate) -> ItemTableModel:  # type: ignore[override]
         # check existence of event table first before creating item table
-        _ = await self.event_table_service.get_document(document_id=data.event_table_id)
+        event_table: EventTableModel = await self.event_table_service.get_document(
+            document_id=data.event_table_id
+        )
+        if not event_table.event_id_column:
+            raise ColumnNotFoundError(
+                f"Event ID column is not available for the event table: {event_table.name}"
+            )
         return await super().create_table(data=data)
 
     async def get_info(self, document_id: ObjectId, verbose: bool) -> ItemTableInfo:

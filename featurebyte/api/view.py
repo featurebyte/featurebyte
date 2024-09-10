@@ -49,7 +49,6 @@ from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
-    ChangeViewNoJoinColumnError,
     NoJoinKeyFoundError,
     RepeatedColumnNamesError,
 )
@@ -956,10 +955,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         set[str]
         """
         additional_columns = self._get_additional_inherited_columns()
-        try:
-            return {self.get_join_column()}.union(self._get_additional_inherited_columns())
-        except ChangeViewNoJoinColumnError:
+        join_col = self._get_join_column()
+        if not join_col:
             return additional_columns
+        return {join_col}.union(self._get_additional_inherited_columns())
 
     def _get_additional_inherited_columns(self) -> set[str]:
         """
@@ -1002,7 +1001,6 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             the other view that we are joining with
         """
 
-    @abstractmethod
     def get_join_column(self) -> str:
         """
         Returns the column from the view that serves as the linking column when the view is joined with another view.
@@ -1011,6 +1009,20 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         -------
         str
             the column name for the join key
+        """
+        join_column = self._get_join_column()
+        assert join_column is not None, "Join column is not found"
+        return join_column
+
+    @abstractmethod
+    def _get_join_column(self) -> Optional[str]:
+        """
+        Returns the column from the view that serves as the linking column when the view is joined with another view.
+
+        Returns
+        -------
+        Optional[str]
+            the column name for the join key or None if it is not found
         """
 
     def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:

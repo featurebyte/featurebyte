@@ -287,3 +287,6 @@ class ChangeView(View, GroupByMixin):
 
     def get_join_column(self) -> str:
         raise ChangeViewNoJoinColumnError
+
+    def _get_join_column(self) -> Optional[str]:
+        return None
