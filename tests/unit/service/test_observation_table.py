@@ -30,7 +30,7 @@ def patch_unique_identifier():
     """
     Patch unique identifier generator
     """
-    with patch("featurebyte.service.query_cache_manager.ObjectId", return_value=ObjectId("0" * 24)):
+    with patch("featurebyte.service.preview.ObjectId", return_value=ObjectId("0" * 24)):
         yield
 
 
@@ -236,7 +236,7 @@ async def test_validate__most_recent_point_in_time(
                 ) * 100 AS "%missing__1",
                 NULL AS "min__1",
                 NULL AS "max__1"
-              FROM "__FB_CACHED_TABLE_000000000000000000000000"
+              FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
             ), joined_tables_0 AS (
               SELECT
                 *

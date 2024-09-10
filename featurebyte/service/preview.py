@@ -109,10 +109,10 @@ class PreviewService:
     async def _get_or_cache_table(
         self,
         session: BaseSession,
-        feature_store_id: Optional[ObjectId],
+        params: FeatureStorePreview,
         table_expr: Select,
     ) -> str:
-        if feature_store_id is None:
+        if params.feature_store_id is None or params.enable_query_cache is False:
             # No caching possible without feature_store_id
             table_name = f"__FB_TEMPORARY_TABLE_{ObjectId()}".upper()
             await session.create_table_as(table_details=table_name, select_expr=table_expr)
@@ -120,7 +120,7 @@ class PreviewService:
 
         return await self.query_cache_manager_service.get_or_cache_table(
             session=session,
-            feature_store_id=feature_store_id,
+            feature_store_id=params.feature_store_id,
             table_expr=table_expr,
         )
 
@@ -371,7 +371,7 @@ class PreviewService:
         feature_store_id = sample.feature_store_id
         input_table_name = await self._get_or_cache_table(
             session=session,
-            feature_store_id=feature_store_id,
+            params=sample,
             table_expr=describe_queries.data.expr,
         )
 
@@ -480,7 +480,7 @@ class PreviewService:
         )
         input_table_name = await self._get_or_cache_table(
             session=session,
-            feature_store_id=preview.feature_store_id,
+            params=preview,
             table_expr=value_counts_queries.data.expr,
         )
         try:
