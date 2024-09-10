@@ -12,6 +12,7 @@ from featurebyte.common.model_util import get_version
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
+from featurebyte.query_graph.node.schema import TableDetails
 
 
 @pytest.fixture(name="mock_snowflake_feature")
@@ -102,7 +103,7 @@ async def test_online_enable(
 
     # 1. Check if online store table exists (execute_query)
     mock_snowflake_session.table_exists.assert_called_once_with(
-        "ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C"
+        TableDetails(table_name="ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C")
     )
 
     # 2. Compute online store values and store in a temporary table
