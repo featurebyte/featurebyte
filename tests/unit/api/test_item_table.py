@@ -546,6 +546,9 @@ def test_create_item_table_without_item_id_column(
         item_view.item_type.as_feature("some feature")
     assert "Item ID column is not available." in str(exc.value)
 
+    # expect subset to work
+    _ = item_view[["item_type", "item_amount"]]
+
 
 def test_create_item_table_without_item_id_column_event_table_no_event_id_column(
     snowflake_database_table, snowflake_database_table_item_table, item_table_dict

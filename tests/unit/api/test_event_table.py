@@ -1202,3 +1202,6 @@ def test_create_event_table_without_event_id_column(
     with pytest.raises(AssertionError) as exc:
         event_view.col_text.as_feature("some feature")
     assert "Event ID column is not available." in str(exc.value)
+
+    # expect subset to work
+    _ = event_view[["col_text", "col_int"]]

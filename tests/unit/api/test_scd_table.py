@@ -522,8 +522,12 @@ def test_create_scd_table_without_natural_key_column(
         scd_view.col_text.as_feature("some feature")
     assert "Natural key column is not available." in str(exc.value)
 
+    # expect aggregate_asat to be successful
     scd_view.groupby("cust_id").aggregate_asat(
         value_column=None,
         method="count",
         feature_name="count_col_int",
     )
+
+    # expect subset to work
+    _ = scd_view[["col_float", "col_text"]]
