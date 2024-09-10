@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional, Sequence
 
-from pydantic import Field, StrictStr, field_validator
+from pydantic import Field, StrictStr, field_validator, model_validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -22,7 +22,7 @@ class SCDTableCreate(TableCreate):
     """
 
     type: Literal[TableDataType.SCD_TABLE] = TableDataType.SCD_TABLE
-    natural_key_column: StrictStr
+    natural_key_column: Optional[StrictStr]
     surrogate_key_column: Optional[StrictStr] = Field(default=None)
     effective_timestamp_column: StrictStr
     end_timestamp_column: Optional[StrictStr] = Field(default=None)
@@ -40,6 +40,26 @@ class SCDTableCreate(TableCreate):
         "end_timestamp_column",
         "current_flag_column",
     )(TableCreate._special_column_validator)
+
+    @model_validator(mode="after")
+    def _validate_natural_key_end_timestamp(self) -> SCDTableCreate:
+        """
+        Validate natural_key_column or end_timestamp_column must be specified
+
+        Returns
+        -------
+        SCDTableCreate
+            SCDTableCreate instance
+
+        Raises
+        ------
+        ValueError
+            Both natural_key_column and end_timestamp_column are not specified
+        """
+        # make sure natural_key_column or end_timestamp_column is available
+        if not self.natural_key_column and not self.end_timestamp_column:
+            raise ValueError("Either natural_key_column or end_timestamp_column must be specified")
+        return self
 
 
 class SCDTableList(PaginationMixin):

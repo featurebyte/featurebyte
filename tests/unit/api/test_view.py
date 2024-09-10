@@ -65,7 +65,7 @@ class SimpleTestView(View):
     def protected_attributes(self) -> List[str]:
         return []
 
-    def get_join_column(self) -> str:
+    def _get_join_column(self) -> Optional[str]:
         return self.join_col
 
     def model_dump(self, **kwargs: Any) -> Dict[str, Any]:

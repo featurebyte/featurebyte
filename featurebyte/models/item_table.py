@@ -35,7 +35,7 @@ class ItemTableModel(ItemTableData, TableModel):
         Status of the ItemTable
     event_id_column: str
         Event ID column name
-    item_id_column: str
+    item_id_column: Optional[str]
         Item ID column name
     event_table_id: PydanticObjectId
         Id of the associated EventTable
@@ -63,7 +63,7 @@ class ItemTableModel(ItemTableData, TableModel):
 
     @property
     def primary_key_columns(self) -> List[str]:
-        return [self.item_id_column]
+        return [self.item_id_column] if self.item_id_column else []
 
     @property
     def special_columns(self) -> List[str]:

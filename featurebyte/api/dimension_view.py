@@ -4,7 +4,7 @@ DimensionView class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Optional
 
 from pydantic import Field
 
@@ -97,5 +97,5 @@ class DimensionView(View, RawMixin):
             logger.error("columns from a SCDView can’t be added to a DimensionView")
             raise JoinViewMismatchError
 
-    def get_join_column(self) -> str:
+    def _get_join_column(self) -> Optional[str]:
         return self.dimension_id_column

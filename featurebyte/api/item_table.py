@@ -101,7 +101,7 @@ class ItemTable(TableApiObject):
 
     # pydantic instance variable (internal use)
     internal_event_id_column: StrictStr = Field(alias="event_id_column")
-    internal_item_id_column: StrictStr = Field(alias="item_id_column")
+    internal_item_id_column: Optional[StrictStr] = Field(alias="item_id_column")
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -367,13 +367,13 @@ class ItemTable(TableApiObject):
             return self.internal_event_id_column
 
     @property
-    def item_id_column(self) -> str:
+    def item_id_column(self) -> Optional[str]:
         """
         Returns the name of the column representing the item key of the Item view.
 
         Returns
         -------
-        str
+        Optional[str]
         """
         try:
             return self.cached_model.item_id_column

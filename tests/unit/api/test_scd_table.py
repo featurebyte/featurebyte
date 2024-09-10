@@ -10,7 +10,10 @@ from typeguard import TypeCheckError
 from featurebyte.api.entity import Entity
 from featurebyte.api.scd_table import SCDTable
 from featurebyte.enum import TableDataType
-from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
+from featurebyte.exception import (
+    DuplicatedRecordException,
+    RecordRetrievalException,
+)
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
@@ -457,3 +460,74 @@ def test_update_default_feature_job_setting(saved_scd_table, feature_group_featu
         feature_job_setting=feature_group_feature_job_setting
     )
     assert saved_scd_table.default_feature_job_setting == feature_group_feature_job_setting
+
+
+def test_create_scd_table_without_natural_key_column(
+    snowflake_database_table_scd_table, snowflake_database_table, scd_table_dict, catalog
+):
+    """
+    Test SCDTable creation using tabular source without natural_key_column
+    """
+    _ = catalog
+
+    # create SCD table without both natural key column and end_timestamp_column and expect to fail
+    with pytest.raises(ValueError) as exc:
+        snowflake_database_table_scd_table.create_scd_table(
+            name="sf_scd_table",
+            natural_key_column=None,
+            effective_timestamp_column="effective_timestamp",
+            current_flag_column="is_active",
+            record_creation_timestamp_column="created_at",
+        )
+    assert "Either natural_key_column or end_timestamp_column must be specified" in str(exc.value)
+
+    # create SCD table without natural key column and with end_timestamp_column and expect to work
+    scd_table = snowflake_database_table_scd_table.create_scd_table(
+        name="sf_scd_table",
+        natural_key_column=None,
+        effective_timestamp_column="effective_timestamp",
+        end_timestamp_column="end_timestamp",
+        current_flag_column="is_active",
+        record_creation_timestamp_column="created_at",
+    )
+
+    entity_a = Entity(name="a", serving_names=["a_id"])
+    entity_a.save()
+    scd_table.cust_id.as_entity("a")
+
+    # check that node parameter is set properly
+    node_params = scd_table.frame.node.parameters
+    assert node_params.id == scd_table.id
+    assert node_params.type == TableDataType.SCD_TABLE
+
+    output = scd_table.model_dump(by_alias=True)
+    assert output["natural_key_column"] is None
+
+    event_table = snowflake_database_table.create_event_table(
+        name="sf_event_table",
+        event_timestamp_column="event_timestamp",
+        record_creation_timestamp_column="created_at",
+        description="Some description",
+    )
+    event_view = event_table.get_view()
+    scd_view = scd_table.get_view()
+
+    # expect join to be unsuccessful
+    with pytest.raises(AssertionError) as exc:
+        event_view.join(scd_view)
+        assert "Natural key column is not available." in str(exc.value)
+
+    # expect lookup feature to be unsuccessful
+    with pytest.raises(AssertionError) as exc:
+        scd_view.col_text.as_feature("some feature")
+    assert "Natural key column is not available." in str(exc.value)
+
+    # expect aggregate_asat to be successful
+    scd_view.groupby("cust_id").aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="count_col_int",
+    )
+
+    # expect subset to work
+    _ = scd_view[["col_float", "col_text"]]

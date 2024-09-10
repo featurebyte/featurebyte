@@ -604,6 +604,7 @@ class ObservationTableService(
             node_name=node.name,
             stats_names=["unique", "max", "min", "%missing"],
             feature_store_id=feature_store.id,
+            enable_query_cache=False,  # query is one off and not expected to be reused
         )
         describe_stats_json = await self.preview_service.describe(sample, 0, 1234)
         describe_stats_dataframe = dataframe_from_json(describe_stats_json)

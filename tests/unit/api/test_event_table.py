@@ -1172,3 +1172,36 @@ def test_update_critical_data_info_with_none_value(saved_event_table):
     assert (
         saved_event_table.col_int.info.critical_data_info.cleaning_operations == cleaning_operations
     )
+
+
+def test_create_event_table_without_event_id_column(
+    snowflake_database_table, event_table_dict, catalog
+):
+    """
+    Test EventTable creation using tabular source without event_id_column
+    """
+    _ = catalog
+
+    event_table = snowflake_database_table.create_event_table(
+        name="sf_event_table",
+        event_timestamp_column="event_timestamp",
+        record_creation_timestamp_column="created_at",
+        description="Some description",
+    )
+
+    # check that node parameter is set properly
+    node_params = event_table.frame.node.parameters
+    assert node_params.id == event_table.id
+    assert node_params.type == TableDataType.EVENT_TABLE
+
+    output = event_table.model_dump(by_alias=True)
+    assert output["event_id_column"] is None
+
+    # expect lookup feature to be unsuccessful
+    event_view = event_table.get_view()
+    with pytest.raises(AssertionError) as exc:
+        event_view.col_text.as_feature("some feature")
+    assert "Event ID column is not available." in str(exc.value)
+
+    # expect subset to work
+    _ = event_view[["col_text", "col_int"]]

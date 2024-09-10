@@ -694,6 +694,8 @@ def get_item_relation_table_lookup_universe(
     assert isinstance(item_table_model, ItemTableModel)
     event_table_model = item_table_model.event_table_model
     assert event_table_model is not None
+    assert event_table_model.event_id_column is not None
+    assert item_table_model.item_id_column is not None
     event_timestamp_column_expr = adapter.normalize_timestamp_before_comparison(
         quoted_identifier(event_table_model.event_timestamp_column)
     )
