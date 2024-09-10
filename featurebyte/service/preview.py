@@ -128,11 +128,12 @@ class PreviewService:
         self,
         session: BaseSession,
         feature_store_id: Optional[ObjectId],
+        enable_query_cache: bool,
         query: str,
         allow_long_running: bool,
     ) -> Optional[pd.DataFrame]:
         # No caching possible without feature_store_id
-        if feature_store_id is None:
+        if feature_store_id is None or enable_query_cache is False:
             return await self._execute_query(session, query, allow_long_running)
 
         return await self.query_cache_manager_service.get_or_cache_dataframe(
@@ -263,6 +264,7 @@ class PreviewService:
                 graph=sample.graph,
                 node_name=sample.node_name,
                 feature_store_id=sample.feature_store_id,
+                enable_query_cache=sample.enable_query_cache,
                 from_timestamp=sample.from_timestamp,
                 to_timestamp=sample.to_timestamp,
                 timestamp_column=sample.timestamp_column,
@@ -342,6 +344,7 @@ class PreviewService:
                 graph=sample.graph,
                 node_name=sample.node_name,
                 feature_store_id=sample.feature_store_id,
+                enable_query_cache=sample.enable_query_cache,
                 from_timestamp=sample.from_timestamp,
                 to_timestamp=sample.to_timestamp,
                 timestamp_column=sample.timestamp_column,
@@ -393,7 +396,11 @@ class PreviewService:
                 )
                 logger.debug("Execute describe SQL", extra={"describe_sql": query})
                 result = await self._get_or_cache_dataframe(
-                    session, feature_store_id, query, allow_long_running
+                    session,
+                    sample.feature_store_id,
+                    sample.enable_query_cache,
+                    query,
+                    allow_long_running,
                 )
                 columns = describe_query.columns
                 assert result is not None
@@ -466,6 +473,7 @@ class PreviewService:
                 graph=preview.graph,
                 node_name=preview.node_name,
                 feature_store_id=preview.feature_store_id,
+                enable_query_cache=preview.enable_query_cache,
             )
         else:
             total_num_rows = None
@@ -512,6 +520,7 @@ class PreviewService:
                     self._process_value_counts_column(
                         session=session,
                         feature_store_id=preview.feature_store_id,
+                        enable_query_cache=preview.enable_query_cache,
                         query=query,
                         column_name=column_query.column_name,
                         column_dtype=column_dtype,
@@ -536,11 +545,16 @@ class PreviewService:
         column_name: str,
         column_dtype: DBVarType,
         feature_store_id: Optional[ObjectId],
+        enable_query_cache: bool,
         done_callback: Callable[[], Coroutine[Any, Any, None]],
     ) -> Tuple[str, dict[Any, int]]:
         session = await session.clone_if_not_threadsafe()
         df_result = await self._get_or_cache_dataframe(
-            session, feature_store_id, query, allow_long_running=True
+            session,
+            feature_store_id=feature_store_id,
+            enable_query_cache=enable_query_cache,
+            query=query,
+            allow_long_running=True,
         )
         assert df_result.columns.tolist() == ["key", "count"]  # type: ignore
         df_result.loc[df_result["key"].isnull(), "key"] = None  # type: ignore
@@ -572,6 +586,7 @@ class PreviewService:
         graph: QueryGraph,
         node_name: str,
         feature_store_id: Optional[ObjectId],
+        enable_query_cache: bool,
         from_timestamp: Optional[datetime] = None,
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
@@ -586,6 +601,10 @@ class PreviewService:
             timestamp_column=timestamp_column,
         )
         df_result = await self._get_or_cache_dataframe(
-            session, feature_store_id, query, allow_long_running
+            session,
+            feature_store_id=feature_store_id,
+            enable_query_cache=enable_query_cache,
+            query=query,
+            allow_long_running=allow_long_running,
         )
         return df_result.iloc[0]["count"]  # type: ignore
