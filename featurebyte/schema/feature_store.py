@@ -47,6 +47,7 @@ class FeatureStorePreview(FeatureByteBaseModel):
     graph: QueryGraph
     node_name: str
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+    enable_query_cache: bool = Field(default=True)
 
 
 class FeatureStoreSample(FeatureStorePreview):
