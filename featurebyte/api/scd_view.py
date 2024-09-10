@@ -120,7 +120,11 @@ class SCDView(View, GroupByMixin, RawMixin):
             raise JoinViewMismatchError
 
     def get_join_column(self) -> str:
-        assert self.natural_key_column is not None, "Natural key column is not available."
+        join_column = self._get_join_column()
+        assert join_column is not None, "Natural key column is not available."
+        return join_column
+
+    def _get_join_column(self) -> Optional[str]:
         return self.natural_key_column
 
     def get_common_scd_parameters(self) -> SCDBaseParameters:

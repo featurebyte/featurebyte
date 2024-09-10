@@ -324,7 +324,11 @@ class ItemView(View, GroupByMixin, RawMixin):
         return True
 
     def get_join_column(self) -> str:
-        assert self.item_id_column is not None, "Item ID column is not available."
+        join_column = self._get_join_column()
+        assert join_column is not None, "Item ID column is not available."
+        return join_column
+
+    def _get_join_column(self) -> Optional[str]:
         return self.item_id_column
 
     def get_additional_lookup_parameters(self, offset: Optional[str] = None) -> dict[str, Any]:
