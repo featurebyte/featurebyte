@@ -70,7 +70,7 @@ def tile_index_to_timestamp_utc(
     """
     offset = time_modulo_frequency_seconds - blind_spot_seconds
     period_in_seconds = tile_index * frequency_minute * 60
-    epoch_ts = datetime.fromtimestamp(period_in_seconds)
+    epoch_ts = datetime.utcfromtimestamp(period_in_seconds)
     adjusted_ts = epoch_ts + timedelta(seconds=offset)
     return adjusted_ts
 
