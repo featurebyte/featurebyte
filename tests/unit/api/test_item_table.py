@@ -532,6 +532,10 @@ def test_create_item_table_without_item_id_column(
         record_creation_timestamp_column="created_at",
     )
 
+    # check item table info
+    item_table_info = item_table.info()
+    assert item_table_info["item_id_column"] is None
+
     # check that node parameter is set properly
     node_params = item_table.frame.node.parameters
     assert node_params.id == item_table.id
