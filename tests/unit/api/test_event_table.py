@@ -1188,6 +1188,10 @@ def test_create_event_table_without_event_id_column(snowflake_database_table, ca
         description="Some description",
     )
 
+    # check event table info
+    event_table_info = event_table.info()
+    assert event_table_info["event_id_column"] is None
+
     # check that node parameter is set properly
     node_params = event_table.frame.node.parameters
     assert node_params.id == event_table.id

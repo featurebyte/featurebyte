@@ -495,6 +495,10 @@ def test_create_scd_table_without_natural_key_column(
     entity_a.save()
     scd_table.cust_id.as_entity("a")
 
+    # check scd table info
+    scd_table_info = scd_table.info()
+    assert scd_table_info["natural_key_column"] is None
+
     # check that node parameter is set properly
     node_params = scd_table.frame.node.parameters
     assert node_params.id == scd_table.id

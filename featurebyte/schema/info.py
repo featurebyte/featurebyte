@@ -220,7 +220,7 @@ class SCDTableInfo(TableInfo):
     SCDTable info schema
     """
 
-    natural_key_column: str
+    natural_key_column: Optional[str]
     effective_timestamp_column: str
     surrogate_key_column: Optional[str] = Field(default=None)
     end_timestamp_column: Optional[str] = Field(default=None)
