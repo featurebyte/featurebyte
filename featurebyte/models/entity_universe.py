@@ -31,7 +31,7 @@ from featurebyte.query_graph.node.generic import (
 )
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters
 from featurebyte.query_graph.node.nested import ItemViewGraphNodeParameters
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
@@ -230,14 +230,17 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
             ts_col = None
 
         if ts_col:
+            ts_col_expr = self.adapter.normalize_timestamp_before_comparison(
+                quoted_identifier(ts_col)
+            )
             aggregate_input_expr = self.aggregate_input_expr.where(
                 expressions.and_(
                     expressions.GTE(
-                        this=quoted_identifier(ts_col),
+                        this=ts_col_expr,
                         expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
                     ),
                     expressions.LT(
-                        this=quoted_identifier(ts_col),
+                        this=ts_col_expr,
                         expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER,
                     ),
                 )
@@ -275,16 +278,16 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         if not node.parameters.serving_names:
             return [DUMMY_ENTITY_UNIVERSE]
 
-        ts_col = node.parameters.effective_timestamp_column
+        ts_col_expr = self.adapter.normalize_timestamp_before_comparison(
+            quoted_identifier(node.parameters.effective_timestamp_column)
+        )
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
             expressions.and_(
                 expressions.GTE(
-                    this=quoted_identifier(ts_col),
+                    this=ts_col_expr,
                     expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
                 ),
-                expressions.LT(
-                    this=quoted_identifier(ts_col), expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER
-                ),
+                expressions.LT(this=ts_col_expr, expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
             )
         )
         universe_expr = (
@@ -440,15 +443,14 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
                 make_literal_value(node.parameters.feature_job_setting.period_seconds // 60),
             ],
         )
+        ts_col_expr = self.adapter.normalize_timestamp_before_comparison(quoted_identifier(ts_col))
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
             expressions.and_(
                 expressions.GTE(
-                    this=quoted_identifier(ts_col),
+                    this=ts_col_expr,
                     expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
                 ),
-                expressions.LT(
-                    this=quoted_identifier(ts_col), expression=last_tile_index_timestamp
-                ),
+                expressions.LT(this=ts_col_expr, expression=last_tile_index_timestamp),
             )
         )
         universe_expr = (
@@ -503,14 +505,17 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
         )
         window_end_timestamp_expr = self.adapter.from_epoch_seconds(range_end_expr)
         window_start_timestamp_expr = self.adapter.from_epoch_seconds(range_start_expr)
+        timestamp_expr = self.adapter.normalize_timestamp_before_comparison(
+            quoted_identifier(node.parameters.timestamp),
+        )
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
             expressions.and_(
                 expressions.GTE(
-                    this=quoted_identifier(node.parameters.timestamp),
+                    this=timestamp_expr,
                     expression=window_start_timestamp_expr,
                 ),
                 expressions.LT(
-                    this=quoted_identifier(node.parameters.timestamp),
+                    this=timestamp_expr,
                     expression=window_end_timestamp_expr,
                 ),
             )
@@ -668,7 +673,9 @@ def get_combined_universe(
     return combined_universe_expr
 
 
-def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> expressions.Select:
+def get_item_relation_table_lookup_universe(
+    item_table_model: TableModel, adapter: BaseAdapter
+) -> expressions.Select:
     """
     Get the entity universe for a relation table that is an ItemTable. This is used when looking up
     a parent entity using a child entity (item id column) in an ItemTable.
@@ -677,6 +684,8 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
     ----------
     item_table_model: TableModel
         Item table model
+    adapter: BaseAdapter
+        SQL adapter
 
     Returns
     -------
@@ -687,6 +696,9 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
     assert event_table_model is not None
     assert event_table_model.event_id_column is not None
     assert item_table_model.item_id_column is not None
+    event_timestamp_column_expr = adapter.normalize_timestamp_before_comparison(
+        quoted_identifier(event_table_model.event_timestamp_column)
+    )
     filtered_event_table_expr = (
         expressions.select(quoted_identifier(event_table_model.event_id_column))
         .from_(
@@ -697,11 +709,11 @@ def get_item_relation_table_lookup_universe(item_table_model: TableModel) -> exp
         .where(
             expressions.and_(
                 expressions.GTE(
-                    this=quoted_identifier(event_table_model.event_timestamp_column),
+                    this=event_timestamp_column_expr,
                     expression=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
                 ),
                 expressions.LT(
-                    this=quoted_identifier(event_table_model.event_timestamp_column),
+                    this=event_timestamp_column_expr,
                     expression=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER,
                 ),
             )

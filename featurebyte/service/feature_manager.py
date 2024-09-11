@@ -385,9 +385,8 @@ class FeatureManagerService:
             tile_spec.blind_spot_second,
             tile_spec.frequency_minute,
         )
-        date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
-        start_ts_str = start_ts.strftime(date_format)
-        end_ts_str = end_ts.strftime(date_format)
+        start_ts_str = start_ts.isoformat()
+        end_ts_str = end_ts.isoformat()
         await self.tile_manager_service.generate_tiles(
             session=session,
             tile_spec=tile_spec,

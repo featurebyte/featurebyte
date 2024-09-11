@@ -27,12 +27,12 @@ FROM (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."sf_table"
       WHERE
-        "event_timestamp" >= CAST('2022-05-15T06:45:00.000000Z' AS TIMESTAMP)
-        AND "event_timestamp" < CAST('2022-05-15T08:45:00.000000Z' AS TIMESTAMP)
+        "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
+        AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
     )
     WHERE
-      "event_timestamp" >= CAST('2022-05-15T06:45:00.000000Z' AS TIMESTAMP)
-      AND "event_timestamp" < CAST('2022-05-15T08:45:00.000000Z' AS TIMESTAMP)
+      "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
+      AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
   )
 )
 GROUP BY
@@ -71,12 +71,12 @@ FROM (
         "cust_id" AS "cust_id"
       FROM "sf_database"."sf_schema"."sf_table"
       WHERE
-        "event_timestamp" >= CAST('2022-05-15T06:45:00.000000Z' AS TIMESTAMP)
-        AND "event_timestamp" < CAST('2022-05-15T08:45:00.000000Z' AS TIMESTAMP)
+        "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
+        AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
     )
     WHERE
-      "event_timestamp" >= CAST('2022-05-15T06:45:00.000000Z' AS TIMESTAMP)
-      AND "event_timestamp" < CAST('2022-05-15T08:45:00.000000Z' AS TIMESTAMP)
+      "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
+      AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
   )
 )
 GROUP BY

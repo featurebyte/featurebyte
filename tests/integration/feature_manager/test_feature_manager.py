@@ -332,4 +332,4 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
             mock_datetime.utcnow.return_value = last_tile_start_ts + timedelta(days=1)
             await feature_manager_service.online_enable(session, online_feature_spec)
         _, kwargs = mock_generate_tiles.call_args
-        assert kwargs["start_ts_str"] == last_tile_start_ts.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        assert kwargs["start_ts_str"] == last_tile_start_ts.strftime("%Y-%m-%dT%H:%M:%S")
