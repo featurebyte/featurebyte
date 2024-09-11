@@ -472,7 +472,7 @@ def test_create_scd_table_without_natural_key_column(
 
     # create SCD table without both natural key column and end_timestamp_column and expect to fail
     with pytest.raises(ValueError) as exc:
-        snowflake_database_table_scd_table.create_scd_table(
+        snowflake_database_table_scd_table.get_or_create_scd_table(
             name="sf_scd_table",
             natural_key_column=None,
             effective_timestamp_column="effective_timestamp",
