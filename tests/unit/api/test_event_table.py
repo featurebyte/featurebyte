@@ -1174,16 +1174,15 @@ def test_update_critical_data_info_with_none_value(saved_event_table):
     )
 
 
-def test_create_event_table_without_event_id_column(
-    snowflake_database_table, event_table_dict, catalog
-):
+def test_create_event_table_without_event_id_column(snowflake_database_table, catalog):
     """
     Test EventTable creation using tabular source without event_id_column
     """
     _ = catalog
 
-    event_table = snowflake_database_table.create_event_table(
+    event_table = snowflake_database_table.get_or_create_event_table(
         name="sf_event_table",
+        event_id_column=None,
         event_timestamp_column="event_timestamp",
         record_creation_timestamp_column="created_at",
         description="Some description",

@@ -787,7 +787,7 @@ class SourceTable(AbstractTableData):
         self,
         name: str,
         event_timestamp_column: str,
-        event_id_column: str,
+        event_id_column: Optional[str],
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
@@ -800,7 +800,7 @@ class SourceTable(AbstractTableData):
         ----------
         name: str
             The desired name for the new table.
-        event_id_column: str
+        event_id_column: Optional[str]
             The column that represents the unique identifier for each event.
         event_timestamp_column: str
             The column that contains the timestamp of the associated event.
@@ -932,7 +932,7 @@ class SourceTable(AbstractTableData):
     def get_or_create_scd_table(
         self,
         name: str,
-        natural_key_column: str,
+        natural_key_column: Optional[str],
         effective_timestamp_column: str,
         end_timestamp_column: Optional[str] = None,
         surrogate_key_column: Optional[str] = None,
