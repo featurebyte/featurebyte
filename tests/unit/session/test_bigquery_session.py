@@ -2,11 +2,13 @@
 Unit test for BigQuerySession
 """
 
+import datetime
 import os
 from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
+from dateutil import tz
 from google.cloud.bigquery import SchemaField, StandardSqlTypeNames
 from google.cloud.bigquery.dbapi.cursor import Column
 from google.cloud.bigquery.table import Row
@@ -357,3 +359,21 @@ def test_convert_to_internal_variable_type(bigquery_var_info, scale, expected):
     Test convert_to_internal_variable_type
     """
     assert BigQuerySession._convert_to_internal_variable_type(bigquery_var_info, scale) == expected  # pylint: disable=protected-access
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (
+            {"date": datetime.datetime(2023, 1, 1, 8, 0, 0, tzinfo=tz.gettz("Asia/Singapore"))},
+            '{"date": "2023-01-01T00:00:00"}',
+        ),
+        ({"date": datetime.datetime(2023, 1, 1, 8, 0, 0)}, '{"date": "2023-01-01T08:00:00"}'),
+    ],
+)
+def test_json_serialization_handler(value, expected):
+    """
+    Test json_serialization_handler
+    """
+
+    assert BigQuerySession._format_value(value) == expected  # pylint: disable=protected-access

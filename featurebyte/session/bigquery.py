@@ -13,6 +13,7 @@ from typing import Any, AsyncGenerator, OrderedDict, cast
 import aiofiles
 import pandas as pd
 import pyarrow as pa
+from dateutil import tz
 from google.api_core.exceptions import NotFound
 from google.api_core.gapic_v1.client_info import ClientInfo
 from google.auth.exceptions import DefaultCredentialsError, MalformedError
@@ -110,6 +111,27 @@ pa_type_mapping = {
     SqlTypeNames.GEOGRAPHY: DBVarType.UNKNOWN,
     StandardSqlTypeNames.RANGE: DBVarType.UNKNOWN,
 }
+
+
+def _json_serialization_handler(value: Any) -> str:
+    """
+    JSON serialization handler for non-serializable objects
+
+    Parameters
+    ----------
+    value: Any
+        Value to serialize
+
+    Returns
+    -------
+    str
+    """
+    if isinstance(value, datetime.datetime):
+        # convert to UTC and remove timezone info
+        if value.tzinfo:
+            return value.astimezone(tz.UTC).replace(tzinfo=None).isoformat()
+        return value.isoformat()
+    return str(value)
 
 
 class BigQuerySession(BaseSession):
@@ -374,13 +396,26 @@ class BigQuerySession(BaseSession):
 
     @staticmethod
     def _format_value(value: Any) -> Any:
+        """
+        Format complex objects in record values from BigQuery
+
+        Parameters
+        ----------
+        value: Any
+            Value to format
+
+        Returns
+        -------
+        Any
+        """
+
         if isinstance(value, list):
             # NULL values are not supported in ARRAY columns, return empty array as None
             if not value:
                 return None
             return json.dumps(value)
         if isinstance(value, dict):
-            return json.dumps(value)
+            return json.dumps(value, default=_json_serialization_handler)
         return value
 
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
