@@ -90,7 +90,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
                       CAST({quoted_result_name_column} AS STRING) AS {quoted_result_name_column},
                       CAST({quoted_value_column} AS {col_type}) AS {quoted_value_column},
                       CAST({next_version} AS INT) AS {quoted_version_column},
-                      to_timestamp('{current_ts}') AS UPDATED_AT
+                      CAST('{current_ts}' AS TIMESTAMP) AS UPDATED_AT
                     FROM ({f_sql})
                     """
                 )
@@ -108,7 +108,7 @@ class TileScheduleOnlineStore(BaseSqlModel):
                     insert_query = textwrap.dedent(
                         f"""
                         INSERT INTO {fs_table} ({column_names}, {quoted_version_column}, UPDATED_AT)
-                        SELECT {column_names}, {next_version}, to_timestamp('{current_ts}')
+                        SELECT {column_names}, {next_version}, CAST('{current_ts}' AS TIMESTAMP)
                         FROM {temp_table}
                         """
                     )
