@@ -192,11 +192,11 @@ async def test_list_table_schema_decimal(config, session_without_datasets):
     _ = config
     session = session_without_datasets
     await session.execute_query(
-        "CREATE TABLE TABLE_WITH_DECIMAL AS SELECT CAST(123 AS DECIMAL) AS A"
+        "CREATE TABLE TABLE_WITH_DECIMAL AS SELECT CAST(123.45 AS DECIMAL) AS A"
     )
     table_schema = await session.list_table_schema(
         "TABLE_WITH_DECIMAL",
         database_name=session.database_name,
         schema_name=session.schema_name,
     )
-    assert table_schema["A"].dtype == DBVarType.INT
+    assert table_schema["A"].dtype == DBVarType.FLOAT
