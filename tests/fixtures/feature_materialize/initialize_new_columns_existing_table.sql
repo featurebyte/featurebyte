@@ -91,10 +91,10 @@ USING (
   FROM "TEMP_FEATURE_TABLE_000000000000000000000000"
 ) AS materialized_features
 ON offline_store_table."cust_id" = materialized_features."cust_id"
-AND "__feature_timestamp" = TO_TIMESTAMP('2022-10-15 10:00:00')
+AND "__feature_timestamp" = CAST('2022-10-15 10:00:00' AS TIMESTAMP)
 WHEN MATCHED THEN UPDATE SET offline_store_table."sum_30m_V220101" = materialized_features."sum_30m_V220101"
 WHEN NOT MATCHED THEN INSERT ("__feature_timestamp", "cust_id", "sum_30m_V220101") VALUES (
-  TO_TIMESTAMP('2022-10-15 10:00:00'),
+  CAST('2022-10-15 10:00:00' AS TIMESTAMP),
   materialized_features."cust_id",
   materialized_features."sum_30m_V220101"
 );

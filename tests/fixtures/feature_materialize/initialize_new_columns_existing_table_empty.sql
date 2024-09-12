@@ -89,7 +89,7 @@ USING (
 ON FALSE
 WHEN MATCHED THEN UPDATE SET offline_store_table."sum_30m_V220101" = materialized_features."sum_30m_V220101"
 WHEN NOT MATCHED THEN INSERT ("__feature_timestamp", "cust_id", "sum_30m_V220101") VALUES (
-  TO_TIMESTAMP('2022-01-01T00:00:00'),
+  CAST('2022-01-01T00:00:00' AS TIMESTAMP),
   materialized_features."cust_id",
   materialized_features."sum_30m_V220101"
 );
