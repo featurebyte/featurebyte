@@ -306,10 +306,10 @@ class BigQuerySession(BaseSession):
         if datatype == SqlTypeNames.INTERVAL:
             pyarrow_type = pa.int64()
         elif datatype in {SqlTypeNames.NUMERIC, SqlTypeNames.BIGNUMERIC}:
-            if scale is None:
-                pyarrow_type = pa.float64()
-            elif scale > 0:
-                pyarrow_type = pa.decimal128(precision, scale)
+            _precision = precision if precision is not None else 38
+            _scale = scale if scale is not None else 9
+            if _scale > 0:
+                pyarrow_type = pa.decimal128(_precision, _scale)
             else:
                 pyarrow_type = pa.int64()
         elif mode == "REPEATED":

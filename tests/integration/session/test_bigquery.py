@@ -3,6 +3,7 @@ This module contains session to BigQuery integration tests.
 """
 
 from collections import OrderedDict
+from decimal import Decimal
 
 import pandas as pd
 import pytest
@@ -191,12 +192,32 @@ async def test_list_table_schema_decimal(config, session_without_datasets):
     """
     _ = config
     session = session_without_datasets
-    await session.execute_query(
-        "CREATE TABLE TABLE_WITH_DECIMAL AS SELECT CAST(123.45 AS DECIMAL) AS A"
-    )
+    await session.execute_query("CREATE TABLE TABLE_DECIMAL AS SELECT CAST(123.45 AS DECIMAL) AS A")
     table_schema = await session.list_table_schema(
-        "TABLE_WITH_DECIMAL",
+        "TABLE_DECIMAL",
         database_name=session.database_name,
         schema_name=session.schema_name,
     )
     assert table_schema["A"].dtype == DBVarType.FLOAT
+    df = await session.execute_query("SELECT * FROM TABLE_DECIMAL")
+    assert df.iloc[0]["A"] == Decimal("123.450000000")
+
+
+@pytest.mark.parametrize("source_type", ["bigquery"], indirect=True)
+@pytest.mark.asyncio
+async def test_list_table_schema_decimal_parameterized(config, session_without_datasets):
+    """
+    Test handling of parameterized DECIMAL numeric type
+    """
+    _ = config
+    session = session_without_datasets
+    await session.execute_query("CREATE TABLE TABLE_DECIMAL_SCALE (A DECIMAL(10, 3))")
+    await session.execute_query("INSERT INTO TABLE_DECIMAL_SCALE (A) VALUES (1.234)")
+    table_schema = await session.list_table_schema(
+        "TABLE_DECIMAL_SCALE",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    assert table_schema["A"].dtype == DBVarType.FLOAT
+    df = await session.execute_query("SELECT * FROM TABLE_DECIMAL_SCALE")
+    assert df.iloc[0]["A"] == Decimal("1.234")
