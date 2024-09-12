@@ -7,6 +7,7 @@ from collections import OrderedDict
 import pandas as pd
 import pytest
 
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.session.bigquery import BigQuerySchemaInitializer, BigQuerySession
 from featurebyte.session.manager import SessionManager
@@ -180,3 +181,22 @@ async def test_register_table(config, session_without_datasets):
     session = session_without_datasets
     df = pd.DataFrame({"a": [1, 2, 3], "date": pd.date_range("2021-01-01", periods=3)})
     await session.register_table(table_name="test_table", dataframe=df)
+
+
+@pytest.mark.parametrize("source_type", ["bigquery"], indirect=True)
+@pytest.mark.asyncio
+async def test_list_table_schema_decimal(config, session_without_datasets):
+    """
+    Test handling of DECIMAL numeric type without scale
+    """
+    _ = config
+    session = session_without_datasets
+    await session.execute_query(
+        "CREATE TABLE TABLE_WITH_DECIMAL AS SELECT CAST(123 AS DECIMAL) AS A"
+    )
+    table_schema = await session.list_table_schema(
+        "TABLE_WITH_DECIMAL",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    assert table_schema["A"].dtype == DBVarType.INT

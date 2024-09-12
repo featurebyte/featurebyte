@@ -271,7 +271,7 @@ class BigQuerySession(BaseSession):
         DBVarType
         """
         if bigquery_typecode in {SqlTypeNames.NUMERIC, SqlTypeNames.BIGNUMERIC}:
-            if scale > 0:
+            if scale is not None and scale > 0:
                 return DBVarType.FLOAT
             return DBVarType.INT
         db_vartype = db_vartype_mapping.get(bigquery_typecode, DBVarType.UNKNOWN)
@@ -306,7 +306,7 @@ class BigQuerySession(BaseSession):
         if datatype == SqlTypeNames.INTERVAL:
             pyarrow_type = pa.int64()
         elif datatype in {SqlTypeNames.NUMERIC, SqlTypeNames.BIGNUMERIC}:
-            if scale > 0:
+            if scale is not None and scale > 0:
                 pyarrow_type = pa.decimal128(precision, scale)
             else:
                 pyarrow_type = pa.int64()
