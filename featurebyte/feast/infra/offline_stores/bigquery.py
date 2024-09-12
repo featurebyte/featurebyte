@@ -20,7 +20,6 @@ from feast.infra.offline_stores.bigquery import (
 from feast.infra.offline_stores.bigquery_source import BigQuerySource
 from feast.infra.offline_stores.offline_store import RetrievalJob
 from feast.repo_config import RepoConfig
-from feast.usage import log_exceptions_and_usage
 
 from featurebyte.session.bigquery import bq_to_arrow_schema
 
@@ -33,7 +32,6 @@ class FeatureByteBigQueryOfflineStore(BigQueryOfflineStore):
     """Offline store for GCP BigQuery"""
 
     @staticmethod
-    @log_exceptions_and_usage(offline_store="bigquery")
     def pull_latest_from_table_or_query(
         config: RepoConfig,
         data_source: DataSource,
