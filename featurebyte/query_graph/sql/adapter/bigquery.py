@@ -278,13 +278,14 @@ class BigQueryAdapter(BaseAdapter):
         return Anonymous(
             this="LAX_FLOAT64",
             expressions=[
-                Anonymous(
-                    this="PARSE_JSON",
-                    expressions=[
-                        self.call_udf(  # result here is the value in JSON formatted string
-                            "F_GET_VALUE", [dictionary_expression, key_expression]
-                        ),
-                    ],
+                expressions.ParseJSON(
+                    this=self.call_udf(  # result here is the value in JSON formatted string
+                        "F_GET_VALUE", [dictionary_expression, key_expression]
+                    ),
+                    expression=expressions.Kwarg(
+                        this=expressions.Var(this="wide_number_mode"),
+                        expression=make_literal_value("round"),
+                    ),
                 )
             ],
         )
