@@ -97,7 +97,7 @@ pa_type_mapping = {
     SqlTypeNames.BYTES: pa.large_binary(),
     SqlTypeNames.TIMESTAMP: pa.timestamp("ns", tz=None),
     SqlTypeNames.DATETIME: pa.timestamp("ns", tz=None),
-    SqlTypeNames.DATE: pa.string(),
+    SqlTypeNames.DATE: pa.date64(),
     SqlTypeNames.TIME: pa.time32("ms"),
     SqlTypeNames.NUMERIC: pa.decimal128(38, 18),
     SqlTypeNames.BIGNUMERIC: pa.decimal128(38, 18),
