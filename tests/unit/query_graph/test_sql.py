@@ -329,7 +329,7 @@ def test_get_value_node(input_node):
             input_sql_nodes=[dictionary_node, lookup_node],
         )
     )
-    assert node.sql.sql() == "GET(dictionary, lookup)"
+    assert node.sql.sql() == "GET(dictionary, CAST(lookup AS VARCHAR))"
 
 
 @pytest.mark.parametrize(

@@ -105,7 +105,8 @@ class GetValueFromDictionaryNode(ExpressionNode):
     @property
     def sql(self) -> Expression:
         return self.context.adapter.get_value_from_dictionary(
-            self.dictionary_feature_node.sql, self.lookup_feature_node.sql
+            self.dictionary_feature_node.sql,
+            self.context.adapter.cast_to_string(self.lookup_feature_node.sql, None),
         )
 
     @classmethod
