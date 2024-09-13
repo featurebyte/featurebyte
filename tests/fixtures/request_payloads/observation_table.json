@@ -25,7 +25,9 @@
         },
         "type": "source_table"
     },
+    "sample_from_timestamp": null,
     "sample_rows": null,
+    "sample_to_timestamp": null,
     "skip_entity_validation_checks": false,
     "target_column": null
 }
