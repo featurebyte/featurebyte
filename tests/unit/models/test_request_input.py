@@ -336,3 +336,50 @@ async def test_materialize__with_sample_timestamp_biqquery(
         """
     ).strip()
     assert session.execute_query_long_running.call_args_list == [call(expected_query)]
+
+
+@pytest.mark.asyncio
+async def test_materialize__with_sample_timestamp_no_columns_rename(
+    session, snowflake_event_table, destination_table
+):
+    """
+    Test materializing with sample from timestamp
+    """
+    view = snowflake_event_table.get_view()
+    view = view[view.col_int == 1]
+    pruned_graph, mapped_node = view.extract_pruned_graph_and_node()
+    request_input = ViewRequestInput(
+        graph=pruned_graph,
+        node_name=mapped_node.name,
+    )
+    await request_input.materialize(
+        session, destination_table, None, datetime(2011, 3, 8), datetime(2012, 5, 9)
+    )
+
+    expected_query = textwrap.dedent(
+        """
+        CREATE TABLE "sf_database"."sf_schema"."my_materialized_table" AS
+        SELECT
+          *
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+          WHERE
+            (
+              "col_int" = 1
+            )
+        )
+        WHERE
+            "POINT_IN_TIME" >= CAST('2011-03-08T00:00:00' AS TIMESTAMP) AND
+            "POINT_IN_TIME" < CAST('2012-05-09T00:00:00' AS TIMESTAMP)
+        """
+    ).strip()
+    assert session.execute_query_long_running.call_args_list == [call(expected_query)]

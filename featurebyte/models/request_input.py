@@ -185,7 +185,9 @@ class BaseRequestInput(FeatureByteBaseModel):
         if time_range_conditions:
             if self.columns is None and self.columns_rename_mapping is None:
                 # add a select * in case the expression already has a where clause
-                query_expr = expressions.Select(expressions=[expressions.Star()]).from_(query_expr)
+                query_expr = expressions.Select(expressions=[expressions.Star()]).from_(
+                    query_expr.subquery()
+                )
             if len(time_range_conditions) == 1:
                 query_expr = query_expr.where(time_range_conditions[0])
             else:
