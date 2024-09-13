@@ -1229,8 +1229,8 @@ class FeatureMaterializeService:
         feature_timestamp_value: str,
         to_specify_merge_conditions: bool,
     ) -> None:
-        feature_timestamp_value_expr = expressions.Anonymous(
-            this="TO_TIMESTAMP", expressions=[make_literal_value(feature_timestamp_value)]
+        feature_timestamp_value_expr = make_literal_value(
+            feature_timestamp_value, cast_as_timestamp=True
         )
         if to_specify_merge_conditions:
             merge_conditions = [
