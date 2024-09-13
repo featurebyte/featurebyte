@@ -5,19 +5,22 @@ RequestInput is the base class for all request input types.
 from __future__ import annotations
 
 from abc import abstractmethod
+from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, cast
 
 from pydantic import Field, PrivateAttr, StrictStr
 from sqlglot import expressions
 from sqlglot.expressions import Select
 
-from featurebyte.enum import StrEnum
+from featurebyte.enum import SpecialColumnName, StrEnum
 from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.materialisation import (
     get_row_count_sql,
     get_source_expr,
@@ -124,6 +127,8 @@ class BaseRequestInput(FeatureByteBaseModel):
         session: BaseSession,
         destination: TableDetails,
         sample_rows: Optional[int],
+        sample_from_timestamp: Optional[datetime] = None,
+        sample_to_timestamp: Optional[datetime] = None,
     ) -> None:
         """
         Materialize the request input table
@@ -136,6 +141,10 @@ class BaseRequestInput(FeatureByteBaseModel):
             The destination table details
         sample_rows: Optional[int]
             The number of rows to sample. If None, no sampling is performed
+        sample_from_timestamp: Optional[datetime]
+            The timestamp to sample from
+        sample_to_timestamp: Optional[datetime]
+            The timestamp to sample to
         """
         query_expr = self.get_query_expr(source_info=session.get_source_info())
 
@@ -148,9 +157,42 @@ class BaseRequestInput(FeatureByteBaseModel):
                 columns = self.columns
             query_expr = select_and_rename_columns(query_expr, columns, self.columns_rename_mapping)
 
+        # apply time range filter if sample_from_timestamp and sample_to_timestamp are provided
+        time_range_conditions: list[expressions.Expression] = []
+        adapter = get_sql_adapter(session.get_source_info())
+        if sample_from_timestamp is not None:
+            time_range_conditions.append(
+                expressions.GTE(
+                    this=adapter.normalize_timestamp_before_comparison(
+                        quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+                    ),
+                    expression=make_literal_value(
+                        sample_from_timestamp.isoformat(), cast_as_timestamp=True
+                    ),
+                )
+            )
+        if sample_to_timestamp is not None:
+            time_range_conditions.append(
+                expressions.LT(
+                    this=adapter.normalize_timestamp_before_comparison(
+                        quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+                    ),
+                    expression=make_literal_value(
+                        sample_to_timestamp.isoformat(), cast_as_timestamp=True
+                    ),
+                )
+            )
+        if time_range_conditions:
+            if self.columns is None and self.columns_rename_mapping is None:
+                # add a select * in case the expression already has a where clause
+                query_expr = expressions.Select(expressions=[expressions.Star()]).from_(query_expr)
+            if len(time_range_conditions) == 1:
+                query_expr = query_expr.where(time_range_conditions[0])
+            else:
+                query_expr = query_expr.where(expressions.And(expressions=time_range_conditions))
+
         if sample_rows is not None:
             num_rows = await self.get_row_count(session=session, query_expr=query_expr)
-            adapter = get_sql_adapter(session.get_source_info())
             if num_rows > sample_rows:
                 if adapter.TABLESAMPLE_SUPPORTS_VIEW:
                     num_percent = self.get_sample_percentage_from_row_count(num_rows, sample_rows)

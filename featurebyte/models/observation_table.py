@@ -54,6 +54,8 @@ class TargetInput(FeatureByteBaseModel):
         session: BaseSession,
         destination: TableDetails,
         sample_rows: Optional[int],
+        sample_from_timestamp: Optional[datetime] = None,
+        sample_to_timestamp: Optional[datetime] = None,
     ) -> None:
         """
         No-op materialize. This method isn't needed for TargetInput since we materialize the target separately.
@@ -69,6 +71,10 @@ class TargetInput(FeatureByteBaseModel):
             The destination table to materialize the target input to
         sample_rows: Optional[int]
             The number of rows to sample from the target input
+        sample_from_timestamp: Optional[datetime]
+            The timestamp to sample from
+        sample_to_timestamp: Optional[datetime]
+            The timestamp to sample to
         """
 
 
@@ -85,6 +91,8 @@ class UploadedFileInput(FeatureByteBaseModel):
         session: BaseSession,
         destination: TableDetails,
         sample_rows: Optional[int],
+        sample_from_timestamp: Optional[datetime] = None,
+        sample_to_timestamp: Optional[datetime] = None,
     ) -> None:
         """
         No-op materialize. This method isn't needed for UploadedFileInput since there is nothing to materialize/compute.
@@ -97,6 +105,10 @@ class UploadedFileInput(FeatureByteBaseModel):
             The destination table to materialize the target input to
         sample_rows: Optional[int]
             The number of rows to sample from the target input
+        sample_from_timestamp: Optional[datetime]
+            The timestamp to sample from
+        sample_to_timestamp: Optional[datetime]
+            The timestamp to sample to
         """
 
 
@@ -147,6 +159,9 @@ class ObservationTableModel(MaterializedTableModel):
     primary_entity_ids: Optional[List[PydanticObjectId]] = Field(default_factory=list)
     has_row_index: Optional[bool] = Field(default=False)
     target_namespace_id: Optional[PydanticObjectId] = Field(default=None)
+    sample_rows: Optional[int] = Field(default=None)
+    sample_from_timestamp: Optional[datetime] = Field(default=None)
+    sample_to_timestamp: Optional[datetime] = Field(default=None)
 
     _sort_primary_entity_ids_validator = field_validator("primary_entity_ids")(
         construct_sort_validator()

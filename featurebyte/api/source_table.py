@@ -17,7 +17,7 @@ from typeguard import typechecked
 from featurebyte.api.entity import Entity
 from featurebyte.api.mixin import SampleMixin
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.utils import dataframe_from_json
+from featurebyte.common.utils import dataframe_from_json, validate_datetime_input
 from featurebyte.config import Configurations
 from featurebyte.core.frame import BaseFrame
 from featurebyte.core.mixin import perf_logging
@@ -999,6 +999,8 @@ class SourceTable(AbstractTableData):
         skip_entity_validation_checks: Optional[bool] = False,
         primary_entities: Optional[List[str]] = None,
         target_column: Optional[str] = None,
+        sample_from_timestamp: Optional[Union[datetime, str]] = None,
+        sample_to_timestamp: Optional[Union[datetime, str]] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the SourceTable.
@@ -1031,6 +1033,10 @@ class SourceTable(AbstractTableData):
             Name of the column in the observation table that stores the target values.
             The target column name must match an existing target namespace in the catalog.
             The data type and primary entities must match the those in the target namespace.
+        sample_from_timestamp: Optional[Union[datetime, str]]
+            Start of date range to sample from.
+        sample_to_timestamp: Optional[Union[datetime, str]]
+            End of date range to sample from.
 
         Returns
         -------
@@ -1067,6 +1073,14 @@ class SourceTable(AbstractTableData):
         else:
             logger.warning("Primary entities will be a mandatory parameter in SDK version 0.7.")
 
+        # Validate timestamp inputs
+        sample_from_timestamp = (
+            validate_datetime_input(sample_from_timestamp) if sample_from_timestamp else None
+        )
+        sample_to_timestamp = (
+            validate_datetime_input(sample_to_timestamp) if sample_to_timestamp else None
+        )
+
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
@@ -1080,6 +1094,8 @@ class SourceTable(AbstractTableData):
             skip_entity_validation_checks=skip_entity_validation_checks,
             primary_entity_ids=primary_entity_ids,
             target_column=target_column,
+            sample_from_timestamp=sample_from_timestamp,
+            sample_to_timestamp=sample_to_timestamp,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

@@ -44,6 +44,7 @@ from featurebyte.common.join_utils import (
     filter_columns_info,
     is_column_name_in_columns,
 )
+from featurebyte.common.utils import validate_datetime_input
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
@@ -1678,6 +1679,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         skip_entity_validation_checks: Optional[bool] = False,
         primary_entities: Optional[List[str]] = None,
         target_column: Optional[str] = None,
+        sample_from_timestamp: Optional[Union[datetime, str]] = None,
+        sample_to_timestamp: Optional[Union[datetime, str]] = None,
     ) -> ObservationTable:
         """
         Creates an ObservationTable from the View.
@@ -1711,6 +1714,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             Name of the column in the observation table that stores the target values.
             The target column name must match an existing target namespace in the catalog.
             The data type and primary entities must match the those in the target namespace.
+        sample_from_timestamp: Optional[Union[datetime, str]]
+            Start of date range to sample from.
+        sample_to_timestamp: Optional[Union[datetime, str]]
+            End of date range to sample from.
 
         Returns
         -------
@@ -1755,6 +1762,14 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
                     "No primary entities found. Please specify the primary entities when creating the observation table."
                 )
 
+        # Validate timestamp inputs
+        sample_from_timestamp = (
+            validate_datetime_input(sample_from_timestamp) if sample_from_timestamp else None
+        )
+        sample_to_timestamp = (
+            validate_datetime_input(sample_to_timestamp) if sample_to_timestamp else None
+        )
+
         pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         definition = get_definition_for_obs_table_creation_from_view(
             pruned_graph,
@@ -1766,7 +1781,10 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             context_name,
             skip_entity_validation_checks,
             primary_entities,
+            sample_from_timestamp,
+            sample_to_timestamp,
         )
+
         payload = ObservationTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
@@ -1782,6 +1800,8 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             skip_entity_validation_checks=skip_entity_validation_checks,
             primary_entity_ids=primary_entity_ids,
             target_column=target_column,
+            sample_from_timestamp=sample_from_timestamp,
+            sample_to_timestamp=sample_to_timestamp,
         )
         observation_table_doc = ObservationTable.post_async_task(
             route="/observation_table", payload=payload.json_dict()

@@ -138,6 +138,9 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "use_case_ids": [],
             "user_id": str(user_id),
             "is_deleted": False,
+            "sample_from_timestamp": None,
+            "sample_rows": None,
+            "sample_to_timestamp": None,
         }
 
     @pytest.mark.parametrize(

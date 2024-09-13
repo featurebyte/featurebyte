@@ -34,6 +34,7 @@ def test_get_definition_for_obs_table_creation_from_view(
         context_name=context.name,
         skip_entity_validation_checks=True,
         primary_entities=[cust_id_entity.name],
+        sample_from_timestamp="2021-01-01T13:15:00",
     )
     version = get_version()
     expected_definition = f"""
@@ -55,6 +56,8 @@ def test_get_definition_for_obs_table_creation_from_view(
         context_name="test_context",
         skip_entity_validation_checks=True,
         primary_entities=["customer"],
+        sample_from_timestamp="2021-01-01T13:15:00",
+        sample_to_timestamp=None,
     )
     """
     assert textwrap.dedent(definition).strip() == textwrap.dedent(expected_definition).strip()
