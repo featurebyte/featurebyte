@@ -1,5 +1,22 @@
 # Changelog
 
+## v2.0.1 (2024-09-13)
+
+### 💡 Enhancements
+
++ `session` Add support for BigQuery as a feature store backend
++ `service` Update ItemTable.get_view() method to auto-resolve column name conflicts by removing the conflicting column from the event table
++ `dependencies` Bump vulnerable dependencies.
+  + jupyterlab to `^4.2.5`
+  + aiohttp to `^3.10.2`
++ `service` Tighten asset name length validation in the service from 255 to 230 characters
++ `service` Allow some special columns (event_id_column, item_id_column, natural_key_column) to be optional during table registration.
++ `service` Support VARCHAR columns with a maximum length (previously detected as UNKNOWN)
+
+### 🐛 Bug Fixes
+
++ `websocket` Fixes issue with websocket connection not disconnecting properly
+
 ## v2.0.0 (2024-07-31)
 
 ### 🛑 Breaking Changes

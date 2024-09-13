@@ -4,7 +4,7 @@ name: publish
   push:
     branches:
       - main
-      - post-release/1.1.4
+      - post-release/*
 permissions:
   contents: write
 env:
