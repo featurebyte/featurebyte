@@ -13,7 +13,7 @@ COMMON_SKIPPED_ATTRIBUTES = [
     "unique_constraints",
     "parse_file",
     "parse_obj",
-    "parse_raw",
+    "model_validate_json",
     "post_async_task",
     "from_orm",
     "from_persistent_object_dict",

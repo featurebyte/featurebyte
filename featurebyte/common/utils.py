@@ -14,6 +14,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
+from io import StringIO
 from typing import Any, Generator, Iterator, List, Optional, Union
 
 import numpy as np
@@ -277,7 +278,7 @@ def dataframe_from_json(values: dict[str, Any]) -> pd.DataFrame:
                 pass
         return value
 
-    dataframe = pd.read_json(values["data"], orient="table", convert_dates=False)
+    dataframe = pd.read_json(StringIO(values["data"]), orient="table", convert_dates=False)
     type_conversions: Optional[dict[Optional[str], DBVarType]] = values.get("type_conversions")
     if type_conversions:
         for col_name, dtype in type_conversions.items():
