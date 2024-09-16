@@ -183,12 +183,11 @@ class BaseRequestInput(FeatureByteBaseModel):
                 )
             )
         if time_range_conditions:
-            if self.columns is None and self.columns_rename_mapping is None:
-                # add a select * in case the expression already has a where clause
-                query_expr = expressions.Select(expressions=[expressions.Star()]).from_(
-                    query_expr.subquery()
-                )
-            query_expr = query_expr.where(expressions.And(expressions=time_range_conditions))
+            query_expr = (
+                expressions.Select(expressions=[expressions.Star()])
+                .from_(query_expr.subquery())
+                .where(expressions.And(expressions=time_range_conditions))
+            )
 
         if sample_rows is not None:
             num_rows = await self.get_row_count(session=session, query_expr=query_expr)
