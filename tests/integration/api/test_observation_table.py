@@ -210,3 +210,35 @@ async def test_observation_table_upload(
     check_materialized_table_preview_methods(
         observation_table, [SpecialColumnName.POINT_IN_TIME, "cust_id"], number_of_rows
     )
+
+
+@pytest.mark.asyncio
+async def test_observation_table_sample_time_range(
+    event_table, scd_table, session, source_type, user_entity
+):
+    """
+    Test creating an observation table from a view sampled with time range
+    """
+    _ = user_entity
+    view = event_table.get_view()
+    scd_view = scd_table.get_view()
+    view = view.join(scd_view, on="ÜSER ID")
+    sample_rows = 123
+    observation_table = view.create_observation_table(
+        f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}_TIME_RANGE_SAMPLED",
+        sample_rows=sample_rows,
+        sample_from_timestamp="2001-02-01",
+        sample_to_timestamp="2001-06-30",
+        columns=[view.timestamp_column, "ÜSER ID"],
+        columns_rename_mapping={view.timestamp_column: "POINT_IN_TIME", "ÜSER ID": "üser id"},
+    )
+    assert (
+        observation_table.name == f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}_TIME_RANGE_SAMPLED"
+    )
+    table_details = observation_table.location.table_details
+    check_location_valid(table_details, session)
+    await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
+
+    df_describe = observation_table.describe()
+    assert pd.to_datetime(df_describe.loc["min", "POINT_IN_TIME"]) >= pd.Timestamp("2001-02-01")
+    assert pd.to_datetime(df_describe.loc["max", "POINT_IN_TIME"]) <= pd.Timestamp("2001-06-30")

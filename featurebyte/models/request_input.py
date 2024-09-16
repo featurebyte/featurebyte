@@ -188,10 +188,7 @@ class BaseRequestInput(FeatureByteBaseModel):
                 query_expr = expressions.Select(expressions=[expressions.Star()]).from_(
                     query_expr.subquery()
                 )
-            if len(time_range_conditions) == 1:
-                query_expr = query_expr.where(time_range_conditions[0])
-            else:
-                query_expr = query_expr.where(expressions.And(expressions=time_range_conditions))
+            query_expr = query_expr.where(expressions.And(expressions=time_range_conditions))
 
         if sample_rows is not None:
             num_rows = await self.get_row_count(session=session, query_expr=query_expr)

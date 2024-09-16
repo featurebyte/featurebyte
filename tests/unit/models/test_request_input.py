@@ -292,7 +292,7 @@ async def test_materialize__with_sample_timestamp(
           FROM "sf_database"."sf_schema"."sf_table"
         )
         WHERE
-          "POINT_IN_TIME" < CAST('2011-03-08T00:00:00' AS TIMESTAMP)
+            "POINT_IN_TIME" < CAST('2011-03-08T00:00:00' AS TIMESTAMP)
         """
     ).strip()
     assert session.execute_query_long_running.call_args_list == [call(expected_query)]
