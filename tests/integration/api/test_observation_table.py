@@ -239,6 +239,9 @@ async def test_observation_table_sample_time_range(
     check_location_valid(table_details, session)
     await check_materialized_table_accessible(table_details, session, source_type, sample_rows)
 
+    df_preview = observation_table.preview(limit=10)
+    assert df_preview.columns.tolist() == ["POINT_IN_TIME", "üser id"]
+
     df_describe = observation_table.describe()
     assert pd.to_datetime(df_describe.loc["min", "POINT_IN_TIME"]) >= pd.Timestamp("2001-02-01")
     assert pd.to_datetime(df_describe.loc["max", "POINT_IN_TIME"]) <= pd.Timestamp("2001-06-30")

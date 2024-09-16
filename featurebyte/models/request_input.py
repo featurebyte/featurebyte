@@ -184,7 +184,12 @@ class BaseRequestInput(FeatureByteBaseModel):
             )
         if time_range_conditions:
             query_expr = (
-                expressions.Select(expressions=[expressions.Star()])
+                expressions.Select(
+                    expressions=[
+                        quoted_identifier(col_expr.alias or col_expr.name)
+                        for (column_idx, col_expr) in enumerate(query_expr.expressions)
+                    ]
+                )
                 .from_(query_expr.subquery())
                 .where(expressions.And(expressions=time_range_conditions))
             )

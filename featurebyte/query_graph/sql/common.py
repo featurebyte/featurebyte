@@ -57,6 +57,8 @@ def quoted_identifier(column_name: str) -> Expression:
     -------
     Expression
     """
+    if column_name == "*":
+        return expressions.Star()
     return expressions.Identifier(this=column_name, quoted=True)
 
 
