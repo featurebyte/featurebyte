@@ -128,6 +128,10 @@ class FeatureByteBaseModel(BaseModel):
         use_enum_values=True,
         # whether arbitrary types are allowed for field types.
         arbitrary_types_allowed=True,
+        # Protected_namespaces warnings are disabled to avoid warnings.
+        # If we create a field_name with an actual conflict with pydantic's internal fields, we will get an error
+        # @See: https://docs.pydantic.dev/latest/api/config/#pydantic.config.ConfigDict.protected_namespaces
+        protected_namespaces=(),
     )
 
 

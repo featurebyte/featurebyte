@@ -72,7 +72,9 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
         node_name_to_operation_structure: Dict[str, OperationStructure]
             Operation structure mapping for each node in the graph
         """
-        forward_nodes = [query_graph.nodes_map[name] for name in query_graph.edges_map[node.name]]
+        forward_nodes = [
+            query_graph.nodes_map[name] for name in query_graph.edges_map.get(node.name, [])
+        ]
         if (
             node.type == NodeType.CONDITIONAL
             and len(forward_nodes) == 1
@@ -179,7 +181,8 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
         """
         for node in query_graph.iterate_sorted_nodes():
             backward_nodes = [
-                query_graph.nodes_map[name] for name in query_graph.backward_edges_map[node.name]
+                query_graph.nodes_map[name]
+                for name in query_graph.backward_edges_map.get(node.name, [])
             ]
             self._identify_output_as_info_dict(node, query_graph, node_name_to_operation_structure)
             self._identify_no_op_node(node, backward_nodes)

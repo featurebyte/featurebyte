@@ -3,9 +3,9 @@ This model contains query graph internal model structures
 """
 
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, cast
 
-from pydantic import Field, PrivateAttr, field_validator, model_validator
+from pydantic import Field, PrivateAttr, model_validator
 
 from featurebyte.enum import TableDataType
 from featurebyte.exception import GraphInconsistencyError
@@ -40,9 +40,9 @@ class QueryGraphModel(FeatureByteBaseModel):
     # non-serialized attributes (will be derived during deserialization)
     # NEVER store a non-serialized attributes that CAN'T BE DERIVED from serialized attributes
     nodes_map: Dict[str, Node] = Field(default_factory=dict, exclude=True)
-    edges_map: DefaultDict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
-    backward_edges_map: DefaultDict[str, List[str]] = Field(default=defaultdict(list), exclude=True)
-    node_type_counter: DefaultDict[str, int] = Field(default=defaultdict(int), exclude=True)
+    edges_map: Dict[str, List[str]] = Field(default_factory=dict, exclude=True)
+    backward_edges_map: Dict[str, List[str]] = Field(default_factory=dict, exclude=True)
+    node_type_counter: Dict[str, int] = Field(default_factory=dict, exclude=True)
     node_name_to_ref: Dict[str, str] = Field(default_factory=dict, exclude=True)
     ref_to_node_name: Dict[str, str] = Field(default_factory=dict, exclude=True)
 
@@ -173,32 +173,41 @@ class QueryGraphModel(FeatureByteBaseModel):
 
     @staticmethod
     def _derive_edges_map(
-        edges: List[Edge], edges_map: Optional[defaultdict[str, List[str]]]
-    ) -> defaultdict[str, List[str]]:
+        edges: List[Edge], edges_map: Optional[dict[str, List[str]]]
+    ) -> dict[str, List[str]]:
         if edges_map is None:
-            edges_map = defaultdict(list)
+            edges_map = {}
         for edge in edges:
-            edges_map[edge.source].append(edge.target)
+            if edge.source not in edges_map:
+                edges_map[edge.source] = [edge.target]
+            else:
+                edges_map[edge.source].append(edge.target)
         return edges_map
 
     @staticmethod
     def _derive_backward_edges_map(
-        edges: List[Edge], backward_edges_map: Optional[defaultdict[str, List[str]]]
-    ) -> defaultdict[str, List[str]]:
+        edges: List[Edge], backward_edges_map: Optional[dict[str, List[str]]]
+    ) -> Dict[str, List[str]]:
         if backward_edges_map is None:
-            backward_edges_map = defaultdict(list)
+            backward_edges_map = {}
         for edge in edges:
-            backward_edges_map[edge.target].append(edge.source)
+            if edge.target not in backward_edges_map:
+                backward_edges_map[edge.target] = [edge.source]
+            else:
+                backward_edges_map[edge.target].append(edge.source)
         return backward_edges_map
 
     @staticmethod
     def _derive_node_type_counter(
-        nodes: List[Node], node_type_counter: Optional[defaultdict[str, int]]
-    ) -> defaultdict[str, int]:
+        nodes: List[Node], node_type_counter: Optional[dict[str, int]]
+    ) -> dict[str, int]:
         if node_type_counter is None:
-            node_type_counter = defaultdict(int)
+            node_type_counter = {}
         for node in nodes:
-            node_type_counter[node.type] += 1
+            if node.type not in node_type_counter:
+                node_type_counter[node.type] = 1
+            else:
+                node_type_counter[node.type] += 1
         return node_type_counter
 
     @staticmethod
@@ -317,20 +326,6 @@ class QueryGraphModel(FeatureByteBaseModel):
             )
 
         return self
-
-    @field_validator("edges_map", "backward_edges_map")
-    @classmethod
-    def _make_default_dict_list(cls, value: Dict[str, Any]) -> Dict[str, Any]:
-        # make sure the output is default dict to list
-        updated_dict = defaultdict(list, value)
-        return updated_dict
-
-    @field_validator("node_type_counter")
-    @classmethod
-    def _make_default_dict_int(cls, value: Dict[str, Any]) -> Dict[str, Any]:
-        # make sure the output is default dict to int
-        updated_dict = defaultdict(int, value)
-        return updated_dict
 
     def get_node_by_name(self, node_name: str) -> Node:
         """
@@ -591,11 +586,21 @@ class QueryGraphModel(FeatureByteBaseModel):
 
         """
         self.edges.append(Edge(source=parent.name, target=child.name))
-        self.edges_map[parent.name].append(child.name)
-        self.backward_edges_map[child.name].append(parent.name)
+        if parent.name not in self.edges_map:
+            self.edges_map[parent.name] = [child.name]
+        else:
+            self.edges_map[parent.name].append(child.name)
+
+        if child.name not in self.backward_edges_map:
+            self.backward_edges_map[child.name] = [parent.name]
+        else:
+            self.backward_edges_map[child.name].append(parent.name)
 
     def _generate_node_name(self, node_type: NodeType) -> str:
-        self.node_type_counter[node_type] += 1
+        if node_type not in self.node_type_counter:
+            self.node_type_counter[node_type] = 1
+        else:
+            self.node_type_counter[node_type] += 1
         return f"{node_type}_{self.node_type_counter[node_type]}"
 
     def _add_node(self, node: Node) -> Node:
