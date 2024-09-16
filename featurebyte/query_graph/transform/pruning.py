@@ -181,7 +181,7 @@ class NodeParametersPruningExtractor(
                 target_node_input_order_pairs.append((project_node, 0))
             else:
                 # get the output nodes of current node (target nodes)
-                target_node_names = self.graph.edges_map[node.name]
+                target_node_names = self.graph.edges_map.get(node.name, [])
                 for target_node_name in target_node_names:
                     target_node = self.graph.get_node_by_name(target_node_name)
                     target_node_input_order_pairs.append((

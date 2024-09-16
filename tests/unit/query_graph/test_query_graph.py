@@ -3,7 +3,6 @@ Unit test for query graph
 """
 
 import textwrap
-from collections import defaultdict
 
 import pytest
 from bson import ObjectId
@@ -169,9 +168,9 @@ def test_serialization_deserialization__with_existing_non_empty_graph(dataframe,
         GraphInterpreter(GlobalQueryGraph(), source_info).construct_preview_sql(node_global.name)
         == query_before_serialization
     )
-    assert isinstance(graph.edges_map, defaultdict)
-    assert isinstance(graph.backward_edges_map, defaultdict)
-    assert isinstance(graph.node_type_counter, defaultdict)
+    assert isinstance(graph.edges_map, dict)
+    assert isinstance(graph.backward_edges_map, dict)
+    assert isinstance(graph.node_type_counter, dict)
 
     # check that loading the deserialized graph back to global won't affect other node
     pruned_graph_after_load, _ = GlobalQueryGraph().prune(target_node=node_before_load)
