@@ -75,7 +75,7 @@ def dfs_inner(
     """
     visited[node.name] = True
     yield node
-    for parent_name in query_graph.backward_edges_map[node.name]:
+    for parent_name in query_graph.backward_edges_map.get(node.name, []):
         if visited.get(parent_name):
             continue
         parent_node = query_graph.get_node_by_name(parent_name)

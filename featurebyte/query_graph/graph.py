@@ -6,7 +6,6 @@ from collections import OrderedDict, defaultdict
 from typing import (
     Any,
     Callable,
-    DefaultDict,
     Dict,
     Generator,
     Iterator,
@@ -419,7 +418,7 @@ class QueryGraph(QueryGraphModel):
         for node in graph.iterate_sorted_nodes():
             input_nodes = [
                 self.get_node_by_name(node_name_map[input_node_name])
-                for input_node_name in graph.backward_edges_map[node.name]
+                for input_node_name in graph.backward_edges_map.get(node.name, [])
             ]
             node_global = self.add_operation_node(node=node, input_nodes=input_nodes)
             node_name_map[node.name] = node_global.name
@@ -641,9 +640,9 @@ def _create_global_graph_state() -> GraphState:
         "edges": [],
         "nodes": [],
         "nodes_map": {},
-        "edges_map": defaultdict(list),
-        "backward_edges_map": defaultdict(list),
-        "node_type_counter": defaultdict(int),
+        "edges_map": {},
+        "backward_edges_map": {},
+        "node_type_counter": {},
         "node_name_to_ref": {},
         "ref_to_node_name": {},
     }
@@ -705,13 +704,13 @@ class GlobalQueryGraph(QueryGraph):
     nodes_map: Dict[str, Node] = Field(
         default_factory=GlobalGraphState.construct_getter_func("nodes_map"), exclude=True
     )
-    edges_map: DefaultDict[str, List[str]] = Field(
+    edges_map: Dict[str, List[str]] = Field(
         default_factory=GlobalGraphState.construct_getter_func("edges_map"), exclude=True
     )
-    backward_edges_map: DefaultDict[str, List[str]] = Field(
+    backward_edges_map: Dict[str, List[str]] = Field(
         default_factory=GlobalGraphState.construct_getter_func("backward_edges_map"), exclude=True
     )
-    node_type_counter: DefaultDict[str, int] = Field(
+    node_type_counter: Dict[str, int] = Field(
         default_factory=GlobalGraphState.construct_getter_func("node_type_counter"),
         exclude=True,
     )
