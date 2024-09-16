@@ -277,7 +277,8 @@ async def test_materialize__with_sample_timestamp(
         """
         CREATE TABLE "sf_database"."sf_schema"."my_materialized_table" AS
         SELECT
-          *
+          "POINT_IN_TIME",
+          "col_int"
         FROM (
           SELECT
             "event_timestamp" AS "POINT_IN_TIME",
@@ -327,7 +328,8 @@ async def test_materialize__with_sample_timestamp_biqquery(
         """
         CREATE TABLE `sf_database`.`sf_schema`.`my_materialized_table` AS
         SELECT
-          *
+          `a`,
+          `b`
         FROM (
           SELECT
             `a`,
@@ -368,7 +370,14 @@ async def test_materialize__with_sample_timestamp_no_columns_rename(
         """
         CREATE TABLE "sf_database"."sf_schema"."my_materialized_table" AS
         SELECT
-          *
+          "col_int",
+          "col_float",
+          "col_char",
+          "col_text",
+          "col_binary",
+          "col_boolean",
+          "event_timestamp",
+          "cust_id"
         FROM (
           SELECT
             "col_int" AS "col_int",
