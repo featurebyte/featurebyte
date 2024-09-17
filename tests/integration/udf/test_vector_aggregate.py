@@ -5,12 +5,16 @@ Tests for vector aggregate operations in snowflake
 import pandas as pd
 import pytest
 import pytest_asyncio
+from sqlglot import expressions
 
+from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.session.base import BaseSession
+from tests.source_types import SNOWFLAKE_SPARK_BIGQUERY
 from tests.util.helper import fb_assert_frame_equal
 
 
 @pytest_asyncio.fixture(name="setup_test_data", scope="module")
-async def setup_test_data_fixture(session):
+async def setup_test_data_fixture(session, to_array):
     """
     Setup test data
     """
@@ -23,35 +27,57 @@ async def setup_test_data_fixture(session):
         (2, [4, 4, 10.0]),
         (2, [1, 12, 2.0]),
     ]
-    create_table_query = (
-        "CREATE OR REPLACE TABLE test_table (id_col number, array_col ARRAY, count float);"
+    create_table_query = "CREATE TABLE TEST_TABLE_VECTOR_AGGREGATE AS\n"
+    row_statements = []
+    for row in input_data:
+        row_statements.append(
+            f"SELECT {row[0]} AS ID_COL, {to_array(tuple(row[1]))} AS ARRAY_COL, CAST(1.0 AS DOUBLE) AS COUNT"
+        )
+    create_table_query += "\nUNION ALL\n".join(row_statements)
+    await session.execute_query(create_table_query)
+
+
+def _get_query_snowflake(aggregate_function: str, with_count: bool) -> str:
+    """
+    Get query with Snowflake table function
+    """
+    args = ["ARRAY_COL"]
+    if with_count:
+        args.append("COUNT")
+    args_str = ", ".join(args)
+    return f"""
+    SELECT a.ID_COL, b.VECTOR_AGG_RESULT AS OUT
+    FROM TEST_TABLE_VECTOR_AGGREGATE AS a, table({aggregate_function}({args_str}) OVER (partition by ID_COL)) AS b
+    """
+
+
+def _get_query_groupby(session: BaseSession, aggregate_function: str, with_count: bool) -> str:
+    """
+    Get query with groupby and then calling vector aggregate function
+    """
+    udf_args = [expressions.Identifier(this="ARRAY_COL")]
+    if with_count:
+        udf_args.append(expressions.Identifier(this="COUNT"))
+    udf_result = sql_to_string(
+        session.adapter.call_udf(aggregate_function, udf_args),
+        source_type=session.source_type,
     )
-    insert_values = []
-    for id_col, array_col in input_data:
-        insert_values.append(f"({id_col}, '{array_col}')")
-    insert_query = f"""
-        INSERT INTO test_table
-          SELECT $1, PARSE_JSON($2), 1
-          FROM VALUES
-          {", ".join(insert_values)}
-          ;
-        """
-    queries = [create_table_query, insert_query]
-    for query in queries:
-        await session.execute_query(query)
+    return f"""
+    SELECT ID_COL, {udf_result} AS OUT
+    FROM TEST_TABLE_VECTOR_AGGREGATE
+    GROUP BY ID_COL
+    """
 
 
-def _get_query(aggregate_function: str) -> str:
+def _get_query(session, aggregate_function: str, with_count: bool = False) -> str:
     """
     Get query
     """
-    return f"""
-    SELECT a.id_col, b.VECTOR_AGG_RESULT AS OUT
-    FROM test_table AS a, table({aggregate_function}(ARRAY_COL) OVER (partition by id_col)) AS b
-    """
+    if session.source_type == "snowflake":
+        return _get_query_snowflake(aggregate_function, with_count)
+    return _get_query_groupby(session, aggregate_function, with_count)
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_max(setup_test_data, session):
     """
@@ -59,7 +85,7 @@ async def test_vector_aggregate_max(setup_test_data, session):
     """
     _ = setup_test_data
     # Run query
-    query = _get_query("VECTOR_AGGREGATE_MAX")
+    query = _get_query(session, "VECTOR_AGGREGATE_MAX")
     df = await session.execute_query(query)
 
     # Assert expected results
@@ -68,7 +94,7 @@ async def test_vector_aggregate_max(setup_test_data, session):
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_sum(setup_test_data, session):
     """
@@ -76,7 +102,7 @@ async def test_vector_aggregate_sum(setup_test_data, session):
     """
     _ = setup_test_data
     # Run query
-    query = _get_query("VECTOR_AGGREGATE_SUM")
+    query = _get_query(session, "VECTOR_AGGREGATE_SUM")
     df = await session.execute_query(query)
 
     # Assert expected results
@@ -85,7 +111,7 @@ async def test_vector_aggregate_sum(setup_test_data, session):
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_simple_avg(setup_test_data, session):
     """
@@ -93,7 +119,7 @@ async def test_vector_aggregate_simple_avg(setup_test_data, session):
     """
     _ = setup_test_data
     # Run query
-    query = _get_query("VECTOR_AGGREGATE_SIMPLE_AVERAGE")
+    query = _get_query(session, "VECTOR_AGGREGATE_SIMPLE_AVERAGE")
     df = await session.execute_query(query)
 
     # Assert expected results
@@ -102,7 +128,7 @@ async def test_vector_aggregate_simple_avg(setup_test_data, session):
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
-@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_avg(setup_test_data, session):
     """
@@ -110,10 +136,7 @@ async def test_vector_aggregate_avg(setup_test_data, session):
     """
     _ = setup_test_data
     # Run query
-    query = """
-    SELECT a.id_col, b.VECTOR_AGG_RESULT AS OUT
-    FROM test_table AS a, table(VECTOR_AGGREGATE_AVG(ARRAY_COL, COUNT) OVER (partition by id_col)) AS b
-    """
+    query = _get_query(session, "VECTOR_AGGREGATE_AVG", with_count=True)
     df = await session.execute_query(query)
 
     # Assert expected results
