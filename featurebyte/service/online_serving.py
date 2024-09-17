@@ -13,9 +13,7 @@ from typing import Any, Dict, List, Optional, Union
 from unittest.mock import patch
 
 import pandas as pd
-from feast.base_feature_view import BaseFeatureView
 from feast.feature_store import FeatureStore as FeastFeatureStore
-from feast.on_demand_feature_view import OnDemandFeatureView
 from jinja2 import Template
 
 from featurebyte.enum import SpecialColumnName
@@ -26,8 +24,6 @@ from featurebyte.exception import (
 )
 from featurebyte.feast.patch import (
     augment_response_with_on_demand_transforms,
-    get_transformed_features_df,
-    with_projection,
 )
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId, VersionIdentifier
@@ -346,29 +342,37 @@ class OnlineServingService:
         ]
 
         # FIXME: This is a temporary fix to avoid the bug in feast 0.35.0
-        with patch.object(
-            feast_store,
-            "_augment_response_with_on_demand_transforms",
-            new=augment_response_with_on_demand_transforms,
-        ):
-            # FIXME: This is a temporary fix to performance issues due to highly fragmented dataframe
-            with patch.object(
-                OnDemandFeatureView,
-                "get_transformed_features_df",
-                new=get_transformed_features_df,
-            ):
-                # FIXME: This is a temporary fix to avoid O(N^2) complexity in with_projection method
-                with patch.object(
-                    BaseFeatureView,
-                    "with_projection",
-                    new=with_projection,
-                ):
-                    feature_service = feast_store.get_feature_service(feast_service_name)
-                    df_feast_online_features = feast_store.get_online_features(
-                        feature_service,
-                        updated_request_data,
-                    ).to_df()[versioned_feature_names]
-                    return df_feast_online_features
+        with patch(
+            "feast.utils._augment_response_with_on_demand_transforms"
+        ) as mock_augment_response_with_on_demand_transforms:
+            mock_augment_response_with_on_demand_transforms.side_effect = (
+                augment_response_with_on_demand_transforms
+            )
+            feature_service = feast_store.get_feature_service(feast_service_name)
+            df_feast_online_features = feast_store.get_online_features(
+                feature_service,
+                updated_request_data,
+            ).to_df()[versioned_feature_names]
+            return df_feast_online_features
+
+            # # FIXME: This is a temporary fix to performance issues due to highly fragmented dataframe
+            # with patch.object(
+            #     OnDemandFeatureView,
+            #     "get_transformed_features_df",
+            #     new=get_transformed_features_df,
+            # ):
+            #     # FIXME: This is a temporary fix to avoid O(N^2) complexity in with_projection method
+            #     with patch.object(
+            #         BaseFeatureView,
+            #         "with_projection",
+            #         new=with_projection,
+            #     ):
+            #         feature_service = feast_store.get_feature_service(feast_service_name)
+            #         df_feast_online_features = feast_store.get_online_features(
+            #             feature_service,
+            #             updated_request_data,
+            #         ).to_df()[versioned_feature_names]
+            #         return df_feast_online_features
 
     @staticmethod
     def _require_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:

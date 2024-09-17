@@ -863,11 +863,12 @@ async def test_feast_registry(
         "order_id": "T3850",
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 12:00:00"),
     }
-    with patch.object(
-        feature_store,
-        "_augment_response_with_on_demand_transforms",
-        new=augment_response_with_on_demand_transforms,
-    ):
+    with patch(
+        "feast.utils._augment_response_with_on_demand_transforms"
+    ) as mock_augment_response_with_on_demand_transforms:
+        mock_augment_response_with_on_demand_transforms.side_effect = (
+            augment_response_with_on_demand_transforms
+        )
         online_features = feature_store.get_online_features(
             features=feature_service,
             entity_rows=[entity_row],
@@ -938,11 +939,12 @@ async def test_feast_registry(
     # set point in time > 2001-01-02 12:00:00 +  2 hours (frequency is 1 hour) &
     # expect all ttl features to be null
     entity_row["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 14:00:01")
-    with patch.object(
-        feature_store,
-        "_augment_response_with_on_demand_transforms",
-        new=augment_response_with_on_demand_transforms,
-    ):
+    with patch(
+        "feast.utils._augment_response_with_on_demand_transforms",
+    ) as mock_augment_response_with_on_demand_transforms:
+        mock_augment_response_with_on_demand_transforms.side_effect = (
+            augment_response_with_on_demand_transforms
+        )
         online_features = feature_store.get_online_features(
             features=feature_service,
             entity_rows=[entity_row],
@@ -978,11 +980,12 @@ async def test_feast_registry(
     # set the point in time earlier than the 2001-01-02 12:00:00
     # expect all ttl features to be null
     entity_row["POINT_IN_TIME"] = pd.Timestamp("2001-01-02 11:59:59")
-    with patch.object(
-        feature_store,
-        "_augment_response_with_on_demand_transforms",
-        new=augment_response_with_on_demand_transforms,
-    ):
+    with patch(
+        "feast.utils._augment_response_with_on_demand_transforms",
+    ) as mock_augment_response_with_on_demand_transforms:
+        mock_augment_response_with_on_demand_transforms.side_effect = (
+            augment_response_with_on_demand_transforms
+        )
         online_features = feature_store.get_online_features(
             features=feature_service,
             entity_rows=[entity_row],
