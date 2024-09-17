@@ -28,9 +28,9 @@ FROM (
         "__FB_EFFECTIVE_TS_COL"
       FROM (
         SELECT
-          FLOOR((
+          CAST(FLOOR((
             DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-          ) / 3600) - 48 AS "__FB_TS_COL",
+          ) / 3600) AS BIGINT) - 48 AS "__FB_TS_COL",
           "CUSTOMER_ID" AS "__FB_KEY_COL_0",
           "BUSINESS_ID" AS "__FB_KEY_COL_1",
           NULL AS "__FB_EFFECTIVE_TS_COL",

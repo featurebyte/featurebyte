@@ -13,13 +13,16 @@ FROM (
   FROM "sf_database"."sf_schema"."sf_table"
   WHERE
     "event_timestamp" >= __fb_last_materialized_timestamp
-    AND "event_timestamp" < F_INDEX_TO_TIMESTAMP(
-      FLOOR((
-        DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
-      ) / 1800),
-      300,
-      600,
-      30
+    AND "event_timestamp" < CONVERT_TIMEZONE(
+      'UTC',
+      F_INDEX_TO_TIMESTAMP(
+        CAST(FLOOR((
+          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+        ) / 1800) AS BIGINT),
+        300,
+        600,
+        30
+      )
     )
 )
 WHERE

@@ -195,12 +195,12 @@ WITH REQUEST_TABLE AS (
   SELECT
     "POINT_IN_TIME",
     "CUSTOMER_ID",
-    FLOOR((
+    CAST(FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) AS __FB_LAST_TILE_INDEX,
-    FLOOR((
+    ) / 3600) AS BIGINT) AS __FB_LAST_TILE_INDEX,
+    CAST(FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) - 2 AS __FB_FIRST_TILE_INDEX
+    ) / 3600) AS BIGINT) - 2 AS __FB_FIRST_TILE_INDEX
   FROM (
     SELECT DISTINCT
       "POINT_IN_TIME",
@@ -211,12 +211,12 @@ WITH REQUEST_TABLE AS (
   SELECT
     "POINT_IN_TIME",
     "CUSTOMER_ID",
-    FLOOR((
+    CAST(FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) AS __FB_LAST_TILE_INDEX,
-    FLOOR((
+    ) / 3600) AS BIGINT) AS __FB_LAST_TILE_INDEX,
+    CAST(FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) - 48 AS __FB_FIRST_TILE_INDEX
+    ) / 3600) AS BIGINT) - 48 AS __FB_FIRST_TILE_INDEX
   FROM (
     SELECT DISTINCT
       "POINT_IN_TIME",
@@ -227,12 +227,12 @@ WITH REQUEST_TABLE AS (
   SELECT
     "POINT_IN_TIME",
     "CUSTOMER_ID",
-    FLOOR((
+    CAST(FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) AS __FB_LAST_TILE_INDEX,
-    FLOOR((
+    ) / 3600) AS BIGINT) AS __FB_LAST_TILE_INDEX,
+    CAST(FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-    ) / 3600) - 2160 AS __FB_FIRST_TILE_INDEX
+    ) / 3600) AS BIGINT) - 2160 AS __FB_FIRST_TILE_INDEX
   FROM (
     SELECT DISTINCT
       "POINT_IN_TIME",
@@ -318,9 +318,9 @@ WITH REQUEST_TABLE AS (
                     "__FB_EFFECTIVE_TS_COL"
                   FROM (
                     SELECT
-                      FLOOR((
+                      CAST(FLOOR((
                         DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
-                      ) / 3600) AS "__FB_TS_COL",
+                      ) / 3600) AS BIGINT) AS "__FB_TS_COL",
                       "CUSTOMER_ID" AS "__FB_KEY_COL_0",
                       "BUSINESS_ID" AS "__FB_KEY_COL_1",
                       NULL AS "__FB_EFFECTIVE_TS_COL",

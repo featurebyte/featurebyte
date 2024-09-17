@@ -61,26 +61,26 @@ FROM (
       "cust_id" AS "cust_id"
     FROM TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9
     WHERE
-      INDEX >= FLOOR(
+      INDEX >= CAST(FLOOR(
         (
           DATE_PART(EPOCH_SECOND, CAST('2022-06-15 10:15:00' AS TIMESTAMP)) - 900
         ) / 3600
-      ) - 4
-      AND INDEX < FLOOR(
+      ) AS BIGINT) - 4
+      AND INDEX < CAST(FLOOR(
         (
           DATE_PART(EPOCH_SECOND, CAST('2022-06-15 10:15:00' AS TIMESTAMP)) - 900
         ) / 3600
-      )
+      ) AS BIGINT)
   ), "REQUEST_TABLE_W14400_F3600_BS1800_M900_cust_id" AS (
     SELECT
       "POINT_IN_TIME",
       "cust_id",
-      FLOOR((
+      CAST(FLOOR((
         DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 900
-      ) / 3600) AS __FB_LAST_TILE_INDEX,
-      FLOOR((
+      ) / 3600) AS BIGINT) AS __FB_LAST_TILE_INDEX,
+      CAST(FLOOR((
         DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 900
-      ) / 3600) - 4 AS __FB_FIRST_TILE_INDEX
+      ) / 3600) AS BIGINT) - 4 AS __FB_FIRST_TILE_INDEX
     FROM (
       SELECT DISTINCT
         "POINT_IN_TIME",
