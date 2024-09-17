@@ -354,6 +354,34 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             disable_audit=self.should_disable_audit,
         )
 
+    async def update_on_demand_feature_view_codes(self, document_id: ObjectId) -> FeatureModel:
+        """
+        Update on-demand feature view codes for a feature
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            Feature id
+
+        Returns
+        -------
+        FeatureModel
+        """
+        feature = await self.get_document(document_id=document_id)
+        if feature.offline_store_info.odfv_info:
+            codes = feature.offline_store_info.generate_on_demand_feature_view_code()
+            await self.persistent.update_one(
+                collection_name=self.collection_name,
+                query_filter=self._construct_get_query_filter(document_id=document_id),
+                update={"$set": {"offline_store_info.odfv_info.codes": codes}},
+                user_id=self.user.id,
+                disable_audit=self.should_disable_audit,
+            )
+            feature = await self.get_document(document_id=document_id)
+            assert feature.offline_store_info.odfv_info is not None, "Update failed"
+            assert feature.offline_store_info.odfv_info.codes == codes, "Update failed"
+        return feature
+
     async def update_last_updated_by_scheduled_task_at(
         self, aggregation_id: str, last_updated_by_scheduled_task_at: datetime
     ) -> None:

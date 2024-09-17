@@ -188,14 +188,14 @@ class DeployFeatureManagementService:
         -------
         FeatureModel
         """
-        # update feature mongo record
-        if feast_registry:
-            feature = await self._update_feature_offline_store_info(
-                feature=feature,
-                table_name_prefix=feast_registry.offline_table_name_prefix,
-            )
-
         if not feature.online_enabled:
+            if feast_registry:
+                # update feature mongo record
+                feature = await self._update_feature_offline_store_info(
+                    feature=feature,
+                    table_name_prefix=feast_registry.offline_table_name_prefix,
+                )
+
             # update data warehouse and backward-fill tiles if the feature is not already online
             await self.online_enable_service.update_data_warehouse(
                 feature=feature, target_online_enabled=True
@@ -526,6 +526,7 @@ class FeastIntegrationService:
     def __init__(
         self,
         feast_registry_service: FeastRegistryService,
+        feature_service: FeatureService,
         feature_list_service: FeatureListService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         offline_store_feature_table_manager_service: OfflineStoreFeatureTableManagerService,
@@ -533,6 +534,7 @@ class FeastIntegrationService:
         deployment_serving_entity_service: DeploymentServingEntityService,
     ):
         self.feast_registry_service = feast_registry_service
+        self.feature_service = feature_service
         self.feature_list_service = feature_list_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.offline_store_feature_table_manager_service = (
@@ -606,8 +608,14 @@ class FeastIntegrationService:
         update_progress: Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
             Optional progress update callback
         """
+        features_to_use = []
+        for feature in features:
+            feature_to_use = await self.feature_service.update_on_demand_feature_view_codes(
+                document_id=feature.id
+            )
+            features_to_use.append(feature_to_use)
         await self.offline_store_feature_table_manager_service.handle_online_enabled_features(
-            features=features,
+            features=features_to_use,
             feature_list_to_online_enable=feature_list_to_online_enable,
             deployment=deployment,
             update_progress=update_progress,

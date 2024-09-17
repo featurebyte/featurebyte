@@ -512,6 +512,7 @@ class FeastAssetCreator:
                 name_to_feast_request_source=name_to_feast_request_source,
             )
             on_demand_feature_views.append(on_demand_feature_view)
+
         return on_demand_feature_views
 
     @staticmethod

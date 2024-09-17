@@ -355,14 +355,11 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                 output_df_name="df",
                 function_name=f"odfv_{unique_func_name}",
             )
-            odfv_info.codes = self.generate_on_demand_feature_view_code(
-                feature_versioned_name=feature_versioned_name,
-                input_df_name=odfv_info.input_df_name,
-                output_df_name=odfv_info.output_df_name,
-                function_name=odfv_info.function_name,
-                ttl_seconds=self.time_to_live_in_secs,
-            )
             self.odfv_info = odfv_info
+            # Generate on demand feature view code. The codes will be overridden later by
+            # `FeatureService.update_on_demand_feature_view_codes` method due to the actual offline store table
+            # used by the feature could be different from the one generated here.
+            self.odfv_info.codes = self.generate_on_demand_feature_view_code()
 
         if self.is_decomposed or self.null_filling_value is not None:
             # initialize the user defined function info
@@ -420,79 +417,60 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             )
         return output
 
-    def generate_on_demand_feature_view_code(
-        self,
-        feature_versioned_name: str,
-        input_df_name: str = "inputs",
-        output_df_name: str = "df",
-        function_name: str = "on_demand_feature_view",
-        ttl_seconds: Optional[int] = None,
-    ) -> str:
+    def generate_on_demand_feature_view_code(self) -> str:
         """
         Extract on demand view graphs from the feature or target query graph
-
-        Parameters
-        ----------
-        feature_versioned_name: str
-            Feature name
-        input_df_name: str
-            Input dataframe name
-        output_df_name: str
-            Output dataframe name
-        function_name: str
-            Function name
-        ttl_seconds: Optional[int]
-            Time-to-live (TTL) in seconds
 
         Returns
         -------
         str
-            Generated code
+            Generated code used for Feast OnDemandFeatureView
         """
+        assert self.odfv_info is not None
         if self.is_decomposed:
             node = self.graph.get_node_by_name(self.node_name)
             codegen_state = OnDemandFeatureViewExtractor(graph=self.graph).extract(
                 node=node,
-                input_df_name=input_df_name,
-                output_df_name=output_df_name,
-                on_demand_function_name=function_name,
-                feature_name_version=feature_versioned_name,
+                input_df_name=self.odfv_info.input_df_name,
+                output_df_name=self.odfv_info.output_df_name,
+                on_demand_function_name=self.odfv_info.function_name,
+                feature_name_version=self.odfv_info.feature_versioned_name,
             )
             code_generator = codegen_state.code_generator
         else:
             code_generator = CodeGenerator(template="on_demand_view.tpl")
-            assert ttl_seconds is not None or self.null_filling_value is not None
+            assert self.time_to_live_in_secs is not None or self.null_filling_value is not None
             if self.null_filling_value is not None:
                 statements = OnDemandFeatureViewExtractor.generate_null_filling_statements(
-                    feature_name_version=feature_versioned_name,
-                    output_df_name=output_df_name,
+                    feature_name_version=self.odfv_info.feature_versioned_name,
+                    output_df_name=self.odfv_info.output_df_name,
                     input_column_expr=subset_frame_column_expr(
-                        input_df_name,
-                        feature_versioned_name,
+                        self.odfv_info.input_df_name,
+                        self.odfv_info.feature_versioned_name,
                     ),
                     fill_value=self.null_filling_value,
                 )
                 code_generator.add_statements(statements=[statements])
 
-            if ttl_seconds is not None:
+            if self.time_to_live_in_secs is not None:
                 statements = OnDemandFeatureViewExtractor.generate_ttl_handling_statements(
-                    feature_name_version=feature_versioned_name,
-                    input_df_name=input_df_name,
-                    output_df_name=output_df_name,
+                    feature_name_version=self.odfv_info.feature_versioned_name,
+                    input_df_name=self.odfv_info.input_df_name,
+                    output_df_name=self.odfv_info.output_df_name,
                     input_column_expr=subset_frame_column_expr(
-                        input_df_name,
-                        feature_versioned_name,
+                        self.odfv_info.input_df_name,
+                        self.odfv_info.feature_versioned_name,
                     ),
-                    ttl_seconds=ttl_seconds,
+                    ttl_seconds=self.time_to_live_in_secs,
                     var_name_generator=VariableNameGenerator(),
                 )
                 code_generator.add_statements(statements=[statements])
 
         codes = code_generator.generate(
             to_format=True,
-            input_df_name=input_df_name,
-            output_df_name=output_df_name,
-            function_name=function_name,
+            input_df_name=self.odfv_info.input_df_name,
+            output_df_name=self.odfv_info.output_df_name,
+            function_name=self.odfv_info.function_name,
         )
         return codes
 
