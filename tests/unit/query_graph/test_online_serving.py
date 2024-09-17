@@ -2,7 +2,6 @@
 Tests for featurebyte.query_graph.sql.online_serving
 """
 
-import textwrap
 from typing import List
 from unittest.mock import patch
 
@@ -68,7 +67,7 @@ def get_aggregation_specs(graph, groupby_node, adapter) -> List[TileBasedAggrega
     return agg_specs
 
 
-def test_construct_universe_sql(query_graph_with_groupby, adapter):
+def test_construct_universe_sql(query_graph_with_groupby, adapter, update_fixtures):
     """
     Test constructing universe sql for a simple point in time groupby
     """
@@ -78,52 +77,24 @@ def test_construct_universe_sql(query_graph_with_groupby, adapter):
 
     # window size of 2h
     universe = plan._construct_online_store_universe(agg_specs[0])
-    expected_sql = textwrap.dedent(
-        """
-        SELECT DISTINCT
-          CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
-          "cust_id" AS "CUSTOMER_ID"
-        FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
-        WHERE
-          INDEX >= FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
-            ) / 3600
-          ) - 2
-          AND INDEX < FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
-            ) / 3600
-          )
-        """
-    ).strip()
-    assert universe.expr.sql(pretty=True) == expected_sql
+    assert_equal_with_expected_fixture(
+        universe.expr.sql(pretty=True),
+        "tests/fixtures/expected_universe_2h.sql",
+        update_fixture=update_fixtures,
+    )
 
     # window size of 48h
     universe = plan._construct_online_store_universe(agg_specs[1])
-    expected_sql = textwrap.dedent(
-        """
-        SELECT DISTINCT
-          CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
-          "cust_id" AS "CUSTOMER_ID"
-        FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
-        WHERE
-          INDEX >= FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
-            ) / 3600
-          ) - 48
-          AND INDEX < FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
-            ) / 3600
-          )
-        """
-    ).strip()
-    assert universe.expr.sql(pretty=True) == expected_sql
+    assert_equal_with_expected_fixture(
+        universe.expr.sql(pretty=True),
+        "tests/fixtures/expected_universe_48h.sql",
+        update_fixture=update_fixtures,
+    )
 
 
-def test_construct_universe_sql__category(query_graph_with_category_groupby, adapter, source_info):
+def test_construct_universe_sql__category(
+    query_graph_with_category_groupby, adapter, source_info, update_fixtures
+):
     """
     Test constructing universe sql for groupby with category (the category column should not be part
     of SELECT DISTINCT)
@@ -133,32 +104,18 @@ def test_construct_universe_sql__category(query_graph_with_category_groupby, ada
     plan = OnlineStorePrecomputePlan(graph, node, adapter, True)
     agg_specs = get_aggregation_specs(graph, node, adapter)
     universe = plan._construct_online_store_universe(agg_specs[0])
-    expected_sql = textwrap.dedent(
-        """
-        SELECT DISTINCT
-          CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
-          "cust_id" AS "CUSTOMER_ID"
-        FROM TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226
-        WHERE
-          INDEX >= FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
-            ) / 3600
-          ) - 2
-          AND INDEX < FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
-            ) / 3600
-          )
-        """
-    ).strip()
-    assert universe.expr.sql(pretty=True) == expected_sql
+    assert_equal_with_expected_fixture(
+        universe.expr.sql(pretty=True),
+        "tests/fixtures/expected_universe_category.sql",
+        update_fixture=update_fixtures,
+    )
 
 
 def test_construct_universe_sql__unbounded_latest(
     global_graph,
     latest_value_without_window_feature_node,
     adapter,
+    update_fixtures,
 ):
     """
     Test constructing universe sql for groupby with category
@@ -173,28 +130,18 @@ def test_construct_universe_sql__unbounded_latest(
         global_graph, global_graph.get_node_by_name("groupby_1"), adapter
     )
     universe = plan._construct_online_store_universe(agg_specs[0])
-    expected_sql = textwrap.dedent(
-        """
-        SELECT DISTINCT
-          CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
-          "cust_id" AS "CUSTOMER_ID",
-          "biz_id" AS "BUSINESS_ID"
-        FROM TILE_F3600_M1800_B900_AF1FD0AEE34EC80A96A6D5A486CE40F5A2267B4E
-        WHERE
-          INDEX < FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
-            ) / 3600
-          )
-        """
-    ).strip()
-    assert universe.expr.sql(pretty=True) == expected_sql
+    assert_equal_with_expected_fixture(
+        universe.expr.sql(pretty=True),
+        "tests/fixtures/expected_universe_unbounded_latest.sql",
+        update_fixture=update_fixtures,
+    )
 
 
 def test_construct_universe_sql__window_offset(
     global_graph,
     window_aggregate_with_offset_feature_node,
     adapter,
+    update_fixtures,
 ):
     """
     Test constructing universe sql for window aggregate with offset
@@ -209,26 +156,11 @@ def test_construct_universe_sql__window_offset(
         global_graph, global_graph.get_node_by_name("groupby_1"), adapter
     )
     universe = plan._construct_online_store_universe(agg_specs[0])
-    expected_sql = textwrap.dedent(
-        """
-        SELECT DISTINCT
-          CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP) AS POINT_IN_TIME,
-          "cust_id" AS "CUSTOMER_ID"
-        FROM TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725
-        WHERE
-          INDEX >= FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
-            ) / 3600
-          ) - 8 - 24
-          AND INDEX < FLOOR(
-            (
-              DATE_PART(EPOCH_SECOND, CAST(__FB_POINT_IN_TIME_SQL_PLACEHOLDER AS TIMESTAMP)) - 1800
-            ) / 3600
-          ) - 8
-        """
-    ).strip()
-    assert universe.expr.sql(pretty=True) == expected_sql
+    assert_equal_with_expected_fixture(
+        universe.expr.sql(pretty=True),
+        "tests/fixtures/expected_universe_window_offset.sql",
+        update_fixture=update_fixtures,
+    )
 
 
 def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtures, adapter):

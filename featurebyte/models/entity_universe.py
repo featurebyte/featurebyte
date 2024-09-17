@@ -434,14 +434,16 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
                 parse_duration_string(node.parameters.offset) if node.parameters.offset else None
             ),
         )
-        last_tile_index_timestamp = expressions.Anonymous(
-            this="F_INDEX_TO_TIMESTAMP",
-            expressions=[
-                last_tile_index_expr,
-                make_literal_value(node.parameters.feature_job_setting.offset_seconds),
-                make_literal_value(node.parameters.feature_job_setting.blind_spot_seconds),
-                make_literal_value(node.parameters.feature_job_setting.period_seconds // 60),
-            ],
+        last_tile_index_timestamp = self.adapter.convert_to_utc_timestamp(
+            self.adapter.call_udf(
+                "F_INDEX_TO_TIMESTAMP",
+                [
+                    last_tile_index_expr,
+                    make_literal_value(node.parameters.feature_job_setting.offset_seconds),
+                    make_literal_value(node.parameters.feature_job_setting.blind_spot_seconds),
+                    make_literal_value(node.parameters.feature_job_setting.period_seconds // 60),
+                ],
+            )
         )
         ts_col_expr = self.adapter.normalize_timestamp_before_comparison(quoted_identifier(ts_col))
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
