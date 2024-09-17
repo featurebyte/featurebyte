@@ -100,7 +100,6 @@ def calculate_last_tile_index_expr(
     Expression
     """
     point_in_time_epoch_expr = adapter.to_epoch_seconds(point_in_time_expr)
-    # f"FLOOR(({point_in_time_epoch_expr.sql()} - {time_modulo_frequency}) / {frequency})"
     last_tile_index_expr = expressions.Cast(
         this=expressions.Floor(
             this=expressions.Div(
