@@ -235,7 +235,7 @@ class PreviewMixin(BaseGraphInterpreter):
         Tuple[QueryGraph, bool]
             Query graph with sample row number set on primary input nodes, whether input node is sampled
         """
-        query_graph = QueryGraph(**self.query_graph.model_dump())
+        query_graph = QueryGraph(**self.query_graph.model_dump(by_alias=True))
         input_node_sampled = False
         if not sample_on_primary_table:
             return query_graph, input_node_sampled

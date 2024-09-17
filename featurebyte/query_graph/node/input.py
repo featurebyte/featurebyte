@@ -420,10 +420,10 @@ class InputNode(BaseNode):
                 SourceDataColumn(
                     name=column.name,
                     table_id=self.parameters.id,
-                    table_type=self.parameters.type,
+                    table_type=TableDataType(self.parameters.type),
                     node_names={self.name},
                     node_name=self.name,
-                    dtype=column.dtype,
+                    dtype=DBVarType(column.dtype),
                     filter=False,
                 )
                 for column in self.parameters.columns
