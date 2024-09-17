@@ -112,6 +112,14 @@ class SparkStoreInfo(BaseStoreInfo):
     type: Literal["spark"] = "spark"
 
 
+class BigQueryStoreInfo(BaseStoreInfo):
+    """
+    BigQuery store info
+    """
+
+    type: Literal["bigquery"] = "bigquery"
+
+
 class DataBricksFeatureLookup(FeatureByteBaseModel):
     """
     DataBricks feature lookup
@@ -468,6 +476,7 @@ STORE_INFO_TYPES = [
     DataBricksStoreInfo,
     DataBricksUnityStoreInfo,
     SparkStoreInfo,
+    BigQueryStoreInfo,
 ]
 if TYPE_CHECKING:
     # use StoreInfo during type checking
