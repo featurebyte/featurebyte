@@ -3,6 +3,7 @@ Unit tests related to RequestInput
 """
 
 import textwrap
+from datetime import datetime
 from functools import partial
 from unittest.mock import AsyncMock, Mock, call
 
@@ -250,3 +251,152 @@ async def test_materialize__view_bigquery(
         "tests/fixtures/request_input/materialize_bigquery.sql",
         update_fixtures,
     )
+
+
+@pytest.mark.asyncio
+async def test_materialize__with_sample_timestamp(
+    session, snowflake_event_table, destination_table
+):
+    """
+    Test materializing with sample from timestamp
+    """
+    view = snowflake_event_table.get_view()
+    pruned_graph, mapped_node = view.extract_pruned_graph_and_node()
+    request_input = ViewRequestInput(
+        columns=["event_timestamp", "col_int"],
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+        graph=pruned_graph,
+        node_name=mapped_node.name,
+    )
+    await request_input.materialize(session, destination_table, None, None, datetime(2011, 3, 8))
+
+    # No need to query database to get column names
+    assert session.list_table_schema.call_args_list == []
+
+    expected_query = textwrap.dedent(
+        """
+        CREATE TABLE "sf_database"."sf_schema"."my_materialized_table" AS
+        SELECT
+          "POINT_IN_TIME",
+          "col_int"
+        FROM (
+          SELECT
+            "event_timestamp" AS "POINT_IN_TIME",
+            "col_int" AS "col_int"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "event_timestamp",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."sf_table"
+          )
+        )
+        WHERE
+            "POINT_IN_TIME" < CAST('2011-03-08T00:00:00' AS TIMESTAMP)
+        """
+    ).strip()
+    assert session.execute_query_long_running.call_args_list == [call(expected_query)]
+
+
+@pytest.mark.asyncio
+async def test_materialize__with_sample_timestamp_biqquery(
+    session, snowflake_database_table, destination_table, bigquery_source_info
+):
+    """
+    Test materializing with sample from timestamp
+    """
+    session.get_source_info.return_value = bigquery_source_info
+    session.source_type = SourceType.BIGQUERY
+    request_input = SourceTableRequestInput(
+        columns=["a", "b"],
+        source=snowflake_database_table.tabular_source,
+    )
+    await request_input.materialize(
+        session, destination_table, None, datetime(2011, 3, 8), datetime(2012, 5, 9)
+    )
+
+    assert session.list_table_schema.call_args_list == [
+        call(table_name="sf_table", database_name="sf_database", schema_name="sf_schema")
+    ]
+
+    expected_query = textwrap.dedent(
+        """
+        CREATE TABLE `sf_database`.`sf_schema`.`my_materialized_table` AS
+        SELECT
+          `a`,
+          `b`
+        FROM (
+          SELECT
+            `a`,
+            `b`
+          FROM (
+            SELECT
+              *
+            FROM `sf_database`.`sf_schema`.`sf_table`
+          )
+        )
+        WHERE
+            CAST(`POINT_IN_TIME` AS DATETIME) >= CAST('2011-03-08T00:00:00' AS DATETIME) AND
+            CAST(`POINT_IN_TIME` AS DATETIME) < CAST('2012-05-09T00:00:00' AS DATETIME)
+        """
+    ).strip()
+    assert session.execute_query_long_running.call_args_list == [call(expected_query)]
+
+
+@pytest.mark.asyncio
+async def test_materialize__with_sample_timestamp_no_columns_rename(
+    session, snowflake_event_table, destination_table
+):
+    """
+    Test materializing with sample from timestamp
+    """
+    view = snowflake_event_table.get_view()
+    view = view[view.col_int == 1]
+    pruned_graph, mapped_node = view.extract_pruned_graph_and_node()
+    request_input = ViewRequestInput(
+        graph=pruned_graph,
+        node_name=mapped_node.name,
+    )
+    await request_input.materialize(
+        session, destination_table, None, datetime(2011, 3, 8), datetime(2012, 5, 9)
+    )
+
+    expected_query = textwrap.dedent(
+        """
+        CREATE TABLE "sf_database"."sf_schema"."my_materialized_table" AS
+        SELECT
+          "col_int",
+          "col_float",
+          "col_char",
+          "col_text",
+          "col_binary",
+          "col_boolean",
+          "event_timestamp",
+          "cust_id"
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+          WHERE
+            (
+              "col_int" = 1
+            )
+        )
+        WHERE
+            "POINT_IN_TIME" >= CAST('2011-03-08T00:00:00' AS TIMESTAMP) AND
+            "POINT_IN_TIME" < CAST('2012-05-09T00:00:00' AS TIMESTAMP)
+        """
+    ).strip()
+    assert session.execute_query_long_running.call_args_list == [call(expected_query)]

@@ -4,6 +4,7 @@ ObservationTableModel API payload schema
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
@@ -21,6 +22,8 @@ class ObservationTableCreate(BaseRequestTableCreate):
     """
 
     sample_rows: Optional[int] = Field(ge=0, default=None)
+    sample_from_timestamp: Optional[datetime] = Field(default=None)
+    sample_to_timestamp: Optional[datetime] = Field(default=None)
     request_input: ObservationInput
     skip_entity_validation_checks: bool = Field(default=False)
     purpose: Optional[Purpose] = Field(default=None)

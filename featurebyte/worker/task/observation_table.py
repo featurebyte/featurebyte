@@ -53,6 +53,8 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             session=db_session,
             destination=location.table_details,
             sample_rows=payload.sample_rows,
+            sample_from_timestamp=payload.sample_from_timestamp,
+            sample_to_timestamp=payload.sample_to_timestamp,
         )
         await self.observation_table_service.add_row_index_column(
             session=db_session, table_details=location.table_details
@@ -87,6 +89,9 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 primary_entity_ids=primary_entity_ids,
                 has_row_index=True,
                 target_namespace_id=payload.target_namespace_id,
+                sample_rows=payload.sample_rows,
+                sample_from_timestamp=payload.sample_from_timestamp,
+                sample_to_timestamp=payload.sample_to_timestamp,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)

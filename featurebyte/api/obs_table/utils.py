@@ -24,6 +24,8 @@ def get_definition_for_obs_table_creation_from_view(
     context_name: Optional[str] = None,
     skip_entity_validation_checks: Optional[bool] = False,
     primary_entities: Optional[List[str]] = None,
+    sample_from_timestamp: Optional[str] = None,
+    sample_to_timestamp: Optional[str] = None,
 ) -> str:
     """
     Helper method to get the definition for creating an observation table from a view.
@@ -48,6 +50,10 @@ def get_definition_for_obs_table_creation_from_view(
         Whether to skip entity validation checks
     primary_entities: Optional[List[str]]
         The primary entities to associate the observation table with
+    sample_from_timestamp: Optional[str]
+        Start of date range to sample from.
+    sample_to_timestamp: Optional[str]
+        End of date range to sample from.
 
     Returns
     -------
@@ -64,6 +70,8 @@ def get_definition_for_obs_table_creation_from_view(
             context_name=context_name,
             skip_entity_validation_checks=skip_entity_validation_checks,
             primary_entities=primary_entities,
+            sample_from_timestamp=sample_from_timestamp,
+            sample_to_timestamp=sample_to_timestamp,
         )
 
         return [(output_var, expression)]

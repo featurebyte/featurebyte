@@ -57,6 +57,7 @@ def quoted_identifier(column_name: str) -> Expression:
     -------
     Expression
     """
+    assert column_name != "*", "Column name cannot be *"
     return expressions.Identifier(this=column_name, quoted=True)
 
 
