@@ -322,6 +322,26 @@ def test_bigquery_schema_initializer__sql_objects(patched_bigquery_session_cls):
             "filename": "F_TIMEZONE_OFFSET_TO_SECOND.sql",
             "identifier": "F_TIMEZONE_OFFSET_TO_SECOND",
         },
+        {
+            "type": "function",
+            "filename": "F_VECTOR_AGGREGATE_MAX.sql",
+            "identifier": "F_VECTOR_AGGREGATE_MAX",
+        },
+        {
+            "type": "function",
+            "filename": "F_VECTOR_AGGREGATE_SIMPLE_AVERAGE.sql",
+            "identifier": "F_VECTOR_AGGREGATE_SIMPLE_AVERAGE",
+        },
+        {
+            "type": "function",
+            "filename": "F_VECTOR_AGGREGATE_SIMPLE_AVG.sql",
+            "identifier": "F_VECTOR_AGGREGATE_SIMPLE_AVG",
+        },
+        {
+            "type": "function",
+            "filename": "F_VECTOR_AGGREGATE_SUM.sql",
+            "identifier": "F_VECTOR_AGGREGATE_SUM",
+        },
     ]
 
     def _sorted_result(lst):
