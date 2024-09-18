@@ -1,11 +1,12 @@
-CREATE OR REPLACE AGGREGATE FUNCTION `{project}.{dataset}.VECTOR_AGGREGATE_SUM`(vector ARRAY<FLOAT64>)
+CREATE OR REPLACE AGGREGATE FUNCTION `{project}.{dataset}.VECTOR_AGGREGATE_SIMPLE_AVERAGE`(vector ARRAY<FLOAT64>)
     RETURNS ARRAY<FLOAT64>
     LANGUAGE js
 as r'''
   export function initialState() {{
-    return {{sum_array: []}}
+    return {{sum_array: [], total_count: 0.0}}
   }}
   export function aggregate(state, x) {{
+    state.total_count += 1.0;
     if (state.sum_array.length === 0) {{
       state.sum_array = x;
       return;
@@ -15,6 +16,7 @@ as r'''
     }}
   }}
   export function merge(state, partialState) {{
+    state.total_count += partialState.total_count;
     if (state.sum_array.length === 0) {{
       state.sum_array = partialState.sum_array;
       return;
@@ -24,6 +26,10 @@ as r'''
     }}
   }}
   export function finalize(state) {{
-    return state.sum_array;
+    var avg_array = [];
+    for (var i = 0; i < state.sum_array.length; i++) {{
+      avg_array.push(state.sum_array[i] / state.total_count);
+    }}
+    return avg_array;
   }}
 ''';
