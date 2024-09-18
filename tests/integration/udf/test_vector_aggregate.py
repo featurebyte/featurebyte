@@ -80,6 +80,7 @@ def _get_query(session, aggregate_function: str, with_count: bool = False) -> st
     return _get_query_groupby(session, aggregate_function, with_count)
 
 
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_max(setup_test_data, session):
     """
