@@ -124,7 +124,12 @@ class OnDemandFeatureViewConstructor:
 
         assert offline_store_info.odfv_info is not None, "OfflineStoreInfo does not have ODFV info"
         feature_view = create_feast_on_demand_feature_view(
-            definition=offline_store_info.odfv_info.codes,
+            definition=offline_store_info.generate_on_demand_feature_view_code(
+                offline_table_name_mapping={
+                    name: feature_view.batch_source.table
+                    for name, feature_view in name_to_feast_feature_view.items()
+                }
+            ),
             function_name=offline_store_info.odfv_info.function_name,
             sources=sources,
             schema=[

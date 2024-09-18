@@ -93,7 +93,7 @@ def test_feature_with_null_filling_value_has_odfv(float_feature, non_time_based_
             request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
             cutoff = request_time - pd.Timedelta(seconds=3600)
             feature_timestamp = pd.to_datetime(
-                inputs["sum_1d_V240201__ts"], unit="s", utc=True
+                inputs["cat1_cust_id_30m____feature_timestamp"], unit="s", utc=True
             )
             mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
             inputs["sum_1d_V240201"][~mask] = np.nan
@@ -148,7 +148,7 @@ def test_feature_with_null_filling_value_has_odfv(float_feature, non_time_based_
             request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
             cutoff = request_time - pd.Timedelta(seconds=3600)
             feat_ts = pd.to_datetime(
-                inputs["__complex_feature_V240201__part0__ts"], utc=True, unit="s"
+                inputs["cat1_cust_id_30m____feature_timestamp"], utc=True, unit="s"
             )
             mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
             inputs.loc[~mask, "__complex_feature_V240201__part0"] = np.nan

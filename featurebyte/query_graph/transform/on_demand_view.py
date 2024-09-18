@@ -98,6 +98,7 @@ class OnDemandFeatureViewExtractor(
         input_df_name: str,
         output_df_name: str,
         input_column_expr: str,
+        ttl_handling_view: str,
         ttl_seconds: int,
         var_name_generator: VariableNameGenerator,
         comment: str = "",
@@ -115,6 +116,8 @@ class OnDemandFeatureViewExtractor(
             Output dataframe name
         input_column_expr: str
             Input column expression (to be applied for ttl handling)
+        ttl_handling_view: str
+            TTL handling view
         ttl_seconds: int
             Time-to-live (TTL) in seconds
         var_name_generator: VariableNameGenerator
@@ -129,7 +132,7 @@ class OnDemandFeatureViewExtractor(
         """
         # feast.online_response.TIMESTAMP_POSTFIX = "__ts" (from feast/online_response.py)
         # hardcoding the timestamp postfix as we don't want to import feast module here
-        ttl_ts_column = f"{feature_name_version}{FEAST_TIMESTAMP_POSTFIX}"
+        ttl_ts_column = f"{ttl_handling_view}{FEAST_TIMESTAMP_POSTFIX}"
 
         # expressions
         subset_pit_expr = subset_frame_column_expr(

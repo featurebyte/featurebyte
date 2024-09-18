@@ -360,6 +360,11 @@ def test_feast_registry_construction(
                 "bodyText"
             ]
 
+    ttl_view_name = None
+    for fv in feat_views:
+        if "cat1_cust_id_30m_via_transaction_id" in fv["spec"]["batchSource"]["name"]:
+            ttl_view_name = fv["spec"]["name"]
+
     expected = f"""
     import datetime
     import json
@@ -375,7 +380,11 @@ def test_feast_registry_construction(
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feature_timestamp = pd.to_datetime(
-            inputs["sum_1d_{get_version()}__ts"], unit="s", utc=True
+            inputs[
+                "{ttl_view_name}____feature_timestamp"
+            ],
+            unit="s",
+            utc=True,
         )
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         inputs["sum_1d_{get_version()}"][~mask] = np.nan

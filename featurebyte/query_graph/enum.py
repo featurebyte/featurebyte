@@ -163,6 +163,6 @@ class GraphNodeType(StrEnum):
 
 
 # copy the constant here to avoid importing feast module
-# feast.online_response.TIMESTAMP_POSTFIX = "__ts" (from feast/online_response.py)
+# feast.online_response.TIMESTAMP_POSTFIX = "____feature_timestamp" (from feast/online_response.py)
 # this is used to retrieve offline feature table event timestamp
-FEAST_TIMESTAMP_POSTFIX = "__ts"
+FEAST_TIMESTAMP_POSTFIX = "____feature_timestamp"

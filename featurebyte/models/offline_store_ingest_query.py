@@ -355,14 +355,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                 output_df_name="df",
                 function_name=f"odfv_{unique_func_name}",
             )
-            odfv_info.codes = self.generate_on_demand_feature_view_code(
-                feature_versioned_name=feature_versioned_name,
-                input_df_name=odfv_info.input_df_name,
-                output_df_name=odfv_info.output_df_name,
-                function_name=odfv_info.function_name,
-                ttl_seconds=self.time_to_live_in_secs,
-            )
             self.odfv_info = odfv_info
+            self.odfv_info.codes = self.generate_on_demand_feature_view_code()
 
         if self.is_decomposed or self.null_filling_value is not None:
             # initialize the user defined function info
@@ -422,27 +416,15 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
 
     def generate_on_demand_feature_view_code(
         self,
-        feature_versioned_name: str,
-        input_df_name: str = "inputs",
-        output_df_name: str = "df",
-        function_name: str = "on_demand_feature_view",
-        ttl_seconds: Optional[int] = None,
+        offline_table_name_mapping: Optional[Dict[str, str]] = None,
     ) -> str:
         """
         Extract on demand view graphs from the feature or target query graph
 
         Parameters
         ----------
-        feature_versioned_name: str
-            Feature name
-        input_df_name: str
-            Input dataframe name
-        output_df_name: str
-            Output dataframe name
-        function_name: str
-            Function name
-        ttl_seconds: Optional[int]
-            Time-to-live (TTL) in seconds
+        offline_table_name_mapping: Optional[Dict[str, str]]
+            Table name mapping from non-precomputed to precomputed offline store tables
 
         Returns
         -------
@@ -453,46 +435,66 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             node = self.graph.get_node_by_name(self.node_name)
             codegen_state = OnDemandFeatureViewExtractor(graph=self.graph).extract(
                 node=node,
-                input_df_name=input_df_name,
-                output_df_name=output_df_name,
-                on_demand_function_name=function_name,
-                feature_name_version=feature_versioned_name,
+                input_df_name=self.odfv_info.input_df_name,
+                output_df_name=self.odfv_info.output_df_name,
+                on_demand_function_name=self.odfv_info.function_name,
+                offline_table_name_mapping=offline_table_name_mapping or {},
+                feature_name_version=self.odfv_info.feature_versioned_name,
             )
             code_generator = codegen_state.code_generator
         else:
             code_generator = CodeGenerator(template="on_demand_view.tpl")
-            assert ttl_seconds is not None or self.null_filling_value is not None
+            assert self.time_to_live_in_secs is not None or self.null_filling_value is not None
             if self.null_filling_value is not None:
                 statements = OnDemandFeatureViewExtractor.generate_null_filling_statements(
-                    feature_name_version=feature_versioned_name,
-                    output_df_name=output_df_name,
+                    feature_name_version=self.odfv_info.feature_versioned_name,
+                    output_df_name=self.odfv_info.output_df_name,
                     input_column_expr=subset_frame_column_expr(
-                        input_df_name,
-                        feature_versioned_name,
+                        self.odfv_info.input_df_name,
+                        self.odfv_info.feature_versioned_name,
                     ),
                     fill_value=self.null_filling_value,
                 )
                 code_generator.add_statements(statements=[statements])
 
-            if ttl_seconds is not None:
+            if self.time_to_live_in_secs is not None:
+                if self.is_decomposed:
+                    offline_table_name, period_secs = None, None
+                    for sub_graph in self.extract_offline_store_ingest_query_graphs():
+                        if (
+                            period_secs is None
+                            or sub_graph.feature_job_setting.period_seconds > period_secs
+                        ):
+                            offline_table_name = sub_graph.offline_store_table_name
+                            period_secs = sub_graph.feature_job_setting.period_seconds
+                    assert offline_table_name is not None
+                else:
+                    assert self.metadata is not None
+                    offline_table_name = self.metadata.offline_store_table_name
+
                 statements = OnDemandFeatureViewExtractor.generate_ttl_handling_statements(
-                    feature_name_version=feature_versioned_name,
-                    input_df_name=input_df_name,
-                    output_df_name=output_df_name,
+                    feature_name_version=self.odfv_info.feature_versioned_name,
+                    input_df_name=self.odfv_info.input_df_name,
+                    output_df_name=self.odfv_info.output_df_name,
                     input_column_expr=subset_frame_column_expr(
-                        input_df_name,
-                        feature_versioned_name,
+                        self.odfv_info.input_df_name,
+                        self.odfv_info.feature_versioned_name,
                     ),
-                    ttl_seconds=ttl_seconds,
+                    ttl_handling_view=(
+                        offline_table_name_mapping[offline_table_name]
+                        if offline_table_name_mapping
+                        else offline_table_name
+                    ),
+                    ttl_seconds=self.time_to_live_in_secs,
                     var_name_generator=VariableNameGenerator(),
                 )
                 code_generator.add_statements(statements=[statements])
 
         codes = code_generator.generate(
             to_format=True,
-            input_df_name=input_df_name,
-            output_df_name=output_df_name,
-            function_name=function_name,
+            input_df_name=self.odfv_info.input_df_name,
+            output_df_name=self.odfv_info.output_df_name,
+            function_name=self.odfv_info.function_name,
         )
         return codes
 

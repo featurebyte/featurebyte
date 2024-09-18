@@ -37,6 +37,7 @@ class OnDemandViewCodeGenConfig(BaseCodeGenConfig):
     input_df_name: str = Field(default="inputs")
     output_df_name: str = Field(default="df")
     on_demand_function_name: str = Field(default="on_demand_feature_view")
+    offline_table_name_mapping: Dict[str, str] = Field(default_factory=dict)
 
 
 class OnDemandFunctionCodeGenConfig(BaseCodeGenConfig):

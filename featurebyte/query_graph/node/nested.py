@@ -640,6 +640,7 @@ class BaseGraphNode(BasePrunableNode):
         null_filling_func: Callable[[VarNameExpressionInfo, ValueStr], ExpressionStr],
         is_databricks_udf: bool,
         config_for_ttl: Optional[OnDemandViewCodeGenConfig] = None,
+        ttl_handling_view: Optional[str] = None,
         ttl_handling_column: Optional[str] = None,
         ttl_seconds: Optional[int] = None,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -658,10 +659,14 @@ class BaseGraphNode(BasePrunableNode):
             input_var_name_expr = var
 
         if ttl_handling_column is not None:
+            assert ttl_handling_view is not None
             assert config_for_ttl is not None
             assert ttl_seconds is not None
             input_df_name = config_for_ttl.input_df_name
-            feat_ts_col = f"{ttl_handling_column}{FEAST_TIMESTAMP_POSTFIX}"
+            ttl_handling_view = config_for_ttl.offline_table_name_mapping.get(
+                ttl_handling_view, ttl_handling_view
+            )
+            feat_ts_col = f"{ttl_handling_view}{FEAST_TIMESTAMP_POSTFIX}"
             # need to apply TTL handling on the input column
             var_name_map = {}
             for var_name in ["request_time", "cutoff", "feat_ts", "mask"]:
@@ -768,6 +773,9 @@ class BaseGraphNode(BasePrunableNode):
             json_conversion_func=_json_conversion_func,
             null_filling_func=lambda expr, val: ExpressionStr(f"{expr}.fillna({val.as_input()})"),
             config_for_ttl=config_for_ttl,
+            ttl_handling_view=self.parameters.offline_store_table_name
+            if ttl_handling_column
+            else None,
             ttl_handling_column=ttl_handling_column,
             ttl_seconds=ttl_seconds,
             is_databricks_udf=False,

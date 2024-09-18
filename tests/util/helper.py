@@ -753,9 +753,16 @@ def check_on_demand_feature_code_generation(
     feat_event_ts = pd.to_datetime(df["POINT_IN_TIME"]) - pd.Timedelta(seconds=10)
     df["__feature_timestamp"] = feat_event_ts
 
-    for col in df.columns:
-        if col != "POINT_IN_TIME":
-            df[f"{col}__ts"] = feat_event_ts.astype(int) // 1e9
+    offline_table_names = []
+    offline_store_info = feature_model.offline_store_info
+    if offline_store_info.is_decomposed:
+        for ingest_query_graph in offline_store_info.extract_offline_store_ingest_query_graphs():
+            offline_table_names.append(ingest_query_graph.offline_store_table_name)
+    else:
+        offline_table_names.append(offline_store_info.metadata.offline_store_table_name)
+
+    for col in offline_table_names:
+        df[f"{col}____feature_timestamp"] = feat_event_ts.astype(int) // 1e9
 
     # introduce some missing values to test null handling for datetime
     if df.shape[0] > 1:

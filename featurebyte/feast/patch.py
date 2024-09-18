@@ -43,6 +43,11 @@ def augment_response_with_on_demand_transforms(
         A boolean that provides the option to add the feature view prefixes to the feature names,
         changing them from the format "feature" to "feature_view__feature" (e.g., "daily_transactions" changes to
         "customer_fv__daily_transactions").
+
+    Raises
+    ------
+    Exception
+        If the OnDemandFeatureMode is invalid.
     """
 
     requested_odfv_map = {odfv.name: odfv for odfv in requested_on_demand_feature_views}

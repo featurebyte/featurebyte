@@ -326,7 +326,7 @@ def test_deployment_with_unbounded_window(
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feature_timestamp = pd.to_datetime(
-            inputs["feat_latest_combined_{version}__ts"], unit="s", utc=True
+            inputs["cat1_cust_id_30m_1____feature_timestamp"], unit="s", utc=True
         )
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
         inputs["feat_latest_combined_{version}"][~mask] = np.nan

@@ -508,4 +508,5 @@ def test_online_store_feature_retrieval_sql__multiple_groups(
 
 def test_feast_timestamp_postfix_consistency():
     """This test is used to check the consistency of the FEAST_TIMESTAMP_POSTFIX constant"""
-    assert FEAST_TIMESTAMP_POSTFIX == TIMESTAMP_POSTFIX == "__ts"
+    assert TIMESTAMP_POSTFIX == "__ts"
+    assert FEAST_TIMESTAMP_POSTFIX == "____feature_timestamp"
