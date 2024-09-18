@@ -33,4 +33,6 @@ def to_array_fixture(source_type):
         return snowflake_util.to_array
     if source_type in {SPARK, DATABRICKS}:
         return spark_util.to_array
+    if source_type == BIGQUERY:
+        return bigquery_util.to_array
     raise NotImplementedError()

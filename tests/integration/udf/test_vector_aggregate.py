@@ -7,6 +7,7 @@ import pytest
 import pytest_asyncio
 from sqlglot import expressions
 
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.session.base import BaseSession
 from tests.source_types import SNOWFLAKE_SPARK_BIGQUERY
@@ -14,7 +15,7 @@ from tests.util.helper import fb_assert_frame_equal
 
 
 @pytest_asyncio.fixture(name="setup_test_data", scope="module")
-async def setup_test_data_fixture(session, to_array):
+async def setup_test_data_fixture(session: BaseSession, to_array):
     """
     Setup test data
     """
@@ -30,8 +31,9 @@ async def setup_test_data_fixture(session, to_array):
     create_table_query = "CREATE TABLE TEST_TABLE_VECTOR_AGGREGATE AS\n"
     row_statements = []
     for row in input_data:
+        double_type = session.adapter.get_physical_type_from_dtype(DBVarType.FLOAT)
         row_statements.append(
-            f"SELECT {row[0]} AS ID_COL, {to_array(tuple(row[1]))} AS ARRAY_COL, CAST(1.0 AS DOUBLE) AS COUNT"
+            f"SELECT {row[0]} AS ID_COL, {to_array(tuple(row[1]))} AS ARRAY_COL, CAST(1.0 AS {double_type}) AS COUNT"
         )
     create_table_query += "\nUNION ALL\n".join(row_statements)
     await session.execute_query(create_table_query)
