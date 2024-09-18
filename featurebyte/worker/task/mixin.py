@@ -52,7 +52,7 @@ class DataWarehouseMixin:
         try:
             yield
         except Exception as exc:
-            logger.error(
+            logger.exception(
                 "Failed to create request table. Dropping table.",
                 extra={"error": str(exc), "task_payload": payload.model_dump()},
             )
