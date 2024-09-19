@@ -19,6 +19,7 @@ from feast import OnDemandFeatureView as FeastOnDemandFeatureView
 from feast import RequestSource as FeastRequestSource
 from feast.data_source import DataSource as FeastDataSource
 from feast.feature_view import DUMMY_ENTITY
+from feast.infra.registry.registry import Registry
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.repo_config import FeastConfigBaseModel, RegistryConfig, RepoConfig
 from feast.repo_contents import RepoContents
@@ -202,7 +203,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
             join_keys=[entity_name],
             value_type=value_type,
         )
-        return entity  # type: ignore[no-any-return]
+        return entity
 
     def create_feast_data_source(
         self,
@@ -282,7 +283,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
             online=True,
             source=data_source,
         )
-        return feature_view  # type: ignore[no-any-return]
+        return feature_view
 
 
 class OfflineStoreTableBuilder:
@@ -727,11 +728,11 @@ class FeastRegistryBuilder:
                 apply_total_with_repo_instance(
                     store=feature_store,
                     project=project_name,
-                    registry=registry,
+                    registry=cast(Registry, registry),
                     repo=repo_content,
                     skip_source_validation=True,
                 )
-                return cast(RegistryProto, registry.proto())
+                return registry.proto()
 
     @classmethod
     def _create_feast_registry_proto(
@@ -945,7 +946,7 @@ class FeastRegistryBuilder:
                 for entity in first_fv.entity_columns
             ]
 
-        feature_view_params = {
+        feature_view_params: Dict[str, Any] = {
             "name": feature_table_name,
             "entities": fv_entities,
             "ttl": first_fv.ttl,
