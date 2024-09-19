@@ -35,7 +35,11 @@ class FeatureByteBigQueryOfflineStoreConfig(BigQueryOfflineStoreConfig):
 
 
 class FeatureByteBigQueryOfflineStore(BigQueryOfflineStore):
-    """Offline store for GCP BigQuery"""
+    """Offline store for GCP BigQuery
+
+    Implementation of pull_latest_from_table_or_query is overridden to support special characters in
+    column names.
+    """
 
     @staticmethod
     def pull_latest_from_table_or_query(
@@ -90,6 +94,12 @@ class FeatureByteBigQueryOfflineStore(BigQueryOfflineStore):
 
 
 class FeatureByteBigQueryRetrievalJob(BigQueryRetrievalJob):
+    """
+    BigQuery retrieval job for FeatureByte
+
+    Implementation of to_arrow is overridden to handle JSON data type.
+    """
+
     def to_arrow(
         self,
         validation_reference: Optional["ValidationReference"] = None,
