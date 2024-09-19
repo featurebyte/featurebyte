@@ -242,6 +242,32 @@ def transform_arrow(
     pa_table: pyarrow.Table,
     full_feature_names: bool = False,
 ) -> pyarrow.Table:
+    """
+    Tha main difference between this and the original Feast implementation is that this function converts the
+    arrow table to a pandas dataframe first and then call `transform` method of the feature view to transform
+    the features. DataFrame with alias column names support is used to improve the runtime & memory performance
+    of the function without copying the columns & dropping after transformation. This significantly reduces the
+    runtime & memory usage of the function.
+
+    Parameters
+    ----------
+    feature_view: OnDemandFeatureView
+        OnDemandFeatureView object
+    pa_table: pyarrow.Table
+        Arrow table to transform
+    full_feature_names: bool
+        A boolean that provides the option to add the feature view prefixes to the feature names,
+
+    Returns
+    -------
+    pyarrow.Table
+        PyArrow table with transformed features
+
+    Raises
+    ------
+    TypeError
+        transform_arrow only accepts pyarrow.Table
+    """
     if not isinstance(pa_table, pyarrow.Table):
         raise TypeError("transform_arrow only accepts pyarrow.Table")
 
