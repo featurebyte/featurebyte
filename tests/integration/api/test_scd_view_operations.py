@@ -432,10 +432,6 @@ def test_scd_lookup_feature_with_offset(config, scd_table, scd_dataframe, source
         == _get_expected_row(offset_2)["User Status"]
     )
 
-    # Note: temporary
-    if source_type == "bigquery":
-        return
-
     # Check online serving
     feature_list.save()
     deployment = None
@@ -547,7 +543,10 @@ def test_aggregate_asat(scd_table, scd_dataframe, source_type):
 
 
 def test_aggregate_asat__no_entity(
-    scd_table, scd_dataframe, config, source_type, skip_deployment_checks_for_bigquery
+    scd_table,
+    scd_dataframe,
+    config,
+    source_type,
 ):
     """
     Test aggregate_asat aggregation on SCDView without entity
@@ -590,10 +589,6 @@ def test_aggregate_asat__no_entity(
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)
     pd.testing.assert_frame_equal(df, expected, check_dtype=False)
-
-    # Note: temporary
-    if skip_deployment_checks_for_bigquery:
-        return
 
     # check online serving
     feature_list = FeatureList([feature, feature_other], "feature_list")
