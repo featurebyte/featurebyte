@@ -2,7 +2,7 @@
 BigQuery UDF util
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -34,3 +34,23 @@ def to_object(obj_dict: Optional[Dict[Any, Any]]) -> str:
         else:
             args.append(str(v))
     return f"JSON_OBJECT({', '.join(args)})"
+
+
+def to_array(array_obj: Optional[List[Any]]) -> str:
+    """
+    Returns an expression converts the list to an array in BigQuery
+
+    Parameters
+    ----------
+    array_obj: Optional[List[Any]]
+        python list
+
+    Returns
+    -------
+    str
+        sql str
+    """
+    if array_obj is None:
+        return "null"
+    joined_string = ", ".join([f"CAST({x} AS FLOAT64)" for x in array_obj])
+    return f"[{joined_string}]"

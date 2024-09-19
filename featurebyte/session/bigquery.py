@@ -654,7 +654,7 @@ class BigQuerySchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 2
+        return 3
 
     async def create_schema(self) -> None:
         create_schema_query = (

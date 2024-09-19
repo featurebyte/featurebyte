@@ -52,4 +52,5 @@ def to_array(array_obj: Optional[List[Any]]) -> str:
     """
     if array_obj is None:
         return "null"
-    return f"{array_obj}"
+    joined_string = ", ".join([str(x) for x in array_obj])
+    return f"ARRAY_CONSTRUCT({joined_string})"
