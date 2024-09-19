@@ -8,6 +8,7 @@ import os
 from typing import Any, Dict, Optional, Tuple
 
 import pandas as pd
+from redis import Redis
 
 from featurebyte.common.utils import dataframe_to_json
 from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT
@@ -61,9 +62,10 @@ class FeaturePreviewService(PreviewService):
         feature_service: FeatureService,
         target_service: TargetService,
         query_cache_manager_service: QueryCacheManagerService,
+        redis: Redis[Any],
     ):
         super().__init__(
-            session_manager_service, feature_store_service, query_cache_manager_service
+            session_manager_service, feature_store_service, query_cache_manager_service, redis
         )
         self.entity_validation_service = entity_validation_service
         self.feature_list_service = feature_list_service

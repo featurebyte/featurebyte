@@ -561,7 +561,9 @@ async def get_online_features(
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 
         tic = time.time()
-        df_features = await execute_feature_query_set(session, query_set)
+        df_features = await execute_feature_query_set(
+            session, online_store_table_version_service.redis, query_set
+        )
     finally:
         if request_table_name is not None and request_table_details is None:
             await session.drop_table(

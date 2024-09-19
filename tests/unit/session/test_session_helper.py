@@ -3,7 +3,7 @@ Tests for featurebyte/session/session_helper.py
 """
 
 import textwrap
-from unittest.mock import AsyncMock, call
+from unittest.mock import AsyncMock, Mock, call
 
 import pandas as pd
 import pytest
@@ -30,6 +30,24 @@ def mock_snowflake_session_fixture(mock_snowflake_session, is_output_row_index_v
         "is_row_index_valid": [is_output_row_index_valid]
     })
     yield mock_snowflake_session
+
+
+@pytest.fixture(name="mock_redis")
+def mock_redis_fixture(is_output_row_index_valid):
+    """
+    Mock redis
+    """
+    mock_redis = Mock()
+    pipeline = mock_redis.pipeline.return_value
+    pipeline.incr.return_value = pipeline
+    pipeline.zadd.return_value = pipeline
+    pipeline.zrem.return_value = pipeline
+    pipeline.execute.side_effect = [
+        [1],  # return semaphone counter
+        [2],  # return semaphone zset score
+        [],
+    ]
+    yield mock_redis
 
 
 @pytest.mark.asyncio
@@ -63,7 +81,7 @@ async def test_validate_row_index__invalid(mock_snowflake_session):
 
 
 @pytest.mark.asyncio
-async def test_execute_feature_query_set(mock_snowflake_session, update_fixtures):
+async def test_execute_feature_query_set(mock_snowflake_session, mock_redis, update_fixtures):
     """
     Test execute_feature_query_set
     """
@@ -85,6 +103,7 @@ async def test_execute_feature_query_set(mock_snowflake_session, update_fixtures
 
     await execute_feature_query_set(
         mock_snowflake_session,
+        mock_redis,
         feature_query_set,
         progress_callback=progress_callback,
     )

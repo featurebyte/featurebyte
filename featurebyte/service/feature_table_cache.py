@@ -240,6 +240,7 @@ class FeatureTableCacheService:
         if is_target:
             return await get_target(
                 session=db_session,
+                redis=self.tile_cache_service.tile_manager_service.redis,
                 graph=graph,
                 nodes=nodes_only,
                 observation_set=observation_table,
@@ -480,6 +481,7 @@ class FeatureTableCacheService:
                         column_names=[InternalName.TABLE_ROW_INDEX.value] + request_column_names,
                     ),
                     exists=True,
+                    retry=True,
                 )
             historical_features_metrics = await self._update_table(
                 feature_store=feature_store,

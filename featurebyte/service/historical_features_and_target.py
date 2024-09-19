@@ -9,6 +9,7 @@ from typing import Any, Callable, Coroutine, Optional, Union
 
 import pandas as pd
 from bson import ObjectId
+from redis import Redis
 
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.logging import get_logger
@@ -234,6 +235,7 @@ async def get_historical_features(
         )
         await execute_feature_query_set(
             session,
+            redis=tile_cache_service.tile_manager_service.redis,
             feature_query_set=historical_feature_query_set,
             progress_callback=(
                 get_ranged_progress_callback(
@@ -262,6 +264,7 @@ async def get_historical_features(
 
 async def get_target(
     session: BaseSession,
+    redis: Redis[Any],
     graph: QueryGraph,
     nodes: list[Node],
     observation_set: Union[pd.DataFrame, ObservationTableModel],
@@ -277,6 +280,8 @@ async def get_target(
     ----------
     session: BaseSession
         Session to use to make queries
+    redis: Redis[Any]
+        Redis connection
     graph : QueryGraph
         Query graph
     nodes : list[Node]
@@ -340,6 +345,7 @@ async def get_target(
 
         await execute_feature_query_set(
             session=session,
+            redis=redis,
             feature_query_set=historical_feature_query_set,
             progress_callback=(
                 get_ranged_progress_callback(
