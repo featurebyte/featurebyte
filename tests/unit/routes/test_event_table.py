@@ -566,3 +566,30 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         response_dict = response.json()
         assert response_dict["columns_info"][0]["description"] == "Integer column"
+
+    def test_deprecate_table_remove_entity_tagging(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test deprecate table and remove entity tagging"""
+        test_api_client, _ = test_api_client_persistent
+        table_id = create_success_response.json()["_id"]
+        table_response = test_api_client.get(f"{self.base_route}/{table_id}")
+        assert table_response.status_code == HTTPStatus.OK
+
+        has_entity_tag = False
+        for col in table_response.json()["columns_info"]:
+            if col["entity_id"]:
+                has_entity_tag = True
+                break
+
+        assert has_entity_tag, "Table should have entity tagging"
+        response = test_api_client.patch(
+            f"{self.base_route}/{table_id}",
+            json={"status": "DEPRECATED"},
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        # check table status and if entity tagging is removed
+        assert response.json()["status"] == "DEPRECATED"
+        for col in response.json()["columns_info"]:
+            assert col["entity_id"] is None
