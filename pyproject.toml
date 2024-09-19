@@ -62,6 +62,7 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
 description = "Python Library for FeatureOps"
 documentation = "https://docs.featurebyte.com"
@@ -99,7 +100,7 @@ importlib_metadata = { version = "*", python = "^3.9"}
 jinja2 = "^3.1.2"
 lazy-object-proxy = "^1.7.1"
 motor = { version = "^3.0.0", optional = true }
-numpy = "^1.24.4"
+numpy = ">=1.22,<2"
 orjson = "^3.9.15"
 pandas = ">=1"
 pdfkit = { version = "^1.0.0", optional = true }
@@ -110,7 +111,7 @@ pydantic-settings = "^2.3.1"
 pyhive = { version = "^0.7.0", extras = ["hive_pure_sasl"], optional = true }
 pymongo = "^4.6.3"
 pyopenssl = "^24.1.0"
-python = ">=3.9,<3.12"  # TODO: numpy needs to be bumped to >1.26.4
+python = ">=3.9,<4"  # TODO: numpy needs to be bumped to >1.26.4
 python-multipart = "^0.0.9"  # Dependency on fastapi form data
 python-on-whales = ">=0.60.0"
 redis = {version = "^4.2.0", optional = true}
