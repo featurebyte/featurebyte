@@ -255,7 +255,7 @@ class TileTaskExecutor:
                 fail_code = spec["status"]["fail"]
                 formatted_traceback = traceback.format_exc()
 
-                logger.error(f"fail_insert_sql exception: {exception}")
+                logger.exception(f"fail_insert_sql exception: {exception}")
                 await _add_log_entry(fail_code, message, formatted_traceback)
                 raise exception
 
