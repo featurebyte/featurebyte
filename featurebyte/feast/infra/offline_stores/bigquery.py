@@ -97,7 +97,7 @@ class FeatureByteBigQueryRetrievalJob(BigQueryRetrievalJob):
     """
     BigQuery retrieval job for FeatureByte
 
-    Implementation of to_arrow is overridden to handle JSON data type.
+    Implementation of to_arrow is overridden to handle JSON data type on empty table.
     """
 
     def to_arrow(
