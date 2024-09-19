@@ -55,6 +55,7 @@ from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureT
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.table import TableService
+from featurebyte.session.session_helper import SessionHandler
 
 logger = get_logger(__name__)
 
@@ -158,7 +159,11 @@ class OnlineServingService:
             feature_store=feature_store,
         )
         features = await get_online_features(
-            session=db_session,
+            session_handler=SessionHandler(
+                session=db_session,
+                redis=self.online_store_table_version_service.redis,
+                feature_store_id=feature_store.id,
+            ),
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_data=request_input,

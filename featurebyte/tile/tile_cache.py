@@ -347,7 +347,9 @@ class TileCache:
                     done_callback=done_callback,
                 )
             )
-        result = await run_coroutines(coroutines, self.tile_manager_service.redis)
+        result = await run_coroutines(
+            coroutines, self.tile_manager_service.redis, str(self.feature_store_id)
+        )
         all_requests = []
         for requests in result:
             all_requests.extend(requests)

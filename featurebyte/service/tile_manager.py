@@ -88,7 +88,7 @@ class TileManagerService:
                     progress_callback=_progress_callback,
                 )
             )
-        await run_coroutines(coroutines, self.redis)
+        await run_coroutines(coroutines, self.redis, str(tile_inputs[0][0].feature_store_id))
 
     async def _generate_tiles_on_demand_for_tile_spec(
         self,

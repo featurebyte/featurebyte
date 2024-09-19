@@ -8,6 +8,7 @@ import os
 from typing import Any, Callable, Coroutine, List, Optional, Union
 
 import pandas as pd
+from bson import ObjectId
 from redis import Redis
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -74,7 +75,7 @@ async def validate_output_row_index(session: BaseSession, output_table_name: str
 
 
 async def run_coroutines(
-    coroutines: List[Coroutine[Any, Any, Any]], redis: Redis[Any]
+    coroutines: List[Coroutine[Any, Any, Any]], redis: Redis[Any], concurrency_key: str
 ) -> List[Any]:
     """
     Execute the provided list of coroutines
@@ -85,13 +86,20 @@ async def run_coroutines(
         List of coroutines to be executed
     redis: Redis[Any]
         Redis connection
+    concurrency_key: str
+        Key for concurrency limit enforcement
 
     Returns
     -------
     List[Any]
         List of results from the coroutines
     """
-    future = asyncio_gather(*coroutines, redis=redis, max_concurrency=MAX_QUERY_CONCURRENCY)
+    future = asyncio_gather(
+        *coroutines,
+        redis=redis,
+        concurrency_key=concurrency_key,
+        max_concurrency=MAX_QUERY_CONCURRENCY,
+    )
     return await future
 
 
@@ -118,9 +126,15 @@ async def execute_feature_query(
     await done_callback()
 
 
+class SessionHandler:
+    def __init__(self, session: BaseSession, redis: Redis[Any], feature_store_id: ObjectId):
+        self.session = session
+        self.redis = redis
+        self.feature_store_id = feature_store_id
+
+
 async def execute_feature_query_set(
-    session: BaseSession,
-    redis: Redis[Any],
+    session_handler: SessionHandler,
     feature_query_set: FeatureQuerySet,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
 ) -> Optional[pd.DataFrame]:
@@ -129,10 +143,8 @@ async def execute_feature_query_set(
 
     Parameters
     ----------
-    session: BaseSession
-        Session object
-    redis: Redis[Any]
-        Redis connection
+    session_handler: SessionHandler
+        SessionHandler object
     feature_query_set: FeatureQuerySet
         FeatureQuerySet object
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -142,6 +154,7 @@ async def execute_feature_query_set(
     -------
     Optional[pd.DataFrame]
     """
+    session = session_handler.session
     total_num_queries = len(feature_query_set.feature_queries) + 1
     materialized_feature_table = []
     processed = 0
@@ -168,7 +181,9 @@ async def execute_feature_query_set(
             materialized_feature_table.append(feature_query.table_name)
         if coroutines:
             with timer("Execute feature queries", logger=logger):
-                await run_coroutines(coroutines, redis)
+                await run_coroutines(
+                    coroutines, session_handler.redis, str(session_handler.feature_store_id)
+                )
 
         result = await session.execute_query_long_running(
             _to_query_str(feature_query_set.output_query, session.source_type)

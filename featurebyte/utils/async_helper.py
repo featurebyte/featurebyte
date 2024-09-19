@@ -120,7 +120,10 @@ class RedisFairCountingSemaphore:
 
 
 def asyncio_gather(
-    *coros: Coroutine[Any, Any, Any], redis: Redis[Any], max_concurrency: int = 0
+    *coros: Coroutine[Any, Any, Any],
+    redis: Redis[Any],
+    concurrency_key: str,
+    max_concurrency: int = 0,
 ) -> Future[List[Any]]:
     """
     Run coroutines with a optional concurrency limit
@@ -131,6 +134,8 @@ def asyncio_gather(
         Coroutines to run
     redis: Redis[Any]
         Redis connection
+    concurrency_key: str
+        Key for concurrency limit enforcement
     max_concurrency: int
         Maximum number of coroutines to run concurrently
 
@@ -145,11 +150,12 @@ def asyncio_gather(
     failed = False
     tasks_canceled = False
     tasks = []
+    semaphore_key = f"asyncio_gather:{concurrency_key}"
 
     # Run coroutines with a semaphore
     async def _coro(coro: Coroutine[Any, Any, Any]) -> Any:
         async with RedisFairCountingSemaphore(
-            redis=redis, key="asyncio_gather", limit=max_concurrency, timeout=3600
+            redis=redis, key=semaphore_key, limit=max_concurrency, timeout=3600
         ):
             nonlocal failed, tasks, tasks_canceled
             if failed:

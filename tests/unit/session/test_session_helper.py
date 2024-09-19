@@ -7,9 +7,14 @@ from unittest.mock import AsyncMock, Mock, call
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 
 from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
-from featurebyte.session.session_helper import execute_feature_query_set, validate_output_row_index
+from featurebyte.session.session_helper import (
+    SessionHandler,
+    execute_feature_query_set,
+    validate_output_row_index,
+)
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
@@ -102,9 +107,10 @@ async def test_execute_feature_query_set(mock_snowflake_session, mock_redis, upd
     progress_callback = AsyncMock(name="mock_progress_callback")
 
     await execute_feature_query_set(
-        mock_snowflake_session,
-        mock_redis,
-        feature_query_set,
+        session_handler=SessionHandler(
+            session=mock_snowflake_session, redis=mock_redis, feature_store_id=str(ObjectId())
+        ),
+        feature_query_set=feature_query_set,
         progress_callback=progress_callback,
     )
 

@@ -34,7 +34,7 @@ from featurebyte.query_graph.sql.feature_historical import (
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.session.base import BaseSession
-from featurebyte.session.session_helper import execute_feature_query_set
+from featurebyte.session.session_helper import SessionHandler, execute_feature_query_set
 
 logger = get_logger(__name__)
 
@@ -234,8 +234,11 @@ async def get_historical_features(
             progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
         )
         await execute_feature_query_set(
-            session,
-            redis=tile_cache_service.tile_manager_service.redis,
+            session_handler=SessionHandler(
+                session=session,
+                redis=tile_cache_service.tile_manager_service.redis,
+                feature_store_id=feature_store.id,
+            ),
             feature_query_set=historical_feature_query_set,
             progress_callback=(
                 get_ranged_progress_callback(
@@ -344,8 +347,9 @@ async def get_target(
         )
 
         await execute_feature_query_set(
-            session=session,
-            redis=redis,
+            session_handler=SessionHandler(
+                session=session, redis=redis, feature_store_id=feature_store.id
+            ),
             feature_query_set=historical_feature_query_set,
             progress_callback=(
                 get_ranged_progress_callback(
