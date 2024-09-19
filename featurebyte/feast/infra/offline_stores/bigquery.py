@@ -5,7 +5,7 @@ Offline store implementations for GCP BigQuery
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from unittest.mock import patch
 
 import pyarrow
@@ -22,6 +22,9 @@ from feast.infra.offline_stores.offline_store import RetrievalJob
 from feast.repo_config import RepoConfig
 
 from featurebyte.session.bigquery import bq_to_arrow_schema
+
+if TYPE_CHECKING:
+    from feast.saved_dataset import ValidationReference
 
 
 class FeatureByteBigQueryOfflineStoreConfig(BigQueryOfflineStoreConfig):

@@ -134,7 +134,20 @@ def _json_serialization_handler(value: Any) -> str:
     return str(value)
 
 
-def bq_to_arrow_schema(schema: list[SchemaField]):
+def bq_to_arrow_schema(schema: list[SchemaField]) -> pa.Schema:
+    """
+    Convert BigQuery schema to pyarrow schema
+
+    Parameters
+    ----------
+    schema: list[SchemaField]
+        BigQuery schema
+
+    Returns
+    -------
+    pa.Schema
+    """
+
     def _get_pyarrow_type(
         datatype: str, precision: int = 0, scale: int = 0, mode: str | None = None
     ) -> pa.DataType:

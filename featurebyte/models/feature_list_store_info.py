@@ -29,7 +29,9 @@ from featurebyte.query_graph.node.schema import (
 )
 from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME
 
-StoreInfoType = Literal["uninitialized", "snowflake", "databricks", "databricks_unity", "spark"]
+StoreInfoType = Literal[
+    "uninitialized", "snowflake", "databricks", "databricks_unity", "spark", "bigquery"
+]
 
 
 class BaseStoreInfo(FeatureByteBaseModel):
