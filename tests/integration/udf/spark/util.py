@@ -56,5 +56,5 @@ def to_array(array_obj: Optional[List[Any]]) -> str:
     """
     if array_obj is None:
         return "null"
-    joined_string = ", ".join([str(x) for x in array_obj])
+    joined_string = ", ".join([f"CAST({x} AS DOUBLE)" for x in array_obj])
     return f"ARRAY({joined_string})"
