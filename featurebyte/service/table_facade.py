@@ -169,14 +169,15 @@ class TableFacadeService:
         service: Optional[TableDocumentService]
             Table document service
         """
-        table = await self.table_service.get_document(table_id)
         if service is None:
+            table = await self.table_service.get_document(table_id)
             service = self.get_specific_table_service(table.type)
         await self.table_status_service.update_status(
             service=service, document_id=table_id, status=status
         )
         if status == TableStatus.DEPRECATED:
             # remove entity tagging from deprecated table
+            table = await service.get_document(table_id)
             columns_info = []
             for col_info in table.columns_info:
                 if col_info.entity_id:

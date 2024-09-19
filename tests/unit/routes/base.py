@@ -1007,7 +1007,10 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         response = test_api_client.patch(f"{self.base_route}/{random_id}", json=data_update_dict)
         assert response.status_code == HTTPStatus.NOT_FOUND
         assert response.json() == {
-            "detail": f'Table (id: "{random_id}") not found. Please save the Table object first.'
+            "detail": (
+                f'{self.class_name} (id: "{random_id}") not found. '
+                f"Please save the {self.class_name} object first."
+            )
         }
 
     def test_update_fails_invalid_transition(
