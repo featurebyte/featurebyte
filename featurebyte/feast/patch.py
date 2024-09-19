@@ -5,8 +5,9 @@ This module functions used to patch the Feast library.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Union
 
+import pandas as pd
 import pyarrow
 from feast import OnDemandFeatureView
 from feast.base_feature_view import BaseFeatureView
@@ -202,3 +203,78 @@ def with_projection(
     cp.projection = feature_view_projection
 
     return cp
+
+
+class DataFrameWrapper(pd.DataFrame):
+    """
+    Wrapper class for pandas DataFrame to support alias column names. This feature is used to improve the
+    runtime & memory performance of the get_transformed_features_df function.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.attrs["_alias"] = {}
+
+    def add_column_alias(self, column_name: str, alias: str) -> None:
+        """
+        Add a column alias
+        Parameters
+        ----------
+        column_name: str
+            Column name
+        alias: str
+            Alias name of the column
+        """
+        self.attrs["_alias"][alias] = column_name
+
+    def __getitem__(self, key: Any) -> Union[pd.Series, pd.DataFrame]:
+        if not isinstance(key, str) and isinstance(key, Iterable):
+            return pd.DataFrame({_key: self.__getitem__(_key) for _key in key})
+
+        if isinstance(key, str) and key in self.attrs["_alias"]:
+            key = self.attrs["_alias"][key]
+
+        return super().__getitem__(key)
+
+
+def transform_arrow(
+    feature_view: OnDemandFeatureView,
+    pa_table: pyarrow.Table,
+    full_feature_names: bool = False,
+) -> pyarrow.Table:
+    if not isinstance(pa_table, pyarrow.Table):
+        raise TypeError("transform_arrow only accepts pyarrow.Table")
+
+    # Transform the arrow to a pandas dataframe first
+    input_df = pa_table.to_pandas()
+
+    # Original implementation assigns a new column on each iteration, this implementation uses a wrapper
+    # class to improve the runtime & memory performance.
+    df_with_features = DataFrameWrapper(input_df)
+    for source_fv_projection in feature_view.source_feature_view_projections.values():
+        for feature in source_fv_projection.features:
+            full_feature_ref = f"{source_fv_projection.name}__{feature.name}"
+            if full_feature_ref in df_with_features.keys():
+                # Make sure the partial feature name is always present
+                df_with_features.add_column_alias(full_feature_ref, feature.name)
+            elif feature.name in df_with_features.keys():
+                # Make sure the full feature name is always present
+                df_with_features.add_column_alias(feature.name, full_feature_ref)
+
+    # Compute transformed values and apply to each result row
+    df_with_transformed_features = feature_view.feature_transformation.transform(df_with_features)
+    assert isinstance(df_with_transformed_features, pd.DataFrame)
+
+    # Work out whether the correct columns names are used.
+    rename_columns: Dict[str, str] = {}
+    for feature in feature_view.features:
+        short_name = feature.name
+        long_name = feature_view._get_projected_feature_name(feature.name)
+        if short_name in df_with_transformed_features.columns and full_feature_names:
+            rename_columns[short_name] = long_name
+        elif not full_feature_names:
+            # Long name must be in dataframe.
+            rename_columns[long_name] = short_name
+
+    df_with_features = pd.DataFrame(df_with_transformed_features).rename(columns=rename_columns)
+    return pyarrow.Table.from_pandas(df_with_features)
