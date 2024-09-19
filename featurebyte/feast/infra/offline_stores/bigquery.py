@@ -21,6 +21,7 @@ from feast.infra.offline_stores.bigquery_source import BigQuerySource
 from feast.infra.offline_stores.offline_store import RetrievalJob
 from feast.repo_config import RepoConfig
 
+from featurebyte.models.credential import GoogleCredential
 from featurebyte.session.bigquery import bq_to_arrow_schema
 
 if TYPE_CHECKING:
@@ -29,6 +30,8 @@ if TYPE_CHECKING:
 
 class FeatureByteBigQueryOfflineStoreConfig(BigQueryOfflineStoreConfig):
     """Offline store config for GCP BigQuery"""
+
+    database_credential: GoogleCredential
 
 
 class FeatureByteBigQueryOfflineStore(BigQueryOfflineStore):

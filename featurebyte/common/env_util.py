@@ -4,7 +4,9 @@ This module contains utility functions related to execution environment
 
 from __future__ import annotations
 
-from typing import Any
+import os
+from contextlib import ExitStack, contextmanager
+from typing import Any, Dict, Iterator, List
 
 
 def is_notebook() -> bool:
@@ -51,3 +53,61 @@ def display_html_in_notebook(html_content: str) -> None:
         from IPython.display import HTML, display
 
         display(HTML(html_content), metadata={"isolated": True})
+
+
+@contextmanager
+def set_environment_variable(variable: str, value: Any) -> Iterator[None]:
+    """
+    Set the environment variable within the context
+
+    Parameters
+    ----------
+    variable: str
+        The environment variable
+    value: Any
+        The value to set
+
+    Yields
+    ------
+    Iterator[None]
+        The context manager
+    """
+    previous_value = os.environ.get(variable)
+    os.environ[variable] = value
+
+    try:
+        yield
+    finally:
+        if previous_value is not None:
+            os.environ[variable] = previous_value
+        else:
+            del os.environ[variable]
+
+
+@contextmanager
+def set_environment_variables(variables: Dict[str, Any]) -> Iterator[None]:
+    """
+    Set multiple environment variables within the context
+
+    Parameters
+    ----------
+    variables: Dict[str, Any]
+        Key value mapping of environment variables to set
+
+    Yields
+    ------
+    Iterator[None]
+        The context manager
+    """
+    ctx_managers: List[Any] = []
+
+    for key, value in variables.items():
+        ctx_managers.append(set_environment_variable(key, value))
+
+    if ctx_managers:
+        with ExitStack() as stack:
+            for mgr in ctx_managers:
+                stack.enter_context(mgr)
+            yield
+    else:
+        yield

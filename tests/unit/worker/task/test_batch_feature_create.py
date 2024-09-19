@@ -10,6 +10,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.api.catalog import Catalog, Entity
+from featurebyte.common.env_util import set_environment_variable
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -19,7 +20,7 @@ from featurebyte.worker.task.batch_feature_create import (
     BatchFeatureCreateTask,
     BatchFeatureCreateTaskPayload,
 )
-from featurebyte.worker.util.batch_feature_creator import execute_sdk_code, set_environment_variable
+from featurebyte.worker.util.batch_feature_creator import execute_sdk_code
 
 
 @pytest.fixture(name="test_catalog")
