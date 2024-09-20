@@ -69,7 +69,7 @@ from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
-from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.task_manager import TaskManager, CeleryTaskBroker
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
 from featurebyte.worker import get_celery
@@ -1626,7 +1626,7 @@ def task_manager_fixture(persistent, user, catalog, storage):
     task_manager = TaskManager(
         user=user,
         persistent=persistent,
-        celery=get_celery(),
+        task_broker=CeleryTaskBroker(get_celery()),
         catalog_id=catalog.id,
         storage=storage,
         redis=redis.from_url(TEST_REDIS_URI),

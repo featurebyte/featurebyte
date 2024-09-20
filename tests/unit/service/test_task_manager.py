@@ -15,7 +15,7 @@ from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Crontab, Interval
 from featurebyte.models.task import Task
 from featurebyte.schema.task import TaskStatus
-from featurebyte.service.task_manager import TaskManager
+from featurebyte.service.task_manager import TaskManager, CeleryTaskBroker
 from featurebyte.worker.test_util.random_task import LongRunningPayload
 
 
@@ -35,7 +35,7 @@ def task_manager_fixture(user_id, persistent, celery, catalog, storage):
     task_manager = TaskManager(
         user=user,
         persistent=persistent,
-        celery=celery,
+        task_broker=CeleryTaskBroker(celery=celery),
         catalog_id=catalog.id,
         storage=storage,
         redis=Mock(),

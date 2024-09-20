@@ -61,6 +61,7 @@ from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.task_manager import CeleryTaskBroker
 from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, session_cache
 from featurebyte.session.manager import SessionManager
 from featurebyte.session.snowflake import SnowflakeSession
@@ -2271,7 +2272,7 @@ def app_container_fixture(persistent, user, catalog, storage, temp_storage):
             "user": user,
             "persistent": persistent,
             "temp_storage": temp_storage,
-            "celery": get_celery(),
+            "task_broker": CeleryTaskBroker(get_celery()),
             "storage": storage,
             "catalog_id": catalog.id,
             "task_id": uuid4(),
@@ -2339,7 +2340,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     "user": user,
                     "persistent": persistent,
                     "temp_storage": temp_storage,
-                    "celery": get_celery(),
+                    "task_broker": CeleryTaskBroker(get_celery()),
                     "redis": get_redis(),
                     "storage": storage,
                     "catalog_id": payload.catalog_id,
@@ -2397,7 +2398,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
 
             with (
                 patch("featurebyte.app.get_celery") as mock_get_celery,
-                mock.patch("featurebyte.worker.task_executor.get_celery") as mock_get_celery_worker,
+                patch("featurebyte.worker.task_executor.get_celery") as mock_get_celery_worker,
             ):
 
                 def get_task(task_id):

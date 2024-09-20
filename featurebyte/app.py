@@ -53,6 +53,7 @@ from featurebyte.routes.use_case.api import UseCaseRouter
 from featurebyte.routes.user_defined_function.api import UserDefinedFunctionRouter
 from featurebyte.schema import APIServiceStatus
 from featurebyte.schema.task import TaskId
+from featurebyte.service.task_manager import CeleryTaskBroker
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
@@ -85,7 +86,7 @@ def _dep_injection_func(
         storage=get_storage(),
         temp_storage=get_temp_storage(),
         redis=get_redis(),
-        celery=get_celery(),
+        task_broker=CeleryTaskBroker(get_celery()),
         catalog_id=active_catalog_id,
         app_container_config=app_container_config,
     )

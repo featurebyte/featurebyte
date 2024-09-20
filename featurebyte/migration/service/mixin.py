@@ -21,6 +21,7 @@ from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.task_manager import TaskBroker
 
 BaseDocumentServiceT = BaseDocumentService[
     FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema
@@ -203,7 +204,6 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
     """
 
     get_credential: Any
-    celery: Celery
 
     def __init__(
         self,
@@ -248,17 +248,6 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
             Callback to retrieve credential
         """
         self.get_credential = get_credential
-
-    def set_celery(self, celery: Celery) -> None:
-        """
-        Set the celery instance
-
-        Parameters
-        ----------
-        celery: Celery
-            Celery instance
-        """
-        self.celery = celery
 
     async def migrate_record(self, document: Document, version: Optional[int]) -> None:
         # Data warehouse migration requires version to be provided when calling migrate_all_records
