@@ -19,7 +19,7 @@ from redis.client import Redis
 from featurebyte import logging
 from featurebyte.models.periodic_task import PeriodicTask
 from featurebyte.models.task import Task
-from featurebyte.service.task_manager import TaskBroker, CeleryTaskBroker
+from featurebyte.service.task_manager import CeleryTaskBroker, TaskBroker
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import DATABASE_NAME, MONGO_URI
 
@@ -185,8 +185,11 @@ def revoke(
     return ok(f"tasks {task_ids} flagged as revoked")
 
 
-def get_task_broker(redis_uri: str = REDIS_URI, mongo_uri: str = MONGO_URI, database_name: str = DATABASE_NAME) -> TaskBroker:
+def get_task_broker(
+    redis_uri: str = REDIS_URI, mongo_uri: str = MONGO_URI, database_name: str = DATABASE_NAME
+) -> TaskBroker:
     return CeleryTaskBroker(get_celery(redis_uri, mongo_uri, database_name))
+
 
 def get_celery(
     redis_uri: str = REDIS_URI, mongo_uri: str = MONGO_URI, database_name: str = DATABASE_NAME
