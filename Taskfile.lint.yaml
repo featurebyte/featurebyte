@@ -118,30 +118,22 @@ tasks:
     desc: "Run the linter[safety]"
     env:
       PERMISSIVE_LICENSES: |-
-        Apache License 2.0;
-        Apache License, Version 2.0;
-        Apache Software License;
-        BSD;
-        BSD License;
+        Apache-2.0;Apache License 2.0;Apache License, Version 2.0;Apache Software License;Apache 2.0;
+        BSD;BSD License;BSD-2-Clause;3-Clause BSD License;
         Historical Permission Notice and Disclaimer (HPND);
         GNU General Public License v2 (GPLv2);
-        ISC License (ISCL);
-        ISC;
-        MIT License;
-        MIT;
-        MPL-2.0;
-        Mozilla Public License 2.0 (MPL 2.0);
-        Public Domain;
-        Python Software Foundation License;
-        The Unlicense (Unlicense)
-      PACKAGES:
-        sh: poetry export --without-hashes --without-urls --extras server | cut -d '=' -f1 | xargs
+        ISC License (ISCL);ISC;
+        MIT License;MIT;
+        MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);
+        Public Domain;Python Software Foundation License;
+        The Unlicense (Unlicense);
+        Zope Public License
     sources:
       - poetry.lock
       - pyproject.toml
       - featurebyte/**/*
     cmds:
-      - poetry run pip-licenses --packages "${PACKAGES}" --allow-only="${PERMISSIVE_LICENSES}"
+      - poetry run pip-licenses --allow-only="${PERMISSIVE_LICENSES}" --ignore-packages featurebyte python-on-whales >/dev/null
       - poetry run pip-audit
 
   bandit:
