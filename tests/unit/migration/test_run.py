@@ -12,7 +12,6 @@ import pytest_asyncio
 from bson import ObjectId, json_util
 
 from featurebyte import SourceType
-from featurebyte.app import get_celery
 from featurebyte.migration.model import MigrationMetadata, SchemaMetadataUpdate
 from featurebyte.migration.run import (
     _extract_migrate_method_marker,
@@ -68,7 +67,6 @@ async def test_migrate_method_generator(user, persistent, get_credential, schema
         user=user,
         persistent=persistent,
         get_credential=get_credential,
-        celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
         schema_metadata=schema_metadata,
@@ -91,7 +89,6 @@ async def test_migrate_method_generator(user, persistent, get_credential, schema
         user=user,
         persistent=persistent,
         get_credential=get_credential,
-        celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
         schema_metadata=schema_metadata,
@@ -119,7 +116,6 @@ async def test_migrate_method_generator__exclude_warehouse(
         user=user,
         persistent=persistent,
         get_credential=get_credential,
-        celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
         schema_metadata=schema_metadata,
@@ -208,7 +204,6 @@ async def test_run_migration(
         user=user,
         persistent=persistent,
         get_credential=get_credential,
-        celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
         include_data_warehouse_migrations=False,
@@ -222,7 +217,6 @@ async def test_run_migration(
         user=user,
         persistent=persistent,
         get_credential=get_credential,
-        celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
         schema_metadata=schema_metadata,

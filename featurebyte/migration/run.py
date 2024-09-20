@@ -9,7 +9,6 @@ import importlib
 import inspect
 from typing import Any, AsyncGenerator, Callable, Iterator, Optional, Set, cast
 
-from celery import Celery
 from redis import Redis
 
 from featurebyte.common.path_util import import_submodules
@@ -38,7 +37,7 @@ from featurebyte.service.catalog import AllCatalogService
 from featurebyte.storage import Storage
 from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.storage import get_storage, get_temp_storage
-from featurebyte.worker import get_celery, get_redis
+from featurebyte.worker import get_redis
 
 logger = get_logger(__name__)
 
@@ -252,7 +251,6 @@ async def migrate_method_generator(
     user: Any,
     persistent: Persistent,
     get_credential: Any,
-    celery: Celery,
     storage: Storage,
     temp_storage: Storage,
     schema_metadata: SchemaMetadataModel,
@@ -270,8 +268,6 @@ async def migrate_method_generator(
         Persistent storage object
     get_credential: Any
         Callback to retrieve credential
-    celery: Celery
-        Celery object
     storage: Storage
         Storage object
     temp_storage: Storage
@@ -316,7 +312,6 @@ async def migrate_method_generator(
             if not include_data_warehouse_migrations:
                 continue
             migrate_service.set_credential_callback(get_credential)
-            migrate_service.set_celery(celery)
 
         migrate_method_name = migrate_method_data["method"]
         migrate_method = getattr(migrate_service, migrate_method_name)
@@ -367,7 +362,6 @@ async def run_migration(
     user: Any,
     persistent: Persistent,
     get_credential: Any,
-    celery: Celery,
     storage: Storage,
     temp_storage: Storage,
     redis: Redis[Any],
@@ -385,8 +379,6 @@ async def run_migration(
         Persistent object
     get_credential: Any
         Callback to retrieve credential
-    celery: Celery
-        Celery object
     storage: Storage
         Storage object
     temp_storage: Storage
@@ -414,7 +406,6 @@ async def run_migration(
         user=user,
         persistent=persistent,
         get_credential=get_credential,
-        celery=celery,
         storage=storage,
         temp_storage=temp_storage,
         schema_metadata=schema_metadata,
@@ -451,7 +442,6 @@ async def run_mongo_migration(persistent: MongoDB) -> None:
         User(),
         persistent,
         credential_provider.get_credential,
-        celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
         redis=get_redis(),

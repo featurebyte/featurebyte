@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Type, Union
 
 from bson import ObjectId
-from celery import Celery
 from redis.client import Redis
 
 from featurebyte.persistent import Persistent
@@ -16,6 +15,7 @@ from featurebyte.routes.app_container_config import (
     ClassDefinition,
     _get_class_name,
 )
+from featurebyte.service.task_manager import TaskBroker
 from featurebyte.storage import Storage
 
 
@@ -92,7 +92,7 @@ class LazyAppContainer:
         app_container_config: AppContainerConfig,
         user: Optional[Any] = None,
         temp_storage: Optional[Storage] = None,
-        celery: Optional[Celery] = None,
+        task_broker: Optional[TaskBroker] = None,
         redis: Optional[Redis[Any]] = None,
         storage: Optional[Storage] = None,
         catalog_id: Optional[ObjectId] = None,
@@ -106,7 +106,7 @@ class LazyAppContainer:
         self.instance_map: Dict[str, Any] = (
             {
                 "catalog_id": catalog_id,
-                "celery": celery,
+                "task_broker": task_broker,
                 "redis": redis,
                 "persistent": persistent,
                 "storage": storage,

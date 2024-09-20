@@ -5,6 +5,7 @@ TaskManager service is responsible to submit task message
 from __future__ import annotations
 
 import datetime
+from abc import ABC, abstractmethod
 from typing import Any, Optional
 from uuid import UUID
 
@@ -27,6 +28,34 @@ from featurebyte.storage import Storage
 logger = get_logger(__name__)
 
 
+class TaskBroker(ABC):
+    @abstractmethod
+    def send_task(self, task: str, kwargs: dict[str, Any], parent_id: Optional[str]) -> Any:
+        raise NotImplementedError("Method not implemented")
+
+    @abstractmethod
+    def AsyncResult(self, task_id: str) -> Any:
+        raise NotImplementedError("Method not implemented")
+
+    def revoke(self, task_id: str, reply: bool, terminate: bool, signal: str) -> None:
+        raise NotImplementedError("Method not implemented")
+
+
+class CeleryTaskBroker(TaskBroker):
+    def __init__(self, celery: Celery) -> None:
+        self.celery = celery
+
+    def send_task(self, task: str, kwargs: dict[str, Any], parent_id: Optional[str]) -> Any:
+        return self.celery.send_task(task, kwargs=kwargs, parent_id=parent_id)
+
+    def AsyncResult(self, task_id: str) -> Any:
+        return self.celery.AsyncResult(task_id)
+
+    def revoke(self, task_id: str, reply: bool, terminate: bool, signal: str) -> None:
+        self.celery.control.revoke(task_id, reply=reply, terminate=terminate, signal=signal)
+
+
+
 class TaskManager:
     """
     TaskManager class is responsible for submitting task request & task status retrieval
@@ -36,14 +65,14 @@ class TaskManager:
         self,
         user: Any,
         persistent: Persistent,
-        celery: Celery,
+        task_broker: TaskBroker,
         catalog_id: Optional[ObjectId],
         storage: Storage,
         redis: Redis[Any],
     ) -> None:
         self.user = user
         self.persistent = persistent
-        self.celery = celery
+        self.task_broker = task_broker
         self.catalog_id = catalog_id
         self.storage = storage
         self.redis = redis
@@ -94,7 +123,7 @@ class TaskManager:
         kwargs["task_output_path"] = payload.task_output_path
         if mark_as_scheduled_task:
             kwargs["is_scheduled_task"] = True
-        task = self.celery.send_task(payload.task, kwargs=kwargs, parent_id=parent_task_id)
+        task = self.task_broker.send_task(payload.task, kwargs=kwargs, parent_id=parent_task_id)
 
         if parent_task_id:
             await self._add_child_task_id(str(parent_task_id), str(task.id))
@@ -122,7 +151,7 @@ class TaskManager:
 
         if not document:
             # no persistent record, fallback to celery result
-            task_result = self.celery.AsyncResult(task_id)
+            task_result = self.task_broker.AsyncResult(task_id)
             if not task_result:
                 # no celery or persistent result
                 return None
@@ -456,4 +485,4 @@ class TaskManager:
         if task.status != TaskStatus.PENDING and not task.payload.get("is_revocable"):
             raise TaskNotRevocableError(f'Task (id: "{task_id}") does not support revoke.')
         if task.status in TaskStatus.non_terminal():
-            self.celery.control.revoke(task_id, reply=True, terminate=True, signal="SIGTERM")
+            self.task_broker.revoke(task_id, reply=True, terminate=True, signal="SIGTERM")

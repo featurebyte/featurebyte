@@ -56,7 +56,7 @@ def migration_service_fixture(app_container, get_cred):
     """
     service = app_container.data_warehouse_migration_service_v3
     service.set_credential_callback(get_cred)
-    service.set_celery(get_celery())
+    service.set_broker(get_celery())
     return service
 
 
