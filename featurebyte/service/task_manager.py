@@ -55,7 +55,6 @@ class CeleryTaskBroker(TaskBroker):
         self.celery.control.revoke(task_id, reply=reply, terminate=terminate, signal=signal)
 
 
-
 class TaskManager:
     """
     TaskManager class is responsible for submitting task request & task status retrieval

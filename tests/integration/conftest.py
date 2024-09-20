@@ -69,7 +69,7 @@ from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
-from featurebyte.service.task_manager import TaskManager, CeleryTaskBroker
+from featurebyte.service.task_manager import CeleryTaskBroker, TaskManager
 from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
 from featurebyte.worker import get_celery

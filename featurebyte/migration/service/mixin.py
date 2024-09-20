@@ -7,8 +7,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from celery import Celery
-
 from featurebyte.enum import InternalName
 from featurebyte.exception import CredentialsError
 from featurebyte.logging import get_logger
@@ -21,7 +19,6 @@ from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.service.task_manager import TaskBroker
 
 BaseDocumentServiceT = BaseDocumentService[
     FeatureByteBaseDocumentModel, FeatureByteBaseModel, BaseDocumentServiceUpdateSchema

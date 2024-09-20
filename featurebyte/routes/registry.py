@@ -169,7 +169,7 @@ from featurebyte.service.target import TargetService
 from featurebyte.service.target_helper.compute_target import TargetComputer, TargetExecutor
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.target_table import TargetTableService
-from featurebyte.service.task_manager import TaskManager, TaskBroker
+from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile.tile_task_executor import TileTaskExecutor
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.tile_job_log import TileJobLogService
@@ -191,7 +191,7 @@ from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
-from featurebyte.worker import get_celery, get_redis, get_task_broker
+from featurebyte.worker import get_redis, get_task_broker
 from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
