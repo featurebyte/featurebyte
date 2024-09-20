@@ -29,29 +29,123 @@ logger = get_logger(__name__)
 
 
 class TaskBroker(ABC):
+    """
+    TaskBroker class is responsible for sending task request & task status retrieval
+    """
+
     @abstractmethod
     def send_task(self, task: str, kwargs: dict[str, Any], parent_id: Optional[str]) -> Any:
+        """
+        Send task to broker
+
+        Parameters
+        ----------
+        task: str
+            Task name
+        kwargs: dict[str, Any]
+            Task arguments
+        parent_id: Optional[str]
+            Parent task ID
+
+        Returns
+        -------
+        Any
+        """
         raise NotImplementedError("Method not implemented")
 
     @abstractmethod
     def AsyncResult(self, task_id: str) -> Any:
+        """
+        Get task result from broker
+
+        Parameters
+        ----------
+        task_id: str
+            Task
+
+        Returns
+        -------
+        Any
+        """
         raise NotImplementedError("Method not implemented")
 
+    @abstractmethod
     def revoke(self, task_id: str, reply: bool, terminate: bool, signal: str) -> None:
+        """
+        Revoke task
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+        reply: bool
+            Reply
+        terminate: bool
+            Terminate
+        signal: str
+            Signal
+        """
         raise NotImplementedError("Method not implemented")
 
 
 class CeleryTaskBroker(TaskBroker):
+    """
+    CeleryTaskBroker class is responsible for sending task request & task status retrieval based on Celery
+    """
+
     def __init__(self, celery: Celery) -> None:
         self.celery = celery
 
     def send_task(self, task: str, kwargs: dict[str, Any], parent_id: Optional[str]) -> Any:
+        """
+        Send task to broker
+
+        Parameters
+        ----------
+        task: str
+            Task name
+        kwargs: dict[str, Any]
+            Task arguments
+        parent_id: Optional[str]
+            Parent task ID
+
+        Returns
+        -------
+        Any
+        """
         return self.celery.send_task(task, kwargs=kwargs, parent_id=parent_id)
 
     def AsyncResult(self, task_id: str) -> Any:
+        """
+        Get task result from broker
+
+        Parameters
+        ----------
+        task_id: str
+            Task
+
+        Returns
+        -------
+        Any
+        """
         return self.celery.AsyncResult(task_id)
 
     def revoke(self, task_id: str, reply: bool, terminate: bool, signal: str) -> None:
+        """
+        Revoke task
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+        reply: bool
+            Reply
+        terminate: bool
+            Terminate
+        signal: str
+            Signal
+
+        """
         self.celery.control.revoke(task_id, reply=reply, terminate=terminate, signal=signal)
 
 

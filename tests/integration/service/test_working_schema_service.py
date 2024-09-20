@@ -5,7 +5,6 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import FeatureList
-from featurebyte.app import get_celery
 from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.service.working_schema import drop_all_objects
 from tests.util.helper import (
@@ -56,7 +55,6 @@ def migration_service_fixture(app_container, get_cred):
     """
     service = app_container.data_warehouse_migration_service_v3
     service.set_credential_callback(get_cred)
-    service.set_broker(get_celery())
     return service
 
 

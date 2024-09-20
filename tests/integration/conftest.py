@@ -1626,7 +1626,7 @@ def task_manager_fixture(persistent, user, catalog, storage):
     task_manager = TaskManager(
         user=user,
         persistent=persistent,
-        task_broker=CeleryTaskBroker(get_celery()),
+        task_broker=CeleryTaskBroker(get_celery(redis_uri=TEST_REDIS_URI)),
         catalog_id=catalog.id,
         storage=storage,
         redis=redis.from_url(TEST_REDIS_URI),
@@ -1642,7 +1642,7 @@ def app_container_fixture(persistent, user, catalog, storage):
     instance_map = {
         "user": user,
         "persistent": persistent,
-        "celery": get_celery(),
+        "task_broker": CeleryTaskBroker(get_celery(redis_uri=TEST_REDIS_URI)),
         "storage": storage,
         "catalog_id": catalog.id,
         "redis": redis.from_url(TEST_REDIS_URI),
