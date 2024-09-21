@@ -189,7 +189,7 @@ def test_tiling_aggregators(
     agg = get_aggregator(agg_func, adapter=adapter, parent_dtype=parent_dtype)
     input_column = InputColumn(name="a_column", dtype=DBVarType.VARCHAR)
     tile_specs = agg.tile(input_column, agg_id)
-    merge_expr = agg.merge(agg_id)
+    merge_expr = agg.merge(agg_id).sql()
     assert [t.tile_expr.sql() for t in tile_specs] == [t["tile_expr"] for t in expected_tile_specs]
     assert [t.tile_column_name for t in tile_specs] == [
         t["tile_column_name"] for t in expected_tile_specs

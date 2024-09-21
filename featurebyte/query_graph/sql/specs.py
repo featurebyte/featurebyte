@@ -142,7 +142,7 @@ class TileBasedAggregationSpec(AggregationSpec):
     aggregation_id: str
     keys: list[str]
     value_by: str | None
-    merge_expr: str
+    merge_expr: Expression
     feature_name: str
     is_order_dependent: bool
     tile_value_columns: list[str]
