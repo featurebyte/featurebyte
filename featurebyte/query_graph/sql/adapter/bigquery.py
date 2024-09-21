@@ -38,7 +38,7 @@ class BigQueryAdapter(BaseAdapter):
         OBJECT = "JSON"
         TIMESTAMP = "TIMESTAMP"
         STRING = "STRING"
-        ARRAY = "ARRAY"
+        ARRAY = "ARRAY<FLOAT64>"
 
     @classmethod
     def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
