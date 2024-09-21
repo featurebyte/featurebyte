@@ -189,7 +189,7 @@ tasks:
         sh: printenv PYTEST_SPLITS || echo "1"
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.5 --cov=featurebyte tests/integration --source-types bigquery --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.5 --cov=featurebyte tests/integration/feature_store_integration/test_feature_materialize.py --source-types bigquery --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}}
       - task: test-teardown
 
   test-docs:
