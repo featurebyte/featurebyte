@@ -479,10 +479,6 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                     feature_name_version=feature_versioned_name,
                     input_df_name=input_df_name,
                     output_df_name=output_df_name,
-                    input_column_expr=subset_frame_column_expr(
-                        input_df_name,
-                        feature_versioned_name,
-                    ),
                     ttl_seconds=ttl_seconds,
                     var_name_generator=VariableNameGenerator(),
                 )

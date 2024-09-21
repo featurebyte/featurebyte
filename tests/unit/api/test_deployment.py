@@ -329,7 +329,7 @@ def test_deployment_with_unbounded_window(
             inputs["feat_latest_combined_{version}__ts"], unit="s", utc=True
         )
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-        inputs["feat_latest_combined_{version}"][~mask] = np.nan
+        inputs.loc[~mask, "feat_latest_combined_{version}"] = np.nan
         df["feat_latest_combined_{version}"] = inputs["feat_latest_combined_{version}"]
         df.fillna(np.nan, inplace=True)
         return df

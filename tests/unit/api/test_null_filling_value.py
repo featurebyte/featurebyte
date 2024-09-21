@@ -96,7 +96,7 @@ def test_feature_with_null_filling_value_has_odfv(float_feature, non_time_based_
                 inputs["sum_1d_V240201__ts"], unit="s", utc=True
             )
             mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-            inputs["sum_1d_V240201"][~mask] = np.nan
+            inputs.loc[~mask, "sum_1d_V240201"] = np.nan
             df["sum_1d_V240201"] = inputs["sum_1d_V240201"]
             df.fillna(np.nan, inplace=True)
             return df
