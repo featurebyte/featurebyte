@@ -33,11 +33,11 @@ async def wait_for_async_task(
 
 
 @pytest.fixture(name="task_manager")
-def task_manager_fixture(celery_service, app_container_no_catalog):
+def task_manager_fixture(task_broker_service, app_container_no_catalog):
     """Task manager fixture"""
-    persistent, celery = celery_service
+    persistent, task_broker = task_broker_service
     app_container_no_catalog.override_instance_for_test("persistent", persistent)
-    app_container_no_catalog.override_instance_for_test("celery", celery)
+    app_container_no_catalog.override_instance_for_test("task_broker", task_broker)
     return app_container_no_catalog.get(TaskManager)
 
 
@@ -136,9 +136,9 @@ async def test_revoke_task(task_manager, persistent):
 
 
 @pytest.mark.asyncio
-async def test_submit_child_task(task_manager, parent_payload, celery_service):
+async def test_submit_child_task(task_manager, parent_payload, task_broker_service):
     """Test submitting child task from parent task"""
-    persistent, _ = celery_service
+    persistent, _ = task_broker_service
     task_id = await task_manager.submit(payload=parent_payload)
     task = await wait_for_async_task(task_manager, task_id)
     assert task.status == "SUCCESS"
