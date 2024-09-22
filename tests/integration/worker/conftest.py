@@ -15,6 +15,7 @@ from bson import ObjectId
 
 from featurebyte.app import get_celery
 from featurebyte.persistent.mongo import MongoDB
+from featurebyte.service.task_manager import CeleryTaskBroker
 from tests.integration.conftest import MONGO_CONNECTION, TEST_REDIS_URI
 
 
@@ -39,8 +40,8 @@ def source_type_fixture(request):
     return request.param
 
 
-@pytest.yield_fixture(scope="module", name="celery_service")
-def celery_service_fixture(worker_type):
+@pytest.yield_fixture(scope="module", name="task_broker_service")
+def task_broker_service_fixture(worker_type):
     if worker_type == "cpu":
         command = [
             "celery",
@@ -84,10 +85,11 @@ def celery_service_fixture(worker_type):
         celery = get_celery(redis_uri=TEST_REDIS_URI, mongo_uri=MONGO_CONNECTION)
         celery.conf.mongodb_backend_settings["database"] = database_name
         proc = subprocess.Popen(command, env=env, stdout=subprocess.PIPE)
+        task_broker = CeleryTaskBroker(celery=celery)
         thread = RunThread(proc.stdout)
         thread.daemon = True
         thread.start()
-        yield persistent, celery
+        yield persistent, task_broker
         time.sleep(0.1)  # wait for job completion to be acknowledged
         proc.terminate()
         client.drop_database(database_name)
