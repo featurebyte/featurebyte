@@ -4,6 +4,7 @@ Offline store implementations for GCP BigQuery
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from unittest.mock import patch
@@ -100,6 +101,33 @@ class FeatureByteBigQueryRetrievalJob(BigQueryRetrievalJob):
     Implementation of to_arrow is overridden to handle JSON data type on empty table.
     """
 
+    @staticmethod
+    def _apply_json_encoding(result: pyarrow.Table) -> pyarrow.Table:
+        schema = result.schema
+        new_fields = []
+        new_columns = []
+        for i, field in enumerate(schema):
+            column = result.column(i)
+            if pyarrow.types.is_list(field.type):
+                # Apply JSON encoding transformation
+                pd_series = column.to_pandas()
+                encoded_column = pyarrow.Array.from_pandas(
+                    pd_series.apply(lambda x: json.dumps(list(x)) if x is not None else None)
+                )
+                new_field = pyarrow.field(field.name, pyarrow.string())
+                new_fields.append(new_field)
+                new_columns.append(encoded_column)
+            else:
+                # Keep the field unchanged if not array type
+                new_fields.append(field)
+                new_columns.append(column)
+
+        # Create a new table with the transformed columns
+        new_schema = pyarrow.schema(new_fields)
+        result_encoded = pyarrow.Table.from_arrays(new_columns, schema=new_schema)
+
+        return result_encoded
+
     def to_arrow(
         self,
         validation_reference: Optional["ValidationReference"] = None,
@@ -109,4 +137,7 @@ class FeatureByteBigQueryRetrievalJob(BigQueryRetrievalJob):
             "google.cloud.bigquery._pandas_helpers.bq_to_arrow_schema"
         ) as patched_bq_to_arrow_schema:
             patched_bq_to_arrow_schema.side_effect = bq_to_arrow_schema
-            return super().to_arrow(validation_reference=validation_reference, timeout=timeout)
+            arrow_result = super().to_arrow(
+                validation_reference=validation_reference, timeout=timeout
+            )
+        return self._apply_json_encoding(arrow_result)

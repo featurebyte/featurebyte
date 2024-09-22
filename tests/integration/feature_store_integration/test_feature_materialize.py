@@ -1140,7 +1140,7 @@ def process_output_features_helper(feat_dict, source_type):
     feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"] = json.loads(
         feat_dict["EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d"]
     )
-    if source_type not in [SourceType.DATABRICKS_UNITY, SourceType.BIGQUERY]:
+    if source_type != SourceType.DATABRICKS_UNITY:
         feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"] = json.loads(
             feat_dict["EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h"]
         )
