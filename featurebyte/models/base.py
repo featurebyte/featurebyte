@@ -4,7 +4,6 @@ FeatureByte specific BaseModel
 
 from __future__ import annotations
 
-import json
 import re
 from datetime import datetime
 from pathlib import Path
@@ -116,7 +115,7 @@ class FeatureByteBaseModel(BaseModel):
         -------
         dict[str, Any]
         """
-        output: dict[str, Any] = json.loads(self.model_dump_json(by_alias=True, **kwargs))
+        output: dict[str, Any] = self.model_dump(mode="json", by_alias=True, **kwargs)
         return output
 
     # pydantic model configuration

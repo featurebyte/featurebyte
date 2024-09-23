@@ -61,7 +61,6 @@ from featurebyte.query_graph.node.schema import (
     BigQueryDetails,
     DatabricksUnityDetails,
     SparkDetails,
-    SQLiteDetails,
 )
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -208,17 +207,6 @@ def credentials_mapping_fixture():
             database_credential=UsernamePasswordCredential(
                 username="wrong-user",
                 password="wrong-password",
-            ),
-        ),
-        "sqlite_datasource": CredentialModel(
-            name="sqlite_datasource",
-            feature_store_id=ObjectId(),
-        ),
-        "databricks_featurestore": CredentialModel(
-            name="databricks_featurestore",
-            feature_store_id=ObjectId(),
-            database_credential=AccessTokenCredential(
-                access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
             ),
         ),
         "databricks_unity_featurestore": CredentialModel(
@@ -440,17 +428,6 @@ def feature_store_details_fixture(source_type, sqlite_filename):  # pylint: disa
             role_name="TESTING",
         )
 
-    if source_type == "databricks":
-        schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
-        temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-        return DatabricksDetails(
-            host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
-            http_path=os.getenv("DATABRICKS_HTTP_PATH"),
-            catalog_name=os.getenv("DATABRICKS_CATALOG"),
-            schema_name=temp_schema_name,
-            storage_path=f"dbfs:/FileStore/{temp_schema_name}",
-        )
-
     if source_type == "databricks_unity":
         schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
         temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
@@ -482,9 +459,6 @@ def feature_store_details_fixture(source_type, sqlite_filename):  # pylint: disa
             project_name=os.getenv("BIGQUERY_PROJECT"),
             dataset_name=temp_schema_name,
         )
-
-    if source_type == "sqlite":
-        return SQLiteDetails(filename=sqlite_filename)
 
     return NotImplementedError(f"Unexpected source_type: {source_type}")
 

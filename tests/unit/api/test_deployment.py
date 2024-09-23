@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 from freezegun import freeze_time
+from pandas.testing import assert_frame_equal
 
 import featurebyte as fb
 from featurebyte import FeatureList
@@ -199,7 +200,12 @@ def test_get_feature_jobs_status(deployment, feature_job_logs):
 
     fixture_path = "tests/fixtures/feature_job_status/expected_session_logs.parquet"
     expected_session_logs = pd.read_parquet(fixture_path)
-    pd.testing.assert_frame_equal(feature_job_status.job_session_logs, expected_session_logs)
+
+    # NOTE: Parquet serialization and deserialization converts NaT to None
+    # converting the problematic values to None before comparing
+    session_logs = feature_job_status.job_session_logs.copy()
+    session_logs.loc[session_logs["ERROR"].isna(), "ERROR"] = None
+    assert_frame_equal(session_logs, expected_session_logs)
 
 
 def test_delete_deployment(deployment):

@@ -98,7 +98,7 @@ def test_dimension_table_model(dimension_table_model, expected_dimension_table_m
     """Test creation, serialization and deserialization of DimensionTable"""
     assert dimension_table_model.model_dump() == expected_dimension_table_model
     dimension_table_json = dimension_table_model.model_dump_json(by_alias=True)
-    dimension_table_loaded = DimensionTableModel.parse_raw(dimension_table_json)
+    dimension_table_loaded = DimensionTableModel.model_validate_json(dimension_table_json)
     assert dimension_table_loaded == dimension_table_model
 
 
