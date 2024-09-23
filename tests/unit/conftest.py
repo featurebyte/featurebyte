@@ -1197,7 +1197,7 @@ def patch_initialize_fixture():
         patcher = patch(f"{module_base_path}.{patch_target}")
         patched[patch_target] = patcher.start()
         started_patchers.append(patcher)
-    yield patched
+    yield started_patchers
     for patcher in started_patchers:
         patcher.stop()
 
