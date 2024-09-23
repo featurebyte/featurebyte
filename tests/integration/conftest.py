@@ -25,6 +25,7 @@ import pandas as pd
 import pymongo
 import pytest
 import pytest_asyncio
+import pytz
 import redis
 import yaml
 from bson import ObjectId
@@ -1553,7 +1554,7 @@ def mock_task_manager(request, persistent, storage):
                     status=status,
                     result="",
                     children=[],
-                    date_done=datetime.utcnow(),
+                    date_done=datetime.now(pytz.timezone('UTC')),
                     name=payload.command,
                     args=[],
                     kwargs=kwargs,
@@ -1571,7 +1572,6 @@ def mock_task_manager(request, persistent, storage):
 
             with (
                 patch("featurebyte.app.get_celery") as mock_get_celery,
-                mock.patch("featurebyte.worker.task_executor.get_celery") as mock_get_celery_worker,
             ):
 
                 def get_task(task_id):
@@ -1581,7 +1581,6 @@ def mock_task_manager(request, persistent, storage):
                     return Mock(status=status)
 
                 mock_get_celery.return_value.AsyncResult.side_effect = get_task
-                mock_get_celery_worker.return_value.AsyncResult.side_effect = get_task
                 yield
 
 
