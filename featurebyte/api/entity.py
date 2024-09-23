@@ -4,7 +4,7 @@ Entity class
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 
 from bson import ObjectId
 from pydantic import Field
@@ -13,6 +13,7 @@ from typeguard import typechecked
 from featurebyte.api.api_object_util import NameAttributeUpdatableMixin
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import EntityModel, ParentEntity
@@ -145,6 +146,18 @@ class Entity(NameAttributeUpdatableMixin, SavableApiObject, DeletableApiObject):
             List of ancestor entity ids.
         """
         return self.cached_model.ancestor_ids
+
+    @property
+    def dtype(self) -> Optional[DBVarType]:
+        """
+        Get the data type of the entity.
+
+        Returns
+        -------
+        Optional[str]
+            Data type of the entity.
+        """
+        return self.cached_model.dtype
 
     @typechecked
     def update_name(self, name: str) -> None:

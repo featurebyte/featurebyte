@@ -1067,6 +1067,10 @@ class TableApiObject(
             skip_update_schema_check=True,
         )
 
+        if entity_id:
+            # call get to update the object cache of the entity
+            Entity.get_by_id(ObjectId(entity_id))
+
     @typechecked
     def update_column_critical_data_info(
         self, column_name: str, critical_data_info: CriticalDataInfo

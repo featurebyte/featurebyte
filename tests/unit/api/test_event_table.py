@@ -1211,12 +1211,16 @@ def test_create_event_table_without_event_id_column(snowflake_database_table, ca
 
 
 def test_associate_conflicting_dtype_to_different_tables(
-    saved_event_table, saved_scd_table, cust_id_entity
+    saved_event_table, saved_scd_table, cust_id_entity, mock_api_object_cache
 ):
     """Test associating conflicting dtype to different tables"""
+    # check entity dtype is None
+    assert cust_id_entity.dtype is None
+
     # associate cust_id column to entity
     assert saved_event_table.cust_id.info.dtype == DBVarType.INT
     saved_event_table.cust_id.as_entity(cust_id_entity.name)
+    assert cust_id_entity.dtype == DBVarType.INT
 
     # check exception raised when associating conflicting dtype to different tables
     assert saved_scd_table.col_text.info.dtype == DBVarType.VARCHAR
