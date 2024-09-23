@@ -19,7 +19,7 @@ from typeguard import TypeCheckError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
-from featurebyte.enum import TableDataType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -1208,3 +1208,22 @@ def test_create_event_table_without_event_id_column(snowflake_database_table, ca
 
     # expect subset to work
     _ = event_view[["col_text", "col_int"]]
+
+
+def test_associate_conflicting_dtype_to_different_tables(
+    saved_event_table, saved_scd_table, cust_id_entity
+):
+    """Test associating conflicting dtype to different tables"""
+    # associate cust_id column to entity
+    assert saved_event_table.cust_id.info.dtype == DBVarType.INT
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+
+    # check exception raised when associating conflicting dtype to different tables
+    assert saved_scd_table.col_text.info.dtype == DBVarType.VARCHAR
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_scd_table.col_text.as_entity(cust_id_entity.name)
+    expected_msg = (
+        f"Column col_text (Table ID: {saved_scd_table.id}, Name: sf_scd_table) has dtype VARCHAR which does not "
+        f"match the entity dtype INT."
+    )
+    assert expected_msg in str(exc.value)
