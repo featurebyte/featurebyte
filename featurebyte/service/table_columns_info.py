@@ -89,6 +89,21 @@ class TableColumnsInfoService(OpsServiceMixin):
                 f"{field_class_name} IDs {list(id_vals)} not found for columns {list(col_names)}."
             )
 
+    async def _validate_column_info(self, columns_info: List[ColumnInfo]) -> None:
+        entity_id_to_column_names = defaultdict(list)
+        for col_info in columns_info:
+            if col_info.entity_id:
+                entity_id_to_column_names[col_info.entity_id].append(col_info.name)
+
+        for entity_id, column_names in entity_id_to_column_names.items():
+            if len(column_names) > 1:
+                entity = await self.entity_service.get_document(entity_id)
+                raise DocumentUpdateError(
+                    f"It looks like the columns {column_names} are all linked to the same entity "
+                    f"(ID: {entity_id}, Name: {entity.name}). Each column should be associated with a unique entity. "
+                    f"Please check your data and ensure that each entity corresponds to only one column."
+                )
+
     @retry(
         retry=retry_if_exception_type(OperationFailure),
         wait=wait_chain(*[wait_random(max=2) for _ in range(3)]),
@@ -134,6 +149,9 @@ class TableColumnsInfoService(OpsServiceMixin):
                     service=self.semantic_service,
                     field_class_name="Semantic",
                 )
+
+            # validate other columns info
+            await self._validate_column_info(columns_info)
 
             async with self.persistent.start_transaction():
                 # update columns info
