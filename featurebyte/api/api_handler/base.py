@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Type
 
 import pandas as pd
 from pandas import DataFrame
+from pydantic import ValidationError
 
 from featurebyte.api.api_object_util import (
     PAGINATED_CALL_PAGE_SIZE,
@@ -19,7 +20,10 @@ from featurebyte.api.api_object_util import (
     map_dict_list_to_name,
     map_object_id_to_name,
 )
+from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseDocumentModel
+
+logger = get_logger(__name__)
 
 
 class ListHandler:
@@ -77,7 +81,13 @@ class ListHandler:
         for item_dict in iterate_api_object_using_paginated_routes(
             route=self.route, params={"page_size": PAGINATED_CALL_PAGE_SIZE, **params}
         ):
-            output.append(json.loads(self.list_schema(**item_dict).model_dump_json()))
+            try:
+                output.append(json.loads(self.list_schema(**item_dict).model_dump_json()))
+            except ValidationError as exc_info:
+                logger.warning(
+                    f"Failed to parse list item: {item_dict} with schema: {self.list_schema}. "
+                    f"Error: {exc_info}"
+                )
 
         fields = self.list_fields
         if include_id:

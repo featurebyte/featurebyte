@@ -547,7 +547,7 @@ def test_feature__with_ttl_handling(float_feature):
             inputs["sum_1d_V231227__ts"], unit="s", utc=True
         )
         mask = (feature_timestamp >= cutoff) & (feature_timestamp <= request_time)
-        inputs["sum_1d_V231227"][~mask] = np.nan
+        inputs.loc[~mask, "sum_1d_V231227"] = np.nan
         df["sum_1d_V231227"] = inputs["sum_1d_V231227"]
         df.fillna(np.nan, inplace=True)
         return df

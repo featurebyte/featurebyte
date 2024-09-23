@@ -3,6 +3,8 @@ Tests for featurebyte.query_graph.feature_common
 """
 
 from bson import ObjectId
+from sqlglot import expressions
+from sqlglot.expressions import Identifier
 
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
@@ -39,9 +41,17 @@ def test_aggregation_spec__from_groupby_query_node(
             serving_names=["CUSTOMER_ID"],
             serving_names_mapping=None,
             value_by=None,
-            merge_expr=(
-                f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
-                f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+            merge_expr=expressions.Div(
+                this=expressions.Sum(
+                    this=Identifier(
+                        this=f"sum_value_avg_{groupby_node_aggregation_id}",
+                    )
+                ),
+                expression=expressions.Sum(
+                    this=Identifier(
+                        this=f"count_value_avg_{groupby_node_aggregation_id}",
+                    )
+                ),
             ),
             feature_name="a_2h_average",
             is_order_dependent=False,
@@ -68,9 +78,17 @@ def test_aggregation_spec__from_groupby_query_node(
             serving_names=["CUSTOMER_ID"],
             serving_names_mapping=None,
             value_by=None,
-            merge_expr=(
-                f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
-                f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+            merge_expr=expressions.Div(
+                this=expressions.Sum(
+                    this=Identifier(
+                        this=f"sum_value_avg_{groupby_node_aggregation_id}",
+                    )
+                ),
+                expression=expressions.Sum(
+                    this=Identifier(
+                        this=f"count_value_avg_{groupby_node_aggregation_id}",
+                    )
+                ),
             ),
             feature_name="a_48h_average",
             is_order_dependent=False,
@@ -123,9 +141,17 @@ def test_aggregation_spec__override_serving_names(
             serving_names=["NEW_CUST_ID"],
             serving_names_mapping=serving_names_mapping,
             value_by=None,
-            merge_expr=(
-                f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
-                f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+            merge_expr=expressions.Div(
+                this=expressions.Sum(
+                    this=Identifier(
+                        this=f"sum_value_avg_{groupby_node_aggregation_id}",
+                    )
+                ),
+                expression=expressions.Sum(
+                    this=Identifier(
+                        this=f"count_value_avg_{groupby_node_aggregation_id}",
+                    )
+                ),
             ),
             feature_name="a_2h_average",
             is_order_dependent=False,
@@ -152,9 +178,17 @@ def test_aggregation_spec__override_serving_names(
             serving_names=["NEW_CUST_ID"],
             serving_names_mapping=serving_names_mapping,
             value_by=None,
-            merge_expr=(
-                f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
-                f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+            merge_expr=expressions.Div(
+                this=expressions.Sum(
+                    this=Identifier(
+                        this=f"sum_value_avg_{groupby_node_aggregation_id}",
+                    )
+                ),
+                expression=expressions.Sum(
+                    this=Identifier(
+                        this=f"count_value_avg_{groupby_node_aggregation_id}",
+                    )
+                ),
             ),
             feature_name="a_48h_average",
             is_order_dependent=False,

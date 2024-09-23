@@ -8,7 +8,8 @@ from dataclasses import asdict
 
 import pytest
 from bson import ObjectId
-from sqlglot import select
+from sqlglot import expressions, select
+from sqlglot.expressions import Identifier
 
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.parent_serving import (
@@ -46,7 +47,7 @@ def agg_spec_template_fixture(expected_pruned_graph_and_node_1):
         serving_names=["CID"],
         serving_names_mapping=None,
         value_by=None,
-        merge_expr="SUM(value)",
+        merge_expr=expressions.Sum(this=Identifier(this="value")),
         feature_name="Amount (1d sum)",
         is_order_dependent=False,
         tile_value_columns=["value"],
@@ -269,9 +270,17 @@ def test_feature_execution_planner(
                 serving_names=["CUSTOMER_ID"],
                 serving_names_mapping=None,
                 value_by=None,
-                merge_expr=(
-                    f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
-                    f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+                merge_expr=expressions.Div(
+                    this=expressions.Sum(
+                        this=Identifier(
+                            this=f"sum_value_avg_{groupby_node_aggregation_id}",
+                        )
+                    ),
+                    expression=expressions.Sum(
+                        this=Identifier(
+                            this=f"count_value_avg_{groupby_node_aggregation_id}",
+                        )
+                    ),
                 ),
                 feature_name="a_2h_average",
                 is_order_dependent=False,
@@ -300,9 +309,17 @@ def test_feature_execution_planner(
                 serving_names=["CUSTOMER_ID"],
                 serving_names_mapping=None,
                 value_by=None,
-                merge_expr=(
-                    f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
-                    f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+                merge_expr=expressions.Div(
+                    this=expressions.Sum(
+                        this=Identifier(
+                            this=f"sum_value_avg_{groupby_node_aggregation_id}",
+                        )
+                    ),
+                    expression=expressions.Sum(
+                        this=Identifier(
+                            this=f"count_value_avg_{groupby_node_aggregation_id}",
+                        )
+                    ),
                 ),
                 feature_name="a_48h_average",
                 is_order_dependent=False,
@@ -372,9 +389,17 @@ def test_feature_execution_planner__serving_names_mapping(
                 serving_names=["NEW_CUST_ID"],
                 serving_names_mapping=mapping,
                 value_by=None,
-                merge_expr=(
-                    f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
-                    f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+                merge_expr=expressions.Div(
+                    this=expressions.Sum(
+                        this=Identifier(
+                            this=f"sum_value_avg_{groupby_node_aggregation_id}",
+                        )
+                    ),
+                    expression=expressions.Sum(
+                        this=Identifier(
+                            this=f"count_value_avg_{groupby_node_aggregation_id}",
+                        )
+                    ),
                 ),
                 feature_name="a_2h_average",
                 is_order_dependent=False,
@@ -403,9 +428,17 @@ def test_feature_execution_planner__serving_names_mapping(
                 serving_names=["NEW_CUST_ID"],
                 serving_names_mapping=mapping,
                 value_by=None,
-                merge_expr=(
-                    f"SUM(sum_value_avg_{groupby_node_aggregation_id}) / "
-                    f"SUM(count_value_avg_{groupby_node_aggregation_id})"
+                merge_expr=expressions.Div(
+                    this=expressions.Sum(
+                        this=Identifier(
+                            this=f"sum_value_avg_{groupby_node_aggregation_id}",
+                        )
+                    ),
+                    expression=expressions.Sum(
+                        this=Identifier(
+                            this=f"count_value_avg_{groupby_node_aggregation_id}",
+                        )
+                    ),
                 ),
                 feature_name="a_48h_average",
                 is_order_dependent=False,

@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Union
 from unittest.mock import patch
 
 import pandas as pd
+from feast import OnDemandFeatureView
 from feast.base_feature_view import BaseFeatureView
 from feast.feature_store import FeatureStore as FeastFeatureStore
 from jinja2 import Template
@@ -25,6 +26,7 @@ from featurebyte.exception import (
 )
 from featurebyte.feast.patch import (
     augment_response_with_on_demand_transforms,
+    transform_arrow,
     with_projection,
 )
 from featurebyte.logging import get_logger
@@ -350,18 +352,26 @@ class OnlineServingService:
             mock_augment_response_with_on_demand_transforms.side_effect = (
                 augment_response_with_on_demand_transforms
             )
-            # FIXME: This is a temporary fix to avoid O(N^2) complexity in with_projection method
+
+            # FIXME: This is a temporary fix to performance issues due to original Feast implementation
+            # make multiples table column copies during ODFV transformation
             with patch.object(
-                BaseFeatureView,
-                "with_projection",
-                new=with_projection,
+                OnDemandFeatureView,
+                "transform_arrow",
+                new=transform_arrow,
             ):
-                feature_service = feast_store.get_feature_service(feast_service_name)
-                df_feast_online_features = feast_store.get_online_features(
-                    feature_service,
-                    updated_request_data,
-                ).to_df()[versioned_feature_names]
-                return df_feast_online_features
+                # FIXME: This is a temporary fix to avoid O(N^2) complexity in with_projection method
+                with patch.object(
+                    BaseFeatureView,
+                    "with_projection",
+                    new=with_projection,
+                ):
+                    feature_service = feast_store.get_feature_service(feast_service_name)
+                    df_feast_online_features = feast_store.get_online_features(
+                        feature_service,
+                        updated_request_data,
+                    ).to_df()[versioned_feature_names]
+                    return df_feast_online_features
 
     @staticmethod
     def _require_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:
