@@ -89,6 +89,19 @@ class TableColumnsInfoService(OpsServiceMixin):
                 f"{field_class_name} IDs {list(id_vals)} not found for columns {list(col_names)}."
             )
 
+    async def _validate_column_info(self, columns_info: List[ColumnInfo]) -> None:
+        entity_id_to_column_names = defaultdict(list)
+        for col_info in columns_info:
+            if col_info.entity_id:
+                entity_id_to_column_names[col_info.entity_id].append(col_info.name)
+
+        for entity_id, column_names in entity_id_to_column_names.items():
+            if len(column_names) > 1:
+                entity = await self.entity_service.get_document(entity_id)
+                raise DocumentUpdateError(
+                    f"Entity {entity.name} (ID: {entity_id}) tagged to multiple columns {column_names} in the table."
+                )
+
     @retry(
         retry=retry_if_exception_type(OperationFailure),
         wait=wait_chain(*[wait_random(max=2) for _ in range(3)]),
@@ -134,6 +147,9 @@ class TableColumnsInfoService(OpsServiceMixin):
                     service=self.semantic_service,
                     field_class_name="Semantic",
                 )
+
+            # validate other columns info
+            await self._validate_column_info(columns_info)
 
             async with self.persistent.start_transaction():
                 # update columns info
