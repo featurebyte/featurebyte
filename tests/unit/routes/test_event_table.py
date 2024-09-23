@@ -593,3 +593,36 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert response.json()["status"] == "DEPRECATED"
         for col in response.json()["columns_info"]:
             assert col["entity_id"] is None
+
+    def test_tag_same_entity_on_multiple_columns_422(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test tag same entity on multiple columns"""
+        test_api_client, _ = test_api_client_persistent
+        table_dict = create_success_response.json()
+        columns = set(col_info["name"] for col_info in table_dict["columns_info"])
+        table_id = table_dict["_id"]
+
+        # tag 1st column with entity (expect success)
+        entity_payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
+        col1 = "cust_id"
+        assert col1 in columns
+        response = test_api_client.patch(
+            f"/event_table/{table_id}/column_entity",
+            json={"column_name": col1, "entity_id": entity_payload["_id"]},
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        # tag 2nd column with same entity (expect failure)
+        col2 = "col_int"
+        assert col2 in columns
+        response = test_api_client.patch(
+            f"/event_table/{table_id}/column_entity",
+            json={"column_name": col2, "entity_id": entity_payload["_id"]},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        expected_error = (
+            f"Entity customer (ID: {entity_payload['_id']}) tagged to multiple columns "
+            f"['col_int', 'cust_id'] in the table."
+        )
+        assert response.json()["detail"] == expected_error
