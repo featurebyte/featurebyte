@@ -5,12 +5,12 @@ This module contains Entity related models
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import pymongo
 from pydantic import Field, StrictStr
 
-from featurebyte.enum import TableDataType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
@@ -83,6 +83,7 @@ class EntityModel(EntityRelationship):
         ID of table with primary key columns associated to the entity
     """
 
+    dtype: Optional[DBVarType] = None
     serving_names: List[NameStr] = Field(frozen=True)
     table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
     primary_table_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
