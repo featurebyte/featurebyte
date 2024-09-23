@@ -52,6 +52,7 @@ class EntityServiceUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     name: Optional[NameStr] = Field(default=None)
+    dtype: Optional[str] = Field(default=None)
     ancestor_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     parents: Optional[List[ParentEntity]] = Field(default=None)
     table_ids: Optional[List[PydanticObjectId]] = Field(default=None)

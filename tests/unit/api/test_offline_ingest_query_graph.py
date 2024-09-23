@@ -235,7 +235,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
 
 
 def test_feature__multiple_non_ttl_components(
-    snowflake_scd_table, snowflake_dimension_table, cust_id_entity
+    snowflake_scd_table, snowflake_dimension_table, cust_id_entity, patch_initialize_entity_dtype
 ):
     """Test that a feature contains multiple non-ttl components."""
     snowflake_scd_table["col_text"].as_entity(cust_id_entity.name)

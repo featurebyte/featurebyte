@@ -283,7 +283,10 @@ def test_as_feature__special_column(snowflake_dimension_view_with_entity):
 
 
 def test_as_feature_same_column_name(
-    snowflake_dimension_view_with_entity, snowflake_scd_table, cust_id_entity
+    snowflake_dimension_view_with_entity,
+    snowflake_scd_table,
+    cust_id_entity,
+    patch_initialize_entity_dtype,
 ):
     """
     Test lookup features with same column name

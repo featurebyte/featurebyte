@@ -34,6 +34,7 @@ async def test_update_columns_info(
     event_table,
     entity,
     transaction_entity,
+    patch_initialize_entity_dtype,
 ):
     """Test update_columns_info"""
     _ = entity, transaction_entity

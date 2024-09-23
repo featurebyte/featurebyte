@@ -157,7 +157,10 @@ from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.table import AllTableService, TableService
-from featurebyte.service.table_columns_info import TableColumnsInfoService
+from featurebyte.service.table_columns_info import (
+    EntityDtypeInitializationAndValidationService,
+    TableColumnsInfoService,
+)
 from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.table_info import TableInfoService
 from featurebyte.service.table_status import TableStatusService
@@ -354,6 +357,7 @@ app_container_config.register_class(SessionManagerService)
 app_container_config.register_class(SessionValidatorService)
 app_container_config.register_class(StaticSourceTableController)
 app_container_config.register_class(StaticSourceTableService)
+app_container_config.register_class(EntityDtypeInitializationAndValidationService)
 app_container_config.register_class(TableColumnsInfoService)
 app_container_config.register_class(
     TableController, dependency_override={"service": "table_service"}

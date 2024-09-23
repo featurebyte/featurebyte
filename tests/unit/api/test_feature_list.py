@@ -1125,6 +1125,7 @@ def test_get_feature_jobs_status_feature_without_tile(
     snowflake_event_table,
     float_feature,
     feature_job_logs,
+    patch_initialize_entity_dtype,
 ):
     """
     Test get_feature_jobs_status for feature without tile
