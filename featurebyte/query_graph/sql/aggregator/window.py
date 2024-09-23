@@ -425,7 +425,7 @@ class WindowAggregator(TileBasedAggregator):
         keys: list[str],
         serving_names: list[str],
         value_by: str | None,
-        merge_exprs: list[str],
+        merge_exprs: list[Expression],
         agg_result_names: list[str],
         num_tiles: int,
         is_order_dependent: bool,
@@ -591,7 +591,7 @@ class WindowAggregator(TileBasedAggregator):
     def merge_tiles_order_dependent(
         req_joined_with_tiles: Select,
         inner_group_by_keys: list[Expression],
-        merge_exprs: list[str],
+        merge_exprs: list[Expression],
         inner_agg_result_names: list[str],
     ) -> Select:
         """
@@ -607,7 +607,7 @@ class WindowAggregator(TileBasedAggregator):
             Result of joining expanded request table with tile table
         inner_group_by_keys: list[Expression]
             Keys that the aggregation should use
-        merge_exprs: list[str]
+        merge_exprs: list[Expression]
             Expressions that merge tile values to produce feature values
         inner_agg_result_names: list[str]
             Names of the aggregation results, should have the same length as merge_exprs
@@ -683,7 +683,7 @@ class WindowAggregator(TileBasedAggregator):
                     GroupbyColumn(
                         parent_dtype=agg_spec.dtype,
                         agg_func=agg_spec.agg_func,
-                        parent_expr=expressions.Identifier(this=agg_spec.merge_expr),
+                        parent_expr=agg_spec.merge_expr,
                         result_name=agg_spec.agg_result_name,
                         parent_cols=[
                             expressions.Identifier(this=col) for col in agg_spec.tile_value_columns

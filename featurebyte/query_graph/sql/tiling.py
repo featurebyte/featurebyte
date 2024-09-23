@@ -9,10 +9,11 @@ from dataclasses import dataclass
 from typing import Optional
 
 from sqlglot import expressions
-from sqlglot.expressions import Anonymous, Expression
+from sqlglot.expressions import Anonymous, Expression, Identifier
 
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.sql.adapter import BaseAdapter
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.vector_helper import should_use_element_wise_vector_aggregation
 
@@ -85,9 +86,8 @@ class TilingAggregator(ABC):
         list[TileSpec]
         """
 
-    @staticmethod
     @abstractmethod
-    def merge(agg_id: str) -> str:
+    def merge(self, agg_id: str) -> Expression:
         """Construct the expressions required to merge tiles
 
         Parameters
@@ -97,7 +97,7 @@ class TilingAggregator(ABC):
 
         Returns
         -------
-        str
+        Expression
         """
 
     def construct_numeric_tile_spec(
@@ -180,9 +180,8 @@ class CountAggregator(OrderIndependentAggregator):
             )
         ]
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        return f"SUM(value_{agg_id})"
+    def merge(self, agg_id: str) -> Expression:
+        return expressions.Sum(this=Identifier(this=f"value_{agg_id}"))
 
 
 class AvgAggregator(OrderIndependentAggregator):
@@ -204,9 +203,11 @@ class AvgAggregator(OrderIndependentAggregator):
         ]
         return tile_specs
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        return f"SUM(sum_value_{agg_id}) / SUM(count_value_{agg_id})"
+    def merge(self, agg_id: str) -> Expression:
+        return expressions.Div(
+            this=expressions.Sum(this=Identifier(this=f"sum_value_{agg_id}")),
+            expression=expressions.Sum(this=Identifier(this=f"count_value_{agg_id}")),
+        )
 
 
 class SumAggregator(OrderIndependentAggregator):
@@ -220,9 +221,8 @@ class SumAggregator(OrderIndependentAggregator):
             )
         ]
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        return f"SUM(value_{agg_id})"
+    def merge(self, agg_id: str) -> Expression:
+        return expressions.Sum(this=Identifier(this=f"value_{agg_id}"))
 
 
 class MinAggregator(OrderIndependentAggregator):
@@ -236,9 +236,8 @@ class MinAggregator(OrderIndependentAggregator):
             )
         ]
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        return f"MIN(value_{agg_id})"
+    def merge(self, agg_id: str) -> Expression:
+        return expressions.Min(this=Identifier(this=f"value_{agg_id}"))
 
 
 class MaxAggregator(OrderIndependentAggregator):
@@ -252,9 +251,8 @@ class MaxAggregator(OrderIndependentAggregator):
             )
         ]
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        return f"MAX(value_{agg_id})"
+    def merge(self, agg_id: str) -> Expression:
+        return expressions.Max(this=Identifier(this=f"value_{agg_id}"))
 
 
 class NACountAggregator(OrderIndependentAggregator):
@@ -274,9 +272,8 @@ class NACountAggregator(OrderIndependentAggregator):
             )
         ]
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        return f"SUM(value_{agg_id})"
+    def merge(self, agg_id: str) -> Expression:
+        return expressions.Sum(this=Identifier(this=f"value_{agg_id}"))
 
 
 class StdAggregator(OrderIndependentAggregator):
@@ -298,13 +295,33 @@ class StdAggregator(OrderIndependentAggregator):
             self.construct_numeric_tile_spec(count_value, f"count_value_{agg_id}", AggFunc.COUNT),
         ]
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        expected_x2 = f"(SUM(sum_value_squared_{agg_id}) / SUM(count_value_{agg_id}))"
-        expected_x = f"(SUM(sum_value_{agg_id}) / SUM(count_value_{agg_id}))"
-        variance = f"({expected_x2} - ({expected_x} * {expected_x}))"
-        variance = f"CASE WHEN {variance} < 0 THEN 0 ELSE {variance} END"
-        stddev = f"SQRT({variance})"
+    def merge(self, agg_id: str) -> Expression:
+        expected_x2 = expressions.Paren(
+            this=expressions.Div(
+                this=expressions.Sum(this=Identifier(this=f"sum_value_squared_{agg_id}")),
+                expression=expressions.Sum(this=Identifier(this=f"count_value_{agg_id}")),
+            )
+        )
+        expected_x = expressions.Paren(
+            this=expressions.Div(
+                this=expressions.Sum(this=Identifier(this=f"sum_value_{agg_id}")),
+                expression=expressions.Sum(this=Identifier(this=f"count_value_{agg_id}")),
+            )
+        )
+        variance = expressions.Paren(
+            this=expressions.Sub(
+                this=expected_x2,
+                expression=expressions.Paren(
+                    this=expressions.Mul(this=expected_x, expression=expected_x),
+                ),
+            )
+        )
+        if_expr = expressions.If(
+            this=expressions.LT(this=variance, expression=make_literal_value(0)),
+            true=make_literal_value(0),
+        )
+        clipped_variance = expressions.Case(ifs=[if_expr], default=variance)
+        stddev = expressions.Sqrt(this=clipped_variance)
         return stddev
 
 
@@ -313,14 +330,13 @@ class VectorMaxAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        max_expression = expressions.Anonymous(
-            this="VECTOR_AGGREGATE_MAX", expressions=[quoted_identifier(col.name)]
+        max_expression = self.adapter.call_udf(
+            "VECTOR_AGGREGATE_MAX", [quoted_identifier(col.name)]
         )
         return [self.construct_array_tile_spec(max_expression, f"value_{agg_id}", AggFunc.MAX)]
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        return f"VECTOR_AGGREGATE_MAX(value_{agg_id})"
+    def merge(self, agg_id: str) -> Expression:
+        return self.adapter.call_udf("VECTOR_AGGREGATE_MAX", [Identifier(this=f"value_{agg_id}")])
 
 
 class VectorAvgAggregator(OrderIndependentAggregator):
@@ -328,8 +344,8 @@ class VectorAvgAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        sum_expression = expressions.Anonymous(
-            this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
+        sum_expression = self.adapter.call_udf(
+            "VECTOR_AGGREGATE_SUM", [quoted_identifier(col.name)]
         )
         count = expressions.Count(this=expressions.Star())
         cast_as_double = expressions.Cast(this=count, to=expressions.DataType.build("DOUBLE"))
@@ -340,9 +356,14 @@ class VectorAvgAggregator(OrderIndependentAggregator):
             ),
         ]
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        return f"VECTOR_AGGREGATE_AVG(sum_list_value_{agg_id}, count_value_{agg_id})"
+    def merge(self, agg_id: str) -> Expression:
+        return self.adapter.call_udf(
+            "VECTOR_AGGREGATE_AVG",
+            [
+                Identifier(this=f"sum_list_value_{agg_id}"),
+                Identifier(this=f"count_value_{agg_id}"),
+            ],
+        )
 
 
 class VectorSumAggregator(OrderIndependentAggregator):
@@ -350,16 +371,20 @@ class VectorSumAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        sum_expression = expressions.Anonymous(
-            this="VECTOR_AGGREGATE_SUM", expressions=[quoted_identifier(col.name)]
+        sum_expression = self.adapter.call_udf(
+            "VECTOR_AGGREGATE_SUM", [quoted_identifier(col.name)]
         )
         return [
             self.construct_array_tile_spec(sum_expression, f"sum_list_value_{agg_id}", AggFunc.SUM),
         ]
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        return f"VECTOR_AGGREGATE_SUM(sum_list_value_{agg_id})"
+    def merge(self, agg_id: str) -> Expression:
+        return self.adapter.call_udf(
+            "VECTOR_AGGREGATE_SUM",
+            [
+                Identifier(this=f"sum_list_value_{agg_id}"),
+            ],
+        )
 
 
 class LatestValueAggregator(OrderDependentAggregator):
@@ -376,9 +401,8 @@ class LatestValueAggregator(OrderDependentAggregator):
             ),
         ]
 
-    @staticmethod
-    def merge(agg_id: str) -> str:
-        return f"FIRST_VALUE(value_{agg_id})"
+    def merge(self, agg_id: str) -> Expression:
+        return expressions.FirstValue(this=Identifier(this=f"value_{agg_id}"))
 
 
 def get_aggregator(

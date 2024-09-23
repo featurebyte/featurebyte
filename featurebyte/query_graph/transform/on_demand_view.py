@@ -97,7 +97,6 @@ class OnDemandFeatureViewExtractor(
         feature_name_version: str,
         input_df_name: str,
         output_df_name: str,
-        input_column_expr: str,
         ttl_seconds: int,
         var_name_generator: VariableNameGenerator,
         comment: str = "",
@@ -113,8 +112,6 @@ class OnDemandFeatureViewExtractor(
             Input dataframe name
         output_df_name: str
             Output dataframe name
-        input_column_expr: str
-            Input column expression (to be applied for ttl handling)
         ttl_seconds: int
             Time-to-live (TTL) in seconds
         var_name_generator: VariableNameGenerator
@@ -151,6 +148,7 @@ class OnDemandFeatureViewExtractor(
         mask_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="mask", node_name=None
         )
+        input_column_expr = subset_frame_column_expr(input_df_name, feature_name_version)
         return StatementStr(
             textwrap.dedent(
                 f"""
@@ -159,7 +157,7 @@ class OnDemandFeatureViewExtractor(
             {cutoff_var_name} = {req_time_var_name} - pd.Timedelta(seconds={ttl_seconds})
             {feat_time_name} = pd.to_datetime({subset_feat_time_col_expr}, unit="s", utc=True)
             {mask_var_name} = ({feat_time_name} >= {cutoff_var_name}) & ({feat_time_name} <= {req_time_var_name})
-            {input_column_expr}[~{mask_var_name}] = np.nan
+            {input_df_name}.loc[~{mask_var_name}, {repr(feature_name_version)}] = np.nan
             {subset_output_column_expr} = {input_column_expr}
             {output_df_name}.fillna(np.nan, inplace=True)
             """

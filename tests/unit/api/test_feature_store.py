@@ -2,6 +2,7 @@
 Unit test for DatabaseSource
 """
 
+import json
 from unittest.mock import patch
 
 import numpy as np
@@ -332,3 +333,21 @@ def test_update_details(saved_snowflake_feature_store):
     assert saved_snowflake_feature_store.details.warehouse == "sf_warehouse"
     saved_snowflake_feature_store.update_details(warehouse="new_warehouse")
     assert saved_snowflake_feature_store.details.warehouse == "new_warehouse"
+
+
+def test_list_feature_store_with_invalid_item(snowflake_feature_store, caplog):
+    """Test list feature store with invalid item"""
+    fs_dict = json.loads(snowflake_feature_store.cached_model.model_dump_json())
+    with patch(
+        "featurebyte.api.api_handler.base.iterate_api_object_using_paginated_routes"
+    ) as mock_iterate:
+        mock_iterate.return_value = [fs_dict, {"name": "invalid"}]
+        output = FeatureStore.list()
+        assert output.shape[0] == 1
+        assert output["name"].iloc[0] == snowflake_feature_store.name
+
+    expected_warning = (
+        "Failed to parse list item: {'name': 'invalid'} with schema: "
+        "<class 'featurebyte.models.feature_store.FeatureStoreModel'>"
+    )
+    assert expected_warning in caplog.text
