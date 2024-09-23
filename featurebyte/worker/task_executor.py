@@ -27,7 +27,7 @@ from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
-from featurebyte.worker import get_async_loop, get_celery
+from featurebyte.worker import get_async_loop, get_task_broker
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
@@ -244,7 +244,7 @@ class BaseCeleryTask(Task):
         """
         instance_map_to_use = {
             # Default instances
-            "celery": get_celery(),
+            "task_broker": get_task_broker(),
             "persistent": MongoDBImpl(),
             # Task specific parameters
             "user": User(id=payload.get("user_id")),
