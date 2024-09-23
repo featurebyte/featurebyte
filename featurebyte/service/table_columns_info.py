@@ -99,9 +99,7 @@ class TableColumnsInfoService(OpsServiceMixin):
             if len(column_names) > 1:
                 entity = await self.entity_service.get_document(entity_id)
                 raise DocumentUpdateError(
-                    f"It looks like the columns {column_names} are all linked to the same entity "
-                    f"(ID: {entity_id}, Name: {entity.name}). Each column should be associated with a unique entity. "
-                    f"Please check your data and ensure that each entity corresponds to only one column."
+                    f"Entity {entity.name} (ID: {entity_id}) tagged to multiple columns {column_names} in the table."
                 )
 
     @retry(

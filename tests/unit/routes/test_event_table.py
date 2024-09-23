@@ -622,9 +622,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         expected_error = (
-            "It looks like the columns ['col_int', 'cust_id'] are all linked to "
-            f"the same entity (ID: {entity_payload['_id']}, Name: customer). "
-            "Each column should be associated with a unique entity. Please "
-            "check your data and ensure that each entity corresponds to only one column."
+            f"Entity customer (ID: {entity_payload['_id']}) tagged to multiple columns "
+            f"['col_int', 'cust_id'] in the table."
         )
         assert response.json()["detail"] == expected_error
