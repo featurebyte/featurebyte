@@ -39,7 +39,7 @@ from tests.integration.conftest import (
     tag_entities_for_item_table,
     tag_entities_for_scd_table,
 )
-from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
 from tests.util.helper import assert_dict_approx_equal
 
 logger = get_logger(__name__)
@@ -690,7 +690,7 @@ def expected_feature_table_names_fixture():
 
 
 @pytest.mark.order(1)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 def test_feature_tables_expected(
     offline_store_feature_tables,
     expected_feature_table_names,
@@ -702,7 +702,7 @@ def test_feature_tables_expected(
 
 
 @pytest.mark.order(1)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 def test_feature_cluster_with_expected_internal_relationships(offline_store_feature_tables):
     """
     Check that feature level relationship information are included in feature cluster correctly
@@ -724,7 +724,7 @@ def test_feature_cluster_with_expected_internal_relationships(offline_store_feat
 
 
 @pytest.mark.order(2)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_feature_tables_populated(session, offline_store_feature_tables_all, source_type):
     """
@@ -815,7 +815,7 @@ async def test_databricks_udf_created(session, offline_store_feature_tables, sou
 
 
 @pytest.mark.order(4)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("deployed_feature_list", "deployed_feature_list_composite_entities")
 async def test_feast_registry(
@@ -994,7 +994,7 @@ async def test_feast_registry(
 
 
 @pytest.mark.order(5)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 def test_online_features__all_entities_provided(config, deployed_feature_list, source_type):
     """
     Check online features are populated correctly
@@ -1147,7 +1147,7 @@ def process_output_features_helper(feat_dict, source_type):
 
 
 @pytest.mark.order(6)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 def test_online_features__primary_entity_ids(
     config, deployed_feature_list, expected_features_order_id_T3850, source_type
 ):
@@ -1189,7 +1189,7 @@ def test_online_features__primary_entity_ids(
 
 
 @pytest.mark.order(6)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 def test_online_features__invalid_child_entity(config, deployed_feature_list):
     """
     Check online features using a child entity that is a feature list's supported_serving_entity_ids
@@ -1215,7 +1215,7 @@ def test_online_features__invalid_child_entity(config, deployed_feature_list):
 
 
 @pytest.mark.order(6)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 def test_online_features__non_existing_order_id(
     config, deployed_feature_list, expected_features_order_id_T3850, source_type
 ):
@@ -1254,7 +1254,7 @@ def test_online_features__non_existing_order_id(
 
 
 @pytest.mark.order(6)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 def test_online_features__composite_entities(config, deployed_feature_list_composite_entities):
     """
     Check online features when the feature list only has a feature with composite entities
@@ -1291,7 +1291,7 @@ def test_online_features__composite_entities(config, deployed_feature_list_compo
 
 
 @pytest.mark.order(6)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 def test_online_features__composite_entities_via_order_id(
     config, deployed_feature_list_composite_entities_order_use_case
 ):
@@ -1328,7 +1328,7 @@ def test_online_features__composite_entities_via_order_id(
 
 
 @pytest.mark.order(7)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_simulated_materialize__ttl_feature_table(
     app_container,
@@ -1411,7 +1411,7 @@ async def reload_feature_table_model(app_container, feature_table_model):
 
 
 @pytest.mark.order(8)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_simulated_materialize__non_ttl_feature_table(
     app_container,
@@ -1492,7 +1492,7 @@ async def test_feature_tables_have_primary_key_constraints(session, offline_stor
 
 
 @pytest.mark.order(10)
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY, indirect=True)
 def test_online_features__patch_feast(config, deployed_feature_list):
     """Test feast online features with patching works without error"""
     client = config.get_client()

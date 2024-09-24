@@ -134,6 +134,107 @@ def _json_serialization_handler(value: Any) -> str:
     return str(value)
 
 
+def get_pyarrow_type(
+    datatype: str, precision: int = 0, scale: int = 0, mode: str | None = None
+) -> pa.DataType:
+    """
+    Get pyarrow type from BigQuery data type
+
+    Parameters
+    ----------
+    datatype: str
+        BigQuery data type
+    precision: int
+        Precision
+    scale: int
+        Scale
+    mode: str | None
+        Mode
+
+    Returns
+    -------
+    pa.DataType
+    """
+    if datatype == SqlTypeNames.INTERVAL:
+        pyarrow_type = pa.int64()
+    elif datatype in {SqlTypeNames.NUMERIC, SqlTypeNames.BIGNUMERIC}:
+        _precision = precision if precision is not None else 38
+        _scale = scale if scale is not None else 9
+        if _scale > 0:
+            pyarrow_type = pa.decimal128(_precision, _scale)
+        else:
+            pyarrow_type = pa.int64()
+    elif mode == "REPEATED":
+        pyarrow_type = pa.string()
+    else:
+        pyarrow_type = pa_type_mapping.get(datatype)
+
+    if not pyarrow_type:
+        # warn and fallback to string for unrecognized types
+        logger.warning("Cannot infer pyarrow type", extra={"datatype": datatype})
+        pyarrow_type = pa.string()
+    return pyarrow_type
+
+
+def convert_to_internal_variable_type(  # pylint: disable=too-many-return-statements
+    bigquery_typecode: str, scale: int = 0, mode: str | None = None
+) -> DBVarType:
+    """
+    Convert BigQuery data type to internal variable type
+
+    Parameters
+    ----------
+    bigquery_typecode: str
+        BigQuery data type
+    scale: int
+        Scale
+    mode: str | None
+        Mode
+
+    Returns
+    -------
+    DBVarType
+    """
+    if bigquery_typecode in {SqlTypeNames.NUMERIC, SqlTypeNames.BIGNUMERIC}:
+        if scale is None or scale > 0:
+            return DBVarType.FLOAT
+        return DBVarType.INT
+    db_vartype = db_vartype_mapping.get(bigquery_typecode, DBVarType.UNKNOWN)
+    if mode == "REPEATED":
+        db_vartype = DBVarType.ARRAY
+    elif db_vartype == DBVarType.UNKNOWN:
+        logger.warning(f"BigQuery: Not supported data type '{bigquery_typecode}'")
+    return db_vartype
+
+
+def bq_to_arrow_schema(schema: list[SchemaField]) -> pa.Schema:
+    """
+    Convert BigQuery schema to pyarrow schema
+
+    Parameters
+    ----------
+    schema: list[SchemaField]
+        BigQuery schema
+
+    Returns
+    -------
+    pa.Schema
+    """
+    fields = []
+    for column in schema:
+        field_name = column.name
+        field_type = column.field_type
+        db_var_type = convert_to_internal_variable_type(field_type, column.scale, column.mode)
+        fields.append(
+            pa.field(
+                field_name,
+                get_pyarrow_type(field_type, column.precision, column.scale, column.mode),
+                metadata={ARROW_METADATA_DB_VAR_TYPE: db_var_type},
+            )
+        )
+    return pa.schema(fields)
+
+
 class BigQuerySession(BaseSession):
     """
     BigQuery session class
@@ -250,79 +351,6 @@ class BigQuerySession(BaseSession):
                 break
         return output
 
-    @staticmethod
-    def _convert_to_internal_variable_type(  # pylint: disable=too-many-return-statements
-        bigquery_typecode: str, scale: int = 0, mode: str | None = None
-    ) -> DBVarType:
-        """
-        Convert BigQuery data type to internal variable type
-
-        Parameters
-        ----------
-        bigquery_typecode: str
-            BigQuery data type
-        scale: int
-            Scale
-        mode: str | None
-            Mode
-
-        Returns
-        -------
-        DBVarType
-        """
-        if bigquery_typecode in {SqlTypeNames.NUMERIC, SqlTypeNames.BIGNUMERIC}:
-            if scale is None or scale > 0:
-                return DBVarType.FLOAT
-            return DBVarType.INT
-        db_vartype = db_vartype_mapping.get(bigquery_typecode, DBVarType.UNKNOWN)
-        if mode == "REPEATED":
-            db_vartype = DBVarType.ARRAY
-        elif db_vartype == DBVarType.UNKNOWN:
-            logger.warning(f"BigQuery: Not supported data type '{bigquery_typecode}'")
-        return db_vartype
-
-    @staticmethod
-    def _get_pyarrow_type(
-        datatype: str, precision: int = 0, scale: int = 0, mode: str | None = None
-    ) -> pa.DataType:
-        """
-        Get pyarrow type from BigQuery data type
-
-        Parameters
-        ----------
-        datatype: str
-            BigQuery data type
-        precision: int
-            Precision
-        scale: int
-            Scale
-        mode: str | None
-            Mode
-
-        Returns
-        -------
-        pa.DataType
-        """
-        if datatype == SqlTypeNames.INTERVAL:
-            pyarrow_type = pa.int64()
-        elif datatype in {SqlTypeNames.NUMERIC, SqlTypeNames.BIGNUMERIC}:
-            _precision = precision if precision is not None else 38
-            _scale = scale if scale is not None else 9
-            if _scale > 0:
-                pyarrow_type = pa.decimal128(_precision, _scale)
-            else:
-                pyarrow_type = pa.int64()
-        elif mode == "REPEATED":
-            pyarrow_type = pa.string()
-        else:
-            pyarrow_type = pa_type_mapping.get(datatype)
-
-        if not pyarrow_type:
-            # warn and fallback to string for unrecognized types
-            logger.warning("Cannot infer pyarrow type", extra={"datatype": datatype})
-            pyarrow_type = pa.string()
-        return pyarrow_type
-
     def _get_schema_from_cursor(self, cursor: Any) -> pa.Schema:
         """
         Get schema from a cursor
@@ -353,21 +381,7 @@ class BigQuerySession(BaseSession):
                 for column in cursor.description
             ]
 
-        fields = []
-        for column in schema:
-            field_name = column.name
-            field_type = column.field_type
-            db_var_type = self._convert_to_internal_variable_type(
-                field_type, column.scale, column.mode
-            )
-            fields.append(
-                pa.field(
-                    field_name,
-                    self._get_pyarrow_type(field_type, column.precision, column.scale, column.mode),
-                    metadata={ARROW_METADATA_DB_VAR_TYPE: db_var_type},
-                )
-            )
-        return pa.schema(fields)
+        return bq_to_arrow_schema(schema)
 
     def fetch_query_result_impl(self, cursor: Any) -> pd.DataFrame | None:
         """
@@ -564,7 +578,7 @@ class BigQuerySession(BaseSession):
         column_name_type_map = collections.OrderedDict()
         if table.schema is not None:
             for field in table.schema:
-                dtype = self._convert_to_internal_variable_type(
+                dtype = convert_to_internal_variable_type(
                     bigquery_typecode=field.field_type,
                     scale=field.scale,
                     mode=field.mode,

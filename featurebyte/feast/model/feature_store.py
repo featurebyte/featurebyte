@@ -5,11 +5,12 @@ This module contains feature store details used to construct feast data source &
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Union, cast
 
-from feast import SnowflakeSource
+from feast import BigQuerySource, SnowflakeSource
 from feast.data_source import DataSource
 from feast.infra.offline_stores.snowflake import SnowflakeOfflineStoreConfig
 
 from featurebyte import SourceType
+from featurebyte.feast.infra.offline_stores.bigquery import FeatureByteBigQueryOfflineStoreConfig
 from featurebyte.feast.infra.offline_stores.databricks import (
     DataBricksOfflineStoreConfig,
     DataBricksUnityOfflineStoreConfig,
@@ -23,6 +24,7 @@ from featurebyte.models.credential import (
 )
 from featurebyte.query_graph.node.schema import (
     BaseDatabaseDetails,
+    BigQueryDetails,
     DatabricksDetails,
     DatabricksUnityDetails,
     SparkDetails,
@@ -311,8 +313,65 @@ class FeastDataBricksUnityDetails(AbstractDatabaseDetailsForFeast, DatabricksUni
         )
 
 
+class FeastBigQueryDetails(AbstractDatabaseDetailsForFeast, BigQueryDetails):
+    """
+    FeastBigQueryDetails.
+    """
+
+    def create_feast_data_source(
+        self,
+        name: str,
+        table_name: str,
+        timestamp_field: str,
+        created_timestamp_column: Optional[str] = None,
+    ) -> DataSource:
+        """
+        Create a Feast DataSource from the details in this class
+
+        Parameters
+        ----------
+        name: str
+            Name of the DataSource
+        table_name: str
+            Name of the table to create a DataSource for
+        timestamp_field: str
+            Event timestamp field used for point in time joins of feature values
+        created_timestamp_column: Optional[str]
+            Timestamp column indicating when the row was created, used for de-duplicating rows.
+
+        Returns
+        -------
+        DataSource
+            Feast DataSource object
+        """
+        return cast(
+            DataSource,
+            BigQuerySource(
+                name=name,
+                timestamp_field=timestamp_field,
+                table=f"{self.project_name}.{self.dataset_name}.{table_name}",
+                created_timestamp_column=created_timestamp_column,
+            ),
+        )
+
+    def get_offline_store_config(
+        self,
+        database_credential: Optional[BaseDatabaseCredential],
+        storage_credential: Optional[BaseStorageCredential],
+    ) -> Any:
+        return FeatureByteBigQueryOfflineStoreConfig(
+            dataset=self.dataset_name,
+            project_id=self.project_name,
+            database_credential=database_credential,
+        )
+
+
 FeastDatabaseDetails = Union[
-    FeastSnowflakeDetails, FeastSparkDetails, FeastDataBricksDetails, FeastDataBricksUnityDetails
+    FeastSnowflakeDetails,
+    FeastSparkDetails,
+    FeastDataBricksDetails,
+    FeastDataBricksUnityDetails,
+    FeastBigQueryDetails,
 ]
 
 

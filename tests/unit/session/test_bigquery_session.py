@@ -15,7 +15,11 @@ from google.cloud.bigquery.table import Row
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.session.bigquery import BigQuerySchemaInitializer, BigQuerySession
+from featurebyte.session.bigquery import (
+    BigQuerySchemaInitializer,
+    BigQuerySession,
+    convert_to_internal_variable_type,
+)
 
 
 @pytest.fixture
@@ -380,7 +384,7 @@ def test_convert_to_internal_variable_type(bigquery_var_info, scale, expected):
     """
     Test convert_to_internal_variable_type
     """
-    assert BigQuerySession._convert_to_internal_variable_type(bigquery_var_info, scale) == expected  # pylint: disable=protected-access
+    assert convert_to_internal_variable_type(bigquery_var_info, scale) == expected  # pylint: disable=protected-access
 
 
 @pytest.mark.parametrize(

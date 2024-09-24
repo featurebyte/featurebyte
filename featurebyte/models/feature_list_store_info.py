@@ -29,7 +29,9 @@ from featurebyte.query_graph.node.schema import (
 )
 from featurebyte.query_graph.sql.entity import DUMMY_ENTITY_COLUMN_NAME
 
-StoreInfoType = Literal["uninitialized", "snowflake", "databricks", "databricks_unity", "spark"]
+StoreInfoType = Literal[
+    "uninitialized", "snowflake", "databricks", "databricks_unity", "spark", "bigquery"
+]
 
 
 class BaseStoreInfo(FeatureByteBaseModel):
@@ -110,6 +112,14 @@ class SparkStoreInfo(BaseStoreInfo):
     """
 
     type: Literal["spark"] = "spark"
+
+
+class BigQueryStoreInfo(BaseStoreInfo):
+    """
+    BigQuery store info
+    """
+
+    type: Literal["bigquery"] = "bigquery"
 
 
 class DataBricksFeatureLookup(FeatureByteBaseModel):
@@ -468,6 +478,7 @@ STORE_INFO_TYPES = [
     DataBricksStoreInfo,
     DataBricksUnityStoreInfo,
     SparkStoreInfo,
+    BigQueryStoreInfo,
 ]
 if TYPE_CHECKING:
     # use StoreInfo during type checking

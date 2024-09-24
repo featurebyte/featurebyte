@@ -3,7 +3,7 @@ SELECT * FROM (SELECT "cust_id",
                       CAST("AGGREGATION_RESULT_NAME" AS STRING) AS "AGGREGATION_RESULT_NAME",
                       CAST("VALUE" AS FLOAT) AS "VALUE",
                       CAST(0 AS INT) AS "VERSION",
-                      to_timestamp('2022-05-15 10:00:05') AS UPDATED_AT
+                      CAST('2022-05-15 10:00:05' AS TIMESTAMP) AS UPDATED_AT
                     FROM (SELECT
   "cust_id",
   CAST('_fb_internal_cust_id_window_w7200_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9' AS VARCHAR) AS "AGGREGATION_RESULT_NAME",

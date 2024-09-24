@@ -5,9 +5,8 @@ Batch feature creator
 import asyncio
 import concurrent
 import os
-from contextlib import ExitStack, contextmanager
 from functools import wraps
-from typing import Any, Callable, Coroutine, Dict, Iterator, List, Sequence, Set, Union
+from typing import Any, Callable, Coroutine, Dict, List, Sequence, Set, Union
 from unittest.mock import patch
 
 from bson import ObjectId
@@ -15,6 +14,7 @@ from cachetools import TTLCache
 from requests import Session
 
 from featurebyte.api.api_object import ApiObject
+from featurebyte.common.env_util import set_environment_variable, set_environment_variables
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.common.utils import timer
 from featurebyte.core.generic import QueryObject
@@ -73,64 +73,6 @@ def patch_api_object_cache(ttl: int = 7200) -> Any:
         return wrapper
 
     return decorator
-
-
-@contextmanager
-def set_environment_variable(variable: str, value: Any) -> Iterator[None]:
-    """
-    Set the environment variable within the context
-
-    Parameters
-    ----------
-    variable: str
-        The environment variable
-    value: Any
-        The value to set
-
-    Yields
-    ------
-    Iterator[None]
-        The context manager
-    """
-    previous_value = os.environ.get(variable)
-    os.environ[variable] = value
-
-    try:
-        yield
-    finally:
-        if previous_value is not None:
-            os.environ[variable] = previous_value
-        else:
-            del os.environ[variable]
-
-
-@contextmanager
-def set_environment_variables(variables: Dict[str, Any]) -> Iterator[None]:
-    """
-    Set multiple environment variables within the context
-
-    Parameters
-    ----------
-    variables: Dict[str, Any]
-        Key value mapping of environment variables to set
-
-    Yields
-    ------
-    Iterator[None]
-        The context manager
-    """
-    ctx_managers: List[Any] = []
-
-    for key, value in variables.items():
-        ctx_managers.append(set_environment_variable(key, value))
-
-    if ctx_managers:
-        with ExitStack() as stack:
-            for mgr in ctx_managers:
-                stack.enter_context(mgr)
-            yield
-    else:
-        yield
 
 
 async def execute_sdk_code(

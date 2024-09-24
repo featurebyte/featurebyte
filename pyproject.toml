@@ -91,7 +91,7 @@ cryptography = ">42"
 databricks-sdk = { version = "^0.24.0", optional = true }
 databricks-sql-connector = { version = "^3.1.1", optional = true }
 fastapi = { version =  "^0.111.0", optional = true }
-feast = { version = "^0.40.1", optional = true, extras = ["snowflake", "redis", "mysql"]}
+feast = { version = "^0.40.1", optional = true, extras = ["snowflake", "redis", "mysql", "gcp"]}
 featurebyte-freeware = { version = "^0.2.21", optional = true }
 gevent = {version = "^23.9.1", optional = true}
 google-cloud-bigquery = "^3.25.0"

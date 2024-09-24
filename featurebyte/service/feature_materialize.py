@@ -4,6 +4,8 @@ FeatureMaterializeService class
 
 from __future__ import annotations
 
+import json
+import tempfile
 import textwrap
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
@@ -16,7 +18,9 @@ from redis import Redis
 from redis.lock import Lock
 from sqlglot import expressions
 
+from featurebyte.common.env_util import set_environment_variables
 from featurebyte.enum import DBVarType, InternalName, SourceType
+from featurebyte.feast.infra.offline_stores.bigquery import FeatureByteBigQueryOfflineStoreConfig
 from featurebyte.feast.service.feature_store import FeastFeatureStore, FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
 from featurebyte.feast.utils.materialize_helper import materialize_partial
@@ -58,6 +62,35 @@ OFFLINE_STORE_TABLE_REDIS_LOCK_TIMEOUT_SECONDS = 3600
 NUM_COLUMNS_PER_MATERIALIZE = 50
 
 logger = get_logger(__name__)
+
+
+@contextmanager
+def setup_online_materialize_environment(feature_store: FeastFeatureStore) -> Iterator[None]:
+    """
+    Setup environment for online materialization
+
+    Parameters
+    ----------
+    feature_store: FeastFeatureStore
+        Feast feature store
+
+    Yields
+    ------
+    Iterator[None]
+        The context manager
+    """
+    if isinstance(feature_store.config.offline_store, FeatureByteBigQueryOfflineStoreConfig):
+        with tempfile.NamedTemporaryFile(mode="w") as temp_credentials_file:
+            json.dump(
+                feature_store.config.offline_store.database_credential.service_account_info,
+                temp_credentials_file,
+            )
+            temp_credentials_file.flush()
+            env_overrides = {"GOOGLE_APPLICATION_CREDENTIALS": temp_credentials_file.name}
+            with set_environment_variables(env_overrides):
+                yield
+    else:
+        yield
 
 
 @dataclass
@@ -1044,20 +1077,21 @@ class FeatureMaterializeService:
         if not columns:
             return
         assert feature_store.online_store_id is not None
-        for i in range(0, len(columns), NUM_COLUMNS_PER_MATERIALIZE):
-            columns_batch = columns[i : i + NUM_COLUMNS_PER_MATERIALIZE]
-            await materialize_partial(
-                feature_store=feature_store,
-                feature_view=feature_store.get_feature_view(feature_table.name),
-                columns=columns_batch,
-                end_date=end_date,
-                start_date=start_date,
-                with_feature_timestamp=(
-                    feature_table.has_ttl
-                    if isinstance(feature_table, OfflineStoreFeatureTableModel)
-                    else False
-                ),
-            )
+        with setup_online_materialize_environment(feature_store):
+            for i in range(0, len(columns), NUM_COLUMNS_PER_MATERIALIZE):
+                columns_batch = columns[i : i + NUM_COLUMNS_PER_MATERIALIZE]
+                await materialize_partial(
+                    feature_store=feature_store,
+                    feature_view=feature_store.get_feature_view(feature_table.name),
+                    columns=columns_batch,
+                    end_date=end_date,
+                    start_date=start_date,
+                    with_feature_timestamp=(
+                        feature_table.has_ttl
+                        if isinstance(feature_table, OfflineStoreFeatureTableModel)
+                        else False
+                    ),
+                )
         await self.offline_store_feature_table_service.update_online_last_materialized_at(
             document_id=feature_table.id,
             online_store_id=feature_store.online_store_id,
