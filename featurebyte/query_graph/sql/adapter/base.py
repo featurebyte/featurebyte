@@ -45,7 +45,6 @@ class BaseAdapter(ABC):
     """
 
     TABLESAMPLE_SUPPORTS_VIEW = True
-    UNIFORM_DISTRIBUTION_SUPPORTS_SEED = True
 
     def __init__(self, source_info: SourceInfo):
         self.source_info = source_info
@@ -573,10 +572,9 @@ class BaseAdapter(ABC):
                     this=quoted_identifier("prob"), expression=make_literal_value(probability)
                 )
             )
+            .order_by(quoted_identifier("prob"))
             .limit(desired_row_count)
         )
-        if cls.UNIFORM_DISTRIBUTION_SUPPORTS_SEED:
-            output = output.order_by(quoted_identifier("prob"))
         return output
 
     @classmethod
