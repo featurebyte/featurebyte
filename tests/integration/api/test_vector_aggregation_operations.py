@@ -437,8 +437,6 @@ def test_vector_value_column_latest_aggregation(event_table_with_array_column):
     """
     Test latest aggregation on vector column
     """
-    _ = patch_initialize_entity_dtype
-
     event_view = event_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = event_view.groupby("USER_ID").aggregate_over(
