@@ -408,10 +408,14 @@ def test_vector_cosine_similarity(item_table_with_array_column):
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
-def test_vector_value_column_latest_aggregation(event_table_with_array_column):
+def test_vector_value_column_latest_aggregation(
+    event_table_with_array_column, patch_initialize_entity_dtype
+):
     """
     Test latest aggregation on vector column
     """
+    _ = patch_initialize_entity_dtype
+
     event_view = event_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = event_view.groupby("USER_ID").aggregate_over(
