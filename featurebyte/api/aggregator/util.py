@@ -5,6 +5,7 @@ Aggregator utility functions
 import warnings
 from typing import Optional
 
+from featurebyte.common.utils import is_server_mode
 from featurebyte.typing import OptionalScalar
 
 
@@ -23,11 +24,12 @@ def conditional_set_skip_fill_na(skip_fill_na: Optional[bool], fill_value: Optio
     -------
     bool
     """
-    if skip_fill_na is not None or fill_value is not None:
-        warnings.warn(
-            "The parameters 'skip_fill_na' and 'fill_value' are deprecated and will be removed in a future version.",
-            DeprecationWarning,
-        )
+    if not is_server_mode():
+        if skip_fill_na is not None or fill_value is not None:
+            warnings.warn(
+                "The parameters 'skip_fill_na' and 'fill_value' are deprecated and will be removed in a future version.",
+                DeprecationWarning,
+            )
 
     if skip_fill_na is None:
         return fill_value is None

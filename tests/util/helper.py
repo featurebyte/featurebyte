@@ -48,6 +48,7 @@ from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate, OnlineFeaturesRequestPayload
 from featurebyte.schema.use_case import UseCaseCreate
+from featurebyte.worker.util.batch_feature_creator import set_environment_variable
 
 
 def reset_global_graph():
@@ -243,7 +244,9 @@ def check_sdk_code_generation(
         to_use_saved_data=to_use_saved_data,
         table_id_to_info=table_id_to_info,
     )
-    exec(sdk_code, {}, local_vars)
+    with set_environment_variable("FEATUREBYTE_SDK_EXECUTION_MODE", "SERVER"):
+        exec(sdk_code, {}, local_vars)
+
     output = local_vars["output"]
     if isinstance(output, AbstractTableData):
         output = output.frame
