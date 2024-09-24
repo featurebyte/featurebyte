@@ -34,16 +34,21 @@ def test_forward_aggregate_fill_na(forward_aggregator):
     Test forward_aggregate.
     """
     fill_value = 1
+    expected_warning = "The parameters 'skip_fill_na' and 'fill_value' are deprecated and will be removed in a future version."
     with pytest.raises(ValueError) as exc_info:
-        forward_aggregator.forward_aggregate(
-            "col_float", AggFunc.SUM, "7d", "target", fill_value, True
-        )
+        with pytest.warns(match=expected_warning):
+            forward_aggregator.forward_aggregate(
+                "col_float", AggFunc.SUM, "7d", "target", fill_value, True
+            )
+
     assert "Specifying both fill_value and skip_fill_na is not allowed" in str(exc_info.value)
 
     # Verify that the fill value node is there
-    target = forward_aggregator.forward_aggregate(
-        "col_float", AggFunc.SUM, "7d", "target", fill_value
-    )
+    with pytest.warns(match=expected_warning):
+        target = forward_aggregator.forward_aggregate(
+            "col_float", AggFunc.SUM, "7d", "target", fill_value
+        )
+
     target_node = target.node
 
     # Check that we have the fill value
