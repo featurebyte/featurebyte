@@ -18,8 +18,8 @@ from redis import Redis
 from redis.lock import Lock
 from sqlglot import expressions
 
-from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.common.env_util import set_environment_variables
+from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.feast.infra.offline_stores.bigquery import FeatureByteBigQueryOfflineStoreConfig
 from featurebyte.feast.service.feature_store import FeastFeatureStore, FeastFeatureStoreService
 from featurebyte.feast.service.registry import FeastRegistryService
@@ -91,7 +91,6 @@ def setup_online_materialize_environment(feature_store: FeastFeatureStore) -> It
                 yield
     else:
         yield
-
 
 
 @dataclass
@@ -1344,7 +1343,7 @@ class FeatureMaterializeService:
                 source_type=session.source_type,
             )
             result = await session.execute_query_long_running(query)
-            return cast(int, result.iloc[0][0])  # type: ignore[union-attr]
+            return cast(int, result.iloc[0, 0])  # type: ignore[union-attr]
         except session._no_schema_error:
             return None
 
