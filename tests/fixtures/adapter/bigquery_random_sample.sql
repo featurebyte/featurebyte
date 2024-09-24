@@ -15,4 +15,6 @@ FROM (
 )
 WHERE
   `prob` <= 0.15000000000000002
+ORDER BY
+  `prob`
 LIMIT 100

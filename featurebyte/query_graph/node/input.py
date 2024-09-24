@@ -48,6 +48,7 @@ class SampleParameters(FeatureByteBaseModel):
     seed: int
     total_num_rows: int
     num_rows: int
+    sort_by_prob: bool
 
 
 class BaseInputNodeParameters(FeatureByteBaseModel):
