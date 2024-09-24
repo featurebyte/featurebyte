@@ -39,6 +39,7 @@ class InputNode(TableNode):
                 desired_row_count=self.sample_parameters.num_rows,
                 total_row_count=self.sample_parameters.total_num_rows,
                 seed=self.sample_parameters.seed,
+                sort_by_prob=self.sample_parameters.sort_by_prob,
             )
             select_expr = select_expr.from_(sample_expr.subquery())
         else:

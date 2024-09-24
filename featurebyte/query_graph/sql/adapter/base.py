@@ -531,7 +531,12 @@ class BaseAdapter(ABC):
 
     @classmethod
     def random_sample(
-        cls, select_expr: Select, desired_row_count: int, total_row_count: int, seed: int
+        cls,
+        select_expr: Select,
+        desired_row_count: int,
+        total_row_count: int,
+        seed: int,
+        sort_by_prob: bool = True,
     ) -> Select:
         """
         Construct query to randomly sample some number of rows from a table
@@ -546,6 +551,9 @@ class BaseAdapter(ABC):
             Total number of rows in the table
         seed: int
             Random seed
+        sort_by_prob: bool
+            Whether to sort sampled result by the random probability to correct for oversampling
+            bias. Can be expensive on large samples.
 
         Returns
         -------
@@ -572,9 +580,10 @@ class BaseAdapter(ABC):
                     this=quoted_identifier("prob"), expression=make_literal_value(probability)
                 )
             )
-            .order_by(quoted_identifier("prob"))
             .limit(desired_row_count)
         )
+        if sort_by_prob:
+            output = output.order_by(quoted_identifier("prob"))
         return output
 
     @classmethod

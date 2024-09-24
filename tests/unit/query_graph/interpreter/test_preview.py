@@ -503,3 +503,24 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
     assert_equal_with_expected_fixture(
         describe_query.data.expr.sql(pretty=True), expected_filename, update_fixtures
     )
+
+
+def test_construct_sample_sql(simple_graph, update_fixtures, source_info):
+    """
+    Test setting sort_by_prob=False in construct_sample_sql
+    """
+    graph, node = simple_graph
+    interpreter = GraphInterpreter(graph, source_info)
+    sql_code = sql_to_string(
+        interpreter._construct_sample_sql(
+            node.name,
+            num_rows=1000,
+            total_num_rows=10000,
+            seed=1234,
+            sample_on_primary_table=True,
+            sort_by_prob=False,
+        )[0],
+        source_info.source_type,
+    )
+    expected_filename = "tests/fixtures/query_graph/expected_sample_sql_disable_sort_by_prob.sql"
+    assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)

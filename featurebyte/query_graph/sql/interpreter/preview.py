@@ -211,6 +211,7 @@ class PreviewMixin(BaseGraphInterpreter):
         sample_on_primary_table: bool,
         target_node_name: str,
         seed: int,
+        sort_by_prob: bool,
         sample_row_num: Optional[int] = None,
         total_num_rows: Optional[int] = None,
     ) -> tuple[QueryGraph, bool]:
@@ -225,6 +226,9 @@ class PreviewMixin(BaseGraphInterpreter):
             Target node name
         seed: int
             Random seed
+        sort_by_prob: bool
+            Whether to sort sampled result by the random probability to correct for oversampling
+            bias. Can be expensive on large samples.
         sample_row_num: Optional[int]
             Number of rows to sample
         total_num_rows: Optional[int]
@@ -246,6 +250,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 seed=seed,
                 total_num_rows=total_num_rows,
                 num_rows=sample_row_num * graph_info.get_oversampling_factor(),
+                sort_by_prob=sort_by_prob,
             )
 
             # override sample parameters for sampling table
@@ -266,6 +271,7 @@ class PreviewMixin(BaseGraphInterpreter):
         total_num_rows: Optional[int] = None,
         clip_timestamp_columns: bool = False,
         sample_on_primary_table: bool = False,
+        sort_by_prob: bool = True,
     ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
@@ -277,6 +283,9 @@ class PreviewMixin(BaseGraphInterpreter):
             Number of rows to sample, no sampling if None
         seed: int
             Random seed to use for sampling
+        sort_by_prob: bool
+            Whether to sort sampled result by the random probability to correct for oversampling
+            bias. Can be expensive on large samples.
         from_timestamp: Optional[datetime]
             Start of date range to filter on
         to_timestamp: Optional[datetime]
@@ -302,6 +311,7 @@ class PreviewMixin(BaseGraphInterpreter):
             sample_on_primary_table=sample_on_primary_table,
             target_node_name=flat_node.name,
             seed=seed,
+            sort_by_prob=sort_by_prob,
             sample_row_num=num_rows,
             total_num_rows=total_num_rows,
         )
@@ -372,7 +382,11 @@ class PreviewMixin(BaseGraphInterpreter):
                 sql_tree = sql_tree.limit(num_rows)
             else:
                 sql_tree = self.adapter.random_sample(
-                    sql_tree, desired_row_count=num_rows, total_row_count=total_num_rows, seed=seed
+                    sql_tree,
+                    desired_row_count=num_rows,
+                    total_row_count=total_num_rows,
+                    seed=seed,
+                    sort_by_prob=sort_by_prob,
                 )
 
         if input_node_sampled:
