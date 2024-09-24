@@ -256,3 +256,34 @@ class TestItemTableApi(BaseTableApiTestSuite):
         table_id = create_response_dict["_id"]
         response = test_api_client.delete(f"{self.base_route}/{table_id}")
         assert response.status_code == HTTPStatus.OK, response.json()
+
+    def test_event_id_column_missing_in_event_table_422(self, test_api_client_persistent):
+        """
+        Test event_id column missing in event table
+        """
+        test_api_client, _ = test_api_client_persistent
+        event_table_payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
+        event_table_payload.pop("event_id_column")
+        response = test_api_client.post("/event_table", json=event_table_payload)
+        assert response.status_code == HTTPStatus.CREATED
+
+        response = test_api_client.post(self.base_route, json=self.payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == (
+            "Event ID column not available in event table sf_event_table (ID: 6337f9651050ee7d5980660d)."
+        )
+
+    def test_event_id_column_dtype_mismatch_422(self, test_api_client_persistent):
+        """
+        Test event_id column dtype mismatch with that in event table
+        """
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        payload = self.payload.copy()
+        payload["event_id_column"] = "item_type"
+        response = test_api_client.post(self.base_route, json=payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == (
+            "Data type mismatch between event ID columns of event table sf_event_table "
+            "(ID: 6337f9651050ee7d5980660d) (INT) and item table (VARCHAR)."
+        )

@@ -504,9 +504,9 @@ async def event_table_fixture(event_table_factory):
 
 
 @pytest_asyncio.fixture(name="item_table")
-async def item_table_fixture(test_dir, feature_store, item_table_service):
+async def item_table_fixture(test_dir, feature_store, item_table_service, event_table):
     """ItemTable model"""
-    _ = feature_store
+    _, _ = feature_store, event_table
     fixture_path = os.path.join(test_dir, "fixtures/request_payloads/item_table.json")
     with open(fixture_path, encoding="utf") as fhandle:
         payload = json.loads(fhandle.read())
