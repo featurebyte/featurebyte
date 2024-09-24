@@ -45,7 +45,6 @@ class BaseAdapter(ABC):
     """
 
     TABLESAMPLE_SUPPORTS_VIEW = True
-    UNIFORM_DISTRIBUTION_SUPPORTS_SEED = True
 
     def __init__(self, source_info: SourceInfo):
         self.source_info = source_info
@@ -532,7 +531,12 @@ class BaseAdapter(ABC):
 
     @classmethod
     def random_sample(
-        cls, select_expr: Select, desired_row_count: int, total_row_count: int, seed: int
+        cls,
+        select_expr: Select,
+        desired_row_count: int,
+        total_row_count: int,
+        seed: int,
+        sort_by_prob: bool = True,
     ) -> Select:
         """
         Construct query to randomly sample some number of rows from a table
@@ -547,6 +551,9 @@ class BaseAdapter(ABC):
             Total number of rows in the table
         seed: int
             Random seed
+        sort_by_prob: bool
+            Whether to sort sampled result by the random probability to correct for oversampling
+            bias. Can be expensive on large samples.
 
         Returns
         -------
@@ -575,7 +582,7 @@ class BaseAdapter(ABC):
             )
             .limit(desired_row_count)
         )
-        if cls.UNIFORM_DISTRIBUTION_SUPPORTS_SEED:
+        if sort_by_prob:
             output = output.order_by(quoted_identifier("prob"))
         return output
 
