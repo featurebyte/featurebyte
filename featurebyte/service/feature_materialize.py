@@ -1077,20 +1077,21 @@ class FeatureMaterializeService:
         if not columns:
             return
         assert feature_store.online_store_id is not None
-        for i in range(0, len(columns), NUM_COLUMNS_PER_MATERIALIZE):
-            columns_batch = columns[i : i + NUM_COLUMNS_PER_MATERIALIZE]
-            await materialize_partial(
-                feature_store=feature_store,
-                feature_view=feature_store.get_feature_view(feature_table.name),
-                columns=columns_batch,
-                end_date=end_date,
-                start_date=start_date,
-                with_feature_timestamp=(
-                    feature_table.has_ttl
-                    if isinstance(feature_table, OfflineStoreFeatureTableModel)
-                    else False
-                ),
-            )
+        with setup_online_materialize_environment(feature_store):
+            for i in range(0, len(columns), NUM_COLUMNS_PER_MATERIALIZE):
+                columns_batch = columns[i : i + NUM_COLUMNS_PER_MATERIALIZE]
+                await materialize_partial(
+                    feature_store=feature_store,
+                    feature_view=feature_store.get_feature_view(feature_table.name),
+                    columns=columns_batch,
+                    end_date=end_date,
+                    start_date=start_date,
+                    with_feature_timestamp=(
+                        feature_table.has_ttl
+                        if isinstance(feature_table, OfflineStoreFeatureTableModel)
+                        else False
+                    ),
+                )
         await self.offline_store_feature_table_service.update_online_last_materialized_at(
             document_id=feature_table.id,
             online_store_id=feature_store.online_store_id,
