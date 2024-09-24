@@ -117,7 +117,7 @@ def index_to_timestamp_fixture(request):
 
 
 @pytest.fixture(name="patch_initialize_entity_dtype")
-def always_patch_initialize_entity_dtype_service():
+def patch_initialize_entity_dtype_service():
     """
     Patch the initialize entity dtype method
     """
