@@ -6,11 +6,13 @@ import textwrap
 from unittest.mock import Mock
 
 import numpy as np
+import pandas as pd
 import pytest
 from sqlglot import parse_one
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.scalar import TimestampValue
 from featurebyte.query_graph.sql.ast.binary import BinaryOp
 from featurebyte.query_graph.sql.ast.count_dict import (
     CountDictTransformNode,
@@ -38,11 +40,14 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.string import IsStringNode
 from featurebyte.query_graph.sql.ast.unary import CastNode, LagNode
 from featurebyte.query_graph.sql.builder import SQLNodeContext
-from featurebyte.query_graph.sql.common import SQLType
+from featurebyte.query_graph.sql.common import SQLType, sql_to_string
 from featurebyte.query_graph.sql.source_info import SourceInfo
+from tests.util.helper import assert_sql_equal
 
 
-def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type=None):
+def make_context(
+    node_type=None, parameters=None, input_sql_nodes=None, sql_type=None, source_type=None
+):
     """
     Helper function to create a SQLNodeContext with only arguments that matter in tests
     """
@@ -50,9 +55,9 @@ def make_context(node_type=None, parameters=None, input_sql_nodes=None, sql_type
         parameters = {}
     if sql_type is None:
         sql_type = SQLType.MATERIALIZE
-    source_info = SourceInfo(
-        source_type=SourceType.SNOWFLAKE, database_name="db", schema_name="public"
-    )
+    if source_type is None:
+        source_type = SourceType.SNOWFLAKE
+    source_info = SourceInfo(source_type=source_type, database_name="db", schema_name="public")
     mock_query_node = Mock(type=node_type)
     mock_query_node.parameters.model_dump.return_value = parameters
     mock_graph = Mock()
@@ -235,6 +240,34 @@ def test_binary_operation_node__scalar(node_type, value, right_op, expected, inp
         make_context(node_type=node_type, input_sql_nodes=input_nodes, parameters=parameters)
     )
     assert node.sql.sql() == expected
+
+
+def test_binary_operation_node__timestamp(input_node):
+    """Test binary operation node with another side is a scalar timestamp"""
+    column1 = StrExpressionNode(make_context(SourceType.BIGQUERY), table_node=input_node, expr="a")
+    input_nodes = [column1]
+    parameters = {
+        "value": TimestampValue.from_pandas_timestamp(
+            pd.Timestamp("2024-01-15 10:00:00")
+        ).model_dump(),
+        "right_op": False,
+    }
+    node = BinaryOp.build(
+        make_context(
+            source_type=SourceType.BIGQUERY,
+            node_type=NodeType.LT,
+            input_sql_nodes=input_nodes,
+            parameters=parameters,
+        )
+    )
+    assert_sql_equal(
+        sql_to_string(node.sql, SourceType.BIGQUERY),
+        """
+        (
+          CAST(a AS DATETIME) < CAST('2024-01-15T10:00:00' AS DATETIME)
+        )
+        """,
+    )
 
 
 def test_make_input_node_escape_special_characters():
