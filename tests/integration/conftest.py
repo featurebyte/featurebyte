@@ -209,6 +209,13 @@ def credentials_mapping_fixture():
                 password="wrong-password",
             ),
         ),
+        "databricks_featurestore": CredentialModel(
+            name="databricks_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=AccessTokenCredential(
+                access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
+            ),
+        ),
         "databricks_unity_featurestore": CredentialModel(
             name="databricks_unity_featurestore",
             feature_store_id=ObjectId(),
@@ -426,6 +433,17 @@ def feature_store_details_fixture(source_type, sqlite_filename):  # pylint: disa
             schema_name=temp_schema_name,
             database_name=os.getenv("SNOWFLAKE_DATABASE"),
             role_name="TESTING",
+        )
+
+    if source_type == "databricks":
+        schema_name = os.getenv("DATABRICKS_SCHEMA_FEATUREBYTE")
+        temp_schema_name = f"{schema_name}_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
+        return DatabricksDetails(
+            host=os.getenv("DATABRICKS_SERVER_HOSTNAME"),
+            http_path=os.getenv("DATABRICKS_HTTP_PATH"),
+            catalog_name=os.getenv("DATABRICKS_CATALOG"),
+            schema_name=temp_schema_name,
+            storage_path=f"dbfs:/FileStore/{temp_schema_name}",
         )
 
     if source_type == "databricks_unity":
