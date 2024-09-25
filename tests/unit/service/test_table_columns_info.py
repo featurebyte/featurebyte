@@ -845,8 +845,8 @@ async def test_entity_dtype_initialization_and_validation__old_records_case_2(
         )
 
     expected_msg = (
-        f"Entity foo (ID: {entity_foo.id}) has columns with different dtypes (VARCHAR and INT) in "
-        f"tables sf_scd_table and sf_event_table. Please double-check the entity of the affected columns."
+        f"Entity foo (ID: {entity_foo.id}) has columns with different dtypes in tables sf_scd_table (VARCHAR) "
+        f"and sf_event_table (INT). Please double-check the entity of the affected columns."
     )
     assert expected_msg in str(exc.value)
 

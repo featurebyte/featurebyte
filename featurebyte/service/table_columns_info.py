@@ -79,9 +79,9 @@ class EntityDtypeInitializationAndValidationService:
                             ref_table_name = table.name
                         elif entity_dtype != column_info.dtype:
                             raise DocumentUpdateError(
-                                f"Entity {entity.name} (ID: {entity_id}) has columns with different dtypes "
-                                f"({entity_dtype} and {column_info.dtype}) in tables {ref_table_name} and "
-                                f"{table.name}. Please double-check the entity of the affected columns."
+                                f"Entity {entity.name} (ID: {entity_id}) has columns with different dtypes in "
+                                f"tables {ref_table_name} ({entity_dtype}) and {table.name} ({column_info.dtype}). "
+                                f"Please double-check the entity of the affected columns."
                             )
 
             if entity_dtype:
@@ -154,6 +154,17 @@ class EntityDtypeInitializationAndValidationService:
     async def update_entity_dtype(
         self, table: TableModel, target_columns_info: List[ColumnInfo]
     ) -> None:
+        """
+        Update entity dtype for the target columns info. This method should be called after the table reference
+         update is done as we need to check if the entity is disassociated from any column.
+
+        Parameters
+        ----------
+        table: TableModel
+            Table triggers the entity tag update
+        target_columns_info: List[ColumnInfo]
+            Target columns info
+        """
         for col_info, prev_entity_id in self.iterate_affected_target_entity_columns_info(
             original_columns_info=table.columns_info, target_columns_info=target_columns_info
         ):
