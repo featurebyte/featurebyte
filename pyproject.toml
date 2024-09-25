@@ -92,7 +92,6 @@ databricks-sdk = { version = "^0.24.0", optional = true }
 databricks-sql-connector = { version = "^3.1.1", optional = true }
 fastapi = { version =  "^0.111.0", optional = true }
 feast = { version = "^0.40.1", optional = true, extras = ["snowflake", "redis", "mysql", "gcp"]}
-dask-expr = { version = "^1.1.10", optional = true }
 featurebyte-freeware = { version = "^0.2.22", optional = true }
 gevent = {version = "^23.9.1", optional = true}
 google-cloud-bigquery = "^3.25.0"
@@ -132,7 +131,7 @@ wheel = "0.40.0"
 google-cloud-bigquery-storage = "^2.25.0"
 
 [tool.poetry.extras]
-server = ["cachetools", "databricks-sdk", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "thrift-sasl", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "requests-kerberos", "feast", "dask-expr"]
+server = ["cachetools", "databricks-sdk", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "thrift-sasl", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "requests-kerberos", "feast"]
 
 [tool.poetry.group.dev.dependencies]
 freezegun = "^1.2.1"
