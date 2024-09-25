@@ -1506,6 +1506,7 @@ def test_feature_create_new_version__multiple_event_table(
     snowflake_database_table_scd_table,
     cust_id_entity,
     main_data_from_event_table,
+    patch_initialize_entity_dtype,
 ):
     """Test create new version with multiple feature job settings"""
     another_event_table = snowflake_database_table_scd_table.create_event_table(

@@ -114,3 +114,27 @@ def index_to_timestamp_fixture(request):
     Parameterized fixture for index to timestamp conversion
     """
     return request.param
+
+
+@pytest.fixture(name="patch_initialize_entity_dtype")
+def patch_initialize_entity_dtype_service():
+    """
+    Patch the initialize entity dtype method
+    """
+    module_base_path = (
+        "featurebyte.service.table_columns_info.EntityDtypeInitializationAndValidationService"
+    )
+    patched = {}
+    patch_targets = [
+        "maybe_initialize_entity_dtype",
+        "validate_entity_dtype",
+        "update_entity_dtype",
+    ]
+    started_patchers = []
+    for patch_target in patch_targets:
+        patcher = patch(f"{module_base_path}.{patch_target}")
+        patched[patch_target] = patcher.start()
+        started_patchers.append(patcher)
+    yield started_patchers
+    for patcher in started_patchers:
+        patcher.stop()

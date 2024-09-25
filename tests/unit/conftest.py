@@ -1185,11 +1185,12 @@ def snowflake_event_table_with_entity_fixture(
     transaction_entity,
     mock_api_object_cache,
     mock_detect_and_update_column_dtypes,
+    patch_initialize_entity_dtype,
 ):
     """
     Entity fixture that sets cust_id in snowflake_event_table as an Entity
     """
-    _ = mock_api_object_cache, mock_detect_and_update_column_dtypes
+    _ = mock_api_object_cache, mock_detect_and_update_column_dtypes, patch_initialize_entity_dtype
     snowflake_event_table.cust_id.as_entity(cust_id_entity.name)
     snowflake_event_table.col_int.as_entity(transaction_entity.name)
     yield snowflake_event_table

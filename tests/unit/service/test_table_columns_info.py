@@ -34,6 +34,7 @@ async def test_update_columns_info(
     event_table,
     entity,
     transaction_entity,
+    patch_initialize_entity_dtype,
 ):
     """Test update_columns_info"""
     _ = entity, transaction_entity
@@ -644,3 +645,231 @@ async def test_scd_table_update_columns_info__entity_relationship(
         child_entity=entity_foo,
         parent_entity=entity_bar,
     )
+
+
+def construct_columns_info(table, target_column, target_entity_id):
+    """
+    Helper function to construct columns info with target entity id for the target column
+    """
+    columns_info = []
+    has_matched_column = False
+    for column_info in table.columns_info:
+        column_info = copy.deepcopy(column_info)
+        if column_info.name == target_column:
+            column_info.entity_id = target_entity_id
+            has_matched_column = True
+        columns_info.append(column_info)
+
+    assert has_matched_column, f"Column {target_column} not found in table {table.name}"
+    return columns_info
+
+
+@pytest.mark.asyncio
+async def test_entity_dtype_initialization_and_validation(
+    app_container,
+    event_table,
+    scd_table,
+    entity_foo,
+    entity_bar,
+):
+    """Test entity dtype initialization and validation"""
+    assert entity_foo.dtype is None
+    assert entity_foo.table_ids == []
+
+    # associate entity foo with event table's col_int
+    await app_container.table_columns_info_service.update_columns_info(
+        service=app_container.event_table_service,
+        document_id=event_table.id,
+        columns_info=construct_columns_info(event_table, "col_int", entity_foo.id),
+    )
+
+    # check entity foo's dtype
+    entity_foo = await app_container.entity_service.get_document(document_id=entity_foo.id)
+    assert entity_foo.dtype == DBVarType.INT
+
+    # associate entity foo with scd table's non-int column
+    with pytest.raises(DocumentUpdateError) as exc:
+        await app_container.table_columns_info_service.update_columns_info(
+            service=app_container.scd_table_service,
+            document_id=scd_table.id,
+            columns_info=construct_columns_info(scd_table, "col_text", entity_foo.id),
+        )
+
+    expected_msg = (
+        f"Column col_text (Table ID: {scd_table.id}, Name: sf_scd_table) has dtype VARCHAR "
+        "which does not match the entity dtype INT."
+    )
+    assert expected_msg in str(exc.value)
+
+    # associate entity foo with scd table's int column
+    await app_container.table_columns_info_service.update_columns_info(
+        service=app_container.scd_table_service,
+        document_id=scd_table.id,
+        columns_info=construct_columns_info(scd_table, "col_int", entity_foo.id),
+    )
+
+    # check entity foo's dtype
+    entity_foo = await app_container.entity_service.get_document(document_id=entity_foo.id)
+    assert entity_foo.dtype == DBVarType.INT
+    assert entity_foo.table_ids == sorted([event_table.id, scd_table.id])
+
+    # disassociate entity foo with event table's col_int
+    await app_container.table_columns_info_service.update_columns_info(
+        service=app_container.event_table_service,
+        document_id=event_table.id,
+        columns_info=construct_columns_info(event_table, "col_int", entity_bar.id),
+    )
+
+    # check entity
+    entity_foo = await app_container.entity_service.get_document(document_id=entity_foo.id)
+    assert entity_foo.dtype == DBVarType.INT
+    assert entity_foo.table_ids == [scd_table.id]
+
+    assert entity_bar.dtype is None
+    assert entity_bar.table_ids == []
+    entity_bar = await app_container.entity_service.get_document(document_id=entity_bar.id)
+    assert entity_bar.dtype == DBVarType.INT
+    assert entity_bar.table_ids == [event_table.id]
+
+    #  disassociate entity foo with scd table's col_int
+    await app_container.table_columns_info_service.update_columns_info(
+        service=app_container.scd_table_service,
+        document_id=scd_table.id,
+        columns_info=construct_columns_info(scd_table, "col_int", None),
+    )
+
+    # check entity
+    entity_foo = await app_container.entity_service.get_document(document_id=entity_foo.id)
+    assert entity_foo.dtype is None
+    assert entity_foo.table_ids == []
+
+
+@pytest.mark.asyncio
+async def test_entity_dtype_initialization_and_validation__old_records_case_1(
+    app_container,
+    event_table,
+    scd_table,
+    entity_foo,
+    patch_initialize_entity_dtype,
+):
+    """Test entity dtype initialization and validation on old records"""
+    assert entity_foo.dtype is None
+    assert entity_foo.table_ids == []
+
+    # simulate old record with no tracking of entity dtype
+    # associate entity foo with event table's col_int
+    await app_container.table_columns_info_service.update_columns_info(
+        service=app_container.event_table_service,
+        document_id=event_table.id,
+        columns_info=construct_columns_info(event_table, "col_int", entity_foo.id),
+    )
+
+    # check entity foo's dtype
+    entity_foo = await app_container.entity_service.get_document(document_id=entity_foo.id)
+    assert entity_foo.dtype is None
+    assert entity_foo.table_ids == [event_table.id]
+
+    # stop patching to enable entity dtype tracking
+    for patcher in patch_initialize_entity_dtype:
+        patcher.stop()
+
+    # associate entity foo with scd table's non-int column
+    with pytest.raises(DocumentUpdateError) as exc:
+        await app_container.table_columns_info_service.update_columns_info(
+            service=app_container.scd_table_service,
+            document_id=scd_table.id,
+            columns_info=construct_columns_info(scd_table, "col_text", entity_foo.id),
+        )
+
+    expected_msg = (
+        f"Column col_text (Table ID: {scd_table.id}, Name: sf_scd_table) has dtype VARCHAR "
+        "which does not match the entity dtype INT."
+    )
+    assert expected_msg in str(exc.value)
+
+    # check entity foo's dtype (should get updated to INT)
+    entity_foo = await app_container.entity_service.get_document(document_id=entity_foo.id)
+    assert entity_foo.dtype == DBVarType.INT
+    assert entity_foo.table_ids == [event_table.id]
+
+    # associate entity foo with scd table's int column should pass
+    await app_container.table_columns_info_service.update_columns_info(
+        service=app_container.scd_table_service,
+        document_id=scd_table.id,
+        columns_info=construct_columns_info(scd_table, "col_int", entity_foo.id),
+    )
+
+
+@pytest.mark.asyncio
+async def test_entity_dtype_initialization_and_validation__old_records_case_2(
+    app_container,
+    event_table,
+    scd_table,
+    dimension_table,
+    entity_foo,
+    patch_initialize_entity_dtype,
+):
+    """Test entity dtype initialization and validation on old records"""
+    assert entity_foo.dtype is None
+    assert entity_foo.table_ids == []
+
+    # simulate old record with no tracking of entity dtype (with conflicting dtype)
+    # associate entity foo with event table's col_int
+    await app_container.table_columns_info_service.update_columns_info(
+        service=app_container.event_table_service,
+        document_id=event_table.id,
+        columns_info=construct_columns_info(event_table, "col_int", entity_foo.id),
+    )
+
+    await app_container.table_columns_info_service.update_columns_info(
+        service=app_container.scd_table_service,
+        document_id=scd_table.id,
+        columns_info=construct_columns_info(scd_table, "col_text", entity_foo.id),
+    )
+
+    # check entity foo's dtype
+    entity_foo = await app_container.entity_service.get_document(document_id=entity_foo.id)
+    assert entity_foo.dtype is None
+    assert entity_foo.table_ids == sorted([event_table.id, scd_table.id])
+
+    # stop patching to enable entity dtype tracking
+    for patcher in patch_initialize_entity_dtype:
+        patcher.stop()
+
+    # associate entity foo with dimension table's col_int should fail
+    with pytest.raises(DocumentUpdateError) as exc:
+        await app_container.table_columns_info_service.update_columns_info(
+            service=app_container.dimension_table_service,
+            document_id=dimension_table.id,
+            columns_info=construct_columns_info(dimension_table, "col_int", entity_foo.id),
+        )
+
+    expected_msg = (
+        f"Entity foo (ID: {entity_foo.id}) has columns with different dtypes in tables sf_scd_table (VARCHAR) "
+        f"and sf_event_table (INT). Please double-check the entity of the affected columns."
+    )
+    assert expected_msg in str(exc.value)
+
+    # remove entity foo from scd table
+    await app_container.table_columns_info_service.update_columns_info(
+        service=app_container.scd_table_service,
+        document_id=scd_table.id,
+        columns_info=construct_columns_info(scd_table, "col_text", None),
+    )
+
+    # check entity foo's dtype
+    entity_foo = await app_container.entity_service.get_document(document_id=entity_foo.id)
+    assert entity_foo.dtype is None
+    assert entity_foo.table_ids == [event_table.id]
+
+    # associate entity foo with dimension table's col_int should pass
+    await app_container.table_columns_info_service.update_columns_info(
+        service=app_container.dimension_table_service,
+        document_id=dimension_table.id,
+        columns_info=construct_columns_info(dimension_table, "col_int", entity_foo.id),
+    )
+
+    # check entity foo's dtype
+    entity_foo = await app_container.entity_service.get_document(document_id=entity_foo.id)
+    assert entity_foo.dtype == DBVarType.INT
+    assert entity_foo.table_ids == sorted([event_table.id, dimension_table.id])

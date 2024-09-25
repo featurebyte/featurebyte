@@ -93,7 +93,11 @@ def test_get_dimension_table(saved_dimension_table, snowflake_dimension_table):
 
 
 def test_delete_table_and_entity_referenced_in_feature_entity_relationship(
-    saved_event_table, saved_scd_table, saved_dimension_table, feature_group_feature_job_setting
+    saved_event_table,
+    saved_scd_table,
+    saved_dimension_table,
+    feature_group_feature_job_setting,
+    patch_initialize_entity_dtype,
 ):
     """
     Test delete table (and entity) referenced in feature's relationships_info but not in feature's table_ids
@@ -170,7 +174,12 @@ def test_delete_table_and_entity_referenced_in_feature_entity_relationship(
 
 
 def test_delete_table_and_entity_referenced_in_feature_list_entity_relationship(
-    saved_event_table, saved_dimension_table, float_feature, transaction_entity, cust_id_entity
+    saved_event_table,
+    saved_dimension_table,
+    float_feature,
+    transaction_entity,
+    cust_id_entity,
+    patch_initialize_entity_dtype,
 ):
     """Test delete table (and entity) referenced in feature list's relationships_info"""
     # construct following entity relationship

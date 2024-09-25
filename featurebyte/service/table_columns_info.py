@@ -5,16 +5,16 @@ TableColumnsInfoService
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import List, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 from bson import ObjectId
 from pymongo.errors import OperationFailure
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
-from featurebyte.enum import TableDataType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId, User
-from featurebyte.models.entity import ParentEntity
+from featurebyte.models.entity import EntityModel, ParentEntity
 from featurebyte.models.feature_store import TableModel
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.persistent import Persistent
@@ -37,6 +37,157 @@ TableDocumentService = Union[
 ]
 
 
+class EntityDtypeInitializationAndValidationService:
+    """
+    EntityDtypeInitializationAndValidationService is responsible for initializing and validating the entity dtype.
+    """
+
+    def __init__(self, entity_service: EntityService, table_service: TableDocumentService):
+        self.entity_service = entity_service
+        self.table_service = table_service
+
+    async def maybe_initialize_entity_dtype(self, entity_id: ObjectId) -> EntityModel:
+        """
+        Initialize entity dtype for old documents that do not have dtype.
+
+        Parameters
+        ----------
+        entity_id: ObjectId
+            Entity ID
+
+        Returns
+        -------
+        EntityModel
+
+        Raises
+        ------
+        DocumentUpdateError
+            When entity has columns with different dtypes in different tables
+        """
+        entity = await self.entity_service.get_document(entity_id)
+
+        if entity.table_ids and entity.dtype is None:
+            entity_dtype: Optional[DBVarType] = None
+            ref_table_name: Optional[str] = None
+            async for table in self.table_service.list_documents_iterator(
+                query_filter={"_id": {"$in": entity.table_ids}}
+            ):
+                for column_info in table.columns_info:
+                    if column_info.entity_id == entity_id:
+                        if entity_dtype is None:
+                            entity_dtype = column_info.dtype
+                            ref_table_name = table.name
+                        elif entity_dtype != column_info.dtype:
+                            raise DocumentUpdateError(
+                                f"Entity {entity.name} (ID: {entity_id}) has columns with different dtypes in "
+                                f"tables {ref_table_name} ({entity_dtype}) and {table.name} ({column_info.dtype}). "
+                                f"Please double-check the entity of the affected columns."
+                            )
+
+            if entity_dtype:
+                # update entity dtype
+                await self.entity_service.update_document(
+                    document_id=entity_id,
+                    data=EntityServiceUpdate(dtype=entity_dtype),
+                    return_document=False,
+                )
+                return await self.entity_service.get_document(entity_id)
+
+        return entity
+
+    @staticmethod
+    def iterate_affected_target_entity_columns_info(
+        original_columns_info: List[ColumnInfo], target_columns_info: List[ColumnInfo]
+    ) -> Iterable[Tuple[ColumnInfo, Optional[ObjectId]]]:
+        """
+        Iterate over the target columns info and yield the affected columns info with the original entity ID.
+
+        Parameters
+        ----------
+        original_columns_info: List[ColumnInfo]
+            Original columns info
+        target_columns_info: List[ColumnInfo]
+            Target columns info
+
+        Yields
+        ------
+        Tuple[ColumnInfo, Optional[ObjectId]]
+            Affected columns info with the original entity ID
+        """
+        original_col_to_entity_id = {
+            col_info.name: col_info.entity_id for col_info in original_columns_info
+        }
+        for col_info in target_columns_info:
+            if col_info.entity_id != original_col_to_entity_id.get(col_info.name):
+                yield col_info, original_col_to_entity_id.get(col_info.name)
+
+    async def validate_entity_dtype(
+        self, table: TableModel, target_columns_info: List[ColumnInfo]
+    ) -> None:
+        """
+        Validate entity dtype for the target columns info.
+
+        Parameters
+        ----------
+        table: TableModel
+            TableModel object
+        target_columns_info: List[ColumnInfo]
+            Target columns info
+
+        Raises
+        ------
+        DocumentUpdateError
+            When the entity dtype does not match the column dtype
+        """
+        for col_info, _ in self.iterate_affected_target_entity_columns_info(
+            original_columns_info=table.columns_info, target_columns_info=target_columns_info
+        ):
+            if col_info.entity_id:
+                # when the entity is associated with a column, validate the entity dtype
+                entity = await self.maybe_initialize_entity_dtype(col_info.entity_id)
+                if entity.dtype and col_info.dtype != entity.dtype:
+                    raise DocumentUpdateError(
+                        f"Column {col_info.name} (Table ID: {table.id}, Name: {table.name}) "
+                        f"has dtype {col_info.dtype} which does not match the entity dtype {entity.dtype}."
+                    )
+
+    async def update_entity_dtype(
+        self, table: TableModel, target_columns_info: List[ColumnInfo]
+    ) -> None:
+        """
+        Update entity dtype for the target columns info. This method should be called after the table reference
+         update is done as we need to check if the entity is disassociated from any column.
+
+        Parameters
+        ----------
+        table: TableModel
+            Table triggers the entity tag update
+        target_columns_info: List[ColumnInfo]
+            Target columns info
+        """
+        for col_info, prev_entity_id in self.iterate_affected_target_entity_columns_info(
+            original_columns_info=table.columns_info, target_columns_info=target_columns_info
+        ):
+            if col_info.entity_id:
+                # when the entity does not have dtype, update the entity dtype
+                entity = await self.entity_service.get_document(col_info.entity_id)
+                if entity.dtype is None:
+                    await self.entity_service.update_document(
+                        document_id=col_info.entity_id,
+                        data=EntityServiceUpdate(dtype=col_info.dtype),
+                        return_document=False,
+                    )
+
+            if prev_entity_id and col_info.entity_id is None:
+                # when the entity is disassociated from a column, update the entity dtype if needed
+                entity = await self.entity_service.get_document(prev_entity_id)
+                if not entity.table_ids:
+                    await self.entity_service.update_documents(
+                        query_filter={"_id": prev_entity_id},
+                        update={"$unset": {"dtype": ""}},
+                    )
+
+
 class TableColumnsInfoService(OpsServiceMixin):
     """
     TableColumnsInfoService is responsible to orchestrate the update of the table columns info.
@@ -50,6 +201,7 @@ class TableColumnsInfoService(OpsServiceMixin):
         entity_service: EntityService,
         relationship_info_service: RelationshipInfoService,
         entity_relationship_service: EntityRelationshipService,
+        entity_dtype_initialization_and_validation_service: EntityDtypeInitializationAndValidationService,
     ):
         self.user = user
         self.persistent = persistent
@@ -57,6 +209,9 @@ class TableColumnsInfoService(OpsServiceMixin):
         self.entity_service = entity_service
         self.relationship_info_service = relationship_info_service
         self.entity_relationship_service = entity_relationship_service
+        self.entity_dtype_initialization_and_validation_service = (
+            entity_dtype_initialization_and_validation_service
+        )
 
     @staticmethod
     async def _validate_column_info_id_field_values(
@@ -89,7 +244,9 @@ class TableColumnsInfoService(OpsServiceMixin):
                 f"{field_class_name} IDs {list(id_vals)} not found for columns {list(col_names)}."
             )
 
-    async def _validate_column_info(self, columns_info: List[ColumnInfo]) -> None:
+    async def _validate_column_info(
+        self, table: TableModel, columns_info: List[ColumnInfo]
+    ) -> None:
         entity_id_to_column_names = defaultdict(list)
         for col_info in columns_info:
             if col_info.entity_id:
@@ -101,6 +258,11 @@ class TableColumnsInfoService(OpsServiceMixin):
                 raise DocumentUpdateError(
                     f"Entity {entity.name} (ID: {entity_id}) tagged to multiple columns {column_names} in the table."
                 )
+
+        # validate entity dtype
+        await self.entity_dtype_initialization_and_validation_service.validate_entity_dtype(
+            table=table, target_columns_info=columns_info
+        )
 
     @retry(
         retry=retry_if_exception_type(OperationFailure),
@@ -149,7 +311,7 @@ class TableColumnsInfoService(OpsServiceMixin):
                 )
 
             # validate other columns info
-            await self._validate_column_info(columns_info)
+            await self._validate_column_info(document, columns_info)
 
             async with self.persistent.start_transaction():
                 # update columns info
@@ -162,6 +324,11 @@ class TableColumnsInfoService(OpsServiceMixin):
 
                 # update entity table reference
                 await self.update_entity_table_references(document, columns_info)
+
+                # update entity dtype
+                await self.entity_dtype_initialization_and_validation_service.update_entity_dtype(
+                    table=document, target_columns_info=columns_info
+                )
 
     async def _update_entity_table_reference(
         self,

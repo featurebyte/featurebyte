@@ -817,7 +817,7 @@ def test_validate_join(snowflake_scd_view, snowflake_dimension_view, snowflake_i
 
 
 def test_validate_simple_aggregate_parameters(
-    snowflake_item_table, transaction_entity, cust_id_entity
+    snowflake_item_table, transaction_entity, cust_id_entity, patch_initialize_entity_dtype
 ):
     """
     Test validate_simple_aggregate_parameters
@@ -846,7 +846,7 @@ def test_validate_simple_aggregate_parameters(
 
 
 def test_validate_aggregate_over_parameters(
-    snowflake_item_table, transaction_entity, cust_id_entity
+    snowflake_item_table, transaction_entity, cust_id_entity, patch_initialize_entity_dtype
 ):
     """
     Test validate_aggregate_over_parameters

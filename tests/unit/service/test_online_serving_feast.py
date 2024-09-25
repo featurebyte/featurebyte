@@ -187,6 +187,7 @@ async def test_feature_requiring_parent_serving(
     online_serving_service,
     deployed_feature_list_requiring_parent_serving,
     fl_requiring_parent_serving_deployment_id,
+    patch_initialize_entity_dtype,
 ):
     """
     Test online serving feast with feature requiring parent serving

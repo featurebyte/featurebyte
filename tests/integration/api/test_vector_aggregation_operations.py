@@ -5,6 +5,7 @@ Test vector aggregation operations module
 import json
 import os
 from typing import List
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -26,6 +27,30 @@ VECTOR_VALUE_FLOAT_COL = "VECTOR_VALUE_FLOAT"
 VECTOR_VALUE_INT_COL = "VECTOR_VALUE_INT"
 VECTOR_VALUE_MIXED_COL = "VECTOR_VALUE_MIXED"
 VECTOR_VALUE_DIFF_LENGTH_COL = "VECTOR_VALUE_DIFFERENT_LENGTH"
+
+
+@pytest.fixture(autouse=True, scope="module")
+def always_patch_initialize_entity_dtype():
+    """
+    Patch initialize_entity_dtype
+    """
+    module_base_path = (
+        "featurebyte.service.table_columns_info.EntityDtypeInitializationAndValidationService"
+    )
+    patched = {}
+    patch_targets = [
+        "maybe_initialize_entity_dtype",
+        "validate_entity_dtype",
+        "update_entity_dtype",
+    ]
+    started_patchers = []
+    for patch_target in patch_targets:
+        patcher = patch(f"{module_base_path}.{patch_target}")
+        patched[patch_target] = patcher.start()
+        started_patchers.append(patcher)
+    yield started_patchers
+    for patcher in started_patchers:
+        patcher.stop()
 
 
 def _update_df(df: pd.DataFrame, event_timestamp_col: str) -> pd.DataFrame:
