@@ -1113,8 +1113,12 @@ def test_get_feature_jobs_status(saved_feature_list, feature_job_logs, update_fi
         job_status_result.job_session_logs.to_parquet(fixture_path)
     else:
         expected_session_logs = pd.read_parquet(fixture_path)
-        assert_frame_equal(job_status_result.job_session_logs, expected_session_logs)
 
+        # NOTE: Parquet serialization and deserialization converts NaT to None
+        # converting the problematic values to None before comparing
+        session_logs = job_status_result.job_session_logs.copy()
+        session_logs.loc[session_logs["ERROR"].isna(), "ERROR"] = None
+        assert_frame_equal(session_logs, expected_session_logs)
     if update_fixtures:
         raise ValueError("Fixtures updated. Please run test again without --update-fixtures flag")
 

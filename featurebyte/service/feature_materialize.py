@@ -1344,7 +1344,7 @@ class FeatureMaterializeService:
                 source_type=session.source_type,
             )
             result = await session.execute_query_long_running(query)
-            return cast(int, result.iloc[0][0])  # type: ignore[union-attr]
+            return cast(int, result.iloc[0, 0])  # type: ignore[union-attr]
         except session._no_schema_error:
             return None
 

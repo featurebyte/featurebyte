@@ -44,5 +44,5 @@ def test_entity_model():
     assert entity_dict["created_at"] == datetime(2022, 6, 30)
     assert entity_dict["updated_at"] == datetime(2022, 6, 30)
 
-    entity_loaded = EntityModel.parse_raw(entity.model_dump_json(by_alias=True))
+    entity_loaded = EntityModel.model_validate_json(entity.model_dump_json(by_alias=True))
     assert entity_loaded == entity

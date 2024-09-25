@@ -61,7 +61,6 @@ from featurebyte.query_graph.node.schema import (
     BigQueryDetails,
     DatabricksUnityDetails,
     SparkDetails,
-    SQLiteDetails,
 )
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -209,10 +208,6 @@ def credentials_mapping_fixture():
                 username="wrong-user",
                 password="wrong-password",
             ),
-        ),
-        "sqlite_datasource": CredentialModel(
-            name="sqlite_datasource",
-            feature_store_id=ObjectId(),
         ),
         "databricks_featurestore": CredentialModel(
             name="databricks_featurestore",
@@ -490,9 +485,6 @@ def feature_store_details_fixture(source_type, sqlite_filename):  # pylint: disa
             project_name=os.getenv("BIGQUERY_PROJECT"),
             dataset_name=temp_schema_name,
         )
-
-    if source_type == "sqlite":
-        return SQLiteDetails(filename=sqlite_filename)
 
     return NotImplementedError(f"Unexpected source_type: {source_type}")
 

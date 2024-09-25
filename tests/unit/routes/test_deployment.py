@@ -454,7 +454,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         data = {"entity_serving_names": [{"cust_id": 1}]}
         response = test_api_client.post(
             f"{self.base_route}/{deployment_id}/online_features",
-            data=json.dumps(data),
+            content=json.dumps(data),
         )
         assert response.status_code == HTTPStatus.OK, response.content
 
@@ -475,7 +475,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         data = {"entity_serving_names": [{"cust_id": 1}]}
         response = test_api_client.post(
             f"{self.base_route}/{deployment_id}/online_features",
-            data=json.dumps(data),
+            content=json.dumps(data),
         )
 
         # Check error
@@ -507,7 +507,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         data = {"entity_serving_names": [{"cust_id": 1}] * num_rows}
         response = test_api_client.post(
             f"{self.base_route}/{deployment_id}/online_features",
-            data=json.dumps(data),
+            content=json.dumps(data),
         )
 
         # Check error
@@ -546,7 +546,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         data = {"entity_serving_names": [{"cust_id": 1}]}
         response = test_api_client.post(
             f"{self.base_route}/{deployment_id}/online_features",
-            data=json.dumps(data),
+            content=json.dumps(data),
         )
         assert response.status_code == HTTPStatus.OK, response.content
 
@@ -582,7 +582,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         data = {"entity_serving_names": [{"cust_id": 1}]}
         response = test_api_client.post(
             f"{self.base_route}/{deployment_id}/online_features",
-            data=json.dumps(data),
+            content=json.dumps(data),
         )
         assert response.status_code == HTTPStatus.OK, response.content
 

@@ -56,7 +56,7 @@ def test_feature_model(feature_model_dict, api_object_to_id):
 
     feature = FeatureModel(**feature_model_dict)
     feature_json = feature.model_dump_json(by_alias=True)
-    loaded_feature = FeatureModel.parse_raw(feature_json)
+    loaded_feature = FeatureModel.model_validate_json(feature_json)
     feature_dict = feature.model_dump(by_alias=True)
     assert loaded_feature.id == feature.id
     assert loaded_feature.model_dump(by_alias=True) == feature_dict
@@ -156,7 +156,7 @@ def test_feature_name_space(feature_namespace_dict):
         for key, value in feature_namespace_dict.items()
     }
     assert serialized_feature_name_space == feature_name_space_dict_sorted_ids
-    loaded_feature_name_space = FeatureNamespaceModel.parse_raw(
+    loaded_feature_name_space = FeatureNamespaceModel.model_validate_json(
         feature_name_space.model_dump_json(by_alias=True)
     )
     assert loaded_feature_name_space == feature_name_space

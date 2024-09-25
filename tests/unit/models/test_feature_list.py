@@ -87,7 +87,7 @@ def test_feature_list_model(feature_list_model_dict):
     assert serialized_feature_list == feature_list_dict_sorted_ids
 
     feature_list_json = feature_list.model_dump_json(by_alias=True)
-    loaded_feature_list = FeatureListModel.parse_raw(feature_list_json)
+    loaded_feature_list = FeatureListModel.model_validate_json(feature_list_json)
     assert loaded_feature_list == feature_list
 
     # test derive production readiness fraction
@@ -123,7 +123,9 @@ def test_feature_list_namespace_model(feature_list_namespace_model_dict):
     assert serialized_feature_list_namespace == feature_list_namespace_model_dict_sorted_ids
 
     feature_list_namespace_json = feature_list_namespace.model_dump_json(by_alias=True)
-    loaded_feature_list_namespace = FeatureListNamespaceModel.parse_raw(feature_list_namespace_json)
+    loaded_feature_list_namespace = FeatureListNamespaceModel.model_validate_json(
+        feature_list_namespace_json
+    )
     assert loaded_feature_list_namespace == feature_list_namespace
 
 

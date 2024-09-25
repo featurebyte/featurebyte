@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from featurebyte_freeware.feature_job_analysis.analysis import create_feature_job_settings_analysis
-from featurebyte_freeware.feature_job_analysis.database import EventDataset
+from featurebyte_freeware.feature_job_analysis.database import DatabaseTableDetails, EventDataset
 
 from featurebyte import SourceType
 from featurebyte.logging import get_logger
@@ -100,10 +100,16 @@ class FeatureJobSettingAnalysisTask(BaseTask[FeatureJobSettingAnalysisTaskPayloa
         database_type = feature_store.type
         if database_type in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
             database_type = SourceType.SPARK
+
+        table_details = DatabaseTableDetails(
+            database_name=event_table.tabular_source.table_details.database_name,
+            schema_name=event_table.tabular_source.table_details.schema_name,
+            table_name=event_table.tabular_source.table_details.table_name,
+        )
         event_dataset = EventDataset(
             database_type=database_type,
             event_table_name=event_table.name,
-            table_details=event_table.tabular_source.table_details,
+            table_details=table_details,
             creation_date_column=event_table.record_creation_timestamp_column,
             event_timestamp_column=event_table.event_timestamp_column,
             sql_query_func=db_session.execute_query,
