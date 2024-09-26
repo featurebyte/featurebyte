@@ -32,6 +32,9 @@ from databricks import sql as databricks_sql
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
 
+# Override the default max duration for pytest-split plugin for legitimately expensive fixtures
+from pytest_split import plugin as pytest_split_plugin
+
 from featurebyte import (
     Catalog,
     Configurations,
@@ -74,6 +77,8 @@ from featurebyte.storage import LocalStorage
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
+
+pytest_split_plugin.STORE_DURATIONS_SETUP_AND_TEARDOWN_THRESHOLD = 2000
 
 MONGO_CONNECTION = "mongodb://localhost:37017/?replicaSet=rs0"
 TEST_REDIS_URI = "redis://localhost:36379"
