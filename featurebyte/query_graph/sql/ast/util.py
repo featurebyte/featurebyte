@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from featurebyte.query_graph.node.scalar import NonNativeValueType
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -39,6 +40,17 @@ def prepare_binary_op_input_nodes(
         right_node = ParsedExpressionNode(
             context=context, table_node=table_node, expr=literal_value
         )
+        if (
+            isinstance(parameters["value"], dict)
+            and parameters["value"].get("type") == NonNativeValueType.TIMESTAMP
+        ):
+            # In case of operation against a scalar timestamp, the timestamp column (left node)
+            # should be normalised to the same type.
+            left_node = ParsedExpressionNode(
+                context=context,
+                table_node=table_node,
+                expr=context.adapter.normalize_timestamp_before_comparison(left_node.sql),
+            )
     else:
         # When the other value is a Series
         right_node = input_sql_nodes[1]
