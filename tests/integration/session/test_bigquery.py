@@ -223,7 +223,7 @@ async def test_register_table_timestamp_type(
     _ = config
     session = session_without_datasets
     df = pd.DataFrame({"ts_col": timestamp_column})
-    table_name = f"test_table_{ObjectId()}"
+    table_name = f"test_register_table_timestamp_type_{ObjectId()}"
     await session.register_table(table_name=table_name, dataframe=df)
     result = await session.execute_query(f"SELECT * FROM {table_name}")
     assert result["ts_col"].tolist() == expected

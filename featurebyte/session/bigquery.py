@@ -519,6 +519,13 @@ class BigQuerySession(BaseSession):
             )
         return schema
 
+    @staticmethod
+    def _process_timestamp_value(ts_val: Any) -> str:
+        ts_val = pd.Timestamp(ts_val)
+        if ts_val.tzinfo is not None:
+            ts_val = ts_val.tz_convert("UTC").tz_localize(None)
+        return ts_val.isoformat()  # type: ignore[no-any-return]
+
     async def register_table(self, table_name: str, dataframe: pd.DataFrame) -> None:
         table_schema = self.get_columns_schema_from_dataframe(dataframe)
         types = {field.name: field.field_type for field in table_schema}
@@ -527,21 +534,7 @@ class BigQuerySession(BaseSession):
             dataframe = dataframe.copy()
             for colname in dataframe.columns:
                 if types[colname] == SqlTypeNames.TIMESTAMP:
-                    try:
-                        # convert timestamp series to string
-                        dataframe[colname] = dataframe[colname].dt.isoformat()
-                    except AttributeError:
-                        # convert object series to string
-                        try:
-                            # convert tz-aware timestamps to string
-                            dataframe[colname] = dataframe[colname].apply(
-                                lambda x: x.tz_convert("UTC").tz_localize(None).isoformat()
-                            )
-                        except TypeError:
-                            # convert tz-naive timestamps to string
-                            dataframe[colname] = dataframe[colname].apply(
-                                lambda x: x.tz_localize(None).isoformat()
-                            )
+                    dataframe[colname] = dataframe[colname].apply(self._process_timestamp_value)
 
         table_ref = TableReference(
             dataset_ref=DatasetReference(project=self.project_name, dataset_id=self.dataset_name),
