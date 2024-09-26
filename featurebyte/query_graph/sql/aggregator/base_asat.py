@@ -17,6 +17,10 @@ from featurebyte.query_graph.sql.aggregator.base import (
     NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
+from featurebyte.query_graph.sql.asat_helper import (
+    ensure_end_timestamp_column,
+    get_record_validity_condition,
+)
 from featurebyte.query_graph.sql.common import (
     CteStatements,
     get_qualified_column_identifier,
@@ -24,7 +28,6 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.offset import OffsetDirection, add_offset_to_timestamp
-from featurebyte.query_graph.sql.scd_helper import END_TS, augment_scd_table_with_end_timestamp
 from featurebyte.query_graph.sql.specifications.base_aggregate_asat import BaseAggregateAsAtSpec
 
 AsAtSpecT = TypeVar("AsAtSpecT", bound=BaseAggregateAsAtSpec)
@@ -88,16 +91,12 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
         LeftJoinableSubquery
         """
         spec = specs[0]
-        if spec.parameters.end_timestamp_column is None:
-            scd_expr = augment_scd_table_with_end_timestamp(
-                table_expr=spec.source_expr,
-                effective_timestamp_column=spec.parameters.effective_timestamp_column,
-                natural_key_column=cast(str, spec.parameters.natural_key_column),
-            )
-            end_timestamp_column = END_TS
-        else:
-            scd_expr = spec.source_expr
-            end_timestamp_column = spec.parameters.end_timestamp_column
+        end_timestamp_column, scd_expr = ensure_end_timestamp_column(
+            effective_timestamp_column=spec.parameters.effective_timestamp_column,
+            natural_key_column=cast(str, spec.parameters.natural_key_column),
+            end_timestamp_column=spec.parameters.end_timestamp_column,
+            source_expr=spec.source_expr,
+        )
 
         if spec.parameters.keys:
             join_key_condition = expressions.and_(*[
@@ -127,32 +126,11 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
         point_in_time_expr = self.adapter.normalize_timestamp_before_comparison(point_in_time_expr)
 
         # Only join records from the SCD table that are valid as at point in time
-        record_validity_condition = expressions.and_(
-            # SCD.effective_timestamp_column <= REQ.POINT_IN_TIME; i.e. record became effective
-            # at or before point in time
-            expressions.LTE(
-                this=self.adapter.normalize_timestamp_before_comparison(
-                    get_qualified_column_identifier(
-                        spec.parameters.effective_timestamp_column, "SCD"
-                    )
-                ),
-                expression=point_in_time_expr,
-            ),
-            expressions.or_(
-                # SCD.end_timestamp_column > REQ.POINT_IN_TIME; i.e. record has not yet been
-                # invalidated as at the point in time, but will be at a future time
-                expressions.GT(
-                    this=self.adapter.normalize_timestamp_before_comparison(
-                        get_qualified_column_identifier(end_timestamp_column, "SCD")
-                    ),
-                    expression=point_in_time_expr,
-                ),
-                # SCD.end_timestamp_column IS NULL; i.e. record is current
-                expressions.Is(
-                    this=get_qualified_column_identifier(end_timestamp_column, "SCD"),
-                    expression=expressions.Null(),
-                ),
-            ),
+        record_validity_condition = get_record_validity_condition(
+            adapter=self.adapter,
+            effective_timestamp_column=spec.parameters.effective_timestamp_column,
+            end_timestamp_column=end_timestamp_column,
+            point_in_time_expr=point_in_time_expr,
         )
         join_condition = expressions.and_(join_key_condition, record_validity_condition)
 
