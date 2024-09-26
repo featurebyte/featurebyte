@@ -16,7 +16,7 @@ from featurebyte.query_graph.sql.scd_helper import END_TS, augment_scd_table_wit
 
 def ensure_end_timestamp_column(
     effective_timestamp_column: str,
-    natural_key_column: str,
+    natural_key_column: Optional[str],
     end_timestamp_column: Optional[str],
     source_expr: Select,
 ) -> Tuple[str, Select]:
@@ -39,6 +39,7 @@ def ensure_end_timestamp_column(
     Tuple[str, Select]
     """
     if end_timestamp_column is None:
+        assert natural_key_column is not None
         scd_expr = augment_scd_table_with_end_timestamp(
             table_expr=source_expr,
             effective_timestamp_column=effective_timestamp_column,
