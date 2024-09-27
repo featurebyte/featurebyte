@@ -39,6 +39,22 @@ class SCDTableValidationService:
         session: BaseSession,
         table_creation_payload: SCDTableCreate,
     ) -> None:
+        """
+        Check that a table is a valid Slowly Changing Dimension (SCD) table based on the provided
+        table creation payload
+
+        Parameters
+        ----------
+        session: BaseSession
+            Session object
+        table_creation_payload: SCDTableCreate
+            SCD table creation payload
+
+        Raises
+        ------
+        SCDTableValidationError
+            If the table is not a proper SCD table
+        """
         if table_creation_payload.natural_key_column is None:
             return
 
