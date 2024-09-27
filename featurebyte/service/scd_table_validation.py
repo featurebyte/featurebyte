@@ -4,8 +4,6 @@ SCDTableValidationService
 
 from __future__ import annotations
 
-from typing import Optional
-
 from sqlglot import expressions
 from sqlglot.expressions import select
 
@@ -14,7 +12,6 @@ from featurebyte.exception import SCDTableValidationError
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.asat_helper import (
-    ensure_end_timestamp_column,
     get_record_validity_condition,
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -43,38 +40,88 @@ class SCDTableValidationService:
     ) -> None:
         if table_creation_payload.natural_key_column is None:
             return
+
         natural_key_column = table_creation_payload.natural_key_column
-        query = self._get_active_record_counts_query(
+
+        # Check if there are multiple active records as of now. Only need to check if
+        # end_timestamp_column is present since otherwise with the inferred end timestamp, there
+        # will not be multiple active records.
+        if table_creation_payload.end_timestamp_column is not None:
+            query = self._get_active_record_counts_as_at_now(
+                session.adapter,
+                table_details=table_creation_payload.tabular_source.table_details,
+                effective_timestamp_column=table_creation_payload.effective_timestamp_column,
+                natural_key_column=natural_key_column,
+                end_timestamp_column=table_creation_payload.end_timestamp_column,
+            )
+            df_result = await session.execute_query_long_running(query)
+            if df_result.shape[0] > 0:
+                invalid_keys = df_result[natural_key_column].tolist()
+                raise SCDTableValidationError(
+                    f"Multiple active records found for the same natural key. Examples of natural keys with multiple active records are: {invalid_keys}"
+                )
+
+        # Check if there are multiple records per natural key and effective timestamp combination
+        query = self._get_count_per_natural_key_column(
             session.adapter,
             table_details=table_creation_payload.tabular_source.table_details,
             effective_timestamp_column=table_creation_payload.effective_timestamp_column,
             natural_key_column=natural_key_column,
-            end_timestamp_column=table_creation_payload.end_timestamp_column,
         )
         df_result = await session.execute_query_long_running(query)
         if df_result.shape[0] > 0:
             invalid_keys = df_result[natural_key_column].tolist()
             raise SCDTableValidationError(
-                f"Multiple active records found for the same natural key. Examples of natural keys with multiple active records are: {invalid_keys}"
+                f"Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: {invalid_keys}"
             )
 
     @staticmethod
-    def _get_active_record_counts_query(
+    def _get_count_per_natural_key_column(
         adapter: BaseAdapter,
         table_details: TableDetails,
         effective_timestamp_column: str,
         natural_key_column: str,
-        end_timestamp_column: Optional[str],
     ) -> str:
         required_columns = [natural_key_column, effective_timestamp_column]
-        if end_timestamp_column is not None:
-            required_columns.append(end_timestamp_column)
-        end_timestamp_column, scd_expr = ensure_end_timestamp_column(
-            effective_timestamp_column=effective_timestamp_column,
-            natural_key_column=natural_key_column,
-            end_timestamp_column=end_timestamp_column,
-            source_expr=get_source_expr(source=table_details, column_names=required_columns),
+        scd_expr = get_source_expr(source=table_details, column_names=required_columns)
+        query_expr = (
+            select(
+                quoted_identifier(effective_timestamp_column),
+                quoted_identifier(natural_key_column),
+                expressions.alias_(
+                    expressions.Count(this=expressions.Star()),
+                    alias=COUNT_PER_NATURAL_KEY,
+                    quoted=True,
+                ),
+            )
+            .from_(scd_expr.subquery())
+            .group_by(
+                quoted_identifier(effective_timestamp_column),
+                quoted_identifier(natural_key_column),
+            )
+            .having(
+                expressions.GT(
+                    this=quoted_identifier(COUNT_PER_NATURAL_KEY),
+                    expression=make_literal_value(1),
+                )
+            )
+            .limit(10)
         )
+        return sql_to_string(
+            query_expr,
+            source_type=adapter.source_type,
+        )
+
+    @staticmethod
+    def _get_active_record_counts_as_at_now(
+        adapter: BaseAdapter,
+        table_details: TableDetails,
+        effective_timestamp_column: str,
+        natural_key_column: str,
+        end_timestamp_column: str,
+    ) -> str:
+        required_columns = [natural_key_column, effective_timestamp_column, end_timestamp_column]
+        scd_expr = get_source_expr(source=table_details, column_names=required_columns)
         point_in_time_expr = adapter.normalize_timestamp_before_comparison(
             get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ")
         )

@@ -53,8 +53,24 @@ def payload_no_end_timestamp():
     )
 
 
+@pytest.fixture
+def payload_with_end_timestamp(payload_no_end_timestamp):
+    """
+    Fixture for SCDTableCreate with end_timestamp_column
+    """
+    payload = payload_no_end_timestamp.copy()
+    payload.columns_info.append(
+        ColumnSpecWithDescription(
+            name="end_date",
+            dtype=DBVarType.TIMESTAMP,
+        )
+    )
+    payload.end_timestamp_column = "end_date"
+    return payload
+
+
 @pytest.mark.asyncio
-async def test_active_record_counts_query__no_end_timestamp(
+async def test_validation_query__no_end_timestamp(
     service,
     mock_snowflake_session,
     payload_no_end_timestamp,
@@ -71,5 +87,24 @@ async def test_active_record_counts_query__no_end_timestamp(
     assert_equal_with_expected_fixture(
         queries,
         "tests/fixtures/scd_table_validation/no_end_timestamp.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_validation_query__with_end_timestamp(
+    service,
+    mock_snowflake_session,
+    payload_with_end_timestamp,
+    adapter,
+    update_fixtures,
+):
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame()
+    payload = payload_with_end_timestamp
+    await service.validate_scd_table(mock_snowflake_session, payload)
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/scd_table_validation/with_end_timestamp.sql",
         update_fixtures,
     )

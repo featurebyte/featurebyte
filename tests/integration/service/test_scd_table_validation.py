@@ -97,9 +97,9 @@ async def test_validate_scd_table__valid(
     await service.validate_scd_table(session, scd_create_payload)
 
 
-@pytest.mark.parametrize("table_name", ["test_validate_scd_table__invalid"])
+@pytest.mark.parametrize("table_name", ["test_validate_scd_table__invalid_multiple_active_records"])
 @pytest.mark.asyncio
-async def test_validate_scd_table__invalid(
+async def test_validate_scd_table__invalid_multiple_active_records(
     service,
     scd_create_with_end_date_payload,
     session_without_datasets,
@@ -129,4 +129,36 @@ async def test_validate_scd_table__invalid(
     assert (
         str(exc_info.value)
         == "Multiple active records found for the same natural key. Examples of natural keys with multiple active records are: [1000]"
+    )
+
+
+@pytest.mark.parametrize(
+    "table_name", ["test_validate_scd_table__invalid_multiple_records_per_ts_id"]
+)
+@pytest.mark.asyncio
+async def test_validate_scd_table__invalid_multiple_records_per_ts_id(
+    service,
+    scd_create_payload,
+    session_without_datasets,
+    table_name,
+):
+    """
+    Test validate SCD table (invalid case)
+    """
+    session = session_without_datasets
+    df_scd = pd.DataFrame({
+        "effective_ts": pd.to_datetime([
+            "2022-04-12 10:00:00",
+            "2022-04-12 10:00:00",
+            "2024-06-12 10:00:00",
+        ]),
+        "cust_id": [1000, 1000, 1000],
+        "value": [1, 2, 3],
+    })
+    await session.register_table(table_name, df_scd)
+    with pytest.raises(SCDTableValidationError) as exc_info:
+        await service.validate_scd_table(session, scd_create_payload)
+    assert (
+        str(exc_info.value)
+        == "Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: [1000]"
     )
