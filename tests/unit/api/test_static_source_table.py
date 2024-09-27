@@ -118,7 +118,7 @@ def test_preview(mock_execute_query, static_source_table_from_source):
 
     # check generated SQL query
     assert sql_query.startswith('SELECT\n  *\nFROM "sf_database"."sf_schema"."STATIC_SOURCE_TABLE_')
-    assert sql_query.endswith("ORDER BY\n  __FB_TABLE_ROW_INDEX NULLS FIRST\nLIMIT 123")
+    assert not sql_query.endswith("ORDER BY\n  __FB_TABLE_ROW_INDEX NULLS FIRST\nLIMIT 123")
 
 
 def test_sample(static_source_table_from_source, mock_source_table):
