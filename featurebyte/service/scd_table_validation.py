@@ -4,6 +4,7 @@ SCDTableValidationService
 
 from __future__ import annotations
 
+import pandas as pd
 from sqlglot import expressions
 from sqlglot.expressions import select
 
@@ -54,7 +55,7 @@ class SCDTableValidationService:
                 natural_key_column=natural_key_column,
                 end_timestamp_column=table_creation_payload.end_timestamp_column,
             )
-            df_result = await session.execute_query_long_running(query)
+            df_result: pd.DataFrame = await session.execute_query_long_running(query)
             if df_result.shape[0] > 0:
                 invalid_keys = df_result[natural_key_column].tolist()
                 raise SCDTableValidationError(
