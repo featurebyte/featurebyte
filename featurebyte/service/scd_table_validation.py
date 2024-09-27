@@ -38,6 +38,7 @@ class SCDTableValidationService:
         self,
         session: BaseSession,
         table_creation_payload: SCDTableCreate,
+        num_records: int = 10,
     ) -> None:
         """
         Check that a table is a valid Slowly Changing Dimension (SCD) table based on the provided
@@ -49,6 +50,8 @@ class SCDTableValidationService:
             Session object
         table_creation_payload: SCDTableCreate
             SCD table creation payload
+        num_records: int
+            Number of records to return in the error message
 
         Raises
         ------
@@ -64,12 +67,13 @@ class SCDTableValidationService:
         # end_timestamp_column is present since otherwise with the inferred end timestamp, there
         # will not be multiple active records.
         if table_creation_payload.end_timestamp_column is not None:
-            query = self._get_active_record_counts_as_at_now(
+            query = self._get_rows_with_multiple_active_records(
                 session.adapter,
                 table_details=table_creation_payload.tabular_source.table_details,
                 effective_timestamp_column=table_creation_payload.effective_timestamp_column,
                 natural_key_column=natural_key_column,
                 end_timestamp_column=table_creation_payload.end_timestamp_column,
+                num_records=num_records,
             )
             df_result: pd.DataFrame = await session.execute_query_long_running(query)
             if df_result.shape[0] > 0:
@@ -79,11 +83,12 @@ class SCDTableValidationService:
                 )
 
         # Check if there are multiple records per natural key and effective timestamp combination
-        query = self._get_count_per_natural_key_column(
+        query = self._get_rows_with_duplicate_timestamp_and_key(
             session.adapter,
             table_details=table_creation_payload.tabular_source.table_details,
             effective_timestamp_column=table_creation_payload.effective_timestamp_column,
             natural_key_column=natural_key_column,
+            num_records=num_records,
         )
         df_result = await session.execute_query_long_running(query)
         if df_result.shape[0] > 0:
@@ -93,11 +98,12 @@ class SCDTableValidationService:
             )
 
     @staticmethod
-    def _get_count_per_natural_key_column(
+    def _get_rows_with_duplicate_timestamp_and_key(
         adapter: BaseAdapter,
         table_details: TableDetails,
         effective_timestamp_column: str,
         natural_key_column: str,
+        num_records: int = 10,
     ) -> str:
         required_columns = [natural_key_column, effective_timestamp_column]
         scd_expr = get_source_expr(source=table_details, column_names=required_columns)
@@ -122,7 +128,7 @@ class SCDTableValidationService:
                     expression=make_literal_value(1),
                 )
             )
-            .limit(10)
+            .limit(num_records)
         )
         return sql_to_string(
             query_expr,
@@ -130,12 +136,13 @@ class SCDTableValidationService:
         )
 
     @staticmethod
-    def _get_active_record_counts_as_at_now(
+    def _get_rows_with_multiple_active_records(
         adapter: BaseAdapter,
         table_details: TableDetails,
         effective_timestamp_column: str,
         natural_key_column: str,
         end_timestamp_column: str,
+        num_records: int = 10,
     ) -> str:
         required_columns = [natural_key_column, effective_timestamp_column, end_timestamp_column]
         scd_expr = get_source_expr(source=table_details, column_names=required_columns)
@@ -198,7 +205,7 @@ class SCDTableValidationService:
                     expression=make_literal_value(1),
                 )
             )
-            .limit(10)
+            .limit(num_records)
         )
         return sql_to_string(
             query_expr,
