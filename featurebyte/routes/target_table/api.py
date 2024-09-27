@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from typing import Optional, cast
+from typing import Any, Dict, Optional, cast
 
-from fastapi import Form, Request, UploadFile
+from fastapi import Form, Query, Request, UploadFile
 from starlette.responses import StreamingResponse
 
 from featurebyte.models.persistent import AuditDocumentList
@@ -16,6 +16,8 @@ from featurebyte.models.target_table import TargetTableModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_materialized_table_router import BaseMaterializedTableRouter
 from featurebyte.routes.common.schema import (
+    PREVIEW_DEFAULT,
+    PREVIEW_LIMIT,
     AuditLogSortByQuery,
     NameQuery,
     PageQuery,
@@ -89,6 +91,11 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
             self.update_target_table_description,
             methods=["PATCH"],
             response_model=TargetTableModel,
+        )
+        self.router.add_api_route(
+            "/{target_table_id}/preview",
+            self.preview_target_table,
+            methods=["POST"],
         )
 
     async def get_table(self, request: Request, target_table_id: PyObjectId) -> TargetTableModel:
@@ -227,3 +234,19 @@ class TargetTableRouter(BaseMaterializedTableRouter[TargetTableModel]):
             description=data.description,
         )
         return target_table
+
+    @staticmethod
+    async def preview_target_table(
+        request: Request,
+        target_table_id: PyObjectId,
+        limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
+    ) -> Dict[str, Any]:
+        """
+        Preview TargetTable
+        """
+        controller = request.state.app_container.target_table_controller
+        result: dict[str, Any] = await controller.preview_materialized_table(
+            document_id=target_table_id,
+            limit=limit,
+        )
+        return result

@@ -15,6 +15,7 @@ from featurebyte.persistent.mongo import MongoDB
 
 # Need to disable early here before any feast imports (too late to patch this in an autouse fixture)
 os.environ["FEAST_USAGE"] = "False"
+os.environ["MODE"] = "development"
 
 
 def pytest_addoption(parser):

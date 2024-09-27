@@ -1514,6 +1514,26 @@ class BaseMaterializedTableTestSuite(BaseAsyncApiTestSuite):
         downloaded_df = pd.read_parquet(BytesIO(response.content))
         pd.testing.assert_frame_equal(downloaded_df, expected_df)
 
+    def test_preview(self, test_api_client_persistent, create_success_response, mock_get_session):
+        """Test preview (success)"""
+        test_api_client, _ = test_api_client_persistent
+        assert create_success_response.status_code == HTTPStatus.OK
+        result = create_success_response.json()
+        doc_id = result["_id"]
+
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = pd.DataFrame()
+
+        response = test_api_client.post(f"{self.base_route}/{doc_id}/preview")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == {
+            "data": (
+                '{"schema":{"fields":[{"name":"index","type":"integer"}],"primaryKey":["index"],'
+                '"pandas_version":"1.4.0"},"data":[]}'
+            ),
+            "type_conversions": None,
+        }
+
     @pytest.fixture(autouse=True)
     def auto_patch_snowflake_execute_query(self, snowflake_execute_query_for_materialized_table):
         """Patch SnowflakeSession.execute_query to return mock data"""

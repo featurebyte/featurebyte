@@ -345,7 +345,9 @@ class FeatureStoreWarehouseService:
         shape, _, _ = await self._get_table_shape(location, db_session)
         return FeatureStoreShape(num_rows=shape[0], num_cols=shape[1])
 
-    async def table_preview(self, location: TabularSource, limit: int) -> dict[str, Any]:
+    async def table_preview(
+        self, location: TabularSource, limit: int, order_by_column: Optional[str] = None
+    ) -> dict[str, Any]:
         """
         Preview table from location.
 
@@ -355,6 +357,8 @@ class FeatureStoreWarehouseService:
             Location to preview from
         limit: int
             Row limit on preview results
+        order_by_column: Optional[str]
+            Column to order by
 
         Returns
         -------
@@ -367,7 +371,14 @@ class FeatureStoreWarehouseService:
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
         )
-        sql_expr = get_source_expr(source=location.table_details).limit(limit)
+        sql_expr = get_source_expr(source=location.table_details)
+
+        # apply order by if specified
+        if order_by_column:
+            sql_expr = sql_expr.order_by(order_by_column)
+
+        # apply limit
+        sql_expr = sql_expr.limit(limit)
         sql = sql_to_string(
             sql_expr,
             source_type=db_session.source_type,

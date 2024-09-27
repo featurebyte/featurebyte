@@ -19,6 +19,10 @@ from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWith
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.routes.base_router import BaseApiRouter
 from featurebyte.routes.common.schema import (
+    DESCRIPTION_SIZE_LIMIT,
+    PREVIEW_DEFAULT,
+    PREVIEW_LIMIT,
+    PREVIEW_SEED,
     AuditLogSortByQuery,
     PageQuery,
     PageSizeQuery,
@@ -307,7 +311,7 @@ class FeatureStoreRouter(
     async def get_data_preview(
         request: Request,
         preview: FeatureStorePreview,
-        limit: int = Query(default=10, gt=0, le=10000),
+        limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
     ) -> Dict[str, Any]:
         """
         Retrieve data preview for query graph node
@@ -319,7 +323,7 @@ class FeatureStoreRouter(
     async def get_table_preview(
         request: Request,
         location: TabularSource,
-        limit: int = Query(default=10, gt=0, le=10000),
+        limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
     ) -> Dict[str, Any]:
         """
         Retrieve data preview for tabular source
@@ -331,8 +335,8 @@ class FeatureStoreRouter(
     async def get_data_sample(
         request: Request,
         sample: FeatureStoreSample,
-        size: int = Query(default=10, gt=0, le=10000),
-        seed: int = Query(default=1234),
+        size: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
+        seed: int = Query(default=PREVIEW_SEED),
     ) -> Dict[str, Any]:
         """
         Retrieve data sample for query graph node
@@ -344,8 +348,8 @@ class FeatureStoreRouter(
     async def get_data_description(
         request: Request,
         sample: FeatureStoreSample,
-        size: int = Query(default=0, gte=0, le=1000000),
-        seed: int = Query(default=1234),
+        size: int = Query(default=0, gte=0, le=DESCRIPTION_SIZE_LIMIT),
+        seed: int = Query(default=PREVIEW_SEED),
     ) -> Dict[str, Any]:
         """
         Retrieve data description for query graph node
@@ -357,8 +361,8 @@ class FeatureStoreRouter(
     async def submit_data_description_task(
         request: Request,
         sample: FeatureStoreSample,
-        size: int = Query(default=0, gte=0, le=1000000),
-        seed: int = Query(default=1234),
+        size: int = Query(default=0, gte=0, le=DESCRIPTION_SIZE_LIMIT),
+        seed: int = Query(default=PREVIEW_SEED),
         catalog_id: PyObjectId = Query(default=None),
     ) -> Task:
         """

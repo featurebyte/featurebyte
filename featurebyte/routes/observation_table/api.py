@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from typing import Optional, cast
+from typing import Any, Dict, Optional, cast
 
-from fastapi import APIRouter, Form, Request, UploadFile
+from fastapi import APIRouter, Form, Query, Request, UploadFile
 from starlette.responses import StreamingResponse
 
 from featurebyte.models.observation_table import ObservationTableModel
@@ -16,6 +16,8 @@ from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
+    PREVIEW_DEFAULT,
+    PREVIEW_LIMIT,
     AuditLogSortByQuery,
     NameQuery,
     PageQuery,
@@ -224,3 +226,20 @@ async def update_observation_table(
         observation_table_id, data
     )
     return observation_table
+
+
+@router.post("/{observation_table_id}/preview", response_model=Dict[str, Any])
+async def preview_observation_table(
+    request: Request,
+    observation_table_id: PyObjectId,
+    limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
+) -> Dict[str, Any]:
+    """
+    Preview ObservationTable
+    """
+    controller = request.state.app_container.observation_table_controller
+    preview: Dict[str, Any] = await controller.preview_materialized_table(
+        document_id=observation_table_id,
+        limit=limit,
+    )
+    return preview

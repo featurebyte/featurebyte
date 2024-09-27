@@ -4,7 +4,7 @@ Tests functions in common/env_util.py module
 
 from unittest.mock import patch
 
-from featurebyte.common.env_util import get_alive_bar_additional_params
+from featurebyte.common.env_util import get_alive_bar_additional_params, is_development_mode
 
 
 @patch("featurebyte.common.env_util.is_notebook")
@@ -15,3 +15,8 @@ def test_get_alive_bar_additional_params(mock_is_notebook):
 
     mock_is_notebook.return_value = False
     assert get_alive_bar_additional_params() == {"dual_line": True}
+
+
+def test_is_development_mode():
+    """Test is_development_mode function"""
+    assert is_development_mode() is True
