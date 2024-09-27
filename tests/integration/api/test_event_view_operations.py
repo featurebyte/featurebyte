@@ -913,6 +913,10 @@ async def test_get_historical_features__features_info(
         "unsaved_feature"
     }
 
+    # test historical feature table preview
+    hist_feat_table_preview = hist_feat_table.preview()
+    assert hist_feat_table_preview.shape[0] == 10, hist_feat_table_preview
+
     # delete the historical feature table
     hist_feat_table.delete()
 

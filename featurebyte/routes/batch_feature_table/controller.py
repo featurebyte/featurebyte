@@ -31,6 +31,7 @@ class BatchFeatureTableController(
     """
 
     paginated_document_class = BatchFeatureTableList
+    has_internal_row_index_column_in_table = False
 
     def __init__(
         self,

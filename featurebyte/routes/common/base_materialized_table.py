@@ -61,6 +61,7 @@ class BaseMaterializedTableController(
     """
 
     task_controller: TaskController
+    has_internal_row_index_column_in_table: bool = True
 
     def __init__(
         self, service: Any, feature_store_warehouse_service: FeatureStoreWarehouseService
@@ -227,15 +228,23 @@ class BaseMaterializedTableController(
             Preview of materialized table
         """
         table = await self.service.get_document(document_id=document_id)
-        try:
-            return await self.feature_store_warehouse_service.table_preview(
-                location=table.location, limit=limit, order_by_column=InternalName.TABLE_ROW_INDEX
-            )
-        except Exception as exc:
-            if is_development_mode():
-                raise exc
+        if self.has_internal_row_index_column_in_table:
+            try:
+                return await self.feature_store_warehouse_service.table_preview(
+                    location=table.location,
+                    limit=limit,
+                    order_by_column=InternalName.TABLE_ROW_INDEX,
+                )
+            except Exception as exc:
+                if is_development_mode():
+                    raise exc
 
-            # if table does not have row index column, preview without ordering
-            return await self.feature_store_warehouse_service.table_preview(
-                location=table.location, limit=limit
-            )
+                # if table does not have row index column, preview without ordering
+                return await self.feature_store_warehouse_service.table_preview(
+                    location=table.location, limit=limit
+                )
+
+        # the table does not have internal row index column
+        return await self.feature_store_warehouse_service.table_preview(
+            location=table.location, limit=limit
+        )
