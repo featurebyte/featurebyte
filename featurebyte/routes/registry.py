@@ -151,6 +151,7 @@ from featurebyte.service.query_cache_manager import QueryCacheManagerService
 from featurebyte.service.relationship import EntityRelationshipService, SemanticRelationshipService
 from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
+from featurebyte.service.scd_table_validation import SCDTableValidationService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
@@ -348,6 +349,7 @@ app_container_config.register_class(
     dependency_override={"service": "scd_table_service"},
 )
 app_container_config.register_class(SCDTableService)
+app_container_config.register_class(SCDTableValidationService)
 app_container_config.register_class(ScheduledFeatureMaterializeTask)
 app_container_config.register_class(SchemaMetadataService)
 app_container_config.register_class(SemanticController)

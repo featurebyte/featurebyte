@@ -307,6 +307,7 @@ def test_create_observation_table_with_sample_rows(
 def test_bad_materialized_tables_cleaned_up(
     snowflake_database_table,
     snowflake_execute_query,
+    catalog,
 ):
     """
     Test that bad materialized tables are cleaned up on any validation errors
