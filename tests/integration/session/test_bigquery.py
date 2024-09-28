@@ -7,6 +7,7 @@ from decimal import Decimal
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -182,6 +183,50 @@ async def test_register_table(config, session_without_datasets):
     session = session_without_datasets
     df = pd.DataFrame({"a": [1, 2, 3], "date": pd.date_range("2021-01-01", periods=3)})
     await session.register_table(table_name="test_table", dataframe=df)
+
+
+@pytest.mark.parametrize("source_type", ["bigquery"], indirect=True)
+@pytest.mark.parametrize(
+    "timestamp_column, expected",
+    [
+        (
+            pd.to_datetime(["2021-01-01 10:00:00"]),
+            [pd.Timestamp("2021-01-01 10:00:00")],
+        ),
+        (
+            pd.to_datetime(["2021-01-01 10:00:00+08:00"]),
+            [pd.Timestamp("2021-01-01 02:00:00")],
+        ),
+        # Mixed offsets with python datetime objects in Series
+        (
+            pd.Series([
+                pd.Timestamp("2021-01-01 10:00:00+0800").to_pydatetime(),
+                pd.Timestamp("2021-01-01 10:00:00-0800").to_pydatetime(),
+            ]),
+            [
+                pd.Timestamp("2021-01-01 02:00:00"),
+                pd.Timestamp("2021-01-01 18:00:00"),
+            ],
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_register_table_timestamp_type(
+    config,
+    session_without_datasets,
+    timestamp_column,
+    expected,
+):
+    """
+    Test timestamp handling in register_table
+    """
+    _ = config
+    session = session_without_datasets
+    df = pd.DataFrame({"ts_col": timestamp_column})
+    table_name = f"test_register_table_timestamp_type_{ObjectId()}"
+    await session.register_table(table_name=table_name, dataframe=df)
+    result = await session.execute_query(f"SELECT * FROM {table_name}")
+    assert result["ts_col"].tolist() == expected
 
 
 @pytest.mark.parametrize("source_type", ["bigquery"], indirect=True)

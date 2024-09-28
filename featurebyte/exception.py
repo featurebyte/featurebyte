@@ -544,3 +544,9 @@ class CursorSchemaError(FeatureByteException):
     """
     Raise when cursor schema is not as expected
     """
+
+
+class SCDTableValidationError(FeatureByteException):
+    """
+    Raise when SCDTable validation fails
+    """

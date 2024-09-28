@@ -127,7 +127,7 @@ tasks:
         sh: printenv PYTEST_SPLITS || echo "1"
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1 --cov=featurebyte tests/integration --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations
+      - poetry run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1 --cov=featurebyte tests/integration --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
       - task: test-teardown
 
   test-reset:
@@ -156,7 +156,7 @@ tasks:
       - task: install
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.2 --cov=featurebyte tests/integration --source-types spark --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
       - cmd: |
           if [ "{{.TEARDOWN}}" == "true" ]; then
               task test-teardown
@@ -174,7 +174,7 @@ tasks:
         sh: printenv PYTEST_SPLITS || echo "1"
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=1350 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations
+      - poetry run pytest --timeout=1800 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
       - task: test-teardown
 
   test-integration-bigquery:
@@ -189,7 +189,7 @@ tasks:
         sh: printenv PYTEST_SPLITS || echo "1"
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.5 --cov=featurebyte tests/integration --source-types bigquery --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations
+      - poetry run pytest --timeout=900 --junitxml=pytest.xml.5 --cov=featurebyte tests/integration --source-types bigquery --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
       - task: test-teardown
 
   test-docs:
