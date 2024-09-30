@@ -106,6 +106,8 @@ def set_environment_variables(variables: Dict[str, Any]) -> Iterator[None]:
 
     if ctx_managers:
         with ExitStack() as stack:
+            for mgr in ctx_managers:
+                stack.enter_context(mgr)
             yield
     else:
         yield
