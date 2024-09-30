@@ -2,8 +2,9 @@
 Unit tests for StaticSourceTable class
 """
 
-from unittest.mock import call
+from unittest.mock import call, patch
 
+import pandas as pd
 import pytest
 
 from featurebyte.api.static_source_table import StaticSourceTable
@@ -98,13 +99,26 @@ def test_data_source(static_source_table_from_source):
     assert source_table.tabular_source.table_details == static_source_table.location.table_details
 
 
-def test_preview(static_source_table_from_source, mock_source_table):
+@patch("featurebyte.session.snowflake.SnowflakeSession.execute_query")
+def test_preview(mock_execute_query, static_source_table_from_source):
     """
     Test preview() calls the underlying SourceTable's preview() method
     """
-    result = static_source_table_from_source.preview(limit=123)
-    assert mock_source_table.preview.call_args == call(limit=123)
-    assert result is mock_source_table.preview.return_value
+
+    def side_effect(query, **kwargs):
+        _ = query, kwargs
+        return pd.DataFrame()
+
+    mock_execute_query.side_effect = side_effect
+    static_source_table_from_source.preview(limit=123)
+    assert len(mock_execute_query.call_args_list) == 1
+
+    sql_query = mock_execute_query.call_args_list[0][0][0]
+    assert mock_execute_query.call_args_list[0]
+
+    # check generated SQL query
+    assert sql_query.startswith('SELECT\n  *\nFROM "sf_database"."sf_schema"."STATIC_SOURCE_TABLE_')
+    assert not sql_query.endswith("ORDER BY\n  __FB_TABLE_ROW_INDEX NULLS FIRST\nLIMIT 123")
 
 
 def test_sample(static_source_table_from_source, mock_source_table):

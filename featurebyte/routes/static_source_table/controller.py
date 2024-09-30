@@ -31,6 +31,7 @@ class StaticSourceTableController(
     """
 
     paginated_document_class = StaticSourceTableList
+    has_internal_row_index_column_in_table = False
 
     def __init__(
         self,

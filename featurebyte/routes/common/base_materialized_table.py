@@ -10,6 +10,8 @@ from bson import ObjectId
 from pyarrow import parquet as pq
 from starlette.responses import StreamingResponse
 
+from featurebyte.common.env_util import is_development_mode
+from featurebyte.enum import InternalName
 from featurebyte.exception import DocumentDeletionError
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
@@ -59,6 +61,7 @@ class BaseMaterializedTableController(
     """
 
     task_controller: TaskController
+    has_internal_row_index_column_in_table: bool = True
 
     def __init__(
         self, service: Any, feature_store_warehouse_service: FeatureStoreWarehouseService
@@ -202,4 +205,46 @@ class BaseMaterializedTableController(
                     f'filename="{table.collection_name()}_{table.name}.parquet"'
                 )
             },
+        )
+
+    async def preview_materialized_table(
+        self,
+        document_id: ObjectId,
+        limit: int,
+    ) -> dict[str, Any]:
+        """
+        Preview materialized table as pyarrow table
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            ID of materialized table to preview
+        limit: int
+            Number of rows to preview
+
+        Returns
+        -------
+        dict[str, Any]
+            Preview of materialized table
+        """
+        table = await self.service.get_document(document_id=document_id)
+        if self.has_internal_row_index_column_in_table:
+            try:
+                return await self.feature_store_warehouse_service.table_preview(
+                    location=table.location,
+                    limit=limit,
+                    order_by_column=InternalName.TABLE_ROW_INDEX,
+                )
+            except Exception as exc:
+                if is_development_mode():
+                    raise exc
+
+                # if table does not have row index column, preview without ordering
+                return await self.feature_store_warehouse_service.table_preview(
+                    location=table.location, limit=limit
+                )
+
+        # the table does not have internal row index column
+        return await self.feature_store_warehouse_service.table_preview(
+            location=table.location, limit=limit
         )

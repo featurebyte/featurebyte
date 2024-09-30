@@ -5,9 +5,9 @@ BatchRequestTable API routes
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Optional, cast
+from typing import Any, Dict, Optional, cast
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from starlette.responses import StreamingResponse
 
 from featurebyte.models.batch_request_table import BatchRequestTableModel
@@ -15,6 +15,8 @@ from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
+    PREVIEW_DEFAULT,
+    PREVIEW_LIMIT,
     AuditLogSortByQuery,
     NameQuery,
     PageQuery,
@@ -186,3 +188,20 @@ async def update_batch_request_table_description(
         description=data.description,
     )
     return batch_request_table
+
+
+@router.post("/{batch_request_table_id}/preview", response_model=Dict[str, Any])
+async def preview_batch_request_table(
+    request: Request,
+    batch_request_table_id: PyObjectId,
+    limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
+) -> Dict[str, Any]:
+    """
+    Preview batch request table
+    """
+    controller = request.state.app_container.batch_request_table_controller
+    preview: Dict[str, Any] = await controller.preview_materialized_table(
+        document_id=batch_request_table_id,
+        limit=limit,
+    )
+    return preview

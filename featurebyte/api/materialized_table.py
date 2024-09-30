@@ -15,7 +15,7 @@ from featurebyte.api.utils import (
     dataframe_from_arrow_stream_with_progress,
     parquet_from_arrow_stream,
 )
-from featurebyte.common.utils import ResponseStream
+from featurebyte.common.utils import ResponseStream, dataframe_from_json
 from featurebyte.config import Configurations
 from featurebyte.enum import SourceType
 from featurebyte.exception import RecordDeletionException, RecordRetrievalException
@@ -150,8 +150,19 @@ class MaterializedTableMixin(MaterializedTableModel):
         -------
         pd.DataFrame
             Preview rows of the table.
+
+        Raises
+        ------
+        RecordRetrievalException
+            Error retrieving record from API.
         """
-        return self._source_table.preview(limit=limit)
+        client = Configurations().get_client()
+        response = client.post(
+            url=f"{self._route}/{self.id}/preview?limit={limit}",
+        )
+        if response.status_code != HTTPStatus.OK:
+            raise RecordRetrievalException(response)
+        return dataframe_from_json(response.json())
 
     @typechecked
     def sample(self, size: int = 10, seed: int = 1234) -> pd.DataFrame:

@@ -6,10 +6,10 @@ from __future__ import annotations
 
 import json
 from http import HTTPStatus
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Form, Request, UploadFile
+from fastapi import APIRouter, Form, Query, Request, UploadFile
 from starlette.responses import StreamingResponse
 
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
@@ -17,6 +17,8 @@ from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
+    PREVIEW_DEFAULT,
+    PREVIEW_LIMIT,
     AuditLogSortByQuery,
     NameQuery,
     PageQuery,
@@ -228,3 +230,20 @@ async def update_historical_feature_table(
         data=data,
     )
     return table
+
+
+@router.post("/{historical_feature_table_id}/preview", response_model=Dict[str, Any])
+async def preview_historical_feature_table(
+    request: Request,
+    historical_feature_table_id: PyObjectId,
+    limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
+) -> Dict[str, Any]:
+    """
+    Preview historical feature table
+    """
+    controller = request.state.app_container.historical_feature_table_controller
+    preview: Dict[str, Any] = await controller.preview_materialized_table(
+        document_id=historical_feature_table_id,
+        limit=limit,
+    )
+    return preview

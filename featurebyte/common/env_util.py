@@ -111,3 +111,14 @@ def set_environment_variables(variables: Dict[str, Any]) -> Iterator[None]:
             yield
     else:
         yield
+
+
+def is_development_mode() -> bool:
+    """
+    Check whether it is in development mode
+
+    Returns
+    -------
+    bool
+    """
+    return os.environ.get("FEATUREBYTE_EXECUTION_MODE") == "development"

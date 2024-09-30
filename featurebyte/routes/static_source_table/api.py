@@ -5,9 +5,9 @@ StaticSourceTable API routes
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import Optional, cast
+from typing import Any, Dict, Optional, cast
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from starlette.responses import StreamingResponse
 
 from featurebyte.models.persistent import AuditDocumentList
@@ -15,6 +15,8 @@ from featurebyte.models.static_source_table import StaticSourceTableModel
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_materialized_table_router import BaseMaterializedTableRouter
 from featurebyte.routes.common.schema import (
+    PREVIEW_DEFAULT,
+    PREVIEW_LIMIT,
     AuditLogSortByQuery,
     NameQuery,
     PageQuery,
@@ -179,3 +181,20 @@ async def update_static_source_table_description(
         description=data.description,
     )
     return static_source_table
+
+
+@router.post("/{static_source_table_id}/preview", response_model=Dict[str, Any])
+async def preview_static_source_table(
+    request: Request,
+    static_source_table_id: PyObjectId,
+    limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
+) -> Dict[str, Any]:
+    """
+    Preview static source table
+    """
+    controller = request.state.app_container.static_source_table_controller
+    preview: Dict[str, Any] = await controller.preview_materialized_table(
+        document_id=static_source_table_id,
+        limit=limit,
+    )
+    return preview
