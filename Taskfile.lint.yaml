@@ -84,8 +84,8 @@ tasks:
       - featurebyte/**/*
       - tests/**/*
     cmds:
-      - poetry run ruff check --diff
-      - poetry run ruff format --diff
+      - poetry run ruff check
+      - poetry run ruff format
 
   style-darglint:
     desc: "Run the linter[style] with only darglint"
