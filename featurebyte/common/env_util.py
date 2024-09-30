@@ -121,4 +121,4 @@ def is_development_mode() -> bool:
     -------
     bool
     """
-    return os.environ.get("MODE") == "development"
+    return os.environ.get("FEATUREBYTE_EXECUTION_MODE") == "development"

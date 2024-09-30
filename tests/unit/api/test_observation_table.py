@@ -104,7 +104,7 @@ def test_preview(mock_execute_query, observation_table_from_source):
 
     # check generated SQL query
     assert sql_query.startswith('SELECT\n  *\nFROM "sf_database"."sf_schema"."OBSERVATION_TABLE_')
-    assert sql_query.endswith("ORDER BY\n  __FB_TABLE_ROW_INDEX NULLS FIRST\nLIMIT 123")
+    assert sql_query.endswith('ORDER BY\n  "__FB_TABLE_ROW_INDEX"\nLIMIT 123')
 
 
 def test_sample(observation_table_from_source, mock_source_table):

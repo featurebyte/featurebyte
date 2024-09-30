@@ -375,7 +375,7 @@ class FeatureStoreWarehouseService:
 
         # apply order by if specified
         if order_by_column:
-            sql_expr = sql_expr.order_by(order_by_column)
+            sql_expr = sql_expr.order_by(quoted_identifier(order_by_column))
 
         # apply limit
         sql_expr = sql_expr.limit(limit)
