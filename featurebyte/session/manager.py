@@ -85,7 +85,7 @@ async def get_new_session(item: str, params: str, timeout: float) -> BaseSession
         )
 
     try:
-        session: BaseSession = await to_thread(_create_session, timeout)
+        session: BaseSession = await to_thread(_create_session, timeout, None)
         await session.initialize()
         logger.debug(f"Session creation time: {time.time() - tic:.3f}s")
     except AsyncioTimeoutError as exc:

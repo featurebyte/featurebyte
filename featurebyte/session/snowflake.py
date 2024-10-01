@@ -104,6 +104,10 @@ class SnowflakeSession(BaseSession):
             "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
         )
 
+    async def _cancel_query(self, cursor: Any, query: str) -> bool:
+        cursor._SnowflakeCursor__cancel_query(query)  # pylint: disable=protected-access
+        return True
+
     def initializer(self) -> BaseSchemaInitializer:
         return SnowflakeSchemaInitializer(self)
 

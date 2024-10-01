@@ -29,7 +29,11 @@ from sqlglot.expressions import Expression, Select
 from featurebyte.common.path_util import get_package_root
 from featurebyte.common.utils import create_new_arrow_stream_writer, dataframe_from_arrow_stream
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix, SourceType, StrEnum
-from featurebyte.exception import DataWarehouseOperationError, QueryExecutionTimeOut
+from featurebyte.exception import (
+    DataWarehouseOperationError,
+    QueryExecutionTimeOut,
+    TaskRevokeExceptions,
+)
 from featurebyte.logging import get_logger
 from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
@@ -50,12 +54,17 @@ HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
 DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 10 * MINUTES_IN_SECONDS
 LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
 APPLICATION_NAME = "FeatureByte"
+MAX_WAIT_TIME_FOR_QUERY_HANDLER = (
+    30  # max seconds to wait for query handler to be available for query cancellation
+)
 session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=600)
 
 logger = get_logger(__name__)
 
 
-async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> Any:
+async def to_thread(
+    func: Any, timeout: float, error_handler: Any, /, *args: Any, **kwargs: Any
+) -> Any:
     """
     Run blocking function in a thread pool and wait for the result.
     From asyncio.to_thread implementation which is only available in Python 3.9
@@ -66,19 +75,18 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
         Function to run in a thread pool.
     timeout : float
         Timeout in seconds.
+    error_handler : Any
+        Error handler function to call on error.
     *args : Any
         Positional arguments to `func`.
     **kwargs : Any
         Keyword arguments to `func`.
 
-    Raises
-    ------
-    asyncio.exceptions.TimeoutError
-        Function execution timed out.
-
     Returns
     -------
     Any
+
+    # noqa: DAR401
     """
     loop = events.get_running_loop()
     ctx = contextvars.copy_context()
@@ -87,25 +95,41 @@ async def to_thread(func: Any, timeout: float, /, *args: Any, **kwargs: Any) -> 
         thread_info["tid"] = threading.get_ident()
         return func(*args, **kwargs)
 
-    def _raise_timeout_exception_in_thread(thread_id: int) -> None:
+    def _raise_exception_in_thread(thread_id: int) -> None:
         res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
-            ctypes.c_ulong(thread_id), ctypes.py_object(TimeoutError)
+            ctypes.c_ulong(thread_id), ctypes.py_object(asyncio.exceptions.CancelledError)
         )
         if res > 1:
             ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
             raise ValueError("Exception raise failure")
         if res:
-            logger.debug("Raised exception in thread")
+            logger.info("Raised exception in thread")
 
     thread_info: Dict[str, int] = {}
     func_call = functools.partial(ctx.run, _func_wrapper, func, thread_info, *args, **kwargs)
 
     try:
-        return await asyncio.wait_for(loop.run_in_executor(None, func_call), timeout)
-    except asyncio.exceptions.TimeoutError:
+        coro = loop.run_in_executor(None, func_call)
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            # let the event loop run
+            await asyncio.sleep(0.1)
+            if coro.done():
+                return coro.result()
+            if coro.cancelled():
+                raise asyncio.exceptions.CancelledError
+        coro.cancel()
+        raise asyncio.exceptions.TimeoutError
+    except (asyncio.exceptions.TimeoutError,) + TaskRevokeExceptions:
+        if error_handler:
+            try:
+                await error_handler(*args, **kwargs)
+            except Exception:
+                logger.error("Error handling exception", exc_info=True)
+
         tid = thread_info.get("tid")
         if tid:
-            _raise_timeout_exception_in_thread(thread_info["tid"])
+            _raise_exception_in_thread(thread_info["tid"])
         raise
 
 
@@ -237,6 +261,47 @@ class BaseSession(BaseModel):
         Any
         """
         return self._connection
+
+    async def _cancel_query(self, cursor: Any, query: str) -> bool:
+        """
+        Cancel query
+
+        Parameters
+        ----------
+        cursor : Any
+            The connection cursor
+        query : str
+            SQL query
+
+        Returns
+        -------
+        bool
+            True if query was cancelled, False otherwise
+        """
+        try:
+            cursor.cancel()
+            return True
+        except AttributeError:
+            return False
+
+    async def _try_cancel_query(self, cursor: Any, query: str) -> None:
+        """
+        Cancel query
+
+        Parameters
+        ----------
+        cursor : Any
+            The connection cursor
+        query : str
+            SQL query
+        """
+        logger.info(f"Cancelling query: {query}")
+        # try to cancel the query for a maximum of MAX_WAIT_TIME_FOR_QUERY_HANDLER seconds
+        start = time.time()
+        while time.time() - start < MAX_WAIT_TIME_FOR_QUERY_HANDLER:
+            if await self._cancel_query(cursor, query):
+                return
+            await asyncio.sleep(1)
 
     @classmethod
     def generate_session_unique_id(cls) -> str:
@@ -460,6 +525,10 @@ class BaseSession(BaseModel):
         dataframe = self.fetch_query_result_impl(cursor)
         yield pa.record_batch(dataframe)
 
+    @staticmethod
+    def _execute_query(cursor: Any, query: str, **kwargs: Any) -> Any:
+        return cursor.execute(query, **kwargs)
+
     async def get_async_query_stream(
         self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
     ) -> AsyncGenerator[bytes, None]:
@@ -490,7 +559,12 @@ class BaseSession(BaseModel):
         try:
             # execute in separate thread
             await to_thread(
-                cursor.execute, timeout, query, **self.get_additional_execute_query_kwargs()
+                self._execute_query,
+                timeout,
+                lambda cursor, query, **kwargs: self._try_cancel_query(cursor, query),
+                cursor,
+                query,
+                **self.get_additional_execute_query_kwargs(),
             )
             if not cursor.description:
                 return

@@ -144,32 +144,29 @@ async def test_get_table_details(config, session_without_datasets):
     )
     assert details.dict() == {
         "details": {
-            "table_catalog": "vpc-host-prod-xa739-xz970",
-            "table_schema": "demo_datasets",
-            "table_name": "groceryinvoice",
-            "table_type": "VIEW",
-            "is_insertable_into": "NO",
-            "is_typed": "NO",
-            "creation_time": 1720878239654,
-            "base_table_catalog": None,
-            "base_table_schema": None,
-            "base_table_name": None,
-            "snapshot_time_ms": None,
-            "ddl": (
-                "CREATE VIEW `vpc-host-prod-xa739-xz970.demo_datasets.groceryinvoice`\nOPTIONS(\n  "
-                'description="Grocery invoice details, containing the timestamp and the total amount of the invoice."'
-                "\n)\nAS SELECT * FROM demo_datasets.__groceryinvoice\nWHERE "
-                "record_available_at <= CURRENT_TIMESTAMP();"
-            ),
-            "default_collation_name": "NULL",
-            "upsert_stream_apply_watermark": None,
-            "replica_source_catalog": None,
-            "replica_source_schema": None,
-            "replica_source_name": None,
-            "replication_status": None,
-            "replication_error": None,
-            "is_change_history_enabled": "NO",
-            "sync_status": None,
+            "kind": "bigquery#table",
+            "etag": "4UC71fIDIyUMf3Bzw939EQ==",
+            "id": "vpc-host-prod-xa739-xz970:demo_datasets.groceryinvoice",
+            "selfLink": "https://bigquery.googleapis.com/bigquery/v2/projects/vpc-host-prod-xa739-xz970/datasets/demo_datasets/tables/groceryinvoice",
+            "tableReference": {
+                "projectId": "vpc-host-prod-xa739-xz970",
+                "datasetId": "demo_datasets",
+                "tableId": "groceryinvoice",
+            },
+            "numBytes": "0",
+            "numLongTermBytes": "0",
+            "numRows": "0",
+            "creationTime": "1720878239654",
+            "lastModifiedTime": "1722841799143",
+            "type": "VIEW",
+            "view": {
+                "query": "SELECT * FROM demo_datasets.__groceryinvoice\nWHERE record_available_at <= CURRENT_TIMESTAMP()",
+                "useLegacySql": False,
+            },
+            "location": "us-central1",
+            "numTotalLogicalBytes": "0",
+            "numActiveLogicalBytes": "0",
+            "numLongTermLogicalBytes": "0",
         },
         "fully_qualified_name": "`vpc-host-prod-xa739-xz970`.`demo_datasets`.`groceryinvoice`",
         "description": "Grocery invoice details, containing the timestamp and the total amount of the invoice.",

@@ -2,6 +2,7 @@
 Test base session
 """
 
+import asyncio
 from io import BytesIO
 
 import pandas as pd
@@ -12,7 +13,10 @@ from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
-from featurebyte.exception import DataWarehouseOperationError
+from featurebyte.exception import (
+    DataWarehouseOperationError,
+    QueryExecutionTimeOut,
+)
 
 
 def sample_dataframe():
@@ -35,19 +39,24 @@ def sample_dataframe():
     })
 
 
-@pytest_asyncio.fixture(scope="module", autouse=True)
-async def setup_module(session):
+@pytest_asyncio.fixture(name="test_session", scope="session")
+async def test_session_fixture(session_without_datasets):
     """
     Setup module
     """
-    await session.register_table("TEST_DATA_TABLE", sample_dataframe())
+    await session_without_datasets.register_table("TEST_DATA_TABLE", sample_dataframe())
+    await session_without_datasets.register_table(
+        table_name="job_cancel_test", dataframe=pd.DataFrame({"id": list(range(10000))})
+    )
+    yield session_without_datasets
 
 
 @pytest.mark.asyncio
-async def test_execute_query(session):
+async def test_execute_query(test_session):
     """
     Test execute query
     """
+    session = test_session
     query = f"SELECT * FROM {session.get_fully_qualified_table_name('TEST_DATA_TABLE')}"
     df = await session.execute_query(query)
     expected_df = sample_dataframe()
@@ -56,10 +65,11 @@ async def test_execute_query(session):
 
 
 @pytest.mark.asyncio
-async def test_fetch_empty(session):
+async def test_fetch_empty(test_session):
     """
     Test fetch empty results
     """
+    session = test_session
     query = f"SELECT * FROM {session.get_fully_qualified_table_name('TEST_DATA_TABLE')} WHERE 1 = 0"
     df = await session.execute_query(query)
 
@@ -69,10 +79,11 @@ async def test_fetch_empty(session):
 
 
 @pytest.mark.asyncio
-async def test_arrow_schema(session):
+async def test_arrow_schema(test_session):
     """
     Test arrow schema and db variable type metadata
     """
+    session = test_session
     query = f"SELECT * FROM {session.get_fully_qualified_table_name('TEST_DATA_TABLE')}"
     bytestream = session.get_async_query_stream(query)
     buffer = BytesIO()
@@ -125,11 +136,26 @@ async def check_table_does_not_exist(session, name):
         )
 
 
+async def check_table_does_not_exist_or_empty(session, name):
+    """
+    Helper function to check that a table or view doesn't exist or is empty
+    """
+
+    try:
+        df = await session.execute_query(
+            f"SELECT * FROM {session.get_fully_qualified_table_name(name)} LIMIT 1"
+        )
+    except session._no_schema_error:
+        return
+    assert df.shape[0] == 0
+
+
 @pytest.mark.asyncio
-async def test_drop_table__table_ok(session):
+async def test_drop_table__table_ok(session_without_datasets):
     """
     Test drop_table function
     """
+    session = session_without_datasets
     name = f"MY_TABLE_{str(ObjectId()).upper()}"
     await session.execute_query(
         f"CREATE TABLE {session.get_fully_qualified_table_name(name)} AS SELECT 1 AS A"
@@ -143,10 +169,11 @@ async def test_drop_table__table_ok(session):
 
 
 @pytest.mark.asyncio
-async def test_drop_table__table_error(session):
+async def test_drop_table__table_error(session_without_datasets):
     """
     Test drop_table function
     """
+    session = session_without_datasets
     name = f"MY_TABLE_{str(ObjectId()).upper()}"
     await session.execute_query(
         f"CREATE TABLE {session.get_fully_qualified_table_name(name)} AS SELECT 1 AS A"
@@ -161,10 +188,11 @@ async def test_drop_table__table_error(session):
 
 
 @pytest.mark.asyncio
-async def test_drop_table__view_ok(session):
+async def test_drop_table__view_ok(session_without_datasets):
     """
     Test drop_table function
     """
+    session = session_without_datasets
     name = f"MY_VIEW_{str(ObjectId()).upper()}"
     await session.execute_query(
         f"CREATE VIEW {session.get_fully_qualified_table_name(name)} AS SELECT 1 AS A"
@@ -178,10 +206,11 @@ async def test_drop_table__view_ok(session):
 
 
 @pytest.mark.asyncio
-async def test_drop_table__view_error(session):
+async def test_drop_table__view_error(test_session):
     """
     Test drop_table function
     """
+    session = test_session
     name = f"MY_VIEW_{str(ObjectId()).upper()}"
     await session.execute_query(
         f"CREATE VIEW {session.get_fully_qualified_table_name(name)} AS SELECT 1 AS A"
@@ -196,8 +225,9 @@ async def test_drop_table__view_error(session):
 
 
 @pytest.mark.asyncio
-async def test_execute_query__error_logging(session, caplog):
+async def test_execute_query__error_logging(test_session, caplog):
     """Test execute query error logging"""
+    session = test_session
     query = "SELECTS * FROM TEST_DATA_TABLE"
     with pytest.raises(Exception):
         await session.execute_query(query)
@@ -206,3 +236,47 @@ async def test_execute_query__error_logging(session, caplog):
         record for record in caplog.records if record.msg.startswith("Error executing query")
     )
     assert record.extra["query"] == query, record.extra
+
+
+@pytest.mark.parametrize(
+    "source_type", ["spark", "databricks_unity", "snowflake", "bigquery"], indirect=True
+)
+@pytest.mark.asyncio
+async def test_session_timeout_cancels_query(config, test_session):
+    """
+    Test the session timeout cancels query.
+    """
+    _ = config
+    session = test_session
+    table_name = session.get_fully_qualified_table_name("job_cancel_test")
+    output_table_name = session.get_fully_qualified_table_name("job_timeout_test_output")
+    with pytest.raises(QueryExecutionTimeOut):
+        await session.execute_query(
+            f"CREATE TABLE {output_table_name} AS SELECT A.* "
+            f"FROM {table_name} AS A CROSS JOIN {table_name} AS B",
+            timeout=0.1,
+        )
+    await check_table_does_not_exist_or_empty(session, "job_timeout_test_output")
+
+
+@pytest.mark.parametrize("source_type", ["spark"], indirect=True)
+@pytest.mark.asyncio
+async def test_task_cancellation_cancels_query(config, test_session):
+    """
+    Test asyncio task cancellation cancels query.
+    """
+    _ = config
+    session = test_session
+    table_name = session.get_fully_qualified_table_name("job_cancel_test")
+    output_table_name = session.get_fully_qualified_table_name("job_cancel_test_output")
+    with pytest.raises(asyncio.exceptions.CancelledError):
+        coro = session.execute_query(
+            f"CREATE TABLE {output_table_name} AS SELECT A.* "
+            f"FROM {table_name} AS A CROSS JOIN {table_name} AS B",
+            timeout=10,
+        )
+        task = asyncio.create_task(coro)
+        await asyncio.sleep(1)
+        task.cancel()
+        await task
+    await check_table_does_not_exist_or_empty(session, "job_cancel_test_output")
