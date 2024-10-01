@@ -8,6 +8,7 @@ from typing import Any, List, Optional
 
 from featurebyte.logging import get_logger
 from featurebyte.models.historical_feature_table import FeatureInfo, HistoricalFeatureTableModel
+from featurebyte.models.system_metrics import SystemMetricsMetadataKey
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
@@ -17,6 +18,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import HistoricalFeaturesService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
@@ -42,6 +44,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         feature_list_service: FeatureListService,
         historical_feature_table_service: HistoricalFeatureTableService,
         historical_features_service: HistoricalFeaturesService,
+        system_metrics_service: SystemMetricsService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -51,6 +54,7 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
         self.feature_list_service = feature_list_service
         self.historical_feature_table_service = historical_feature_table_service
         self.historical_features_service = historical_features_service
+        self.system_metrics_service = system_metrics_service
 
     async def get_task_description(self, payload: HistoricalFeatureTableTaskPayload) -> str:
         return f'Save historical feature table "{payload.name}"'
@@ -130,3 +134,9 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                 is_view=result.is_output_view,
             )
             await self.historical_feature_table_service.create_document(historical_feature_table)
+            await self.system_metrics_service.create_metrics(
+                metrics=result.historical_features_metrics,
+                metadata={
+                    SystemMetricsMetadataKey.historical_feature_table_id: payload.output_document_id
+                },
+            )

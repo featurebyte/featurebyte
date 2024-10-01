@@ -50,7 +50,10 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
             isinstance(executor_params.observation_set, ObservationTableModel)
             and executor_params.observation_set.has_row_index
         ):
-            is_output_view = await self.feature_table_cache_service.create_view_or_table_from_cache(
+            (
+                is_output_view,
+                historical_features_metrics,
+            ) = await self.feature_table_cache_service.create_view_or_table_from_cache(
                 feature_store=executor_params.feature_store,
                 observation_table=executor_params.observation_set,
                 graph=executor_params.graph,
@@ -60,7 +63,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
                 serving_names_mapping=executor_params.serving_names_mapping,
             )
         else:
-            await get_target(
+            historical_features_metrics = await get_target(
                 session=executor_params.session,
                 graph=executor_params.graph,
                 nodes=executor_params.nodes,
@@ -72,7 +75,9 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
                 progress_callback=executor_params.progress_callback,
             )
             is_output_view = False
-        return ExecutionResult(is_output_view=is_output_view)
+        return ExecutionResult(
+            is_output_view=is_output_view, historical_features_metrics=historical_features_metrics
+        )
 
 
 class TargetComputer(Computer[ComputeTargetRequest, ExecutorParams]):

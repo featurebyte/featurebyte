@@ -157,6 +157,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.static_source_table import StaticSourceTableService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.table import AllTableService, TableService
 from featurebyte.service.table_columns_info import (
     EntityDtypeInitializationAndValidationService,
@@ -359,6 +360,7 @@ app_container_config.register_class(SessionManagerService)
 app_container_config.register_class(SessionValidatorService)
 app_container_config.register_class(StaticSourceTableController)
 app_container_config.register_class(StaticSourceTableService)
+app_container_config.register_class(SystemMetricsService)
 app_container_config.register_class(EntityDtypeInitializationAndValidationService)
 app_container_config.register_class(TableColumnsInfoService)
 app_container_config.register_class(

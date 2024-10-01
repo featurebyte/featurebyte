@@ -13,6 +13,7 @@ import pandas as pd
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
+from featurebyte.models.system_metrics import HistoricalFeaturesMetrics
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
@@ -72,6 +73,11 @@ class ExecutionResult:
     """
 
     is_output_view: bool
+    historical_features_metrics: HistoricalFeaturesMetrics
+
+    # forbid extra fields
+    class Config:
+        extra = "forbid"
 
 
 class QueryExecutor(Generic[ExecutorParamsT]):

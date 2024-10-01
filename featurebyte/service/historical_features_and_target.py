@@ -15,6 +15,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
+from featurebyte.models.system_metrics import HistoricalFeaturesMetrics
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
@@ -127,7 +128,7 @@ async def get_historical_features(
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-) -> None:
+) -> HistoricalFeaturesMetrics:
     """Get historical features
 
     Parameters
@@ -203,8 +204,10 @@ async def get_historical_features(
             ),
         )
 
-        elapsed = time.time() - tic
-        logger.debug("Done checking and computing tiles on demand", extra={"duration": elapsed})
+        tile_compute_seconds = time.time() - tic
+        logger.debug(
+            "Done checking and computing tiles on demand", extra={"duration": tile_compute_seconds}
+        )
 
         if progress_callback:
             await progress_callback(
@@ -238,7 +241,8 @@ async def get_historical_features(
                 else None
             ),
         )
-        logger.debug(f"compute_historical_features in total took {time.time() - tic_:.2f}s")
+        feature_compute_seconds = time.time() - tic_
+        logger.debug(f"compute_historical_features in total took {feature_compute_seconds:.2f}s")
     finally:
         await session.drop_table(
             table_name=request_table_name,
@@ -246,6 +250,10 @@ async def get_historical_features(
             database_name=session.database_name,
             if_exists=True,
         )
+    return HistoricalFeaturesMetrics(
+        tile_compute_seconds=tile_compute_seconds,
+        feature_compute_seconds=feature_compute_seconds,
+    )
 
 
 async def get_target(
@@ -258,7 +266,7 @@ async def get_target(
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-) -> None:
+) -> HistoricalFeaturesMetrics:
     """Get target
 
     Parameters
@@ -335,7 +343,8 @@ async def get_target(
                 else None
             ),
         )
-        logger.debug(f"compute_targets in total took {time.time() - tic_:.2f}s")
+        feature_compute_seconds = time.time() - tic_
+        logger.debug(f"compute_targets in total took {feature_compute_seconds:.2f}s")
     finally:
         await session.drop_table(
             table_name=request_table_name,
@@ -343,3 +352,7 @@ async def get_target(
             database_name=session.database_name,
             if_exists=True,
         )
+    return HistoricalFeaturesMetrics(
+        tile_compute_seconds=0,
+        feature_compute_seconds=feature_compute_seconds,
+    )
