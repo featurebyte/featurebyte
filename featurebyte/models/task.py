@@ -2,14 +2,103 @@
 Task document model
 """
 
+from collections import defaultdict
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 import pymongo
-from pydantic import Field
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.models.base import FeatureByteBaseDocumentModel
+
+
+class LogMessage(BaseModel):
+    """Log message schema"""
+
+    percent: int
+    message: Optional[str]
+
+
+class ProgressHistory(BaseModel):
+    """
+    Progress history schema
+    """
+
+    data: List[LogMessage] = Field(default=[])
+    # compress_at is the last percent at which compression was done
+    # if compress_at is 0, it means no compression has been done
+    # if compress_at is 100, it means all messages have been compressed
+    compress_at: int = Field(default=0)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _parse_data_field(cls, value: Any) -> Any:
+        data = value.get("data")
+
+        if isinstance(data, list) and data:
+            if isinstance(data[0], list):
+                # parse each item in the list using LogMessage's parsing logic
+                # the message is stored as a list of [percent, message] to reduce storage space in mongodb
+                value["data"] = [
+                    LogMessage(percent=percent, message=message) for percent, message in data
+                ]
+
+        return value
+
+    def compress(self, max_messages: int) -> "ProgressHistory":
+        """
+        Compress progress history
+
+        Parameters
+        ----------
+        max_messages : int
+            Maximum number of messages to keep
+
+        Returns
+        -------
+        ProgressHistory
+            Compressed progress history
+        """
+        if len(self.data) <= max_messages:
+            return self
+
+        # Step 1: Map percents to message indices
+        percent_to_indices = defaultdict(list)
+        for idx, msg in enumerate(self.data):
+            percent_to_indices[msg.percent].append(idx)
+
+        # Step 2: Initialize variables
+        compressed_indices = set()
+        total_messages = len(self.data)
+        current_percent = self.compress_at
+
+        # Step 3: Iterate over percents from compress_at upwards
+        for percent in range(self.compress_at, 101):
+            indices = percent_to_indices.get(percent, [])
+            if len(indices) > 1:
+                # Keep only the last message, remove the rest
+                indices_to_remove = indices[:-1]
+                compressed_indices.update(indices_to_remove)
+                total_messages -= len(indices_to_remove)
+
+            # Update compress_at to the current percent
+            current_percent = percent
+
+            # Stop if total messages are within the limit
+            if total_messages <= max_messages:
+                break
+
+            # Stop if percent reaches maximum
+            if percent == self.data[-1].percent:
+                break
+
+        # Step 4: Update data and compress_at
+        messages = [msg for idx, msg in enumerate(self.data) if idx not in compressed_indices]
+        self.data = messages[-max_messages:]
+        self.compress_at = current_percent
+
+        return self
 
 
 class Task(FeatureByteBaseDocumentModel):
@@ -31,6 +120,7 @@ class Task(FeatureByteBaseDocumentModel):
     retries: int
     queue: str
     progress: Optional[Dict[str, Any]] = Field(default=None)
+    progress_history: Optional[ProgressHistory] = Field(default=None)
 
     class Settings:
         """

@@ -2,7 +2,7 @@
 Unit tests for worker/util directory
 """
 
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from bson import ObjectId
@@ -51,3 +51,32 @@ async def test_progress_update(persistent, user_id):
         "metadata": {"task_specific_value": "1234"},
     }
     assert updated_doc["progress"] == expected
+    assert updated_doc["progress_history"] == {"data": [[50, "Test progress"]]}
+
+    # check progress history compression logic
+    with patch.object(TaskProgressUpdater, "max_progress_history", 10):
+        for i in range(50, 101):
+            await progress_updater.update_progress(percent=i, message=f"First test progress {i}")
+            await progress_updater.update_progress(percent=i, message=f"Second test progress {i}")
+
+    # check task document
+    updated_doc = await persistent.find_one(
+        collection_name=Task.collection_name(),
+        query_filter={"_id": task_id},
+    )
+    assert updated_doc["progress_history"] == {
+        "compress_at": 100,
+        "data": [
+            [91, "Second test progress 91"],
+            [92, "Second test progress 92"],
+            [93, "Second test progress 93"],
+            [94, "Second test progress 94"],
+            [95, "Second test progress 95"],
+            [96, "Second test progress 96"],
+            [97, "Second test progress 97"],
+            [98, "Second test progress 98"],
+            [99, "Second test progress 99"],
+            [100, "Second test progress 100"],
+        ],
+    }
+    assert updated_doc["progress"] == {"percent": 100, "message": "Second test progress 100"}
