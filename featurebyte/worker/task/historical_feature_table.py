@@ -8,7 +8,6 @@ from typing import Any, List, Optional
 
 from featurebyte.logging import get_logger
 from featurebyte.models.historical_feature_table import FeatureInfo, HistoricalFeatureTableModel
-from featurebyte.models.system_metrics import SystemMetricsMetadataKey
 from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
@@ -134,9 +133,6 @@ class HistoricalFeatureTableTask(DataWarehouseMixin, BaseTask[HistoricalFeatureT
                 is_view=result.is_output_view,
             )
             await self.historical_feature_table_service.create_document(historical_feature_table)
-            await self.system_metrics_service.create_metrics(
-                metrics=result.historical_features_metrics,
-                metadata={
-                    SystemMetricsMetadataKey.historical_feature_table_id: payload.output_document_id
-                },
-            )
+            metrics_data = result.historical_features_metrics
+            metrics_data.historical_feature_table_id = payload.output_document_id
+            await self.system_metrics_service.create_metrics(metrics_data=metrics_data)

@@ -5,7 +5,7 @@ Unit tests for SystemMetricsService
 import pytest
 from bson import ObjectId
 
-from featurebyte.models.system_metrics import HistoricalFeaturesMetrics, SystemMetricsMetadataKey
+from featurebyte.models.system_metrics import HistoricalFeaturesMetrics
 from featurebyte.service.system_metrics import SystemMetricsService
 
 
@@ -26,31 +26,38 @@ def historical_feature_table_id():
 
 
 @pytest.fixture
-def metrics_metadata(historical_feature_table_id):
+def historical_feature_metrics_data(historical_feature_table_id):
     """
-    Fixture for metrics_metadata
+    Fixture for historical_feature_metrics_data
     """
-    return {
-        SystemMetricsMetadataKey.historical_feature_table_id: historical_feature_table_id,
-    }
+    return HistoricalFeaturesMetrics(
+        tile_compute_seconds=3600,
+        feature_compute_seconds=7200,
+        historical_feature_table_id=historical_feature_table_id,
+    )
 
 
 @pytest.mark.asyncio
-async def test_create_metrics(service, metrics_metadata):
+async def test_create_metrics(
+    service, historical_feature_metrics_data, historical_feature_table_id
+):
     """
     Test create_metrics
     """
     await service.create_metrics(
-        metadata=metrics_metadata,
-        metrics=HistoricalFeaturesMetrics(tile_compute_seconds=3600, feature_compute_seconds=7200),
+        metrics_data=historical_feature_metrics_data,
     )
-    metrics = await service.get_metrics(metadata=metrics_metadata)
+    query_filter = {"metrics_data.historical_feature_table_id": historical_feature_table_id}
+    doc = None
+    async for doc in service.list_documents_iterator(query_filter=query_filter):
+        break
+    assert doc is not None
     assert {
-        "metadata": metrics_metadata,
-        "metrics": {
+        "metrics_data": {
             "tile_compute_seconds": 3600,
             "feature_compute_seconds": 7200,
             "feature_cache_update_seconds": None,
+            "historical_feature_table_id": historical_feature_table_id,
             "type": "historical_features",
         },
-    }.items() < metrics.dict().items()
+    }.items() < doc.dict().items()

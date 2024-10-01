@@ -544,6 +544,31 @@ def get_training_events_and_expected_result():
     return df_training_events, df_historical_expected
 
 
+def check_historical_features_system_metrics(config, historical_feature_table_id=None):
+    """
+    Check system metrics for historical features
+    """
+    params = {"type": "historical_features"}
+    if historical_feature_table_id is not None:
+        params["historical_feature_table_id"] = str(historical_feature_table_id)
+
+    client = config.get_client()
+    response = client.get("/system_metrics", params=params)
+    assert response.status_code == 200
+    response_dict = response.json()
+
+    if historical_feature_table_id:
+        assert response_dict["total"] == 1
+    metrics = response_dict["data"][0]
+    assert set(metrics["metrics_data"].keys()) == {
+        "historical_feature_table_id",
+        "tile_compute_seconds",
+        "feature_compute_seconds",
+        "feature_cache_update_seconds",
+        "type",
+    }
+
+
 @pytest.mark.parametrize(
     "in_out_formats",
     [
@@ -563,6 +588,7 @@ async def test_get_historical_features(
     in_out_formats,
     user_entity,
     new_user_id_entity,
+    config,
 ):
     """
     Test getting historical features from FeatureList
@@ -593,14 +619,19 @@ async def test_get_historical_features(
         df_historical_expected.insert(0, "__FB_TABLE_ROW_INDEX", np.arange(1, 11))
 
     if output_format == "table":
-        df_historical_features = await compute_historical_feature_table_dataframe_helper(
+        (
+            df_historical_features,
+            historical_feature_table_id,
+        ) = await compute_historical_feature_table_dataframe_helper(
             feature_list=feature_list,
             df_observation_set=df_training_events,
             session=session,
             data_source=data_source,
             input_format=input_format,
+            return_id=True,
         )
     else:
+        historical_feature_table_id = None
         existing_historical_feature_tables = HistoricalFeatureTable.list().shape[0]
         df_historical_features = feature_list.compute_historical_features(df_training_events)
         assert HistoricalFeatureTable.list().shape[0] == existing_historical_feature_tables
@@ -611,6 +642,8 @@ async def test_get_historical_features(
     # np.arange(1, 11) as setup in df_historical_expected.
     row_index_not_comparable = session.source_type == "bigquery" and input_format == "table"
     ignore_columns = ["__FB_TABLE_ROW_INDEX"] if row_index_not_comparable else None
+
+    check_historical_features_system_metrics(config, historical_feature_table_id)
 
     # When using fetch_pandas_all(), the dtype of "ÜSER ID" column is int8 (int64 otherwise)
     fb_assert_frame_equal(

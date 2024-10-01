@@ -43,6 +43,7 @@ from featurebyte.routes.relationship_info.api import RelationshipInfoRouter
 from featurebyte.routes.scd_table.api import SCDTableRouter
 from featurebyte.routes.semantic.api import SemanticRouter
 from featurebyte.routes.static_source_table.api import StaticSourceTableRouter
+from featurebyte.routes.system_metrics.api import SystemMetricsRouter
 from featurebyte.routes.table.api import TableRouter
 from featurebyte.routes.target.api import TargetRouter
 from featurebyte.routes.target_namespace.api import TargetNamespaceRouter
@@ -247,6 +248,7 @@ def get_app() -> FastAPI:
         RelationshipInfoRouter(),
         SCDTableRouter(),
         StaticSourceTableRouter(prefix="/static_source_table"),
+        SystemMetricsRouter(),
         TableRouter(),
         TargetRouter(),
         TargetNamespaceRouter(),

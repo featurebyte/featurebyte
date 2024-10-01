@@ -154,6 +154,10 @@ async def get_historical_features(
         Output table details to write the results to
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
+
+    Returns
+    -------
+    HistoricalFeaturesMetrics
     """
     tic_ = time.time()
 
@@ -290,6 +294,10 @@ async def get_target(
         Preparation required for serving parent features
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
+
+    Returns
+    -------
+    HistoricalFeaturesMetrics
     """
     tic_ = time.time()
 
