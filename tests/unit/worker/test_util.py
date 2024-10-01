@@ -51,7 +51,9 @@ async def test_progress_update(persistent, user_id):
         "metadata": {"task_specific_value": "1234"},
     }
     assert updated_doc["progress"] == expected
-    assert updated_doc["progress_history"] == {"data": [[50, "Test progress"]]}
+    assert updated_doc["progress_history"] == {
+        "data": [{"percent": 50, "message": "Test progress"}]
+    }
 
     # check progress history compression logic
     with patch.object(TaskProgressUpdater, "max_progress_history", 10):
@@ -67,16 +69,16 @@ async def test_progress_update(persistent, user_id):
     assert updated_doc["progress_history"] == {
         "compress_at": 100,
         "data": [
-            [91, "Second test progress 91"],
-            [92, "Second test progress 92"],
-            [93, "Second test progress 93"],
-            [94, "Second test progress 94"],
-            [95, "Second test progress 95"],
-            [96, "Second test progress 96"],
-            [97, "Second test progress 97"],
-            [98, "Second test progress 98"],
-            [99, "Second test progress 99"],
-            [100, "Second test progress 100"],
+            {"percent": 91, "message": "Second test progress 91"},
+            {"percent": 92, "message": "Second test progress 92"},
+            {"percent": 93, "message": "Second test progress 93"},
+            {"percent": 94, "message": "Second test progress 94"},
+            {"percent": 95, "message": "Second test progress 95"},
+            {"percent": 96, "message": "Second test progress 96"},
+            {"percent": 97, "message": "Second test progress 97"},
+            {"percent": 98, "message": "Second test progress 98"},
+            {"percent": 99, "message": "Second test progress 99"},
+            {"percent": 100, "message": "Second test progress 100"},
         ],
     }
     assert updated_doc["progress"] == {"percent": 100, "message": "Second test progress 100"}

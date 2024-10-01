@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 import pymongo
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from featurebyte.models.base import FeatureByteBaseDocumentModel
 
@@ -30,21 +30,6 @@ class ProgressHistory(BaseModel):
     # if compress_at is 0, it means no compression has been done
     # if compress_at is 100, it means all messages have been compressed
     compress_at: int = Field(default=0)
-
-    @model_validator(mode="before")
-    @classmethod
-    def _parse_data_field(cls, value: Any) -> Any:
-        data = value.get("data")
-
-        if isinstance(data, list) and data:
-            if isinstance(data[0], list):
-                # parse each item in the list using LogMessage's parsing logic
-                # the message is stored as a list of [percent, message] to reduce storage space in mongodb
-                value["data"] = [
-                    LogMessage(percent=percent, message=message) for percent, message in data
-                ]
-
-        return value
 
     def compress(self, max_messages: int) -> "ProgressHistory":
         """

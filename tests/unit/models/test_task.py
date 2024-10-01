@@ -11,9 +11,9 @@ def test_compress_no_action_needed():
     Compression should not occur.
     """
     data = [
-        [10, "Message at 10%"],
-        [20, "Message at 20%"],
-        [30, "Message at 30%"],
+        {"percent": 10, "message": "Message at 10%"},
+        {"percent": 20, "message": "Message at 20%"},
+        {"percent": 30, "message": "Message at 30%"},
     ]
     progress_history = ProgressHistory(data=data)
     progress_history.compress(max_messages=5)
@@ -27,12 +27,12 @@ def test_compress_basic():
     Test basic compression where multiple messages exist for the same percent.
     """
     data = [
-        [10, "First message at 10%"],
-        [10, "Second message at 10%"],
-        [20, "First message at 20%"],
-        [20, "Second message at 20%"],
-        [30, "Message at 30%"],
-        [40, "Message at 40%"],
+        {"percent": 10, "message": "First message at 10%"},
+        {"percent": 10, "message": "Second message at 10%"},
+        {"percent": 20, "message": "First message at 20%"},
+        {"percent": 20, "message": "Second message at 20%"},
+        {"percent": 30, "message": "Message at 30%"},
+        {"percent": 40, "message": "Message at 40%"},
     ]
     progress_history = ProgressHistory(data=data)
     progress_history.compress(max_messages=4)
@@ -55,8 +55,8 @@ def test_compress_until_limit_reached():
     """
     data = []
     for i in range(1, 51):  # Create 50 messages at percent 1 to 50
-        data.append([i, f"Message at {i}% - first"])
-        data.append([i, f"Message at {i}% - second"])
+        data.append({"percent": i, "message": f"Message at {i}% - first"})
+        data.append({"percent": i, "message": f"Message at {i}% - second"})
 
     progress_history = ProgressHistory(data=data)
     progress_history.compress(max_messages=30)
@@ -76,12 +76,12 @@ def test_compress_with_existing_compress_at():
     Test compression starting from an existing compress_at value.
     """
     data = [
-        [5, "Message at 5%"],
-        [10, "First message at 10%"],
-        [10, "Second message at 10%"],
-        [15, "First message at 15%"],
-        [15, "Second message at 15%"],
-        [20, "Message at 20%"],
+        {"percent": 5, "message": "Message at 5%"},
+        {"percent": 10, "message": "First message at 10%"},
+        {"percent": 10, "message": "Second message at 10%"},
+        {"percent": 15, "message": "First message at 15%"},
+        {"percent": 15, "message": "Second message at 15%"},
+        {"percent": 20, "message": "Message at 20%"},
     ]
     progress_history = ProgressHistory(data=data, compress_at=10)
     progress_history.compress(max_messages=4)
@@ -100,11 +100,11 @@ def test_compress_edge_case_zero_and_hundred_percent():
     Test edge cases with messages at 0% and 100%.
     """
     data = [
-        [0, "First message at 0%"],
-        [0, "Second message at 0%"],
-        [50, "Message at 50%"],
-        [100, "First message at 100%"],
-        [100, "Second message at 100%"],
+        {"percent": 0, "message": "First message at 0%"},
+        {"percent": 0, "message": "Second message at 0%"},
+        {"percent": 50, "message": "Message at 50%"},
+        {"percent": 100, "message": "First message at 100%"},
+        {"percent": 100, "message": "Second message at 100%"},
     ]
     progress_history = ProgressHistory(data=data)
     progress_history.compress(max_messages=3)
@@ -124,9 +124,9 @@ def test_no_messages_to_compress():
     Test when there are no messages to compress (each percent has only one message).
     """
     data = [
-        [10, "Message at 10%"],
-        [20, "Message at 20%"],
-        [30, "Message at 30%"],
+        {"percent": 10, "message": "Message at 10%"},
+        {"percent": 20, "message": "Message at 20%"},
+        {"percent": 30, "message": "Message at 30%"},
     ]
     progress_history = ProgressHistory(data=data)
     progress_history.compress(max_messages=3)
@@ -140,9 +140,9 @@ def test_compress_with_single_percent():
     Test data where all messages are at the same percent.
     """
     data = [
-        [50, "Message 1 at 50%"],
-        [50, "Message 2 at 50%"],
-        [50, "Message 3 at 50%"],
+        {"percent": 50, "message": "Message 1 at 50%"},
+        {"percent": 50, "message": "Message 2 at 50%"},
+        {"percent": 50, "message": "Message 3 at 50%"},
     ]
     progress_history = ProgressHistory(data=data)
     progress_history.compress(max_messages=1)

@@ -59,7 +59,12 @@ class TaskProgressUpdater:
             query_filter={"_id": str(self.task_id)},
             update={
                 "$set": {"progress": progress_dict},
-                "$push": {"progress_history.data": [progress.percent, progress.message]},
+                "$push": {
+                    "progress_history.data": {
+                        "percent": progress.percent,
+                        "message": progress.message,
+                    }
+                },
             },
             disable_audit=True,
             user_id=self.user.id,
@@ -75,14 +80,10 @@ class TaskProgressUpdater:
             progress_history = ProgressHistory(**result["progress_history"])
             if len(progress_history.data) > self.max_progress_history:
                 progress_history = progress_history.compress(max_messages=self.max_progress_history)
-                progress_history_dict = progress_history.model_dump()
-                progress_history_dict["data"] = [
-                    [log.percent, log.message] for log in progress_history.data
-                ]
                 await self.persistent.update_one(
                     collection_name=Task.collection_name(),
                     query_filter={"_id": str(self.task_id)},
-                    update={"$set": {"progress_history": progress_history_dict}},
+                    update={"$set": {"progress_history": progress_history.model_dump()}},
                     disable_audit=True,
                     user_id=self.user.id,
                 )
