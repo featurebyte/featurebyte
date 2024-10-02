@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import tempfile
 import textwrap
+import time
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from datetime import datetime
@@ -30,6 +31,7 @@ from featurebyte.models.offline_store_feature_table import (
     OfflineLastMaterializedAtUpdate,
     OfflineStoreFeatureTableModel,
 )
+from featurebyte.models.system_metrics import ScheduledFeatureMaterializeMetrics
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -56,6 +58,7 @@ from featurebyte.service.materialized_table import BaseMaterializedTableService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.session.base import BaseSession
 
 OFFLINE_STORE_TABLE_REDIS_LOCK_TIMEOUT_SECONDS = 3600
@@ -214,6 +217,7 @@ class FeatureMaterializeService:
         entity_validation_service: EntityValidationService,
         deployment_service: DeploymentService,
         feature_materialize_run_service: FeatureMaterializeRunService,
+        system_metrics_service: SystemMetricsService,
         redis: Redis[Any],
     ):
         self.feature_service = feature_service
@@ -226,6 +230,7 @@ class FeatureMaterializeService:
         self.entity_validation_service = entity_validation_service
         self.deployment_service = deployment_service
         self.feature_materialize_run_service = feature_materialize_run_service
+        self.system_metrics_service = system_metrics_service
         self.redis = redis
 
     @asynccontextmanager
@@ -235,6 +240,7 @@ class FeatureMaterializeService:
         selected_columns: Optional[List[str]] = None,
         session: Optional[BaseSession] = None,
         use_last_materialized_timestamp: bool = True,
+        metrics: Optional[ScheduledFeatureMaterializeMetrics] = None,
     ) -> AsyncIterator[MaterializedFeaturesSet]:
         """
         Materialise features for the provided offline store feature table.
@@ -263,6 +269,7 @@ class FeatureMaterializeService:
         if session is None:
             session = await self._get_session(feature_table_model)
 
+        tic = time.time()
         unique_id = ObjectId()
         batch_request_table = TemporaryBatchRequestTable(
             table_details=TableDetails(
@@ -288,6 +295,8 @@ class FeatureMaterializeService:
         await BaseMaterializedTableService.add_row_index_column(
             session, batch_request_table.table_details
         )
+        if metrics:
+            metrics.generate_entity_universe_seconds = time.time() - tic
 
         # Materialize features
         output_table_details = TableDetails(
@@ -300,6 +309,7 @@ class FeatureMaterializeService:
             output_table_details.table_name,
         ]
         try:
+            tic = time.time()
             if selected_columns is None:
                 nodes = feature_table_model.feature_cluster.nodes
             else:
@@ -350,7 +360,10 @@ class FeatureMaterializeService:
             materialized_features_set = MaterializedFeaturesSet.create(
                 feature_table_model, materialized_features
             )
+            if metrics:
+                metrics.generate_feature_table_seconds = time.time() - tic
 
+            tic = time.time()
             for (
                 lookup_feature_table,
                 lookup_materialized_features,
@@ -370,6 +383,8 @@ class FeatureMaterializeService:
                 tables_names_pending_cleanup.append(
                     lookup_materialized_features.materialized_table_name
                 )
+            if metrics:
+                metrics.generate_precomputed_lookup_feature_tables_seconds = time.time() - tic
 
             yield materialized_features_set
 
@@ -624,9 +639,17 @@ class FeatureMaterializeService:
         feature_tables = []
         feature_timestamp = None
 
+        metrics_data = ScheduledFeatureMaterializeMetrics(
+            offline_store_feature_table_id=feature_table_model.id,
+            num_columns=len(feature_table_model.output_column_names),
+        )
         async with self.materialize_features(
-            feature_table_model, session=session, use_last_materialized_timestamp=True
+            feature_table_model,
+            session=session,
+            use_last_materialized_timestamp=True,
+            metrics=metrics_data,
         ) as materialized_features_set:
+            tic = time.time()
             for (
                 current_feature_table,
                 materialized_features,
@@ -645,8 +668,10 @@ class FeatureMaterializeService:
                 await self._update_offline_last_materialized_at(
                     current_feature_table, materialized_features.feature_timestamp
                 )
+            metrics_data.update_feature_tables_seconds = time.time() - tic
 
         # Feast online materialize
+        tic = time.time()
         for current_feature_table in feature_tables:
             if current_feature_table.deployment_ids:
                 service = self.feast_feature_store_service
@@ -666,6 +691,9 @@ class FeatureMaterializeService:
                         start_date=online_store_last_materialized_at,
                         end_date=feature_timestamp,  # type: ignore
                     )
+        metrics_data.online_materialize_seconds = time.time() - tic
+
+        await self.system_metrics_service.create_metrics(metrics_data)
 
     async def initialize_new_columns(
         self,

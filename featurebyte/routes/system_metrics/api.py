@@ -4,7 +4,7 @@ System metrics API routes
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Query, Request
 
@@ -42,6 +42,7 @@ async def list_metrics(
     sort_dir: Optional[SortDir] = SortDirQuery,
     type: Optional[str] = NameQuery,
     historical_feature_table_id: Optional[PyObjectId] = Query(default=None),
+    offline_store_feature_table_id: Optional[PyObjectId] = Query(default=None),
 ) -> SystemMetricsList:
     """
     List Table
@@ -49,10 +50,18 @@ async def list_metrics(
     controller: SystemMetricsController = request.state.app_container.system_metrics_controller
 
     query_filter = {}
+
+    def _add_metrics_data_filter(field: str, value: Any) -> None:
+        query_filter[f"metrics_data.{field}"] = value
+
     if type is not None:
-        query_filter["metrics_data.type"] = type
+        _add_metrics_data_filter("type", type)
+
     if historical_feature_table_id is not None:
-        query_filter["metrics_data.historical_feature_table_id"] = historical_feature_table_id
+        _add_metrics_data_filter("historical_feature_table_id", historical_feature_table_id)
+
+    if offline_store_feature_table_id is not None:
+        _add_metrics_data_filter("offline_store_feature_table_id", offline_store_feature_table_id)
 
     system_metrics_list = await controller.list(
         page=page,

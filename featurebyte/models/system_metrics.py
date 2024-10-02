@@ -24,6 +24,7 @@ class SystemMetricsType(StrEnum):
 
     HISTORICAL_FEATURES = "historical_features"
     TILE_TASK = "tile_task"
+    SCHEDULED_FEATURE_MATERIALIZE = "scheduled_feature_materialize"
 
 
 class HistoricalFeaturesMetrics(FeatureByteBaseModel):
@@ -50,8 +51,26 @@ class TileTaskMetrics(FeatureByteBaseModel):
     type: Literal[SystemMetricsType.TILE_TASK] = SystemMetricsType.TILE_TASK
 
 
+class ScheduledFeatureMaterializeMetrics(FeatureByteBaseModel):
+    """
+    ScheduledFeatureMaterializeMetrics class
+    """
+
+    offline_store_feature_table_id: PydanticObjectId
+    num_columns: int
+    generate_entity_universe_seconds: Optional[float] = None
+    generate_feature_table_seconds: Optional[float] = None
+    generate_precomputed_lookup_feature_tables_seconds: Optional[float] = None
+    update_feature_tables_seconds: Optional[float] = None
+    online_materialize_seconds: Optional[float] = None
+    type: Literal[SystemMetricsType.SCHEDULED_FEATURE_MATERIALIZE] = (
+        SystemMetricsType.SCHEDULED_FEATURE_MATERIALIZE
+    )
+
+
 SystemMetricsData = Annotated[
-    Union[HistoricalFeaturesMetrics, TileTaskMetrics], Field(discriminator="type")
+    Union[HistoricalFeaturesMetrics, TileTaskMetrics, ScheduledFeatureMaterializeMetrics],
+    Field(discriminator="type"),
 ]
 
 
@@ -69,5 +88,6 @@ class SystemMetricsModel(FeatureByteCatalogBaseDocumentModel):
             IndexModel("metrics_data.type"),
             IndexModel("metrics_data.historical_feature_table_id"),
             IndexModel("metrics_data.tile_table_id"),
+            IndexModel("metrics_data.offline_store_feature_table_id"),
         ]
         auditable = False
