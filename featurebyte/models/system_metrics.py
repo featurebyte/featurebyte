@@ -43,6 +43,8 @@ class TileTaskMetrics(FeatureByteBaseModel):
     TileTaskMetrics class
     """
 
+    tile_table_id: str
+    tile_monitor_seconds: Optional[float] = None
     tile_compute_seconds: Optional[float] = None
     internal_online_compute_seconds: Optional[float] = None
     type: Literal[SystemMetricsType.TILE_TASK] = SystemMetricsType.TILE_TASK
@@ -66,5 +68,6 @@ class SystemMetricsModel(FeatureByteCatalogBaseDocumentModel):
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
             IndexModel("metrics_data.type"),
             IndexModel("metrics_data.historical_feature_table_id"),
+            IndexModel("metrics_data.tile_table_id"),
         ]
         auditable = False

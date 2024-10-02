@@ -38,6 +38,7 @@ from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.static_source_table import StaticSourceTableService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.table import TableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
@@ -79,6 +80,7 @@ DocumentServiceT = TypeVar(
     UserDefinedFunctionService,
     AllDeploymentService,
     UseCaseService,
+    SystemMetricsService,
 )
 
 
