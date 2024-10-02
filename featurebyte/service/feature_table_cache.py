@@ -2,6 +2,8 @@
 Module for managing physical feature table cache as well as metadata storage.
 """
 
+from __future__ import annotations
+
 import time
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, cast
 
