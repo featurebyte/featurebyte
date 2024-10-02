@@ -58,6 +58,6 @@ async def test_create_metrics(
             "feature_compute_seconds": 7200,
             "feature_cache_update_seconds": None,
             "historical_feature_table_id": historical_feature_table_id,
-            "type": "historical_features",
+            "metrics_type": "historical_features",
         },
     }.items() < doc.dict().items()
