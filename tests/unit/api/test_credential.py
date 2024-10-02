@@ -211,6 +211,11 @@ async def test_credential_update(credential, snowflake_feature_store, persistent
                 np.nan,
                 str(snowflake_feature_store.id),
             ),
+            # This should not be here because the model should default to []
+            #   But we have 2 methods of creating a credential,
+            #   The python way does not default the group_ids to []
+            #   The http way does
+            ("INSERT", 'insert: "sf_featurestore"', "group_ids", np.nan, []),
             ("INSERT", 'insert: "sf_featurestore"', "is_deleted", np.nan, False),
             ("INSERT", 'insert: "sf_featurestore"', "name", np.nan, "sf_featurestore"),
             ("INSERT", 'insert: "sf_featurestore"', "storage_credential", np.nan, None),

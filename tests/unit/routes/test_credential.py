@@ -105,6 +105,7 @@ class TestCredentialApi(BaseApiTestSuite):
                     "s3_access_key_id": "test1",
                     "s3_secret_access_key": "test2",
                 },
+                "group_ids": [],
             },
         )
         assert response.status_code == HTTPStatus.OK, response.json()
@@ -117,6 +118,7 @@ class TestCredentialApi(BaseApiTestSuite):
             "s3_secret_access_key": "********",
             "type": "S3",
         }
+        assert result["group_ids"] == []
 
         # test get audit records
         response = test_api_client.get(f"{self.base_route}/audit/{credential_id}")
@@ -131,6 +133,46 @@ class TestCredentialApi(BaseApiTestSuite):
         assert decrypt_value(previous_values[0]["username"]) == "user"
         assert decrypt_value(previous_values[0]["password"]) == "pass"
         assert previous_values[1] is None
+
+    def test_update_group_ids_200(self, create_success_response, test_api_client_persistent):
+        """
+        Test credential update (success)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        credential_id = response_dict["_id"]
+        updated_group_ids = ["63eda344d0313fb925f7883b", "63eda344d0313fb925f7883a"]
+        response = test_api_client.patch(
+            f"{self.base_route}/{credential_id}",
+            json={
+                "database_credential": None,
+                "storage_credential": None,
+                "group_ids": updated_group_ids,
+            },
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        result = response.json()
+
+        assert len(result["group_ids"]) == 2
+        assert result["group_ids"] == updated_group_ids
+        assert "database_credential" in result  # previous fields still exist
+        assert "storage_credential" in result
+
+        # test get audit records
+        response = test_api_client.get(f"{self.base_route}/audit/{credential_id}")
+        assert response.status_code == HTTPStatus.OK
+        results = response.json()
+        assert results["total"] == 2
+        assert [record["action_type"] for record in results["data"]] == ["UPDATE", "INSERT"]
+
+        previous_values = [record["previous_values"].get("group_ids") for record in results["data"]]
+        current_values = [record["current_values"].get("group_ids") for record in results["data"]]
+        assert previous_values[1] == None  # Created from null
+        assert current_values[1] == []  # Default to empty list
+        assert previous_values[0] == []
+        assert (
+            current_values[0] == updated_group_ids
+        )  # Updated value must be equal to the updated group
 
     def test_update_404(self, test_api_client_persistent):
         """
