@@ -1407,7 +1407,7 @@ async def test_simulated_materialize__ttl_feature_table(
         "/system_metrics",
         params={
             "offline_store_feature_table_id": str(feature_table_model.id),
-            "type": "scheduled_feature_materialize",
+            "metrics_type": "scheduled_feature_materialize",
         },
     )
     assert response.status_code == 200

@@ -343,7 +343,9 @@ async def test_schedule_generate_tile__no_default_job_ts(
     )
 
     client = config.get_client()
-    response = client.get("/system_metrics", params={"tile_table_id": tile_id})
+    response = client.get(
+        "/system_metrics", params={"tile_table_id": tile_id, "metrics_type": "tile_task"}
+    )
     assert response.status_code == 200
     response_dict = response.json()
     assert len(response_dict["data"]) > 0

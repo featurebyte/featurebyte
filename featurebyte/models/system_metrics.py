@@ -36,7 +36,9 @@ class HistoricalFeaturesMetrics(FeatureByteBaseModel):
     tile_compute_seconds: Optional[float] = None
     feature_compute_seconds: Optional[float] = None
     feature_cache_update_seconds: Optional[float] = None
-    type: Literal[SystemMetricsType.HISTORICAL_FEATURES] = SystemMetricsType.HISTORICAL_FEATURES
+    metrics_type: Literal[SystemMetricsType.HISTORICAL_FEATURES] = (
+        SystemMetricsType.HISTORICAL_FEATURES
+    )
 
 
 class TileTaskMetrics(FeatureByteBaseModel):
@@ -48,7 +50,7 @@ class TileTaskMetrics(FeatureByteBaseModel):
     tile_monitor_seconds: Optional[float] = None
     tile_compute_seconds: Optional[float] = None
     internal_online_compute_seconds: Optional[float] = None
-    type: Literal[SystemMetricsType.TILE_TASK] = SystemMetricsType.TILE_TASK
+    metrics_type: Literal[SystemMetricsType.TILE_TASK] = SystemMetricsType.TILE_TASK
 
 
 class ScheduledFeatureMaterializeMetrics(FeatureByteBaseModel):
@@ -63,14 +65,14 @@ class ScheduledFeatureMaterializeMetrics(FeatureByteBaseModel):
     generate_precomputed_lookup_feature_tables_seconds: Optional[float] = None
     update_feature_tables_seconds: Optional[float] = None
     online_materialize_seconds: Optional[float] = None
-    type: Literal[SystemMetricsType.SCHEDULED_FEATURE_MATERIALIZE] = (
+    metrics_type: Literal[SystemMetricsType.SCHEDULED_FEATURE_MATERIALIZE] = (
         SystemMetricsType.SCHEDULED_FEATURE_MATERIALIZE
     )
 
 
 SystemMetricsData = Annotated[
     Union[HistoricalFeaturesMetrics, TileTaskMetrics, ScheduledFeatureMaterializeMetrics],
-    Field(discriminator="type"),
+    Field(discriminator="metrics_type"),
 ]
 
 
@@ -85,7 +87,7 @@ class SystemMetricsModel(FeatureByteCatalogBaseDocumentModel):
         collection_name: str = "system_metrics"
         unique_constraints = []
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
-            IndexModel("metrics_data.type"),
+            IndexModel("metrics_data.metrics_type"),
             IndexModel("metrics_data.historical_feature_table_id"),
             IndexModel("metrics_data.tile_table_id"),
             IndexModel("metrics_data.offline_store_feature_table_id"),

@@ -257,6 +257,8 @@ class FeatureMaterializeService:
             Whether to specify the last materialized timestamp of feature_table_model when creating
             the entity universe. This is set to True on scheduled task, and False on initialization
             of new columns.
+        metrics: Optional[ScheduledFeatureMaterializeMetrics]
+            Metrics object to be updated in place if specified
 
         Yields
         ------

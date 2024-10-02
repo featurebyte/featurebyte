@@ -11,7 +11,6 @@ from fastapi import APIRouter, Query, Request
 from featurebyte.persistent.base import SortDir
 from featurebyte.routes.base_router import BaseRouter
 from featurebyte.routes.common.schema import (
-    NameQuery,
     PageQuery,
     PageSizeQuery,
     PyObjectId,
@@ -40,8 +39,9 @@ async def list_metrics(
     page_size: int = PageSizeQuery,
     sort_by: Optional[str] = SortByQuery,
     sort_dir: Optional[SortDir] = SortDirQuery,
-    type: Optional[str] = NameQuery,
+    metrics_type: Optional[str] = Query(default=None),
     historical_feature_table_id: Optional[PyObjectId] = Query(default=None),
+    tile_table_id: Optional[str] = Query(default=None),
     offline_store_feature_table_id: Optional[PyObjectId] = Query(default=None),
 ) -> SystemMetricsList:
     """
@@ -54,11 +54,14 @@ async def list_metrics(
     def _add_metrics_data_filter(field: str, value: Any) -> None:
         query_filter[f"metrics_data.{field}"] = value
 
-    if type is not None:
-        _add_metrics_data_filter("type", type)
+    if metrics_type is not None:
+        _add_metrics_data_filter("metrics_type", metrics_type)
 
     if historical_feature_table_id is not None:
         _add_metrics_data_filter("historical_feature_table_id", historical_feature_table_id)
+
+    if tile_table_id is not None:
+        _add_metrics_data_filter("tile_table_id", tile_table_id)
 
     if offline_store_feature_table_id is not None:
         _add_metrics_data_filter("offline_store_feature_table_id", offline_store_feature_table_id)

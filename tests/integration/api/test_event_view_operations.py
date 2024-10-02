@@ -548,7 +548,7 @@ def check_historical_features_system_metrics(config, historical_feature_table_id
     """
     Check system metrics for historical features
     """
-    params = {"type": "historical_features"}
+    params = {"metrics_type": "historical_features"}
     if historical_feature_table_id is not None:
         params["historical_feature_table_id"] = str(historical_feature_table_id)
 
@@ -565,7 +565,7 @@ def check_historical_features_system_metrics(config, historical_feature_table_id
         "tile_compute_seconds",
         "feature_compute_seconds",
         "feature_cache_update_seconds",
-        "type",
+        "metrics_type",
     }
 
 
