@@ -167,7 +167,7 @@ class TestCredentialApi(BaseApiTestSuite):
 
         previous_values = [record["previous_values"].get("group_ids") for record in results["data"]]
         current_values = [record["current_values"].get("group_ids") for record in results["data"]]
-        assert previous_values[1] == None  # Created from null
+        assert previous_values[1] is None  # Created from null
         assert current_values[1] == []  # Default to empty list
         assert previous_values[0] == []
         assert (
