@@ -250,7 +250,7 @@ tasks:
         sh: id -u
       LOCAL_GID:
         sh: id -g
-      SPARK_VERSION: '{{default "3.3.1"}}'
+      SPARK_VERSION: '{{default "3.5.0"}}'
     cmds:
       - echo "SPARK_VERSION=$SPARK_VERSION"
       - mkdir -p ~/.spark/data
@@ -275,7 +275,7 @@ tasks:
   test-teardown:
     desc: "Teardown the test environment"
     env:
-      SPARK_VERSION: '{{default "3.3.1"}}'
+      SPARK_VERSION: '{{default "3.5.0"}}'
     preconditions:
       - sh: docker compose ls | grep 'featurebyte_docker'
         msg: "Test environment is not running."
