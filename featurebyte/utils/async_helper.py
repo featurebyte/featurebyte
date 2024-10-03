@@ -246,7 +246,7 @@ def asyncio_gather(
             key=semaphore_key,
             limit=max_concurrency,
             timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
-        ) as semaphore:
+        ):
             nonlocal failed, tasks, tasks_canceled
             if failed:
                 # Close unawaited coroutines on failure
