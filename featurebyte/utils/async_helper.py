@@ -46,6 +46,7 @@ class RedisFairCountingSemaphore:
         self._ctr = f"{self._key}:counter"
         self._lock = f"{self._key}:lock"
         self._identifier: str | None = None
+        self._semaphore_refresh_task: Task[None] | None = None
 
     async def _acquire_semaphore(self) -> str | None:
         """
@@ -111,6 +112,10 @@ class RedisFairCountingSemaphore:
         if not self._identifier:
             return
 
+        # Cancel semaphore refresh task
+        if self._semaphore_refresh_task:
+            self._semaphore_refresh_task.cancel()
+
         # Release semaphore
         pipeline = self._redis.pipeline(True)
         pipeline.zrem(self._key, self._identifier)
@@ -118,7 +123,7 @@ class RedisFairCountingSemaphore:
         pipeline.execute()
         self._identifier = None
 
-    async def refresh(self) -> bool:
+    async def _refresh(self) -> bool:
         """
         Refresh semaphore
 
@@ -147,11 +152,24 @@ class RedisFairCountingSemaphore:
         ------
         TimeoutError
             If semaphore is not acquired within timeout
+        RuntimeError
+            If semaphore is already acquired
 
         Returns
         -------
         RedisFairCountingSemaphore
         """
+        if self._identifier:
+            raise RuntimeError("Semaphore already acquired")
+
+        async def _semaphore_refresh_task() -> None:
+            """
+            Refresh semaphore periodically
+            """
+            while self._identifier is not None:
+                # Refresh semaphore while not released
+                await asyncio.sleep(SEMAPHORE_TIMEOUT_SECONDS / 2)
+                await self._refresh()
 
         # Try to acquire semaphore
         now = time.time()
@@ -163,6 +181,10 @@ class RedisFairCountingSemaphore:
                     identifier = await self._acquire_semaphore()
                     if identifier:
                         self._identifier = identifier
+                        # Add task to refresh semaphore while semaphore is acquired
+                        self._semaphore_refresh_task = asyncio.create_task(
+                            _semaphore_refresh_task()
+                        )
                         return self
                 finally:
                     # Release lock
@@ -182,23 +204,6 @@ class RedisFairCountingSemaphore:
             parameters
         """
         await self._release_semaphore()
-
-
-async def _semaphore_refresh(task: Task[Any], semaphore: RedisFairCountingSemaphore) -> None:
-    """
-    Refresh semaphore while task is running
-
-    Parameters
-    ----------
-    task: Task[Any]
-        Task to monitor
-    semaphore: RedisFairCountingSemaphore
-        Semaphore to refresh
-    """
-    # Refresh semaphore while task is running
-    while not task.done() and not task.cancelled():
-        await asyncio.sleep(SEMAPHORE_TIMEOUT_SECONDS / 2)
-        await semaphore.refresh()
 
 
 def asyncio_gather(
@@ -249,8 +254,6 @@ def asyncio_gather(
                 return
             task = asyncio.create_task(coro)
             tasks.append(task)
-            # Add task to refresh semaphore while task is running
-            semaphore_refresh_task = asyncio.create_task(_semaphore_refresh(task, semaphore))
             try:
                 return await task
             except Exception:
@@ -261,8 +264,5 @@ def asyncio_gather(
                         task.cancel()
                     tasks_canceled = True
                 raise
-            finally:
-                # Cancel semaphore refresh task
-                semaphore_refresh_task.cancel()
 
     return asyncio.gather(*(_coro(c) for c in coros))
