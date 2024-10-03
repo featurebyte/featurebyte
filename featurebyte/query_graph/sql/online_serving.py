@@ -49,8 +49,7 @@ from featurebyte.query_graph.sql.online_serving_util import get_version_placehol
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
-from featurebyte.session.base import BaseSession
-from featurebyte.session.session_helper import execute_feature_query_set
+from featurebyte.session.session_helper import SessionHandler, execute_feature_query_set
 
 logger = get_logger(__name__)
 
@@ -466,7 +465,7 @@ class TemporaryBatchRequestTable(FeatureByteBaseModel):
 
 
 async def get_online_features(
-    session: BaseSession,
+    session_handler: SessionHandler,
     graph: QueryGraph,
     nodes: list[Node],
     request_data: Union[pd.DataFrame, BatchRequestTableModel, TemporaryBatchRequestTable],
@@ -482,8 +481,8 @@ async def get_online_features(
 
     Parameters
     ----------
-    session: BaseSession
-        Session to use for executing the query
+    session_handler: SessionHandler
+        SessionHandler to use for executing the query
     graph: QueryGraph
         Query graph
     nodes: list[Node]
@@ -509,6 +508,7 @@ async def get_online_features(
     Optional[List[Dict[str, Any]]]
     """
     tic = time.time()
+    session = session_handler.session
 
     # Process nodes in batches
     node_groups = split_nodes(graph, nodes, NUM_FEATURES_PER_QUERY)
@@ -561,7 +561,7 @@ async def get_online_features(
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 
         tic = time.time()
-        df_features = await execute_feature_query_set(session, query_set)
+        df_features = await execute_feature_query_set(session_handler, query_set)
     finally:
         if request_table_name is not None and request_table_details is None:
             await session.drop_table(

@@ -7,6 +7,8 @@ from __future__ import annotations
 import time
 from typing import Any, Callable, Coroutine, List, Optional, Tuple
 
+from redis import Redis
+
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileScheduledJobParameters, TileSpec, TileType
@@ -37,12 +39,14 @@ class TileManagerService:
         tile_scheduler_service: TileSchedulerService,
         tile_registry_service: TileRegistryService,
         feature_service: FeatureService,
+        redis: Redis[Any],
     ):
         self.online_store_table_version_service = online_store_table_version_service
         self.online_store_compute_query_service = online_store_compute_query_service
         self.tile_scheduler_service = tile_scheduler_service
         self.tile_registry_service = tile_registry_service
         self.feature_service = feature_service
+        self.redis = redis
 
     async def generate_tiles_on_demand(
         self,
@@ -84,7 +88,7 @@ class TileManagerService:
                     progress_callback=_progress_callback,
                 )
             )
-        await run_coroutines(coroutines)
+        await run_coroutines(coroutines, self.redis, str(tile_inputs[0][0].feature_store_id))
 
     async def _generate_tiles_on_demand_for_tile_spec(
         self,

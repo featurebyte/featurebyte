@@ -65,6 +65,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
         else:
             historical_features_metrics = await get_target(
                 session=executor_params.session,
+                redis=self.feature_table_cache_service.tile_cache_service.tile_manager_service.redis,
                 graph=executor_params.graph,
                 nodes=executor_params.nodes,
                 observation_set=executor_params.observation_set,

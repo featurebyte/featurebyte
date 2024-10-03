@@ -2,11 +2,14 @@
 Module for managing physical feature table cache as well as metadata storage.
 """
 
+from __future__ import annotations
+
 import time
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, cast
 
 import pandas as pd
 from bson import ObjectId
+from redis import Redis
 from sqlglot import expressions
 
 from featurebyte.common.progress import get_ranged_progress_callback
@@ -60,6 +63,7 @@ class FeatureTableCacheService:
         entity_validation_service: EntityValidationService,
         tile_cache_service: TileCacheService,
         feature_list_service: FeatureListService,
+        redis: Redis[Any],
     ):
         self.feature_table_cache_metadata_service = feature_table_cache_metadata_service
         self.namespace_handler = namespace_handler
@@ -67,6 +71,7 @@ class FeatureTableCacheService:
         self.entity_validation_service = entity_validation_service
         self.tile_cache_service = tile_cache_service
         self.feature_list_service = feature_list_service
+        self.redis = redis
 
     async def definition_hashes_for_nodes(
         self,
@@ -240,6 +245,7 @@ class FeatureTableCacheService:
         if is_target:
             return await get_target(
                 session=db_session,
+                redis=self.redis,
                 graph=graph,
                 nodes=nodes_only,
                 observation_set=observation_table,
@@ -480,6 +486,7 @@ class FeatureTableCacheService:
                         column_names=[InternalName.TABLE_ROW_INDEX.value] + request_column_names,
                     ),
                     exists=True,
+                    retry=True,
                 )
             historical_features_metrics = await self._update_table(
                 feature_store=feature_store,

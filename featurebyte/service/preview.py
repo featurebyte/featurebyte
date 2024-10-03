@@ -10,6 +10,7 @@ from typing import Any, Callable, Coroutine, Optional, Tuple, Type, cast
 
 import pandas as pd
 from bson import ObjectId
+from redis import Redis
 from sqlglot.expressions import Select
 
 from featurebyte.common.utils import dataframe_to_json, timer
@@ -48,10 +49,12 @@ class PreviewService:
         session_manager_service: SessionManagerService,
         feature_store_service: FeatureStoreService,
         query_cache_manager_service: QueryCacheManagerService,
+        redis: Redis[Any],
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.query_cache_manager_service = query_cache_manager_service
+        self.redis = redis
 
     async def _get_feature_store_session(
         self, graph: QueryGraph, node_name: str, feature_store_id: Optional[ObjectId]
@@ -526,7 +529,7 @@ class PreviewService:
                         done_callback=_callback,
                     )
                 )
-            results = await run_coroutines(coroutines)
+            results = await run_coroutines(coroutines, self.redis, str(preview.feature_store_id))
         finally:
             if not is_table_cached:
                 # Need to cleanup as the table is not managed by query cache

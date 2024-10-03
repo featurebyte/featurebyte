@@ -3,13 +3,18 @@ Tests for featurebyte/session/session_helper.py
 """
 
 import textwrap
-from unittest.mock import AsyncMock, call
+from unittest.mock import AsyncMock, Mock, call
 
 import pandas as pd
 import pytest
+from bson import ObjectId
 
 from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
-from featurebyte.session.session_helper import execute_feature_query_set, validate_output_row_index
+from featurebyte.session.session_helper import (
+    SessionHandler,
+    execute_feature_query_set,
+    validate_output_row_index,
+)
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
@@ -30,6 +35,24 @@ def mock_snowflake_session_fixture(mock_snowflake_session, is_output_row_index_v
         "is_row_index_valid": [is_output_row_index_valid]
     })
     yield mock_snowflake_session
+
+
+@pytest.fixture(name="mock_redis")
+def mock_redis_fixture(is_output_row_index_valid):
+    """
+    Mock redis
+    """
+    mock_redis = Mock()
+    pipeline = mock_redis.pipeline.return_value
+    pipeline.incr.return_value = pipeline
+    pipeline.zadd.return_value = pipeline
+    pipeline.zrem.return_value = pipeline
+    pipeline.execute.side_effect = [
+        [1],  # return semaphone counter
+        [2],  # return semaphone zset score
+        [],
+    ]
+    yield mock_redis
 
 
 @pytest.mark.asyncio
@@ -63,7 +86,7 @@ async def test_validate_row_index__invalid(mock_snowflake_session):
 
 
 @pytest.mark.asyncio
-async def test_execute_feature_query_set(mock_snowflake_session, update_fixtures):
+async def test_execute_feature_query_set(mock_snowflake_session, mock_redis, update_fixtures):
     """
     Test execute_feature_query_set
     """
@@ -84,8 +107,10 @@ async def test_execute_feature_query_set(mock_snowflake_session, update_fixtures
     progress_callback = AsyncMock(name="mock_progress_callback")
 
     await execute_feature_query_set(
-        mock_snowflake_session,
-        feature_query_set,
+        session_handler=SessionHandler(
+            session=mock_snowflake_session, redis=mock_redis, feature_store_id=str(ObjectId())
+        ),
+        feature_query_set=feature_query_set,
         progress_callback=progress_callback,
     )
 

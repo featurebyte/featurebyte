@@ -60,6 +60,7 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.session.base import BaseSession
+from featurebyte.session.session_helper import SessionHandler
 
 OFFLINE_STORE_TABLE_REDIS_LOCK_TIMEOUT_SECONDS = 3600
 NUM_COLUMNS_PER_MATERIALIZE = 50
@@ -329,7 +330,9 @@ class FeatureMaterializeService:
                 feature_store=feature_store,
             )
             await get_online_features(
-                session=session,
+                session_handler=SessionHandler(
+                    session=session, redis=self.redis, feature_store_id=feature_store.id
+                ),
                 graph=feature_table_model.feature_cluster.graph,
                 nodes=nodes,
                 request_data=batch_request_table,
