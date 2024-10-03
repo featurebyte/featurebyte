@@ -65,7 +65,10 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
             isinstance(executor_params.observation_set, ObservationTableModel)
             and executor_params.observation_set.has_row_index
         ):
-            is_output_view = await self.feature_table_cache_service.create_view_or_table_from_cache(
+            (
+                is_output_view,
+                historical_features_metrics,
+            ) = await self.feature_table_cache_service.create_view_or_table_from_cache(
                 feature_store=executor_params.feature_store,
                 observation_table=executor_params.observation_set,
                 graph=executor_params.graph,
@@ -77,7 +80,7 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 progress_callback=executor_params.progress_callback,
             )
         else:
-            await get_historical_features(
+            historical_features_metrics = await get_historical_features(
                 session=executor_params.session,
                 tile_cache_service=self.tile_cache_service,
                 graph=executor_params.graph,
@@ -90,7 +93,10 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 progress_callback=executor_params.progress_callback,
             )
             is_output_view = False
-        return ExecutionResult(is_output_view=is_output_view)
+        return ExecutionResult(
+            is_output_view=is_output_view,
+            historical_features_metrics=historical_features_metrics,
+        )
 
 
 class HistoricalFeaturesValidationParametersService:

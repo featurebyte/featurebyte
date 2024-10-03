@@ -499,7 +499,7 @@ def create_observation_table_by_upload(df):
 
 
 async def compute_historical_feature_table_dataframe_helper(
-    feature_list, df_observation_set, session, data_source, input_format, **kwargs
+    feature_list, df_observation_set, session, data_source, input_format, return_id=False, **kwargs
 ):
     """
     Helper to call compute_historical_feature_table using DataFrame as input, converted to an
@@ -525,7 +525,9 @@ async def compute_historical_feature_table_dataframe_helper(
     df_historical_features = await get_dataframe_from_materialized_table(
         session, historical_feature_table
     )
-    return df_historical_features
+    if not return_id:
+        return df_historical_features
+    return df_historical_features, historical_feature_table.id
 
 
 def check_observation_table_creation_query(query, expected):

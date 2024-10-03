@@ -13,12 +13,14 @@ from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_materialize_prerequisite import PrerequisiteTileTaskStatusType
+from featurebyte.models.system_metrics import TileTaskMetrics
 from featurebyte.models.tile import TileScheduledJobParameters, TileType
 from featurebyte.models.tile_job_log import TileJobLogModel
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_materialize_sync import FeatureMaterializeSyncService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.session.base import BaseSession
@@ -45,6 +47,7 @@ class TileTaskExecutor:
         tile_job_log_service: TileJobLogService,
         feature_service: FeatureService,
         feature_materialize_sync_service: FeatureMaterializeSyncService,
+        system_metrics_service: SystemMetricsService,
     ):
         self.online_store_table_version_service = online_store_table_version_service
         self.online_store_compute_query_service = online_store_compute_query_service
@@ -52,6 +55,7 @@ class TileTaskExecutor:
         self.tile_job_log_service = tile_job_log_service
         self.feature_service = feature_service
         self.feature_materialize_sync_service = feature_materialize_sync_service
+        self.system_metrics_service = system_metrics_service
 
     async def execute(self, session: BaseSession, params: TileScheduledJobParameters) -> None:
         """
@@ -223,6 +227,7 @@ class TileTaskExecutor:
                     "fail": "MONITORED_FAILED",
                     "success": "MONITORED",
                 },
+                "metric_field_name": "tile_monitor_seconds",
             },
             {
                 "name": "tile_generate",
@@ -231,6 +236,7 @@ class TileTaskExecutor:
                     "fail": "GENERATED_FAILED",
                     "success": "GENERATED",
                 },
+                "metric_field_name": "tile_compute_seconds",
             },
             {
                 "name": "tile_online_store",
@@ -239,9 +245,11 @@ class TileTaskExecutor:
                     "fail": "ONLINE_STORE_FAILED",
                     "success": "COMPLETED",
                 },
+                "metric_field_name": "internal_online_compute_seconds",
             },
         ]
 
+        metrics_data = {}
         for spec in step_specs:
             try:
                 logger.info(f"Calling {spec['name']}")
@@ -249,6 +257,7 @@ class TileTaskExecutor:
                 tic = time.time()
                 await tile_ins.execute()
                 duration = time.time() - tic
+                metrics_data[spec["metric_field_name"]] = duration
                 logger.info(f"End of calling {spec['name']}")
             except Exception as exception:
                 message = str(exception).replace("'", "")
@@ -266,6 +275,9 @@ class TileTaskExecutor:
         await self.feature_service.update_last_updated_by_scheduled_task_at(
             aggregation_id=params.aggregation_id,
             last_updated_by_scheduled_task_at=datetime.utcnow(),
+        )
+        await self.system_metrics_service.create_metrics(
+            TileTaskMetrics(tile_table_id=params.tile_id, **metrics_data)
         )
         logger.info("End of TileSchedule.execute")
 

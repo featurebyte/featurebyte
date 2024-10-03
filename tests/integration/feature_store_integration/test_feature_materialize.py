@@ -7,6 +7,7 @@ import os
 import textwrap
 import time
 from datetime import datetime
+from pprint import pprint
 from unittest.mock import patch
 
 import numpy as np
@@ -1335,6 +1336,7 @@ async def test_simulated_materialize__ttl_feature_table(
     session,
     user_entity_ttl_feature_table,
     source_type,
+    config,
 ):
     """
     Test simulating scheduled feature materialization for a feature table with TTL
@@ -1399,6 +1401,19 @@ async def test_simulated_materialize__ttl_feature_table(
     assert df.shape[0] == 36
     assert df["__feature_timestamp"].nunique() == 4
     assert df["üser id"].isnull().sum() == 0
+
+    client = config.get_client()
+    response = client.get(
+        "/system_metrics",
+        params={
+            "offline_store_feature_table_id": str(feature_table_model.id),
+            "metrics_type": "scheduled_feature_materialize",
+        },
+    )
+    assert response.status_code == 200
+    response_dict = response.json()
+    pprint(response_dict["data"])
+    assert len(response_dict["data"]) == 3
 
 
 async def reload_feature_table_model(app_container, feature_table_model):

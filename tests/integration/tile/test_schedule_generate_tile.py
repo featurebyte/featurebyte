@@ -265,7 +265,7 @@ async def test_schedule_generate_tile__with_registry(
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
 async def test_schedule_generate_tile__no_default_job_ts(
-    session, tile_task_prep_spark, base_sql_model, tile_task_executor, tile_registry_service
+    session, tile_task_prep_spark, base_sql_model, tile_task_executor, tile_registry_service, config
 ):
     """
     Test the stored procedure of generating tiles
@@ -341,3 +341,11 @@ async def test_schedule_generate_tile__no_default_job_ts(
         tile_model.last_run_metadata_online.tile_end_date.strftime(date_format)
         == "2023-05-04 14:33:00"
     )
+
+    client = config.get_client()
+    response = client.get(
+        "/system_metrics", params={"tile_table_id": tile_id, "metrics_type": "tile_task"}
+    )
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert len(response_dict["data"]) > 0

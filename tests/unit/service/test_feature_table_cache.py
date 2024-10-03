@@ -517,7 +517,7 @@ async def test_create_view_from_cache__create_cache(
         schema_name=mock_snowflake_session.schema_name,
         table_name="result_view",
     )
-    is_output_view = await feature_table_cache_service.create_view_or_table_from_cache(
+    is_output_view, _ = await feature_table_cache_service.create_view_or_table_from_cache(
         feature_store=feature_store,
         observation_table=observation_table,
         graph=feature_list.feature_clusters[0].graph,
@@ -605,7 +605,7 @@ async def test_create_view_from_cache__update_cache(
         schema_name=mock_snowflake_session.schema_name,
         table_name="result_view",
     )
-    is_output_view = await feature_table_cache_service.create_view_or_table_from_cache(
+    is_output_view, _ = await feature_table_cache_service.create_view_or_table_from_cache(
         feature_store=feature_store,
         observation_table=observation_table,
         graph=feature_list.feature_clusters[0].graph,
@@ -696,7 +696,7 @@ async def test_create_view_from_cache__create_view_failed(
         schema_name=mock_snowflake_session.schema_name,
         table_name="result_view",
     )
-    is_output_view = await feature_table_cache_service.create_view_or_table_from_cache(
+    is_output_view, _ = await feature_table_cache_service.create_view_or_table_from_cache(
         feature_store=feature_store,
         observation_table=observation_table,
         graph=feature_list.feature_clusters[0].graph,

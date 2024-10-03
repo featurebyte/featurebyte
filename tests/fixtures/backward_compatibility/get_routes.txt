@@ -25,6 +25,7 @@
 /semantic
 /static_source_table
 /status
+/system_metrics
 /table
 /target
 /target_namespace
