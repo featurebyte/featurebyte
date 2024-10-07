@@ -117,6 +117,7 @@ async def materialize_partial(
             await to_thread(
                 provider.materialize_single_feature_view,
                 LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+                None,
                 config=feature_store.config,
                 feature_view=partial_feature_view,
                 start_date=start_date,

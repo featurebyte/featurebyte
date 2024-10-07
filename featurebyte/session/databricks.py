@@ -3,13 +3,17 @@ DatabricksSession class
 """
 
 import os
+import time
 from io import BytesIO
 from typing import Any, AsyncGenerator, BinaryIO, Optional
+from unittest.mock import patch
 
 import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
+from databricks.sql.thrift_api.TCLIService.ttypes import TOperationHandle
 from pydantic import PrivateAttr
+from TCLIService import ttypes
 
 from featurebyte import AccessTokenCredential, logging
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
@@ -22,6 +26,7 @@ try:
     from databricks.sdk import WorkspaceClient
     from databricks.sdk.mixins.files import DbfsExt
     from databricks.sql.exc import ServerOperationError
+    from databricks.sql.thrift_backend import ThriftBackend as BaseThriftBackend
 
     HAS_DATABRICKS_SQL_CONNECTOR = True
 except ImportError:
@@ -32,6 +37,22 @@ logger = logging.get_logger(__name__)
 
 
 DATABRICKS_BATCH_FETCH_SIZE = 1000
+
+
+class ThriftBackend(BaseThriftBackend):
+    def _poll_for_status(self, op_handle: TOperationHandle) -> ttypes.TGetOperationStatusResp:
+        # introduce a sleep between polls to make query execution cancellable
+        req = ttypes.TGetOperationStatusReq(
+            operationHandle=op_handle,
+            getProgressUpdate=False,
+        )
+        resp = self.make_request(self._client.GetOperationStatus, req)
+        if resp.operationState in [
+            ttypes.TOperationState.RUNNING_STATE,
+            ttypes.TOperationState.PENDING_STATE,
+        ]:
+            time.sleep(0.1)
+        return resp
 
 
 class DatabricksSession(BaseSparkSession):
@@ -50,15 +71,23 @@ class DatabricksSession(BaseSparkSession):
         if not HAS_DATABRICKS_SQL_CONNECTOR:
             raise RuntimeError("databricks-sql-connector is not available")
 
-        self._connection = databricks_sql.connect(
-            server_hostname=self.host,
-            http_path=self.http_path,
-            access_token=self.database_credential.access_token,
-            catalog=self.catalog_name,
-            schema=self.schema_name,
-            _user_agent_entry=APPLICATION_NAME,
-            _use_arrow_native_complex_types=False,
-        )
+        # This patch is necessary for the query execution to be cancellable while the cursor is polling for results
+        with patch("databricks.sql.client.ThriftBackend", ThriftBackend):
+            self._connection = databricks_sql.connect(
+                server_hostname=self.host,
+                http_path=self.http_path,
+                access_token=self.database_credential.access_token,
+                catalog=self.catalog_name,
+                schema=self.schema_name,
+                _user_agent_entry=APPLICATION_NAME,
+                _use_arrow_native_complex_types=False,
+            )
+
+    async def _cancel_query(self, cursor: Any, query: str) -> bool:
+        if cursor.active_op_handle:
+            cursor.cancel()
+            return True
+        return False
 
     @property
     def _workspace_client(self) -> WorkspaceClient:

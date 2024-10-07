@@ -338,6 +338,10 @@ class BigQueryDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     dataset_name: StrictStr = Field(
         description="The name of the dataset to use for creation of output tables."
     )
+    location: Optional[StrictStr] = Field(
+        default="US",
+        description="The location of the dataset to use for creation of output tables.",
+    )
 
     def get_source_info(self) -> SourceInfo:
         return SourceInfo(

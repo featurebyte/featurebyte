@@ -63,16 +63,6 @@ class MockBigQueryClient:
     Mocked BigQuery client
     """
 
-    _get_query_results = Mock(
-        return_value=Mock(
-            schema=[
-                SchemaField(name="a", field_type="INTEGER"),
-                SchemaField(name="b", field_type="INTEGER"),
-                SchemaField(name="c", field_type="INTEGER"),
-            ]
-        )
-    )
-
     def list_projects(self, page_token=None):
         return MockIterator([
             Mock(project_id="vpc-host-prod-xa739-xz970"),
@@ -116,6 +106,14 @@ class MockBigQueryConnection:
     """
     Mocked BigQuery connection
     """
+
+    _query_rows = Mock(
+        schema=[
+            SchemaField(name="a", field_type="INTEGER"),
+            SchemaField(name="b", field_type="INTEGER"),
+            SchemaField(name="c", field_type="INTEGER"),
+        ]
+    )
 
     def __init__(self, *args, **kwargs):
         self.description = None

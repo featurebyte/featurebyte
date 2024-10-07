@@ -8,18 +8,18 @@ import collections
 import datetime
 import json
 import logging
+import uuid
 from typing import Any, AsyncGenerator, OrderedDict, cast
 
 import aiofiles
 import pandas as pd
 import pyarrow as pa
 from dateutil import tz
-from google.api_core.exceptions import NotFound
+from google.api_core.exceptions import Forbidden, NotFound
 from google.api_core.gapic_v1.client_info import ClientInfo
 from google.auth.exceptions import DefaultCredentialsError, MalformedError
 from google.cloud import bigquery
 from google.cloud.bigquery import (
-    DEFAULT_RETRY,
     Client,
     DatasetReference,
     LoadJobConfig,
@@ -242,9 +242,11 @@ class BigQuerySession(BaseSession):
 
     _no_schema_error = DatabaseError
     _client: Any = PrivateAttr(default=None)
+    _location: Any = PrivateAttr(default=None)
 
     project_name: str
     dataset_name: str
+    location: str = "US"
     source_type: SourceType = SourceType.BIGQUERY
     database_credential: GoogleCredential
 
@@ -261,6 +263,7 @@ class BigQuerySession(BaseSession):
             )
             self._client = Client(
                 project=self.project_name,
+                location=self.location,
                 credentials=self._credentials,
                 client_info=ClientInfo(user_agent=APPLICATION_NAME),
             )
@@ -283,6 +286,25 @@ class BigQuerySession(BaseSession):
             default_dataset=f"{self.database_name}.{self.schema_name}"
         )
         return {"job_config": job_config}
+
+    @property
+    def dataset_ref(self) -> DatasetReference:
+        return DatasetReference(project=self.project_name, dataset_id=self.dataset_name)
+
+    @staticmethod
+    def _execute_query(cursor: Any, query: str, **kwargs: Any) -> Any:
+        job_id = str(uuid.uuid4())
+        cursor.job_id = job_id
+        return cursor.execute(query, job_id=job_id, **kwargs)
+
+    async def _cancel_query(self, cursor: Any, query: str) -> bool:
+        try:
+            self._client.cancel_job(
+                cursor.job_id, project=self.project_name, location=self.location
+            )
+        except Forbidden:
+            return False
+        return True
 
     async def list_databases(self) -> list[str]:
         """
@@ -364,12 +386,10 @@ class BigQuerySession(BaseSession):
         -------
         pa.Schema
         """
-        # get schema from query job as cursor description is missing REPEATED information
-        try:
-            schema = self._client._get_query_results(
-                cursor.query_job.job_id, DEFAULT_RETRY, page_size=1
-            ).schema  # pylint: disable=protected-access
-        except NotFound:
+        rows = cursor._query_rows  # pylint: disable=protected-access
+        if rows:
+            schema = rows.schema
+        else:
             schema = [
                 SchemaField(
                     name=column.name,
@@ -537,7 +557,7 @@ class BigQuerySession(BaseSession):
                     dataframe[colname] = dataframe[colname].apply(self._process_timestamp_value)
 
         table_ref = TableReference(
-            dataset_ref=DatasetReference(project=self.project_name, dataset_id=self.dataset_name),
+            dataset_ref=self.dataset_ref,
             table_id=table_name,
         )
         job_config = LoadJobConfig(
@@ -590,13 +610,24 @@ class BigQuerySession(BaseSession):
         database_name: str | None = None,
         schema_name: str | None = None,
     ) -> TableDetails:
-        query = (
-            f"SELECT * FROM `{database_name}`.`{schema_name}`.`INFORMATION_SCHEMA`.`TABLES` WHERE "
-            f"`table_schema`='{schema_name}' AND `table_name`='{table_name}'"
+        assert database_name is not None
+        assert schema_name is not None
+
+        # Use BiqQuery client to get table details instead of INFORMATION_SCHEMA tables
+        # INFORMATION_SCHEMA access requires  dataset location to match client location which is not always the case
+        table_ref = TableReference(
+            dataset_ref=DatasetReference(project=database_name, dataset_id=schema_name),
+            table_id=table_name,
         )
-        details = await self.execute_query_interactive(query)
-        if details is None or details.shape[0] == 0:
+
+        try:
+            table = self._client.get_table(table_ref)
+        except NotFound:
             raise self.no_schema_error(f"Table {table_name} not found.")
+
+        details = table.to_api_repr()
+        table_description = details.pop("description", None)
+        details.pop("schema", None)
 
         fully_qualified_table_name = get_fully_qualified_table_name({
             "table_name": table_name,
@@ -604,16 +635,8 @@ class BigQuerySession(BaseSession):
             "database_name": database_name,
         })
 
-        assert database_name is not None
-        assert schema_name is not None
-        table_ref = TableReference(
-            dataset_ref=DatasetReference(project=database_name, dataset_id=schema_name),
-            table_id=table_name,
-        )
-        table_description = self._client.get_table(table_ref).description
-
         return TableDetails(
-            details=json.loads(details.iloc[0].to_json(orient="index")),
+            details=details,
             fully_qualified_name=sql_to_string(
                 fully_qualified_table_name, source_type=self.source_type
             ),
@@ -625,7 +648,7 @@ class BigQuerySession(BaseSession):
 
     async def comment_table(self, table_name: str, comment: str) -> None:
         table_ref = TableReference(
-            dataset_ref=DatasetReference(project=self.project_name, dataset_id=self.dataset_name),
+            dataset_ref=self.dataset_ref,
             table_id=table_name,
         )
         table = self._client.get_table(table_ref)

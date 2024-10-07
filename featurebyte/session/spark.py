@@ -7,13 +7,17 @@ from __future__ import annotations
 import os
 import subprocess
 import tempfile
+import time
 from typing import Any, AsyncGenerator, Optional, Union, cast
+from uuid import UUID
 
 import pandas as pd
 import pyarrow as pa
 from pyarrow import ArrowTypeError, Schema
 from pydantic import Field, PrivateAttr
-from pyhive.exc import OperationalError
+from pyhive.exc import DatabaseError, OperationalError
+from TCLIService import ttypes
+from TCLIService.ttypes import TOperationState
 from thrift.transport.TTransport import TTransportException
 from typing_extensions import Annotated
 
@@ -121,6 +125,45 @@ class SparkSession(BaseSparkSession):
     def __del__(self) -> None:
         if hasattr(self, "_connection") and self._connection:
             self._connection.close()
+
+    async def _cancel_query(self, cursor: Any, query: str) -> bool:
+        if cursor._operationHandle:  # pylint: disable=protected-access
+            if self._connection:
+                # cancel without waiting for response as the thrift_transport tend to be stuck on cancellation
+                req = ttypes.TCancelOperationReq(
+                    operationHandle=cursor._operationHandle,
+                )
+                self._connection.client.send_CancelOperation(req)
+                # reset the connection so that a new thrift_transport is established to support subsequent queries
+                self._initialize_connection()
+                # unset the operation handle to avoid cursor.close() from calling the stale thrift_transport
+                cursor._operationHandle = None  # pylint: disable=protected-access
+            return True
+        return False
+
+    @staticmethod
+    def _execute_query(cursor: Any, query: str, **kwargs: Any) -> Any:
+        cursor.execute(query, async_=True)
+        response = cursor.poll()
+        while response.operationState in (
+            TOperationState.INITIALIZED_STATE,
+            TOperationState.RUNNING_STATE,
+        ):
+            time.sleep(0.1)
+            response = cursor.poll()
+        if response.operationState != TOperationState.FINISHED_STATE:
+            guid = str(
+                cursor._operationHandle and UUID(bytes=cursor._operationHandle.operationId.guid)
+            )
+            if response.operationState == TOperationState.ERROR_STATE:
+                raise OperationalError(response.errorMessage, {"guid": guid})
+            elif response.operationState == ttypes.TOperationState.CLOSED_STATE:
+                raise DatabaseError("Command unexpectedly closed server side")
+            logs = cursor.fetch_logs()
+            messages = "\n".join(logs)
+            raise OperationalError(
+                f"Failed to execute query: {response.errorMessage or messages}", {"guid": guid}
+            )
 
     @staticmethod
     def _kinit(credential: KerberosKeytabCredential) -> None:

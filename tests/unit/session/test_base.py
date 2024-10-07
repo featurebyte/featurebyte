@@ -4,6 +4,7 @@ Unit test for base snowflake session.
 
 from __future__ import annotations
 
+import asyncio
 import collections
 import time
 from asyncio.exceptions import TimeoutError as AsyncIOTimeoutError
@@ -41,6 +42,9 @@ def base_session_test_fixture():
             return Mock(name="MockInitializer")
 
         source_type: SourceType = SourceType.TEST
+
+        async def _cancel_query(self, cursor: Any, query: str) -> bool:
+            return True
 
         @property
         def schema_name(self) -> str:
@@ -262,12 +266,12 @@ async def test_to_thread__blocking_function():
         try:
             for i in range(10):
                 time.sleep(0.1)
-        except TimeoutError:
+        except asyncio.exceptions.CancelledError:
             values[0] = 2
 
     values = [0]
     with pytest.raises(AsyncIOTimeoutError):
-        await to_thread(_blocking_sync_function, 0.1, values)
+        await to_thread(_blocking_sync_function, 0.1, None, values)
 
     # expect exception to be raised inside thread on timeout
     time.sleep(0.5)
@@ -284,7 +288,7 @@ async def test_to_thread__exception():
 
     values = [0]
     with pytest.raises(Exception) as exc:
-        await to_thread(_blocking_sync_function, 0.1, values)
+        await to_thread(_blocking_sync_function, 0.5, None, values)
 
     # expect exception to be raised inside thread
     assert "This is an exception from the thread!" in str(exc.value)

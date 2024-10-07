@@ -7,7 +7,7 @@ from __future__ import annotations
 import collections
 import os
 import sqlite3
-from typing import Optional, OrderedDict
+from typing import Any, Optional, OrderedDict
 
 import pandas as pd
 
@@ -42,6 +42,10 @@ class SQLiteSession(BaseSession):
     @classmethod
     def is_threadsafe(cls) -> bool:
         return False
+
+    async def _cancel_query(self, cursor: Any, query: str) -> bool:
+        # no way to cancel query in sqlite
+        return True
 
     async def list_databases(self) -> list[str]:
         return []
