@@ -71,6 +71,7 @@ class DatabricksSession(BaseSparkSession):
         if not HAS_DATABRICKS_SQL_CONNECTOR:
             raise RuntimeError("databricks-sql-connector is not available")
 
+        # This patch is necessary for the query execution to be cancellable while the cursor is polling for results
         with patch("databricks.sql.client.ThriftBackend", ThriftBackend):
             self._connection = databricks_sql.connect(
                 server_hostname=self.host,

@@ -43,6 +43,9 @@ def base_session_test_fixture():
 
         source_type: SourceType = SourceType.TEST
 
+        async def _cancel_query(self, cursor: Any, query: str) -> bool:
+            return True
+
         @property
         def schema_name(self) -> str:
             return "test base session - schema"

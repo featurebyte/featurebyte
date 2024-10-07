@@ -262,6 +262,7 @@ class BaseSession(BaseModel):
         """
         return self._connection
 
+    @abstractmethod
     async def _cancel_query(self, cursor: Any, query: str) -> bool:
         """
         Cancel query
@@ -278,11 +279,6 @@ class BaseSession(BaseModel):
         bool
             True if query was cancelled, False otherwise
         """
-        try:
-            cursor.cancel()
-            return True
-        except AttributeError:
-            return False
 
     async def _try_cancel_query(self, cursor: Any, query: str) -> None:
         """
@@ -561,7 +557,7 @@ class BaseSession(BaseModel):
             await to_thread(
                 self._execute_query,
                 timeout,
-                lambda cursor, query, **kwargs: self._try_cancel_query(cursor, query),
+                lambda *args, **kwargs: self._try_cancel_query(cursor, query),
                 cursor,
                 query,
                 **self.get_additional_execute_query_kwargs(),

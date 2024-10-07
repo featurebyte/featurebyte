@@ -612,6 +612,9 @@ class BigQuerySession(BaseSession):
     ) -> TableDetails:
         assert database_name is not None
         assert schema_name is not None
+
+        # Use BiqQuery client to get table details instead of INFORMATION_SCHEMA tables
+        # INFORMATION_SCHEMA access requires  dataset location to match client location which is not always the case
         table_ref = TableReference(
             dataset_ref=DatasetReference(project=database_name, dataset_id=schema_name),
             table_id=table_name,
