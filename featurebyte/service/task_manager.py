@@ -139,6 +139,7 @@ class TaskManager:
             start_time=document.get("start_time"),
             date_done=document.get("date_done"),
             progress=document.get("progress"),
+            progress_history=document.get("progress_history"),
             child_task_ids=document.get("child_task_ids"),
         )
 
