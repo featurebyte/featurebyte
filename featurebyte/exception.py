@@ -550,3 +550,9 @@ class SCDTableValidationError(FeatureByteException):
     """
     Raise when SCDTable validation fails
     """
+
+
+class InvalidOutputRowIndexError(FeatureByteException):
+    """
+    Raise when output row index is invalid
+    """

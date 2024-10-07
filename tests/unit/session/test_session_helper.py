@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
+from featurebyte.exception import InvalidOutputRowIndexError
 from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.session.session_helper import (
     SessionHandler,
@@ -78,7 +79,7 @@ async def test_validate_row_index__invalid(mock_snowflake_session):
     """
     Test validate_output_row_index on error case
     """
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(InvalidOutputRowIndexError) as exc_info:
         await validate_output_row_index(
             session=mock_snowflake_session, output_table_name="my_table"
         )
@@ -133,3 +134,43 @@ async def test_execute_feature_query_set(mock_snowflake_session, mock_redis, upd
         call(50, progress_message),
         call(100, progress_message),
     ]
+
+
+@pytest.mark.parametrize("is_output_row_index_valid", [False])
+@pytest.mark.asyncio
+async def test_execute_feature_query_set__invalid_row_index(
+    mock_snowflake_session,
+    mock_redis,
+):
+    """
+    Test execute_feature_query_set
+    """
+    progress_message = "My custom progress message"
+    feature_query_set = FeatureQuerySet(
+        feature_queries=[
+            FeatureQuery(
+                sql="CREATE TABLE my_table AS SELECT * FROM another_table",
+                table_name="my_table",
+                feature_names=["a", "b", "c"],
+            ),
+        ],
+        output_query="CREATE TABLE output_table AS SELECT * FROM my_table",
+        output_table_name="output_table",
+        progress_message=progress_message,
+        validate_output_row_index=True,
+    )
+    progress_callback = AsyncMock(name="mock_progress_callback")
+
+    with pytest.raises(InvalidOutputRowIndexError) as exc_info:
+        await execute_feature_query_set(
+            session_handler=SessionHandler(
+                session=mock_snowflake_session, redis=mock_redis, feature_store_id=str(ObjectId())
+            ),
+            feature_query_set=feature_query_set,
+            progress_callback=progress_callback,
+        )
+
+    assert (
+        str(exc_info.value)
+        == "Row index column is invalid in the intermediate feature table: my_table. Feature names: a, b, c"
+    )
