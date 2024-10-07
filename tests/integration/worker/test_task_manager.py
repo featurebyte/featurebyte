@@ -11,7 +11,7 @@ import pytest
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.periodic_task import Interval
-from featurebyte.models.task import Task
+from featurebyte.models.task import LogMessage, ProgressHistory, Task
 from featurebyte.schema.task import TaskId, TaskStatus
 from featurebyte.schema.worker.task.test import TestIOTaskPayload, TestTaskPayload
 from featurebyte.service.task_manager import TaskManager
@@ -77,6 +77,20 @@ async def test_submit_task(task_manager, payload):
     assert task.progress == {"percent": 100}
     assert isinstance(task.start_time, datetime.datetime)
     assert isinstance(task.date_done, datetime.datetime)
+
+    # check task progress history
+    assert task.progress_history == ProgressHistory(
+        data=[
+            LogMessage(percent=0, message=None),
+            LogMessage(percent=0, message=None),
+            LogMessage(percent=20, message=None),
+            LogMessage(percent=40, message=None),
+            LogMessage(percent=60, message=None),
+            LogMessage(percent=80, message=None),
+            LogMessage(percent=100, message=None),
+        ],
+        compress_at=0,
+    )
 
     # ensure task is in the tasks list
     tasks, _ = await task_manager.list_tasks()

@@ -11,6 +11,7 @@ from typing_extensions import Annotated
 
 from featurebyte.enum import StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.task import ProgressHistory
 from featurebyte.schema.common.base import PaginationMixin
 
 UUID4 = Union[uuid.UUID, Annotated[str, AfterValidator(lambda x: uuid.UUID(x, version=4))]]
@@ -68,6 +69,7 @@ class Task(FeatureByteBaseModel):
     start_time: Optional[datetime.datetime] = Field(frozen=True, default=None)
     date_done: Optional[datetime.datetime] = Field(frozen=True, default=None)
     progress: Optional[Dict[str, Any]] = Field(default=None)
+    progress_history: Optional[ProgressHistory] = Field(default=None)
     child_task_ids: Optional[List[TaskId]] = Field(default=None)
 
 
