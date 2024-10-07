@@ -123,7 +123,7 @@ async def to_thread(
     except (asyncio.exceptions.TimeoutError,) + TaskRevokeExceptions:
         if error_handler:
             try:
-                await error_handler(*args, **kwargs)
+                await error_handler()
             except Exception:
                 logger.error("Error handling exception", exc_info=True)
 
@@ -557,7 +557,7 @@ class BaseSession(BaseModel):
             await to_thread(
                 self._execute_query,
                 timeout,
-                lambda *args, **kwargs: self._try_cancel_query(cursor, query),
+                lambda: self._try_cancel_query(cursor, query),
                 cursor,
                 query,
                 **self.get_additional_execute_query_kwargs(),
