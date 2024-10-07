@@ -15,6 +15,7 @@ from sqlglot.expressions import Expression
 
 from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName, SourceType
+from featurebyte.exception import InvalidOutputRowIndexError
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
@@ -47,7 +48,7 @@ async def validate_output_row_index(session: BaseSession, output_table_name: str
 
     Raises
     ------
-    ValueError
+    InvalidOutputRowIndexError
         If any of the row index value is not unique
     """
     query = sql_to_string(
@@ -71,7 +72,7 @@ async def validate_output_row_index(session: BaseSession, output_table_name: str
         df_result = await session.execute_query_long_running(query)
     is_row_index_valid = df_result["is_row_index_valid"].iloc[0]  # type: ignore[index]
     if not is_row_index_valid:
-        raise ValueError("Row index column is invalid in the output table")
+        raise InvalidOutputRowIndexError("Row index column is invalid in the output table")
 
 
 async def run_coroutines(
@@ -119,10 +120,23 @@ async def execute_feature_query(
         Instance of a FeatureQuery
     done_callback: Optional[Callable[[], Coroutine[Any, Any, None]]]
         To be called when task is completed to update progress
+
+    Raises
+    ------
+    InvalidOutputRowIndexError
+        If the row index column is not unique in the intermediate feature table
     """
     session = await session.clone_if_not_threadsafe()
     await session.execute_query_long_running(_to_query_str(feature_query.sql, session.source_type))
-    await validate_output_row_index(session, feature_query.table_name)
+    try:
+        await validate_output_row_index(session, feature_query.table_name)
+    except InvalidOutputRowIndexError:
+        formatted_feature_names = ", ".join(feature_query.feature_names)
+        raise InvalidOutputRowIndexError(
+            f"Row index column is invalid in the intermediate feature table: {feature_query.table_name}."
+            f" Feature names: {formatted_feature_names}"
+        )
+
     await done_callback()
 
 
