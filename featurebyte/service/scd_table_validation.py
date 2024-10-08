@@ -5,7 +5,6 @@ SCDTableValidationService
 from __future__ import annotations
 
 import pandas as pd
-from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import select
 
@@ -42,7 +41,7 @@ class SCDTableValidationService(
     async def validate_table(
         self,
         session: BaseSession,
-        table_id: ObjectId,
+        table_model: SCDTableModel,
         num_records: int = 10,
     ) -> None:
         """
@@ -52,8 +51,8 @@ class SCDTableValidationService(
         ----------
         session: BaseSession
             Session object
-        table_id: ObjectId
-            Table identifier
+        table_model: SCDTableModel
+            Table model
         num_records: int
             Number of records to return in the error message
 
@@ -62,8 +61,6 @@ class SCDTableValidationService(
         TableValidationError
             If the table is not a proper SCD table
         """
-        table_model = await self.table_document_service.get_document(table_id)
-
         if table_model.natural_key_column is None:
             return
 

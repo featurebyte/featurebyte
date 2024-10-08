@@ -4,7 +4,6 @@ BaseTableValidationService class
 
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import Generic
 
 from bson import ObjectId
@@ -59,8 +58,9 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         feature_store_id = catalog.default_feature_store_ids[0]
         feature_store = await self.feature_store_service.get_document(feature_store_id)
         session = await self.session_manager_service.get_feature_store_session(feature_store)
+        table_model = await self.table_document_service.get_document(table_id)
         try:
-            await self.validate_table(session, table_id)
+            await self.validate_table(session, table_model)
         except TableValidationError as e:
             table_validation = TableValidation(
                 status=TableValidationStatus.FAILED,
@@ -71,27 +71,25 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             self.table_document_service.document_update_class(validation=table_validation),
         )
 
-    @abstractmethod
     async def validate_table(
         self,
         session: BaseSession,
-        table_id: ObjectId,
+        table_model: Document,
         num_records: int = 10,
     ) -> None:
         """
-        Check that a table is valid based on its parameters and table's content
+        Check that a table is valid based on its parameters and table's content. Implementation
+        should raise TableValidationError if the table is not valid.
 
         Parameters
         ----------
         session: BaseSession
             Session object
-        table_id: ObjectId
+        table_model: Document
             Table ID
         num_records: int
             Number of records to return in the error message
-
-        Raises
-        ------
-        TableValidationError
-            If the table is not valid
         """
+        _ = session
+        _ = table_model
+        _ = num_records
