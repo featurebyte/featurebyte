@@ -100,14 +100,6 @@ class TestDataDescriptionTask(BaseTaskTestSuite):
             })
             yield mock_execute_query
 
-    @pytest.fixture(autouse=True)
-    def insert_credential_fixture(self, insert_credential):
-        """
-        Insert default credential into db.
-        """
-        _ = insert_credential
-        yield
-
     @pytest.mark.asyncio
     async def test_execute_success(self, task_completed, temp_storage):
         """

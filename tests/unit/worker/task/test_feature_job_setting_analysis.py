@@ -57,14 +57,6 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         )
 
     @pytest.fixture(autouse=True)
-    def insert_credential_fixture(self, insert_credential):
-        """
-        Insert default credential into db.
-        """
-        _ = insert_credential
-        yield
-
-    @pytest.fixture(autouse=True)
     def use_mock_event_dataset(self, mock_event_dataset):
         """
         Patch event dataset to skip calls to data warehouse
