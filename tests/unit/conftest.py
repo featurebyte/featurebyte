@@ -82,6 +82,8 @@ pytest.register_assert_rewrite("tests.unit.routes.base")
 # We keep the definition in a separate file for readability
 _ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
 
+TEST_REDIS_URI = "redis://localhost:36379"
+
 
 @pytest.fixture(name="mock_api_object_cache")
 def mock_api_object_cache_fixture():
@@ -2274,7 +2276,7 @@ def app_container_fixture(persistent, user, catalog, storage, temp_storage):
     return LazyAppContainer(
         app_container_config=app_container_config,
         instance_map={
-            "user": user,  # With a value
+            "user": user,
             "persistent": persistent,
             "temp_storage": temp_storage,
             "celery": get_celery(),
@@ -2282,6 +2284,7 @@ def app_container_fixture(persistent, user, catalog, storage, temp_storage):
             "catalog_id": catalog.id,
             "task_id": uuid4(),
             "progress": Mock(),
+            "redis_uri": TEST_REDIS_URI,
         },
     )
 

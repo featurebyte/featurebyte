@@ -43,26 +43,6 @@ from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
 from tests.util.helper import deploy_feature_ids, get_relationship_info, manage_document
 
-TEST_REDIS_URI = "redis://localhost:36379"
-
-
-@pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog, storage, temp_storage):
-    """
-    Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
-    """
-    instance_map = {
-        "user": user,
-        "persistent": persistent,
-        "temp_storage": temp_storage,
-        "storage": storage,
-        "catalog_id": catalog.id,
-        "user_id": user.id,
-        "task_id": uuid4(),
-        "redis_uri": TEST_REDIS_URI,
-    }
-    return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
-
 
 @pytest.fixture(name="feature_store_service")
 def feature_store_service_fixture(app_container):
