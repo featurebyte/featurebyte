@@ -25,6 +25,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from tests.unit.conftest import user_id
 
 
 @pytest.fixture(name="entity")
@@ -122,7 +123,7 @@ def test_entity_creation(entity):
             Entity(name="Customer", serving_names=["cust_id"]).save()
 
 
-def test_entity_update_name(entity, catalog):
+def test_entity_update_name(entity, catalog, user_id):
     """
     Test update entity name
     """
@@ -161,7 +162,7 @@ def test_entity_update_name(entity, catalog):
             ("INSERT", 'insert: "customer"', "serving_names", np.nan, ["cust_id"]),
             ("INSERT", 'insert: "customer"', "table_ids", np.nan, []),
             ("INSERT", 'insert: "customer"', "updated_at", np.nan, None),
-            ("INSERT", 'insert: "customer"', "user_id", np.nan, None),
+            ("INSERT", 'insert: "customer"', "user_id", np.nan, str(user_id)),
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )

@@ -12,7 +12,6 @@ from featurebyte.query_graph.node.schema import DatabaseDetails
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
 from featurebyte.session.manager import SessionManager
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 logger = get_logger(__name__)
 
@@ -35,11 +34,9 @@ class SessionValidatorService:
     def __init__(
         self,
         user: Any,
-        mongo_backed_credential_provider: MongoBackedCredentialProvider,
         feature_store_service: FeatureStoreService,
     ):
         self.user = user
-        self.credential_provider = mongo_backed_credential_provider
         self.feature_store_service = feature_store_service
 
     @classmethod

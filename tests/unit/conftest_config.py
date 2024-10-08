@@ -48,24 +48,6 @@ def config_fixture(config_file):
     yield Configurations(config_file_path=config_file)
 
 
-@pytest.fixture(name="credentials")
-def credentials_fixture():
-    """
-    Credentials object for unit testing
-    """
-    return {
-        "sf_featurestore": CredentialModel(
-            name="sf_featurestore",
-            feature_store_id=ObjectId(),
-            database_credential=UsernamePasswordCredential(
-                username="sf_user",
-                password="sf_password",
-            ),
-        ),
-        "sq_featurestore": None,
-    }
-
-
 @pytest.fixture(name="mock_config_path_env")
 def mock_config_path_env_fixture(config_file):
     """

@@ -202,7 +202,6 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
     Provides common functionalities required for migrating data warehouse
     """
 
-    get_credential: Any
     celery: Celery
 
     def __init__(
@@ -234,20 +233,9 @@ class DataWarehouseMigrationMixin(BaseMigrationServiceMixin, ABC):
         """
         feature_store_user = User(id=feature_store.user_id)
         session = await self.session_manager_service.get_feature_store_session(
-            feature_store, get_credential=self.get_credential, user_override=feature_store_user
+            feature_store, user_override=feature_store_user
         )
         return session
-
-    def set_credential_callback(self, get_credential: Any) -> None:
-        """
-        Set the get_credential callback
-
-        Parameters
-        ----------
-        get_credential: Any
-            Callback to retrieve credential
-        """
-        self.get_credential = get_credential
 
     def set_celery(self, celery: Celery) -> None:
         """

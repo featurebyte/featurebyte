@@ -52,7 +52,7 @@ class TestCredentialApi(BaseApiTestSuite):
         """
         Mock _validate_credential method
         """
-        with patch("featurebyte.service.credential.CredentialService._validate_credential"):
+        with patch("featurebyte.routes.credential.controller.CredentialController._validate_credentials"):
             yield
 
     def setup_creation_route(self, api_client):

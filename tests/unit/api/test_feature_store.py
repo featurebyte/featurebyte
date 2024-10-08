@@ -194,12 +194,13 @@ def test_save__unexpected_creation_exception(snowflake_feature_store_params):
     Test unexpected feature store creation exception
     """
     # check unexpected creation exception
+    # Unable to connect to snowflake
     with pytest.raises(RecordCreationException):
         with patch("featurebyte.api.api_object.Configurations"):
             FeatureStore.create(**snowflake_feature_store_params)
 
 
-def test_get(saved_snowflake_feature_store):
+def test_get(saved_snowflake_feature_store, user_id):
     """
     Test feature store retrieval
     """
@@ -224,7 +225,7 @@ def test_get(saved_snowflake_feature_store):
             ("name", "sf_featurestore"),
             ("type", "snowflake"),
             ("updated_at", None),
-            ("user_id", None),
+            ("user_id", str(user_id)),
         ],
         columns=["field_name", "new_value"],
     )

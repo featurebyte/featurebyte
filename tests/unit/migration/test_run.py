@@ -57,7 +57,7 @@ def test_retrieve_all_migration_methods__duplicated_version(mock_extract_method)
 
 
 @pytest.mark.asyncio
-async def test_migrate_method_generator(user, persistent, get_credential, schema_metadata_service):
+async def test_migrate_method_generator(user, persistent, schema_metadata_service):
     """Test migrate method generator"""
     schema_metadata = await schema_metadata_service.get_or_create_document(
         name=MigrationMetadata.SCHEMA_METADATA.value
@@ -67,7 +67,6 @@ async def test_migrate_method_generator(user, persistent, get_credential, schema
     method_generator = migrate_method_generator(
         user=user,
         persistent=persistent,
-        get_credential=get_credential,
         celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
@@ -90,7 +89,6 @@ async def test_migrate_method_generator(user, persistent, get_credential, schema
     method_generator = migrate_method_generator(
         user=user,
         persistent=persistent,
-        get_credential=get_credential,
         celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
@@ -118,7 +116,6 @@ async def test_migrate_method_generator__exclude_warehouse(
     method_generator = migrate_method_generator(
         user=user,
         persistent=persistent,
-        get_credential=get_credential,
         celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
@@ -207,7 +204,6 @@ async def test_run_migration(
     await run_migration(
         user=user,
         persistent=persistent,
-        get_credential=get_credential,
         celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
@@ -221,7 +217,6 @@ async def test_run_migration(
     async for service, migrate_method in migrate_method_generator(
         user=user,
         persistent=persistent,
-        get_credential=get_credential,
         celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
@@ -273,17 +268,12 @@ async def test_data_warehouse_migration_get_session(
         payload = json.loads(fhandle.read())
         feature_store = FeatureStoreModel(**{**payload, "user_id": feature_store_user_id})
 
-    get_credential_func = AsyncMock()
     warehouse_migration = DataWarehouseMigrationMixin(
         persistent=migration_check_persistent,
         session_manager_service=app_container.session_manager_service,
         feature_store_service=app_container.feature_store_service,
     )
-    warehouse_migration.set_credential_callback(get_credential=get_credential_func)
 
     # check get_credential called parameters
     mock_session_manager.return_value.get_session = AsyncMock()
     _ = await warehouse_migration.get_session(feature_store=feature_store)
-    get_credential_func.assert_called_with(
-        user_id=feature_store_user_id, feature_store_name=feature_store.name
-    )

@@ -46,19 +46,6 @@ from tests.util.helper import deploy_feature_ids, get_relationship_info, manage_
 TEST_REDIS_URI = "redis://localhost:36379"
 
 
-@pytest.fixture(name="get_credential")
-def get_credential_fixture(credentials):
-    """
-    get_credential fixture
-    """
-
-    async def get_credential(user_id, feature_store_name):
-        _ = user_id
-        return credentials.get(feature_store_name)
-
-    return get_credential
-
-
 @pytest.fixture(name="app_container")
 def app_container_fixture(persistent, user, catalog, storage, temp_storage):
     """

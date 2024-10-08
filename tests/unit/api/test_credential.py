@@ -30,16 +30,13 @@ def test_credential_creation__success(snowflake_feature_store, credential):
     Credential creation success
     """
     credential.delete()
-    with mock.patch("featurebyte.service.credential.CredentialService._validate_credential"):
-        new_credential = Credential.create(
-            feature_store_name=snowflake_feature_store.name,
-            database_credential=UsernamePasswordCredential(
-                username="username", password="password"
-            ),
-            storage_credential=S3StorageCredential(
-                s3_access_key_id="access_key_id", s3_secret_access_key="s3_secret_access_key"
-            ),
-        )
+    new_credential = Credential.create(
+        feature_store_name=snowflake_feature_store.name,
+        database_credential=UsernamePasswordCredential(username="username", password="password"),
+        storage_credential=S3StorageCredential(
+            s3_access_key_id="access_key_id", s3_secret_access_key="s3_secret_access_key"
+        ),
+    )
     assert new_credential.saved
     assert new_credential.id is not None
     assert new_credential.feature_store_id == snowflake_feature_store.id
@@ -66,7 +63,9 @@ def test_credential_creation__conflict(snowflake_feature_store):
     """
     Credential creation conflict
     """
-    with mock.patch("featurebyte.service.credential.CredentialService._validate_credential"):
+    with mock.patch(
+        "featurebyte.routes.credential.controller.CredentialController._validate_credentials"
+    ):  # Do not validate credentials
         with pytest.raises(DuplicatedRecordException) as exc:
             Credential.create(feature_store_name=snowflake_feature_store.name)
     assert f'Credential (feature_store_id: "{snowflake_feature_store.id}") already exists' in str(
@@ -75,7 +74,7 @@ def test_credential_creation__conflict(snowflake_feature_store):
 
 
 @pytest.mark.asyncio
-async def test_credential_update(credential, snowflake_feature_store, persistent):
+async def test_credential_update(credential, snowflake_feature_store, persistent, user_id):
     """
     Test credential update
     """
@@ -86,7 +85,9 @@ async def test_credential_update(credential, snowflake_feature_store, persistent
     assert credential_info["database_credential_type"] == "USERNAME_PASSWORD"
     assert credential_info["storage_credential_type"] is None
 
-    with mock.patch("featurebyte.service.credential.CredentialService._validate_credential"):
+    with mock.patch(
+        "featurebyte.routes.credential.controller.CredentialController._validate_credentials"
+    ):  # Do not validate credentials
         credential.update_credentials(
             database_credential=AccessTokenCredential(access_token="access_token"),
             storage_credential=S3StorageCredential(
@@ -216,7 +217,7 @@ async def test_credential_update(credential, snowflake_feature_store, persistent
             ("INSERT", 'insert: "sf_featurestore"', "name", np.nan, "sf_featurestore"),
             ("INSERT", 'insert: "sf_featurestore"', "storage_credential", np.nan, None),
             ("INSERT", 'insert: "sf_featurestore"', "updated_at", np.nan, None),
-            ("INSERT", 'insert: "sf_featurestore"', "user_id", np.nan, None),
+            ("INSERT", 'insert: "sf_featurestore"', "user_id", np.nan, str(user_id)),
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )

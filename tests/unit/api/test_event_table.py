@@ -40,7 +40,7 @@ from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
 
 
 @pytest.fixture(name="event_table_dict")
-def event_table_dict_fixture(snowflake_database_table):
+def event_table_dict_fixture(snowflake_database_table, user_id):
     """EventTable in serialized dictionary format"""
     return {
         "type": "event_table",
@@ -134,7 +134,7 @@ def event_table_dict_fixture(snowflake_database_table):
         "default_feature_job_setting": None,
         "created_at": None,
         "updated_at": None,
-        "user_id": None,
+        "user_id": user_id,
         "event_timestamp_timezone_offset": None,
         "event_timestamp_timezone_offset_column": None,
         "is_deleted": False,

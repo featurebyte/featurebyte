@@ -480,7 +480,7 @@ def test_catalog_creation(new_catalog):
     assert expected_msg in str(exc.value)
 
 
-def test_catalog_update_name(new_catalog):
+def test_catalog_update_name(new_catalog, user_id):
     """
     Test update catalog name
     """
@@ -520,7 +520,7 @@ def test_catalog_update_name(new_catalog):
             ("INSERT", 'insert: "grocery"', "name", np.nan, "grocery"),
             ("INSERT", 'insert: "grocery"', "online_store_id", np.nan, None),
             ("INSERT", 'insert: "grocery"', "updated_at", np.nan, None),
-            ("INSERT", 'insert: "grocery"', "user_id", np.nan, None),
+            ("INSERT", 'insert: "grocery"', "user_id", np.nan, str(user_id)),
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
