@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from featurebyte.enum import DBVarType
-from featurebyte.exception import SCDTableValidationError
+from featurebyte.exception import TableValidationError
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -124,7 +124,7 @@ async def test_validate_scd_table__invalid_multiple_active_records(
         "value": [1, 1, 2],
     })
     await session.register_table(table_name, df_scd)
-    with pytest.raises(SCDTableValidationError) as exc_info:
+    with pytest.raises(TableValidationError) as exc_info:
         await service.validate_scd_table(session, scd_create_with_end_date_payload)
     assert (
         str(exc_info.value)
@@ -156,7 +156,7 @@ async def test_validate_scd_table__invalid_multiple_records_per_ts_id(
         "value": [1, 2, 3],
     })
     await session.register_table(table_name, df_scd)
-    with pytest.raises(SCDTableValidationError) as exc_info:
+    with pytest.raises(TableValidationError) as exc_info:
         await service.validate_scd_table(session, scd_create_payload)
     assert (
         str(exc_info.value)

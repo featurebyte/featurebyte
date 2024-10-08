@@ -351,7 +351,10 @@ app_container_config.register_class(
     dependency_override={"service": "scd_table_service"},
 )
 app_container_config.register_class(SCDTableService)
-app_container_config.register_class(SCDTableValidationService)
+app_container_config.register_class(
+    SCDTableValidationService,
+    dependency_override={"table_document_service": "scd_table_service"},
+)
 app_container_config.register_class(ScheduledFeatureMaterializeTask)
 app_container_config.register_class(SchemaMetadataService)
 app_container_config.register_class(SemanticController)
