@@ -9,6 +9,7 @@ from bson import ObjectId
 from featurebyte.enum import SemanticType
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import ItemTableInfo
 from featurebyte.schema.item_table import ItemTableList, ItemTableServiceUpdate
 from featurebyte.service.entity import EntityService
@@ -55,6 +56,7 @@ class ItemTableController(
         specialized_dtype_detection_service: SpecializedDtypeDetectionService,
         feature_store_service: FeatureStoreService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
+        task_controller: TaskController,
     ):
         super().__init__(
             service=item_table_service,
@@ -67,6 +69,7 @@ class ItemTableController(
             specialized_dtype_detection_service=specialized_dtype_detection_service,
             feature_store_service=feature_store_service,
             feature_store_warehouse_service=feature_store_warehouse_service,
+            task_controller=task_controller,
         )
         self.table_info_service = table_info_service
         self.event_table_service = event_table_service

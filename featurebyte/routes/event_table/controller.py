@@ -12,6 +12,7 @@ from featurebyte.enum import SemanticType
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.routes.common.base_table import BaseTableDocumentController
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.event_table import EventTableList, EventTableServiceUpdate
 from featurebyte.schema.info import EventTableInfo
 from featurebyte.service.entity import EntityService
@@ -61,6 +62,7 @@ class EventTableController(
         specialized_dtype_detection_service: SpecializedDtypeDetectionService,
         feature_store_service: FeatureStoreService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
+        task_controller: TaskController,
     ):
         super().__init__(
             service=event_table_service,
@@ -73,6 +75,7 @@ class EventTableController(
             specialized_dtype_detection_service=specialized_dtype_detection_service,
             feature_store_service=feature_store_service,
             feature_store_warehouse_service=feature_store_warehouse_service,
+            task_controller=task_controller,
         )
         self.table_info_service = table_info_service
         self.item_table_service = item_table_service

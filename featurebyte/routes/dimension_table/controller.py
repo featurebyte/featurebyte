@@ -9,6 +9,7 @@ from bson import ObjectId
 from featurebyte.enum import SemanticType
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.dimension_table import DimensionTableList, DimensionTableServiceUpdate
 from featurebyte.schema.info import DimensionTableInfo
 from featurebyte.service.dimension_table import DimensionTableService
@@ -52,6 +53,7 @@ class DimensionTableController(
         specialized_dtype_detection_service: SpecializedDtypeDetectionService,
         feature_store_service: FeatureStoreService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
+        task_controller: TaskController,
     ):
         super().__init__(
             service=dimension_table_service,
@@ -64,6 +66,7 @@ class DimensionTableController(
             specialized_dtype_detection_service=specialized_dtype_detection_service,
             feature_store_service=feature_store_service,
             feature_store_warehouse_service=feature_store_warehouse_service,
+            task_controller=task_controller,
         )
         self.table_info_service = table_info_service
 
