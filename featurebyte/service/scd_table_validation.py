@@ -25,13 +25,16 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.materialisation import get_source_expr
+from featurebyte.schema.scd_table import SCDTableCreate, SCDTableServiceUpdate
 from featurebyte.service.base_table_validation import BaseTableValidationService
 from featurebyte.session.base import BaseSession
 
 COUNT_PER_NATURAL_KEY = "COUNT_PER_NATURAL_KEY"
 
 
-class SCDTableValidationService(BaseTableValidationService):
+class SCDTableValidationService(
+    BaseTableValidationService[SCDTableModel, SCDTableCreate, SCDTableServiceUpdate]
+):
     """
     SCDTableValidationService class
     """
@@ -59,7 +62,7 @@ class SCDTableValidationService(BaseTableValidationService):
         TableValidationError
             If the table is not a proper SCD table
         """
-        table_model: SCDTableModel = await self.table_document_service.get_document(table_id)
+        table_model = await self.table_document_service.get_document(table_id)
 
         if table_model.natural_key_column is None:
             return

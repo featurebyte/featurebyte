@@ -5,20 +5,25 @@ BaseTableValidationService class
 from __future__ import annotations
 
 from abc import abstractmethod
+from typing import Generic
 
 from bson import ObjectId
 
 from featurebyte.exception import TableValidationError
 from featurebyte.models.feature_store import TableValidation, TableValidationStatus
-from featurebyte.schema.table import TableServiceUpdate
-from featurebyte.service.base_table_document import BaseTableDocumentService
+from featurebyte.service.base_table_document import (
+    BaseTableDocumentService,
+    DocumentCreate,
+    DocumentUpdate,
+)
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.mixin import Document
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import BaseSession
 
 
-class BaseTableValidationService:
+class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdate]):
     """
     BaseTableValidationService class
     """
@@ -29,7 +34,7 @@ class BaseTableValidationService:
         catalog_service: CatalogService,
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
-        table_document_service: BaseTableDocumentService,
+        table_document_service: BaseTableDocumentService[Document, DocumentCreate, DocumentUpdate],
     ):
         self.catalog_id = catalog_id
         self.catalog_service = catalog_service
@@ -63,7 +68,7 @@ class BaseTableValidationService:
             )
         await self.table_document_service.update_document(
             table_id,
-            TableServiceUpdate(validation=table_validation),
+            self.table_document_service.document_update_class(validation=table_validation),
         )
 
     @abstractmethod
