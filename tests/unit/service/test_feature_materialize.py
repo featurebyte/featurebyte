@@ -368,6 +368,7 @@ async def test_scheduled_materialize_features(
     is_online_store_registered_for_catalog,
     feature_materialize_run,
     update_fixtures,
+    insert_credential,
 ):
     """
     Test scheduled_materialize_features
@@ -431,6 +432,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
     offline_store_feature_table,
     online_store,
     mock_materialize_partial,
+    insert_credential,
 ):
     """
     Test calling scheduled_materialize_features when the feature table has already been materialized

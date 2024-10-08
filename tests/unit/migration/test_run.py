@@ -104,7 +104,7 @@ async def test_migrate_method_generator(user, persistent, schema_metadata_servic
 
 @pytest.mark.asyncio
 async def test_migrate_method_generator__exclude_warehouse(
-    user, persistent, get_credential, schema_metadata_service
+    user, persistent, schema_metadata_service, insert_credential,
 ):
     """Test migrate method generator with include_data_warehouse_migrations=False"""
     schema_metadata = await schema_metadata_service.get_or_create_document(
@@ -192,7 +192,7 @@ async def test_post_migration_sanity_check(app_container):
 
 @pytest.mark.asyncio
 async def test_run_migration(
-    migration_check_persistent, user, get_credential, schema_metadata_service
+    migration_check_persistent, user, insert_credential, schema_metadata_service
 ):
     """Test run migration function"""
     persistent = migration_check_persistent
