@@ -11,6 +11,7 @@ from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.scd_table import SCDTableCreate
+from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.scd_table_validation import SCDTableValidationService
 
 
@@ -23,12 +24,20 @@ def service(app_container) -> SCDTableValidationService:
 
 
 @pytest.fixture
+def document_service(app_container) -> SCDTableService:
+    """
+    Fixture for SCDTableService
+    """
+    return app_container.scd_table_service
+
+
+@pytest.fixture
 def scd_create_payload(feature_store, session_without_datasets, table_name):
     """
     Fixture for SCDTableCreate payload
     """
     return SCDTableCreate(
-        name="my_scd_table",
+        name=table_name,
         tabular_source=TabularSource(
             feature_store_id=feature_store.id,
             table_details=TableDetails(
@@ -75,6 +84,7 @@ def scd_create_with_end_date_payload(scd_create_payload):
 @pytest.mark.asyncio
 async def test_validate_scd_table__valid(
     service,
+    document_service,
     scd_create_payload,
     session_without_datasets,
     table_name,
@@ -94,13 +104,15 @@ async def test_validate_scd_table__valid(
         "value": [1, 1, 2, 2],
     })
     await session.register_table(table_name, df_scd)
-    await service.validate_scd_table(session, scd_create_payload)
+    table_model = await document_service.create_document(scd_create_payload)
+    await service.validate_table(session, table_model)
 
 
 @pytest.mark.parametrize("table_name", ["test_validate_scd_table__invalid_multiple_active_records"])
 @pytest.mark.asyncio
 async def test_validate_scd_table__invalid_multiple_active_records(
     service,
+    document_service,
     scd_create_with_end_date_payload,
     session_without_datasets,
     table_name,
@@ -124,8 +136,9 @@ async def test_validate_scd_table__invalid_multiple_active_records(
         "value": [1, 1, 2],
     })
     await session.register_table(table_name, df_scd)
+    table_model = await document_service.create_document(scd_create_with_end_date_payload)
     with pytest.raises(TableValidationError) as exc_info:
-        await service.validate_scd_table(session, scd_create_with_end_date_payload)
+        await service.validate_table(session, table_model)
     assert (
         str(exc_info.value)
         == "Multiple active records found for the same natural key. Examples of natural keys with multiple active records are: [1000]"
@@ -138,6 +151,7 @@ async def test_validate_scd_table__invalid_multiple_active_records(
 @pytest.mark.asyncio
 async def test_validate_scd_table__invalid_multiple_records_per_ts_id(
     service,
+    document_service,
     scd_create_payload,
     session_without_datasets,
     table_name,
@@ -156,8 +170,9 @@ async def test_validate_scd_table__invalid_multiple_records_per_ts_id(
         "value": [1, 2, 3],
     })
     await session.register_table(table_name, df_scd)
+    table_model = await document_service.create_document(scd_create_payload)
     with pytest.raises(TableValidationError) as exc_info:
-        await service.validate_scd_table(session, scd_create_payload)
+        await service.validate_table(session, table_model)
     assert (
         str(exc_info.value)
         == "Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: [1000]"
