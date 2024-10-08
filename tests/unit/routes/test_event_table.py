@@ -120,6 +120,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
             "record_creation_timestamp_column": "created_at",
             "default_feature_job_setting": {"blind_spot": "10m", "period": "30m", "offset": "5m"},
             "status": "PUBLISHED",
+            "validation": {"status": "PASSED", "validation_message": None},
             "user_id": str(user_id),
             "_id": ObjectId(),
         }
@@ -188,8 +189,10 @@ class TestEventTableApi(BaseTableApiTestSuite):
         response = test_api_client.get(f"/event_table/audit/{insert_id}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
-        assert results["total"] == 3
+        assert results["total"] == 5
         assert [record["action_type"] for record in results["data"]] == [
+            "UPDATE",
+            "UPDATE",
             "UPDATE",
             "UPDATE",
             "INSERT",
@@ -199,6 +202,8 @@ class TestEventTableApi(BaseTableApiTestSuite):
             for record in results["data"]
         ] == [
             {"blind_spot": "600s", "period": "1800s", "offset": "300s", "execution_buffer": "0s"},
+            None,
+            None,
             None,
             None,
         ]

@@ -767,6 +767,8 @@ def test_default_feature_job_setting_history(saved_event_table):
             ("UPDATE", 'update: "sf_event_table"'),
             ("UPDATE", 'update: "sf_event_table"'),
             ("UPDATE", 'update: "sf_event_table"'),
+            ("UPDATE", 'update: "sf_event_table"'),
+            ("UPDATE", 'update: "sf_event_table"'),
             ("INSERT", 'insert: "sf_event_table"'),
         ],
         columns=["action_type", "name"],
@@ -901,6 +903,7 @@ def test_default_feature_job_setting_history(saved_event_table):
         "event_timestamp_timezone_offset_column",
         "block_modification_by",
         "is_deleted",
+        "validation",
     }
 
 

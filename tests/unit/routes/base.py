@@ -1066,14 +1066,18 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/audit/{current_data['_id']}")
         assert response.status_code == HTTPStatus.OK
         results = response.json()
-        assert results["total"] == 3
+        assert results["total"] == 5
         assert [record["action_type"] for record in results["data"]] == [
+            "UPDATE",
+            "UPDATE",
             "UPDATE",
             "UPDATE",
             "INSERT",
         ]
         assert [record["previous_values"].get("status") for record in results["data"]] == [
             "PUBLIC_DRAFT",
+            None,
+            None,
             None,
             None,
         ]

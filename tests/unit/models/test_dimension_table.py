@@ -91,6 +91,7 @@ def get_base_expected_dimension_table_model(dimension_table_model, dimension_col
         "block_modification_by": [],
         "description": None,
         "is_deleted": False,
+        "validation": None,
     }
 
 
