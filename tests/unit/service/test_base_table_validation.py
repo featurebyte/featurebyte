@@ -71,9 +71,13 @@ async def test_validate_and_update__success(
     Test validate_and_update (success case)
     """
     with patch.object(table_validation_service, "validate_table", side_effect=None):
-        await table_validation_service.validate_and_update(table_model.id)
+        await table_validation_service.validate_and_update(table_model.id, "task_id_1")
     updated_table_model = await document_service.get_document(table_model.id)
-    assert updated_table_model.validation.dict() == {"status": "PASSED", "validation_message": None}
+    assert updated_table_model.validation.dict() == {
+        "status": "PASSED",
+        "validation_message": None,
+        "task_id": None,
+    }
 
 
 @pytest.mark.asyncio
@@ -90,9 +94,10 @@ async def test_validate_and_update__failure(
         "validate_table",
         side_effect=TableValidationError("custom message"),
     ):
-        await table_validation_service.validate_and_update(table_model.id)
+        await table_validation_service.validate_and_update(table_model.id, "task_id_2")
     updated_table_model = await document_service.get_document(table_model.id)
     assert updated_table_model.validation.dict() == {
         "status": "FAILED",
         "validation_message": "custom message",
+        "task_id": None,
     }

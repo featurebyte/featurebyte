@@ -769,6 +769,7 @@ def test_default_feature_job_setting_history(saved_event_table):
             ("UPDATE", 'update: "sf_event_table"'),
             ("UPDATE", 'update: "sf_event_table"'),
             ("UPDATE", 'update: "sf_event_table"'),
+            ("UPDATE", 'update: "sf_event_table"'),
             ("INSERT", 'insert: "sf_event_table"'),
         ],
         columns=["action_type", "name"],

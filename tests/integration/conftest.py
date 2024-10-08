@@ -1537,6 +1537,7 @@ def mock_task_manager(request, persistent, storage):
                 task = app_container.get(TASK_REGISTRY_MAP[payload.command])
                 try:
                     task_payload = task.get_payload_obj(kwargs)
+                    task.set_task_id(UUID(task_id))
                     await task.execute(task_payload)
                     status = TaskStatus.SUCCESS
                     traceback_info = None

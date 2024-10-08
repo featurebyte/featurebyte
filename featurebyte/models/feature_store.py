@@ -120,6 +120,7 @@ class TableValidation(FeatureByteBaseModel):
 
     status: TableValidationStatus
     validation_message: Optional[StrictStr] = Field(default=None)
+    task_id: Optional[str] = Field(default=None)
 
 
 class ConstructGraphMixin:

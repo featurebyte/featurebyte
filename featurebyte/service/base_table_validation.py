@@ -4,7 +4,7 @@ BaseTableValidationService class
 
 from __future__ import annotations
 
-from typing import Generic
+from typing import Generic, Optional
 
 from bson import ObjectId
 
@@ -41,7 +41,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         self.session_manager_service = session_manager_service
         self.table_document_service = table_document_service
 
-    async def validate_and_update(self, table_id: ObjectId) -> None:
+    async def validate_and_update(self, table_id: ObjectId, task_id: Optional[str]) -> None:
         """
         Validate table and update validation status
 
@@ -49,8 +49,19 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         ----------
         table_id: ObjectId
             Table ID
+        task_id: Optional[str]
+            Task ID
         """
-        table_validation = TableValidation(
+        if task_id is not None:
+            await self.table_document_service.update_document(
+                table_id,
+                self.table_document_service.document_update_class(
+                    validation=TableValidation(
+                        status=TableValidationStatus.PENDING, task_id=task_id
+                    )
+                ),
+            )
+        new_validation_state = TableValidation(
             status=TableValidationStatus.PASSED,
             validation_message=None,
         )
@@ -62,13 +73,13 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         try:
             await self.validate_table(session, table_model)
         except TableValidationError as e:
-            table_validation = TableValidation(
+            new_validation_state = TableValidation(
                 status=TableValidationStatus.FAILED,
                 validation_message=str(e),
             )
         await self.table_document_service.update_document(
             table_id,
-            self.table_document_service.document_update_class(validation=table_validation),
+            self.table_document_service.document_update_class(validation=new_validation_state),
         )
 
     async def validate_table(
