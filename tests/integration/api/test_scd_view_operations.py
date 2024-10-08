@@ -69,7 +69,7 @@ def expected_dataframe_scd_join(transaction_data_upper_case, scd_dataframe):
 
 
 @pytest.mark.asyncio
-async def test_scd_join_small(session, data_source, source_type):
+async def test_scd_join_small(session, data_source, source_type, config):
     """
     Self-contained test case to test SCD with small datasets
     """
@@ -151,6 +151,16 @@ async def test_scd_join_small(session, data_source, source_type):
     event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest_v2")
     df_actual = event_view.preview()
     pd.testing.assert_frame_equal(df_actual, df_expected, check_dtype=False)
+
+    client = config.get_client()
+    response = client.get(f"/scd_table/{scd_table.id}")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["validation"] == {
+        "status": "FAILED",
+        "validation_message": "Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: [1000, 1000, 1000]",
+        "task_id": None,
+    }
 
 
 @pytest.mark.asyncio
