@@ -119,7 +119,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "description": None,
             "entity_column_name_to_count": {},
             "has_row_index": True,
-            "is_view": True,
+            "is_view": False,
             "least_recent_point_in_time": None,
             "location": json_dict["location"],
             "min_interval_secs_between_entities": None,

@@ -670,21 +670,9 @@ class FeatureTableCacheService:
                 })
             )
         )
-        try:
-            await db_session.create_table_as(
-                table_details=output_view_details,
-                select_expr=select_expr,
-                kind="VIEW",
-            )
-            return True, historical_features_metrics
-        except BaseException as _:
-            logger.info(
-                "Failed to create view. Trying to create a table instead",
-                extra={"observation_table_id": observation_table.id},
-                exc_info=True,
-            )
-            await db_session.create_table_as(
-                table_details=output_view_details,
-                select_expr=select_expr,
-            )
-            return False, historical_features_metrics
+        await db_session.create_table_as(
+            table_details=output_view_details,
+            select_expr=select_expr,
+            kind="TABLE",
+        )
+        return False, historical_features_metrics
