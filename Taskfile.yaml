@@ -125,7 +125,8 @@ tasks:
         sh: printenv PYTEST_GROUP || echo "1"
       PYTEST_SPLITS:
         sh: printenv PYTEST_SPLITS || echo "1"
-      MONGO_URI: mongodb://localhost:37017/?replicaSet=rs0
+    env:
+      MONGODB_URI: mongodb://localhost:37017/?replicaSet=rs0
       REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
@@ -154,7 +155,8 @@ tasks:
         sh: printenv PYTEST_GROUP || echo "1"
       PYTEST_SPLITS:
         sh: printenv PYTEST_SPLITS || echo "1"
-      MONGO_URI: mongodb://localhost:37017/?replicaSet=rs0
+    env:
+      MONGODB_URI: mongodb://localhost:37017/?replicaSet=rs0
       REDIS_URI: redis://localhost:36379
     deps:
       - task: install
@@ -176,7 +178,8 @@ tasks:
         sh: printenv PYTEST_GROUP || echo "1"
       PYTEST_SPLITS:
         sh: printenv PYTEST_SPLITS || echo "1"
-      MONGO_URI: mongodb://localhost:37017/?replicaSet=rs0
+    env:
+      MONGODB_URI: mongodb://localhost:37017/?replicaSet=rs0
       REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
@@ -193,7 +196,8 @@ tasks:
         sh: printenv PYTEST_GROUP || echo "1"
       PYTEST_SPLITS:
         sh: printenv PYTEST_SPLITS || echo "1"
-      MONGO_URI: mongodb://localhost:37017/?replicaSet=rs0
+    env:
+      MONGODB_URI: mongodb://localhost:37017/?replicaSet=rs0
       REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
