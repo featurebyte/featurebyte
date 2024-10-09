@@ -421,11 +421,6 @@ class CredentialModel(FeatureByteBaseDocumentModel):
                 conflict_fields_signature={"id": ["_id"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
             ),
-            UniqueValuesConstraint(
-                fields=("user_id", "feature_store_id"),
-                conflict_fields_signature={"feature_store_id": ["feature_store_id"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_BY_ID,
-            ),
         ]
 
         indexes = FeatureByteBaseDocumentModel.Settings.indexes + [

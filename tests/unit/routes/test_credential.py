@@ -27,11 +27,6 @@ class TestCredentialApi(BaseApiTestSuite):
             f'Credential (id: "{payload["_id"]}") already exists. '
             f'Get the existing object by `Credential.get_by_id(id="{payload["_id"]}")`.',
         ),
-        (
-            {**payload, "_id": str(ObjectId())},
-            f'Credential (feature_store_id: "{payload["feature_store_id"]}") already exists. '
-            f'Get the existing object by `Credential.get_by_id(id="{payload["_id"]}")`.',
-        ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
@@ -46,14 +41,6 @@ class TestCredentialApi(BaseApiTestSuite):
             ],
         )
     ]
-
-    @pytest.fixture(autouse=True)
-    def patch_validate_credentials(self):
-        """
-        Mock _validate_credential method
-        """
-        with patch("featurebyte.routes.credential.controller.CredentialController._validate_credentials"):
-            yield
 
     def setup_creation_route(self, api_client):
         """
@@ -79,11 +66,16 @@ class TestCredentialApi(BaseApiTestSuite):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
 
+        # Create featurestore
+        feature_store = self.load_payload("tests/fixtures/request_payloads/feature_store.json")
+        api_client.post("/feature_store", json=feature_store)
+
+        # Create multiple credentials
         for i in range(3):
             payload = self.payload.copy()
             payload["_id"] = str(ObjectId())
             payload["name"] = f'{self.payload["name"]}_{i}'
-            payload["feature_store_id"] = str(ObjectId())
+            payload["feature_store_id"] = feature_store["_id"]
             yield payload
 
     def test_update_200(self, create_success_response, test_api_client_persistent):

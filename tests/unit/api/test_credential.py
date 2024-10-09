@@ -59,20 +59,6 @@ def test_credential_creation__success(snowflake_feature_store, credential):
     )
 
 
-def test_credential_creation__conflict(snowflake_feature_store):
-    """
-    Credential creation conflict
-    """
-    with mock.patch(
-        "featurebyte.routes.credential.controller.CredentialController._validate_credentials"
-    ):  # Do not validate credentials
-        with pytest.raises(DuplicatedRecordException) as exc:
-            Credential.create(feature_store_name=snowflake_feature_store.name)
-    assert f'Credential (feature_store_id: "{snowflake_feature_store.id}") already exists' in str(
-        exc.value
-    )
-
-
 @pytest.mark.asyncio
 async def test_credential_update(credential, snowflake_feature_store, persistent, user_id):
     """
