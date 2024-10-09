@@ -55,6 +55,17 @@ class TaskStatus(StrEnum):
         """
         return {cls.SUCCESS, cls.FAILURE, cls.REVOKED, cls.REJECTED, cls.IGNORED}
 
+    @classmethod
+    def unsuccessful(cls) -> Set[StrEnum]:
+        """
+        Unsuccessful status values
+
+        Returns
+        -------
+        Set[StrEnum]
+        """
+        return {cls.FAILURE, cls.REVOKED, cls.REJECTED, cls.IGNORED}
+
 
 class Task(FeatureByteBaseModel):
     """

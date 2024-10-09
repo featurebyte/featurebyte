@@ -12,7 +12,7 @@ from bson import ObjectId
 from celery import Celery
 from redis import Redis
 
-from featurebyte.exception import TaskNotFound, TaskNotRevocableError
+from featurebyte.exception import TaskNotFound, TaskNotRerunnableError, TaskNotRevocableError
 from featurebyte.logging import get_logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.task import Task as TaskModel
@@ -458,3 +458,50 @@ class TaskManager:
             raise TaskNotRevocableError(f'Task (id: "{task_id}") does not support revoke.')
         if task.status in TaskStatus.non_terminal():
             self.celery.control.revoke(task_id, reply=True, terminate=True, signal="SIGTERM")
+            # revoke all child tasks
+            task_docs, _ = await self.persistent.find(
+                collection_name=TaskModel.collection_name(),
+                query_filter={"parent_id": task_id},
+            )
+            for task_doc in task_docs:
+                self.celery.control.revoke(
+                    str(task_doc["_id"]), reply=True, terminate=True, signal="SIGTERM"
+                )
+
+    async def rerun_task(self, task_id: str) -> str:
+        """
+        Rerun task
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+
+        Raises
+        ------
+        TaskNotFound
+            Task not found.
+        TaskNotRerunnableError
+            Task does not support rerun.
+
+        Returns
+        -------
+        str
+            Task ID
+        """
+        # try to find record in persistent first
+        document = await self.persistent.find_one(
+            collection_name=TaskModel.collection_name(),
+            query_filter={"_id": task_id},
+        )
+
+        if not document:
+            raise TaskNotFound(f'Task (id: "{task_id}") not found.')
+
+        task = TaskModel(**document)
+        if task.status not in TaskStatus.unsuccessful() or not task.kwargs.get("is_rerunnable"):
+            raise TaskNotRerunnableError(f'Task (id: "{task_id}") does not support rerun.')
+
+        payload = BaseTaskPayload(**task.kwargs)
+        task = self.celery.send_task(payload.task, kwargs=task.kwargs)
+        return str(task.id)

@@ -123,14 +123,14 @@ def mock_websocket_client_fixture(request):
             yield mock_get_websocket_client
 
 
-@pytest.fixture(name="mock_get_redis", autouse=True)
-def mock_get_redis_fixture():
+@pytest.fixture(name="mock_redis", autouse=True)
+def mock_redis_fixture():
     """Mock get_redis in featurebyte.worker"""
     with patch("featurebyte.worker.Redis") as mock_get_redis:
         mock_redis = mock_get_redis.from_url.return_value
         mock_redis.pipeline.return_value.execute.return_value = [0]
         mock_redis.zrank.return_value = 0
-        yield mock_get_redis
+        yield mock_redis
 
 
 @pytest.fixture(name="storage")

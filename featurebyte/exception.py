@@ -524,6 +524,12 @@ class TaskNotRevocableError(BaseUnprocessableEntityError):
     """
 
 
+class TaskNotRerunnableError(BaseUnprocessableEntityError):
+    """
+    Raise when task is not rerunnable
+    """
+
+
 class TaskNotFound(DocumentNotFoundError):
     """
     Raise when task is not found
