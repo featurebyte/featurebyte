@@ -7,10 +7,8 @@ from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
-import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.models.credential import CredentialModel, UsernamePasswordCredential
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 

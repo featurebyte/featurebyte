@@ -82,7 +82,9 @@ class CredentialService(
 
     # This is a temporary method
     # This is hardcoded to use user_id to find the credential
-    async def find(self, user_id: Optional[ObjectId], feature_store_name: str) -> Optional[CredentialModel]:
+    async def find(
+        self, user_id: Optional[ObjectId], feature_store_name: str
+    ) -> Optional[CredentialModel]:
         """
         Find credential
 

@@ -8,7 +8,6 @@ import json
 import os.path
 from typing import Optional
 from unittest.mock import Mock, patch
-from uuid import uuid4
 
 import pytest
 import pytest_asyncio
@@ -25,8 +24,6 @@ from featurebyte.query_graph.model.entity_relationship_info import (
     FeatureEntityLookupInfo,
 )
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
-from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_table import DimensionTableCreate

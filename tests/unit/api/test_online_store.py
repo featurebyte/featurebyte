@@ -11,7 +11,6 @@ from pandas.testing import assert_frame_equal
 from featurebyte import MySQLOnlineStoreDetails, UsernamePasswordCredential
 from featurebyte.api.online_store import OnlineStore
 from featurebyte.exception import ObjectHasBeenSavedError, RecordRetrievalException
-from tests.unit.conftest import user_id
 
 
 def test_info(saved_mysql_online_store, catalog):

@@ -11,7 +11,7 @@ from bson import ObjectId
 
 from featurebyte import AccessTokenCredential, S3StorageCredential, UsernamePasswordCredential
 from featurebyte.api.credential import Credential
-from featurebyte.exception import DuplicatedRecordException, RecordRetrievalException
+from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.credential import CredentialModel
 from tests.util.helper import compare_pydantic_obj
 

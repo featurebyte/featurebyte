@@ -35,7 +35,9 @@ class SessionManagerService:
     async def get_feature_store_session(
         self,
         feature_store: FeatureStoreModel,
-        get_credential: Callable[[ObjectId, str], Awaitable[CredentialModel]] = None,
+        get_credential: Optional[
+            Callable[[ObjectId, str], Awaitable[Optional[CredentialModel]]]
+        ] = None,
         user_override: Optional[User] = None,
         timeout: float = NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
         skip_validation: bool = False,
@@ -47,7 +49,7 @@ class SessionManagerService:
         ----------
         feature_store: FeatureStoreModel
             ExtendedFeatureStoreModel object
-        get_credential: Callable[[ObjectId, str], CredentialModel]
+        get_credential: Optional[Callable[[ObjectId, str], Awaitable[Optional[CredentialModel]]]]
             Override credential handler function
         user_override: Optional[User]
             User object to override
@@ -74,6 +76,11 @@ class SessionManagerService:
                 credential = await self.credential_service.find(
                     user_id=user_to_use.id, feature_store_name=feature_store.name
                 )
+            if credential is None:
+                raise CredentialsError(
+                    f'Credential used to access FeatureStore (name: "{feature_store.name}") is missing or invalid.'
+                )
+
             credentials = {feature_store.name: credential}
             session_manager = SessionManager(credentials=credentials)
             session = await session_manager.get_session(feature_store, timeout=timeout)

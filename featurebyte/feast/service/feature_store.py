@@ -201,6 +201,11 @@ class FeastFeatureStoreService:
         -------
         FeastFeatureStore
             Feast feature store
+
+        Raises
+        ------
+        ValueError
+            if unable to retrieve feature store credentials
         """
         logger.info("Creating feast feature store for registry %s", str(feast_registry.id))
         feature_store = await self.feature_store_service.get_document(

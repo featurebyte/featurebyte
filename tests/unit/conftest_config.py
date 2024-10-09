@@ -8,10 +8,8 @@ from unittest import mock
 
 import pytest
 import yaml
-from bson import ObjectId
 
 from featurebyte import Configurations
-from featurebyte.models.credential import CredentialModel, UsernamePasswordCredential
 
 
 @pytest.fixture(name="config_file")

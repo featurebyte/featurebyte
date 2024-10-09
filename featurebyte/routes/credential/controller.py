@@ -4,6 +4,8 @@ Credential API routes
 
 from __future__ import annotations
 
+from typing import Any
+
 from bson import ObjectId
 from fastapi import Request
 
@@ -60,7 +62,7 @@ class CredentialController(
         """
 
         # Override the get get_credentials function
-        async def credentials_get_override(_1, _2):
+        async def credentials_get_override(_1: Any, _2: Any) -> CredentialModel:
             return credentials
 
         session = await self.session_manager_service.get_feature_store_session(
@@ -82,7 +84,7 @@ class CredentialController(
 
         Returns
         -------
-        CredentialRead | None
+        CredentialRead
             CredentialRead object or None if failed to validate credentials
         """
         # Test Credential Validity
@@ -91,7 +93,9 @@ class CredentialController(
         )
         credentials = CredentialModel.model_validate(data.model_dump(by_alias=True))
 
-        await self._validate_credentials(feature_store, credentials)
+        await self._validate_credentials(
+            feature_store, credentials
+        )  # Will raise exception if invalid
 
         # Create Credential
         saved_credentials = await self.service.create_document(data=data)

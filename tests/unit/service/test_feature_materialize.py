@@ -239,7 +239,9 @@ async def offline_store_feature_table_with_precomputed_lookup_ttl_fixture(
 
 
 @pytest_asyncio.fixture(name="feast_feature_store")
-async def feast_feature_store_fixture(app_container, offline_store_feature_table, insert_credential):
+async def feast_feature_store_fixture(
+    app_container, offline_store_feature_table, insert_credential
+):
     """
     Fixture for the feast feature store
     """
