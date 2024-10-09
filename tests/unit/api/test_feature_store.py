@@ -3,6 +3,7 @@ Unit test for DatabaseSource
 """
 
 import json
+from unittest import mock
 from unittest.mock import patch
 
 import numpy as np
@@ -22,6 +23,16 @@ from featurebyte.exception import (
 )
 from featurebyte.query_graph.node.schema import SnowflakeDetails
 from featurebyte.session.manager import SessionManager
+
+
+def test_save__unexpected_creation_exception(snowflake_feature_store_params):
+    """
+    Test unexpected feature store creation exception
+    """
+    # check unexpected creation exception
+    with mock.patch("featurebyte.api.savable_api_object.Configurations"):
+        with pytest.raises(RecordCreationException):
+            FeatureStore.create(**snowflake_feature_store_params)
 
 
 @pytest.mark.asyncio
@@ -187,17 +198,6 @@ def test_save__duplicate_record_exception(saved_snowflake_feature_store):
         saved_snowflake_feature_store.save()
     expected_msg = f'FeatureStore (id: "{saved_snowflake_feature_store.id}") has been saved before.'
     assert expected_msg in str(exc.value)
-
-
-def test_save__unexpected_creation_exception(snowflake_feature_store_params):
-    """
-    Test unexpected feature store creation exception
-    """
-    # check unexpected creation exception
-    # Unable to connect to snowflake
-    with pytest.raises(RecordCreationException):
-        with patch("featurebyte.api.api_object.Configurations"):
-            FeatureStore.create(**snowflake_feature_store_params)
 
 
 def test_get(saved_snowflake_feature_store, user_id):
