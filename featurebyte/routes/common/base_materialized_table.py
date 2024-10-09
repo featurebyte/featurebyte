@@ -211,6 +211,7 @@ class BaseMaterializedTableController(
         self,
         document_id: ObjectId,
         limit: int,
+        column_names: Optional[list[str]] = None,
     ) -> dict[str, Any]:
         """
         Preview materialized table as pyarrow table
@@ -221,6 +222,8 @@ class BaseMaterializedTableController(
             ID of materialized table to preview
         limit: int
             Number of rows to preview
+        column_names: Optional[list[str]]
+            Column names to preview
 
         Returns
         -------
@@ -234,6 +237,7 @@ class BaseMaterializedTableController(
                     location=table.location,
                     limit=limit,
                     order_by_column=InternalName.TABLE_ROW_INDEX,
+                    column_names=column_names,
                 )
             except Exception as exc:
                 if is_development_mode():
@@ -241,10 +245,10 @@ class BaseMaterializedTableController(
 
                 # if table does not have row index column, preview without ordering
                 return await self.feature_store_warehouse_service.table_preview(
-                    location=table.location, limit=limit
+                    location=table.location, limit=limit, column_names=column_names
                 )
 
         # the table does not have internal row index column
         return await self.feature_store_warehouse_service.table_preview(
-            location=table.location, limit=limit
+            location=table.location, limit=limit, column_names=column_names
         )

@@ -9,8 +9,6 @@ from typing import Any, Optional
 import pandas as pd
 from bson import ObjectId
 
-from featurebyte.common.env_util import is_development_mode
-from featurebyte.enum import InternalName
 from featurebyte.models.base_feature_or_target_table import BaseFeatureOrTargetTableModel
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.routes.common.feature_or_target_table import (
@@ -163,35 +161,17 @@ class HistoricalFeatureTableController(
         dict[str, Any]
             Preview of feature from materialized table
         """
+        # include only column names from observation table and feature
         table = await self.service.get_document(document_id=document_id)
-
-        # include observation table and feature column names
         assert table.observation_table_id is not None
         observation_table = await self.observation_table_service.get_document(
             table.observation_table_id
         )
         feature = await self.feature_service.get_document(feature_id)
         assert feature.name is not None
-        column_names = [col.name for col in observation_table.columns_info] + [feature.name]
 
-        if self.has_internal_row_index_column_in_table:
-            try:
-                return await self.feature_store_warehouse_service.table_preview(
-                    location=table.location,
-                    limit=limit,
-                    order_by_column=InternalName.TABLE_ROW_INDEX,
-                    column_names=column_names,
-                )
-            except Exception as exc:
-                if is_development_mode():
-                    raise exc
-
-                # if table does not have row index column, preview without ordering
-                return await self.feature_store_warehouse_service.table_preview(
-                    location=table.location, limit=limit, column_names=column_names
-                )
-
-        # the table does not have internal row index column
-        return await self.feature_store_warehouse_service.table_preview(
-            location=table.location, limit=limit
+        return await self.preview_materialized_table(
+            document_id=document_id,
+            limit=limit,
+            column_names=[col.name for col in observation_table.columns_info] + [feature.name],
         )
