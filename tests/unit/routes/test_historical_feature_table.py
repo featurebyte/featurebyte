@@ -3,15 +3,17 @@ Tests for HistoricalFeatureTable routes
 """
 
 import copy
+import textwrap
 from http import HTTPStatus
 from unittest.mock import patch
 
 import pandas as pd
 import pytest
 from bson.objectid import ObjectId
+from pandas.testing import assert_frame_equal
 from sqlglot import expressions
 
-from featurebyte.common.utils import dataframe_to_arrow_bytes
+from featurebyte.common.utils import dataframe_from_json, dataframe_to_arrow_bytes
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -255,3 +257,43 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         response = test_api_client.delete(f"/feature_list/{feature_list_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "FeatureList is referenced by Deployment: my_deployment"
+
+    def test_preview_historical_feature_table(
+        self, create_success_response, test_api_client_persistent, mock_get_session
+    ):
+        """Test preview features in historical feature table"""
+        response_dict = create_success_response.json()
+        doc_id = response_dict["_id"]
+        table_name = response_dict["location"]["table_details"]["table_name"]
+
+        expected_df = pd.DataFrame({
+            "POINT_IN_TIME": ["2021-01-01 00:00:00", "2021-01-01 00:00:00"],
+            "cust_id": [1, 2],
+            "sum_30m": [1.0, 2.0],
+        })
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.get(
+            f"{self.base_route}/{doc_id}/feature_preview/646f6c1b0ed28a5271fb02c4"
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        result_df = dataframe_from_json(response.json())
+        assert_frame_equal(result_df, expected_df)
+
+        assert (
+            mock_session.execute_query.call_args[0][0]
+            == textwrap.dedent(
+                f"""
+            SELECT
+              "POINT_IN_TIME",
+              "cust_id",
+              "sum_30m"
+            FROM "sf_database"."sf_schema"."{table_name}"
+            ORDER BY
+              "__FB_TABLE_ROW_INDEX"
+            LIMIT 10
+            """
+            ).strip()
+        )
