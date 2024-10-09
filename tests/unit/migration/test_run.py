@@ -3,13 +3,12 @@ Test functions in migration/run.py
 """
 
 import glob
-import json
 import os
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 import pytest_asyncio
-from bson import ObjectId, json_util
+from bson import json_util
 
 from featurebyte import SourceType
 from featurebyte.app import get_celery
@@ -25,9 +24,7 @@ from featurebyte.migration.run import (
 )
 from featurebyte.migration.service.mixin import (
     BaseMongoCollectionMigration,
-    DataWarehouseMigrationMixin,
 )
-from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.node.schema import SnowflakeDetails
 from featurebyte.schema.feature_store import FeatureStoreCreate
 from featurebyte.service.feature_store import FeatureStoreService
@@ -252,31 +249,3 @@ async def test_run_migration(
     )
     assert schema_metadata.version == version
     assert schema_metadata.description == description
-
-
-@pytest.mark.asyncio
-@patch("featurebyte.service.session_manager.SessionManager")
-async def test_data_warehouse_migration_get_session(
-    mock_session_manager,
-    migration_check_persistent,
-    test_dir,
-    user,
-    app_container,
-):
-    """Test data warehouse migration get_session method"""
-    fixture_path = os.path.join(test_dir, "fixtures/request_payloads/feature_store.json")
-    # Explicitly set a different user ID to verify that that is the value that get_credential is being called with.
-    feature_store_user_id = ObjectId()
-    with open(fixture_path, encoding="utf") as fhandle:
-        payload = json.loads(fhandle.read())
-        feature_store = FeatureStoreModel(**{**payload, "user_id": feature_store_user_id})
-
-    warehouse_migration = DataWarehouseMigrationMixin(
-        persistent=migration_check_persistent,
-        session_manager_service=app_container.session_manager_service,
-        feature_store_service=app_container.feature_store_service,
-    )
-
-    # check get_credential called parameters
-    mock_session_manager.return_value.get_session = AsyncMock()
-    _ = await warehouse_migration.get_session(feature_store=feature_store)
