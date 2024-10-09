@@ -63,6 +63,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
     @pytest_asyncio.fixture(autouse=True)
     async def setup(
         self,
+        user_id,
         mongo_persistent,
         storage,
         temp_storage,
@@ -81,6 +82,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         )
         payload["catalog_id"] = catalog.id
         await self.execute_task(
+            user_id=user_id,
             task_class=FeatureJobSettingAnalysisTask,
             payload=payload,
             persistent=persistent,
@@ -159,7 +161,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
 
     @pytest.mark.asyncio
     async def test_execute_fail(
-        self, mongo_persistent, progress, storage, temp_storage, app_container
+        self, mongo_persistent, progress, storage, temp_storage, app_container, user_id
     ):
         """
         Test failed task execution
@@ -174,6 +176,7 @@ class TestFeatureJobSettingAnalysisBacktestTask(BaseTaskTestSuite):
         with pytest.raises(DocumentNotFoundError) as excinfo:
             app_container.invalidate_dep_for_test(TaskProgressUpdater)
             await self.execute_task(
+                user_id=user_id,
                 task_class=self.task_class,
                 payload=payload,
                 persistent=persistent,

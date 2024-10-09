@@ -154,7 +154,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
 
     @pytest.mark.asyncio
     async def test_execute_fail(
-        self, mongo_persistent, progress, storage, temp_storage, app_container
+        self, mongo_persistent, progress, storage, temp_storage, app_container, user_id
     ):
         """
         Test failed task execution
@@ -167,6 +167,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         payload["event_table_id"] = event_table_id
         with pytest.raises(DocumentNotFoundError) as excinfo:
             await self.execute_task(
+                user_id=user_id,
                 task_class=self.task_class,
                 payload=payload,
                 persistent=persistent,
@@ -195,6 +196,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         storage,
         temp_storage,
         app_container,
+        user_id,
     ):
         """
         Test successful task execution without using existing event table
@@ -215,6 +217,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             ],
         }
         await self.execute_task(
+            user_id=user_id,
             task_class=self.task_class,
             payload=payload,
             persistent=persistent,
@@ -259,6 +262,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
         temp_storage,
         app_container,
         snowflake_feature_store,
+        user_id,
     ):
         """
         Test successful task execution using databricks feature store
@@ -299,6 +303,7 @@ class TestFeatureJobSettingAnalysisTask(BaseTaskTestSuite):
             feature_store.type = SourceType.DATABRICKS
 
             await self.execute_task(
+                user_id=user_id,
                 task_class=self.task_class,
                 payload=payload,
                 persistent=persistent,
