@@ -85,22 +85,20 @@ async def test_get_historical_feature_tables_parallel(
         assert df_preview.columns.tolist() == ["POINT_IN_TIME", "üser id", f"my_feature_{i}"]
 
     # Check feature cache metadata and table are expected
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
+        observation_table_id=observation_table.id,
     )
-    assert len(feature_table_cache.feature_definitions) == num_hashes_expected
+    assert len(cached_definitions) == num_hashes_expected
+    cached_tables = list({cached_def.table_name for cached_def in cached_definitions})
+    assert len(cached_tables) == 1
     query = sql_to_string(
         parse_one(
             f"""
-            SELECT * FROM "{session.database_name}"."{session.schema_name}"."{feature_table_cache.table_name}"
+            SELECT * FROM "{session.database_name}"."{session.schema_name}"."{cached_tables[0]}"
             """
         ),
         source_type=session.source_type,
     )
     df = await session.execute_query(query)
-    expected_columns = {
-        feature_def.feature_name for feature_def in feature_table_cache.feature_definitions
-    }
+    expected_columns = {feature_def.feature_name for feature_def in cached_definitions}
     assert expected_columns.issubset(df.columns)

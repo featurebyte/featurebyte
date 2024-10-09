@@ -37,6 +37,15 @@ class CachedFeatureDefinition(FeatureByteBaseModel):
         return values
 
 
+class CachedDefinitionWithTable(CachedFeatureDefinition):
+    """
+    Similar to CachedFeatureDefinition but with cache table name. Used in query results and not
+    serialized.
+    """
+
+    table_name: str
+
+
 class FeatureTableCacheMetadataModel(FeatureByteCatalogBaseDocumentModel):
     """
     Model for feature table cache
