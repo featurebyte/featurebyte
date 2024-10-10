@@ -223,20 +223,14 @@ async def test_task_manager__revoke_tasks(task_manager, celery, user_id, persist
     )
     document = task.model_dump(by_alias=True)
     document["_id"] = str(document["_id"])
+    document["child_task_ids"] = [str(uuid4()), str(uuid4()), str(uuid4())]
     await persistent._db[Task.collection_name()].insert_one(document)
-
-    # add some children tasks
-    task_ids = [task_id]
-    for _ in range(3):
-        document["_id"] = str(uuid4())
-        document["parent_id"] = task_id
-        task_ids.append(document["_id"])
-        await persistent._db[Task.collection_name()].insert_one(document)
 
     # revoke task
     await task_manager.revoke_task(task_id)
 
     # check celery task revoke calls
+    task_ids = [task_id] + document["child_task_ids"]
     expected_kwargs = {"reply": True, "terminate": True, "signal": "SIGTERM"}
     for i, task_id in enumerate(task_ids):
         assert celery.control.revoke.call_args_list[i].args == (task_id,)

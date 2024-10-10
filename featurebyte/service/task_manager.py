@@ -459,14 +459,11 @@ class TaskManager:
         if task.status in TaskStatus.non_terminal():
             self.celery.control.revoke(task_id, reply=True, terminate=True, signal="SIGTERM")
             # revoke all child tasks
-            task_docs, _ = await self.persistent.find(
-                collection_name=TaskModel.collection_name(),
-                query_filter={"parent_id": task_id},
-            )
-            for task_doc in task_docs:
-                self.celery.control.revoke(
-                    str(task_doc["_id"]), reply=True, terminate=True, signal="SIGTERM"
-                )
+            if task.child_task_ids:
+                for child_task_id in task.child_task_ids:
+                    self.celery.control.revoke(
+                        str(child_task_id), reply=True, terminate=True, signal="SIGTERM"
+                    )
 
     async def rerun_task(self, task_id: str) -> str:
         """
