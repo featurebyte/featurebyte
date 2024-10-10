@@ -151,11 +151,6 @@ class HistoricalFeatureTableController(
         limit: int
             Number of rows to preview
 
-        Raises
-        ------
-        Exception
-            If table does not have row index column and preview fails
-
         Returns
         -------
         dict[str, Any]
