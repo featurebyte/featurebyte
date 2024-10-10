@@ -2,6 +2,8 @@
 Test feature table cache service
 """
 
+from unittest.mock import patch
+
 import pytest
 from bson import ObjectId
 
@@ -332,3 +334,126 @@ async def test_update_feature_table_cache_updates_feature_id(
         ),
     ]
     assert all(bool(feat.feature_id) for feat in cached_definitions)
+
+
+@patch(
+    "featurebyte.service.feature_table_cache_metadata.FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS",
+    2,
+)
+@pytest.mark.asyncio
+async def test_get_or_create_feature_table_cache_exceed_limit(
+    feature_table_cache_metadata_service,
+    observation_table_service,
+    observation_table,
+):
+    """
+    Test get_or_create_feature_table_cache to create multiple tables when column limit is exceeded
+    """
+    observation_table_doc = await observation_table_service.create_document(observation_table)
+
+    # Insert definitions to hit the limit
+    definitions = [
+        CachedFeatureDefinition(
+            definition_hash="feature_1_definition_hash",
+            feature_name="FEATURE_feature_1_definition_hash",
+        ),
+        CachedFeatureDefinition(
+            feature_id=ObjectId(),
+            definition_hash="feature_2_definition_hash",
+            feature_name="FEATURE_feature_2_definition_hash",
+        ),
+    ]
+    cache_metadata = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table_doc.id, num_columns_to_insert=len(definitions)
+    )
+    await feature_table_cache_metadata_service.update_feature_table_cache(
+        cache_metadata_id=cache_metadata.id,
+        feature_definitions=definitions,
+    )
+    cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
+        observation_table_id=observation_table_doc.id
+    )
+    assert cache_metadata.table_name == f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_1"
+    assert len(cached_definitions) == 2
+
+    # Insert one
+    definitions = [
+        CachedFeatureDefinition(
+            definition_hash="feature_3_definition_hash",
+            feature_name="FEATURE_feature_3_definition_hash",
+        ),
+    ]
+    cache_metadata = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table_doc.id, num_columns_to_insert=len(definitions)
+    )
+    await feature_table_cache_metadata_service.update_feature_table_cache(
+        cache_metadata_id=cache_metadata.id,
+        feature_definitions=definitions,
+    )
+    cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
+        observation_table_id=observation_table_doc.id
+    )
+    assert cached_definitions == [
+        CachedDefinitionWithTable(
+            feature_id=cached_definitions[0].feature_id,
+            definition_hash="feature_3_definition_hash",
+            feature_name="FEATURE_feature_3_definition_hash",
+            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_2",
+        ),
+        CachedDefinitionWithTable(
+            feature_id=cached_definitions[1].feature_id,
+            definition_hash="feature_1_definition_hash",
+            feature_name="FEATURE_feature_1_definition_hash",
+            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_1",
+        ),
+        CachedDefinitionWithTable(
+            feature_id=cached_definitions[2].feature_id,
+            definition_hash="feature_2_definition_hash",
+            feature_name="FEATURE_feature_2_definition_hash",
+            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_1",
+        ),
+    ]
+
+    # Insert one again (still fit in the same table)
+    definitions = [
+        CachedFeatureDefinition(
+            definition_hash="feature_4_definition_hash",
+            feature_name="FEATURE_feature_4_definition_hash",
+        ),
+    ]
+    cache_metadata = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+        observation_table_id=observation_table_doc.id, num_columns_to_insert=len(definitions)
+    )
+    await feature_table_cache_metadata_service.update_feature_table_cache(
+        cache_metadata_id=cache_metadata.id,
+        feature_definitions=definitions,
+    )
+    cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
+        observation_table_id=observation_table_doc.id
+    )
+    assert cached_definitions == [
+        CachedDefinitionWithTable(
+            feature_id=cached_definitions[0].feature_id,
+            definition_hash="feature_3_definition_hash",
+            feature_name="FEATURE_feature_3_definition_hash",
+            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_2",
+        ),
+        CachedDefinitionWithTable(
+            feature_id=cached_definitions[1].feature_id,
+            definition_hash="feature_4_definition_hash",
+            feature_name="FEATURE_feature_4_definition_hash",
+            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_2",
+        ),
+        CachedDefinitionWithTable(
+            feature_id=cached_definitions[2].feature_id,
+            definition_hash="feature_1_definition_hash",
+            feature_name="FEATURE_feature_1_definition_hash",
+            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_1",
+        ),
+        CachedDefinitionWithTable(
+            feature_id=cached_definitions[3].feature_id,
+            definition_hash="feature_2_definition_hash",
+            feature_name="FEATURE_feature_2_definition_hash",
+            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_1",
+        ),
+    ]
