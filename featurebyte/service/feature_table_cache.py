@@ -155,28 +155,11 @@ class FeatureTableCacheService:
 
         return [definition_hashes_mapping[node.name] for node in nodes]
 
-    def _get_column_exprs(
-        self,
-        graph: QueryGraph,
-        nodes: List[Node],
-        hashes: List[str],
-        cached_features: Dict[str, str],
-    ) -> List[expressions.Alias]:
-        return [
-            expressions.alias_(
-                quoted_identifier(cached_features[definition_hash]),
-                alias=graph.get_node_output_column_name(node.name),
-                quoted=True,
-            )
-            for definition_hash, node in zip(hashes, nodes)
-        ]
-
     async def get_feature_query(
         self,
         observation_table_id: ObjectId,
-        graph: QueryGraph,
-        nodes: List[Node],
         hashes: List[str],
+        output_column_names: List[str],
         additional_columns: List[str],
     ) -> expressions.Select:
         """
@@ -186,12 +169,10 @@ class FeatureTableCacheService:
         ----------
         observation_table_id: ObjectId
             Observation table id
-        graph: QueryGraph
-            Query graph
-        nodes: List[Node]
-            Nodes
         hashes: List[str]
             Definition hashes corresponding to the list of nodes
+        output_column_names: List[str]
+            Output column names corresponding to the list of hashes
         additional_columns: List[str]
             Additional columns to include in the select query
 
@@ -221,7 +202,7 @@ class FeatureTableCacheService:
         # Join necessary feature cache tables based on the definition hashes
         select_expr = expressions.select()
         table_name_to_alias = {}
-        for i, table_name in enumerate(required_cache_tables):
+        for i, table_name in enumerate(sorted(required_cache_tables)):
             table_alias = f"T{i}"
             table_name_to_alias[table_name] = table_alias
             if i == 0:
@@ -248,10 +229,9 @@ class FeatureTableCacheService:
 
         # Add feature columns to the select expression
         feature_exprs = []
-        for node, definition_hash in zip(nodes, hashes):
+        for output_feature_name, definition_hash in zip(output_column_names, hashes):
             table_name, column_name = cached_definition_hash_mapping[definition_hash]
             table_alias = table_name_to_alias[table_name]
-            output_feature_name = graph.get_node_output_column_name(node.name)
             feature_exprs.append(
                 expressions.alias_(
                     get_qualified_column_identifier(column_name, table_alias),
@@ -643,9 +623,10 @@ class FeatureTableCacheService:
         )
         select_expr = await self.get_feature_query(
             observation_table_id=observation_table.id,
-            graph=graph,
-            nodes=nodes,
             hashes=hashes,
+            output_column_names=[
+                cast(str, graph.get_node_output_column_name(node.name)) for node in nodes
+            ],
             additional_columns=columns or [],
         )
         sql = sql_to_string(select_expr, source_type=db_session.source_type)
@@ -718,9 +699,10 @@ class FeatureTableCacheService:
         request_column_names = [col.name for col in observation_table.columns_info]
         select_expr = await self.get_feature_query(
             observation_table_id=observation_table.id,
-            graph=graph,
-            nodes=nodes,
             hashes=hashes,
+            output_column_names=[
+                cast(str, graph.get_node_output_column_name(node.name)) for node in nodes
+            ],
             additional_columns=request_column_names,
         )
 

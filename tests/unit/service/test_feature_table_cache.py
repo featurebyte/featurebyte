@@ -14,13 +14,14 @@ from bson import ObjectId
 from snowflake.connector import ProgrammingError
 from sqlglot import parse_one
 
+from featurebyte.models.feature_table_cache_metadata import CachedFeatureDefinition
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.request_input import SourceTableRequestInput
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature import FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListServiceCreate
-from tests.util.helper import assert_sql_equal
+from tests.util.helper import assert_equal_with_expected_fixture, assert_sql_equal
 
 
 async def check_feature_table_cache(
@@ -785,4 +786,90 @@ async def test_read_from_cache(
         '  T0."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
         '  T0."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
         f'FROM "{feature_table_cache_name}" AS T0'
+    )
+
+
+@patch(
+    "featurebyte.service.feature_table_cache_metadata.FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS",
+    2,
+)
+@pytest.mark.asyncio
+async def test_get_feature_query(
+    feature_store,
+    feature_table_cache_service,
+    feature_table_cache_metadata_service,
+    observation_table,
+    update_fixtures,
+):
+    """
+    Test query for accessing feature table cache with multiple tables
+    """
+
+    async def _insert_definitions(definitions):
+        cache_metadata = (
+            await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+                observation_table_id=observation_table.id, num_columns_to_insert=len(definitions)
+            )
+        )
+        await feature_table_cache_metadata_service.update_feature_table_cache(
+            cache_metadata_id=cache_metadata.id,
+            feature_definitions=definitions,
+        )
+
+    # Set up 4 cache tables
+    await _insert_definitions([
+        CachedFeatureDefinition(
+            definition_hash="hash_1",
+            feature_name="col_hash_1",
+        ),
+        CachedFeatureDefinition(
+            definition_hash="hash_2",
+            feature_name="col_hash_2",
+        ),
+    ])
+    await _insert_definitions([
+        CachedFeatureDefinition(
+            definition_hash="hash_3",
+            feature_name="col_hash_3",
+        ),
+        CachedFeatureDefinition(
+            definition_hash="hash_4",
+            feature_name="col_hash_4",
+        ),
+    ])
+    await _insert_definitions([
+        CachedFeatureDefinition(
+            definition_hash="hash_5",
+            feature_name="col_hash_5",
+        ),
+        CachedFeatureDefinition(
+            definition_hash="hash_6",
+            feature_name="col_hash_6",
+        ),
+    ])
+    await _insert_definitions([
+        CachedFeatureDefinition(
+            definition_hash="hash_7",
+            feature_name="col_hash_7",
+        ),
+        CachedFeatureDefinition(
+            definition_hash="hash_8",
+            feature_name="col_hash_8",
+        ),
+    ])
+
+    # Check query to retrieve a subset of hashes. Should only join 3 of the tables
+    feature_query = await feature_table_cache_service.get_feature_query(
+        observation_table_id=observation_table.id,
+        hashes=["hash_1", "hash_4", "hash_7", "hash_8"],
+        output_column_names=["featureA", "featureB", "featureC", "featureD"],
+        additional_columns=["cust_id"],
+    )
+    feature_query_cleaned = feature_query.sql(pretty=True).replace(
+        str(observation_table.id), "0" * 24
+    )
+    assert_equal_with_expected_fixture(
+        feature_query_cleaned,
+        "tests/fixtures/feature_table_cache/feature_query.sql",
+        update_fixtures,
     )
