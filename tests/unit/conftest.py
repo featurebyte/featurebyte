@@ -123,14 +123,14 @@ def mock_websocket_client_fixture(request):
             yield mock_get_websocket_client
 
 
-@pytest.fixture(name="mock_get_redis", autouse=True)
-def mock_get_redis_fixture():
+@pytest.fixture(name="mock_redis", autouse=True)
+def mock_redis_fixture():
     """Mock get_redis in featurebyte.worker"""
     with patch("featurebyte.worker.Redis") as mock_get_redis:
         mock_redis = mock_get_redis.from_url.return_value
         mock_redis.pipeline.return_value.execute.return_value = [0]
         mock_redis.zrank.return_value = 0
-        yield mock_get_redis
+        yield mock_redis
 
 
 @pytest.fixture(name="storage")
@@ -2402,6 +2402,12 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                         return None
                     return Mock(status=status)
 
+                def send_task(*args, **kwargs):
+                    task_id = str(uuid4())
+                    task_status[task_id] = TaskStatus.STARTED
+                    return Mock(id=task_id)
+
+                mock_get_celery.return_value.send_task.side_effect = send_task
                 mock_get_celery.return_value.AsyncResult.side_effect = get_task
                 mock_get_celery_worker.return_value.AsyncResult.side_effect = get_task
                 yield

@@ -107,6 +107,7 @@ async def test_cache_and_get_table(service, periodic_task_service, feature_store
         "command": "QUERY_CACHE_CLEANUP",
         "output_collection_name": None,
         "is_revocable": False,
+        "is_rerunnable": False,
     }
 
     # Check retrieval

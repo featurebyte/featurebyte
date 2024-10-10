@@ -93,3 +93,19 @@ class TaskController:
         if update.revoke:
             await self.task_manager.revoke_task(task_id)
         return await self.get_task(task_id)
+
+    async def resubmit_task(self, task_id: str) -> Task:
+        """
+        Resubmit task for execution
+
+        Parameters
+        ----------
+        task_id: str
+            Task ID
+
+        Returns
+        -------
+        Task
+        """
+        new_task_id = await self.task_manager.rerun_task(task_id)
+        return await self.get_task(new_task_id)

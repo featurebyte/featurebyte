@@ -92,6 +92,7 @@ class LongRunningPayload(BaseTaskPayload):
 
     command: ClassVar[Command] = Command.LONG_RUNNING_COMMAND  # type: ignore
     is_revocable: ClassVar[bool] = True
+    is_rerunnable: ClassVar[bool] = True
     output_collection_name: ClassVar[str] = "long_running_result_collection"
 
 

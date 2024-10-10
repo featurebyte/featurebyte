@@ -4,6 +4,7 @@ Job status route
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import Optional
 
 from fastapi import APIRouter, Request
@@ -38,6 +39,13 @@ class TaskRouter(BaseRouter):
             self.list_tasks,
             methods=["GET"],
             response_model=TaskList,
+        )
+        self.router.add_api_route(
+            "/{task_id}",
+            self.resubmit_task,
+            methods=["POST"],
+            response_model=Task,
+            status_code=HTTPStatus.CREATED,
         )
 
     @staticmethod
@@ -75,3 +83,12 @@ class TaskRouter(BaseRouter):
             sort_dir=sort_dir,
         )
         return task_list
+
+    @staticmethod
+    async def resubmit_task(request: Request, task_id: str) -> Task:
+        """
+        Resubmit task
+        """
+        controller = request.state.app_container.task_controller
+        task: Task = await controller.resubmit_task(task_id=task_id)
+        return task

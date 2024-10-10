@@ -66,6 +66,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
                 "priority": 2,
                 "is_scheduled_task": False,
                 "is_revocable": True,
+                "is_rerunnable": True,
             },
             parent_id=None,
         )
@@ -222,13 +223,18 @@ async def test_task_manager__revoke_tasks(task_manager, celery, user_id, persist
     )
     document = task.model_dump(by_alias=True)
     document["_id"] = str(document["_id"])
+    document["child_task_ids"] = [str(uuid4()), str(uuid4()), str(uuid4())]
     await persistent._db[Task.collection_name()].insert_one(document)
 
     # revoke task
     await task_manager.revoke_task(task_id)
 
-    # check celery task revoke
-    celery.control.revoke.assert_called_with(task_id, reply=True, terminate=True, signal="SIGTERM")
+    # check celery task revoke calls
+    task_ids = [task_id] + document["child_task_ids"]
+    expected_kwargs = {"reply": True, "terminate": True, "signal": "SIGTERM"}
+    for i, task_id in enumerate(task_ids):
+        assert celery.control.revoke.call_args_list[i].args == (task_id,)
+        assert celery.control.revoke.call_args_list[i].kwargs == expected_kwargs
 
 
 @pytest.mark.asyncio
@@ -255,6 +261,55 @@ async def test_task_manager__submit_mark_as_scheduled_task(task_manager, celery,
             "priority": 2,
             "is_scheduled_task": True,  # check this is set
             "is_revocable": True,
+            "is_rerunnable": True,
         },
         parent_id=None,
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.disable_task_manager_mock
+async def test_task_manager__rerun_task(task_manager, celery, user_id, persistent, catalog):
+    """
+    Test rerunning task
+    """
+    payload = LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
+    task_id = await task_manager.submit(payload=payload)
+
+    # insert task into db manually since we are mocking celery
+    task = Task(
+        _id=task_id,
+        status=TaskStatus.FAILURE,
+        result="",
+        children=[],
+        date_done=datetime.datetime.utcnow(),
+        name=LongRunningPayload.command,
+        args=[],
+        kwargs=celery.send_task.call_args.kwargs["kwargs"],
+        worker="worker",
+        retries=0,
+        queue="default",
+    )
+    document = task.model_dump(by_alias=True)
+    document["_id"] = str(document["_id"])
+    await persistent._db[Task.collection_name()].insert_one(document)
+
+    new_task_id = await task_manager.rerun_task(task_id)
+    celery.send_task.assert_called_with(
+        payload.task,
+        kwargs={
+            "user_id": str(user_id),
+            "output_document_id": str(payload.output_document_id),
+            "command": payload.command,
+            "catalog_id": str(payload.catalog_id),
+            "output_collection_name": payload.output_collection_name,
+            "task_output_path": payload.task_output_path,
+            "task_type": "io_task",
+            "priority": 2,
+            "is_revocable": True,
+            "is_rerunnable": True,
+            "is_scheduled_task": False,
+        },
+    )
+
+    assert new_task_id != task_id
