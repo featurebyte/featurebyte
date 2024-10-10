@@ -19,6 +19,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.feature_table_cache_metadata import (
+    CachedDefinitionWithTable,
     CachedFeatureDefinition,
     FeatureTableCacheMetadataModel,
 )
@@ -28,7 +29,6 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import (
-    get_fully_qualified_table_name,
     get_qualified_column_identifier,
     quoted_identifier,
     sql_to_string,
@@ -155,25 +155,100 @@ class FeatureTableCacheService:
 
         return [definition_hashes_mapping[node.name] for node in nodes]
 
-    def _get_column_exprs(
+    async def get_feature_query(
         self,
-        graph: QueryGraph,
-        nodes: List[Node],
+        observation_table_id: ObjectId,
         hashes: List[str],
-        cached_features: Dict[str, str],
-    ) -> List[expressions.Alias]:
-        return [
-            expressions.alias_(
-                quoted_identifier(cached_features[definition_hash]),
-                alias=graph.get_node_output_column_name(node.name),
-                quoted=True,
-            )
-            for definition_hash, node in zip(hashes, nodes)
-        ]
+        output_column_names: List[str],
+        additional_columns: List[str],
+    ) -> expressions.Select:
+        """
+        Get sql query to retrieve cached feature values from feature cache table(s)
 
+        Parameters
+        ----------
+        observation_table_id: ObjectId
+            Observation table id
+        hashes: List[str]
+            Definition hashes corresponding to the list of nodes
+        output_column_names: List[str]
+            Output column names corresponding to the list of hashes
+        additional_columns: List[str]
+            Additional columns to include in the select query
+
+        Returns
+        -------
+        expressions.Select
+        """
+        # Retrieve cached definitions
+        hashes_set = set(hashes)
+        cached_definitions = await self.feature_table_cache_metadata_service.get_cached_definitions(
+            observation_table_id=observation_table_id
+        )
+        cached_definition_hash_mapping = {}
+        for definition in cached_definitions:
+            assert definition.feature_name is not None
+            if definition.definition_hash in hashes_set:
+                cached_definition_hash_mapping[definition.definition_hash] = (
+                    definition.table_name,
+                    definition.feature_name,
+                )
+
+        # Get the required cache tables
+        required_cache_tables = set()
+        for table_name, feature_name in cached_definition_hash_mapping.values():
+            required_cache_tables.add(table_name)
+
+        # Join necessary feature cache tables based on the definition hashes
+        select_expr = expressions.select()
+        table_name_to_alias = {}
+        for i, table_name in enumerate(sorted(required_cache_tables)):
+            table_alias = f"T{i}"
+            table_name_to_alias[table_name] = table_alias
+            if i == 0:
+                select_expr = select_expr.from_(
+                    expressions.Table(
+                        this=quoted_identifier(table_name),
+                        alias=expressions.TableAlias(this=expressions.Identifier(this=table_alias)),
+                    ),
+                )
+            else:
+                select_expr = select_expr.join(
+                    expressions.Table(
+                        this=quoted_identifier(table_name),
+                        alias=expressions.TableAlias(this=expressions.Identifier(this=table_alias)),
+                    ),
+                    join_type="left",
+                    on=expressions.EQ(
+                        this=get_qualified_column_identifier(InternalName.TABLE_ROW_INDEX, "T0"),
+                        expression=get_qualified_column_identifier(
+                            InternalName.TABLE_ROW_INDEX, table_alias
+                        ),
+                    ),
+                )
+
+        # Add feature columns to the select expression
+        feature_exprs = []
+        for output_feature_name, definition_hash in zip(output_column_names, hashes):
+            table_name, column_name = cached_definition_hash_mapping[definition_hash]
+            table_alias = table_name_to_alias[table_name]
+            feature_exprs.append(
+                expressions.alias_(
+                    get_qualified_column_identifier(column_name, table_alias),
+                    alias=output_feature_name,
+                    quoted=True,
+                )
+            )
+        select_expr = select_expr.select(
+            get_qualified_column_identifier(InternalName.TABLE_ROW_INDEX, "T0"),
+            *[get_qualified_column_identifier(col, "T0") for col in additional_columns],
+            *feature_exprs,
+        )
+        return select_expr
+
+    @staticmethod
     async def get_non_cached_nodes(
-        self,
-        feature_table_cache_metadata: FeatureTableCacheMetadataModel,
+        cached_definitions: List[CachedDefinitionWithTable],
         nodes: List[Node],
         hashes: List[str],
     ) -> List[Tuple[Node, CachedFeatureDefinition]]:
@@ -186,8 +261,8 @@ class FeatureTableCacheService:
 
         Parameters
         ----------
-        feature_table_cache_metadata: FeatureTableCacheMetadataModel
-            Feature table cache metadata
+        cached_definitions: List[CachedDefinitionWithTable]
+            List of cached feature definitions
         nodes: List[Node]
             Input node names
         hashes: List[str]
@@ -198,9 +273,7 @@ class FeatureTableCacheService:
         List[Tuple[Node, CachedFeatureDefinition]]
             List of non cached nodes and respective newly-created cached feature definitions
         """
-        cached_hashes = {
-            feat.definition_hash: feat for feat in feature_table_cache_metadata.feature_definitions
-        }
+        cached_hashes = {feat.definition_hash: feat for feat in cached_definitions}
         added_hashes = set()
         non_cached_nodes = []
         for definition_hash, node in zip(hashes, nodes):
@@ -269,11 +342,10 @@ class FeatureTableCacheService:
                 progress_callback=progress_callback,
             )
 
-    async def _update_table(  # pylint: disable=too-many-arguments
+    async def _materialize_and_update_cache(  # pylint: disable=too-many-arguments
         self,
         feature_store: FeatureStoreModel,
         observation_table: ObservationTableModel,
-        cache_metadata: FeatureTableCacheMetadataModel,
         db_session: BaseSession,
         graph: QueryGraph,
         non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
@@ -303,6 +375,32 @@ class FeatureTableCacheService:
                 serving_names_mapping=serving_names_mapping,
                 progress_callback=progress_callback,
             )
+
+            cache_metadata = (
+                await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+                    observation_table_id=observation_table.id,
+                    num_columns_to_insert=len(non_cached_nodes),
+                )
+            )
+            feature_table_cache_exists = await self._feature_table_cache_exists(
+                cache_metadata, db_session
+            )
+            if not feature_table_cache_exists:
+                # If cache table doesn't exist yet, create one by cloning from the observation table
+                request_column_names = [col.name for col in observation_table.columns_info]
+                await db_session.create_table_as(
+                    table_details=TableDetails(
+                        database_name=db_session.database_name,
+                        schema_name=db_session.schema_name,
+                        table_name=cache_metadata.table_name,
+                    ),
+                    select_expr=get_source_expr(
+                        observation_table.location.table_details,
+                        column_names=[InternalName.TABLE_ROW_INDEX.value] + request_column_names,
+                    ),
+                    exists=True,
+                    retry=True,
+                )
 
             # alter cached tables adding columns for new features
             adapter = db_session.adapter
@@ -379,6 +477,10 @@ class FeatureTableCacheService:
                 table_name=intermediate_table_name,
                 if_exists=True,
             )
+        await self.feature_table_cache_metadata_service.update_feature_table_cache(
+            cache_metadata_id=cache_metadata.id,
+            feature_definitions=[definition for _, definition in non_cached_nodes],
+        )
         return historical_features_metrics
 
     @staticmethod
@@ -445,20 +547,15 @@ class FeatureTableCacheService:
             observation_table.has_row_index
         ), "Observation Tables without row index are not supported"
 
-        cache_metadata = (
-            await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-                observation_table_id=observation_table.id,
-            )
+        cached_definitions = await self.feature_table_cache_metadata_service.get_cached_definitions(
+            observation_table_id=observation_table.id
         )
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
         )
-        feature_table_cache_exists = await self._feature_table_cache_exists(
-            cache_metadata, db_session
-        )
 
         hashes = await self.get_feature_definition_hashes(graph, nodes, feature_list_id)
-        non_cached_nodes = await self.get_non_cached_nodes(cache_metadata, nodes, hashes)
+        non_cached_nodes = await self.get_non_cached_nodes(cached_definitions, nodes, hashes)
 
         if progress_callback:
             await progress_callback(
@@ -472,37 +569,15 @@ class FeatureTableCacheService:
             remaining_progress_callback = None
 
         if non_cached_nodes:
-            if not feature_table_cache_exists:
-                # If cache table doesn't exist yet, create one by cloning from the observation table
-                request_column_names = [col.name for col in observation_table.columns_info]
-                await db_session.create_table_as(
-                    table_details=TableDetails(
-                        database_name=db_session.database_name,
-                        schema_name=db_session.schema_name,
-                        table_name=cache_metadata.table_name,
-                    ),
-                    select_expr=get_source_expr(
-                        observation_table.location.table_details,
-                        column_names=[InternalName.TABLE_ROW_INDEX.value] + request_column_names,
-                    ),
-                    exists=True,
-                    retry=True,
-                )
-            historical_features_metrics = await self._update_table(
+            historical_features_metrics = await self._materialize_and_update_cache(
                 feature_store=feature_store,
                 observation_table=observation_table,
-                cache_metadata=cache_metadata,
                 db_session=db_session,
                 graph=graph,
                 non_cached_nodes=non_cached_nodes,
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
                 progress_callback=remaining_progress_callback,
-            )
-
-            await self.feature_table_cache_metadata_service.update_feature_table_cache(
-                observation_table_id=observation_table.id,
-                feature_definitions=[definition for _, definition in non_cached_nodes],
             )
         else:
             historical_features_metrics = HistoricalFeaturesMetrics(
@@ -543,39 +618,16 @@ class FeatureTableCacheService:
             Result data
         """
         hashes = await self.definition_hashes_for_nodes(graph, nodes)
-        cache_metadata = (
-            await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-                observation_table_id=observation_table.id,
-            )
-        )
-        cached_hashes = set(
-            feature_def.definition_hash for feature_def in cache_metadata.feature_definitions
-        )
-        assert set(hashes) <= cached_hashes, "All nodes must be cached"
-
-        cached_features = {
-            feature.definition_hash: feature.feature_name
-            for feature in cache_metadata.feature_definitions
-        }
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
         )
-        columns_expr = self._get_column_exprs(
-            graph, nodes, hashes, cast(Dict[str, str], cached_features)
-        )
-        additional_columns_expr = [quoted_identifier(col) for col in columns] if columns else []
-        select_expr = (
-            expressions.select(
-                quoted_identifier(InternalName.TABLE_ROW_INDEX), *additional_columns_expr
-            )
-            .select(*columns_expr)
-            .from_(
-                get_fully_qualified_table_name({
-                    "database_name": db_session.database_name,
-                    "schema_name": db_session.schema_name,
-                    "table_name": cache_metadata.table_name,
-                })
-            )
+        select_expr = await self.get_feature_query(
+            observation_table_id=observation_table.id,
+            hashes=hashes,
+            output_column_names=[
+                cast(str, graph.get_node_output_column_name(node.name)) for node in nodes
+            ],
+            additional_columns=columns or [],
         )
         sql = sql_to_string(select_expr, source_type=db_session.source_type)
         return await db_session.execute_query_long_running(sql)
@@ -643,33 +695,17 @@ class FeatureTableCacheService:
                 serving_names_mapping=serving_names_mapping,
                 progress_callback=progress_callback,
             )
-        cache_metadata = (
-            await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-                observation_table_id=observation_table.id,
-            )
-        )
-        cached_features = {
-            feature.definition_hash: feature.feature_name
-            for feature in cache_metadata.feature_definitions
-        }
 
         request_column_names = [col.name for col in observation_table.columns_info]
-        request_columns = [quoted_identifier(col) for col in request_column_names]
-        columns_expr = self._get_column_exprs(
-            graph, nodes, hashes, cast(Dict[str, str], cached_features)
+        select_expr = await self.get_feature_query(
+            observation_table_id=observation_table.id,
+            hashes=hashes,
+            output_column_names=[
+                cast(str, graph.get_node_output_column_name(node.name)) for node in nodes
+            ],
+            additional_columns=request_column_names,
         )
-        select_expr = (
-            expressions.select(quoted_identifier(InternalName.TABLE_ROW_INDEX))
-            .select(*request_columns)
-            .select(*columns_expr)
-            .from_(
-                get_fully_qualified_table_name({
-                    "database_name": db_session.database_name,
-                    "schema_name": db_session.schema_name,
-                    "table_name": cache_metadata.table_name,
-                })
-            )
-        )
+
         await db_session.create_table_as(
             table_details=output_view_details,
             select_expr=select_expr,

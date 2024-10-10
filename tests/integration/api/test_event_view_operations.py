@@ -900,17 +900,17 @@ async def test_get_historical_features__feature_table_cache(
         sort_by_columns=["POINT_IN_TIME", "üser id"],
     )
 
-    cache = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+    cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
         observation_table_id=observation_table.id,
     )
-    assert len(cache.feature_definitions) == len(
+    assert len(cached_definitions) == len(
         set(feature_list_1.feature_names + feature_list_2.feature_names)
     )
     df = await session.execute_query(
         sql_to_string(
             parse_one(
                 f"""
-                SELECT * FROM "{session.database_name}"."{session.schema_name}"."{cache.table_name}"
+                SELECT * FROM "{session.database_name}"."{session.schema_name}"."{cached_definitions[0].table_name}"
                 """
             ),
             source_type=session.source_type,

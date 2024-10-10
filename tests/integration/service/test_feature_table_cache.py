@@ -145,15 +145,11 @@ async def test_create_feature_table_cache(
         feature_list_id=feature_list_model.id,
     )
 
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
+        observation_table_id=observation_table.id,
     )
-    cached_column_names = [
-        definition.feature_name for definition in feature_table_cache.feature_definitions
-    ]
-    hashes = [definition.definition_hash for definition in feature_table_cache.feature_definitions]
+    cached_column_names = [definition.feature_name for definition in cached_definitions]
+    hashes = [definition.definition_hash for definition in cached_definitions]
     # Subtract 1 because one of the features is a duplicate and has the same hash
     assert len(cached_column_names) == len(feature_list_model.feature_ids) - 1
 
@@ -168,7 +164,7 @@ async def test_create_feature_table_cache(
     query = sql_to_string(
         parse_one(
             f"""
-            SELECT * FROM "{session.database_name}"."{session.schema_name}"."{feature_table_cache.table_name}"
+            SELECT * FROM "{session.database_name}"."{session.schema_name}"."{cached_definitions[0].table_name}"
             """
         ),
         source_type=source_type,
@@ -216,14 +212,10 @@ async def test_update_feature_table_cache(
         nodes=feature_cluster.nodes,
         feature_list_id=feature_list_model_1.id,
     )
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
+        observation_table_id=observation_table.id,
     )
-    features_1_fl = [
-        definition.feature_name for definition in feature_table_cache.feature_definitions
-    ]
+    features_1_fl = [definition.feature_name for definition in cached_definitions]
     assert len(features_1_fl) == len(feature_list_model_1.feature_ids)
 
     feature_cluster = feature_list_model_2.feature_clusters[0]
@@ -234,13 +226,11 @@ async def test_update_feature_table_cache(
         nodes=feature_cluster.nodes,
         feature_list_id=feature_list_model_2.id,
     )
-    feature_table_cache = (
-        await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-            observation_table_id=observation_table.id,
-        )
+    cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
+        observation_table_id=observation_table.id,
     )
-    features = [definition.feature_name for definition in feature_table_cache.feature_definitions]
-    hashes = [definition.definition_hash for definition in feature_table_cache.feature_definitions]
+    features = [definition.feature_name for definition in cached_definitions]
+    hashes = [definition.definition_hash for definition in cached_definitions]
 
     assert set(features_1_fl) <= set(features)
 
@@ -258,7 +248,7 @@ async def test_update_feature_table_cache(
     query = sql_to_string(
         parse_one(
             f"""
-            SELECT * FROM "{session.database_name}"."{session.schema_name}"."{feature_table_cache.table_name}"
+            SELECT * FROM "{session.database_name}"."{session.schema_name}"."{cached_definitions[0].table_name}"
             """
         ),
         source_type=source_type,
