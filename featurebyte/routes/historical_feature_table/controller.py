@@ -26,6 +26,7 @@ from featurebyte.schema.worker.task.historical_feature_table import (
     HistoricalFeatureTableTaskPayload,
 )
 from featurebyte.service.entity_validation import EntityValidationService
+from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
@@ -61,6 +62,7 @@ class HistoricalFeatureTableController(
         task_controller: TaskController,
         feature_list_service: FeatureListService,
         historical_features_validation_parameters_service: HistoricalFeaturesValidationParametersService,
+        feature_service: FeatureService,
     ):
         super().__init__(
             service=historical_feature_table_service,
@@ -74,6 +76,7 @@ class HistoricalFeatureTableController(
         self.historical_features_validation_parameters_service = (
             historical_features_validation_parameters_service
         )
+        self.feature_service = feature_service
 
     async def get_payload(
         self,
@@ -129,3 +132,41 @@ class HistoricalFeatureTableController(
         )
         assert isinstance(table, HistoricalFeatureTableModel)
         return table
+
+    async def preview_feature(
+        self,
+        document_id: ObjectId,
+        feature_id: ObjectId,
+        limit: int,
+    ) -> dict[str, Any]:
+        """
+        Preview feature from materialized table as pyarrow table
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            ID of materialized table to preview
+        feature_id: ObjectId
+            ID of feature to preview
+        limit: int
+            Number of rows to preview
+
+        Returns
+        -------
+        dict[str, Any]
+            Preview of feature from materialized table
+        """
+        # include only column names from observation table and feature
+        table = await self.service.get_document(document_id=document_id)
+        assert table.observation_table_id is not None
+        observation_table = await self.observation_table_service.get_document(
+            table.observation_table_id
+        )
+        feature = await self.feature_service.get_document(feature_id)
+        assert feature.name is not None
+
+        return await self.preview_materialized_table(
+            document_id=document_id,
+            limit=limit,
+            column_names=[col.name for col in observation_table.columns_info] + [feature.name],
+        )

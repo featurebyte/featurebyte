@@ -247,3 +247,24 @@ async def preview_historical_feature_table(
         limit=limit,
     )
     return preview
+
+
+@router.get(
+    "/{historical_feature_table_id}/feature_preview/{feature_id}", response_model=Dict[str, Any]
+)
+async def preview_historical_feature_table_feature(
+    request: Request,
+    historical_feature_table_id: PyObjectId,
+    feature_id: PyObjectId,
+    limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
+) -> Dict[str, Any]:
+    """
+    Preview feature in historical feature table
+    """
+    controller = request.state.app_container.historical_feature_table_controller
+    preview: Dict[str, Any] = await controller.preview_feature(
+        document_id=historical_feature_table_id,
+        feature_id=feature_id,
+        limit=limit,
+    )
+    return preview
