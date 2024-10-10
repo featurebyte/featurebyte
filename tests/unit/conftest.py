@@ -2402,6 +2402,12 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                         return None
                     return Mock(status=status)
 
+                def send_task(*args, **kwargs):
+                    task_id = str(uuid4())
+                    task_status[task_id] = TaskStatus.STARTED
+                    return Mock(id=task_id)
+
+                mock_get_celery.return_value.send_task.side_effect = send_task
                 mock_get_celery.return_value.AsyncResult.side_effect = get_task
                 mock_get_celery_worker.return_value.AsyncResult.side_effect = get_task
                 yield

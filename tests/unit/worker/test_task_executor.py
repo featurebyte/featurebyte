@@ -49,6 +49,7 @@ def test_extend_base_task_payload():
         "priority": 2,
         "is_scheduled_task": False,
         "is_revocable": False,
+        "is_rerunnable": False,
     }
     assert payload_obj.task_output_path == f"/random_collection/{document_id}"
 

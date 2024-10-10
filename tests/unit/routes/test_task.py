@@ -98,3 +98,37 @@ class TestTaskApi:
         test_api_client, _ = api_client_persistent
         response = test_api_client.patch(f"{self.base_route}/{task_id}", json={"revoke": True})
         assert response.status_code == HTTPStatus.OK
+
+    @pytest.mark.asyncio
+    async def test_post_422__task_not_rerunnable(
+        self, api_client_persistent, task_manager, user_id
+    ):
+        """Test post (not rerunnable)"""
+        test_api_client, _ = api_client_persistent
+        task_id = await task_manager.submit(
+            payload=TestIOTaskPayload(user_id=user_id, catalog_id=DEFAULT_CATALOG_ID)
+        )
+        response = test_api_client.post(f"{self.base_route}/{task_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == f'Task (id: "{task_id}") does not support rerun.'
+
+    def test_post_422__task_not_unsuccessful(self, api_client_persistent, task_id):
+        """Test post (task is not unsuccessful)"""
+        test_api_client, _ = api_client_persistent
+        response = test_api_client.post(f"{self.base_route}/{task_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == f'Task (id: "{task_id}") does not support rerun.'
+
+    @pytest.mark.asyncio
+    async def test_post_200(self, api_client_persistent, task_id):
+        """Test post"""
+        test_api_client, persistent = api_client_persistent
+        await persistent.update_one(
+            collection_name="celery_taskmeta",
+            query_filter={"_id": task_id},
+            update={"$set": {"status": "FAILURE"}},
+            user_id=None,
+        )
+
+        response = test_api_client.post(f"{self.base_route}/{task_id}")
+        assert response.status_code == HTTPStatus.CREATED, response.json()
