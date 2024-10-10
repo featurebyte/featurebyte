@@ -7,10 +7,8 @@ from http import HTTPStatus
 from unittest.mock import patch
 
 import pytest
-import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.models.credential import CredentialModel, UsernamePasswordCredential
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -53,27 +51,6 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             f'Deployment (id: "{random_id}") not found. Please save the Deployment object first.',
         ),
     ]
-
-    @pytest_asyncio.fixture(autouse=True)
-    async def insert_credential(self, persistent, user_id):
-        """
-        Calling this fixture will insert the credential into the database.
-        """
-        credential_model = CredentialModel(
-            name="sf_featurestore",
-            feature_store_id=ObjectId("646f6c190ed28a5271fb02a1"),
-            database_credential=UsernamePasswordCredential(
-                username="sf_user",
-                password="sf_password",
-            ),
-            user_id=user_id,
-        )
-        credential_model.encrypt_credentials()
-        await persistent.insert_one(
-            collection_name=CredentialModel.collection_name(),
-            document=credential_model.model_dump(by_alias=True),
-            user_id=user_id,
-        )
 
     @pytest.fixture(autouse=True)
     def mock_online_enable_service_update_data_warehouse(self, mock_deployment_flow):

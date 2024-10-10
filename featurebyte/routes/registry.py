@@ -189,7 +189,6 @@ from featurebyte.service.validator.production_ready_validator import ProductionR
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
 from featurebyte.service.working_schema import WorkingSchemaService
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
 from featurebyte.utils.storage import get_storage, get_temp_storage
@@ -314,7 +313,6 @@ app_container_config.register_class(
 app_container_config.register_class(HistoricalFeaturesValidationParametersService)
 app_container_config.register_class(ItemTableController)
 app_container_config.register_class(ItemTableService)
-app_container_config.register_class(MongoBackedCredentialProvider)
 app_container_config.register_class(NamespaceHandler)
 app_container_config.register_class(ObservationSetHelper)
 app_container_config.register_class(ObservationTableController)

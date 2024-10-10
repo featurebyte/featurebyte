@@ -28,7 +28,7 @@ from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture(name="item_table_dict")
-def item_table_dict_fixture(snowflake_database_table_item_table):
+def item_table_dict_fixture(snowflake_database_table_item_table, user_id):
     """ItemTable in serialized dictionary format"""
     return {
         "columns_info": [
@@ -99,7 +99,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table):
         },
         "type": "item_table",
         "updated_at": None,
-        "user_id": None,
+        "user_id": user_id,
         "is_deleted": False,
     }
 

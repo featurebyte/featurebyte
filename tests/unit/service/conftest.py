@@ -8,7 +8,6 @@ import json
 import os.path
 from typing import Optional
 from unittest.mock import Mock, patch
-from uuid import uuid4
 
 import pytest
 import pytest_asyncio
@@ -25,8 +24,6 @@ from featurebyte.query_graph.model.entity_relationship_info import (
     FeatureEntityLookupInfo,
 )
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
-from featurebyte.routes.lazy_app_container import LazyAppContainer
-from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate, CatalogOnlineStoreUpdate
 from featurebyte.schema.context import ContextCreate
 from featurebyte.schema.dimension_table import DimensionTableCreate
@@ -42,39 +39,6 @@ from featurebyte.schema.scd_table import SCDTableCreate
 from featurebyte.schema.target import TargetCreate
 from featurebyte.service.catalog import CatalogService
 from tests.util.helper import deploy_feature_ids, get_relationship_info, manage_document
-
-TEST_REDIS_URI = "redis://localhost:36379"
-
-
-@pytest.fixture(name="get_credential")
-def get_credential_fixture(credentials):
-    """
-    get_credential fixture
-    """
-
-    async def get_credential(user_id, feature_store_name):
-        _ = user_id
-        return credentials.get(feature_store_name)
-
-    return get_credential
-
-
-@pytest.fixture(name="app_container")
-def app_container_fixture(persistent, user, catalog, storage, temp_storage):
-    """
-    Return an app container used in tests. This will allow us to easily retrieve instances of the right type.
-    """
-    instance_map = {
-        "user": user,
-        "persistent": persistent,
-        "temp_storage": temp_storage,
-        "storage": storage,
-        "catalog_id": catalog.id,
-        "user_id": user.id,
-        "task_id": uuid4(),
-        "redis_uri": TEST_REDIS_URI,
-    }
-    return LazyAppContainer(app_container_config=app_container_config, instance_map=instance_map)
 
 
 @pytest.fixture(name="feature_store_service")

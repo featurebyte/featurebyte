@@ -480,7 +480,7 @@ def test_info(saved_feature_list):
 
 
 def test_get_feature_list(
-    saved_feature_list, catalog, cust_id_entity, transaction_entity, snowflake_event_table
+    saved_feature_list, catalog, cust_id_entity, transaction_entity, snowflake_event_table, user_id
 ):
     """
     Test get feature list using feature list name
@@ -547,7 +547,7 @@ def test_get_feature_list(
             ),
             ("table_ids", [str(snowflake_event_table.id)]),
             ("updated_at", None),
-            ("user_id", None),
+            ("user_id", str(user_id)),
             ("version.name", saved_feature_list.version),
             ("version.suffix", None),
         ],

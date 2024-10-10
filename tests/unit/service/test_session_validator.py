@@ -11,15 +11,6 @@ from featurebyte import FeatureStore
 from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureStorePresentError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.service.session_validator import ValidateStatus
-from featurebyte.utils.credential import MongoBackedCredentialProvider
-
-
-@pytest.fixture(name="credential_provider")
-def get_credential_provider_fixture(persistent):
-    """
-    Fixture to get a MongoBackedCredentialProvider
-    """
-    return MongoBackedCredentialProvider(persistent=persistent)
 
 
 @pytest.mark.asyncio

@@ -111,7 +111,7 @@ def test_save__duplicate_record_exception(saved_mysql_online_store):
 
 
 @pytest.mark.asyncio
-async def test_get(saved_mysql_online_store, persistent):
+async def test_get(saved_mysql_online_store, persistent, user_id):
     """
     Test online store retrieval
     """
@@ -142,7 +142,7 @@ async def test_get(saved_mysql_online_store, persistent):
             ("is_deleted", False),
             ("name", "mysql_online_store"),
             ("updated_at", None),
-            ("user_id", None),
+            ("user_id", str(user_id)),
         ],
         columns=["field_name", "new_value"],
     )

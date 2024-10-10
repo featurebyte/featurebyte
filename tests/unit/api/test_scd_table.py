@@ -97,7 +97,7 @@ class TestSCDTableTestSuite(BaseTableTestSuite):
 
 
 @pytest.fixture(name="scd_table_dict")
-def scd_table_dict_fixture(snowflake_database_table_scd_table):
+def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
     """SCDTable in serialized dictionary format"""
     return {
         "type": TableDataType.SCD_TABLE,
@@ -210,7 +210,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table):
         "record_creation_timestamp_column": "created_at",
         "created_at": None,
         "updated_at": None,
-        "user_id": None,
+        "user_id": user_id,
         "is_deleted": False,
     }
 

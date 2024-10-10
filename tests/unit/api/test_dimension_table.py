@@ -80,7 +80,7 @@ class TestDimensionTableTestSuite(BaseTableTestSuite):
 
 
 @pytest.fixture(name="dimension_table_dict")
-def dimension_table_dict_fixture(snowflake_database_table):
+def dimension_table_dict_fixture(snowflake_database_table, user_id):
     """DimensionTable in serialized dictionary format"""
     return {
         "type": TableDataType.DIMENSION_TABLE,
@@ -171,7 +171,7 @@ def dimension_table_dict_fixture(snowflake_database_table):
         "record_creation_timestamp_column": "created_at",
         "created_at": None,
         "updated_at": None,
-        "user_id": None,
+        "user_id": user_id,
         "is_deleted": False,
     }
 

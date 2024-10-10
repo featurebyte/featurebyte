@@ -9,10 +9,10 @@ from featurebyte.exception import FeatureStoreSchemaCollisionError, NoFeatureSto
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.node.schema import DatabaseDetails
+from featurebyte.service.credential import CredentialService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
 from featurebyte.session.manager import SessionManager
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 logger = get_logger(__name__)
 
@@ -35,12 +35,12 @@ class SessionValidatorService:
     def __init__(
         self,
         user: Any,
-        mongo_backed_credential_provider: MongoBackedCredentialProvider,
         feature_store_service: FeatureStoreService,
+        credential_service: CredentialService,
     ):
         self.user = user
-        self.credential_provider = mongo_backed_credential_provider
         self.feature_store_service = feature_store_service
+        self.credential_service = credential_service
 
     @classmethod
     async def validate_existing_session(
@@ -106,12 +106,12 @@ class SessionValidatorService:
         BaseSession
             session for the parameters passed in
         """
-        if get_credential is not None:
+        if get_credential is not None:  # TODO: Remove this callback
             credential = await get_credential(
                 user_id=self.user.id, feature_store_name=feature_store_name
             )
         else:
-            credential = await self.credential_provider.get_credential(
+            credential = await self.credential_service.find(
                 user_id=self.user.id, feature_store_name=feature_store_name
             )
         session_manager = SessionManager(credentials={feature_store_name: credential})

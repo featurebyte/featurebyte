@@ -18,7 +18,6 @@ from featurebyte.routes.block_modification_handler import BlockModificationHandl
 from featurebyte.schema.credential import CredentialCreate, CredentialServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.storage import Storage
 
 logger = get_logger(__name__)
@@ -38,7 +37,6 @@ class CredentialService(
         user: Any,
         persistent: Persistent,
         catalog_id: Optional[ObjectId],
-        feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
         block_modification_handler: BlockModificationHandler,
         storage: Storage,
@@ -52,7 +50,6 @@ class CredentialService(
             storage=storage,
             redis=redis,
         )
-        self.feature_store_warehouse_service = feature_store_warehouse_service
         self.feature_store_service = feature_store_service
 
     def _construct_get_query_filter(
@@ -82,40 +79,52 @@ class CredentialService(
             output["user_id"] = self.user.id
         return output
 
-    async def _validate_credential(self, credential: CredentialModel) -> None:
+    # This is a temporary method
+    # This is hardcoded to use user_id to find the credential
+    async def find(
+        self, user_id: Optional[ObjectId], feature_store_name: str
+    ) -> Optional[CredentialModel]:
         """
-        Validate credential is valid
+        Find credential
 
         Parameters
         ----------
-        credential: CredentialModel
-            CredentialModel to validate
+        user_id: ObjectId | None
+            User ID
+        feature_store_name: str
+            Feature store name
+
+        Returns
+        -------
+        CredentialModel | None
         """
-        # test credential works
-        feature_store = await self.feature_store_service.get_document(
-            document_id=credential.feature_store_id
+        feature_stores = await self.feature_store_service.list_documents(
+            query_filter={"name": feature_store_name}
         )
+        if len(feature_stores) > 1:
+            logger.warning(f"Multiple feature stores found with name {feature_store_name}")
+        elif len(feature_stores) == 0:
+            logger.warning(f"No feature store found with name {feature_store_name}")
+            return None
 
-        async def get_credential(**kwargs: Any) -> CredentialModel:
-            """
-            Get credential to test with feature store
+        feature_store = feature_stores[0]
 
-            Parameters
-            ----------
-            kwargs: Any
-                Keyword arguments
-
-            Returns
-            -------
-            CredentialModel
-            """
-            _ = kwargs
-            return credential
-
-        await self.feature_store_warehouse_service.list_databases(
-            feature_store=feature_store,
-            get_credential=get_credential,
+        credentials = await self.list_documents(
+            query_filter={"user_id": user_id, "feature_store_id": feature_store.id}
         )
+        if len(credentials) == 0:
+            logger.warning(
+                f"No credentials found for user {user_id} and feature store {feature_store_name}"
+            )
+            return None
+
+        # Choose the credentials
+        # TODO: Implement a better way to choose the credentials
+        #       Currently choosing the first one
+        #       Which is sorted by created_at, DESC
+        chosen_credentials = credentials[0]
+        chosen_credentials.decrypt_credentials()
+        return chosen_credentials
 
     async def create_document(self, data: CredentialCreate) -> CredentialModel:
         """
@@ -131,7 +140,6 @@ class CredentialService(
         CredentialModel
         """
         credential = self.document_class(**data.model_dump(by_alias=True))
-        await self._validate_credential(credential=credential)
         credential.encrypt_credentials()
         return await super().create_document(
             data=CredentialCreate(**credential.model_dump(by_alias=True))
@@ -182,15 +190,7 @@ class CredentialService(
         except InvalidToken:
             logger.warning("Credential is already decrypted")
 
-        # verify credential is valid
-        update_dict = data.model_dump(exclude_none=exclude_none)
-        updated_document = self.document_class(**{
-            **document.model_dump(by_alias=True),
-            **update_dict,
-        })
-        await self._validate_credential(credential=updated_document)
         data.encrypt()
-
         return await super().update_document(
             document_id=document_id,
             data=data,

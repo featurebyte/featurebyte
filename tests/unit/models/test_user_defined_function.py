@@ -55,9 +55,9 @@ def test_function_parameter(dtype, default_value, test_value, expected_error_mes
 
 
 @pytest.mark.parametrize(
-    "function_parameters,catalog_id,expected_signature,expected_test_sql",
+    "function_parameters,expected_signature,expected_test_sql",
     [
-        ([], None, "function_name() -> float", "SELECT SQL_FUNC()"),
+        ([], "function_name() -> float", "SELECT SQL_FUNC()"),
         (
             [
                 {
@@ -73,17 +73,17 @@ def test_function_parameter(dtype, default_value, test_value, expected_error_mes
                     "test_value": 0.0,
                 },
             ],
-            ObjectId(),
             "function_name(param1: int, param2: float = 1.0) -> float",
             "SELECT SQL_FUNC(1, 0.0)",
         ),
     ],
 )
 def test_user_defined_function_model(
-    function_parameters, catalog_id, expected_signature, expected_test_sql, source_info
+    function_parameters, expected_signature, expected_test_sql, source_info
 ):
     """Test UserDefinedFunctionModel"""
     feature_store_id = ObjectId()
+    catalog_id = ObjectId()
     user_defined_function = UserDefinedFunctionModel(
         name="function_name",
         sql_function_name="sql_func",

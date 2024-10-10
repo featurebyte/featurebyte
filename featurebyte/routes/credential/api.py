@@ -132,8 +132,9 @@ class CredentialRouter(
         """
         Create credential
         """
-        credential = await super().create_object(request, data)
-        return CredentialRead(**credential.model_dump(by_alias=True))
+        controller = self.get_controller_for_request(request)
+        credentials = await controller.create_credential(request, data)
+        return credentials
 
     async def update_credential(
         self,

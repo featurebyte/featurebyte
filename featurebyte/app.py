@@ -182,20 +182,15 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     # Application Start hooks
     # NIL
     startup_tasks: list[asyncio.Task[Any]] = []
-    logger.info("Running startup tasks")
     await asyncio.gather(*startup_tasks)
-    logger.info("Completed startup tasks")
 
     yield
 
     # Application Shutdown hooks
     # 1. Close all websocket connections
-    logger.info("Running Shutting down")
     shutdown_tasks: list[asyncio.Task[Any]] = []
     shutdown_tasks.append(asyncio.create_task(close_ws_connections()))
-
     await asyncio.gather(*shutdown_tasks)
-    logger.info("Completed shutdown tasks")
 
 
 def get_app() -> FastAPI:

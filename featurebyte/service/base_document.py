@@ -724,6 +724,40 @@ class BaseDocumentService(
         async for doc in docs:
             yield doc
 
+    async def list_documents(
+        self,
+        query_filter: QueryFilter,
+        use_raw_query_filter: bool = False,
+        populate_remote_attributes: bool = True,
+        **kwargs: Any,
+    ) -> List[Document]:
+        """
+        List documents
+
+        Parameters
+        ----------
+        query_filter: QueryFilter
+            Query filter
+        use_raw_query_filter: bool
+            Use only provided query filter (without any further processing)
+        populate_remote_attributes: bool
+            Populate attributes that are stored remotely (e.g. file paths)
+        kwargs: Any
+            Additional keyword arguments
+
+        Returns
+        -------
+        List[Document]
+            List of documents fulfilled the filtering condition
+        """
+        it = self.list_documents_iterator(
+            query_filter=query_filter,
+            use_raw_query_filter=use_raw_query_filter,
+            populate_remote_attributes=populate_remote_attributes,
+            **kwargs,
+        )
+        return [doc async for doc in it]
+
     async def list_documents_iterator(
         self,
         query_filter: QueryFilter,

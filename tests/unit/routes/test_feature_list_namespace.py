@@ -72,14 +72,6 @@ class TestFeatureListNamespaceApi(BaseCatalogApiTestSuite):
     def test_create_201__id_is_none(self, test_api_client_persistent):
         """Test creation (success) ID is None"""
 
-    @pytest.mark.skip("POST method not exposed")
-    def test_create_201_non_default_catalog(
-        self,
-        catalog_id,
-        create_success_response,
-    ):
-        """Test creation (success) in default catalog"""
-
     def multiple_success_payload_generator(self, api_client):
         """Generate multiple success payloads"""
         feature_list_payload = self.load_payload(

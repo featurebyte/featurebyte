@@ -25,11 +25,11 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.online_store import OnlineStoreModel
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.credential import CredentialService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store import OnlineStoreService
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 
 logger = get_logger(__name__)
 
@@ -151,7 +151,7 @@ class FeastFeatureStoreService:
         self,
         user: Any,
         feast_registry_service: FeastRegistryService,
-        mongo_backed_credential_provider: MongoBackedCredentialProvider,
+        credential_service: CredentialService,
         feature_store_service: FeatureStoreService,
         catalog_service: CatalogService,
         online_store_service: OnlineStoreService,
@@ -160,7 +160,7 @@ class FeastFeatureStoreService:
     ):
         self.user = user
         self.feast_registry_service = feast_registry_service
-        self.credential_provider = mongo_backed_credential_provider
+        self.credential_service = credential_service
         self.feature_store_service = feature_store_service
         self.catalog_service = catalog_service
         self.online_store_service = online_store_service
@@ -201,14 +201,25 @@ class FeastFeatureStoreService:
         -------
         FeastFeatureStore
             Feast feature store
+
+        Raises
+        ------
+        ValueError
+            if unable to retrieve feature store credentials
         """
         logger.info("Creating feast feature store for registry %s", str(feast_registry.id))
         feature_store = await self.feature_store_service.get_document(
             document_id=feast_registry.feature_store_id
         )
-        credentials = await self.credential_provider.get_credential(
+        credentials = await self.credential_service.find(
             user_id=self.user.id, feature_store_name=feature_store.name
         )
+        if credentials is None:
+            logger.error(
+                "Unable to retrieve feature store credentials",
+                extra={"user_id": self.user.id, "feature_store": feature_store.name},
+            )
+            raise ValueError("Unable to retrieve feature store credentials")
 
         # Get online store feast config
         catalog = await self.catalog_service.get_document(feast_registry.catalog_id)
@@ -290,9 +301,15 @@ class FeastFeatureStoreService:
         feature_store = await self.feature_store_service.get_document(
             document_id=first_registry.feature_store_id
         )
-        offline_store_credentials = await self.credential_provider.get_credential(
+        offline_store_credentials = await self.credential_service.find(
             user_id=self.user.id, feature_store_name=feature_store.name
         )
+        if offline_store_credentials is None:
+            logger.error(
+                "Unable to retrieve feature store credentials",
+                extra={"user_id": self.user.id, "feature_store": feature_store.name},
+            )
+            return None
         offline_store_config = FeastRegistryBuilder.get_offline_store_config(
             feature_store_model=feature_store, offline_store_credentials=offline_store_credentials
         )

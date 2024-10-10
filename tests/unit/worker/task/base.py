@@ -73,6 +73,7 @@ class BaseTaskTestSuite:
 
     async def execute_task(
         self,
+        user_id,
         task_class,
         payload,
         persistent,
@@ -85,7 +86,7 @@ class BaseTaskTestSuite:
         Execute task with payload
         """
 
-        user = User(id=payload.get("user_id"))
+        user = User(id=user_id)
         app_container.override_instance_for_test("persistent", persistent)
         app_container.override_instance_for_test("user", user)
         app_container.override_instance_for_test("temp_storage", temp_storage)
@@ -97,7 +98,7 @@ class BaseTaskTestSuite:
 
     @pytest_asyncio.fixture()
     async def task_completed(
-        self, mongo_persistent, progress, storage, temp_storage, catalog, app_container
+        self, mongo_persistent, progress, storage, temp_storage, catalog, app_container, user_id
     ):
         """
         Test execution of the task
@@ -106,6 +107,7 @@ class BaseTaskTestSuite:
         self.payload["catalog_id"] = catalog.id
         app_container.invalidate_dep_for_test(TaskProgressUpdater)
         await self.execute_task(
+            user_id=user_id,
             task_class=self.task_class,
             payload=self.payload,
             persistent=persistent,

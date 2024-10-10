@@ -18,14 +18,6 @@ from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 
 
-@pytest.fixture(scope="session")
-def user_id():
-    """
-    Mock user id
-    """
-    return ObjectId()
-
-
 @pytest.fixture()
 def api_client_persistent(persistent, user_id, temp_storage):
     """
@@ -84,19 +76,6 @@ def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
             ),
         )
         yield mocked_get_session
-
-
-@pytest.fixture(name="get_credential")
-def get_credential_fixture(credentials):
-    """
-    get_credential fixture
-    """
-
-    async def get_credential(user_id, feature_store_name):
-        _ = user_id
-        return credentials.get(feature_store_name)
-
-    return get_credential
 
 
 @pytest.fixture(name="location")

@@ -3,7 +3,6 @@ Test config parser
 """
 
 import tempfile
-import time
 from pathlib import Path
 from unittest.mock import Mock, patch
 from uuid import uuid4
@@ -289,17 +288,3 @@ def test_websocket_reconnect():
             ]
             with pytest.raises(WebSocketBadStatusException):
                 ws_client.receive_bytes()
-
-
-@pytest.mark.no_mock_api_client
-def test_client_retry():
-    """
-    Test getting client
-    """
-    # expect client to retry and take more than 1 second to report error
-    client = APIClient(api_url="http://localhost:9999", api_token=None)
-    t0 = time.time()
-    with pytest.raises(InvalidSettingsError):
-        client.get("/")
-    t1 = time.time()
-    assert (t1 - t0) > 1

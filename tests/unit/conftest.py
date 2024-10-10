@@ -82,6 +82,8 @@ pytest.register_assert_rewrite("tests.unit.routes.base")
 # We keep the definition in a separate file for readability
 _ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
 
+TEST_REDIS_URI = "redis://localhost:36379"
+
 
 @pytest.fixture(name="mock_api_object_cache")
 def mock_api_object_cache_fixture():
@@ -91,17 +93,19 @@ def mock_api_object_cache_fixture():
         yield
 
 
-@pytest.fixture(autouse=True)
-def mock_api_client_fixture(request):
+@pytest.fixture(autouse=True, scope="session")
+def mock_api_client_fixture(request, user_id):
     """
     Mock Configurations.get_client to use test client
     """
     if "no_mock_api_client" in request.keywords:
         yield
     else:
-        with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
-            with TestClient(app) as client:
-                yield inject_request_side_effect(mock_request, client)
+        with mock.patch("featurebyte.app.User") as mock_user:
+            mock_user.return_value = User(id=user_id)
+            with mock.patch("featurebyte.config.BaseAPIClient.request") as mock_request:
+                with TestClient(app) as client:
+                    yield inject_request_side_effect(mock_request, client)
 
 
 @pytest.fixture(autouse=True)
@@ -2210,7 +2214,7 @@ def api_object_to_id_fixture():
 
 
 @pytest.fixture(name="user_id", scope="session")
-def user_id_fixture():
+def user_id() -> ObjectId:
     """
     User ID fixture
     """
@@ -2218,7 +2222,7 @@ def user_id_fixture():
 
 
 @pytest.fixture(scope="session")
-def user(user_id):
+def user(user_id) -> User:
     """
     Mock user
     """
@@ -2228,7 +2232,7 @@ def user(user_id):
 
 
 @pytest.fixture(name="catalog_id", scope="session")
-def catalog_id_fixture():
+def catalog_id_fixture() -> ObjectId:
     """
     User ID fixture
     """
@@ -2280,6 +2284,7 @@ def app_container_fixture(persistent, user, catalog, storage, temp_storage):
             "catalog_id": catalog.id,
             "task_id": uuid4(),
             "progress": Mock(),
+            "redis_uri": TEST_REDIS_URI,
         },
     )
 
@@ -2304,19 +2309,6 @@ async def insert_credential_fixture(persistent, user, snowflake_feature_store_id
         document=credential_model.model_dump(by_alias=True),
         user_id=user.id,
     )
-
-
-@pytest.fixture(name="get_credential")
-def get_credential_fixture(credentials):
-    """
-    get_credential fixture
-    """
-
-    async def get_credential(user_id, feature_store_name):
-        _ = user_id
-        return credentials.get(feature_store_name)
-
-    return get_credential
 
 
 TEST_TASK_REGISTRY_MAP = TASK_REGISTRY_MAP.copy()

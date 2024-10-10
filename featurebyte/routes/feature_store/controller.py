@@ -119,20 +119,22 @@ class FeatureStoreController(
                 storage_credential=data.storage_credential,
             )
 
-            async def _temp_get_credential(user_id: str, feature_store_name: str) -> Any:
+            async def _temp_get_credential(
+                user_id: ObjectId, feature_store_name: str
+            ) -> CredentialModel:
                 """
                 Use the temporary credential to try to initialize the session.
 
                 Parameters
                 ----------
-                user_id: str
+                user_id: ObjectId
                     user id
                 feature_store_name: str
                     feature store name
 
                 Returns
                 -------
-                Any
+                CredentialModel
                     credentials
                 """
                 _ = user_id, feature_store_name

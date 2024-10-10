@@ -239,7 +239,9 @@ async def offline_store_feature_table_with_precomputed_lookup_ttl_fixture(
 
 
 @pytest_asyncio.fixture(name="feast_feature_store")
-async def feast_feature_store_fixture(app_container, offline_store_feature_table):
+async def feast_feature_store_fixture(
+    app_container, offline_store_feature_table, insert_credential
+):
     """
     Fixture for the feast feature store
     """
@@ -368,6 +370,7 @@ async def test_scheduled_materialize_features(
     is_online_store_registered_for_catalog,
     feature_materialize_run,
     update_fixtures,
+    insert_credential,
 ):
     """
     Test scheduled_materialize_features
@@ -431,6 +434,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
     offline_store_feature_table,
     online_store,
     mock_materialize_partial,
+    insert_credential,
 ):
     """
     Test calling scheduled_materialize_features when the feature table has already been materialized
@@ -562,6 +566,7 @@ async def test_initialize_new_columns__table_does_not_exist(
     mock_materialize_partial,
     is_online_store_registered_for_catalog,
     update_fixtures,
+    insert_credential,
 ):
     """
     Test initialize_new_columns when feature table is not yet created
@@ -605,6 +610,7 @@ async def test_initialize_new_columns__table_exists(
     offline_store_feature_table,
     mock_materialize_partial,
     update_fixtures,
+    insert_credential,
 ):
     """
     Test initialize_new_columns when feature table already exists
@@ -652,6 +658,7 @@ async def test_initialize_new_columns__table_exists_but_empty(
     offline_store_feature_table,
     mock_materialize_partial,
     update_fixtures,
+    insert_credential,
 ):
     """
     Test initialize_new_columns when feature table already exists but empty
@@ -698,6 +705,7 @@ async def test_initialize_new_columns__databricks_unity(
     mock_materialize_partial,
     databricks_source_info,
     update_fixtures,
+    insert_credential,
 ):
     """
     Test initialize_new_columns when session is databricks_unity

@@ -36,7 +36,6 @@ from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config as default_app_container_config
 from featurebyte.service.catalog import AllCatalogService
 from featurebyte.storage import Storage
-from featurebyte.utils.credential import MongoBackedCredentialProvider
 from featurebyte.utils.storage import get_storage, get_temp_storage
 from featurebyte.worker import get_celery, get_redis
 
@@ -251,7 +250,6 @@ def get_migration_methods_to_apply(current_metadata_version: int) -> list[Any]:
 async def migrate_method_generator(
     user: Any,
     persistent: Persistent,
-    get_credential: Any,
     celery: Celery,
     storage: Storage,
     temp_storage: Storage,
@@ -268,8 +266,6 @@ async def migrate_method_generator(
         User object contains id information
     persistent: Persistent
         Persistent storage object
-    get_credential: Any
-        Callback to retrieve credential
     celery: Celery
         Celery object
     storage: Storage
@@ -315,7 +311,6 @@ async def migrate_method_generator(
         if isinstance(migrate_service, DataWarehouseMigrationMixin):
             if not include_data_warehouse_migrations:
                 continue
-            migrate_service.set_credential_callback(get_credential)
             migrate_service.set_celery(celery)
 
         migrate_method_name = migrate_method_data["method"]
@@ -366,7 +361,6 @@ async def post_migration_sanity_check(service: BaseMigrationServiceMixin) -> Non
 async def run_migration(
     user: Any,
     persistent: Persistent,
-    get_credential: Any,
     celery: Celery,
     storage: Storage,
     temp_storage: Storage,
@@ -383,8 +377,6 @@ async def run_migration(
         User object
     persistent: Persistent
         Persistent object
-    get_credential: Any
-        Callback to retrieve credential
     celery: Celery
         Celery object
     storage: Storage
@@ -413,7 +405,6 @@ async def run_migration(
     method_generator = migrate_method_generator(
         user=user,
         persistent=persistent,
-        get_credential=get_credential,
         celery=celery,
         storage=storage,
         temp_storage=temp_storage,
@@ -446,11 +437,9 @@ async def run_mongo_migration(persistent: MongoDB) -> None:
     persistent: MongoDB
         Mongo persistent object
     """
-    credential_provider = MongoBackedCredentialProvider(persistent=persistent)
     await run_migration(
         User(),
         persistent,
-        credential_provider.get_credential,
         celery=get_celery(),
         storage=get_storage(),
         temp_storage=get_temp_storage(),
