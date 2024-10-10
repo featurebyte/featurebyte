@@ -112,11 +112,7 @@ class CredentialService(
         credentials = await self.list_documents(
             query_filter={"user_id": user_id, "feature_store_id": feature_store.id}
         )
-        if len(credentials) > 1:
-            logger.warning(
-                f"Multiple credentials found for user {user_id} and feature store {feature_store_name}"
-            )
-        elif len(credentials) == 0:
+        if len(credentials) == 0:
             logger.warning(
                 f"No credentials found for user {user_id} and feature store {feature_store_name}"
             )
@@ -124,6 +120,8 @@ class CredentialService(
 
         # Choose the credentials
         # TODO: Implement a better way to choose the credentials
+        #       Currently choosing the first one
+        #       Which is sorted by created_at, DESC
         chosen_credentials = credentials[0]
         chosen_credentials.decrypt_credentials()
         return chosen_credentials

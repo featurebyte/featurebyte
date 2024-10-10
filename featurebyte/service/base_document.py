@@ -744,6 +744,11 @@ class BaseDocumentService(
             Populate attributes that are stored remotely (e.g. file paths)
         kwargs: Any
             Additional keyword arguments
+
+        Returns
+        -------
+        List[Document]
+            List of documents fulfilled the filtering condition
         """
         it = self.list_documents_iterator(
             query_filter=query_filter,
