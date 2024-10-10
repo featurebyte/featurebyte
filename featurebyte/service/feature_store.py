@@ -4,7 +4,7 @@ FeatureStoreService class
 
 from __future__ import annotations
 
-from typing import Type
+from typing import Optional, Type
 
 from bson import ObjectId
 
@@ -23,6 +23,23 @@ class FeatureStoreService(
     """
 
     document_class: Type[FeatureStoreModel] = FeatureStoreModel
+
+    async def get_by_name(self, name: str) -> Optional[FeatureStoreModel]:
+        """
+        Get feature store by name
+
+        Parameters
+        ----------
+        name: str
+            Feature store name
+
+        Returns
+        -------
+        Optional[FeatureStoreModel]
+        """
+        return await self.persistent.find_one(
+            collection_name=self.document_class.collection_name(), query_filter={"name": name}
+        )
 
     async def get_feature_store_info(
         self, document_id: ObjectId, verbose: bool

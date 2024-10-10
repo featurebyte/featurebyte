@@ -11,7 +11,6 @@ from cryptography.fernet import InvalidToken
 from redis import Redis
 
 from featurebyte.logging import get_logger
-from featurebyte.models import FeatureStoreModel
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Persistent
@@ -99,22 +98,35 @@ class CredentialService(
         -------
         CredentialModel | None
         """
-        feature_store = await self.persistent.find_one(
-            collection_name=FeatureStoreModel.collection_name(),
-            query_filter={"name": feature_store_name},
+        feature_stores = await self.feature_store_service.list_documents(
+            query_filter={"name": feature_store_name}
         )
-        if not feature_store:
+        if len(feature_stores) > 1:
+            logger.warning(f"Multiple feature stores found with name {feature_store_name}")
+        elif len(feature_stores) == 0:
+            logger.warning(f"No feature store found with name {feature_store_name}")
             return None
 
-        document = await self.persistent.find_one(
-            collection_name=CredentialModel.collection_name(),
-            query_filter={"user_id": user_id, "feature_store_id": feature_store["_id"]},
+        feature_store = feature_stores[0]
+
+        credentials = await self.list_documents(
+            query_filter={"user_id": user_id, "feature_store_id": feature_store.id}
         )
-        if document:
-            credential = CredentialModel(**document)
-            credential.decrypt_credentials()
-            return credential
-        return None
+        if len(credentials) > 1:
+            logger.warning(
+                f"Multiple credentials found for user {user_id} and feature store {feature_store_name}"
+            )
+        elif len(credentials) == 0:
+            logger.warning(
+                f"No credentials found for user {user_id} and feature store {feature_store_name}"
+            )
+            return None
+
+        # Choose the credentials
+        # TODO: Implement a better way to choose the credentials
+        chosen_credentials = credentials[0]
+        chosen_credentials.decrypt_credentials()
+        return chosen_credentials
 
     async def create_document(self, data: CredentialCreate) -> CredentialModel:
         """
