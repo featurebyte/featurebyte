@@ -155,7 +155,7 @@ async def saved_snowflake_feature_store_fixture(
     persistent = mock_get_persistent.return_value
     assert snowflake_feature_store.saved is True
     assert snowflake_feature_store.created_at is not None
-    docs, cnt = await persistent.find(collection_name="feature_store", query_filter={})
+    docs, cnt = await persistent.get_credentials(collection_name="feature_store", query_filter={})
     assert cnt == 1
     assert (
         docs[0].items()
@@ -265,7 +265,7 @@ async def test_feature_store_create(
 
     # before save
     persistent = mock_get_persistent.return_value
-    docs, cnt = await persistent.find(collection_name="feature_store", query_filter={})
+    docs, cnt = await persistent.get_credentials(collection_name="feature_store", query_filter={})
     assert cnt == 0 and docs == []
 
     # call create - this should save, and return an instance
@@ -289,7 +289,7 @@ async def test_feature_store_create(
     # assert that we have saved the feature store correctly
     assert snowflake_feature_store.saved is True
     assert snowflake_feature_store.created_at is not None
-    docs, cnt = await persistent.find(collection_name="feature_store", query_filter={})
+    docs, cnt = await persistent.get_credentials(collection_name="feature_store", query_filter={})
     assert cnt == 1
     assert (
         docs[0].items()

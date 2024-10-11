@@ -211,7 +211,7 @@ class FeastFeatureStoreService:
         feature_store = await self.feature_store_service.get_document(
             document_id=feast_registry.feature_store_id
         )
-        credentials = await self.credential_service.find(
+        credentials = await self.credential_service.get_credentials(
             user_id=self.user.id, feature_store_name=feature_store.name
         )
         if credentials is None:
@@ -301,7 +301,7 @@ class FeastFeatureStoreService:
         feature_store = await self.feature_store_service.get_document(
             document_id=first_registry.feature_store_id
         )
-        offline_store_credentials = await self.credential_service.find(
+        offline_store_credentials = await self.credential_service.get_credentials(
             user_id=self.user.id, feature_store_name=feature_store.name
         )
         if offline_store_credentials is None:

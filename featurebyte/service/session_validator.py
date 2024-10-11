@@ -111,7 +111,7 @@ class SessionValidatorService:
                 user_id=self.user.id, feature_store_name=feature_store_name
             )
         else:
-            credential = await self.credential_service.find(
+            credential = await self.credential_service.get_credentials(
                 user_id=self.user.id, feature_store_name=feature_store_name
             )
         session_manager = SessionManager(credentials={feature_store_name: credential})

@@ -59,7 +59,7 @@ async def saved_mysql_online_store_fixture(mysql_online_store, mock_get_persiste
     persistent = mock_get_persistent.return_value
     assert mysql_online_store.saved is True
     assert mysql_online_store.created_at is not None
-    docs, cnt = await persistent.find(collection_name="online_store", query_filter={})
+    docs, cnt = await persistent.get_credentials(collection_name="online_store", query_filter={})
     # decrypt credential
     decrypt_credential(docs)
 
@@ -180,7 +180,7 @@ async def test_online_store_create(
 
     # before save
     persistent = mock_get_persistent.return_value
-    docs, cnt = await persistent.find(collection_name="online_store", query_filter={})
+    docs, cnt = await persistent.get_credentials(collection_name="online_store", query_filter={})
     assert cnt == 0 and docs == []
 
     # call create - this should save, and return an instance
@@ -202,7 +202,7 @@ async def test_online_store_create(
     # assert that we have saved the online store correctly
     assert mysql_online_store.saved is True
     assert mysql_online_store.created_at is not None
-    docs, cnt = await persistent.find(collection_name="online_store", query_filter={})
+    docs, cnt = await persistent.get_credentials(collection_name="online_store", query_filter={})
     assert cnt == 1
     # decrypt credential
     decrypt_credential(docs)

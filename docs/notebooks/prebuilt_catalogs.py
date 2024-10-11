@@ -60,7 +60,7 @@ def to_python_variable_name(name: str):
 
 def is_tutorial_catalog(catalog_name):
     # does the catalog name contain playground? if so, it is not a tutorial catalog
-    if catalog_name.lower().find("playground") != -1:
+    if catalog_name.lower().get_credentials("playground") != -1:
         return False
 
     # does the catalog name begin with "quick start " or "deep dive "? if so, it is probably a tutorial catalog
