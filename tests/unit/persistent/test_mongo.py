@@ -37,12 +37,12 @@ async def test_insert_one(mongo_persistent, test_document, disable_audit):
     )
 
     # check document is inserted
-    results = await client["test"]["data"].get_credentials({}).to_list()
+    results = await client["test"]["data"].find({}).to_list()
     assert results[0] == test_document
     assert results[0]["_id"] == inserted_id
 
     # check audit record is inserted
-    results = await client["test"]["__audit__data"].get_credentials({"document_id": inserted_id}).to_list()
+    results = await client["test"]["__audit__data"].find({"document_id": inserted_id}).to_list()
     if disable_audit:
         assert len(results) == 0
         return
@@ -61,11 +61,11 @@ async def test_insert_one(mongo_persistent, test_document, disable_audit):
 
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
-    before = await client["test"]["__audit__data"].get_credentials({"document_id": inserted_id}).to_list()
+    before = await client["test"]["__audit__data"].find({"document_id": inserted_id}).to_list()
     await persistent._migrate_audit_records(
         collection_name="data", document_id=inserted_id, migrate_func=dummy_migrate_func
     )
-    after = await client["test"]["__audit__data"].get_credentials({"document_id": inserted_id}).to_list()
+    after = await client["test"]["__audit__data"].find({"document_id": inserted_id}).to_list()
     assert before == after
 
 
@@ -99,12 +99,12 @@ async def test_insert_many(mongo_persistent, test_documents, disable_audit):
     )
 
     # check documents are inserted
-    assert await client["test"]["data"].get_credentials({}).to_list() == test_documents
+    assert await client["test"]["data"].find({}).to_list() == test_documents
     assert [doc["_id"] for doc in test_documents] == inserted_ids
 
     # check audit records are inserted
     for doc in test_documents:
-        results = await client["test"]["__audit__data"].get_credentials({"document_id": doc["_id"]}).to_list()
+        results = await client["test"]["__audit__data"].find({"document_id": doc["_id"]}).to_list()
         if disable_audit:
             assert len(results) == 0
             continue
@@ -147,29 +147,29 @@ async def test_find_many(mongo_persistent, test_documents):
     """
     persistent, client = mongo_persistent
     await client["test"]["data"].insert_many(test_documents)
-    docs, total = await persistent.get_credentials(collection_name="data", query_filter={})
+    docs, total = await persistent.find(collection_name="data", query_filter={})
     assert docs == test_documents
     assert total == 3
 
     # test pagination
-    docs, total = await persistent.get_credentials(
+    docs, total = await persistent.find(
         collection_name="data", query_filter={}, page_size=2, page=1
     )
     assert docs == test_documents[:2]
     assert total == 3
-    docs, total = await persistent.get_credentials(
+    docs, total = await persistent.find(
         collection_name="data", query_filter={}, page_size=2, page=2
     )
     assert docs == test_documents[2:]
     assert total == 3
-    docs, total = await persistent.get_credentials(
+    docs, total = await persistent.find(
         collection_name="data", query_filter={}, page_size=0, page=2
     )
     assert docs == test_documents
     assert total == 3
 
     # test sort
-    docs, total = await persistent.get_credentials(
+    docs, total = await persistent.find(
         collection_name="data",
         query_filter={},
         sort_by=[("_id", "desc")],
@@ -185,7 +185,7 @@ async def test_find_multiple_sort_keys(mongo_persistent, test_documents):
     """
     persistent, client = mongo_persistent
     await client["test"]["data"].insert_many(test_documents)
-    docs, total = await persistent.get_credentials(
+    docs, total = await persistent.find(
         collection_name="data",
         query_filter={},
         sort_by=[("_id", "desc"), ("name", "asc"), ("version", "asc")],
@@ -213,7 +213,7 @@ async def test_update_one(mongo_persistent, test_document, disable_audit):
     )
 
     assert result == 1
-    results = await client["test"]["data"].get_credentials({}).to_list()
+    results = await client["test"]["data"].find({}).to_list()
 
     # only first document should be updated
     assert results[0]["value"] == 1
@@ -221,7 +221,7 @@ async def test_update_one(mongo_persistent, test_document, disable_audit):
     assert results[2] == test_documents[2]
 
     # check audit record is inserted
-    audit_docs = await client["test"]["__audit__data"].get_credentials({"action_type": "UPDATE"}).to_list()
+    audit_docs = await client["test"]["__audit__data"].find({"action_type": "UPDATE"}).to_list()
     if disable_audit:
         assert len(audit_docs) == 0
         return
@@ -241,11 +241,11 @@ async def test_update_one(mongo_persistent, test_document, disable_audit):
 
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
-    before = await client["test"]["__audit__data"].get_credentials({"document_id": doc_id}).to_list()
+    before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     await persistent._migrate_audit_records(
         collection_name="data", document_id=doc_id, migrate_func=dummy_migrate_func
     )
-    after = await client["test"]["__audit__data"].get_credentials({"document_id": doc_id}).to_list()
+    after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     assert before == after
 
 
@@ -267,10 +267,10 @@ async def test_update_many(mongo_persistent, test_documents, disable_audit):
     )
     # expect all documents to be updated
     assert result == 3
-    results = await client["test"]["data"].get_credentials({}).to_list()
+    results = await client["test"]["data"].find({}).to_list()
 
     # check audit records are inserted
-    audit_docs = await client["test"]["__audit__data"].get_credentials({}).to_list()
+    audit_docs = await client["test"]["__audit__data"].find({}).to_list()
     if disable_audit:
         assert len(audit_docs) == 0
         return
@@ -301,7 +301,7 @@ async def test_replace_one(mongo_persistent, test_document, test_documents, disa
     )
 
     time.sleep(0.01)  # wait for a while to make sure replace & create time are different
-    before = await client["test"]["data"].get_credentials({}).to_list()
+    before = await client["test"]["data"].find({}).to_list()
     result = await persistent.replace_one(
         user_id=user_id,
         collection_name="data",
@@ -311,7 +311,7 @@ async def test_replace_one(mongo_persistent, test_document, test_documents, disa
     )
 
     assert result == 1
-    after = await client["test"]["data"].get_credentials({}).to_list()
+    after = await client["test"]["data"].find({}).to_list()
 
     # only first document should be updated
     assert after[0]["value"] == 1
@@ -319,7 +319,7 @@ async def test_replace_one(mongo_persistent, test_document, test_documents, disa
     assert after[2] == before[2]
 
     # check audit record is inserted
-    audit_docs = await client["test"]["__audit__data"].get_credentials({"action_type": "REPLACE"}).to_list()
+    audit_docs = await client["test"]["__audit__data"].find({"action_type": "REPLACE"}).to_list()
     if disable_audit:
         assert len(audit_docs) == 0
         return
@@ -352,11 +352,11 @@ async def test_replace_one(mongo_persistent, test_document, test_documents, disa
 
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
-    before = await client["test"]["__audit__data"].get_credentials({"document_id": doc_id}).to_list()
+    before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     await persistent._migrate_audit_records(
         collection_name="data", document_id=doc_id, migrate_func=dummy_migrate_func
     )
-    after = await client["test"]["__audit__data"].get_credentials({"document_id": doc_id}).to_list()
+    after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     assert before == after
 
 
@@ -379,11 +379,11 @@ async def test_delete_one(mongo_persistent, test_documents, disable_audit):
     )
     # expect only one document to be deleted
     assert result == 1
-    results = await client["test"]["data"].get_credentials({}).to_list()
+    results = await client["test"]["data"].find({}).to_list()
     assert len(results) == 2
 
     # check audit record is inserted
-    audit_docs = await client["test"]["__audit__data"].get_credentials({"action_type": "DELETE"}).to_list()
+    audit_docs = await client["test"]["__audit__data"].find({"action_type": "DELETE"}).to_list()
     if disable_audit:
         assert len(audit_docs) == 0
         return
@@ -406,11 +406,11 @@ async def test_delete_one(mongo_persistent, test_documents, disable_audit):
 
     # check migrate audit records (make sure there is no actual changes
     # due to identity migration function)
-    before = await client["test"]["__audit__data"].get_credentials({"document_id": doc_id}).to_list()
+    before = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     await persistent._migrate_audit_records(
         collection_name="data", document_id=doc_id, migrate_func=dummy_migrate_func
     )
-    after = await client["test"]["__audit__data"].get_credentials({"document_id": doc_id}).to_list()
+    after = await client["test"]["__audit__data"].find({"document_id": doc_id}).to_list()
     assert before == after
 
 
@@ -428,11 +428,11 @@ async def test_delete_many(mongo_persistent, test_documents, disable_audit):
     )
     # expect all documents to be deleted
     assert result == 3
-    results = await client["test"]["data"].get_credentials({}).to_list()
+    results = await client["test"]["data"].find({}).to_list()
     assert len(results) == 0
 
     # check audit records are inserted
-    audit_docs = await client["test"]["__audit__data"].get_credentials({}).to_list()
+    audit_docs = await client["test"]["__audit__data"].find({}).to_list()
     if disable_audit:
         assert len(audit_docs) == 0
         return

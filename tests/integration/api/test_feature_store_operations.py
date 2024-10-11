@@ -54,5 +54,5 @@ async def test_feature_store_create__no_writes_on_error(mongo_persistent, featur
     # an exception in `validate_feature_store_id_not_used_in_warehouse`, which happens after we try to
     # create the document.
     persistent, _ = mongo_persistent
-    _, count = await persistent.get_credentials(collection_name="feature_store", query_filter={})
+    _, count = await persistent.find(collection_name="feature_store", query_filter={})
     assert count == 0

@@ -198,7 +198,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
 
         # check feature namespace
         _, persistent = test_api_client_persistent
-        feat_namespace_docs, match_count = await persistent.get_credentials(
+        feat_namespace_docs, match_count = await persistent.find(
             collection_name="feature_namespace",
             query_filter={"name": self.payload["name"]},
         )

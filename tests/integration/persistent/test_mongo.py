@@ -19,7 +19,7 @@ async def test_start_transaction__success(mongo_persistent):
 
     # check both records written to the mongodb
     output = sorted(
-        database[col].get_credentials({}, {"_id": False, "created_at": False}), key=lambda d: list(d.keys())
+        database[col].find({}, {"_id": False, "created_at": False}), key=lambda d: list(d.keys())
     )
     assert output == [{"key1": "value1"}, {"key2": "value2"}]
 
@@ -39,10 +39,10 @@ async def test_start_transaction__exception_within_transaction(mongo_persistent)
             _ = session[0]
 
     # ensure persistent is working after failed transaction
-    await persistent.get_credentials(collection_name=col, query_filter={})
+    await persistent.find(collection_name=col, query_filter={})
 
     # check no record written to the mongodb
-    output = list(database[col].get_credentials({}, {"_id": False}))
+    output = list(database[col].find({}, {"_id": False}))
     assert not output
 
 
@@ -62,7 +62,7 @@ async def test_crud(mongo_persistent):
     )
 
     # check both records written to the mongodb
-    records, total = await persistent.get_credentials(collection_name=col, query_filter={})
+    records, total = await persistent.find(collection_name=col, query_filter={})
     assert total == 2
     records[0].pop("created_at")
     assert records[0] == {"_id": id1, "key1": "value1"}
