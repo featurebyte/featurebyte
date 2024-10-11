@@ -61,7 +61,4 @@ class TableValidationTask(BaseTask[TableValidationTaskPayload]):
         }
         if payload.table_type in validation_service_mapping:
             service = validation_service_mapping[payload.table_type]
-            await service.validate_and_update(
-                table_id=payload.table_id,
-                task_id=str(self.task_id) if self.task_id is not None else None,
-            )
+            await service.validate_and_update(table_id=payload.table_id)

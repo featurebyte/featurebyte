@@ -4,7 +4,7 @@ BaseTableValidationService class
 
 from __future__ import annotations
 
-from typing import Generic, Optional
+from typing import Generic
 
 from bson import ObjectId
 
@@ -41,7 +41,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         self.session_manager_service = session_manager_service
         self.table_document_service = table_document_service
 
-    async def validate_and_update(self, table_id: ObjectId, task_id: Optional[str]) -> None:
+    async def validate_and_update(self, table_id: ObjectId) -> None:
         """
         Validate table and update validation status
 
@@ -49,18 +49,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         ----------
         table_id: ObjectId
             Table ID
-        task_id: Optional[str]
-            Task ID
         """
-        if task_id is not None:
-            await self.table_document_service.update_document(
-                table_id,
-                self.table_document_service.document_update_class(
-                    validation=TableValidation(
-                        status=TableValidationStatus.PENDING, task_id=task_id
-                    )
-                ),
-            )
         new_validation_state = TableValidation(
             status=TableValidationStatus.PASSED,
             validation_message=None,
@@ -82,6 +71,23 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             self.table_document_service.document_update_class(validation=new_validation_state),
         )
 
+    @classmethod
+    def table_needs_validation(cls, table_model: Document) -> bool:
+        """
+        Check if a table needs validation
+
+        Parameters
+        ----------
+        table_model: Document
+            Table model
+
+        Returns
+        -------
+        bool
+        """
+        _ = table_model
+        return False
+
     async def validate_table(
         self,
         session: BaseSession,
@@ -97,7 +103,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         session: BaseSession
             Session object
         table_model: Document
-            Table ID
+            Table model
         num_records: int
             Number of records to return in the error message
         """

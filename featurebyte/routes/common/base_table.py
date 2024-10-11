@@ -21,7 +21,6 @@ from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
-from featurebyte.schema.task import Task
 from featurebyte.schema.worker.task.table_validation import TableValidationTaskPayload
 from featurebyte.service.base_table_document import DocumentCreate
 from featurebyte.service.dimension_table import DimensionTableService
@@ -180,23 +179,36 @@ class BaseTableDocumentController(
             )
         return document
 
-    async def _start_table_validation_task(self, table_document: TableDocumentT) -> Task:
-        await self.service.update_document(
-            document_id=table_document.id,
-            data=self.document_update_schema_class(  # type: ignore
-                validation=TableValidation(status=TableValidationStatus.PENDING)
-            ),
-            return_document=True,
-        )
-        payload = TableValidationTaskPayload(
-            user_id=self.service.user.id,
-            catalog_id=self.service.catalog_id,
-            table_id=table_document.id,
-            table_name=table_document.name,
-            table_type=table_document.type,
-        )
-        task_id = await self.task_controller.task_manager.submit(payload=payload)
-        return await self.task_controller.get_task(task_id=str(task_id))
+    async def _start_table_validation_task(self, table_document: TableDocumentT) -> None:
+        if self.table_facade_service.table_needs_validation(table_document):
+            payload = TableValidationTaskPayload(
+                user_id=self.service.user.id,
+                catalog_id=self.service.catalog_id,
+                table_id=table_document.id,
+                table_name=table_document.name,
+                table_type=table_document.type,
+            )
+            task_id = await self.task_controller.task_manager.submit(payload=payload)
+            table_document = await self.service.get_document(document_id=table_document.id)  # type: ignore[assignment]
+            if (
+                table_document.validation is not None
+                and table_document.validation.status not in TableValidationStatus.terminal()
+            ):
+                await self.service.update_document(
+                    document_id=table_document.id,
+                    data=self.document_update_schema_class(  # type: ignore
+                        validation=TableValidation(
+                            status=TableValidationStatus.PENDING, task_id=task_id
+                        )
+                    ),
+                )
+        else:
+            await self.service.update_document(
+                document_id=table_document.id,
+                data=self.document_update_schema_class(  # type: ignore
+                    validation=TableValidation(status=TableValidationStatus.PASSED)
+                ),
+            )
 
     async def create_table(self, data: DocumentCreate) -> TableDocumentT:
         """

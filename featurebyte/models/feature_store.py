@@ -5,7 +5,7 @@ This module contains DatabaseSource related models
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Type
 
 import pymongo
 from pydantic import Field, StrictStr
@@ -106,6 +106,17 @@ class TableValidationStatus(StrEnum):
     PASSED = "PASSED"
     FAILED = "FAILED"
     PENDING = "PENDING"
+
+    @classmethod
+    def terminal(cls) -> Set[StrEnum]:
+        """
+        Terminal status values
+
+        Returns
+        -------
+        Set[StrEnum]
+        """
+        return {cls.PASSED, cls.FAILED}
 
 
 class TableValidation(FeatureByteBaseModel):
