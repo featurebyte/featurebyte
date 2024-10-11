@@ -109,7 +109,9 @@ async def test_execute_feature_query_set(mock_snowflake_session, mock_redis, upd
 
     await execute_feature_query_set(
         session_handler=SessionHandler(
-            session=mock_snowflake_session, redis=mock_redis, feature_store_id=str(ObjectId())
+            session=mock_snowflake_session,
+            redis=mock_redis,
+            feature_store=Mock(id=ObjectId(), max_query_concurrency=None),
         ),
         feature_query_set=feature_query_set,
         progress_callback=progress_callback,
@@ -164,7 +166,9 @@ async def test_execute_feature_query_set__invalid_row_index(
     with pytest.raises(InvalidOutputRowIndexError) as exc_info:
         await execute_feature_query_set(
             session_handler=SessionHandler(
-                session=mock_snowflake_session, redis=mock_redis, feature_store_id=str(ObjectId())
+                session=mock_snowflake_session,
+                redis=mock_redis,
+                feature_store=Mock(id=ObjectId(), max_query_concurrency=None),
             ),
             feature_query_set=feature_query_set,
             progress_callback=progress_callback,

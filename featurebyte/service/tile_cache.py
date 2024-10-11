@@ -13,6 +13,7 @@ from featurebyte.common.utils import timer
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.session.base import BaseSession
 from featurebyte.tile.tile_cache import TileCache
@@ -28,8 +29,10 @@ class TileCacheService:
     def __init__(
         self,
         tile_manager_service: TileManagerService,
+        feature_store_service: FeatureStoreService,
     ):
         self.tile_manager_service = tile_manager_service
+        self.feature_store_service = feature_store_service
 
     async def compute_tiles_on_demand(
         self,
@@ -64,10 +67,11 @@ class TileCacheService:
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
         """
+        feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
         tile_cache = TileCache(
             session=session,
             tile_manager_service=self.tile_manager_service,
-            feature_store_id=feature_store_id,
+            feature_store=feature_store,
         )
         if progress_callback is not None:
             tile_check_progress_callback, tile_compute_progress_callback = divide_progress_callback(

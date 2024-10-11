@@ -331,7 +331,7 @@ class FeatureMaterializeService:
             )
             await get_online_features(
                 session_handler=SessionHandler(
-                    session=session, redis=self.redis, feature_store_id=feature_store.id
+                    session=session, redis=self.redis, feature_store=feature_store
                 ),
                 graph=feature_table_model.feature_cluster.graph,
                 nodes=nodes,

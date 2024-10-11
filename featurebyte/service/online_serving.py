@@ -162,7 +162,7 @@ class OnlineServingService:
             session_handler=SessionHandler(
                 session=db_session,
                 redis=self.online_store_table_version_service.redis,
-                feature_store_id=feature_store.id,
+                feature_store=feature_store,
             ),
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,

@@ -13,6 +13,7 @@
         "schema_name": "sf_schema",
         "warehouse": "sf_warehouse"
     },
+    "max_query_concurrency": null,
     "name": "sf_featurestore",
     "storage_credential": null,
     "type": "snowflake"

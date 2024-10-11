@@ -133,8 +133,10 @@ async def test_schedule_offline_tiles(
 
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.generate_tiles")
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.update_tile_entity_tracker")
+@mock.patch("featurebyte.service.feature_store.FeatureStoreService.get_document")
 @pytest.mark.asyncio
 async def test_generate_tiles_on_demand(
+    mock_feature_store_service_get_document,
     mock_generate_tiles,
     mock_update_tile_entity_tracker,
     mock_snowflake_tile,
@@ -146,6 +148,9 @@ async def test_generate_tiles_on_demand(
     """
     mock_generate_tiles.size_effect = None
     mock_update_tile_entity_tracker.size_effect = None
+    mock_feature_store_service_get_document.return_value = Mock(
+        id=mock_snowflake_tile.feature_store_id, max_query_concurrency=None
+    )
 
     await tile_manager_service.generate_tiles_on_demand(
         mock_snowflake_session, [(mock_snowflake_tile, "temp_entity_table")]
@@ -157,8 +162,10 @@ async def test_generate_tiles_on_demand(
 
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.generate_tiles")
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.update_tile_entity_tracker")
+@mock.patch("featurebyte.service.feature_store.FeatureStoreService.get_document")
 @pytest.mark.asyncio
 async def test_generate_tiles_on_demand__progress_update(
+    mock_feature_store_service_get_document,
     mock_generate_tiles,
     mock_update_tile_entity_tracker,
     mock_snowflake_tile,
@@ -170,6 +177,9 @@ async def test_generate_tiles_on_demand__progress_update(
     """
     mock_generate_tiles.size_effect = None
     mock_update_tile_entity_tracker.size_effect = None
+    mock_feature_store_service_get_document.return_value = Mock(
+        id=mock_snowflake_tile.feature_store_id, max_query_concurrency=None
+    )
     mock_progress_callback = AsyncMock()
 
     await tile_manager_service.generate_tiles_on_demand(

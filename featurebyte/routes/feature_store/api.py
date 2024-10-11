@@ -40,6 +40,7 @@ from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
     FeatureStoreShape,
+    FeatureStoreUpdate,
 )
 from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.schema.task import Task
@@ -135,6 +136,12 @@ class FeatureStoreRouter(
         self.router.add_api_route(
             "/{feature_store_id}/details",
             self.update_details,
+            methods=["PATCH"],
+            response_model=FeatureStoreModel,
+        )
+        self.router.add_api_route(
+            "/{feature_store_id}",
+            self.update,
             methods=["PATCH"],
             response_model=FeatureStoreModel,
         )
@@ -388,3 +395,13 @@ class FeatureStoreRouter(
         return await controller.update_details(
             feature_store_id=ObjectId(feature_store_id), data=data
         )
+
+    async def update(
+        self,
+        request: Request,
+        feature_store_id: PyObjectId,
+        data: FeatureStoreUpdate,
+    ) -> FeatureStoreModel:
+        """Update max_query_concurrency"""
+        controller: FeatureStoreController = self.get_controller_for_request(request)
+        return await controller.update(feature_store_id=ObjectId(feature_store_id), data=data)
