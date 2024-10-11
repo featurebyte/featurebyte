@@ -35,12 +35,11 @@ from featurebyte.query_graph.sql.tile_util import (
     get_previous_job_epoch_expr,
 )
 from featurebyte.service.tile_manager import TileManagerService
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, BaseSession
 from featurebyte.session.session_helper import run_coroutines
 
 logger = get_logger(__name__)
 
-TILE_CACHE_LIST_TABLES_TIMEOUT_SECONDS = 60 * 10
 NUM_TRACKER_TABLES_PER_QUERY = 20
 
 
@@ -510,7 +509,7 @@ class TileCache:
         for table in await self.session.list_tables(
             database_name=self.session.database_name,
             schema_name=self.session.schema_name,
-            timeout=TILE_CACHE_LIST_TABLES_TIMEOUT_SECONDS,
+            timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
         ):
             # always convert to upper case in case some backends change the casing
             table_name = table.name.upper()
