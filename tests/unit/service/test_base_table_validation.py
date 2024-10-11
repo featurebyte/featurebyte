@@ -71,7 +71,7 @@ async def test_validate_and_update__success(
     Test validate_and_update (success case)
     """
     with patch.object(table_validation_service, "validate_table", side_effect=None):
-        await table_validation_service.validate_and_update(table_model.id, "task_id_1")
+        await table_validation_service.validate_and_update(table_model.id)
     updated_table_model = await document_service.get_document(table_model.id)
     assert updated_table_model.validation.dict() == {
         "status": "PASSED",
@@ -94,7 +94,7 @@ async def test_validate_and_update__failure(
         "validate_table",
         side_effect=TableValidationError("custom message"),
     ):
-        await table_validation_service.validate_and_update(table_model.id, "task_id_2")
+        await table_validation_service.validate_and_update(table_model.id)
     updated_table_model = await document_service.get_document(table_model.id)
     assert updated_table_model.validation.dict() == {
         "status": "FAILED",
