@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 
-from featurebyte.models.task import ProgressHistory
+from featurebyte.models.task import LogMessage, ProgressHistory
 
 
 def test_compress_no_action_needed():
@@ -150,3 +150,10 @@ def test_compress_with_single_percent():
     assert len(progress_history.data) == 1
     assert progress_history.data[0].message == "Message 3 at 50%"
     assert progress_history.compress_at == 50
+
+
+def test_progress_history_with_missing_message():
+    """Test progress history with missing messages."""
+    data = [{"percent": 0}]
+    progress_history = ProgressHistory(data=data)
+    assert progress_history.data == [LogMessage(percent=0, message=None)]
