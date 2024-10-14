@@ -113,11 +113,24 @@ class FeatureTableCacheService:
             hashes.append(definition_hash)
         return hashes
 
+    async def _get_definition_hashes_mapping_from_feature_list_id(
+        self, feature_list_id: ObjectId
+    ) -> Dict[str, str]:
+        definition_hashes_mapping = {}
+        feature_list = await self.feature_list_service.get_document(feature_list_id)
+        if feature_list.feature_clusters is not None:
+            stored_hashes = feature_list.feature_clusters[0].feature_node_definition_hashes
+            if stored_hashes is not None:
+                for info in stored_hashes:
+                    if info.definition_hash is not None:
+                        definition_hashes_mapping[info.node_name] = info.definition_hash
+        return definition_hashes_mapping
+
     async def get_feature_definition_hashes(
         self,
         graph: QueryGraph,
         nodes: List[Node],
-        feature_list_id: Optional[ObjectId],
+        definition_hashes_mapping: Optional[Dict[str, str]] = None,
     ) -> List[str]:
         """
         Get definition hashes for list of nodes. Retrieve the result from feature list if available.
@@ -128,32 +141,27 @@ class FeatureTableCacheService:
             Query graph
         nodes: List[Node]
             Nodes
-        feature_list_id: ObjectId
-            Feature list id
+        definition_hashes_mapping: Optional[Dict[str, str]]
+            Optional definition hashes. If specified, the hashes will be used instead of being
+            computed from the graph
 
         Returns
         -------
         List[str]
         """
-        # Retrieve definition hashes if stored in feature list
-        definition_hashes_mapping = {}
-        if feature_list_id is not None:
-            feature_list = await self.feature_list_service.get_document(feature_list_id)
-            if feature_list.feature_clusters is not None:
-                stored_hashes = feature_list.feature_clusters[0].feature_node_definition_hashes
-                if stored_hashes is not None:
-                    for info in stored_hashes:
-                        if info.definition_hash is not None:
-                            definition_hashes_mapping[info.node_name] = info.definition_hash
+        with timer("get_feature_definition_hashes", logger):
+            definition_hashes_mapping = definition_hashes_mapping or {}
 
-        # Fallback to deriving the hashes from scratch
-        missing_nodes = [node for node in nodes if node.name not in definition_hashes_mapping]
-        if missing_nodes:
-            missing_definition_hashes = await self.definition_hashes_for_nodes(graph, missing_nodes)
-            for node, definition_hash in zip(missing_nodes, missing_definition_hashes):
-                definition_hashes_mapping[node.name] = definition_hash
+            # Fallback to deriving the hashes from scratch
+            missing_nodes = [node for node in nodes if node.name not in definition_hashes_mapping]
+            if missing_nodes:
+                missing_definition_hashes = await self.definition_hashes_for_nodes(
+                    graph, missing_nodes
+                )
+                for node, definition_hash in zip(missing_nodes, missing_definition_hashes):
+                    definition_hashes_mapping[node.name] = definition_hash
 
-        return [definition_hashes_mapping[node.name] for node in nodes]
+            return [definition_hashes_mapping[node.name] for node in nodes]
 
     async def get_feature_query(
         self,
@@ -505,6 +513,7 @@ class FeatureTableCacheService:
         observation_table: ObservationTableModel,
         graph: QueryGraph,
         nodes: List[Node],
+        definition_hashes_mapping: Optional[Dict[str, str]] = None,
         is_target: bool = False,
         feature_list_id: Optional[PydanticObjectId] = None,
         serving_names_mapping: Optional[Dict[str, str]] = None,
@@ -525,6 +534,9 @@ class FeatureTableCacheService:
             Graph definition
         nodes: List[Node]
             Input node names
+        definition_hashes_mapping: Optional[Dict[str, str]]
+            Optional definition hashes. If specified, the hashes will be used instead of being
+            computed from the graph
         is_target : bool
             Whether it is a target computation call
         feature_list_id: Optional[PydanticObjectId]
@@ -554,9 +566,13 @@ class FeatureTableCacheService:
             feature_store=feature_store
         )
 
-        with timer("get_feature_definition_hashes", logger):
-            hashes = await self.get_feature_definition_hashes(graph, nodes, feature_list_id)
+        if definition_hashes_mapping is None and feature_list_id is not None:
+            # Retrieve definition hashes if stored in feature list
+            definition_hashes_mapping = (
+                await self._get_definition_hashes_mapping_from_feature_list_id(feature_list_id)
+            )
 
+        hashes = await self.get_feature_definition_hashes(graph, nodes, definition_hashes_mapping)
         non_cached_nodes = await self.get_non_cached_nodes(cached_definitions, nodes, hashes)
 
         if progress_callback:
@@ -596,6 +612,7 @@ class FeatureTableCacheService:
         observation_table: ObservationTableModel,
         graph: QueryGraph,
         nodes: List[Node],
+        definition_hashes_mapping: Optional[Dict[str, str]] = None,
         columns: Optional[List[str]] = None,
     ) -> pd.DataFrame:
         """
@@ -611,6 +628,9 @@ class FeatureTableCacheService:
             Graph definition
         nodes: List[Node]
             Node names
+        definition_hashes_mapping: Optional[Dict[str, str]]
+            Optional definition hashes. If specified, the hashes will be used instead of being
+            computed from the graph
         columns: Optional[List[str]]
             Optional list of columns to read from the cache table
 
@@ -619,7 +639,7 @@ class FeatureTableCacheService:
         pd.DataFrame
             Result data
         """
-        hashes = await self.definition_hashes_for_nodes(graph, nodes)
+        hashes = await self.get_feature_definition_hashes(graph, nodes, definition_hashes_mapping)
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store
         )
