@@ -17,7 +17,7 @@ class LogMessage(BaseModel):
     """Log message schema"""
 
     percent: int
-    message: Optional[str]
+    message: Optional[str] = None
 
 
 class ProgressHistory(BaseModel):
