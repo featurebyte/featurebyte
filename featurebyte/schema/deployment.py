@@ -97,7 +97,7 @@ class FeatureTableJobRun(FeatureByteBaseModel):
     scheduled_ts: datetime
     completion_ts: Optional[datetime]
     completion_status: Optional[CompletionStatus]
-    duration_seconds: Optional[int]
+    duration_seconds: Optional[float]
     incomplete_tile_tasks_count: Optional[int]
 
 
