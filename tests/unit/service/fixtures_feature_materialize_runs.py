@@ -122,9 +122,9 @@ async def saved_feature_materialize_run_models(
                 offline_store_feature_table_id=offline_store_feature_table_id,
                 offline_store_feature_table_name="customer",
                 scheduled_job_ts=current_scheduled_job_ts,
-                completion_ts=current_scheduled_job_ts + timedelta(seconds=10),
+                completion_ts=current_scheduled_job_ts + timedelta(seconds=10, milliseconds=100),
                 completion_status="success" if i % 2 == 0 else "failure",
-                duration_from_scheduled_seconds=10,
+                duration_from_scheduled_seconds=10.1,
                 incomplete_tile_tasks=[
                     IncompleteTileTask(
                         aggregation_id="another_agg_id" if i % 2 == 0 else feature_aggregation_id,
