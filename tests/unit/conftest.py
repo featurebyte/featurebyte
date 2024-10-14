@@ -2351,6 +2351,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                 task_result = None
                 try:
                     task_payload = task.get_payload_obj(kwargs)
+                    task.set_task_id(UUID(task_id))
                     task_result = await task.execute(task_payload)
                     status = TaskStatus.SUCCESS
                     traceback_info = None

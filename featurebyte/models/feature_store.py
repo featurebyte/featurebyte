@@ -5,15 +5,16 @@ This module contains DatabaseSource related models
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Type
 
 import pymongo
 from pydantic import Field, StrictStr
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import OrderedStrEnum
+from featurebyte.enum import OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteBaseDocumentModel,
+    FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
     NameStr,
     PydanticObjectId,
@@ -99,6 +100,40 @@ class TableStatus(OrderedStrEnum):
     PUBLISHED = "PUBLISHED"
 
 
+class TableValidationStatus(StrEnum):
+    """Table validation status"""
+
+    PASSED = "PASSED"
+    FAILED = "FAILED"
+    PENDING = "PENDING"
+
+    @classmethod
+    def terminal(cls) -> Set[StrEnum]:
+        """
+        Terminal status values
+
+        Returns
+        -------
+        Set[StrEnum]
+        """
+        return {cls.PASSED, cls.FAILED}
+
+
+class TableValidation(FeatureByteBaseModel):
+    """
+    Table validation schema
+
+    status: TableValidationStatus
+        Table validation status
+    validation_message: Optional[str]
+        Validation message
+    """
+
+    status: TableValidationStatus
+    validation_message: Optional[StrictStr] = Field(default=None)
+    task_id: Optional[str] = Field(default=None)
+
+
 class ConstructGraphMixin:
     """ConstructGraphMixin class"""
 
@@ -152,6 +187,7 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
 
     status: TableStatus = Field(default=TableStatus.PUBLIC_DRAFT.value, frozen=True)
     record_creation_timestamp_column: Optional[StrictStr] = Field(default=None)
+    validation: Optional[TableValidation] = Field(default=None)
     _table_data_class: ClassVar[Type[BaseTableData]] = BaseTableData  # type: ignore[misc]
 
     @property

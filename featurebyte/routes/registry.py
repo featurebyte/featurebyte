@@ -86,12 +86,14 @@ from featurebyte.service.deploy import (
 )
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
+from featurebyte.service.dimension_table_validation import DimensionTableValidationService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_lookup_feature_table import EntityLookupFeatureTableService
 from featurebyte.service.entity_relationship_extractor import EntityRelationshipExtractorService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.event_table import EventTableService
+from featurebyte.service.event_table_validation import EventTableValidationService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_facade import FeatureFacadeService
 from featurebyte.service.feature_job_history_service import FeatureJobHistoryService
@@ -123,6 +125,7 @@ from featurebyte.service.historical_features import (
     HistoricalFeaturesValidationParametersService,
 )
 from featurebyte.service.item_table import ExtendedItemTableService, ItemTableService
+from featurebyte.service.item_table_validation import ItemTableValidationService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
@@ -219,6 +222,7 @@ from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
 from featurebyte.worker.task.query_cache_cleanup import QueryCacheCleanupTask
 from featurebyte.worker.task.scheduled_feature_materialize import ScheduledFeatureMaterializeTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
+from featurebyte.worker.task.table_validation import TableValidationTask
 from featurebyte.worker.task.target_table import TargetTableTask
 from featurebyte.worker.task.test_task import TestIOTask, TestTask
 from featurebyte.worker.task.tile_task import TileTask
@@ -349,7 +353,22 @@ app_container_config.register_class(
     dependency_override={"service": "scd_table_service"},
 )
 app_container_config.register_class(SCDTableService)
-app_container_config.register_class(SCDTableValidationService)
+app_container_config.register_class(
+    SCDTableValidationService,
+    dependency_override={"table_document_service": "scd_table_service"},
+)
+app_container_config.register_class(
+    EventTableValidationService,
+    dependency_override={"table_document_service": "event_table_service"},
+)
+app_container_config.register_class(
+    ItemTableValidationService,
+    dependency_override={"table_document_service": "item_table_service"},
+)
+app_container_config.register_class(
+    DimensionTableValidationService,
+    dependency_override={"table_document_service": "dimension_table_service"},
+)
 app_container_config.register_class(ScheduledFeatureMaterializeTask)
 app_container_config.register_class(SchemaMetadataService)
 app_container_config.register_class(SemanticController)
@@ -432,6 +451,7 @@ app_container_config.register_class(TestIOTask)
 app_container_config.register_class(TestTask)
 app_container_config.register_class(DataDescriptionTask)
 app_container_config.register_class(FeatureListMakeProductionReadyTask)
+app_container_config.register_class(TableValidationTask)
 app_container_config.register_class(TaskProgressUpdater)
 app_container_config.register_class(BatchFeatureCreator)
 app_container_config.register_class(BlockModificationHandler)

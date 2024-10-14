@@ -125,6 +125,9 @@ tasks:
         sh: printenv PYTEST_GROUP || echo "1"
       PYTEST_SPLITS:
         sh: printenv PYTEST_SPLITS || echo "1"
+    env:
+      MONGODB_URI: mongodb://localhost:37017/?replicaSet=rs0
+      REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
       - poetry run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1 --cov=featurebyte tests/integration --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
@@ -152,6 +155,9 @@ tasks:
         sh: printenv PYTEST_GROUP || echo "1"
       PYTEST_SPLITS:
         sh: printenv PYTEST_SPLITS || echo "1"
+    env:
+      MONGODB_URI: mongodb://localhost:37017/?replicaSet=rs0
+      REDIS_URI: redis://localhost:36379
     deps:
       - task: install
     cmds:
@@ -172,6 +178,9 @@ tasks:
         sh: printenv PYTEST_GROUP || echo "1"
       PYTEST_SPLITS:
         sh: printenv PYTEST_SPLITS || echo "1"
+    env:
+      MONGODB_URI: mongodb://localhost:37017/?replicaSet=rs0
+      REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
       - poetry run pytest --timeout=1800 --junitxml=pytest.xml.4 --cov=featurebyte tests/integration --source-types databricks_unity --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
@@ -187,6 +196,9 @@ tasks:
         sh: printenv PYTEST_GROUP || echo "1"
       PYTEST_SPLITS:
         sh: printenv PYTEST_SPLITS || echo "1"
+    env:
+      MONGODB_URI: mongodb://localhost:37017/?replicaSet=rs0
+      REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
       - poetry run pytest --timeout=900 --junitxml=pytest.xml.5 --cov=featurebyte tests/integration --source-types bigquery --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations

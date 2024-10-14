@@ -9,6 +9,7 @@ from bson import ObjectId
 from featurebyte.enum import SemanticType
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.routes.common.base_table import BaseTableDocumentController
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.info import SCDTableInfo
 from featurebyte.schema.scd_table import SCDTableList, SCDTableServiceUpdate
 from featurebyte.service.entity import EntityService
@@ -54,6 +55,7 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
         specialized_dtype_detection_service: SpecializedDtypeDetectionService,
         feature_store_service: FeatureStoreService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
+        task_controller: TaskController,
     ):
         super().__init__(
             service=scd_table_service,
@@ -66,6 +68,7 @@ class SCDTableController(BaseTableDocumentController[SCDTableModel, SCDTableServ
             specialized_dtype_detection_service=specialized_dtype_detection_service,
             feature_store_service=feature_store_service,
             feature_store_warehouse_service=feature_store_warehouse_service,
+            task_controller=task_controller,
         )
         self.table_info_service = table_info_service
 

@@ -3,6 +3,7 @@ Tests for SCDTable routes
 """
 
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -70,6 +71,14 @@ class TestSCDTableApi(BaseTableApiTestSuite):
         ),
     ]
     update_unprocessable_payload_expected_detail_pairs = []
+
+    @pytest.fixture(autouse=True)
+    def patched_table_validation_service(self):
+        """Patch SCDTableValidationService.validate_table to always pass"""
+        with patch(
+            "featurebyte.service.scd_table_validation.SCDTableValidationService.validate_table",
+        ) as mock:
+            yield mock
 
     @pytest_asyncio.fixture(name="scd_table_semantic_ids")
     async def scd_table_semantic_ids_fixture(self, app_container):

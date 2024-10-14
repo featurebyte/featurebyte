@@ -552,9 +552,9 @@ class CursorSchemaError(FeatureByteException):
     """
 
 
-class SCDTableValidationError(FeatureByteException):
+class TableValidationError(FeatureByteException):
     """
-    Raise when SCDTable validation fails
+    Raise when table validation fails
     """
 
 

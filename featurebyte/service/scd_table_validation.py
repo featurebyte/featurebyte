@@ -9,7 +9,8 @@ from sqlglot import expressions
 from sqlglot.expressions import select
 
 from featurebyte.enum import AggFunc, SpecialColumnName
-from featurebyte.exception import SCDTableValidationError
+from featurebyte.exception import TableValidationError
+from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.asat_helper import (
@@ -23,77 +24,85 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.groupby_helper import GroupbyColumn, GroupbyKey, get_groupby_expr
 from featurebyte.query_graph.sql.materialisation import get_source_expr
-from featurebyte.schema.scd_table import SCDTableCreate
+from featurebyte.schema.scd_table import SCDTableCreate, SCDTableServiceUpdate
+from featurebyte.service.base_table_validation import BaseTableValidationService
 from featurebyte.session.base import BaseSession
 
 COUNT_PER_NATURAL_KEY = "COUNT_PER_NATURAL_KEY"
 
 
-class SCDTableValidationService:
+class SCDTableValidationService(
+    BaseTableValidationService[SCDTableModel, SCDTableCreate, SCDTableServiceUpdate]
+):
     """
     SCDTableValidationService class
     """
 
-    async def validate_scd_table(
+    @classmethod
+    def table_needs_validation(cls, table_model: SCDTableModel) -> bool:
+        if table_model.natural_key_column is None:
+            return False
+        return True
+
+    async def validate_table(
         self,
         session: BaseSession,
-        table_creation_payload: SCDTableCreate,
+        table_model: SCDTableModel,
         num_records: int = 10,
     ) -> None:
         """
-        Check that a table is a valid Slowly Changing Dimension (SCD) table based on the provided
-        table creation payload
+        Check that a table is a valid Slowly Changing Dimension (SCD) table
 
         Parameters
         ----------
         session: BaseSession
             Session object
-        table_creation_payload: SCDTableCreate
-            SCD table creation payload
+        table_model: SCDTableModel
+            Table model
         num_records: int
             Number of records to return in the error message
 
         Raises
         ------
-        SCDTableValidationError
+        TableValidationError
             If the table is not a proper SCD table
         """
-        if table_creation_payload.natural_key_column is None:
+        if table_model.natural_key_column is None:
             return
 
-        natural_key_column = table_creation_payload.natural_key_column
+        natural_key_column = table_model.natural_key_column
 
         # Check if there are multiple active records as of now. Only need to check if
         # end_timestamp_column is present since otherwise with the inferred end timestamp, there
         # will not be multiple active records.
-        if table_creation_payload.end_timestamp_column is not None:
+        if table_model.end_timestamp_column is not None:
             query = self._get_rows_with_multiple_active_records(
                 session.adapter,
-                table_details=table_creation_payload.tabular_source.table_details,
-                effective_timestamp_column=table_creation_payload.effective_timestamp_column,
+                table_details=table_model.tabular_source.table_details,
+                effective_timestamp_column=table_model.effective_timestamp_column,
                 natural_key_column=natural_key_column,
-                end_timestamp_column=table_creation_payload.end_timestamp_column,
+                end_timestamp_column=table_model.end_timestamp_column,
                 num_records=num_records,
             )
             df_result: pd.DataFrame = await session.execute_query_long_running(query)
             if df_result.shape[0] > 0:
                 invalid_keys = df_result[natural_key_column].tolist()
-                raise SCDTableValidationError(
+                raise TableValidationError(
                     f"Multiple active records found for the same natural key. Examples of natural keys with multiple active records are: {invalid_keys}"
                 )
 
         # Check if there are multiple records per natural key and effective timestamp combination
         query = self._get_rows_with_duplicate_timestamp_and_key(
             session.adapter,
-            table_details=table_creation_payload.tabular_source.table_details,
-            effective_timestamp_column=table_creation_payload.effective_timestamp_column,
+            table_details=table_model.tabular_source.table_details,
+            effective_timestamp_column=table_model.effective_timestamp_column,
             natural_key_column=natural_key_column,
             num_records=num_records,
         )
         df_result = await session.execute_query_long_running(query)
         if df_result.shape[0] > 0:
             invalid_keys = df_result[natural_key_column].tolist()
-            raise SCDTableValidationError(
+            raise TableValidationError(
                 f"Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: {invalid_keys}"
             )
 

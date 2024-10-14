@@ -12,13 +12,16 @@ from featurebyte.enum import SemanticType
 from featurebyte.exception import ColumnNotFoundError, EntityTaggingIsNotAllowedError
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
+from featurebyte.models.feature_store import TableValidation, TableValidationStatus
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
+from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
+from featurebyte.schema.worker.task.table_validation import TableValidationTaskPayload
 from featurebyte.service.base_table_document import DocumentCreate
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
@@ -75,6 +78,7 @@ class BaseTableDocumentController(
         specialized_dtype_detection_service: SpecializedDtypeDetectionService,
         feature_store_service: FeatureStoreService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
+        task_controller: TaskController,
     ):
         super().__init__(service)  # type: ignore[arg-type]
         self.table_facade_service = table_facade_service
@@ -86,6 +90,7 @@ class BaseTableDocumentController(
         self.specialized_dtype_detection_service = specialized_dtype_detection_service
         self.feature_store_service = feature_store_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
+        self.task_controller = task_controller
 
     async def _get_column_semantic_map(self, document: TableDocumentT) -> dict[str, Any]:
         """
@@ -174,6 +179,37 @@ class BaseTableDocumentController(
             )
         return document
 
+    async def _start_table_validation_task(self, table_document: TableDocumentT) -> None:
+        if self.table_facade_service.table_needs_validation(table_document):
+            payload = TableValidationTaskPayload(
+                user_id=self.service.user.id,
+                catalog_id=self.service.catalog_id,
+                table_id=table_document.id,
+                table_name=table_document.name,
+                table_type=table_document.type,
+            )
+            task_id = await self.task_controller.task_manager.submit(payload=payload)
+            table_document = await self.service.get_document(document_id=table_document.id)  # type: ignore[assignment]
+            if (
+                table_document.validation is not None
+                and table_document.validation.status not in TableValidationStatus.terminal()
+            ):
+                await self.service.update_document(
+                    document_id=table_document.id,
+                    data=self.document_update_schema_class(  # type: ignore
+                        validation=TableValidation(
+                            status=TableValidationStatus.PENDING, task_id=task_id
+                        )
+                    ),
+                )
+        else:
+            await self.service.update_document(
+                document_id=table_document.id,
+                data=self.document_update_schema_class(  # type: ignore
+                    validation=TableValidation(status=TableValidationStatus.PASSED)
+                ),
+            )
+
     async def create_table(self, data: DocumentCreate) -> TableDocumentT:
         """
         Create Table record at persistent
@@ -190,6 +226,7 @@ class BaseTableDocumentController(
         """
         document = await self.service.create_document(data)  # type: ignore[arg-type]
         document = await self._add_table_description_from_warehouse(document)  # type: ignore
+        await self._start_table_validation_task(document)  # type: ignore[arg-type]
         await self.specialized_dtype_detection_service.detect_and_update_column_dtypes(document)
         return await self._add_semantic_tags(document=document)  # type: ignore
 

@@ -2,24 +2,35 @@
 Table  Facade Service which is responsible for handling high level table operations
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from bson import ObjectId
 
 from featurebyte import ColumnCleaningOperation
 from featurebyte.enum import TableDataType
-from featurebyte.models.feature_store import TableStatus
+from featurebyte.models.feature_store import TableModel, TableStatus
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.schema.event_table import EventTableServiceUpdate
 from featurebyte.schema.feature_job_setting_analysis import FeatureJobSetting
 from featurebyte.service.dimension_table import DimensionTableService
+from featurebyte.service.dimension_table_validation import DimensionTableValidationService
 from featurebyte.service.event_table import EventTableService
+from featurebyte.service.event_table_validation import EventTableValidationService
 from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.item_table_validation import ItemTableValidationService
 from featurebyte.service.scd_table import SCDTableService
+from featurebyte.service.scd_table_validation import SCDTableValidationService
 from featurebyte.service.table import TableService
 from featurebyte.service.table_columns_info import TableColumnsInfoService, TableDocumentService
 from featurebyte.service.table_status import TableStatusService
+
+TableValidationService = Union[
+    EventTableValidationService,
+    ItemTableValidationService,
+    DimensionTableValidationService,
+    SCDTableValidationService,
+]
 
 
 class TableFacadeService:
@@ -35,6 +46,10 @@ class TableFacadeService:
         item_table_service: ItemTableService,
         dimension_table_service: DimensionTableService,
         scd_table_service: SCDTableService,
+        event_table_validation_service: EventTableValidationService,
+        item_table_validation_service: ItemTableValidationService,
+        dimension_table_validation_service: DimensionTableValidationService,
+        scd_table_validation_service: SCDTableValidationService,
         table_columns_info_service: TableColumnsInfoService,
         table_status_service: TableStatusService,
     ):
@@ -43,6 +58,10 @@ class TableFacadeService:
         self.item_table_service = item_table_service
         self.dimension_table_service = dimension_table_service
         self.scd_table_service = scd_table_service
+        self.event_table_validation_service = event_table_validation_service
+        self.item_table_validation_service = item_table_validation_service
+        self.dimension_table_validation_service = dimension_table_validation_service
+        self.scd_table_validation_service = scd_table_validation_service
         self.table_columns_info_service = table_columns_info_service
         self.table_status_service = table_status_service
 
@@ -64,6 +83,29 @@ class TableFacadeService:
             TableDataType.ITEM_TABLE: self.item_table_service,
             TableDataType.DIMENSION_TABLE: self.dimension_table_service,
             TableDataType.SCD_TABLE: self.scd_table_service,
+        }
+        return table_service_map[table_type]  # type: ignore
+
+    def get_specific_table_validation_service(
+        self, table_type: TableDataType
+    ) -> TableValidationService:
+        """
+        Get specific table validation service based on table type
+
+        Parameters
+        ----------
+        table_type: TableDataType
+            Table type
+
+        Returns
+        -------
+        TableDocumentService
+        """
+        table_service_map = {
+            TableDataType.EVENT_TABLE: self.event_table_validation_service,
+            TableDataType.ITEM_TABLE: self.item_table_validation_service,
+            TableDataType.DIMENSION_TABLE: self.dimension_table_validation_service,
+            TableDataType.SCD_TABLE: self.scd_table_validation_service,
         }
         return table_service_map[table_type]  # type: ignore
 
@@ -203,3 +245,19 @@ class TableFacadeService:
             data=EventTableServiceUpdate(default_feature_job_setting=default_feature_job_setting),
             return_document=False,
         )
+
+    def table_needs_validation(self, table_model: TableModel) -> bool:
+        """
+        Check if a table needs validation
+
+        Parameters
+        ----------
+        table_model: TableModel
+            Table model
+
+        Returns
+        -------
+        bool
+        """
+        service = self.get_specific_table_validation_service(table_model.type)
+        return service.table_needs_validation(table_model)  # type: ignore[arg-type]

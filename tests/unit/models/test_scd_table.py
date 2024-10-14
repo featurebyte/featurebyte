@@ -132,6 +132,7 @@ def get_base_expected_scd_table_model(scd_table_model, scd_columns_info):
         "block_modification_by": [],
         "description": None,
         "is_deleted": False,
+        "validation": None,
     }
 
 

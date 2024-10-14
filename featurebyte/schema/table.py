@@ -12,7 +12,7 @@ from pydantic_core.core_schema import ValidationInfo
 
 from featurebyte.common.validator import columns_info_validator
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
-from featurebyte.models.feature_store import TableStatus
+from featurebyte.models.feature_store import TableStatus, TableValidation
 from featurebyte.models.proxy_table import TableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo, ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -71,6 +71,7 @@ class TableUpdate(FeatureByteBaseModel):
     """
 
     status: Optional[TableStatus] = Field(default=None)
+    validation: Optional[TableValidation] = Field(default=None)
     record_creation_timestamp_column: Optional[StrictStr] = Field(default=None)
 
     # Update of columns info is deprecated and will be removed in release 0.5.0

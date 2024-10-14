@@ -33,6 +33,7 @@ from featurebyte.worker.task.online_store_cleanup import OnlineStoreCleanupTask
 from featurebyte.worker.task.query_cache_cleanup import QueryCacheCleanupTask
 from featurebyte.worker.task.scheduled_feature_materialize import ScheduledFeatureMaterializeTask
 from featurebyte.worker.task.static_source_table import StaticSourceTableTask
+from featurebyte.worker.task.table_validation import TableValidationTask
 from featurebyte.worker.task.target_table import TargetTableTask
 from featurebyte.worker.task.test_task import TestIOTask, TestTask
 from featurebyte.worker.task.tile_task import TileTask
@@ -60,6 +61,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.FEATURE_MATERIALIZE_SYNC: FeatureMaterializeSyncTask,
     WorkerCommand.CATALOG_ONLINE_STORE_UPDATE: CatalogOnlineStoreUpdateTask,
     WorkerCommand.DATA_DESCRIPTION: DataDescriptionTask,
+    WorkerCommand.TABLE_VALIDATION: TableValidationTask,
     WorkerCommand.TEST: TestTask,
     WorkerCommand.IO_TEST: TestIOTask,
     # TO BE DEPRECATED
