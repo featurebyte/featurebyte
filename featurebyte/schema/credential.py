@@ -30,7 +30,6 @@ class CredentialCreate(FeatureByteBaseModel):
     """
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
-    group_ids: List[PydanticObjectId] = Field(default_factory=list)
     name: Optional[NameStr] = Field(default=None)
     feature_store_id: PydanticObjectId
     database_credential: Optional[DatabaseCredential] = Field(default=None)
@@ -43,7 +42,6 @@ class CredentialRead(FeatureByteBaseDocumentModel):
     """
 
     feature_store_id: PydanticObjectId
-    group_ids: List[PydanticObjectId] = Field(default_factory=list)
     database_credential: Optional[DatabaseCredential] = Field(default=None)
     storage_credential: Optional[StorageCredential] = Field(default=None)
 
@@ -87,7 +85,6 @@ class CredentialUpdate(FeatureByteBaseModel):
     Schema for credential update
     """
 
-    group_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     database_credential: Optional[DatabaseCredential] = Field(default=None)
     storage_credential: Optional[StorageCredential] = Field(default=None)
 
@@ -97,7 +94,6 @@ class CredentialServiceUpdate(BaseDocumentServiceUpdateSchema):
     Credential service update schema
     """
 
-    group_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     database_credential: Optional[DatabaseCredential] = Field(default=None)
     storage_credential: Optional[StorageCredential] = Field(default=None)
 

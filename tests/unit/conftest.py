@@ -725,7 +725,6 @@ def credentials_fixture(snowflake_feature_store_params):
     return {
         snowflake_feature_store_params["name"]: CredentialModel(
             name="sf_featurestore",
-            group_id=[],
             feature_store_id=ObjectId(),
             database_credential=UsernamePasswordCredential(
                 username="sf_user",

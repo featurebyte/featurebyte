@@ -378,7 +378,6 @@ class CredentialModel(FeatureByteBaseDocumentModel):
     """
 
     feature_store_id: PydanticObjectId
-    group_ids: List[PydanticObjectId] = Field(default=[])
     database_credential: Optional[DatabaseCredential] = Field(default=None)
     storage_credential: Optional[StorageCredential] = Field(default=None)
 
