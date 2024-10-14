@@ -554,7 +554,9 @@ class FeatureTableCacheService:
             feature_store=feature_store
         )
 
-        hashes = await self.get_feature_definition_hashes(graph, nodes, feature_list_id)
+        with timer("get_feature_definition_hashes", logger):
+            hashes = await self.get_feature_definition_hashes(graph, nodes, feature_list_id)
+
         non_cached_nodes = await self.get_non_cached_nodes(cached_definitions, nodes, hashes)
 
         if progress_callback:
