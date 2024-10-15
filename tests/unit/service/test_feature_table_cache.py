@@ -234,10 +234,18 @@ async def test_get_feature_definition_hashes(
     intercepted_definition_hashes_for_nodes,
 ):
     """Test get_feature_definition_hashes"""
+    if feature_list_id_provided:
+        definition_hashes_mapping = (
+            await feature_table_cache_service._get_definition_hashes_mapping_from_feature_list_id(
+                feature_list_id=regular_feature_list.id
+            )
+        )
+    else:
+        definition_hashes_mapping = None
     hashes = await feature_table_cache_service.get_feature_definition_hashes(
         graph=regular_feature_list.feature_clusters[0].graph,
         nodes=regular_feature_list.feature_clusters[0].nodes,
-        **{"feature_list_id": regular_feature_list.id if feature_list_id_provided else None},
+        definition_hashes_mapping=definition_hashes_mapping,
     )
     if feature_list_id_provided:
         assert intercepted_definition_hashes_for_nodes.call_count == 0
