@@ -29,6 +29,7 @@ class FeatureStoreCreate(FeatureByteBaseModel):
     details: DatabaseDetails
     database_credential: Optional[DatabaseCredential] = Field(default=None)
     storage_credential: Optional[StorageCredential] = Field(default=None)
+    max_query_concurrency: Optional[int] = Field(default=None)
 
 
 class FeatureStoreList(PaginationMixin):
@@ -125,3 +126,11 @@ class DatabaseDetailsServiceUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     details: DatabaseDetails
+
+
+class FeatureStoreUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Feature Store Update Schema
+    """
+
+    max_query_concurrency: Optional[int] = Field(default=None, gt=0, lt=100)

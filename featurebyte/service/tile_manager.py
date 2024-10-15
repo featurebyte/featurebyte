@@ -10,9 +10,12 @@ from typing import Any, Callable, Coroutine, List, Optional, Tuple
 from redis import Redis
 
 from featurebyte.enum import InternalName
+from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
+from featurebyte.models import FeatureStoreModel
 from featurebyte.models.tile import TileScheduledJobParameters, TileSpec, TileType
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -39,6 +42,7 @@ class TileManagerService:
         tile_scheduler_service: TileSchedulerService,
         tile_registry_service: TileRegistryService,
         feature_service: FeatureService,
+        feature_store_service: FeatureStoreService,
         redis: Redis[Any],
     ):
         self.online_store_table_version_service = online_store_table_version_service
@@ -46,6 +50,7 @@ class TileManagerService:
         self.tile_scheduler_service = tile_scheduler_service
         self.tile_registry_service = tile_registry_service
         self.feature_service = feature_service
+        self.feature_store_service = feature_store_service
         self.redis = redis
 
     async def generate_tiles_on_demand(
@@ -78,6 +83,18 @@ class TileManagerService:
 
         if progress_callback:
             await progress_callback(0, "Computing tiles on demand")
+
+        feature_store_id = tile_inputs[0][0].feature_store_id
+        max_query_currency = None
+        if feature_store_id:
+            try:
+                feature_store: FeatureStoreModel = await self.feature_store_service.get_document(
+                    document_id=feature_store_id
+                )
+                max_query_currency = feature_store.max_query_concurrency
+            except DocumentNotFoundError:
+                pass
+
         coroutines = []
         for tile_spec, entity_table in tile_inputs:
             coroutines.append(
@@ -88,7 +105,7 @@ class TileManagerService:
                     progress_callback=_progress_callback,
                 )
             )
-        await run_coroutines(coroutines, self.redis, str(tile_inputs[0][0].feature_store_id))
+        await run_coroutines(coroutines, self.redis, str(feature_store_id), max_query_currency)
 
     async def _generate_tiles_on_demand_for_tile_spec(
         self,

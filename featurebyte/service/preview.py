@@ -529,7 +529,12 @@ class PreviewService:
                         done_callback=_callback,
                     )
                 )
-            results = await run_coroutines(coroutines, self.redis, str(preview.feature_store_id))
+            results = await run_coroutines(
+                coroutines,
+                self.redis,
+                str(preview.feature_store_id),
+                feature_store.max_query_concurrency,
+            )
         finally:
             if not is_table_cached:
                 # Need to cleanup as the table is not managed by query cache

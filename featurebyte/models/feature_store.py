@@ -35,6 +35,7 @@ class FeatureStoreModel(FeatureByteBaseDocumentModel, FeatureStoreDetails):
     """Model for a feature store"""
 
     name: NameStr
+    max_query_concurrency: Optional[int] = Field(default=None)
 
     def get_feature_store_details(self) -> FeatureStoreDetails:
         """

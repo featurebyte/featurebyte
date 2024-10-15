@@ -222,6 +222,7 @@ def test_get(saved_snowflake_feature_store, user_id):
             ("details.schema_name", "sf_schema"),
             ("details.warehouse", "sf_warehouse"),
             ("is_deleted", False),
+            ("max_query_concurrency", None),
             ("name", "sf_featurestore"),
             ("type", "snowflake"),
             ("updated_at", None),

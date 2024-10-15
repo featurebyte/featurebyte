@@ -26,6 +26,7 @@ from featurebyte.schema.feature_store import (
     FeatureStorePreview,
     FeatureStoreSample,
     FeatureStoreShape,
+    FeatureStoreUpdate,
 )
 from featurebyte.schema.info import FeatureStoreInfo
 from featurebyte.schema.task import Task
@@ -504,4 +505,25 @@ class FeatureStoreController(
             raise DataWarehouseConnectionError(f"Invalid details: {exc}") from exc
 
         await self.service.update_document(document_id=feature_store_id, data=update_data)
+        return await self.service.get_document(feature_store_id)
+
+    async def update(
+        self, feature_store_id: ObjectId, data: FeatureStoreUpdate
+    ) -> FeatureStoreModel:
+        """
+        Update feature store
+
+        Parameters
+        ----------
+        feature_store_id: ObjectId
+            Feature store ID
+        data: FeatureStoreUpdate
+            FeatureStoreUpdate object
+
+        Returns
+        -------
+        FeatureStoreModel
+            Updated feature store document
+        """
+        await self.service.update_document(document_id=feature_store_id, data=data)
         return await self.service.get_document(feature_store_id)

@@ -1014,3 +1014,60 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         }
         response = test_api_client.post(f"{self.base_route}", json=payload)
         assert response.status_code == 201
+
+    def test_update_feature_store_200(
+        self, test_api_client_persistent, create_success_response, user_id
+    ):
+        """Test update feature store (success)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+
+        update_payload = {
+            "max_query_concurrency": 5,
+        }
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json=update_payload)
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict["_id"] == doc_id
+        assert datetime.fromisoformat(response_dict["updated_at"]) < datetime.utcnow()
+        assert response_dict["user_id"] == str(user_id)
+        assert response_dict["name"] == self.payload["name"]
+        assert response_dict["max_query_concurrency"] == update_payload["max_query_concurrency"]
+
+    def test_update_feature_store_422(
+        self, test_api_client_persistent, create_success_response, user_id
+    ):
+        """Test update feature store (failure)"""
+        test_api_client, _ = test_api_client_persistent
+        create_response_dict = create_success_response.json()
+        doc_id = create_response_dict["_id"]
+
+        update_payload = {
+            "max_query_concurrency": 0,
+        }
+        response = test_api_client.patch(f"{self.base_route}/{doc_id}", json=update_payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json() == {
+            "detail": [
+                {
+                    "type": "greater_than",
+                    "loc": ["body", "max_query_concurrency"],
+                    "msg": "Input should be greater than 0",
+                    "input": 0,
+                    "ctx": {"gt": 0},
+                }
+            ]
+        }
+
+        response = test_api_client.get(f"{self.base_route}/{doc_id}")
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.OK
+        assert response_dict["_id"] == doc_id
+        assert response_dict["updated_at"] is None
+        assert response_dict["user_id"] == str(user_id)
+        assert response_dict["name"] == self.payload["name"]
+        assert response_dict["max_query_concurrency"] is None

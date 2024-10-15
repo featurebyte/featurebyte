@@ -39,7 +39,7 @@ def tile_cache_fixture(session, feature_store, app_container):
     return TileCache(
         session=session,
         tile_manager_service=tile_manager_service,
-        feature_store_id=feature_store.id,
+        feature_store=feature_store,
     )
 
 

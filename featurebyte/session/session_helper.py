@@ -8,7 +8,6 @@ import os
 from typing import Any, Callable, Coroutine, List, Optional, Union
 
 import pandas as pd
-from bson import ObjectId
 from redis import Redis
 from sqlglot import expressions
 from sqlglot.expressions import Expression
@@ -17,6 +16,7 @@ from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.exception import InvalidOutputRowIndexError
 from featurebyte.logging import get_logger
+from featurebyte.models import FeatureStoreModel
 from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.session.base import BaseSession
@@ -25,7 +25,7 @@ from featurebyte.utils.async_helper import asyncio_gather
 logger = get_logger(__name__)
 
 
-MAX_QUERY_CONCURRENCY = int(os.getenv("MAX_QUERY_CONCURRENCY", "10"))
+MAX_QUERY_CONCURRENCY = int(os.getenv("MAX_QUERY_CONCURRENCY", "3"))
 
 
 def _to_query_str(query: Union[str, Expression], source_type: SourceType) -> str:
@@ -76,7 +76,10 @@ async def validate_output_row_index(session: BaseSession, output_table_name: str
 
 
 async def run_coroutines(
-    coroutines: List[Coroutine[Any, Any, Any]], redis: Redis[Any], concurrency_key: str
+    coroutines: List[Coroutine[Any, Any, Any]],
+    redis: Redis[Any],
+    concurrency_key: str,
+    max_concurrency: Optional[int],
 ) -> List[Any]:
     """
     Execute the provided list of coroutines
@@ -89,17 +92,20 @@ async def run_coroutines(
         Redis connection
     concurrency_key: str
         Key for concurrency limit enforcement
+    max_concurrency: Optional[int]
+        Maximum number of coroutines to run concurrently or None to use the default
 
     Returns
     -------
     List[Any]
         List of results from the coroutines
     """
+    max_concurrency = max_concurrency or MAX_QUERY_CONCURRENCY
     future = asyncio_gather(
         *coroutines,
         redis=redis,
         concurrency_key=concurrency_key,
-        max_concurrency=MAX_QUERY_CONCURRENCY,
+        max_concurrency=max_concurrency,
     )
     return await future
 
@@ -141,10 +147,10 @@ async def execute_feature_query(
 
 
 class SessionHandler:
-    def __init__(self, session: BaseSession, redis: Redis[Any], feature_store_id: ObjectId):
+    def __init__(self, session: BaseSession, redis: Redis[Any], feature_store: FeatureStoreModel):
         self.session = session
         self.redis = redis
-        self.feature_store_id = feature_store_id
+        self.feature_store = feature_store
 
 
 async def execute_feature_query_set(
@@ -196,7 +202,10 @@ async def execute_feature_query_set(
         if coroutines:
             with timer("Execute feature queries", logger=logger):
                 await run_coroutines(
-                    coroutines, session_handler.redis, str(session_handler.feature_store_id)
+                    coroutines,
+                    session_handler.redis,
+                    str(session_handler.feature_store.id),
+                    session_handler.feature_store.max_query_concurrency,
                 )
 
         result = await session.execute_query_long_running(

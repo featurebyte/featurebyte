@@ -15,6 +15,7 @@ from sqlglot.expressions import Expression, select
 from featurebyte.common.progress import divide_progress_callback
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
+from featurebyte.models import FeatureStoreModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -220,11 +221,11 @@ class TileCache:
         self,
         session: BaseSession,
         tile_manager_service: TileManagerService,
-        feature_store_id: ObjectId,
+        feature_store: FeatureStoreModel,
     ):
         self.session = session
         self.tile_manager_service = tile_manager_service
-        self.feature_store_id = feature_store_id
+        self.feature_store = feature_store
         self._materialized_temp_table_names: set[str] = set()
 
     @property
@@ -265,7 +266,7 @@ class TileCache:
         """
         tile_inputs = []
         for request in required_requests:
-            tile_input = request.to_tile_manager_input(feature_store_id=self.feature_store_id)
+            tile_input = request.to_tile_manager_input(feature_store_id=self.feature_store.id)
             tile_inputs.append(tile_input)
         await self.tile_manager_service.generate_tiles_on_demand(
             session=self.session, tile_inputs=tile_inputs, progress_callback=progress_callback
@@ -347,7 +348,10 @@ class TileCache:
                 )
             )
         result = await run_coroutines(
-            coroutines, self.tile_manager_service.redis, str(self.feature_store_id)
+            coroutines,
+            self.tile_manager_service.redis,
+            str(self.feature_store.id),
+            self.feature_store.max_query_concurrency,
         )
         all_requests = []
         for requests in result:

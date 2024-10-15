@@ -237,7 +237,7 @@ async def get_historical_features(
             session_handler=SessionHandler(
                 session=session,
                 redis=tile_cache_service.tile_manager_service.redis,
-                feature_store_id=feature_store.id,
+                feature_store=feature_store,
             ),
             feature_query_set=historical_feature_query_set,
             progress_callback=(
@@ -348,7 +348,7 @@ async def get_target(
 
         await execute_feature_query_set(
             session_handler=SessionHandler(
-                session=session, redis=redis, feature_store_id=feature_store.id
+                session=session, redis=redis, feature_store=feature_store
             ),
             feature_query_set=historical_feature_query_set,
             progress_callback=(
