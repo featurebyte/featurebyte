@@ -5,6 +5,7 @@ This module contains DatabaseSource related models
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Type
 
 import pymongo
@@ -132,6 +133,7 @@ class TableValidation(FeatureByteBaseModel):
 
     status: TableValidationStatus
     validation_message: Optional[StrictStr] = Field(default=None)
+    updated_at: Optional[datetime] = Field(default=None)
     task_id: Optional[str] = Field(default=None)
 
 

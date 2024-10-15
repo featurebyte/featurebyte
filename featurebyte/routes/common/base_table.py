@@ -8,6 +8,7 @@ from typing import Any, List, Optional, Tuple, Type, TypeVar, cast
 
 from bson import ObjectId
 
+from featurebyte.common.model_util import get_utc_now
 from featurebyte.enum import SemanticType
 from featurebyte.exception import ColumnNotFoundError, EntityTaggingIsNotAllowedError
 from featurebyte.models.dimension_table import DimensionTableModel
@@ -198,7 +199,9 @@ class BaseTableDocumentController(
                     document_id=table_document.id,
                     data=self.document_update_schema_class(  # type: ignore
                         validation=TableValidation(
-                            status=TableValidationStatus.PENDING, task_id=task_id
+                            status=TableValidationStatus.PENDING,
+                            task_id=task_id,
+                            updated_at=get_utc_now(),
                         )
                     ),
                 )
@@ -206,7 +209,10 @@ class BaseTableDocumentController(
             await self.service.update_document(
                 document_id=table_document.id,
                 data=self.document_update_schema_class(  # type: ignore
-                    validation=TableValidation(status=TableValidationStatus.PASSED)
+                    validation=TableValidation(
+                        status=TableValidationStatus.PASSED,
+                        updated_at=get_utc_now(),
+                    )
                 ),
             )
 
