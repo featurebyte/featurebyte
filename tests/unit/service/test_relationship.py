@@ -124,6 +124,12 @@ async def object_d_fixture(family_document_service):
     return await family_document_service.create_document(data=FamilyModel(name="object_d"))
 
 
+@pytest_asyncio.fixture(name="object_e")
+async def object_e_fixture(family_document_service):
+    """Object E fixture"""
+    return await family_document_service.create_document(data=FamilyModel(name="object_e"))
+
+
 @pytest.mark.asyncio
 async def test_add_relationship__both_parent_and_child(family_relationship_service, object_a):
     """Test add_relationship - parent & child are the same object"""
@@ -428,3 +434,109 @@ async def test_remove_relationship__case_3(
         parent_ids = [parent.id for parent in obj.parents]
         assert parent_ids == expected["parent_ids"]
         assert obj.ancestor_ids == expected["ancestor_ids"]
+
+
+@pytest.mark.asyncio
+async def test_remove_relationship__case_4(
+    family_document_service, family_relationship_service, object_a, object_b, object_c, object_d
+):
+    """Test remove relationship method, case 4:
+    scenario:
+    * A is the parent of B
+    * B is the parent of C
+    * B is the parent of D
+    * C is the parent of D
+
+    check:
+    * Remove C from D
+    """
+    # setup
+    await family_relationship_service.add_relationship(
+        parent=Parent(id=object_a.id), child_id=object_b.id
+    )
+    await family_relationship_service.add_relationship(
+        parent=Parent(id=object_b.id), child_id=object_c.id
+    )
+    await family_relationship_service.add_relationship(
+        parent=Parent(id=object_b.id), child_id=object_d.id
+    )
+    await family_relationship_service.add_relationship(
+        parent=Parent(id=object_c.id), child_id=object_d.id
+    )
+
+    # check remove parent C from object D
+    await family_relationship_service.remove_relationship(
+        parent_id=object_c.id, child_id=object_d.id
+    )
+
+    expected_map = {
+        object_a.id: {"parent_ids": [], "ancestor_ids": []},
+        object_b.id: {"parent_ids": [object_a.id], "ancestor_ids": [object_a.id]},
+        object_c.id: {"parent_ids": [object_b.id], "ancestor_ids": [object_a.id, object_b.id]},
+        object_d.id: {"parent_ids": [object_b.id], "ancestor_ids": [object_a.id, object_b.id]},
+    }
+    for obj_id, expected in expected_map.items():
+        obj = await family_document_service.get_document(document_id=obj_id)
+        parent_ids = [parent.id for parent in obj.parents]
+        assert parent_ids == expected["parent_ids"]
+        assert obj.ancestor_ids == expected["ancestor_ids"]
+
+
+@pytest.mark.asyncio
+async def test_remove_relationship__case_5(
+    family_document_service,
+    family_relationship_service,
+    object_a,
+    object_b,
+    object_c,
+    object_d,
+    object_e,
+):
+    """Test remove relationship method, case 4:
+    scenario:
+    * A is the parent of B
+    * B is the parent of C
+    * C is the parent of D
+    * A is the parent of D (this is not allowed)
+    * D is the parent of E
+
+    check:
+    * Remove C from D
+    """
+    # setup
+    await family_relationship_service.add_relationship(
+        parent=Parent(id=object_a.id), child_id=object_b.id
+    )
+    await family_relationship_service.add_relationship(
+        parent=Parent(id=object_b.id), child_id=object_c.id
+    )
+    await family_relationship_service.add_relationship(
+        parent=Parent(id=object_c.id), child_id=object_d.id
+    )
+    await family_relationship_service.add_relationship(
+        parent=Parent(id=object_d.id), child_id=object_e.id
+    )
+
+    expected_msg = 'Object "object_a" is already an ancestor of object "object_d".'
+    with pytest.raises(DocumentUpdateError, match=expected_msg):
+        await family_relationship_service.add_relationship(
+            parent=Parent(id=object_a.id), child_id=object_d.id
+        )
+
+    # check remove parent C from object D
+    await family_relationship_service.remove_relationship(
+        parent_id=object_c.id, child_id=object_d.id
+    )
+
+    expected_map = {
+        object_a.id: {"parent_ids": [], "ancestor_ids": []},
+        object_b.id: {"parent_ids": [object_a.id], "ancestor_ids": [object_a.id]},
+        object_c.id: {"parent_ids": [object_b.id], "ancestor_ids": [object_b.id, object_a.id]},
+        object_d.id: {"parent_ids": [], "ancestor_ids": []},
+        object_e.id: {"parent_ids": [object_d.id], "ancestor_ids": [object_d.id]},
+    }
+    for obj_id, expected in expected_map.items():
+        obj = await family_document_service.get_document(document_id=obj_id)
+        parent_ids = [parent.id for parent in obj.parents]
+        assert parent_ids == expected["parent_ids"]
+        assert obj.ancestor_ids == sorted(expected["ancestor_ids"])
