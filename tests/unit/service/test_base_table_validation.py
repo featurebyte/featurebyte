@@ -73,7 +73,9 @@ async def test_validate_and_update__success(
     with patch.object(table_validation_service, "validate_table", side_effect=None):
         await table_validation_service.validate_and_update(table_model.id)
     updated_table_model = await document_service.get_document(table_model.id)
-    assert updated_table_model.validation.dict() == {
+    updated_table_model_dict = updated_table_model.dict()
+    assert updated_table_model_dict["validation"].pop("updated_at") is not None
+    assert updated_table_model_dict["validation"] == {
         "status": "PASSED",
         "validation_message": None,
         "task_id": None,
@@ -96,7 +98,9 @@ async def test_validate_and_update__failure(
     ):
         await table_validation_service.validate_and_update(table_model.id)
     updated_table_model = await document_service.get_document(table_model.id)
-    assert updated_table_model.validation.dict() == {
+    updated_table_model_dict = updated_table_model.dict()
+    assert updated_table_model_dict["validation"].pop("updated_at") is not None
+    assert updated_table_model_dict["validation"] == {
         "status": "FAILED",
         "validation_message": "custom message",
         "task_id": None,

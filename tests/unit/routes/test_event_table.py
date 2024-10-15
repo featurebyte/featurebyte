@@ -120,7 +120,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
             "record_creation_timestamp_column": "created_at",
             "default_feature_job_setting": {"blind_spot": "10m", "period": "30m", "offset": "5m"},
             "status": "PUBLISHED",
-            "validation": {"status": "PASSED", "validation_message": None},
+            "validation": {"status": "PASSED", "validation_message": None, "updated_at": None},
             "user_id": str(user_id),
             "_id": ObjectId(),
         }
@@ -135,6 +135,7 @@ class TestEventTableApi(BaseTableApiTestSuite):
         output = EventTableModel(**event_table_dict).json_dict()
         assert output.pop("created_at") is None
         assert output.pop("updated_at") is None
+        output["validation"].pop("updated_at")
         output["catalog_id"] = str(default_catalog_id)
         return output
 
@@ -173,6 +174,8 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert update_response_dict["_id"] == insert_id
         update_response_dict.pop("created_at")
         update_response_dict.pop("updated_at")
+        if "validation" in update_response_dict:
+            update_response_dict["validation"].pop("updated_at")
 
         # default_feature_job_setting should be updated
         assert (
@@ -254,6 +257,8 @@ class TestEventTableApi(BaseTableApiTestSuite):
         assert data["_id"] == insert_id
         data.pop("created_at")
         data.pop("updated_at")
+        if "validation" in data:
+            data["validation"].pop("updated_at")
 
         # default_feature_job_setting should be updated
         assert (

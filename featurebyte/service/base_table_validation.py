@@ -8,6 +8,7 @@ from typing import Generic
 
 from bson import ObjectId
 
+from featurebyte.common.model_util import get_utc_now
 from featurebyte.exception import TableValidationError
 from featurebyte.models.feature_store import TableValidation, TableValidationStatus
 from featurebyte.service.base_table_document import (
@@ -66,6 +67,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                 status=TableValidationStatus.FAILED,
                 validation_message=str(e),
             )
+        new_validation_state.updated_at = get_utc_now()
         await self.table_document_service.update_document(
             table_id,
             self.table_document_service.document_update_class(validation=new_validation_state),

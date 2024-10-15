@@ -156,6 +156,7 @@ async def test_scd_join_small(session, data_source, source_type, config):
     response = client.get(f"/scd_table/{scd_table.id}")
     assert response.status_code == 200
     response_dict = response.json()
+    assert response_dict["validation"].pop("updated_at") is not None
     assert response_dict["validation"] == {
         "status": "FAILED",
         "validation_message": "Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: [1000, 1000, 1000]",
