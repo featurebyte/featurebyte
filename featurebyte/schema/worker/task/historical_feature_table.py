@@ -23,6 +23,7 @@ class HistoricalFeatureTableTaskPayload(BaseTaskPayload, HistoricalFeatureTableC
     command: ClassVar[WorkerCommand] = WorkerCommand.HISTORICAL_FEATURE_TABLE_CREATE
     output_collection_name: ClassVar[str] = HistoricalFeatureTableModel.collection_name()
     is_revocable: ClassVar[bool] = True
+    is_rerunnable: ClassVar[bool] = True
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
