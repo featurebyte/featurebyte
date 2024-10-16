@@ -8,8 +8,8 @@ import pytest
 
 from featurebyte import FeatureJobSetting
 from featurebyte.enum import InternalName
+from featurebyte.models.tile_cache import OnDemandTileComputeRequest
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
-from featurebyte.tile.tile_cache import OnDemandTileComputeRequest, TileCache
 
 
 @pytest.fixture(name="feature_for_tile_cache_tests")
@@ -30,17 +30,20 @@ def feature_for_tile_cache_tests_fixture(event_table, groupby_category):
     yield feature_group["SESSION_COUNT_48h"]
 
 
-@pytest.fixture(name="tile_cache")
-def tile_cache_fixture(session, feature_store, app_container):
+@pytest.fixture(name="tile_cache_query_by_entity_service")
+def tile_cache_query_by_entity_service_fixture(app_container):
     """
-    Fixture for TileCache
+    Fixture for TileCacheQueryByEntityService
     """
-    tile_manager_service = app_container.tile_manager_service
-    return TileCache(
-        session=session,
-        tile_manager_service=tile_manager_service,
-        feature_store=feature_store,
-    )
+    return app_container.tile_cache_query_by_entity_service
+
+
+@pytest.fixture(name="tile_cache_service")
+def tile_cache_service_fixture(app_container):
+    """
+    Fixture for TileCacheService
+    """
+    return app_container.tile_cache_service
 
 
 async def check_entity_table_sql_and_tile_compute_sql(
@@ -72,11 +75,13 @@ async def check_temp_tables_cleaned_up(session):
     assert InternalName.TILE_CACHE_WORKING_TABLE.value not in temp_table_names
 
 
-async def invoke_tile_manager_and_check_tracker_table(session, tile_cache, requests):
+async def invoke_tile_manager_and_check_tracker_table(
+    session, feature_store, tile_cache_service, requests
+):
     """
     Call tile_cache.invoke_tile_manager() and check that the tracker table is updated correctly
     """
-    await tile_cache.invoke_tile_manager(requests)
+    await tile_cache_service.invoke_tile_manager(requests, session, feature_store)
 
     for request in requests:
         tracker_table_name = f"{request.aggregation_id}_v2_entity_tracker"
@@ -93,7 +98,14 @@ async def invoke_tile_manager_and_check_tracker_table(session, tile_cache, reque
 @pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.parametrize("groupby_category", [None, "PRODUCT_ACTION"])
 @pytest.mark.asyncio
-async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, groupby_category):
+async def test_tile_cache(
+    session,
+    feature_store,
+    tile_cache_query_by_entity_service,
+    tile_cache_service,
+    feature_for_tile_cache_tests,
+    groupby_category,
+):
     """Test TileCache performs caching properly"""
     feature = feature_for_tile_cache_tests
     _ = groupby_category
@@ -109,12 +121,15 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
 
     # No cache existed before for this feature. Check that one tile table needs to be computed
     request_id = session.generate_session_unique_id()
-    requests = await tile_cache.get_required_computation(
+    request_set = await tile_cache_query_by_entity_service.get_required_computation(
+        session=session,
+        feature_store=feature_store,
         request_id=request_id,
         graph=feature.graph,
         nodes=[feature.node],
         request_table_name=request_table_name,
     )
+    requests = request_set.compute_requests
     assert len(requests) == 1
     df_entity_expected = pd.DataFrame({
         "LAST_TILE_START_DATE": pd.to_datetime(["2001-01-02 07:45:00"] * 5),
@@ -128,18 +143,23 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
         "ÜSER ID",
         df_entity_expected,
     )
-    await invoke_tile_manager_and_check_tracker_table(session, tile_cache, requests)
-    await tile_cache.cleanup_temp_tables()
+    await invoke_tile_manager_and_check_tracker_table(
+        session, feature_store, tile_cache_service, requests
+    )
+    await tile_cache_service.cleanup_temp_tables(session, request_set)
     await check_temp_tables_cleaned_up(session)
 
     # Cache now exists. No additional compute required for the same request table
     request_id = session.generate_session_unique_id()
-    requests = await tile_cache.get_required_computation(
+    request_set = await tile_cache_query_by_entity_service.get_required_computation(
+        session=session,
+        feature_store=feature_store,
         request_id=request_id,
         graph=feature.graph,
         nodes=[feature.node],
         request_table_name=request_table_name,
     )
+    requests = request_set.compute_requests
     assert len(requests) == 0
 
     # Check using training events with outdated entities (user 3, 4, 5)
@@ -149,12 +169,15 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
     })
     await session.register_table(request_table_name, df_training_events)
     request_id = session.generate_session_unique_id()
-    requests = await tile_cache.get_required_computation(
+    request_set = await tile_cache_query_by_entity_service.get_required_computation(
+        session=session,
+        feature_store=feature_store,
         request_id=request_id,
         graph=feature.graph,
         nodes=[feature.node],
         request_table_name=request_table_name,
     )
+    requests = request_set.compute_requests
     assert len(requests) == 1
     df_entity_expected = pd.DataFrame({
         "LAST_TILE_START_DATE": pd.to_datetime(["2001-01-03 07:45:00"] * 3),
@@ -168,18 +191,23 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
         "ÜSER ID",
         df_entity_expected,
     )
-    await invoke_tile_manager_and_check_tracker_table(session, tile_cache, requests)
-    await tile_cache.cleanup_temp_tables()
+    await invoke_tile_manager_and_check_tracker_table(
+        session, feature_store, tile_cache_service, requests
+    )
+    await tile_cache_service.cleanup_temp_tables(session, request_set)
     await check_temp_tables_cleaned_up(session)
 
     # Cache now exists. No additional compute required for the same request table
     request_id = session.generate_session_unique_id()
-    requests = await tile_cache.get_required_computation(
+    request_set = await tile_cache_query_by_entity_service.get_required_computation(
+        session=session,
+        feature_store=feature_store,
         request_id=request_id,
         graph=feature.graph,
         nodes=[feature.node],
         request_table_name=request_table_name,
     )
+    requests = request_set.compute_requests
     assert len(requests) == 0
 
     # Check using training events with new (6. 7) and existing (1) entities
@@ -191,12 +219,15 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
     request_id = session.generate_session_unique_id()
     request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
     await session.register_table(request_table_name, df_training_events)
-    requests = await tile_cache.get_required_computation(
+    request_set = await tile_cache_query_by_entity_service.get_required_computation(
+        session=session,
+        feature_store=feature_store,
         request_id=request_id,
         graph=feature.graph,
         nodes=[feature.node],
         request_table_name=request_table_name,
     )
+    requests = request_set.compute_requests
     assert len(requests) == 1
     df_entity_expected = pd.DataFrame({
         "LAST_TILE_START_DATE": pd.to_datetime(
@@ -216,6 +247,8 @@ async def test_tile_cache(session, tile_cache, feature_for_tile_cache_tests, gro
         "ÜSER ID",
         df_entity_expected,
     )
-    await invoke_tile_manager_and_check_tracker_table(session, tile_cache, requests)
-    await tile_cache.cleanup_temp_tables()
+    await invoke_tile_manager_and_check_tracker_table(
+        session, feature_store, tile_cache_service, requests
+    )
+    await tile_cache_service.cleanup_temp_tables(session, request_set)
     await check_temp_tables_cleaned_up(session)

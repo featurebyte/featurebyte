@@ -7,7 +7,7 @@ from sqlglot import expressions
 
 from featurebyte.query_graph.sql.interpreter import TileGenSql
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
-from featurebyte.tile.tile_cache import TileCacheStatus, TileInfoKey
+from featurebyte.service.tile_cache_query_by_entity import TileCacheStatus, TileInfoKey
 
 
 def create_tile_gen_sql(aggregation_id):
