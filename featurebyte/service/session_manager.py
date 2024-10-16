@@ -73,7 +73,7 @@ class SessionManagerService:
             if get_credential is not None:
                 credential = await get_credential(user_to_use.id, feature_store.name)
             else:
-                credential = await self.credential_service.find(
+                credential = await self.credential_service.get_credentials(
                     user_id=user_to_use.id, feature_store_name=feature_store.name
                 )
             if credential is None:
