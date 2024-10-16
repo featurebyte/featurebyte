@@ -281,13 +281,15 @@ async def test_get_historical_features__intermediate_tables_dropped(
 def mocked_tile_cache():
     """Fixture for a mocked SnowflakeTileCache object"""
     patched = {}
+    service_mod = "featurebyte.service.tile_cache_query_by_entity"
     with mock.patch(
-        "featurebyte.tile.tile_cache.TileCache._get_compute_requests"
+        f"{service_mod}.TileCacheQueryByEntityService._get_compute_requests"
     ) as mock_get_compute_requests:
         with mock.patch(
-            "featurebyte.tile.tile_cache.TileCache._filter_keys_with_tracker", return_value=[]
+            f"{service_mod}.TileCacheQueryByEntityService._filter_keys_with_tracker",
+            return_value=[],
         ):
-            with mock.patch("featurebyte.tile.tile_cache.run_coroutines"):
+            with mock.patch(f"{service_mod}.run_coroutines"):
                 patched["_get_compute_requests"] = mock_get_compute_requests
                 yield patched
 
@@ -315,7 +317,7 @@ async def test_get_historical_features__tile_cache_multiple_batches(
     graph, _ = complex_feature.extract_pruned_graph_and_node()
     nodes = [graph.get_node_by_name("groupby_1"), graph.get_node_by_name("groupby_2")]
 
-    with patch("featurebyte.tile.tile_cache.NUM_TRACKER_TABLES_PER_QUERY", 1):
+    with patch("featurebyte.service.tile_cache_query_by_entity.NUM_TRACKER_TABLES_PER_QUERY", 1):
         _ = await get_historical_features(
             session=mock_snowflake_session,
             tile_cache_service=tile_cache_service,
