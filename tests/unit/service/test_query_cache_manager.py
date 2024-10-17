@@ -13,6 +13,14 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.query_cache import QueryCacheType
 
 
+@pytest.fixture(name="document_service")
+def document_service_fixture(app_container):
+    """
+    Fixture for a QueryCacheDocumentService
+    """
+    return app_container.query_cache_document_service
+
+
 @pytest.fixture(name="service")
 def service_fixture(app_container):
     """
@@ -264,3 +272,65 @@ async def test_cleanup_service_dataframes(
 
     with pytest.raises(FileNotFoundError):
         await app_container.storage.get_bytes(storage_path)
+
+
+@pytest.mark.asyncio
+async def test_cleanup_service_error_handling(
+    service,
+    document_service,
+    cleanup_service,
+    periodic_task_service,
+    feature_store_id,
+    mock_snowflake_session,
+):
+    """
+    Test cleanup service error handling
+    """
+    query_1 = "SELECT * FROM table_1"
+    query_2 = "SELECT * FROM table_2"
+
+    with freeze_time("2024-01-01"):
+        await service.cache_table(feature_store_id, query_1, "created_table_1")
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == []
+
+    with freeze_time("2024-01-02"):
+        await service.cache_table(feature_store_id, query_2, "created_table_2")
+        tasks = await get_all_periodic_tasks(periodic_task_service)
+        assert len(tasks) == 1
+        assert mock_snowflake_session.drop_table.call_args_list == []
+
+    def _mock_drop_table(**kwargs):
+        if kwargs["table_name"] == "created_table_2":
+            raise RuntimeError("Error dropping table")
+
+    # Simulate error when cleaning up a query
+    mock_snowflake_session.drop_table.reset_mock()
+    with freeze_time("2024-01-10"):
+        mock_snowflake_session.drop_table.side_effect = _mock_drop_table
+        await cleanup_service.run_cleanup(feature_store_id)
+        # Check attempts to drop tables
+        assert mock_snowflake_session.drop_table.call_args_list == [
+            call(table_name="created_table_2", schema_name="sf_schema", database_name="sf_db"),
+            call(table_name="created_table_1", schema_name="sf_schema", database_name="sf_db"),
+        ]
+        # The cache document corresponding to the failed table should still exist
+        stale_docs = []
+        async for doc in document_service.list_stale_documents_as_dict_iterator(feature_store_id):
+            stale_docs.append(doc)
+        assert len(stale_docs) == 1
+        assert stale_docs[0]["cached_object"]["table_name"] == "created_table_2"
+
+    # Retry cleanup should work
+    with freeze_time("2024-01-11"):
+        mock_snowflake_session.drop_table.reset_mock()
+        mock_snowflake_session.drop_table.side_effect = None
+        await cleanup_service.run_cleanup(feature_store_id)
+        assert mock_snowflake_session.drop_table.call_args_list == [
+            call(table_name="created_table_2", schema_name="sf_schema", database_name="sf_db"),
+        ]
+        stale_docs = []
+        async for doc in document_service.list_stale_documents_as_dict_iterator(feature_store_id):
+            stale_docs.append(doc)
+        assert len(stale_docs) == 0
