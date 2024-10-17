@@ -1208,7 +1208,7 @@ def arbitrary_default_feature_job_setting_fixture():
     """
     Get arbitrary default feature job setting
     """
-    return FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m")
+    return FeatureJobSetting(blind_spot="1m30s", period="15m", offset="3m")
 
 
 @pytest.fixture(name="snowflake_event_table_with_entity_and_feature_job")

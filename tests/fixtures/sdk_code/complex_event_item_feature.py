@@ -42,7 +42,7 @@ grouped = joined_view_1.groupby(
     windows=["24h"],
     feature_names=["count_a_24h_per_col_int"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", period="360s", offset="180s"
+        blind_spot="90s", period="900s", offset="180s"
     ),
     skip_fill_na=True,
     offset=None,
@@ -57,12 +57,12 @@ grouped_1 = joined_view_1.groupby(
     windows=["24h"],
     feature_names=["sum_a_24h"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", period="360s", offset="180s"
+        blind_spot="90s", period="900s", offset="180s"
     ),
     skip_fill_na=True,
     offset=None,
 )
 feat_3 = grouped_1["sum_a_24h"]
-feat_4 = feat_1.cd.unique_count(include_missing=False)
-feat_5 = feat_1.cd.unique_count(include_missing=True)
-output = (feat_3 + feat_2) - (feat_4 / feat_5)
+feat_4 = feat_1.cd.unique_count(include_missing=True)
+feat_5 = feat_1.cd.unique_count(include_missing=False)
+output = (feat_3 + feat_2) - (feat_5 / feat_4)
