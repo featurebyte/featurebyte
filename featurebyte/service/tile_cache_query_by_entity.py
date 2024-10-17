@@ -1,5 +1,5 @@
 """
-Module for TileCache and its implementors
+TileCacheQueryByEntityService class
 """
 
 from __future__ import annotations
@@ -8,7 +8,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, Iterator, Optional, cast
 
-from bson import ObjectId
+from redis import Redis
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, select
 
@@ -16,7 +16,11 @@ from featurebyte.common.progress import divide_progress_callback
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
-from featurebyte.models.tile import TileSpec
+from featurebyte.models.tile_cache import (
+    OnDemandTileComputeRequest,
+    OnDemandTileComputeRequestSet,
+    TileInfoKey,
+)
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
@@ -35,68 +39,12 @@ from featurebyte.query_graph.sql.tile_util import (
     get_earliest_tile_start_date_expr,
     get_previous_job_epoch_expr,
 )
-from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, BaseSession
 from featurebyte.session.session_helper import run_coroutines
 
 logger = get_logger(__name__)
 
 NUM_TRACKER_TABLES_PER_QUERY = 20
-
-
-@dataclass(frozen=True)
-class TileInfoKey:
-    """
-    Represents a unique unit of work for tile cache check
-    """
-
-    aggregation_id: str
-    tile_id_version: int
-
-    @classmethod
-    def from_tile_info(cls, tile_info: TileGenSql) -> TileInfoKey:
-        """
-        Get a tile key object from TileGenSql
-
-        Parameters
-        ----------
-        tile_info: TileGenSql
-            TileGenSql object
-
-        Returns
-        -------
-        TileInfoKey
-        """
-        return cls(
-            aggregation_id=tile_info.aggregation_id, tile_id_version=tile_info.tile_id_version
-        )
-
-    def get_entity_tracker_table_name(self) -> str:
-        """
-        Get entity tracker table name
-
-        Returns
-        -------
-        str
-        """
-        aggregation_id, tile_id_version = self.aggregation_id, self.tile_id_version
-        if tile_id_version == 1:
-            return f"{aggregation_id}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
-        return (
-            f"{aggregation_id}_v{tile_id_version}{InternalName.TILE_ENTITY_TRACKER_SUFFIX}".upper()
-        )
-
-    def get_working_table_column_name(self) -> str:
-        """
-        Get the column name corresponding to this key in the tile cache working table
-
-        This is transient, so we don't have to worry about backward compatibility.
-
-        Returns
-        -------
-        str
-        """
-        return f"{self.aggregation_id}_v{self.tile_id_version}"
 
 
 @dataclass
@@ -152,150 +100,35 @@ class TileCacheStatus:
             yield self.subset(keys)
 
 
-@dataclass
-class OnDemandTileComputeRequest:
-    """Information required to compute and update a single tile table"""
-
-    tile_table_id: str
-    aggregation_id: str
-    tracker_sql: str
-    tile_compute_sql: str
-    tile_gen_info: TileGenSql
-
-    def to_tile_manager_input(self, feature_store_id: ObjectId) -> tuple[TileSpec, str]:
-        """Returns a tuple required by FeatureListManager to compute tiles on-demand
-
-        Parameters
-        ----------
-        feature_store_id: ObjectId
-            Feature store id
-
-        Returns
-        -------
-        tuple[TileSpec, str]
-            Tuple of TileSpec and temp table name
-        """
-        entity_column_names = self.tile_gen_info.entity_columns[:]
-        if self.tile_gen_info.value_by_column is not None:
-            entity_column_names.append(self.tile_gen_info.value_by_column)
-        tile_spec = TileSpec(
-            time_modulo_frequency_second=self.tile_gen_info.time_modulo_frequency,
-            blind_spot_second=self.tile_gen_info.blind_spot,
-            frequency_minute=self.tile_gen_info.frequency // 60,
-            tile_sql=self.tile_compute_sql,
-            column_names=self.tile_gen_info.columns,
-            entity_column_names=entity_column_names,
-            value_column_names=self.tile_gen_info.tile_value_columns,
-            value_column_types=self.tile_gen_info.tile_value_types,
-            tile_id=self.tile_table_id,
-            aggregation_id=self.aggregation_id,
-            category_column_name=self.tile_gen_info.value_by_column,
-            feature_store_id=feature_store_id,
-            entity_tracker_table_name=self.tile_info_key.get_entity_tracker_table_name(),
-            windows=self.tile_gen_info.windows,
-        )
-        return tile_spec, self.tracker_sql
-
-    @property
-    def tile_info_key(self) -> TileInfoKey:
-        """
-        Returns a TileInfoKey object to uniquely identify a unit of tile compute work
-
-        Returns
-        -------
-        TileInfoKey
-        """
-        return TileInfoKey.from_tile_info(self.tile_gen_info)
-
-
-class TileCache:
+class TileCacheQueryByEntityService:
     """Responsible for on-demand tile computation for historical features
 
-    Parameters
-    ----------
-    session : BaseSession
-        Session object to interact with database
+    This service uses entity level tracker tables in the data warehouse to determine whether tile
+    tables are up-to-date, and if not, constructs a set of queries to compute the tile tables.
     """
 
-    def __init__(
-        self,
-        session: BaseSession,
-        tile_manager_service: TileManagerService,
-        feature_store: FeatureStoreModel,
-    ):
-        self.session = session
-        self.tile_manager_service = tile_manager_service
-        self.feature_store = feature_store
-        self._materialized_temp_table_names: set[str] = set()
-
-    @property
-    def adapter(self) -> BaseAdapter:
-        """
-        Returns an instance of adapter for engine specific SQL expressions generation
-
-        Returns
-        -------
-        BaseAdapter
-        """
-        return self.session.adapter
-
-    @property
-    def source_info(self) -> SourceInfo:
-        """
-        Returns the source info that corresponds to this TileCache
-
-        Returns
-        -------
-        SourceInfo
-        """
-        return self.adapter.source_info
-
-    async def invoke_tile_manager(
-        self,
-        required_requests: list[OnDemandTileComputeRequest],
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-    ) -> None:
-        """Interacts with FeatureListManager to compute tiles and update cache
-
-        Parameters
-        ----------
-        required_requests : list[OnDemandTileComputeRequest]
-            List of required compute requests (where entity table is non-empty)
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
-            Optional progress callback function
-        """
-        tile_inputs = []
-        for request in required_requests:
-            tile_input = request.to_tile_manager_input(feature_store_id=self.feature_store.id)
-            tile_inputs.append(tile_input)
-        await self.tile_manager_service.generate_tiles_on_demand(
-            session=self.session, tile_inputs=tile_inputs, progress_callback=progress_callback
-        )
-
-    async def cleanup_temp_tables(self) -> None:
-        """Drops all the temp tables that was created by TileCache"""
-        for temp_table_name in self._materialized_temp_table_names:
-            await self.session.drop_table(
-                table_name=temp_table_name,
-                schema_name=self.session.schema_name,
-                database_name=self.session.database_name,
-                if_exists=True,
-            )
-        self._materialized_temp_table_names = set()
+    def __init__(self, redis: Redis[Any]):
+        self.redis = redis
 
     async def get_required_computation(
         self,
+        session: BaseSession,
+        feature_store: FeatureStoreModel,
         request_id: str,
         graph: QueryGraph,
         nodes: list[Node],
         request_table_name: str,
         serving_names_mapping: dict[str, str] | None = None,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-    ) -> list[OnDemandTileComputeRequest]:
+    ) -> OnDemandTileComputeRequestSet:
         """Query the entity tracker tables and obtain a list of tile computations that are required
 
         Parameters
         ----------
+        session : BaseSession
+            Data warehouse session
+        feature_store: FeatureStoreModel
+            Feature store model
         request_id : str
             Request ID
         graph : QueryGraph
@@ -311,7 +144,7 @@ class TileCache:
 
         Returns
         -------
-        list[OnDemandTileComputeRequest]
+        OnDemandTileComputeRequestSet
         """
         if progress_callback is None:
             graph_progress, query_progress = None, None
@@ -320,6 +153,7 @@ class TileCache:
                 progress_callback, at_percent=20
             )
         tile_cache_status = await self._get_tile_cache_status(
+            session=session,
             graph=graph,
             nodes=nodes,
             serving_names_mapping=serving_names_mapping,
@@ -341,6 +175,7 @@ class TileCache:
         for i, subset_tile_cache_status in enumerate(batches):
             coroutines.append(
                 self._get_compute_requests(
+                    session=session,
                     request_id=f"{request_id}_{i}",
                     request_table_name=request_table_name,
                     tile_cache_status=subset_tile_cache_status,
@@ -349,29 +184,27 @@ class TileCache:
             )
         result = await run_coroutines(
             coroutines,
-            self.tile_manager_service.redis,
-            str(self.feature_store.id),
-            self.feature_store.max_query_concurrency,
+            self.redis,
+            str(feature_store.id),
+            feature_store.max_query_concurrency,
         )
-        all_requests = []
-        for requests in result:
-            all_requests.extend(requests)
-        return all_requests
+        return OnDemandTileComputeRequestSet.merge(result)
 
     async def _get_compute_requests(
         self,
+        session: BaseSession,
         request_id: str,
         request_table_name: str,
         tile_cache_status: TileCacheStatus,
         done_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
-    ) -> list[OnDemandTileComputeRequest]:
+    ) -> OnDemandTileComputeRequestSet:
         # Construct a temp table and query from it whether each tile has updated cache
         tic = time.time()
         unique_tile_infos = tile_cache_status.unique_tile_infos
         keys_with_tracker = tile_cache_status.keys_with_tracker
         keys_without_tracker = list(set(unique_tile_infos.keys()) - set(keys_with_tracker))
-        session = await self.session.clone_if_not_threadsafe()
-        await self._register_working_table(
+        session = await session.clone_if_not_threadsafe()
+        working_table_name = await self._register_working_table(
             session=session,
             unique_tile_infos=unique_tile_infos,
             keys_with_tracker=keys_with_tracker,
@@ -404,6 +237,7 @@ class TileCache:
             else:
                 logger.debug(f"Need to recompute cache for {agg_id}")
                 request = self._construct_request_from_working_table(
+                    adapter=session.adapter,
                     request_id=request_id,
                     tile_info=unique_tile_infos[key],
                 )
@@ -412,10 +246,14 @@ class TileCache:
         if done_callback is not None:
             await done_callback()
 
-        return requests
+        return OnDemandTileComputeRequestSet(
+            compute_requests=requests,
+            materialized_temp_table_names={working_table_name},
+        )
 
     async def _get_tile_cache_status(
         self,
+        session: BaseSession,
         graph: QueryGraph,
         nodes: list[Node],
         serving_names_mapping: dict[str, str] | None = None,
@@ -425,6 +263,8 @@ class TileCache:
 
         Parameters
         ----------
+        session: BaseSession
+            Data warehouse session
         graph : QueryGraph
             Query graph
         nodes : list[Node]
@@ -441,19 +281,24 @@ class TileCache:
         unique_tile_infos = await self._get_unique_tile_infos(
             graph=graph,
             nodes=nodes,
+            source_info=session.get_source_info(),
             serving_names_mapping=serving_names_mapping,
             progress_callback=progress_callback,
         )
-        keys_with_tracker = await self._filter_keys_with_tracker(list(unique_tile_infos.keys()))
+        keys_with_tracker = await self._filter_keys_with_tracker(
+            session, list(unique_tile_infos.keys())
+        )
         return TileCacheStatus(
             unique_tile_infos=unique_tile_infos,
             keys_with_tracker=keys_with_tracker,
         )
 
+    @classmethod
     async def _get_unique_tile_infos(
-        self,
+        cls,
         graph: QueryGraph,
         nodes: list[Node],
+        source_info: SourceInfo,
         serving_names_mapping: dict[str, str] | None,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> dict[TileInfoKey, TileGenSql]:
@@ -465,6 +310,8 @@ class TileCache:
             Query graph
         nodes : list[Node]
             List of query graph node
+        source_info : SourceInfo
+            Source information
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -475,7 +322,7 @@ class TileCache:
         dict[TileInfoKey, TileGenSql]
         """
         out = {}
-        interpreter = GraphInterpreter(graph, source_info=self.source_info)
+        interpreter = GraphInterpreter(graph, source_info=source_info)
         for i, node in enumerate(nodes):
             infos = interpreter.construct_tile_gen_sql(node, is_on_demand=True)
             for info in infos:
@@ -493,14 +340,19 @@ class TileCache:
             await progress_callback(100, "Checking tile cache availability")
         return out
 
+    @classmethod
     async def _filter_keys_with_tracker(
-        self, tile_info_keys: list[TileInfoKey]
+        cls,
+        session: BaseSession,
+        tile_info_keys: list[TileInfoKey],
     ) -> list[TileInfoKey]:
         """Query tracker tables in data warehouse to identify aggregation IDs with existing tracking
         tables
 
         Parameters
         ----------
+        session: BaseSession
+            Data warehouse session
         tile_info_keys: list[TileInfoKey]
             List of TileInfoKey
 
@@ -510,9 +362,9 @@ class TileCache:
             List of TileInfoKey with existing entity tracker tables
         """
         all_trackers = set()
-        for table in await self.session.list_tables(
-            database_name=self.session.database_name,
-            schema_name=self.session.schema_name,
+        for table in await session.list_tables(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
             timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
         ):
             # always convert to upper case in case some backends change the casing
@@ -527,15 +379,16 @@ class TileCache:
                 out.append(tile_info_key)
         return out
 
+    @classmethod
     async def _register_working_table(
-        self,
+        cls,
         session: BaseSession,
         unique_tile_infos: dict[TileInfoKey, TileGenSql],
         keys_with_tracker: list[TileInfoKey],
         keys_no_tracker: list[TileInfoKey],
         request_id: str,
         request_table_name: str,
-    ) -> None:
+    ) -> str:
         """Register a temp table from which we can query whether each (POINT_IN_TIME, ENTITY_ID,
         TILE_ID) triplet has updated tile cache:
 
@@ -573,6 +426,11 @@ class TileCache:
             Request ID
         request_table_name : str
             Name of the request table
+
+        Returns
+        -------
+        str
+            Name of the working table
         """
 
         table_expr = select().from_(f"{request_table_name} AS REQ")
@@ -621,7 +479,7 @@ class TileCache:
             ),
             table_expr,
         )
-        self._materialized_temp_table_names.add(tile_cache_working_table_name)
+        return tile_cache_working_table_name
 
     async def _get_tile_cache_validity_from_working_table(
         self,
@@ -659,11 +517,16 @@ class TileCache:
             v: k for (k, v) in key_to_result_name_mapping.items()
         }
 
+        adapter = session.adapter
         for key in keys:
             tile_info = unique_tile_infos[key]
-            point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
+            point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(
+                adapter=adapter, in_groupby_context=False
+            )
             last_tile_start_date_expr = self._get_last_tile_start_date_expr(
-                point_in_time_epoch_expr, tile_info
+                adapter=adapter,
+                point_in_time_epoch_expr=point_in_time_epoch_expr,
+                tile_info=tile_info,
             )
             is_tile_updated = expressions.Sum(
                 this=expressions.Cast(
@@ -712,12 +575,14 @@ class TileCache:
         return {result_name_to_key_mapping[k.lower()]: v for (k, v) in out.items()}
 
     def _construct_request_from_working_table(
-        self, request_id: str, tile_info: TileGenSql
+        self, adapter: BaseAdapter, request_id: str, tile_info: TileGenSql
     ) -> OnDemandTileComputeRequest:
         """Construct a compute request for a tile table that is known to require computation
 
         Parameters
         ----------
+        adapter : BaseAdapter
+            Data warehouse adapter
         request_id : str
             Request ID
         tile_info : TileGenSql
@@ -730,9 +595,11 @@ class TileCache:
         aggregation_id = tile_info.aggregation_id
 
         # Filter for rows where tile cache are outdated
-        point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=False)
+        point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(
+            adapter=adapter, in_groupby_context=False
+        )
         last_tile_start_date_expr = self._get_last_tile_start_date_expr(
-            point_in_time_epoch_expr, tile_info
+            adapter, point_in_time_epoch_expr, tile_info
         )
         working_table_column_name = TileInfoKey.from_tile_info(
             tile_info
@@ -753,12 +620,14 @@ class TileCache:
         )
 
         # Expressions to inform the date range for tile building
-        point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(in_groupby_context=True)
+        point_in_time_epoch_expr = self._get_point_in_time_epoch_expr(
+            adapter=adapter, in_groupby_context=True
+        )
         last_tile_start_date_expr = self._get_last_tile_start_date_expr(
-            point_in_time_epoch_expr, tile_info
+            adapter, point_in_time_epoch_expr, tile_info
         )
         start_date_expr, end_date_expr = self._get_tile_start_end_date_expr(
-            point_in_time_epoch_expr, tile_info
+            adapter, point_in_time_epoch_expr, tile_info
         )
 
         # Entity table can be constructed from the working table by filtering for rows with outdated
@@ -791,17 +660,22 @@ class TileCache:
         request = OnDemandTileComputeRequest(
             tile_table_id=tile_info.tile_table_id,
             aggregation_id=aggregation_id,
-            tracker_sql=sql_to_string(entity_table_expr, source_type=self.source_info.source_type),
+            tracker_sql=sql_to_string(entity_table_expr, source_type=adapter.source_type),
             tile_compute_sql=tile_compute_sql,
             tile_gen_info=tile_info,
         )
         return request
 
-    def _get_point_in_time_epoch_expr(self, in_groupby_context: bool) -> Expression:
+    @classmethod
+    def _get_point_in_time_epoch_expr(
+        cls, adapter: BaseAdapter, in_groupby_context: bool
+    ) -> Expression:
         """Get the SQL expression for point-in-time
 
         Parameters
         ----------
+        adapter : BaseAdapter
+            Data warehouse adapter
         in_groupby_context : bool
             Whether the expression is to be used within groupby
 
@@ -815,20 +689,26 @@ class TileCache:
         if in_groupby_context:
             # When this is True, we are interested in the latest point-in-time for each entity (the
             # groupby key).
-            point_in_time_epoch_expr = self.adapter.to_epoch_seconds(
+            point_in_time_epoch_expr = adapter.to_epoch_seconds(
                 expressions.Max(this=point_in_time_identifier)
             )
         else:
-            point_in_time_epoch_expr = self.adapter.to_epoch_seconds(point_in_time_identifier)
+            point_in_time_epoch_expr = adapter.to_epoch_seconds(point_in_time_identifier)
         return point_in_time_epoch_expr
 
+    @classmethod
     def _get_last_tile_start_date_expr(
-        self, point_in_time_epoch_expr: Expression, tile_info: TileGenSql
+        cls,
+        adapter: BaseAdapter,
+        point_in_time_epoch_expr: Expression,
+        tile_info: TileGenSql,
     ) -> Expression:
         """Get the SQL expression for the "last tile start date" corresponding to the point-in-time
 
         Parameters
         ----------
+        adapter : BaseAdapter
+            Data warehouse adapter
         point_in_time_epoch_expr : Expression
             Expression for point-in-time in epoch second
         tile_info : TileGenSql
@@ -844,7 +724,7 @@ class TileCache:
         frequency = make_literal_value(tile_info.frequency)
 
         # TO_TIMESTAMP(PREVIOUS_JOB_EPOCH_EXPR - BLIND_SPOT - FREQUENCY
-        last_tile_start_date_expr = self.adapter.from_epoch_seconds(
+        last_tile_start_date_expr = adapter.from_epoch_seconds(
             expressions.Sub(
                 this=expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot),
                 expression=frequency,
@@ -852,8 +732,9 @@ class TileCache:
         )
         return last_tile_start_date_expr
 
+    @classmethod
     def _get_tile_start_end_date_expr(
-        self, point_in_time_epoch_expr: Expression, tile_info: TileGenSql
+        cls, adapter: BaseAdapter, point_in_time_epoch_expr: Expression, tile_info: TileGenSql
     ) -> tuple[Expression, Expression]:
         """Get the start and end dates based on which to compute the tiles
 
@@ -862,6 +743,8 @@ class TileCache:
 
         Parameters
         ----------
+        adapter : BaseAdapter
+            Data warehouse adapter
         point_in_time_epoch_expr : Expression
             Expression for point-in-time in epoch second
         tile_info : TileGenSql
@@ -877,11 +760,11 @@ class TileCache:
         time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
 
         # TO_TIMESTAMP(PREVIOUS_JOB_EPOCH - BLIND_SPOT)
-        end_date_expr = self.adapter.from_epoch_seconds(
+        end_date_expr = adapter.from_epoch_seconds(
             expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)
         )
         earliest_start_date_expr = get_earliest_tile_start_date_expr(
-            adapter=self.adapter,
+            adapter=adapter,
             time_modulo_frequency=time_modulo_frequency,
             blind_spot=blind_spot,
         )
@@ -889,7 +772,7 @@ class TileCache:
         # This expression will be evaluated in a group by statement with the entity value as the
         # group by key. We can use ANY_VALUE because the recorded last tile start date is the same
         # across all rows within the group.
-        recorded_last_tile_start_date_expr = self.adapter.any_value(
+        recorded_last_tile_start_date_expr = adapter.any_value(
             expressions.Identifier(
                 this=TileInfoKey.from_tile_info(tile_info).get_working_table_column_name()
             )
@@ -906,7 +789,7 @@ class TileCache:
                     true=earliest_start_date_expr,
                 )
             ],
-            default=self.adapter.dateadd_microsecond(
+            default=adapter.dateadd_microsecond(
                 frequency_microsecond,
                 recorded_last_tile_start_date_expr,
             ),
