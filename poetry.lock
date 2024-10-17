@@ -6,7 +6,7 @@ server = ["cachetools", "celery", "celerybeat-mongo", "databricks-sdk", "databri
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "5195912a524b29ef540d476729575acff680a40291a1d44b75dbc31c479834fe"
+content-hash = "b5a7df92dcdc199b37c561343b1b63d0accf5c396062b6a9972b7dfe106cdd6a"
 
 [[package]]
 name = "about-time"
