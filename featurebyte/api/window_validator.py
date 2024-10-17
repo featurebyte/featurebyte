@@ -7,7 +7,7 @@ from typing import Optional
 
 from featurebyte.common.model_util import parse_duration_string, validate_offset_string
 
-MAX_NUM_TILES_FOR_AGGREGATION = int(os.getenv("FEATUREBYTE_MAX_NUM_TILES_FOR_AGGREGATION", "5000"))
+MAX_NUM_TILES_FOR_AGGREGATION = int(os.getenv("FEATUREBYTE_MAX_NUM_TILES_FOR_AGGREGATION", "10000"))
 
 
 def validate_offset(offset: Optional[str]) -> None:
