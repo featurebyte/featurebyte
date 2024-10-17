@@ -22,10 +22,30 @@ def test_validate_window__in_proper_range():
     # greater than shouldn't error
     validate_window("30m", "15m")
 
+
+@pytest.mark.parametrize(
+    "window, feature_job_period, expected_error",
+    [
+        ("366d", "15m", "window 366d needs to be less than 52 days"),
+        ("366d", "30m", "window 366d needs to be less than 104 days"),
+        ("366d", "1h", "window 366d needs to be less than 208 days"),
+        ("180d", "1h", None),
+        ("1000d", "1d", None),
+        ("10000d", "1d", "window 10000d needs to be less than 5000 days"),
+    ],
+)
+def test_validate_window__upper_limit(window, feature_job_period, expected_error):
+    """
+    Test upper limit of window
+    """
     # greater than upper bound should error
-    with pytest.raises(ValueError) as exc:
-        validate_window("366d", "15m")
-    assert "window 366d needs to be less than 365 days" in str(exc)
+    if expected_error is not None:
+        with pytest.raises(ValueError) as exc:
+            validate_window(window, feature_job_period)
+        full_error = f"{expected_error}. Please specify a different time window or increase the feature job period."
+        assert full_error in str(exc)
+    else:
+        validate_window(window, feature_job_period)
 
 
 def test_validates_window__not_multiple_of_feature_job_frequency():
