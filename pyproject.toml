@@ -87,6 +87,7 @@ black = "^24.3.0"
 cachetools = { version = "^5.2.0", optional = true }
 celery = { version = "^5.2.6", extras = ["redis"], optional = true }
 celerybeat-mongo = { version = "^0.2.0", optional = true }
+starlette = ">=0.40"
 databricks-sdk = { version = "^0.24.0", optional = true }
 databricks-sql-connector = { version = "^3.1.1", optional = true }
 fastapi = { version =  ">0.100", optional = true }
