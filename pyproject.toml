@@ -69,6 +69,7 @@ documentation = "https://docs.featurebyte.com"
 homepage = "https://featurebyte.com"
 include = [
     "featurebyte/sql/spark/*.jar",
+    "featurebyte/py.typed",
 ]
 keywords = []
 license = "Elastic License 2.0"
