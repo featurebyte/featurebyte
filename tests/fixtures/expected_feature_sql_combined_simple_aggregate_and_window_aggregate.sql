@@ -1,13 +1,13 @@
-WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
+WITH "REQUEST_TABLE_W604800_F900_BS90_M180_cust_id" AS (
   SELECT
     "POINT_IN_TIME",
     "cust_id",
     CAST(FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 180
-    ) / 360) AS BIGINT) AS __FB_LAST_TILE_INDEX,
+    ) / 900) AS BIGINT) AS __FB_LAST_TILE_INDEX,
     CAST(FLOOR((
       DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 180
-    ) / 360) AS BIGINT) - 1680 AS __FB_FIRST_TILE_INDEX
+    ) / 900) AS BIGINT) - 672 AS __FB_FIRST_TILE_INDEX
   FROM (
     SELECT DISTINCT
       "POINT_IN_TIME",
@@ -20,23 +20,23 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
   FROM REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
-    "T0"."_fb_internal_cust_id_window_w604800_sum_b0b3ecc1a6233735c72f7224f1b7caaa4e2ab60d" AS "_fb_internal_cust_id_window_w604800_sum_b0b3ecc1a6233735c72f7224f1b7caaa4e2ab60d",
+    "T0"."_fb_internal_cust_id_window_w604800_sum_39fe45efb36ff23a9c19836ec605f3a9775d5b98" AS "_fb_internal_cust_id_window_w604800_sum_39fe45efb36ff23a9c19836ec605f3a9775d5b98",
     "T1"."_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1" AS "_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "POINT_IN_TIME",
       "cust_id",
-      SUM(value_sum_b0b3ecc1a6233735c72f7224f1b7caaa4e2ab60d) AS "_fb_internal_cust_id_window_w604800_sum_b0b3ecc1a6233735c72f7224f1b7caaa4e2ab60d"
+      SUM(value_sum_39fe45efb36ff23a9c19836ec605f3a9775d5b98) AS "_fb_internal_cust_id_window_w604800_sum_39fe45efb36ff23a9c19836ec605f3a9775d5b98"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
         REQ."cust_id",
         TILE.INDEX,
-        TILE.value_sum_b0b3ecc1a6233735c72f7224f1b7caaa4e2ab60d
-      FROM "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS REQ
-      INNER JOIN TILE_SUM_B0B3ECC1A6233735C72F7224F1B7CAAA4E2AB60D AS TILE
-        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1680) = FLOOR(TILE.INDEX / 1680)
+        TILE.value_sum_39fe45efb36ff23a9c19836ec605f3a9775d5b98
+      FROM "REQUEST_TABLE_W604800_F900_BS90_M180_cust_id" AS REQ
+      INNER JOIN TILE_SUM_39FE45EFB36FF23A9C19836EC605F3A9775D5B98 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 672) = FLOOR(TILE.INDEX / 672)
         AND REQ."cust_id" = TILE."cust_id"
       WHERE
         TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
@@ -45,10 +45,10 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
         REQ."POINT_IN_TIME",
         REQ."cust_id",
         TILE.INDEX,
-        TILE.value_sum_b0b3ecc1a6233735c72f7224f1b7caaa4e2ab60d
-      FROM "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS REQ
-      INNER JOIN TILE_SUM_B0B3ECC1A6233735C72F7224F1B7CAAA4E2AB60D AS TILE
-        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1680) - 1 = FLOOR(TILE.INDEX / 1680)
+        TILE.value_sum_39fe45efb36ff23a9c19836ec605f3a9775d5b98
+      FROM "REQUEST_TABLE_W604800_F900_BS90_M180_cust_id" AS REQ
+      INNER JOIN TILE_SUM_39FE45EFB36FF23A9C19836EC605F3A9775D5B98 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 672) - 1 = FLOOR(TILE.INDEX / 672)
         AND REQ."cust_id" = TILE."cust_id"
       WHERE
         TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
@@ -118,6 +118,6 @@ WITH "REQUEST_TABLE_W604800_F360_BS90_M180_cust_id" AS (
 )
 SELECT
   CAST((
-    "_fb_internal_cust_id_window_w604800_sum_b0b3ecc1a6233735c72f7224f1b7caaa4e2ab60d" + "_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1"
+    "_fb_internal_cust_id_window_w604800_sum_39fe45efb36ff23a9c19836ec605f3a9775d5b98" + "_fb_internal_transaction_id_item_count_None_event_id_col_None_join_1"
   ) AS BIGINT) AS "combined_feature"
 FROM _FB_AGGREGATED AS AGG

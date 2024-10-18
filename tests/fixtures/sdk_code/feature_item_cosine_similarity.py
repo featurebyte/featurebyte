@@ -18,15 +18,15 @@ grouped = item_view.groupby(
 ).aggregate_over(
     value_column="item_amount",
     method="sum",
-    windows=["90d"],
-    feature_names=["sum_item_amount_over_90d"],
+    windows=["45d"],
+    feature_names=["sum_item_amount_over_45d"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", period="360s", offset="180s"
+        blind_spot="90s", period="900s", offset="180s"
     ),
     skip_fill_na=True,
     offset=None,
 )
-feat = grouped["sum_item_amount_over_90d"]
+feat = grouped["sum_item_amount_over_45d"]
 grouped_1 = item_view.groupby(
     by_keys=["cust_id_event_table"], category="item_id_col"
 ).aggregate_over(
@@ -35,7 +35,7 @@ grouped_1 = item_view.groupby(
     windows=["30d"],
     feature_names=["sum_item_amount_over_30d"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", period="360s", offset="180s"
+        blind_spot="90s", period="900s", offset="180s"
     ),
     skip_fill_na=True,
     offset=None,
@@ -43,6 +43,6 @@ grouped_1 = item_view.groupby(
 feat_1 = grouped_1["sum_item_amount_over_30d"]
 feat_2 = feat_1.cd.cosine_similarity(other=feat)
 feat_2.name = (
-    "sum_item_amount_over_30d_cosine_similarity_sum_item_amount_over_90d"
+    "sum_item_amount_over_30d_cosine_similarity_sum_item_amount_over_45d"
 )
 output = feat_2

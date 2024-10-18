@@ -31,22 +31,7 @@ event_view = event_table.get_view(
 joined_view = event_view.add_feature(
     new_column_name="sum_item_amt", feature=feat_1, entity_column="cust_id"
 )
-col = joined_view["sum_item_amt"]
-view = joined_view.copy()
-view["sum_item_amt_plus_one"] = col + 1
-grouped = view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
-    value_column="sum_item_amt_plus_one",
-    method="sum",
-    windows=["30d"],
-    feature_names=["sum_item_amt_plus_one_over_30d"],
-    feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", period="360s", offset="180s"
-    ),
-    skip_fill_na=True,
-    offset=None,
-)
-feat_2 = grouped["sum_item_amt_plus_one_over_30d"]
-grouped_1 = joined_view.groupby(
+grouped = joined_view.groupby(
     by_keys=["cust_id"], category=None
 ).aggregate_over(
     value_column="sum_item_amt",
@@ -54,12 +39,27 @@ grouped_1 = joined_view.groupby(
     windows=["30d"],
     feature_names=["sum_item_amt_over_30d"],
     feature_job_setting=FeatureJobSetting(
-        blind_spot="90s", period="360s", offset="180s"
+        blind_spot="90s", period="900s", offset="180s"
     ),
     skip_fill_na=True,
     offset=None,
 )
-feat_3 = grouped_1["sum_item_amt_over_30d"]
-feat_4 = feat_3 / feat_2
+feat_2 = grouped["sum_item_amt_over_30d"]
+col = joined_view["sum_item_amt"]
+view = joined_view.copy()
+view["sum_item_amt_plus_one"] = col + 1
+grouped_1 = view.groupby(by_keys=["cust_id"], category=None).aggregate_over(
+    value_column="sum_item_amt_plus_one",
+    method="sum",
+    windows=["30d"],
+    feature_names=["sum_item_amt_plus_one_over_30d"],
+    feature_job_setting=FeatureJobSetting(
+        blind_spot="90s", period="900s", offset="180s"
+    ),
+    skip_fill_na=True,
+    offset=None,
+)
+feat_3 = grouped_1["sum_item_amt_plus_one_over_30d"]
+feat_4 = feat_2 / feat_3
 feat_4.name = "fraction"
 output = feat_4
