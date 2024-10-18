@@ -441,7 +441,7 @@ class TileCacheQueryByEntityService:
             tile_info = unique_tile_infos[key]
             tracker_table_name = key.get_entity_tracker_table_name()
             table_alias = f"T{table_index}"
-            join_conditions = []
+            join_conditions: list[Expression] = []
             for serving_name, entity_column_name in zip(
                 tile_info.serving_names, tile_info.entity_columns
             ):
