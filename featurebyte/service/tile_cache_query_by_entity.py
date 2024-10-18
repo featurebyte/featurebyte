@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, Iterator, Optional, cast
 
 from redis import Redis
-from sqlglot import expressions, parse_one
+from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
 from featurebyte.common.progress import divide_progress_callback
@@ -29,6 +29,7 @@ from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     apply_serving_names_mapping,
+    get_qualified_column_identifier,
     quoted_identifier,
     sql_to_string,
 )
@@ -445,8 +446,9 @@ class TileCacheQueryByEntityService:
                 tile_info.serving_names, tile_info.entity_columns
             ):
                 join_conditions.append(
-                    parse_one(
-                        f"REQ.{quoted_identifier(serving_name).sql()} <=> {table_alias}.{quoted_identifier(entity_column_name).sql()}"
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(serving_name, "REQ"),
+                        expression=get_qualified_column_identifier(entity_column_name, table_alias),
                     )
                 )
             if not join_conditions:
