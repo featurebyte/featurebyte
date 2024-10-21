@@ -68,20 +68,24 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         ),
         (
             AggFunc.MIN,
-            None,
+            DBVarType.INT,
             [
                 make_expected_tile_spec(
-                    tile_expr='MIN("a_column")', tile_column_name="value_1234beef"
+                    tile_expr='MIN("a_column")',
+                    tile_column_name="value_1234beef",
+                    tile_column_type="FLOAT",
                 )
             ],
             "MIN(value_1234beef)",
         ),
         (
             AggFunc.MAX,
-            None,
+            DBVarType.TIMESTAMP,
             [
                 make_expected_tile_spec(
-                    tile_expr='MAX("a_column")', tile_column_name="value_1234beef"
+                    tile_expr='MAX("a_column")',
+                    tile_column_name="value_1234beef",
+                    tile_column_type="TIMESTAMP_NTZ",
                 )
             ],
             "MAX(value_1234beef)",
@@ -140,7 +144,7 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
         ),
         (
             AggFunc.LATEST,
-            None,
+            DBVarType.VARCHAR,
             [
                 make_expected_tile_spec(
                     tile_expr='FIRST_VALUE("a_column")',
@@ -157,7 +161,7 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
                 make_expected_tile_spec(
                     tile_expr='VECTOR_AGGREGATE_MAX("a_column")',
                     tile_column_name="value_1234beef",
-                    tile_column_type="VARCHAR",
+                    tile_column_type="ARRAY",
                 )
             ],
             "VECTOR_AGGREGATE_MAX(value_1234beef)",
@@ -187,12 +191,15 @@ def test_tiling_aggregators(
     """Test tiling aggregators produces expected expressions"""
     agg_id = "1234beef"
     agg = get_aggregator(agg_func, adapter=adapter, parent_dtype=parent_dtype)
-    input_column = InputColumn(name="a_column", dtype=DBVarType.VARCHAR)
+    input_column = InputColumn(name="a_column", dtype=parent_dtype)
     tile_specs = agg.tile(input_column, agg_id)
     merge_expr = agg.merge(agg_id).sql()
     assert [t.tile_expr.sql() for t in tile_specs] == [t["tile_expr"] for t in expected_tile_specs]
     assert [t.tile_column_name for t in tile_specs] == [
         t["tile_column_name"] for t in expected_tile_specs
+    ]
+    assert [t.tile_column_type for t in tile_specs] == [
+        t["tile_column_type"] for t in expected_tile_specs
     ]
     assert merge_expr == expected_merge_expr
 
