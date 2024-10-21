@@ -1795,6 +1795,26 @@ def feature_group_per_category_fixture(event_view):
     return feature_group_per_category
 
 
+@pytest.fixture(name="feature_group_timestamp_agg")
+def feature_group_timestamp_agg_fixture(event_view):
+    """
+    Fixture for a simple FeatureGroup with count features
+    """
+    feature_ts_max = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="ëvent_timestamp".upper(),
+        method="max",
+        windows=["24h"],
+        feature_names=["TS_MAX_24h"],
+    )["TS_MAX_24h"]
+    feature_ts_min = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="ëvent_timestamp".upper(),
+        method="max",
+        windows=["24h"],
+        feature_names=["TS_MIN_24h"],
+    )["TS_MIN_24h"]
+    return FeatureGroup([feature_ts_max, feature_ts_min])
+
+
 @pytest.fixture(name="count_distinct_feature_group")
 def count_distinct_feature_group_fixture(item_table, dimension_table):
     """

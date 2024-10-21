@@ -542,6 +542,30 @@ def get_training_events_and_expected_result():
             0.4629100498862757,
             np.nan,
         ],
+        "TS_MIN_24h": [
+            pd.Timestamp("2001-01-02 08:42:19.000673"),
+            pd.Timestamp("2001-01-02 10:56:57.000561"),
+            pd.Timestamp("2001-01-02 08:06:01.000282"),
+            pd.Timestamp("2001-01-02 08:41:46.000438"),
+            pd.Timestamp("2001-01-02 06:54:51.000699"),
+            pd.Timestamp("2001-01-02 10:29:32.000059"),
+            pd.Timestamp("2001-01-02 06:12:39.000024"),
+            pd.Timestamp("2001-01-02 07:59:55.000736"),
+            pd.Timestamp("2001-01-02 07:19:27.000175"),
+            pd.NaT,
+        ],
+        "TS_MAX_24h": [
+            pd.Timestamp("2001-01-02 08:42:19.000673"),
+            pd.Timestamp("2001-01-02 10:56:57.000561"),
+            pd.Timestamp("2001-01-02 08:06:01.000282"),
+            pd.Timestamp("2001-01-02 08:41:46.000438"),
+            pd.Timestamp("2001-01-02 06:54:51.000699"),
+            pd.Timestamp("2001-01-02 10:29:32.000059"),
+            pd.Timestamp("2001-01-02 06:12:39.000024"),
+            pd.Timestamp("2001-01-02 07:59:55.000736"),
+            pd.Timestamp("2001-01-02 07:19:27.000175"),
+            pd.NaT,
+        ],
     })
     return df_training_events, df_historical_expected
 
@@ -587,6 +611,7 @@ async def test_get_historical_features(
     data_source,
     feature_group,
     feature_group_per_category,
+    feature_group_timestamp_agg,
     in_out_formats,
     user_entity,
     new_user_id_entity,
@@ -611,6 +636,8 @@ async def test_get_historical_features(
             feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
             feature_group["COUNT_2h DIV COUNT_24h"],
             feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
+            feature_group_timestamp_agg["TS_MIN_24h"],
+            feature_group_timestamp_agg["TS_MAX_24h"],
         ],
         name="My FeatureList",
     )
