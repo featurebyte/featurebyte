@@ -111,9 +111,6 @@ class CredentialService(
             query_filter={"user_id": user_id, "feature_store_id": feature_store.id}
         )
         if len(credentials) == 0:
-            logger.warning(
-                f"No credentials found for user {user_id} and feature store {feature_store_name}"
-            )
             return None
 
         # Choose the credentials
