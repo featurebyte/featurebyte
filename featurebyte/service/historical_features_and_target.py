@@ -160,7 +160,7 @@ async def get_historical_features(
     -------
     HistoricalFeaturesMetrics
     """
-    tic_ = time.time()
+    first_tic = time.time()
 
     output_include_row_index = (
         isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index is True
@@ -220,6 +220,7 @@ async def get_historical_features(
             )
 
         # Generate SQL code that computes the features
+        tic = time.time()
         historical_feature_query_set = get_historical_features_query_set(
             graph=graph,
             nodes=nodes,
@@ -250,7 +251,7 @@ async def get_historical_features(
                 else None
             ),
         )
-        feature_compute_seconds = time.time() - tic_
+        feature_compute_seconds = time.time() - tic
         logger.debug(f"compute_historical_features in total took {feature_compute_seconds:.2f}s")
     finally:
         await session.drop_table(
@@ -262,6 +263,7 @@ async def get_historical_features(
     return HistoricalFeaturesMetrics(
         tile_compute_seconds=tile_compute_seconds,
         feature_compute_seconds=feature_compute_seconds,
+        total_seconds=time.time() - first_tic,
     )
 
 
@@ -307,7 +309,7 @@ async def get_target(
     -------
     HistoricalFeaturesMetrics
     """
-    tic_ = time.time()
+    first_tic = time.time()
 
     output_include_row_index = (
         isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index is True
@@ -346,6 +348,7 @@ async def get_target(
             progress_message=PROGRESS_MESSAGE_COMPUTING_TARGET,
         )
 
+        tic = time.time()
         await execute_feature_query_set(
             session_handler=SessionHandler(
                 session=session, redis=redis, feature_store=feature_store
@@ -361,7 +364,7 @@ async def get_target(
                 else None
             ),
         )
-        feature_compute_seconds = time.time() - tic_
+        feature_compute_seconds = time.time() - tic
         logger.debug(f"compute_targets in total took {feature_compute_seconds:.2f}s")
     finally:
         await session.drop_table(
@@ -373,4 +376,5 @@ async def get_target(
     return HistoricalFeaturesMetrics(
         tile_compute_seconds=0,
         feature_compute_seconds=feature_compute_seconds,
+        total_seconds=time.time() - first_tic,
     )

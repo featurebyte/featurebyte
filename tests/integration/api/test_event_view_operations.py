@@ -591,6 +591,7 @@ def check_historical_features_system_metrics(config, historical_feature_table_id
         "tile_compute_seconds",
         "feature_compute_seconds",
         "feature_cache_update_seconds",
+        "total_seconds",
         "metrics_type",
     }
 
