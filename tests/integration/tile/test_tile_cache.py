@@ -123,6 +123,7 @@ async def test_tile_cache(
         graph=feature.graph,
         nodes=[feature.node],
         request_table_name=request_table_name,
+        observation_table_id=None,
     )
     requests = request_set.compute_requests
     assert len(requests) == 1
@@ -153,6 +154,7 @@ async def test_tile_cache(
         graph=feature.graph,
         nodes=[feature.node],
         request_table_name=request_table_name,
+        observation_table_id=None,
     )
     requests = request_set.compute_requests
     assert len(requests) == 0
@@ -172,6 +174,7 @@ async def test_tile_cache(
         graph=feature.graph,
         nodes=[feature.node],
         request_table_name=request_table_name,
+        observation_table_id=None,
     )
     requests = request_set.compute_requests
     assert len(requests) == 1
@@ -202,6 +205,7 @@ async def test_tile_cache(
         graph=feature.graph,
         nodes=[feature.node],
         request_table_name=request_table_name,
+        observation_table_id=None,
     )
     requests = request_set.compute_requests
     assert len(requests) == 0
@@ -222,6 +226,7 @@ async def test_tile_cache(
         graph=feature.graph,
         nodes=[feature.node],
         request_table_name=request_table_name,
+        observation_table_id=None,
     )
     requests = request_set.compute_requests
     assert len(requests) == 1

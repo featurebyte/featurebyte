@@ -9,7 +9,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import SourceType
-from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.models.tile import OnDemandTileSpec, TileSpec, TileType
 from featurebyte.session.snowflake import SnowflakeSession
 
 
@@ -153,7 +153,8 @@ async def test_generate_tiles_on_demand(
     )
 
     await tile_manager_service.generate_tiles_on_demand(
-        mock_snowflake_session, [(mock_snowflake_tile, "temp_entity_table")]
+        mock_snowflake_session,
+        [OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table")],
     )
 
     mock_generate_tiles.assert_called_once()
@@ -185,10 +186,10 @@ async def test_generate_tiles_on_demand__progress_update(
     await tile_manager_service.generate_tiles_on_demand(
         mock_snowflake_session,
         [
-            (mock_snowflake_tile, "temp_entity_table"),
-            (mock_snowflake_tile, "temp_entity_table"),
-            (mock_snowflake_tile, "temp_entity_table"),
-            (mock_snowflake_tile, "temp_entity_table"),
+            OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table"),
+            OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table"),
+            OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table"),
+            OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table"),
         ],
         progress_callback=mock_progress_callback,
     )

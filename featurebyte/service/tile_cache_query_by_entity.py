@@ -8,11 +8,11 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, Iterator, Optional, cast
 
-from redis import Redis
+from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
-from featurebyte.common.progress import divide_progress_callback
+from featurebyte.common.progress import ProgressCallbackType
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
@@ -21,25 +21,22 @@ from featurebyte.models.tile_cache import (
     OnDemandTileComputeRequestSet,
     TileInfoKey,
 )
-from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
-    apply_serving_names_mapping,
     get_qualified_column_identifier,
     quoted_identifier,
     sql_to_string,
 )
-from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
-from featurebyte.query_graph.sql.source_info import SourceInfo
+from featurebyte.query_graph.sql.interpreter import TileGenSql
 from featurebyte.query_graph.sql.tile_util import (
     construct_entity_table_query,
     get_earliest_tile_start_date_expr,
     get_previous_job_epoch_expr,
 )
+from featurebyte.service.tile_cache_query_base import BaseTileCacheQueryService
 from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, BaseSession
 from featurebyte.session.session_helper import run_coroutines
 
@@ -101,45 +98,39 @@ class TileCacheStatus:
             yield self.subset(keys)
 
 
-class TileCacheQueryByEntityService:
+class TileCacheQueryByEntityService(BaseTileCacheQueryService):
     """Responsible for on-demand tile computation for historical features
 
     This service uses entity level tracker tables in the data warehouse to determine whether tile
     tables are up-to-date, and if not, constructs a set of queries to compute the tile tables.
     """
 
-    def __init__(self, redis: Redis[Any]):
-        self.redis = redis
-
-    async def get_required_computation(
+    async def get_required_computation_impl(
         self,
+        tile_infos: list[TileGenSql],
         session: BaseSession,
         feature_store: FeatureStoreModel,
         request_id: str,
-        graph: QueryGraph,
-        nodes: list[Node],
         request_table_name: str,
-        serving_names_mapping: dict[str, str] | None = None,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        observation_table_id: Optional[ObjectId],
+        progress_callback: Optional[ProgressCallbackType] = None,
     ) -> OnDemandTileComputeRequestSet:
         """Query the entity tracker tables and obtain a list of tile computations that are required
 
         Parameters
         ----------
+        tile_infos : list[TileGenSql]
+            List of all TileGenSql extracted from the query graph
         session : BaseSession
             Data warehouse session
         feature_store: FeatureStoreModel
             Feature store model
         request_id : str
             Request ID
-        graph : QueryGraph
-            Query graph
-        nodes : list[Node]
-            List of query graph node
         request_table_name : str
             Request table name to use
-        serving_names_mapping : dict[str, str] | None
-            Optional mapping from original serving name to new serving name
+        observation_table_id : Optional[ObjectId]
+            Observation table ID
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
 
@@ -147,18 +138,10 @@ class TileCacheQueryByEntityService:
         -------
         OnDemandTileComputeRequestSet
         """
-        if progress_callback is None:
-            graph_progress, query_progress = None, None
-        else:
-            graph_progress, query_progress = divide_progress_callback(
-                progress_callback, at_percent=20
-            )
+        unique_tile_infos = self.get_unique_tile_infos(tile_infos)
         tile_cache_status = await self._get_tile_cache_status(
             session=session,
-            graph=graph,
-            nodes=nodes,
-            serving_names_mapping=serving_names_mapping,
-            progress_callback=graph_progress,
+            unique_tile_infos=unique_tile_infos,
         )
 
         # Check tile cache availability concurrently in batches
@@ -168,9 +151,9 @@ class TileCacheQueryByEntityService:
         async def done_callback() -> None:
             nonlocal processed
             processed += 1
-            if query_progress is not None:
+            if progress_callback is not None:
                 pct = int(100 * processed / len(batches))
-                await query_progress(pct, "Checking tile cache availability")
+                await progress_callback(pct, "Checking tile cache availability")
 
         coroutines = []
         for i, subset_tile_cache_status in enumerate(batches):
@@ -255,10 +238,7 @@ class TileCacheQueryByEntityService:
     async def _get_tile_cache_status(
         self,
         session: BaseSession,
-        graph: QueryGraph,
-        nodes: list[Node],
-        serving_names_mapping: dict[str, str] | None = None,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        unique_tile_infos: dict[TileInfoKey, TileGenSql],
     ) -> TileCacheStatus:
         """Get a TileCacheStatus object that corresponds to the graph and nodes
 
@@ -266,26 +246,13 @@ class TileCacheQueryByEntityService:
         ----------
         session: BaseSession
             Data warehouse session
-        graph : QueryGraph
-            Query graph
-        nodes : list[Node]
-            List of query graph node
-        serving_names_mapping : dict[str, str] | None
-            Optional mapping from original serving name to new serving name
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
-            Optional progress callback function
+        unique_tile_infos: dict[TileInfoKey, TileGenSql]
+            Mapping from tile identifier to TileGenSql
 
         Returns
         -------
         TileCacheStatus
         """
-        unique_tile_infos = await self._get_unique_tile_infos(
-            graph=graph,
-            nodes=nodes,
-            source_info=session.get_source_info(),
-            serving_names_mapping=serving_names_mapping,
-            progress_callback=progress_callback,
-        )
         keys_with_tracker = await self._filter_keys_with_tracker(
             session, list(unique_tile_infos.keys())
         )
@@ -293,53 +260,6 @@ class TileCacheQueryByEntityService:
             unique_tile_infos=unique_tile_infos,
             keys_with_tracker=keys_with_tracker,
         )
-
-    @classmethod
-    async def _get_unique_tile_infos(
-        cls,
-        graph: QueryGraph,
-        nodes: list[Node],
-        source_info: SourceInfo,
-        serving_names_mapping: dict[str, str] | None,
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-    ) -> dict[TileInfoKey, TileGenSql]:
-        """Construct mapping from aggregation id to TileGenSql for easier manipulation
-
-        Parameters
-        ----------
-        graph : QueryGraph
-            Query graph
-        nodes : list[Node]
-            List of query graph node
-        source_info : SourceInfo
-            Source information
-        serving_names_mapping : dict[str, str] | None
-            Optional mapping from original serving name to new serving name
-        progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
-            Optional progress callback function
-
-        Returns
-        -------
-        dict[TileInfoKey, TileGenSql]
-        """
-        out = {}
-        interpreter = GraphInterpreter(graph, source_info=source_info)
-        for i, node in enumerate(nodes):
-            infos = interpreter.construct_tile_gen_sql(node, is_on_demand=True)
-            for info in infos:
-                if info.aggregation_id not in out:
-                    if serving_names_mapping is not None:
-                        info.serving_names = apply_serving_names_mapping(
-                            info.serving_names, serving_names_mapping
-                        )
-                    out[TileInfoKey.from_tile_info(info)] = info
-            if i % 10 == 0 and progress_callback is not None:
-                await progress_callback(
-                    int((i + 1) / len(nodes) * 100), "Checking tile cache availability"
-                )
-        if progress_callback is not None:
-            await progress_callback(100, "Checking tile cache availability")
-        return out
 
     @classmethod
     async def _filter_keys_with_tracker(
@@ -663,6 +583,7 @@ class TileCacheQueryByEntityService:
             tile_table_id=tile_info.tile_table_id,
             aggregation_id=aggregation_id,
             tracker_sql=sql_to_string(entity_table_expr, source_type=adapter.source_type),
+            observation_table_id=None,
             tile_compute_sql=tile_compute_sql,
             tile_gen_info=tile_info,
         )

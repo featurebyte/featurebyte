@@ -5,7 +5,7 @@ TileManagerService class
 from __future__ import annotations
 
 import time
-from typing import Any, Callable, Coroutine, List, Optional, Tuple
+from typing import Any, Callable, Coroutine, List, Optional
 
 from redis import Redis
 
@@ -13,9 +13,10 @@ from featurebyte.enum import InternalName
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
-from featurebyte.models.tile import TileScheduledJobParameters, TileSpec, TileType
+from featurebyte.models.tile import OnDemandTileSpec, TileScheduledJobParameters, TileSpec, TileType
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.observation_table_tile_cache import ObservationTableTileCacheService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -43,6 +44,7 @@ class TileManagerService:
         tile_registry_service: TileRegistryService,
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
+        observation_table_tile_cache_service: ObservationTableTileCacheService,
         redis: Redis[Any],
     ):
         self.online_store_table_version_service = online_store_table_version_service
@@ -51,12 +53,13 @@ class TileManagerService:
         self.tile_registry_service = tile_registry_service
         self.feature_service = feature_service
         self.feature_store_service = feature_store_service
+        self.observation_table_tile_cache_service = observation_table_tile_cache_service
         self.redis = redis
 
     async def generate_tiles_on_demand(
         self,
         session: BaseSession,
-        tile_inputs: List[Tuple[TileSpec, str]],
+        tile_inputs: List[OnDemandTileSpec],
         progress_callback: Optional[Callable[[int, str], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         """
@@ -84,7 +87,7 @@ class TileManagerService:
         if progress_callback:
             await progress_callback(0, "Computing tiles on demand")
 
-        feature_store_id = tile_inputs[0][0].feature_store_id
+        feature_store_id = tile_inputs[0].tile_spec.feature_store_id
         max_query_currency = None
         if feature_store_id:
             try:
@@ -96,12 +99,11 @@ class TileManagerService:
                 pass
 
         coroutines = []
-        for tile_spec, entity_table in tile_inputs:
+        for on_demand_tile_spec in tile_inputs:
             coroutines.append(
                 self._generate_tiles_on_demand_for_tile_spec(
                     session=session,
-                    tile_spec=tile_spec,
-                    entity_table=entity_table,
+                    on_demand_tile_spec=on_demand_tile_spec,
                     progress_callback=_progress_callback,
                 )
             )
@@ -110,32 +112,44 @@ class TileManagerService:
     async def _generate_tiles_on_demand_for_tile_spec(
         self,
         session: BaseSession,
-        tile_spec: TileSpec,
-        entity_table: str,
+        on_demand_tile_spec: OnDemandTileSpec,
         progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         tic = time.time()
         session = await session.clone_if_not_threadsafe()
         await self.generate_tiles(
             session=session,
-            tile_spec=tile_spec,
+            tile_spec=on_demand_tile_spec.tile_spec,
             tile_type=TileType.OFFLINE,
             start_ts_str=None,
             end_ts_str=None,
         )
         logger.debug(
             "Done generating tiles",
-            extra={"tile_id": tile_spec.tile_id, "duration": time.time() - tic},
+            extra={"tile_id": on_demand_tile_spec.tile_spec.tile_id, "duration": time.time() - tic},
         )
 
         tic = time.time()
-        await self.update_tile_entity_tracker(
-            session=session, tile_spec=tile_spec, temp_entity_table=entity_table
-        )
-        logger.debug(
-            "Done update_tile_entity_tracker",
-            extra={"tile_id": tile_spec.tile_id, "duration": time.time() - tic},
-        )
+        if on_demand_tile_spec.tracker_sql is not None:
+            await self.update_tile_entity_tracker(
+                session=session,
+                tile_spec=on_demand_tile_spec.tile_spec,
+                temp_entity_table=on_demand_tile_spec.tracker_sql,
+            )
+            logger.debug(
+                "Done update_tile_entity_tracker",
+                extra={
+                    "tile_id": on_demand_tile_spec.tile_spec.tile_id,
+                    "duration": time.time() - tic,
+                },
+            )
+        if on_demand_tile_spec.observation_table_id is not None:
+            await (
+                self.observation_table_tile_cache_service.add_aggregation_ids_for_observation_table(
+                    observation_table_id=on_demand_tile_spec.observation_table_id,
+                    aggregation_ids=[on_demand_tile_spec.tile_spec.aggregation_id],
+                )
+            )
 
         if progress_callback:
             await progress_callback()
