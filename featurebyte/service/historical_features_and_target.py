@@ -160,8 +160,6 @@ async def get_historical_features(
     -------
     HistoricalFeaturesMetrics
     """
-    first_tic = time.time()
-
     output_include_row_index = (
         isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index is True
     )
@@ -263,7 +261,6 @@ async def get_historical_features(
     return HistoricalFeaturesMetrics(
         tile_compute_seconds=tile_compute_seconds,
         feature_compute_seconds=feature_compute_seconds,
-        total_seconds=time.time() - first_tic,
     )
 
 
@@ -309,8 +306,6 @@ async def get_target(
     -------
     HistoricalFeaturesMetrics
     """
-    first_tic = time.time()
-
     output_include_row_index = (
         isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index is True
     )
@@ -376,5 +371,4 @@ async def get_target(
     return HistoricalFeaturesMetrics(
         tile_compute_seconds=0,
         feature_compute_seconds=feature_compute_seconds,
-        total_seconds=time.time() - first_tic,
     )
