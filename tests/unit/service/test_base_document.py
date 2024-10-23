@@ -351,6 +351,7 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
     compare_pydantic_obj(output, expected=expected)
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "kwargs, expected",
     [
@@ -393,10 +394,10 @@ def test_get_filed_history__existing_field_removal(audit_docs, expected):
         ),
     ],
 )
-def test_construct_list_query_filter(kwargs, expected):
+async def test_construct_list_query_filter(kwargs, expected):
     """Test construct_list_query_filter logic"""
     assert (
-        BaseDocumentService.construct_list_query_filter(
+        await BaseDocumentService.construct_list_query_filter(
             Mock(is_catalog_specific=True, catalog_id="catalog_id"), **kwargs
         )
         == expected

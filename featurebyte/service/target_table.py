@@ -64,22 +64,22 @@ class TargetTableService(BaseMaterializedTableService[TargetTableModel, TargetTa
     def class_name(self) -> str:
         return "TargetTable"
 
-    def _construct_get_query_filter(
+    async def construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
     ) -> QueryFilter:
-        query_filter = super()._construct_get_query_filter(
+        query_filter = await super().construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         query_filter["request_input.type"] = {"$in": ["observation_table", "dataframe"]}
         return query_filter
 
-    def construct_list_query_filter(
+    async def construct_list_query_filter(
         self,
         query_filter: Optional[QueryFilter] = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
-        query_filter = super().construct_list_query_filter(
+        query_filter = await super().construct_list_query_filter(
             query_filter=query_filter, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         query_filter["request_input.type"] = {"$in": ["observation_table", "dataframe"]}
