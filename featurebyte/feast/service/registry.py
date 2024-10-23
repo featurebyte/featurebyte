@@ -337,7 +337,7 @@ class FeastRegistryService(
             document = await self._move_registry_to_storage(recreated_model)
             await self.persistent.update_one(
                 collection_name=self.collection_name,
-                query_filter=self._construct_get_query_filter(document_id=document.id),
+                query_filter=await self.construct_get_query_filter(document_id=document.id),
                 update={
                     "$set": {"registry_path": document.registry_path},
                     "$unset": {"registry": ""},  # remove registry field from older document
