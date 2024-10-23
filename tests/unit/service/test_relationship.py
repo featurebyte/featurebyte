@@ -52,7 +52,7 @@ class FamilyDocumentService(BaseDocumentService):
     ):
         await self.persistent.update_one(
             collection_name=self.collection_name,
-            query_filter=await self.construct_get_query_filter(document_id=document_id),
+            query_filter=self._construct_get_query_filter(document_id=document_id),
             update={"$set": data.model_dump(exclude_none=exclude_none)},
             user_id=self.user.id,
         )

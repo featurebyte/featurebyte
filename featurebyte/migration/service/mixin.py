@@ -88,9 +88,7 @@ class BaseMigrationServiceMixin:
         if query_filter is None:
             with self.delegate_service.allow_use_raw_query_filter():
                 query_filter = dict(
-                    await self.delegate_service.construct_list_query_filter(
-                        use_raw_query_filter=True
-                    )
+                    self.delegate_service.construct_list_query_filter(use_raw_query_filter=True)
                 )
 
         logger.info(
