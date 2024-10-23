@@ -268,7 +268,7 @@ def test_databricks_specs(
             },
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1__no_entity_6m",
+            table_name="feature_engineering.some_schema.cat1__no_entity_15m",
             lookup_key=["__featurebyte_dummy_entity"],
             timestamp_lookup_key=timestamp_lookup_key,
             lookback_window=None,
@@ -402,8 +402,8 @@ def test_list_feature_table_names(databricks_deployment, cust_id_30m_suffix):
     """Test list feature table names"""
     output = databricks_deployment.databricks.list_feature_table_names()
     assert output == [
+        "feature_engineering.some_schema.cat1__no_entity_15m",
         "feature_engineering.some_schema.cat1__no_entity_30m",
-        "feature_engineering.some_schema.cat1__no_entity_6m",
         f"feature_engineering.some_schema.cat1_cust_id_30m_via_transaction_id_{cust_id_30m_suffix}",
         "feature_engineering.some_schema.cat1_transaction_id_1d",
     ]

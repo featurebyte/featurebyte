@@ -401,12 +401,12 @@ def test_sdk_code_generation__item_view_cosine_similarity_feature(
     grouped_1 = item_view.groupby("cust_id_event_table", category="item_id_col").aggregate_over(
         value_column="item_amount",
         method=AggFunc.SUM,
-        windows=["90d"],
-        feature_names=["sum_item_amount_over_90d"],
+        windows=["45d"],
+        feature_names=["sum_item_amount_over_45d"],
     )
-    feat_1 = grouped_1["sum_item_amount_over_90d"]
+    feat_1 = grouped_1["sum_item_amount_over_45d"]
     output = feat.cd.cosine_similarity(other=feat_1)
-    output.name = "sum_item_amount_over_30d_cosine_similarity_sum_item_amount_over_90d"
+    output.name = "sum_item_amount_over_30d_cosine_similarity_sum_item_amount_over_45d"
 
     # save feature so that the graph is pruned
     output.save()

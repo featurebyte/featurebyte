@@ -111,7 +111,7 @@ def test_empty_groupby_keys(snowflake_event_view_with_entity):
         method="count",
         windows=["30d"],
         feature_names=["feat_count"],
-        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="6m", offset="3m"),
+        feature_job_setting=FeatureJobSetting(blind_spot="1m30s", period="60m", offset="3m"),
     )
     feature_dict = feature_group["feat_count"].model_dump()
     node = get_node(feature_dict["graph"], "groupby_1")
