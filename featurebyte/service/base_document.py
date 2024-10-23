@@ -299,7 +299,7 @@ class BaseDocumentService(
         )
         return dict(document.model_dump(by_alias=True))
 
-    def _construct_get_query_filter(
+    async def construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
     ) -> QueryFilter:
         """
@@ -371,7 +371,7 @@ class BaseDocumentService(
         DocumentNotFoundError
             If the requested document not found
         """
-        query_filter = self._construct_get_query_filter(
+        query_filter = await self.construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         document_dict = await self.persistent.find_one(
@@ -467,7 +467,7 @@ class BaseDocumentService(
         # check if document is modifiable
         self._check_document_modifiable(document=document_dict)
 
-        query_filter = self._construct_get_query_filter(
+        query_filter = await self.construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         num_of_records_deleted = await self.persistent.delete_one(
@@ -504,7 +504,7 @@ class BaseDocumentService(
         int
             number of records deleted
         """
-        query_filter = self.construct_list_query_filter(
+        query_filter = await self.construct_list_query_filter(
             query_filter=query_filter,
             use_raw_query_filter=use_raw_query_filter,
             **kwargs,
@@ -566,7 +566,7 @@ class BaseDocumentService(
             update={"$set": {"is_deleted": True}},
         )
 
-    def construct_list_query_filter(
+    async def construct_list_query_filter(
         self,
         query_filter: Optional[QueryFilter] = None,
         use_raw_query_filter: bool = False,
@@ -659,7 +659,7 @@ class BaseDocumentService(
             If the persistent query is not supported
         """
         sort_by = sort_by or [("created_at", "desc")]
-        query_filter = self.construct_list_query_filter(
+        query_filter = await self.construct_list_query_filter(
             use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         try:
@@ -707,7 +707,7 @@ class BaseDocumentService(
             If the persistent query is not supported
         """
         sort_by = sort_by or [("created_at", "desc")]
-        query_filter = self.construct_list_query_filter(
+        query_filter = await self.construct_list_query_filter(
             use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         try:
@@ -794,7 +794,7 @@ class BaseDocumentService(
                 document = await self._populate_remote_attributes(document=document)
             yield document
 
-    def _construct_list_audit_query_filter(
+    async def _construct_list_audit_query_filter(
         self, query_filter: Optional[QueryFilter], **kwargs: Any
     ) -> QueryFilter:
         """
@@ -849,7 +849,9 @@ class BaseDocumentService(
         dict[str, Any]
             List of documents fulfilled the filtering condition
         """
-        query_filter = self._construct_list_audit_query_filter(query_filter=query_filter, **kwargs)
+        query_filter = await self._construct_list_audit_query_filter(
+            query_filter=query_filter, **kwargs
+        )
         docs, total = await self.persistent.get_audit_logs(
             collection_name=self.collection_name,
             document_id=document_id,
@@ -1167,7 +1169,7 @@ class BaseDocumentService(
             # only update if change is detected
             await self.persistent.update_one(
                 collection_name=self.collection_name,
-                query_filter=self._construct_get_query_filter(document_id=document.id),
+                query_filter=await self.construct_get_query_filter(document_id=document.id),
                 update={"$set": update_dict},
                 user_id=self.user.id,
                 disable_audit=self.should_disable_audit,

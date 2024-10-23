@@ -116,7 +116,7 @@ class FeatureMaterializePrerequisiteService(
         document = await self.get_or_create_for_feature_table(
             offline_store_feature_table_id, scheduled_job_ts
         )
-        query_filter = self._construct_get_query_filter(document.id)
+        query_filter = await self.construct_get_query_filter(document.id)
         await self.update_documents(
             query_filter=query_filter,
             update={"$push": {"completed": prerequisite_tile_task.model_dump(by_alias=True)}},
