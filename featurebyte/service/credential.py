@@ -52,10 +52,10 @@ class CredentialService(
         )
         self.feature_store_service = feature_store_service
 
-    async def construct_get_query_filter(
+    def _construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
     ) -> QueryFilter:
-        query_filter = await super().construct_get_query_filter(
+        query_filter = super()._construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         # credentials are personal to the user
@@ -63,13 +63,13 @@ class CredentialService(
             query_filter["user_id"] = self.user.id
         return query_filter
 
-    async def construct_list_query_filter(
+    def construct_list_query_filter(
         self,
         query_filter: Optional[QueryFilter] = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
-        output = await super().construct_list_query_filter(
+        output = super().construct_list_query_filter(
             query_filter=query_filter,
             use_raw_query_filter=use_raw_query_filter,
             **kwargs,

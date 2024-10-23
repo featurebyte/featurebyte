@@ -58,7 +58,7 @@ class OfflineStoreFeatureTableMigrationServiceV9(BaseMongoCollectionMigration):
         sanity_check_sample_size = 10
 
         # use the normal query filter (contains catalog ID filter)
-        query_filter = await self.delegate_service.construct_list_query_filter()
+        query_filter = self.delegate_service.construct_list_query_filter()
         total_before = await self.get_total_record(query_filter=query_filter)
 
         # migrate all records
