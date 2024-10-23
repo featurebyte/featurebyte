@@ -36,6 +36,7 @@ class HistoricalFeaturesMetrics(FeatureByteBaseModel):
     tile_compute_seconds: Optional[float] = None
     feature_compute_seconds: Optional[float] = None
     feature_cache_update_seconds: Optional[float] = None
+    total_seconds: Optional[float] = None
     metrics_type: Literal[SystemMetricsType.HISTORICAL_FEATURES] = (
         SystemMetricsType.HISTORICAL_FEATURES
     )
@@ -65,6 +66,7 @@ class ScheduledFeatureMaterializeMetrics(FeatureByteBaseModel):
     generate_precomputed_lookup_feature_tables_seconds: Optional[float] = None
     update_feature_tables_seconds: Optional[float] = None
     online_materialize_seconds: Optional[float] = None
+    total_seconds: Optional[float] = None
     metrics_type: Literal[SystemMetricsType.SCHEDULED_FEATURE_MATERIALIZE] = (
         SystemMetricsType.SCHEDULED_FEATURE_MATERIALIZE
     )

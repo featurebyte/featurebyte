@@ -617,13 +617,15 @@ class FeatureMaterializeService:
         Exception
             If any error occurs during the materialization process
         """
+        first_tic = time.time()
+
         if feature_materialize_run_id is not None:
             await self.feature_materialize_run_service.update_feature_materialize_ts(
                 feature_materialize_run_id, datetime.utcnow()
             )
 
         try:
-            await self._scheduled_materialize_features(feature_table_model)
+            metrics_data = await self._scheduled_materialize_features(feature_table_model)
         except Exception:
             if feature_materialize_run_id is not None:
                 await self.feature_materialize_run_service.set_completion(
@@ -636,10 +638,13 @@ class FeatureMaterializeService:
                 feature_materialize_run_id, datetime.utcnow(), "success"
             )
 
+        metrics_data.total_seconds = time.time() - first_tic
+        await self.system_metrics_service.create_metrics(metrics_data)
+
     async def _scheduled_materialize_features(
         self,
         feature_table_model: OfflineStoreFeatureTableModel,
-    ) -> None:
+    ) -> ScheduledFeatureMaterializeMetrics:
         session = await self._get_session(feature_table_model)
         feature_tables = []
         feature_timestamp = None
@@ -697,8 +702,7 @@ class FeatureMaterializeService:
                         end_date=feature_timestamp,  # type: ignore
                     )
         metrics_data.online_materialize_seconds = time.time() - tic
-
-        await self.system_metrics_service.create_metrics(metrics_data)
+        return metrics_data
 
     async def initialize_new_columns(
         self,
