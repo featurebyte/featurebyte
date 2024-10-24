@@ -21,6 +21,7 @@ class TestTaskPayload(BaseTaskPayload):
     # class variables
     command: ClassVar[WorkerCommand] = WorkerCommand.TEST
     is_revocable: ClassVar[bool] = True
+    is_rerunnable: ClassVar[bool] = True
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
@@ -47,6 +48,7 @@ class TestIOTaskPayload(TestTaskPayload):
     # class variables
     command: ClassVar[WorkerCommand] = WorkerCommand.IO_TEST
     is_revocable: ClassVar[bool] = False
+    is_rerunnable: ClassVar[bool] = False
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.IO_TASK)
