@@ -91,7 +91,6 @@ async def invoke_tile_manager_and_check_tracker_table(
         ]
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "bigquery"], indirect=True)
 @pytest.mark.parametrize("groupby_category", [None, "PRODUCT_ACTION"])
 @pytest.mark.asyncio
 async def test_tile_cache(
