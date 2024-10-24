@@ -9,6 +9,7 @@ from featurebyte import FeatureJobSetting
 from featurebyte.enum import InternalName
 from featurebyte.models.tile_cache import OnDemandTileComputeRequest
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.session.base import BaseSession
 
 
 @pytest.fixture(name="feature_for_tile_cache_tests")
@@ -60,18 +61,14 @@ async def check_entity_table_sql_and_tile_compute_sql(
     assert df_tiles[entity_column].isin(expected_entities[entity_column]).all()
 
 
-async def check_temp_tables_cleaned_up(session):
+async def check_temp_tables_cleaned_up(session: BaseSession, request_set):
     """Check that temp tables are properly cleaned up"""
-    if session.source_type == "snowflake":
-        df_tables = await session.execute_query("SHOW TABLES")
-        temp_table_names = df_tables[df_tables["kind"] == "TEMPORARY"]["name"].tolist()
-    elif session.source_type == "spark":
-        df_tables = await session.execute_query("SHOW VIEWS")
-        temp_table_names = df_tables[df_tables["isTemporary"] == "true"]["viewName"].tolist()
-    else:
-        raise NotImplementedError()
-    temp_table_names = [name.upper() for name in temp_table_names]
-    assert InternalName.TILE_CACHE_WORKING_TABLE.value not in temp_table_names
+    tables = await session.list_tables(
+        database_name=session.database_name, schema_name=session.schema_name
+    )
+    table_names = [table.name for table in tables]
+    for table_name in request_set.materialized_temp_table_names:
+        assert table_name not in table_names
 
 
 async def invoke_tile_manager_and_check_tracker_table(
@@ -83,7 +80,7 @@ async def invoke_tile_manager_and_check_tracker_table(
     await tile_cache_service.invoke_tile_manager(requests, session, feature_store)
 
     for request in requests:
-        tracker_table_name = f"{request.aggregation_id}_v2_entity_tracker"
+        tracker_table_name = f"{request.aggregation_id}_v2_entity_tracker".upper()
         df_entity_tracker = await session.execute_query(f"SELECT * FROM {tracker_table_name}")
 
         # The üser id column should be the primary key (unique) of the tracker table
@@ -94,11 +91,10 @@ async def invoke_tile_manager_and_check_tracker_table(
         ]
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark"], indirect=True)
 @pytest.mark.parametrize("groupby_category", [None, "PRODUCT_ACTION"])
 @pytest.mark.asyncio
 async def test_tile_cache(
-    session,
+    session: BaseSession,
     feature_store,
     tile_cache_query_by_entity_service,
     tile_cache_service,
@@ -146,7 +142,7 @@ async def test_tile_cache(
         session, feature_store, tile_cache_service, requests
     )
     await tile_cache_service.cleanup_temp_tables(session, request_set)
-    await check_temp_tables_cleaned_up(session)
+    await check_temp_tables_cleaned_up(session, request_set)
 
     # Cache now exists. No additional compute required for the same request table
     request_id = session.generate_session_unique_id()
@@ -166,8 +162,9 @@ async def test_tile_cache(
         "POINT_IN_TIME": pd.to_datetime(["2001-01-02 10:00:00"] * 2 + ["2001-01-03 10:00:00"] * 2),
         "üser id": [1, 2, 3, 4],
     })
-    await session.register_table(request_table_name, df_training_events)
     request_id = session.generate_session_unique_id()
+    request_table_name = f"{REQUEST_TABLE_NAME}_{request_id}"
+    await session.register_table(request_table_name, df_training_events)
     request_set = await tile_cache_query_by_entity_service.get_required_computation(
         session=session,
         feature_store=feature_store,
@@ -194,7 +191,7 @@ async def test_tile_cache(
         session, feature_store, tile_cache_service, requests
     )
     await tile_cache_service.cleanup_temp_tables(session, request_set)
-    await check_temp_tables_cleaned_up(session)
+    await check_temp_tables_cleaned_up(session, request_set)
 
     # Cache now exists. No additional compute required for the same request table
     request_id = session.generate_session_unique_id()
@@ -250,4 +247,4 @@ async def test_tile_cache(
         session, feature_store, tile_cache_service, requests
     )
     await tile_cache_service.cleanup_temp_tables(session, request_set)
-    await check_temp_tables_cleaned_up(session)
+    await check_temp_tables_cleaned_up(session, request_set)

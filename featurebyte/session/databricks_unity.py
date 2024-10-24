@@ -176,7 +176,7 @@ class DatabricksUnitySession(DatabricksSession):
         try:
             tables = await self.execute_query_interactive(
                 f"SELECT TABLE_NAME, COMMENT FROM `{database_name}`.INFORMATION_SCHEMA.TABLES "
-                f"WHERE TABLE_SCHEMA = '{schema_name}'",
+                f"WHERE TABLE_SCHEMA ILIKE '{schema_name}'",
                 timeout=timeout,
             )
         except self._no_schema_error:
