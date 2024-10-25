@@ -128,6 +128,7 @@ from featurebyte.service.item_table import ExtendedItemTableService, ItemTableSe
 from featurebyte.service.item_table_validation import ItemTableValidationService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.observation_table_tile_cache import ObservationTableTileCacheService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.offline_store_feature_table_comment import (
     OfflineStoreFeatureTableCommentService,
@@ -323,6 +324,7 @@ app_container_config.register_class(ObservationSetHelper)
 app_container_config.register_class(ObservationTableController)
 app_container_config.register_class(ObservationTableDeleteValidator)
 app_container_config.register_class(ObservationTableService)
+app_container_config.register_class(ObservationTableTileCacheService)
 app_container_config.register_class(OfflineStoreFeatureTableConstructionService)
 app_container_config.register_class(OfflineStoreFeatureTableService)
 app_container_config.register_class(OfflineStoreFeatureTableCommentService)
