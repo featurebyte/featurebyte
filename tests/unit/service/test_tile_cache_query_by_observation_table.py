@@ -89,14 +89,6 @@ async def test_get_required_computation(
         "ON_DEMAND_TILE_ENTITY_TABLE_000000000000000000000000"
     }
 
-    # Check the executed queries
-    executed_queries = extract_session_executed_queries(mock_snowflake_session)
-    assert_equal_with_expected_fixture(
-        executed_queries,
-        "tests/fixtures/tile_cache_query_by_observation_table/get_required_computation.sql",
-        update_fixtures,
-    )
-
     # Run on demand tile generation and check again
     tile_manager_inputs = [
         request.to_tile_manager_input(feature_store.id) for request in compute_requests
@@ -105,3 +97,11 @@ async def test_get_required_computation(
     request_set = await _get_required_computation()
     assert len(request_set.compute_requests) == 0
     assert request_set.materialized_temp_table_names == set()
+
+    # Check the executed queries
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/tile_cache_query_by_observation_table/expected_queries.sql",
+        update_fixtures,
+    )
