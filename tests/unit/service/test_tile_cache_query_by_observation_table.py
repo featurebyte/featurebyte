@@ -7,10 +7,10 @@ from unittest.mock import patch
 import pytest
 from bson import ObjectId
 
-from featurebyte.service.observation_table_tile_cache import ObservationTableTileCacheService
 from featurebyte.service.tile_cache_query_by_observation_table import (
     TileCacheQueryByObservationTableService,
 )
+from featurebyte.service.tile_manager import TileManagerService
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
@@ -34,12 +34,12 @@ def service_fixture(app_container) -> TileCacheQueryByObservationTableService:
     return app_container.tile_cache_query_by_observation_table_service
 
 
-@pytest.fixture(name="observation_table_tile_cache_service")
-def observation_table_tile_cache_service_fixture(app_container) -> ObservationTableTileCacheService:
+@pytest.fixture(name="tile_manager_service")
+def tile_manager_service_fixture(app_container) -> TileManagerService:
     """
-    Fixture for TileCacheService
+    Fixture for TileManagerService
     """
-    return app_container.observation_table_tile_cache_service
+    return app_container.tile_manager_service
 
 
 @pytest.fixture(name="observation_table_id")
@@ -53,7 +53,7 @@ def observation_table_id_fixture():
 @pytest.mark.asyncio
 async def test_get_required_computation(
     service,
-    observation_table_tile_cache_service,
+    tile_manager_service,
     mock_snowflake_session,
     feature_store,
     production_ready_feature,
@@ -97,11 +97,11 @@ async def test_get_required_computation(
         update_fixtures,
     )
 
-    # Update observation table tile cache and check again
-    await observation_table_tile_cache_service.add_aggregation_ids_for_observation_table(
-        observation_table_id,
-        production_ready_feature.aggregation_ids,
-    )
+    # Run on demand tile generation and check again
+    tile_manager_inputs = [
+        request.to_tile_manager_input(feature_store.id) for request in compute_requests
+    ]
+    await tile_manager_service.generate_tiles_on_demand(mock_snowflake_session, tile_manager_inputs)
     request_set = await _get_required_computation()
     assert len(request_set.compute_requests) == 0
     assert request_set.materialized_temp_table_names == set()
