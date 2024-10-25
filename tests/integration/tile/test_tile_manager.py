@@ -5,7 +5,7 @@ This module contains integration tests for TileManager
 import pytest
 
 from featurebyte.enum import InternalName
-from featurebyte.models.tile import TileType
+from featurebyte.models.tile import OnDemandTileSpec, TileType
 from featurebyte.session.spark import SparkSession
 
 
@@ -117,7 +117,9 @@ async def test_generate_tiles_on_demand(session, tile_spec, tile_manager_service
         InternalName.TILE_START_DATE_SQL_PLACEHOLDER, "'2022-06-05 23:33:00'"
     ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, "'2022-06-05 23:58:00'")
 
-    await tile_manager_service.generate_tiles_on_demand(session, [(tile_spec, entity_table_query)])
+    await tile_manager_service.generate_tiles_on_demand(
+        session, [OnDemandTileSpec(tile_spec=tile_spec, tracker_sql=entity_table_query)]
+    )
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_spec.tile_id}"
     result = await session.execute_query(sql)
