@@ -54,22 +54,18 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
         observation_table_id: Optional[ObjectId],
         progress_callback: Optional[ProgressCallbackType] = None,
     ) -> OnDemandTileComputeRequestSet:
-        # Only process tile tables that have not been processed for the observation table
+        # Filter tile tables that have not been processed for the observation table
         assert observation_table_id is not None
-        unique_tile_infos = self.get_unique_tile_infos(tile_infos)
-        aggregation_ids = list({
-            tile_info_key.aggregation_id for tile_info_key in unique_tile_infos.keys()
-        })
         non_cached_ids = set(
             await self.observation_table_tile_cache_service.get_non_cached_aggregation_ids(
-                observation_table_id=observation_table_id, aggregation_ids=aggregation_ids
+                observation_table_id=observation_table_id,
+                aggregation_ids=list({tile_info.aggregation_id for tile_info in tile_infos}),
             )
         )
-        unique_tile_infos = {
-            tile_info_key: tile_info
-            for tile_info_key, tile_info in unique_tile_infos.items()
-            if tile_info_key.aggregation_id in non_cached_ids
-        }
+        tile_infos = [
+            tile_info for tile_info in tile_infos if tile_info.aggregation_id in non_cached_ids
+        ]
+        unique_tile_infos = self.get_unique_tile_infos(tile_infos)
 
         # Get the max window sizes for each aggregation_id. This determines the start and end
         # timestamps in the entity table. Each aggregation_id can have more than one TileGenSql.
