@@ -79,10 +79,14 @@ class BaseSqlModel(BaseModel):
         if isinstance(self._session, SnowflakeSession):
             return f"EQUAL_NULL({left_expr}, {right_expr})"
         elif isinstance(self._session, BigQuerySession):
-            # There isn't a null-safe equal operator in BigQuery, so we just use the equal operator.
-            # This should be fine in most cases since we don't support missing values in entity
-            # column anyway.
-            return f"{left_expr} = {right_expr}"
+            # There isn't a null-safe equal operator in BigQuery, but we need to handle this because
+            # this will be used as the join condition in merge operations, specifically in the tile
+            # tables with category columns which can have NULL values.
+
+            def _replace_null(expr: str) -> str:
+                return f"IFNULL(CAST({expr} AS STRING), '__MISSING__')"
+
+            return f"{_replace_null(left_expr)} = {_replace_null(right_expr)}"
 
         return f"{left_expr} <=> {right_expr}"
 
