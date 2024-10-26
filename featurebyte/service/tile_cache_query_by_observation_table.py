@@ -18,7 +18,7 @@ from featurebyte.models.tile_cache import (
     OnDemandTileComputeRequestSet,
 )
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.interpreter import TileGenSql
 from featurebyte.query_graph.sql.tile_util import (
     construct_entity_table_query_for_window,
@@ -73,19 +73,15 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
 
         # Construct tile compute requests
         compute_requests = []
-        materialized_tables_mapping = {}
+        entity_tables_mapping: dict[str, str] = {}
         for tile_info_key, tile_info in unique_tile_infos.items():
-            serving_names = tile_info.serving_names
-            serving_names_tuple = tuple(serving_names)
-            if serving_names_tuple not in materialized_tables_mapping:
-                entity_table_name = await self._materialize_entity_table_for_serving_names(
-                    session=session,
-                    request_table_name=request_table_name,
-                    tile_info=tile_info,
-                    max_window_sizes=max_window_sizes,
-                )
-                materialized_tables_mapping[tuple(serving_names)] = entity_table_name
-            entity_table_name = materialized_tables_mapping[serving_names_tuple]
+            entity_table_name = await self._get_or_materialize_entity_table(
+                entity_tables_mapping=entity_tables_mapping,
+                session=session,
+                request_table_name=request_table_name,
+                tile_info=tile_info,
+                max_window_sizes=max_window_sizes,
+            )
             tile_compute_sql = cast(
                 str,
                 tile_info.sql_template.render(
@@ -108,12 +104,13 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
 
         return OnDemandTileComputeRequestSet(
             compute_requests=compute_requests,
-            materialized_temp_table_names=set(materialized_tables_mapping.values()),
+            materialized_temp_table_names=set(entity_tables_mapping.values()),
         )
 
     @classmethod
-    async def _materialize_entity_table_for_serving_names(
+    async def _get_or_materialize_entity_table(
         cls,
+        entity_tables_mapping: dict[str, str],
         session: BaseSession,
         request_table_name: str,
         tile_info: TileGenSql,
@@ -125,14 +122,17 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
             request_table_name=request_table_name,
             window=max_window_sizes[tile_info.aggregation_id],
         )
-        materialized_table_name = f"ON_DEMAND_TILE_ENTITY_TABLE_{ObjectId()}".upper()
-        await session.create_table_as(
-            TableDetails(
-                database_name=session.database_name,
-                schema_name=session.schema_name,
-                table_name=materialized_table_name,
-                select_expr=entity_table_expr,
-            ),
-            entity_table_expr,
-        )
-        return materialized_table_name
+        key = sql_to_string(entity_table_expr, source_type=session.source_type)
+        if key not in entity_tables_mapping:
+            materialized_table_name = f"ON_DEMAND_TILE_ENTITY_TABLE_{ObjectId()}".upper()
+            await session.create_table_as(
+                TableDetails(
+                    database_name=session.database_name,
+                    schema_name=session.schema_name,
+                    table_name=materialized_table_name,
+                    select_expr=entity_table_expr,
+                ),
+                entity_table_expr,
+            )
+            entity_tables_mapping[key] = materialized_table_name
+        return entity_tables_mapping[key]
