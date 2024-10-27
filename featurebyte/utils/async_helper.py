@@ -11,6 +11,7 @@ from asyncio import Future, Task
 from typing import Any, Coroutine, List
 
 from redis import Redis
+from redis.exceptions import LockNotOwnedError
 
 from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
 
@@ -175,7 +176,7 @@ class RedisFairCountingSemaphore:
         now = time.time()
         while time.time() - now < self._timeout:
             # Acquire lock for semaphore
-            lock = self._redis.lock(self._lock, timeout=1)
+            lock = self._redis.lock(self._lock, timeout=10)
             if lock.acquire(blocking=False):
                 try:
                     identifier = await self._acquire_semaphore()
@@ -189,7 +190,11 @@ class RedisFairCountingSemaphore:
                 finally:
                     # Release lock
                     if lock.owned():
-                        lock.release()
+                        try:
+                            lock.release()
+                        except LockNotOwnedError:
+                            # Lock may have expired before release
+                            pass
             await asyncio.sleep(0.1)
         # Timeout trying to acquire semaphore
         raise TimeoutError(f"Failed to acquire semaphore after {time.time() - now}s")
