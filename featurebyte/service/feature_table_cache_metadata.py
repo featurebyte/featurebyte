@@ -4,14 +4,16 @@ Feature Table Cache service
 
 from __future__ import annotations
 
+import asyncio
 import os
 from typing import Any, List, Optional
 
 from bson import ObjectId
 from redis import Redis
+from redis.exceptions import LockNotOwnedError
 
 from featurebyte.enum import MaterializedTableNamePrefix
-from featurebyte.exception import DocumentConflictError
+from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_table_cache_metadata import (
     CachedDefinitionWithTable,
@@ -25,9 +27,12 @@ from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.storage import Storage
 
+logger = get_logger(__name__)
+
 FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS = int(
     os.getenv("FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS", "1000")
 )
+REDIS_LOCK_TIMEOUT = 240  # a maximum life for the lock in seconds
 
 
 class FeatureTableCacheMetadataService(
@@ -113,6 +118,34 @@ class FeatureTableCacheMetadataService(
         FeatureTableCacheMetadataModel
             Feature Table Cache model
         """
+        while True:
+            logger.info("Trying to acquire lock...")
+            lock = self.redis.lock(
+                f"get_or_create_feature_table_cache:{observation_table_id}",
+                timeout=REDIS_LOCK_TIMEOUT,
+            )
+            if lock.acquire(blocking=False):
+                try:
+                    logger.info("Got lock!")
+                    return await self._get_or_create_feature_table_cache(
+                        observation_table_id, num_columns_to_insert
+                    )
+                finally:
+                    # Release lock
+                    if lock.owned():
+                        try:
+                            lock.release()
+                        except LockNotOwnedError:
+                            # Lock may have expired before release
+                            pass
+            await asyncio.sleep(0.1)
+
+    async def _get_or_create_feature_table_cache(
+        self,
+        observation_table_id: PydanticObjectId,
+        num_columns_to_insert: int,
+    ) -> FeatureTableCacheMetadataModel:
+        logger.info("----> In _get_or_create_feature_table_cache")
         query_filter = {"observation_table_id": observation_table_id}
 
         eligible_cache_metadata = None
@@ -124,6 +157,7 @@ class FeatureTableCacheMetadataService(
                 eligible_cache_metadata = cache_metadata
             num_cache_tables += 1
 
+        logger.info(f"----> In _get_or_create_feature_table_cache: {eligible_cache_metadata}")
         if eligible_cache_metadata is None:
             observation_table = await self.observation_table_service.get_document(
                 document_id=observation_table_id
@@ -135,15 +169,9 @@ class FeatureTableCacheMetadataService(
                 ),
                 feature_definitions=[],
             )
-            try:
-                eligible_cache_metadata = await self.create_document(document)
-            except DocumentConflictError:
-                # A FeatureTableCacheMetadataModel document was created after the existence check.
-                # Retrieve again.
-                return await self.get_or_create_feature_table_cache(
-                    observation_table_id, num_columns_to_insert
-                )
+            eligible_cache_metadata = await self.create_document(document)
 
+        logger.info("----> In _get_or_create_feature_table_cache, returning")
         return eligible_cache_metadata
 
     @staticmethod
