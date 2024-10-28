@@ -3,7 +3,7 @@ Test FeatureManagerService
 """
 
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pandas as pd
 import pytest
@@ -41,6 +41,15 @@ def feature_manager_service(app_container):
     Fixture for a FeatureManagerService
     """
     return app_container.feature_manager_service
+
+
+@pytest.fixture(name="mock_snowflake_session")
+def mock_snowflake_session_fixture(mock_snowflake_session):
+    """
+    Mock SnowflakeSession fixture
+    """
+    mock_snowflake_session.table_exists = AsyncMock()
+    yield mock_snowflake_session
 
 
 @pytest.fixture
