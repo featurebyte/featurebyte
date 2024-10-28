@@ -244,7 +244,9 @@ async def test_get_or_cached_dataframe(service, feature_store_id, mock_snowflake
 
 
 @pytest.mark.asyncio
-async def test_get_or_cached_dataframe(service, feature_store_id, mock_snowflake_session, storage):
+async def test_get_or_cached_dataframe_with_error(
+    service, feature_store_id, mock_snowflake_session, storage
+):
     """
     Test get_or_cache_dataframe when the cached object cannot be retrieved unexpectedly
     """
