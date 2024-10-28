@@ -133,6 +133,27 @@ def mock_redis_fixture():
         yield mock_redis
 
 
+@pytest.fixture(autouse=True)
+def patched_query_cache_unique_identifier():
+    """
+    Patch ObjectId to return a fixed value
+    """
+    current = 0
+
+    def increasing_object_id():
+        # 0-pad with 24 characters
+        nonlocal current
+        out = f"{current:024d}"
+        current += 1
+        return out
+
+    with patch(
+        "featurebyte.service.query_cache_manager.ObjectId",
+        side_effect=increasing_object_id,
+    ):
+        yield
+
+
 @pytest.fixture(name="storage")
 def storage_fixture():
     """
@@ -2093,6 +2114,7 @@ def mock_snowflake_session_fixture():
     )
     session.clone_if_not_threadsafe.return_value = session
     session.create_table_as = partial(SnowflakeSession.create_table_as, session)
+    session.table_exists = partial(SnowflakeSession.table_exists, session)
     session.retry_sql = partial(SnowflakeSession.retry_sql, session)
     session.list_table_schema.return_value = {}
     session.get_source_info.return_value = SourceInfo(

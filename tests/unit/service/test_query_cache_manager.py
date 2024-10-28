@@ -3,14 +3,16 @@ Unit tests for QueryCacheManagerService
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 import pandas as pd
 import pytest
 from freezegun import freeze_time
+from sqlglot import parse_one
 
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.query_cache import QueryCacheType
+from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
 @pytest.fixture(name="document_service")
@@ -126,6 +128,67 @@ async def test_cache_and_get_table(service, periodic_task_service, feature_store
     with freeze_time(datetime.utcnow() + timedelta(days=100)):
         result = await service.get_cached_table(feature_store_id, query)
         assert result is None
+
+
+@pytest.mark.asyncio
+async def test_get_or_cache_table(
+    service, mock_snowflake_session, feature_store_id, update_fixtures
+):
+    """
+    Test get_or_cache_table
+    """
+    table_expr = parse_one("SELECT * FROM table_1")
+    cached_table_name_1 = await service.get_or_cache_table(
+        session=mock_snowflake_session,
+        feature_store_id=feature_store_id,
+        table_expr=table_expr,
+    )
+    cached_table_name_2 = await service.get_or_cache_table(
+        session=mock_snowflake_session,
+        feature_store_id=feature_store_id,
+        table_expr=table_expr,
+    )
+    assert cached_table_name_1 == cached_table_name_2
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/query_cache_manager/get_or_cache_table.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_or_cache_table_with_error(
+    service, mock_snowflake_session, feature_store_id, update_fixtures
+):
+    """
+    Test get_or_cache_table when cached table became invalid unexpectedly
+    """
+    table_expr = parse_one("SELECT * FROM table_1")
+    cached_table_name_1 = await service.get_or_cache_table(
+        session=mock_snowflake_session,
+        feature_store_id=feature_store_id,
+        table_expr=table_expr,
+    )
+
+    # Simulate table not found error for the cached table
+    mock_snowflake_session.table_exists = Mock(
+        side_effect=mock_snowflake_session._no_schema_error("Not found")
+    )
+    cached_table_name_2 = await service.get_or_cache_table(
+        session=mock_snowflake_session,
+        feature_store_id=feature_store_id,
+        table_expr=table_expr,
+    )
+
+    # Query should be executed and cached again
+    assert cached_table_name_1 != cached_table_name_2
+    executed_queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        executed_queries,
+        "tests/fixtures/query_cache_manager/get_or_cache_table_with_error.sql",
+        update_fixtures,
+    )
 
 
 @pytest.mark.asyncio
