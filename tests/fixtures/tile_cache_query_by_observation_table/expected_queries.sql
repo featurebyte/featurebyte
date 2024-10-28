@@ -7,11 +7,11 @@ SELECT
   DATEADD(
     microsecond,
     (
-      1 * 1800 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
-    ) * -1,
-    CAST(FLOOR((
-      DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 300
-    ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+      (
+        300 - 600
+      ) * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
+    ),
+    CAST('1970-01-01' AS TIMESTAMP)
   ) AS __FB_ENTITY_TABLE_START_DATE
 FROM "my_request_table"
 GROUP BY
