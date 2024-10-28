@@ -172,9 +172,7 @@ async def test_get_or_cache_table_with_error(
     )
 
     # Simulate table not found error for the cached table
-    mock_snowflake_session.table_exists = Mock(
-        side_effect=mock_snowflake_session._no_schema_error("Not found")
-    )
+    mock_snowflake_session.table_exists.side_effect = lambda _: False
     cached_table_name_2 = await service.get_or_cache_table(
         session=mock_snowflake_session,
         feature_store_id=feature_store_id,

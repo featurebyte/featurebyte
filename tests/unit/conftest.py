@@ -2113,9 +2113,9 @@ def mock_snowflake_session_fixture():
         _no_schema_error=ProgrammingError,
     )
     session.clone_if_not_threadsafe.return_value = session
-    session.create_table_as = partial(SnowflakeSession.create_table_as, session)
-    session.table_exists = partial(SnowflakeSession.table_exists, session)
-    session.retry_sql = partial(SnowflakeSession.retry_sql, session)
+    session.create_table_as.side_effect = partial(SnowflakeSession.create_table_as, session)
+    session.table_exists.side_effect = partial(SnowflakeSession.table_exists, session)
+    session.retry_sql.side_effect = partial(SnowflakeSession.retry_sql, session)
     session.list_table_schema.return_value = {}
     session.get_source_info.return_value = SourceInfo(
         database_name="sf_db", schema_name="sf_schema", source_type=SourceType.SNOWFLAKE

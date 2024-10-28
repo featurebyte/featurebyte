@@ -82,9 +82,7 @@ class QueryCacheManagerService:
 
         # Check validity of the cached table
         if cached_table_name is not None:
-            try:
-                await session.table_exists(_get_table_details(cached_table_name))
-            except session._no_schema_error:
+            if not await session.table_exists(_get_table_details(cached_table_name)):
                 logger.warning(
                     "Cached table does not exist", extra={"table_name": cached_table_name}
                 )
