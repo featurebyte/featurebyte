@@ -221,6 +221,55 @@ async def test_cache_and_get_dataframe(service, periodic_task_service, feature_s
 
 
 @pytest.mark.asyncio
+async def test_get_or_cached_dataframe(service, feature_store_id, mock_snowflake_session):
+    """
+    Test get_or_cache_dataframe
+    """
+    query = "SELECT * FROM table_1"
+    dataframe = pd.DataFrame({"a": [1, 2, 3]}, index=["x", "y", "z"])
+    mock_snowflake_session.execute_query_long_running.return_value = dataframe
+    result_1 = await service.get_or_cache_dataframe(
+        session=mock_snowflake_session,
+        feature_store_id=feature_store_id,
+        query=query,
+    )
+    result_2 = await service.get_or_cache_dataframe(
+        session=mock_snowflake_session,
+        feature_store_id=feature_store_id,
+        query=query,
+    )
+    pd.testing.assert_frame_equal(result_1, dataframe)
+    pd.testing.assert_frame_equal(result_2, dataframe)
+    assert mock_snowflake_session.execute_query_long_running.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_get_or_cached_dataframe(service, feature_store_id, mock_snowflake_session, storage):
+    """
+    Test get_or_cache_dataframe when the cached object cannot be retrieved unexpectedly
+    """
+    query = "SELECT * FROM table_1"
+    dataframe = pd.DataFrame({"a": [1, 2, 3]}, index=["x", "y", "z"])
+    mock_snowflake_session.execute_query_long_running.return_value = dataframe
+    result_1 = await service.get_or_cache_dataframe(
+        session=mock_snowflake_session,
+        feature_store_id=feature_store_id,
+        query=query,
+    )
+    # Simulate error when retrieving the cached object
+    storage.get_dataframe = Mock(side_effect=FileNotFoundError)
+    result_2 = await service.get_or_cache_dataframe(
+        session=mock_snowflake_session,
+        feature_store_id=feature_store_id,
+        query=query,
+    )
+    # Query should be executed and cached again
+    pd.testing.assert_frame_equal(result_1, dataframe)
+    pd.testing.assert_frame_equal(result_2, dataframe)
+    assert mock_snowflake_session.execute_query_long_running.call_count == 2
+
+
+@pytest.mark.asyncio
 async def test_stop_job_with_queries(
     service, cleanup_scheduler_service, feature_store_id, periodic_task_service
 ):

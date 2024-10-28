@@ -217,7 +217,14 @@ class QueryCacheManagerService:
         # Download the cached dataframe
         cached_object = cache_model.cached_object
         assert isinstance(cached_object, CachedDataFrame)
-        return await self.storage.get_dataframe(Path(cached_object.storage_path))
+        try:
+            return await self.storage.get_dataframe(Path(cached_object.storage_path))
+        except FileNotFoundError:
+            logger.warning(
+                "Cached dataframe does not exist",
+                extra={"query": truncate_query(query)},
+            )
+            return None
 
     async def cache_dataframe(
         self, feature_store_id: ObjectId, query: str, dataframe: pd.DataFrame
