@@ -20,6 +20,7 @@ from featurebyte.models.query_cache import (
     QueryCacheModel,
     QueryCacheType,
 )
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.service.query_cache import QueryCacheDocumentService
 from featurebyte.service.query_cache_cleanup_scheduler import QueryCacheCleanupSchedulerService
@@ -70,14 +71,32 @@ class QueryCacheManagerService:
         """
         query = sql_to_string(table_expr, source_type=session.source_type)
 
+        def _get_table_details(_table_name: str) -> TableDetails:
+            return TableDetails(
+                database_name=session.database_name,
+                schema_name=session.schema_name,
+                table_name=_table_name,
+            )
+
         cached_table_name = await self.get_cached_table(feature_store_id, query)
+
+        # Check validity of the cached table
+        if cached_table_name is not None:
+            if not await session.table_exists(_get_table_details(cached_table_name)):
+                logger.warning(
+                    "Cached table does not exist", extra={"table_name": cached_table_name}
+                )
+                cached_table_name = None
+
         if cached_table_name is None:
             table_name = f"__FB_CACHED_TABLE_{ObjectId()}".upper()
             logger.info(
                 "Caching table for query",
                 extra={"table_name": cached_table_name, "query": truncate_query(query)},
             )
-            await session.create_table_as(table_details=table_name, select_expr=table_expr)
+            await session.create_table_as(
+                table_details=_get_table_details(table_name), select_expr=table_expr
+            )
             await self.cache_table(feature_store_id, query, table_name)
             return table_name
 
@@ -196,7 +215,14 @@ class QueryCacheManagerService:
         # Download the cached dataframe
         cached_object = cache_model.cached_object
         assert isinstance(cached_object, CachedDataFrame)
-        return await self.storage.get_dataframe(Path(cached_object.storage_path))
+        try:
+            return await self.storage.get_dataframe(Path(cached_object.storage_path))
+        except FileNotFoundError:
+            logger.warning(
+                "Cached dataframe does not exist",
+                extra={"query": truncate_query(query)},
+            )
+            return None
 
     async def cache_dataframe(
         self, feature_store_id: ObjectId, query: str, dataframe: pd.DataFrame

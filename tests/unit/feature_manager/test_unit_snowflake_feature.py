@@ -12,7 +12,6 @@ from featurebyte.common.model_util import get_version
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
-from featurebyte.query_graph.node.schema import TableDetails
 
 
 @pytest.fixture(name="mock_snowflake_feature")
@@ -102,16 +101,15 @@ async def test_online_enable(
     # Expected execute_query calls are triggered by TileScheduleOnlineStore:
 
     # 1. Check if online store table exists (execute_query)
-    mock_snowflake_session.table_exists.assert_called_once_with(
-        TableDetails(table_name="ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C")
-    )
+    args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[0]
+    assert args[0].strip().startswith('SELECT\n  *\nFROM "ONLINE_STORE_')
 
     # 2. Compute online store values and store in a temporary table
-    args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[0]
+    args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[1]
     assert args[0].strip().startswith('CREATE TABLE "__SESSION_TEMP_TABLE_')
 
     # 3. Insert into online store table (execute_query_long_running)
-    args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[1]
+    args, _ = mock_snowflake_session.execute_query_long_running.call_args_list[2]
     assert args[0].strip().startswith("INSERT INTO ONLINE_STORE_")
 
 
