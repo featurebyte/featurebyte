@@ -52,7 +52,13 @@ async def test_progress_update(persistent, user_id):
     }
     assert updated_doc["progress"] == expected
     assert updated_doc["progress_history"] == {
-        "data": [{"percent": 50, "message": "Test progress"}]
+        "data": [
+            {
+                "percent": 50,
+                "message": "Test progress",
+                "timestamp": updated_doc["progress_history"]["data"][0]["timestamp"],
+            }
+        ],
     }
 
     # check progress history compression logic
@@ -69,16 +75,56 @@ async def test_progress_update(persistent, user_id):
     assert updated_doc["progress_history"] == {
         "compress_at": 100,
         "data": [
-            {"percent": 91, "message": "Second test progress 91"},
-            {"percent": 92, "message": "Second test progress 92"},
-            {"percent": 93, "message": "Second test progress 93"},
-            {"percent": 94, "message": "Second test progress 94"},
-            {"percent": 95, "message": "Second test progress 95"},
-            {"percent": 96, "message": "Second test progress 96"},
-            {"percent": 97, "message": "Second test progress 97"},
-            {"percent": 98, "message": "Second test progress 98"},
-            {"percent": 99, "message": "Second test progress 99"},
-            {"percent": 100, "message": "Second test progress 100"},
+            {
+                "percent": 91,
+                "message": "Second test progress 91",
+                "timestamp": updated_doc["progress_history"]["data"][0]["timestamp"],
+            },
+            {
+                "percent": 92,
+                "message": "Second test progress 92",
+                "timestamp": updated_doc["progress_history"]["data"][1]["timestamp"],
+            },
+            {
+                "percent": 93,
+                "message": "Second test progress 93",
+                "timestamp": updated_doc["progress_history"]["data"][2]["timestamp"],
+            },
+            {
+                "percent": 94,
+                "message": "Second test progress 94",
+                "timestamp": updated_doc["progress_history"]["data"][3]["timestamp"],
+            },
+            {
+                "percent": 95,
+                "message": "Second test progress 95",
+                "timestamp": updated_doc["progress_history"]["data"][4]["timestamp"],
+            },
+            {
+                "percent": 96,
+                "message": "Second test progress 96",
+                "timestamp": updated_doc["progress_history"]["data"][5]["timestamp"],
+            },
+            {
+                "percent": 97,
+                "message": "Second test progress 97",
+                "timestamp": updated_doc["progress_history"]["data"][6]["timestamp"],
+            },
+            {
+                "percent": 98,
+                "message": "Second test progress 98",
+                "timestamp": updated_doc["progress_history"]["data"][7]["timestamp"],
+            },
+            {
+                "percent": 99,
+                "message": "Second test progress 99",
+                "timestamp": updated_doc["progress_history"]["data"][8]["timestamp"],
+            },
+            {
+                "percent": 100,
+                "message": "Second test progress 100",
+                "timestamp": updated_doc["progress_history"]["data"][9]["timestamp"],
+            },
         ],
     }
     assert updated_doc["progress"] == {"percent": 100, "message": "Second test progress 100"}
