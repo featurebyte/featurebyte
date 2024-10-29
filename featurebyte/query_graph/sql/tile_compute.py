@@ -8,23 +8,18 @@ from typing import Optional, cast
 
 import pandas as pd
 from sqlglot import expressions
-from sqlglot.expressions import Expression, Select, select
+from sqlglot.expressions import Select, select
 
-from featurebyte.common.model_util import parse_duration_string
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
-from featurebyte.query_graph.sql.ast.datetime import TimedeltaExtractNode
-from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tile_util import (
-    construct_entity_table_query,
-    get_earliest_tile_start_date_expr,
-    get_previous_job_epoch_expr,
-    update_maximum_window_size_dict,
+    construct_entity_table_query_for_window,
+    get_max_window_sizes,
 )
 
 
@@ -51,8 +46,8 @@ class OnDemandTileComputePlan:
         source_info: SourceInfo,
     ):
         self.processed_agg_ids: set[str] = set()
-        self.max_window_size_by_tile_id: dict[str, Optional[int]] = {}
         self.tile_infos: list[TileGenSql] = []
+        self.all_tile_infos: list[TileGenSql] = []
         self.request_table_name = request_table_name
         self.source_info = source_info
 
@@ -80,8 +75,7 @@ class OnDemandTileComputePlan:
         tile_gen_info_lst = get_tile_gen_info(graph, node, self.source_info)
 
         for tile_info in tile_gen_info_lst:
-            # The date range of each tile table depends on the feature window sizes.
-            self.update_max_window_size(tile_info)
+            self.all_tile_infos.append(tile_info)
 
             if tile_info.aggregation_id in self.processed_agg_ids:
                 # The same aggregation_id can appear more than once. For example, two groupby
@@ -103,6 +97,12 @@ class OnDemandTileComputePlan:
         tile_sqls: dict[str, Select] = {}
         prev_aliases: dict[str, str] = {}
 
+        # The date range of each tile table depends on the feature window sizes.
+        max_window_size_by_tile_id = get_max_window_sizes(
+            tile_info_list=self.all_tile_infos,
+            key_name="tile_table_id",
+        )
+
         for tile_info in self.tile_infos:
             # Construct tile SQL using an entity table (a table with entity column(s) as the primary
             # key representing the entities of interest) created from the request table and feature
@@ -111,9 +111,10 @@ class OnDemandTileComputePlan:
                 adapter=self.adapter,
                 tile_info=tile_info,
                 request_table_name=self.request_table_name,
-                window=self.get_max_window_size(tile_info.tile_table_id),
+                window=max_window_size_by_tile_id[tile_info.tile_table_id],
             )
 
+            # TODO: simplify the logic below since tile table is no longer wide
             # Build wide tile table by joining tile sqls with the same tile_table_id
             tile_table_id = tile_info.tile_table_id
             agg_id = tile_info.aggregation_id
@@ -156,43 +157,6 @@ class OnDemandTileComputePlan:
                 )
 
         return tile_sqls
-
-    def update_max_window_size(self, tile_info: TileGenSql) -> None:
-        """Update the maximum feature window size observed for each tile table
-
-        Parameters
-        ----------
-        tile_info : TileGenSql
-            Tile table information
-        """
-        tile_id = tile_info.tile_table_id
-        for window in tile_info.windows:
-            if window is not None:
-                window_size = parse_duration_string(window)
-                if tile_info.offset is not None:
-                    window_size += parse_duration_string(tile_info.offset)
-                assert window_size % tile_info.frequency == 0
-            else:
-                window_size = None
-            update_maximum_window_size_dict(
-                max_window_size_dict=self.max_window_size_by_tile_id,
-                key=tile_id,
-                window_size=window_size,
-            )
-
-    def get_max_window_size(self, tile_id: str) -> Optional[int]:
-        """Get the maximum feature window size for a given tile table id
-
-        Parameters
-        ----------
-        tile_id : str
-            Tile table identifier
-
-        Returns
-        -------
-        Optional[int]
-        """
-        return self.max_window_size_by_tile_id[tile_id]
 
     def construct_on_demand_tile_ctes(self) -> CteStatements:
         """Construct the CTE statements that would compute all the required tiles
@@ -289,64 +253,12 @@ def get_tile_sql(
     -------
     Select
     """
-
-    def get_tile_boundary(point_in_time_expr: Expression) -> Expression:
-        previous_job_epoch_expr = get_previous_job_epoch_expr(
-            adapter.to_epoch_seconds(point_in_time_expr), tile_info
-        )
-        return adapter.from_epoch_seconds(
-            expressions.Sub(this=previous_job_epoch_expr, expression=blind_spot)
-        )
-
-    blind_spot = make_literal_value(tile_info.blind_spot)
-    time_modulo_frequency = make_literal_value(tile_info.time_modulo_frequency)
-
-    if window:
-        num_tiles = int(window // tile_info.frequency)
-    else:
-        num_tiles = None
-
-    # Tile end date is determined from the latest point in time per entity
-    end_date_expr = get_tile_boundary(
-        expressions.Max(this=expressions.Identifier(this=SpecialColumnName.POINT_IN_TIME.value))
-    )
-
-    if num_tiles:
-        minus_num_tiles_in_microseconds = expressions.Mul(
-            this=TimedeltaExtractNode.convert_timedelta_unit(
-                expressions.Mul(
-                    this=make_literal_value(num_tiles),
-                    expression=make_literal_value(tile_info.frequency),
-                ),
-                "second",
-                "microsecond",
-            ),
-            expression=make_literal_value(-1),
-        )
-        # Tile start date is determined from the earliest point in time per entity minus the largest
-        # feature window
-        start_date_expr = adapter.dateadd_microsecond(
-            minus_num_tiles_in_microseconds,
-            get_tile_boundary(
-                expressions.Min(
-                    this=expressions.Identifier(this=SpecialColumnName.POINT_IN_TIME.value)
-                )
-            ),
-        )
-    else:
-        start_date_expr = get_earliest_tile_start_date_expr(
-            adapter=adapter,
-            time_modulo_frequency=time_modulo_frequency,
-            blind_spot=blind_spot,
-        )
-
-    entity_table_expr = construct_entity_table_query(
+    entity_table_expr = construct_entity_table_query_for_window(
+        adapter=adapter,
         tile_info=tile_info,
-        entity_source_expr=select().from_(quoted_identifier(request_table_name)),
-        start_date_expr=start_date_expr,
-        end_date_expr=end_date_expr,
+        request_table_name=request_table_name,
+        window=window,
     )
-
     return cast(
         Select,
         tile_info.sql_template.render(

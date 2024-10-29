@@ -6,15 +6,21 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.api.feature_list import FeatureList
+from featurebyte.api.observation_table import ObservationTable
 from featurebyte.common.model_util import validate_job_setting_parameters
 from featurebyte.enum import StrEnum
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.sql.tile_compute import epoch_seconds_to_timestamp, get_epoch_seconds
 from tests.integration.api.dataframe_helper import apply_agg_func_on_filtered_dataframe
-from tests.util.helper import fb_assert_frame_equal, get_lagged_series_pandas
+from tests.util.helper import (
+    create_observation_table_from_dataframe,
+    fb_assert_frame_equal,
+    get_lagged_series_pandas,
+)
 
 logger = get_logger(__name__)
 
@@ -333,6 +339,19 @@ def feature_parameters_fixture():
     return parameters
 
 
+@pytest_asyncio.fixture(name="observation_table", scope="module")
+async def observation_table_fixture(session, data_source, observation_set):
+    """
+    Fixture for observation table
+    """
+    return await create_observation_table_from_dataframe(
+        session=session,
+        df=observation_set,
+        data_source=data_source,
+        serving_names_mapping={"ÜSER ID": "üser id"},
+    )
+
+
 def test_feature_with_target(event_table, observation_set, transaction_data_upper_case):
     """
     Test that feature with target works
@@ -421,10 +440,12 @@ def test_feature_with_target(event_table, observation_set, transaction_data_uppe
 
 def test_aggregate_over(
     transaction_data_upper_case,
-    observation_set,
+    observation_table,
     event_table,
     config,
     feature_parameters,
+    session,
+    data_source,
 ):
     """
     Test that aggregate_over produces correct feature values
@@ -459,6 +480,7 @@ def test_aggregate_over(
 
     df = transaction_data_upper_case.sort_values(event_timestamp_column_name)
 
+    # Test using observation table as a materialized table first, and then as a dataframe
     common_args = (
         df,
         entity_column_name,
@@ -469,16 +491,18 @@ def test_aggregate_over(
         time_modulo_frequency,
         blind_spot,
     )
-    check_aggregate_over(observation_set, *common_args)
+    check_aggregate_over(observation_table, *common_args)
 
     # Test with a subset of data but with POINT_IN_TIME shifted forward to trigger tile updates
-    observation_set_new = observation_set.sample(n=100, random_state=0).reset_index(drop=True)
+    observation_set_df = observation_table.to_pandas()
+    observation_set_df.rename(columns={"üser id": "ÜSER ID"}, inplace=True)
+    observation_set_new = observation_set_df.sample(n=100, random_state=0).reset_index(drop=True)
     observation_set_new["POINT_IN_TIME"] = observation_set_new["POINT_IN_TIME"] + pd.Timedelta("1d")
     check_aggregate_over(observation_set_new, *common_args)
 
 
 def check_aggregate_over(
-    observation_set,
+    observation_set: pd.DataFrame | ObservationTable,
     df,
     entity_column_name,
     event_timestamp_column_name,
@@ -488,7 +512,14 @@ def check_aggregate_over(
     time_modulo_frequency,
     blind_spot,
 ):
-    df_expected_all = [observation_set]
+    if not isinstance(observation_set, pd.DataFrame):
+        observation_set_df = observation_set.to_pandas()
+        # get_expected_feature_values expects "ÜSER ID" in the observation dataframe
+        observation_set_df.rename(columns={"üser id": "ÜSER ID"}, inplace=True)
+    else:
+        observation_set_df = observation_set
+
+    df_expected_all = [observation_set_df]
     utc_event_timestamps = pd.to_datetime(df[event_timestamp_column_name], utc=True).dt.tz_localize(
         None
     )
@@ -527,7 +558,7 @@ def check_aggregate_over(
             offset_size = None
         df_expected = get_expected_feature_values(
             FeatureKind.AGGREGATE_OVER,
-            observation_set,
+            observation_set_df,
             feature_name,
             ExpectedEventFeatureValueParams(
                 df=df,
@@ -556,10 +587,19 @@ def check_aggregate_over(
     check_feature_preview(feature_list, df_expected, dict_like_columns)
 
     tic = time.time()
-    df_historical_features = feature_list.compute_historical_features(
-        observation_set,
-        serving_names_mapping={"üser id": "ÜSER ID"},
-    )
+    if isinstance(observation_set, pd.DataFrame):
+        df_historical_features = feature_list.compute_historical_features(
+            observation_set,
+            serving_names_mapping={"üser id": "ÜSER ID"},
+        )
+    else:
+        df_historical_features_table = feature_list.compute_historical_feature_table(
+            observation_set,
+            historical_feature_table_name=str(ObjectId()),
+        )
+        df_historical_features = df_historical_features_table.to_pandas()
+        df_historical_features.rename(columns={"üser id": "ÜSER ID"}, inplace=True)
+
     elapsed_historical = time.time() - tic
     logger.debug(f"elapsed historical: {elapsed_historical}")
 

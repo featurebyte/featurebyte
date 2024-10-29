@@ -179,6 +179,9 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile.tile_task_executor import TileTaskExecutor
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.tile_cache_query_by_entity import TileCacheQueryByEntityService
+from featurebyte.service.tile_cache_query_by_observation_table import (
+    TileCacheQueryByObservationTableService,
+)
 from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -413,6 +416,7 @@ app_container_config.register_class(TaskManager)
 app_container_config.register_class(TempDataController)
 app_container_config.register_class(TileCacheService)
 app_container_config.register_class(TileCacheQueryByEntityService)
+app_container_config.register_class(TileCacheQueryByObservationTableService)
 app_container_config.register_class(TileColumnTypeExtractor)
 app_container_config.register_class(TileJobLogService)
 app_container_config.register_class(TileManagerService)
