@@ -134,6 +134,16 @@ class TileSpec(FeatureByteBaseModel):
         return self
 
 
+class OnDemandTileSpec(FeatureByteBaseModel):
+    """
+    Model for OnDemandTileSpec
+    """
+
+    tile_spec: TileSpec
+    tracker_sql: Optional[str] = None
+    observation_table_id: Optional[PydanticObjectId] = None
+
+
 class TileCommonParameters(FeatureByteBaseModel):
     """
     Model for common parameters used by various steps within a tile scheduled job

@@ -49,6 +49,7 @@ async def compute_tiles_on_demand(
     request_table_columns: list[str],
     feature_store_id: ObjectId,
     serving_names_mapping: Optional[dict[str, str]],
+    observation_table_id: Optional[ObjectId],
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
 ) -> None:
@@ -76,6 +77,8 @@ async def compute_tiles_on_demand(
     serving_names_mapping : dict[str, str] | None
         Optional serving names mapping if the training events data has different serving name
         columns than those defined in Entities
+    observation_table_id : Optional[ObjectId]
+        Observation table ID if available
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -106,6 +109,7 @@ async def compute_tiles_on_demand(
             request_id=request_id,
             request_table_name=effective_request_table_name,
             feature_store_id=feature_store_id,
+            observation_table_id=observation_table_id,
             serving_names_mapping=serving_names_mapping,
             progress_callback=progress_callback,
         )
@@ -163,6 +167,9 @@ async def get_historical_features(
     output_include_row_index = (
         isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index is True
     )
+    observation_table_id = (
+        observation_set.id if isinstance(observation_set, ObservationTableModel) else None
+    )
     observation_set = get_internal_observation_set(observation_set)
 
     # Validate request
@@ -201,6 +208,7 @@ async def get_historical_features(
             request_table_columns=request_table_columns,
             feature_store_id=feature_store.id,
             serving_names_mapping=serving_names_mapping,
+            observation_table_id=observation_table_id,
             parent_serving_preparation=parent_serving_preparation,
             progress_callback=(
                 tile_cache_progress_callback if tile_cache_progress_callback else None
