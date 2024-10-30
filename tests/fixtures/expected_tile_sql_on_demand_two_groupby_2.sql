@@ -1,8 +1,7 @@
 SELECT
   index,
-  "cust_id",
-  SUM("a") AS sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35,
-  COUNT("a") AS count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35
+  "biz_id",
+  SUM("a") AS value_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774
 FROM (
   SELECT
     *,
@@ -25,11 +24,11 @@ FROM (
         ) AS "c"
       FROM "db"."public"."event_table"
     ) AS R
-      ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+      ON R."biz_id" = __FB_ENTITY_TABLE_NAME."biz_id"
       AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
       AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
   )
 )
 GROUP BY
   index,
-  "cust_id"
+  "biz_id"

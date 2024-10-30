@@ -2,8 +2,6 @@
 Tests for Join SQLNode
 """
 
-import textwrap
-
 import pytest
 from pydantic import ValidationError
 
@@ -12,6 +10,7 @@ from featurebyte.query_graph.node.generic import JoinNode
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture(name="item_table_join_event_table_filtered_node")
@@ -64,7 +63,7 @@ def derived_expression_from_join_node(global_graph, item_table_join_event_table_
 
 
 def test_item_table_join_event_table_attributes(
-    global_graph, item_table_join_event_table_node, source_info
+    global_graph, item_table_join_event_table_node, source_info, update_fixtures
 ):
     """
     Test SQL generation for ItemTable joined with EventTable
@@ -73,47 +72,15 @@ def test_item_table_join_event_table_attributes(
         global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
     )
     sql_tree = sql_graph.build(item_table_join_event_table_node).sql
-    expected = textwrap.dedent(
-        """
-        SELECT
-          L."order_method" AS "order_method",
-          R."order_id" AS "order_id",
-          R."item_id" AS "item_id",
-          R."item_name" AS "item_name",
-          R."item_type" AS "item_type"
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "order_id" AS "order_id",
-            "order_method" AS "order_method"
-          FROM "db"."public"."event_table"
-        ) AS L
-        INNER JOIN (
-          SELECT
-            "order_id",
-            ANY_VALUE("item_id") AS "item_id",
-            ANY_VALUE("item_name") AS "item_name",
-            ANY_VALUE("item_type") AS "item_type"
-          FROM (
-            SELECT
-              "order_id" AS "order_id",
-              "item_id" AS "item_id",
-              "item_name" AS "item_name",
-              "item_type" AS "item_type"
-            FROM "db"."public"."item_table"
-          )
-          GROUP BY
-            "order_id"
-        ) AS R
-          ON L."order_id" = R."order_id"
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_join/test_item_table_join_event_table_attributes.sql",
+        update_fixtures,
+    )
 
 
 def test_item_table_join_event_table_attributes_with_filter(
-    global_graph, item_table_join_event_table_filtered_node, source_info
+    global_graph, item_table_join_event_table_filtered_node, source_info, update_fixtures
 ):
     """
     Test SQL generation for ItemTable joined with EventTable with filter
@@ -122,51 +89,15 @@ def test_item_table_join_event_table_attributes_with_filter(
         global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
     )
     sql_tree = sql_graph.build(item_table_join_event_table_filtered_node).sql
-    expected = textwrap.dedent(
-        """
-        SELECT
-          L."order_method" AS "order_method",
-          R."order_id" AS "order_id",
-          R."item_id" AS "item_id",
-          R."item_name" AS "item_name",
-          R."item_type" AS "item_type"
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "order_id" AS "order_id",
-            "order_method" AS "order_method"
-          FROM "db"."public"."event_table"
-        ) AS L
-        INNER JOIN (
-          SELECT
-            "order_id",
-            ANY_VALUE("item_id") AS "item_id",
-            ANY_VALUE("item_name") AS "item_name",
-            ANY_VALUE("item_type") AS "item_type"
-          FROM (
-            SELECT
-              "order_id" AS "order_id",
-              "item_id" AS "item_id",
-              "item_name" AS "item_name",
-              "item_type" AS "item_type"
-            FROM "db"."public"."item_table"
-          )
-          GROUP BY
-            "order_id"
-        ) AS R
-          ON L."order_id" = R."order_id"
-        WHERE
-          (
-            R."item_type" = 'sports'
-          )
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_join/test_item_table_join_event_table_attributes_with_filter.sql",
+        update_fixtures,
+    )
 
 
 def test_item_table_join_event_table_attributes_on_demand_tile_gen(
-    global_graph, item_table_joined_event_table_feature_node, source_info
+    global_graph, item_table_joined_event_table_feature_node, source_info, update_fixtures
 ):
     """
     Test on-demand tile SQL generation for ItemView
@@ -178,74 +109,15 @@ def test_item_table_join_event_table_attributes_on_demand_tile_gen(
     groupby_node = global_graph.get_node_by_name(groupby_node_name)
     tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=True)
     assert len(tile_gen_sqls) == 1
-    expected = textwrap.dedent(
-        """
-        SELECT
-          index,
-          "cust_id",
-          "item_type",
-          COUNT(*) AS value_count_d445f47d1ab8d2fa742190a9d0e595f23da0c25d
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
-          FROM (
-            WITH __FB_ENTITY_TABLE_NAME AS (
-              __FB_ENTITY_TABLE_SQL_PLACEHOLDER
-            )
-            SELECT
-              R.*
-            FROM __FB_ENTITY_TABLE_NAME
-            INNER JOIN (
-              SELECT
-                L."order_method" AS "order_method",
-                R."order_id" AS "order_id",
-                R."item_id" AS "item_id",
-                R."item_name" AS "item_name",
-                R."item_type" AS "item_type"
-              FROM (
-                SELECT
-                  "ts" AS "ts",
-                  "cust_id" AS "cust_id",
-                  "order_id" AS "order_id",
-                  "order_method" AS "order_method"
-                FROM "db"."public"."event_table"
-              ) AS L
-              INNER JOIN (
-                SELECT
-                  "order_id",
-                  ANY_VALUE("item_id") AS "item_id",
-                  ANY_VALUE("item_name") AS "item_name",
-                  ANY_VALUE("item_type") AS "item_type"
-                FROM (
-                  SELECT
-                    "order_id" AS "order_id",
-                    "item_id" AS "item_id",
-                    "item_name" AS "item_name",
-                    "item_type" AS "item_type"
-                  FROM "db"."public"."item_table"
-                )
-                GROUP BY
-                  "order_id"
-              ) AS R
-                ON L."order_id" = R."order_id"
-            ) AS R
-              ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
-              AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
-          )
-        )
-        GROUP BY
-          index,
-          "cust_id",
-          "item_type"
-        """
-    ).strip()
-    assert tile_gen_sqls[0].sql == expected
+    assert_equal_with_expected_fixture(
+        tile_gen_sqls[0].sql,
+        "tests/fixtures/query_graph/test_join/test_item_table_join_event_table_attributes_on_demand_tile_gen.sql",
+        update_fixtures,
+    )
 
 
 def test_item_groupby_feature_joined_event_view(
-    global_graph, order_size_feature_join_node, source_info
+    global_graph, order_size_feature_join_node, source_info, update_fixtures
 ):
     """
     Test SQL generation for non-time aware feature in ItemTable joined into EventView
@@ -254,55 +126,15 @@ def test_item_groupby_feature_joined_event_view(
         global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
     )
     sql_tree = sql_graph.build(order_size_feature_join_node).sql
-    expected = textwrap.dedent(
-        """
-        SELECT
-          "ts" AS "ts",
-          "cust_id" AS "cust_id",
-          "order_id" AS "order_id",
-          "order_method" AS "order_method",
-          (
-            "_fb_internal_order_id_item_count_None_order_id_None_input_1" + 123
-          ) AS "ord_size"
-        FROM (
-          SELECT
-            REQ."ts",
-            REQ."cust_id",
-            REQ."order_id",
-            REQ."order_method",
-            "T0"."_fb_internal_order_id_item_count_None_order_id_None_input_1" AS "_fb_internal_order_id_item_count_None_order_id_None_input_1"
-          FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "order_id" AS "order_id",
-              "order_method" AS "order_method"
-            FROM "db"."public"."event_table"
-          ) AS REQ
-          LEFT JOIN (
-            SELECT
-              ITEM."order_id" AS "order_id",
-              COUNT(*) AS "_fb_internal_order_id_item_count_None_order_id_None_input_1"
-            FROM (
-              SELECT
-                "order_id" AS "order_id",
-                "item_id" AS "item_id",
-                "item_name" AS "item_name",
-                "item_type" AS "item_type"
-              FROM "db"."public"."item_table"
-            ) AS ITEM
-            GROUP BY
-              ITEM."order_id"
-          ) AS T0
-            ON REQ."order_id" = T0."order_id"
-        )
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_join/test_item_groupby_feature_joined_event_view.sql",
+        update_fixtures,
+    )
 
 
 def test_derived_expression_from_join_node(
-    global_graph, derived_expression_from_join_node, source_info
+    global_graph, derived_expression_from_join_node, source_info, update_fixtures
 ):
     """
     Test derived expression from join node
@@ -311,44 +143,16 @@ def test_derived_expression_from_join_node(
         global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
     )
     sql_tree = sql_graph.build(derived_expression_from_join_node).sql_standalone
-    expected = textwrap.dedent(
-        """
-        SELECT
-          (
-            R."item_id" + 123
-          )
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "order_id" AS "order_id",
-            "order_method" AS "order_method"
-          FROM "db"."public"."event_table"
-        ) AS L
-        INNER JOIN (
-          SELECT
-            "order_id",
-            ANY_VALUE("item_id") AS "item_id",
-            ANY_VALUE("item_name") AS "item_name",
-            ANY_VALUE("item_type") AS "item_type"
-          FROM (
-            SELECT
-              "order_id" AS "order_id",
-              "item_id" AS "item_id",
-              "item_name" AS "item_name",
-              "item_type" AS "item_type"
-            FROM "db"."public"."item_table"
-          )
-          GROUP BY
-            "order_id"
-        ) AS R
-          ON L."order_id" = R."order_id"
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_join/test_derived_expression_from_join_node.sql",
+        update_fixtures,
+    )
 
 
-def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph, source_info):
+def test_double_aggregation(
+    global_graph, order_size_agg_by_cust_id_graph, source_info, update_fixtures
+):
     """
     Test aggregating a non-time aware feature derived from ItemTable
     """
@@ -357,76 +161,14 @@ def test_double_aggregation(global_graph, order_size_agg_by_cust_id_graph, sourc
     )
     _, node = order_size_agg_by_cust_id_graph
     sql_tree = sql_graph.build(node).sql
-    expected = textwrap.dedent(
-        """
-        SELECT
-          index,
-          "cust_id",
-          SUM("ord_size") AS sum_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec,
-          COUNT("ord_size") AS count_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
-          FROM (
-            SELECT
-              *
-            FROM (
-              SELECT
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "order_id" AS "order_id",
-                "order_method" AS "order_method",
-                (
-                  "_fb_internal_order_id_item_count_None_order_id_None_input_1" + 123
-                ) AS "ord_size"
-              FROM (
-                SELECT
-                  REQ."ts",
-                  REQ."cust_id",
-                  REQ."order_id",
-                  REQ."order_method",
-                  "T0"."_fb_internal_order_id_item_count_None_order_id_None_input_1" AS "_fb_internal_order_id_item_count_None_order_id_None_input_1"
-                FROM (
-                  SELECT
-                    "ts" AS "ts",
-                    "cust_id" AS "cust_id",
-                    "order_id" AS "order_id",
-                    "order_method" AS "order_method"
-                  FROM "db"."public"."event_table"
-                ) AS REQ
-                LEFT JOIN (
-                  SELECT
-                    ITEM."order_id" AS "order_id",
-                    COUNT(*) AS "_fb_internal_order_id_item_count_None_order_id_None_input_1"
-                  FROM (
-                    SELECT
-                      "order_id" AS "order_id",
-                      "item_id" AS "item_id",
-                      "item_name" AS "item_name",
-                      "item_type" AS "item_type"
-                    FROM "db"."public"."item_table"
-                  ) AS ITEM
-                  GROUP BY
-                    ITEM."order_id"
-                ) AS T0
-                  ON REQ."order_id" = T0."order_id"
-              )
-            )
-            WHERE
-              "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
-          )
-        )
-        GROUP BY
-          index,
-          "cust_id"
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_join/test_double_aggregation.sql",
+        update_fixtures,
+    )
 
 
-def test_scd_join(global_graph, scd_join_node, source_info):
+def test_scd_join(global_graph, scd_join_node, source_info, update_fixtures):
     """
     Test SQL generation for SCD join
     """
@@ -434,95 +176,11 @@ def test_scd_join(global_graph, scd_join_node, source_info):
         global_graph, sql_type=SQLType.MATERIALIZE, source_info=source_info
     )
     sql_tree = sql_graph.build(scd_join_node).sql
-    expected = textwrap.dedent(
-        """
-        SELECT
-          L."ts" AS "ts",
-          L."cust_id" AS "cust_id",
-          L."order_id" AS "order_id",
-          L."order_method" AS "order_method",
-          R."membership_status" AS "latest_membership_status"
-        FROM (
-          SELECT
-            "__FB_KEY_COL_0",
-            "__FB_LAST_TS",
-            "ts",
-            "cust_id",
-            "order_id",
-            "order_method"
-          FROM (
-            SELECT
-              "__FB_KEY_COL_0",
-              LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
-              "ts",
-              "cust_id",
-              "order_id",
-              "order_method",
-              "__FB_EFFECTIVE_TS_COL"
-            FROM (
-              SELECT
-                CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
-                "cust_id" AS "__FB_KEY_COL_0",
-                NULL AS "__FB_EFFECTIVE_TS_COL",
-                2 AS "__FB_TS_TIE_BREAKER_COL",
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "order_id" AS "order_id",
-                "order_method" AS "order_method"
-              FROM (
-                SELECT
-                  "ts" AS "ts",
-                  "cust_id" AS "cust_id",
-                  "order_id" AS "order_id",
-                  "order_method" AS "order_method"
-                FROM "db"."public"."event_table"
-              )
-              UNION ALL
-              SELECT
-                CAST(CONVERT_TIMEZONE('UTC', "effective_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
-                "cust_id" AS "__FB_KEY_COL_0",
-                "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
-                1 AS "__FB_TS_TIE_BREAKER_COL",
-                NULL AS "ts",
-                NULL AS "cust_id",
-                NULL AS "order_id",
-                NULL AS "order_method"
-              FROM (
-                SELECT
-                  "effective_ts" AS "effective_ts",
-                  "cust_id" AS "cust_id",
-                  "membership_status" AS "membership_status"
-                FROM "db"."public"."customer_profile_table"
-                WHERE
-                  "effective_timestamp" IS NOT NULL
-              )
-            )
-          )
-          WHERE
-            "__FB_EFFECTIVE_TS_COL" IS NULL
-        ) AS L
-        LEFT JOIN (
-          SELECT
-            ANY_VALUE("effective_ts") AS "effective_ts",
-            "cust_id",
-            ANY_VALUE("membership_status") AS "membership_status"
-          FROM (
-            SELECT
-              "effective_ts" AS "effective_ts",
-              "cust_id" AS "cust_id",
-              "membership_status" AS "membership_status"
-            FROM "db"."public"."customer_profile_table"
-            WHERE
-              "effective_timestamp" IS NOT NULL
-          )
-          GROUP BY
-            "effective_timestamp",
-            "cust_id"
-        ) AS R
-          ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL_0" = R."cust_id"
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_join/test_scd_join.sql",
+        update_fixtures,
+    )
 
 
 @pytest.mark.parametrize(
