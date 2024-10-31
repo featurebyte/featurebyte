@@ -240,7 +240,7 @@ def test_graph_interpreter_tile_gen(
 
 
 def test_graph_interpreter_on_demand_tile_gen(
-    query_graph_with_groupby, groupby_node_aggregation_id, source_info
+    query_graph_with_groupby, groupby_node_aggregation_id, source_info, update_fixtures
 ):
     """Test tile building SQL with on-demand tile generation
 
@@ -254,49 +254,12 @@ def test_graph_interpreter_on_demand_tile_gen(
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-
-    sql = tile_gen_sqls[0].sql
-    expected_sql = textwrap.dedent(
-        """
-        SELECT
-          index,
-          "cust_id",
-          SUM("a") AS sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35,
-          COUNT("a") AS count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
-          FROM (
-            WITH __FB_ENTITY_TABLE_NAME AS (
-              __FB_ENTITY_TABLE_SQL_PLACEHOLDER
-            )
-            SELECT
-              R.*
-            FROM __FB_ENTITY_TABLE_NAME
-            INNER JOIN (
-              SELECT
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "a" AS "a",
-                "b" AS "b",
-                (
-                  "a" + "b"
-                ) AS "c"
-              FROM "db"."public"."event_table"
-            ) AS R
-              ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
-              AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
-          )
-        )
-        GROUP BY
-          index,
-          "cust_id"
-        """
-    ).strip()
-    assert sql == expected_sql
     info_dict.pop("sql_template")
+    assert_equal_with_expected_fixture(
+        tile_gen_sqls[0].sql,
+        "tests/fixtures/expected_tile_sql_on_demand.sql",
+        update_fixtures,
+    )
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "tile_id_version": 1,
@@ -325,7 +288,9 @@ def test_graph_interpreter_on_demand_tile_gen(
     }
 
 
-def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_groupby, source_info):
+def test_graph_interpreter_tile_gen_with_category(
+    query_graph_with_category_groupby, source_info, update_fixtures
+):
     """Test tile building SQL with aggregation per category"""
     interpreter = GraphInterpreter(query_graph_with_category_groupby, source_info)
     groupby_node = query_graph_with_category_groupby.get_node_by_name("groupby_1")
@@ -334,47 +299,14 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-
-    aggregation_id = "4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
-    expected_sql = textwrap.dedent(
-        f"""
-        SELECT
-          index,
-          "cust_id",
-          "product_type",
-          SUM("a") AS sum_value_avg_{aggregation_id},
-          COUNT("a") AS count_value_avg_{aggregation_id}
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
-          FROM (
-            SELECT
-              *
-            FROM (
-              SELECT
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "a" AS "a",
-                "b" AS "b",
-                (
-                  "a" + "b"
-                ) AS "c"
-              FROM "db"."public"."event_table"
-            )
-            WHERE
-              "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
-          )
-        )
-        GROUP BY
-          index,
-          "cust_id",
-          "product_type"
-        """
-    ).strip()
-    assert info.sql == expected_sql
     info_dict.pop("sql_template")
+
+    assert_equal_with_expected_fixture(
+        tile_gen_sqls[0].sql,
+        "tests/fixtures/expected_tile_sql_on_demand_with_category.sql",
+        update_fixtures,
+    )
+    aggregation_id = "4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226",
         "tile_id_version": 1,
@@ -404,7 +336,7 @@ def test_graph_interpreter_tile_gen_with_category(query_graph_with_category_grou
 
 
 def test_graph_interpreter_on_demand_tile_gen_two_groupby(
-    complex_feature_query_graph, groupby_node_aggregation_id, source_info
+    complex_feature_query_graph, groupby_node_aggregation_id, source_info, update_fixtures
 ):
     """Test case for a complex feature that depends on two groupby nodes"""
     complex_feature_node, graph = complex_feature_query_graph
@@ -415,7 +347,6 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     # Check required tile 1 (groupby keys: cust_id)
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    sql = info.sql
     info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
@@ -443,52 +374,16 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         "parent": "a",
         "agg_func": "avg",
     }
-    expected = textwrap.dedent(
-        f"""
-        SELECT
-          index,
-          "cust_id",
-          SUM("a") AS sum_value_avg_{groupby_node_aggregation_id},
-          COUNT("a") AS count_value_avg_{groupby_node_aggregation_id}
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
-          FROM (
-            WITH __FB_ENTITY_TABLE_NAME AS (
-              __FB_ENTITY_TABLE_SQL_PLACEHOLDER
-            )
-            SELECT
-              R.*
-            FROM __FB_ENTITY_TABLE_NAME
-            INNER JOIN (
-              SELECT
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "a" AS "a",
-                "b" AS "b",
-                (
-                  "a" + "b"
-                ) AS "c"
-              FROM "db"."public"."event_table"
-            ) AS R
-              ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
-              AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
-          )
-        )
-        GROUP BY
-          index,
-          "cust_id"
-        """
-    ).strip()
-    assert sql == expected
+    assert_equal_with_expected_fixture(
+        info.sql,
+        "tests/fixtures/expected_tile_sql_on_demand_two_groupby_1.sql",
+        update_fixtures,
+    )
 
     # Check required tile 2 (groupby keys: biz_id)
     aggregation_id = "d5ebb5711120ac12cb84f6136654c6dba7e21774"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
-    sql = info.sql
     info_dict.pop("sql_template")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
@@ -512,45 +407,11 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
         "parent": "a",
         "agg_func": "sum",
     }
-    expected = textwrap.dedent(
-        f"""
-        SELECT
-          index,
-          "biz_id",
-          SUM("a") AS value_sum_{aggregation_id}
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
-          FROM (
-            WITH __FB_ENTITY_TABLE_NAME AS (
-              __FB_ENTITY_TABLE_SQL_PLACEHOLDER
-            )
-            SELECT
-              R.*
-            FROM __FB_ENTITY_TABLE_NAME
-            INNER JOIN (
-              SELECT
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "a" AS "a",
-                "b" AS "b",
-                (
-                  "a" + "b"
-                ) AS "c"
-              FROM "db"."public"."event_table"
-            ) AS R
-              ON R."biz_id" = __FB_ENTITY_TABLE_NAME."biz_id"
-              AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
-              AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
-          )
-        )
-        GROUP BY
-          index,
-          "biz_id"
-        """
-    ).strip()
-    assert sql == expected
+    assert_equal_with_expected_fixture(
+        info.sql,
+        "tests/fixtures/expected_tile_sql_on_demand_two_groupby_2.sql",
+        update_fixtures,
+    )
 
 
 def test_one_demand_tile_gen_on_simple_view(
@@ -587,7 +448,7 @@ def test_on_demand_tile_gen_on_joined_view(
     assert len(tile_gen_sqls) == 1
     assert_equal_with_expected_fixture(
         tile_gen_sqls[0].sql,
-        "tests/fixtures/expected_tile_sql_on_demand.sql",
+        "tests/fixtures/expected_tile_sql_on_demand_joined_view.sql",
         update_fixtures,
     )
 
