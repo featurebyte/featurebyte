@@ -471,7 +471,7 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
             "Discrepancies found between the promoted feature version you are trying to promote to "
             "PRODUCTION_READY, and the input table.\n"
             "{'feature_job_setting': {"
-            "'data_source': FeatureJobSetting(blind_spot='600s', period='1800s', offset='300s', execution_buffer='0s'), "
+            "'data_source': FeatureJobSetting(blind_spot='600s', period='86400s', offset='300s', execution_buffer='0s'), "
             "'promoted_feature': "
             "FeatureJobSetting(blind_spot='82800s', period='86400s', offset='3600s', execution_buffer='0s')}}\n"
             "Please fix these issues first before trying to promote your feature to PRODUCTION_READY."
