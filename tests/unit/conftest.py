@@ -8,6 +8,7 @@ import logging
 import os
 import tempfile
 import traceback
+import typing
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -15,12 +16,13 @@ from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
 from uuid import UUID, uuid4
 
+import httpx
 import pandas as pd
 import pytest
 import pytest_asyncio
 from bson import ObjectId
 from cachetools import TTLCache
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient as BaseTestClient
 from snowflake.connector import ProgrammingError
 from snowflake.connector.constants import QueryStatus
 
@@ -83,6 +85,41 @@ pytest.register_assert_rewrite("tests.unit.routes.base")
 _ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
 
 TEST_REDIS_URI = "redis://localhost:36379"
+
+
+class Response(httpx.Response):
+    """
+    Response object with additional methods
+    """
+
+    def __init__(self, response: httpx.Response):
+        for key, value in response.__dict__.items():
+            setattr(self, key, value)
+
+    def iter_content(self, chunk_size=1):
+        return super().iter_bytes(chunk_size=chunk_size)
+
+
+class TestClient(BaseTestClient):
+    """
+    Override TestClient to handle streaming responses
+    """
+
+    def request(
+        self,
+        method: str,
+        url: httpx._types.URLTypes,
+        *args: typing.Any,
+        stream: bool = False,
+        **kwargs: typing.Any,
+    ) -> httpx.Response:
+        """
+        Override request method to handle streaming responses
+        """
+        if stream:
+            with super().stream(method, url, *args, **kwargs) as response:
+                return Response(response)
+        return super().request(method, url, *args, **kwargs)
 
 
 @pytest.fixture(name="mock_api_object_cache")

@@ -31,7 +31,9 @@ class MaterializedTableMixin(MaterializedTableModel):
     _route: ClassVar[str] = ""
     _poll_async_task: ClassVar[Callable[..., Any]]
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download(
+        self, output_path: Optional[Union[str, Path]] = None, overwrite: bool = False
+    ) -> Path:
         """
         Downloads the table from the database.
 
@@ -39,6 +41,8 @@ class MaterializedTableMixin(MaterializedTableModel):
         ----------
         output_path: Optional[Union[str, Path]]
             Location to save downloaded parquet file.
+        overwrite: bool
+            Overwrite the file if it already exists.
 
         Returns
         -------
@@ -54,7 +58,7 @@ class MaterializedTableMixin(MaterializedTableModel):
         file_name = f"{self.location.table_details.table_name}.parquet"
         output_path = output_path or Path(f"./{file_name}")
         output_path = Path(output_path)
-        if output_path.exists():
+        if output_path.exists() and not overwrite:
             raise FileExistsError(f"{output_path} already exists.")
 
         client = Configurations().get_client()
