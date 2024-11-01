@@ -26,7 +26,6 @@ from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_generate import TileGenerate
-from featurebyte.sql.tile_monitor import TileMonitor
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 logger = get_logger(__name__)
@@ -113,7 +112,6 @@ class TileTaskExecutor:
 
         tile_start_ts = tile_end_ts - timedelta(minutes=lookback_period)
         tile_start_ts_str = tile_start_ts.strftime(DATE_FORMAT)
-        monitor_tile_start_ts_str = tile_start_ts_str
 
         # use the last_tile_start_date from tile registry as tile_start_ts_str if it is earlier than tile_start_ts_str
         tile_model = await self.tile_registry_service.get_tile_model(
@@ -153,15 +151,6 @@ class TileTaskExecutor:
 
         await _add_log_entry("STARTED", "")
 
-        monitor_end_ts = tile_end_ts - timedelta(minutes=params.frequency_minute)
-        monitor_tile_end_ts_str = monitor_end_ts.strftime(DATE_FORMAT)
-
-        monitor_input_sql = params.sql.replace(
-            f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_start_ts_str + "'"
-        ).replace(
-            f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + monitor_tile_end_ts_str + "'"
-        )
-
         tile_end_ts_str = tile_end_ts.strftime(DATE_FORMAT)
         generate_input_sql = params.sql.replace(
             f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", "'" + tile_start_ts_str + "'"
@@ -175,23 +164,6 @@ class TileTaskExecutor:
                 "tile_end_ts_str": tile_end_ts_str,
                 "tile_type": tile_type,
             },
-        )
-
-        tile_monitor_ins = TileMonitor(
-            session=session,
-            feature_store_id=params.feature_store_id,
-            tile_id=tile_id,
-            time_modulo_frequency_second=params.time_modulo_frequency_second,
-            blind_spot_second=params.blind_spot_second,
-            frequency_minute=params.frequency_minute,
-            sql=generate_input_sql,
-            monitor_sql=monitor_input_sql,
-            entity_column_names=params.entity_column_names,
-            value_column_names=params.value_column_names,
-            value_column_types=params.value_column_types,
-            tile_type=params.tile_type,
-            aggregation_id=params.aggregation_id,
-            tile_registry_service=self.tile_registry_service,
         )
 
         tile_generate_ins = TileGenerate(
@@ -220,15 +192,6 @@ class TileTaskExecutor:
         )
 
         step_specs: List[Dict[str, Any]] = [
-            {
-                "name": "tile_monitor",
-                "trigger": tile_monitor_ins,
-                "status": {
-                    "fail": "MONITORED_FAILED",
-                    "success": "MONITORED",
-                },
-                "metric_field_name": "tile_monitor_seconds",
-            },
             {
                 "name": "tile_generate",
                 "trigger": tile_generate_ins,

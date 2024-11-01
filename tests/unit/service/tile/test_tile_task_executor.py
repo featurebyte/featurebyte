@@ -86,7 +86,7 @@ def patched_tile_classes_fixture():
     """
     mocks = {}
     patchers = []
-    classes_to_patch = ["TileMonitor", "TileGenerate", "TileScheduleOnlineStore"]
+    classes_to_patch = ["TileGenerate", "TileScheduleOnlineStore"]
     for class_name in classes_to_patch:
         patcher = patch(f"featurebyte.service.tile.tile_task_executor.{class_name}", autospec=True)
         mocks[class_name] = patcher.start()
