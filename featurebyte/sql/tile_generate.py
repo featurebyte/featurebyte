@@ -32,16 +32,19 @@ class TileGenerate(TileCommon):
         """
         Execute tile generate operation
         """
-        final_sql = self.sql
-        if self.tile_start_ts_str is not None:
-            final_sql = final_sql.replace(
-                f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}",
-                "'" + self.tile_start_ts_str + "'",
-            )
-        if self.tile_end_ts_str is not None:
-            final_sql = final_sql.replace(
-                f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + self.tile_end_ts_str + "'"
-            )
+        if self.sql is not None:
+            final_sql = self._replace_placeholder_dates(self.sql)
+        else:
+            assert self.tile_compute_query is not None
+            tile_compute_query = self.tile_compute_query
+            for table in self.tile_compute_query.prerequisite.tables:
+                replaced_query = self._replace_placeholder_dates(table.query.query_str)
+                if table.query.query_str != replaced_query:
+                    tile_compute_query = tile_compute_query.replace_prerequisite_table_str(
+                        name=table.name,
+                        new_query_str=replaced_query,
+                    )
+            final_sql = tile_compute_query.get_combined_query_string()
 
         final_sql_with_index = self._construct_tile_sql_with_index(final_sql)
 
@@ -151,3 +154,14 @@ class TileGenerate(TileCommon):
             from ({tile_sql})
         """
         return tile_sql
+
+    def _replace_placeholder_dates(self, query: str) -> str:
+        if self.tile_start_ts_str is not None:
+            query = query.replace(
+                f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", f"'{self.tile_start_ts_str}'"
+            )
+        if self.tile_end_ts_str is not None:
+            query = query.replace(
+                f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", f"'{self.tile_end_ts_str}'"
+            )
+        return query

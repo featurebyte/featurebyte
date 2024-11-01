@@ -254,7 +254,7 @@ def test_graph_interpreter_on_demand_tile_gen(
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("sql_template")
+    info_dict.pop("tile_compute_query")
     assert_equal_with_expected_fixture(
         tile_gen_sqls[0].sql,
         "tests/fixtures/expected_tile_sql_on_demand.sql",

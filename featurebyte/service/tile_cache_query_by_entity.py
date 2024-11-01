@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Coroutine, Iterator, Optional, cast
+from typing import Any, Callable, Coroutine, Iterator, Optional
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -573,18 +573,16 @@ class TileCacheQueryByEntityService(BaseTileCacheQueryService):
             end_date_expr=end_date_expr,
         )
 
-        tile_compute_sql = cast(
-            str,
-            tile_info.sql_template.render({
-                InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery(),
-            }),
+        tile_compute_query = tile_info.tile_compute_query.replace_prerequisite_table_expr(
+            InternalName.ENTITY_TABLE_NAME,
+            entity_table_expr,
         )
         request = OnDemandTileComputeRequest(
             tile_table_id=tile_info.tile_table_id,
             aggregation_id=aggregation_id,
             tracker_sql=sql_to_string(entity_table_expr, source_type=adapter.source_type),
             observation_table_id=None,
-            tile_compute_sql=tile_compute_sql,
+            tile_compute_query=tile_compute_query,
             tile_gen_info=tile_info,
         )
         return request

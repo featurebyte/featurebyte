@@ -11,6 +11,7 @@ from bson import ObjectId
 
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import OnDemandTileSpec, TileSpec
+from featurebyte.models.tile_compute_query import TileComputeQuery
 from featurebyte.query_graph.sql.interpreter import TileGenSql
 
 
@@ -77,7 +78,7 @@ class OnDemandTileComputeRequest:
     aggregation_id: str
     tracker_sql: Optional[str]
     observation_table_id: Optional[ObjectId]
-    tile_compute_sql: str
+    tile_compute_query: TileComputeQuery
     tile_gen_info: TileGenSql
 
     def to_tile_manager_input(self, feature_store_id: ObjectId) -> OnDemandTileSpec:
@@ -99,7 +100,7 @@ class OnDemandTileComputeRequest:
             time_modulo_frequency_second=self.tile_gen_info.time_modulo_frequency,
             blind_spot_second=self.tile_gen_info.blind_spot,
             frequency_minute=self.tile_gen_info.frequency // 60,
-            tile_sql=self.tile_compute_sql,
+            tile_compute_query=self.tile_compute_query,
             column_names=self.tile_gen_info.columns,
             entity_column_names=entity_column_names,
             value_column_names=self.tile_gen_info.tile_value_columns,

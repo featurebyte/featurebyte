@@ -20,7 +20,6 @@ def get_table_filtered_by_entity(
     adapter: BaseAdapter,
     table_column_names: Optional[list[str]] = None,
     timestamp_column: Optional[str] = None,
-    inject_entity_table_placeholder: bool = False,
     distinct: bool = False,
 ) -> Select:
     """
@@ -47,8 +46,6 @@ def get_table_filtered_by_entity(
     timestamp_column: Optional[str]
         If specified, additionally filter using the timestamp column based on the start and end date
         specified in the entity table
-    inject_entity_table_placeholder: bool
-        If set, define the entity table placeholder as a CTE in the generated select statement
     distinct: bool
         If set, select distinct entity values from the entity table. Applicable for entity tables
         with composite keys.
@@ -95,14 +92,7 @@ def get_table_filtered_by_entity(
 
     join_conditions_expr = expressions.and_(*join_conditions)
 
-    if inject_entity_table_placeholder:
-        select_expr = select().with_(
-            entity_table, as_=InternalName.ENTITY_TABLE_SQL_PLACEHOLDER.value
-        )
-    else:
-        select_expr = select()
-
-    select_expr = select_expr.select("R.*").join(
+    select_expr = select("R.*").join(
         input_expr.subquery(),
         join_alias="R",
         join_type="inner",
