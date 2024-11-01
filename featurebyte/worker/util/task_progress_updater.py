@@ -3,6 +3,7 @@ Task progress updater
 """
 
 import os
+from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID
 
@@ -63,6 +64,7 @@ class TaskProgressUpdater:
                     "progress_history.data": {
                         "percent": progress.percent,
                         "message": progress.message,
+                        "timestamp": datetime.utcnow(),
                     }
                 },
             },

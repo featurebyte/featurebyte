@@ -18,6 +18,7 @@ class LogMessage(BaseModel):
 
     percent: int
     message: Optional[str] = None
+    timestamp: Optional[datetime] = Field(default=None)
 
 
 class ProgressHistory(BaseModel):

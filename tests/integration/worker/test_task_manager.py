@@ -79,15 +79,16 @@ async def test_submit_task(task_manager, payload):
     assert isinstance(task.date_done, datetime.datetime)
 
     # check task progress history
-    assert task.progress_history == ProgressHistory(
+    progress_history = task.progress_history
+    assert progress_history == ProgressHistory(
         data=[
-            LogMessage(percent=0, message=None),
-            LogMessage(percent=0, message=None),
-            LogMessage(percent=20, message=None),
-            LogMessage(percent=40, message=None),
-            LogMessage(percent=60, message=None),
-            LogMessage(percent=80, message=None),
-            LogMessage(percent=100, message=None),
+            LogMessage(percent=0, message=None, timestamp=progress_history.data[0].timestamp),
+            LogMessage(percent=0, message=None, timestamp=progress_history.data[1].timestamp),
+            LogMessage(percent=20, message=None, timestamp=progress_history.data[2].timestamp),
+            LogMessage(percent=40, message=None, timestamp=progress_history.data[3].timestamp),
+            LogMessage(percent=60, message=None, timestamp=progress_history.data[4].timestamp),
+            LogMessage(percent=80, message=None, timestamp=progress_history.data[5].timestamp),
+            LogMessage(percent=100, message=None, timestamp=progress_history.data[6].timestamp),
         ],
         compress_at=0,
     )
