@@ -1509,9 +1509,45 @@ def snowflake_execute_query_for_materialized_table_fixture(
         yield mock_execute_query
 
 
+@pytest.fixture(name="snowflake_execute_query_for_observation_table")
+def snowflake_execute_query_for_observation_table_fixture(
+    snowflake_connector,
+    snowflake_query_map,
+):
+    """
+    Extended version of the default execute_query mock to handle more queries expected when running
+    observation table creation tasks.
+    """
+    _ = snowflake_connector
+
+    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, to_log_error=True):
+        _ = timeout, to_log_error
+        if "COUNT(*)" in query:
+            res = [
+                {
+                    "row_count": 500,
+                }
+            ]
+        else:
+            res = snowflake_query_map.get(query)
+        if res is not None:
+            return pd.DataFrame(res)
+        return None
+
+    with mock.patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
+        mock_execute_query.side_effect = side_effect
+        yield mock_execute_query
+
+
 @pytest.fixture(name="observation_table_from_source")
 def observation_table_from_source_fixture(
-    snowflake_database_table, patched_observation_table_service, catalog, context
+    snowflake_database_table,
+    patched_observation_table_service,
+    snowflake_execute_query_for_observation_table,
+    catalog,
+    context,
 ):
     """
     Observation table created from SourceTable
