@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 import dateutil.parser
 
 from featurebyte.common import date_util
-from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_materialize_prerequisite import PrerequisiteTileTaskStatusType
 from featurebyte.models.system_metrics import TileTaskMetrics
@@ -152,9 +151,6 @@ class TileTaskExecutor:
         await _add_log_entry("STARTED", "")
 
         tile_end_ts_str = tile_end_ts.strftime(DATE_FORMAT)
-        generate_input_sql = params.sql.replace(
-            f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}", "'" + tile_start_ts_str + "'"
-        ).replace(f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + tile_end_ts_str + "'")
 
         logger.info(
             "Tile Schedule information",
@@ -173,12 +169,14 @@ class TileTaskExecutor:
             time_modulo_frequency_second=params.time_modulo_frequency_second,
             blind_spot_second=params.blind_spot_second,
             frequency_minute=params.frequency_minute,
-            sql=generate_input_sql,
+            sql=params.sql,
             entity_column_names=params.entity_column_names,
             value_column_names=params.value_column_names,
             value_column_types=params.value_column_types,
             tile_type=params.tile_type,
-            last_tile_start_str=tile_end_ts_str,
+            tile_start_ts_str=tile_start_ts_str,
+            tile_end_ts_str=tile_end_ts_str,
+            update_last_run_metadata=True,
             aggregation_id=params.aggregation_id,
             tile_registry_service=self.tile_registry_service,
         )

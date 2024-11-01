@@ -391,7 +391,7 @@ class FeatureManagerService:
             tile_type=TileType.OFFLINE,
             end_ts_str=end_ts_str,
             start_ts_str=start_ts_str,
-            last_tile_start_ts_str=end_ts_str if update_last_run_metadata else None,
+            update_last_run_metadata=update_last_run_metadata,
         )
         if update_backfill_start_date:
             await self.tile_registry_service.update_backfill_metadata(
