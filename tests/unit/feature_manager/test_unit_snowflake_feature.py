@@ -10,7 +10,6 @@ import pytest
 
 from featurebyte.common.model_util import get_version
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
 
 
@@ -226,36 +225,3 @@ async def test_online_disable(
             await feature_manager_service.online_disable(mock_snowflake_session, feature_spec)
 
     mock_delete_by_result_name.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_retrieve_feature_tile_inconsistency_data(
-    mock_snowflake_session, feature_manager_service
-):
-    """
-    Test retrieve_feature_tile_inconsistency_data
-    """
-    mock_snowflake_session.execute_query.return_value = pd.DataFrame.from_dict({
-        "NAME": ["sum_30m", "sum_30m"],
-        "VERSION": ["v1", "v1"],
-        "TILE_START_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
-        "TILE_MONITOR_DATE": ["2022-06-05 16:03:00", "2022-06-05 15:58:00"],
-    })
-    result = await feature_manager_service.retrieve_feature_tile_inconsistency_data(
-        mock_snowflake_session,
-        query_start_ts="2022-06-05 15:43:00",
-        query_end_ts="2022-06-05 16:03:00",
-    )
-    assert len(result) == 2
-    assert result.iloc[0]["TILE_START_DATE"] == "2022-06-05 16:03:00"
-    assert result.iloc[1]["TILE_START_DATE"] == "2022-06-05 15:58:00"
-
-    retrieve_sql = tm_feature_tile_monitor.render(
-        query_start_ts="2022-06-05 15:43:00",
-        query_end_ts="2022-06-05 16:03:00",
-    )
-
-    calls = [
-        mock.call(retrieve_sql),
-    ]
-    mock_snowflake_session.execute_query.assert_has_calls(calls, any_order=True)

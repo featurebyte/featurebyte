@@ -2,13 +2,10 @@
 This module contains integration tests for scheduled tile generation
 """
 
-from datetime import datetime
-
 import dateutil.parser
 import pandas as pd
 import pytest
 from bson import ObjectId
-from sqlglot import expressions
 
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import TileScheduledJobParameters
@@ -96,7 +93,7 @@ async def test_schedule_generate_tile_online(
     ):
         result.append(doc)
     result = sorted(result, key=lambda x: x["created_at"])
-    assert [res["status"] for res in result] == ["STARTED", "MONITORED", "GENERATED", "COMPLETED"]
+    assert [res["status"] for res in result] == ["STARTED", "GENERATED", "COMPLETED"]
 
     session_id = result[0]["session_id"]
     assert "|" in session_id
@@ -104,92 +101,6 @@ async def test_schedule_generate_tile_online(
     df = pd.DataFrame(result)
     assert (df["created_at"].diff().iloc[1:].dt.total_seconds() > 0).all()
     assert (df["duration"].iloc[1:] > 0).all()
-
-
-@pytest.mark.usefixtures("enable_tile_monitoring")
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
-@pytest.mark.asyncio
-async def test_schedule_monitor_tile_online(session, base_sql_model, tile_task_executor):
-    """
-    Test the stored procedure of monitoring tiles
-    """
-    entity_col_names = ["PRODUCT_ACTION", "CUST_ID", "客户"]
-    value_col_names = ["VALUE"]
-    value_col_types = ["FLOAT"]
-    suffix = datetime.now().strftime("%Y%m%d%H%M%S_%f")
-    tile_id = f"TEMP_TABLE_{suffix}"
-    agg_id = f"some_agg_id_{suffix}"
-    tile_end_ts = "2022-06-05T23:53:00Z"
-
-    table_name = f"SOURCE_TABLE_{datetime.now().strftime('%Y%m%d%H%M%S_%f')}"
-    await session.create_table_as(
-        table_details=table_name,
-        select_expr=expressions.Select(expressions=[expressions.Star()]).from_(
-            expressions.Table(this=expressions.Identifier(this="TEMP_TABLE"))
-        ),
-    )
-
-    entity_col_names_str = ",".join([base_sql_model.quote_column(col) for col in entity_col_names])
-    value_col_names_str = ",".join(value_col_names)
-    tile_sql = (
-        f" SELECT INDEX,{entity_col_names_str},{value_col_names_str} FROM {table_name} "
-        f" WHERE {InternalName.TILE_START_DATE} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
-        f" AND {InternalName.TILE_START_DATE} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
-    )
-
-    tile_schedule_ins = TileScheduledJobParameters(
-        tile_id=tile_id,
-        time_modulo_frequency_second=183,
-        blind_spot_second=3,
-        frequency_minute=5,
-        sql=tile_sql,
-        entity_column_names=entity_col_names,
-        value_column_names=value_col_names,
-        value_column_types=value_col_types,
-        tile_type="ONLINE",
-        offline_period_minute=1440,
-        monitor_periods=10,
-        aggregation_id=agg_id,
-        job_schedule_ts=tile_end_ts,
-        feature_store_id=ObjectId(),
-    )
-    await tile_task_executor.execute(session, tile_schedule_ins)
-
-    sql = f"""
-            UPDATE {table_name} SET VALUE = VALUE + 1
-            WHERE {InternalName.TILE_START_DATE} in (
-                to_timestamp('2022-06-05 23:33:00'),
-                to_timestamp('2022-06-05 23:48:00')
-            )
-          """
-    await session.execute_query(sql)
-
-    tile_end_ts_2 = "2022-06-05T23:58:03Z"
-    tile_schedule_ins = TileScheduledJobParameters(
-        tile_id=tile_id,
-        time_modulo_frequency_second=183,
-        blind_spot_second=3,
-        frequency_minute=5,
-        sql=tile_sql,
-        entity_column_names=entity_col_names,
-        value_column_names=value_col_names,
-        value_column_types=value_col_types,
-        tile_type="ONLINE",
-        offline_period_minute=1440,
-        monitor_periods=10,
-        aggregation_id=agg_id,
-        job_schedule_ts=tile_end_ts_2,
-        feature_store_id=ObjectId(),
-    )
-    await tile_task_executor.execute(session, tile_schedule_ins)
-
-    sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_id}_MONITOR"
-    result = await session.execute_query(sql)
-    assert result["TILE_COUNT"].iloc[0] == 2
-
-    sql = f"SELECT COUNT(*) as TILE_COUNT FROM TILE_MONITOR_SUMMARY WHERE TILE_ID = '{tile_id}'"
-    result = await session.execute_query(sql)
-    assert result["TILE_COUNT"].iloc[0] == 2
 
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
