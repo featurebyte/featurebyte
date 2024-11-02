@@ -10,6 +10,43 @@ WITH REQUEST_TABLE AS (
     sum_value_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6,
     count_value_avg_4478d266b052ffb6b332e2ec9c2e486fca6c23c6
   FROM (
+    WITH __FB_ENTITY_TABLE_NAME AS (
+      SELECT
+        "CUSTOMER_ID" AS "cust_id",
+        CAST(FLOOR((
+          DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
+        ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
+        DATEADD(
+          microsecond,
+          (
+            48 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
+          ) * -1,
+          CAST(FLOOR((
+            DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
+          ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP)
+        ) AS __FB_ENTITY_TABLE_START_DATE
+      FROM "REQUEST_TABLE"
+      GROUP BY
+        "CUSTOMER_ID"
+    ), __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
+      SELECT
+        R.*
+      FROM __FB_ENTITY_TABLE_NAME
+      INNER JOIN (
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "a" AS "a",
+          "b" AS "b",
+          (
+            "a" + "b"
+          ) AS "c"
+        FROM "db"."public"."event_table"
+      ) AS R
+        ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+        AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+        AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+    )
     SELECT
       index,
       "cust_id",
@@ -20,46 +57,7 @@ WITH REQUEST_TABLE AS (
       SELECT
         *,
         F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
-      FROM (
-        WITH __FB_ENTITY_TABLE_NAME AS (
-          (
-            SELECT
-              "CUSTOMER_ID" AS "cust_id",
-              CAST(FLOOR((
-                DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
-              ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
-              DATEADD(
-                microsecond,
-                (
-                  48 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
-                ) * -1,
-                CAST(FLOOR((
-                  DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
-                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP)
-              ) AS __FB_ENTITY_TABLE_START_DATE
-            FROM "REQUEST_TABLE"
-            GROUP BY
-              "CUSTOMER_ID"
-          )
-        )
-        SELECT
-          R.*
-        FROM __FB_ENTITY_TABLE_NAME
-        INNER JOIN (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b",
-            (
-              "a" + "b"
-            ) AS "c"
-          FROM "db"."public"."event_table"
-        ) AS R
-          ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-          AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
-          AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
-      )
+      FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
     )
     GROUP BY
       index,

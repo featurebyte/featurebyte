@@ -5,7 +5,6 @@ Models for tile compute query
 from __future__ import annotations
 
 import textwrap
-from dataclasses import dataclass
 from typing import List, Optional, cast
 
 from pydantic import Field
@@ -87,13 +86,12 @@ class Prerequisite(FeatureByteBaseModel):
     tables: List[PrerequisiteTable]
 
 
-@dataclass
-class TileComputeQuery:
+class TileComputeQuery(FeatureByteBaseModel):
     """
     Represents a tile compute query
     """
 
-    prerequisite: Prerequisite
+    prerequisite: Prerequisite = Field(default_factory=lambda: Prerequisite(tables=[]))
     aggregation_query: QueryModel
 
     def get_combined_query_expr(self) -> Select:

@@ -4,7 +4,29 @@ SELECT * FROM (SELECT index, "cust_id", created_at FROM (
                 index,
                 "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9,
                 current_timestamp() as created_at
-            from (SELECT
+            from (WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
+  SELECT
+    *
+  FROM (
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      "event_timestamp" AS "event_timestamp",
+      "cust_id" AS "cust_id"
+    FROM "sf_database"."sf_schema"."sf_table"
+    WHERE
+      "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
+      AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
+  )
+  WHERE
+    "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
+    AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
+)
+SELECT
   index,
   "cust_id",
   COUNT(*) AS value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9
@@ -12,28 +34,7 @@ FROM (
   SELECT
     *,
     F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "event_timestamp"), 900, 1800, 60) AS index
-  FROM (
-    SELECT
-      *
-    FROM (
-      SELECT
-        "col_int" AS "col_int",
-        "col_float" AS "col_float",
-        "col_char" AS "col_char",
-        "col_text" AS "col_text",
-        "col_binary" AS "col_binary",
-        "col_boolean" AS "col_boolean",
-        "event_timestamp" AS "event_timestamp",
-        "cust_id" AS "cust_id"
-      FROM "sf_database"."sf_schema"."sf_table"
-      WHERE
-        "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
-        AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
-    )
-    WHERE
-      "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
-      AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
-  )
+  FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
 )
 GROUP BY
   index,
@@ -48,7 +49,29 @@ ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN value
                 index,
                 "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9,
                 current_timestamp() as created_at
-            from (SELECT
+            from (WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
+  SELECT
+    *
+  FROM (
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      "event_timestamp" AS "event_timestamp",
+      "cust_id" AS "cust_id"
+    FROM "sf_database"."sf_schema"."sf_table"
+    WHERE
+      "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
+      AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
+  )
+  WHERE
+    "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
+    AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
+)
+SELECT
   index,
   "cust_id",
   COUNT(*) AS value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9
@@ -56,28 +79,7 @@ FROM (
   SELECT
     *,
     F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "event_timestamp"), 900, 1800, 60) AS index
-  FROM (
-    SELECT
-      *
-    FROM (
-      SELECT
-        "col_int" AS "col_int",
-        "col_float" AS "col_float",
-        "col_char" AS "col_char",
-        "col_text" AS "col_text",
-        "col_binary" AS "col_binary",
-        "col_boolean" AS "col_boolean",
-        "event_timestamp" AS "event_timestamp",
-        "cust_id" AS "cust_id"
-      FROM "sf_database"."sf_schema"."sf_table"
-      WHERE
-        "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
-        AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
-    )
-    WHERE
-      "event_timestamp" >= CAST('2022-05-15T06:45:00' AS TIMESTAMP)
-      AND "event_timestamp" < CAST('2022-05-15T08:45:00' AS TIMESTAMP)
-  )
+  FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
 )
 GROUP BY
   index,

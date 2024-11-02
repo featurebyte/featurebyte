@@ -177,6 +177,26 @@ def test_window_function(global_graph, input_node, source_info):
     tile_gen_sql = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
     expected = textwrap.dedent(
         """
+        WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
+          SELECT
+            *
+          FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b",
+              LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+            FROM "db"."public"."event_table"
+            WHERE
+              (
+                "a" > 1000
+              )
+          )
+          WHERE
+            "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+            AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+        )
         SELECT
           index,
           "cust_id",
@@ -185,26 +205,7 @@ def test_window_function(global_graph, input_node, source_info):
           SELECT
             *,
             F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 600, 1, 60) AS index
-          FROM (
-            SELECT
-              *
-            FROM (
-              SELECT
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "a" AS "a",
-                "b" AS "b",
-                LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
-              FROM "db"."public"."event_table"
-              WHERE
-                (
-                  "a" > 1000
-                )
-            )
-            WHERE
-              "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-              AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
-          )
+          FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
         )
         GROUP BY
           index,

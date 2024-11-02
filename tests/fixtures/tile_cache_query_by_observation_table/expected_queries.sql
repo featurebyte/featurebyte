@@ -30,7 +30,31 @@ ALTER TABLE TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295 ADD COLUMN value_s
                 index,
                 "cust_id", value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295,
                 current_timestamp() as created_at
-            from (SELECT
+            from (WITH __FB_ENTITY_TABLE_NAME AS (
+  SELECT
+    *
+  FROM "ON_DEMAND_TILE_ENTITY_TABLE_000000000000000000000000"
+), __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
+  SELECT
+    R.*
+  FROM __FB_ENTITY_TABLE_NAME
+  INNER JOIN (
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      "col_text" AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      "event_timestamp" AS "event_timestamp",
+      "cust_id" AS "cust_id"
+    FROM "sf_database"."sf_schema"."sf_table"
+  ) AS R
+    ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+    AND R."event_timestamp" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+    AND R."event_timestamp" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+)
+SELECT
   index,
   "cust_id",
   SUM("col_float") AS value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295
@@ -38,31 +62,7 @@ FROM (
   SELECT
     *,
     F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "event_timestamp"), 300, 600, 30) AS index
-  FROM (
-    WITH __FB_ENTITY_TABLE_NAME AS (
-      SELECT
-        *
-      FROM "ON_DEMAND_TILE_ENTITY_TABLE_000000000000000000000000"
-    )
-    SELECT
-      R.*
-    FROM __FB_ENTITY_TABLE_NAME
-    INNER JOIN (
-      SELECT
-        "col_int" AS "col_int",
-        "col_float" AS "col_float",
-        "col_char" AS "col_char",
-        "col_text" AS "col_text",
-        "col_binary" AS "col_binary",
-        "col_boolean" AS "col_boolean",
-        "event_timestamp" AS "event_timestamp",
-        "cust_id" AS "cust_id"
-      FROM "sf_database"."sf_schema"."sf_table"
-    ) AS R
-      ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-      AND R."event_timestamp" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
-      AND R."event_timestamp" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
-  )
+  FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
 )
 GROUP BY
   index,

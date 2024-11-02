@@ -60,7 +60,7 @@ def get_tile_sql_used_in_scheduled_tasks(feature):
     """
     tile_specs = ExtendedFeatureModel(**feature.model_dump(by_alias=True)).tile_specs
     assert len(tile_specs) == 1
-    return tile_specs[0].tile_sql
+    return tile_specs[0].tile_compute_query.get_combined_query_expr().sql(pretty=True)
 
 
 def test_scheduled_tile_sql__can_push_down_date_filter(float_feature, update_fixtures):
