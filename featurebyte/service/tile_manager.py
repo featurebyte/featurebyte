@@ -9,7 +9,6 @@ from typing import Any, Callable, Coroutine, List, Optional
 
 from redis import Redis
 
-from featurebyte.enum import InternalName
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
@@ -208,7 +207,7 @@ class TileManagerService:
         tile_type: TileType,
         start_ts_str: Optional[str],
         end_ts_str: Optional[str],
-        last_tile_start_ts_str: Optional[str] = None,
+        update_last_run_metadata: bool = False,
     ) -> None:
         """
         Manually trigger tile generation
@@ -225,17 +224,10 @@ class TileManagerService:
             start_timestamp of tile. ie. 2022-06-20 15:00:00
         end_ts_str: str
             end_timestamp of tile. ie. 2022-06-21 15:00:00
-        last_tile_start_ts_str: str
-            start date string of last tile used to update the tile_registry table
+        update_last_run_metadata: bool
+            whether to update last run metadata (intended to be set when enabling deployment and
+            when running scheduled tile jobs)
         """
-
-        if start_ts_str and end_ts_str:
-            tile_sql = tile_spec.tile_sql.replace(
-                InternalName.TILE_START_DATE_SQL_PLACEHOLDER, f"'{start_ts_str}'"
-            ).replace(InternalName.TILE_END_DATE_SQL_PLACEHOLDER, f"'{end_ts_str}'")
-        else:
-            tile_sql = tile_spec.tile_sql
-
         tile_generate_ins = TileGenerate(
             session=session,
             feature_store_id=tile_spec.feature_store_id,
@@ -243,12 +235,14 @@ class TileManagerService:
             time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
             blind_spot_second=tile_spec.blind_spot_second,
             frequency_minute=tile_spec.frequency_minute,
-            sql=tile_sql,
+            sql=tile_spec.tile_sql,
             entity_column_names=tile_spec.entity_column_names,
             value_column_names=tile_spec.value_column_names,
             value_column_types=tile_spec.value_column_types,
             tile_type=tile_type,
-            last_tile_start_str=last_tile_start_ts_str,
+            tile_start_ts_str=start_ts_str,
+            tile_end_ts_str=end_ts_str,
+            update_last_run_metadata=update_last_run_metadata,
             aggregation_id=tile_spec.aggregation_id,
             tile_registry_service=self.tile_registry_service,
         )

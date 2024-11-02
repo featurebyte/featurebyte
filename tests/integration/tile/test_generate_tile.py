@@ -37,8 +37,8 @@ async def test_generate_tile(session, base_sql_model, tile_registry_service):
     fmt_timestamp_expr = format_timestamp_expr(session, InternalName.TILE_START_DATE)
     tile_sql = (
         f"SELECT index,{entity_col_names_str},{value_col_names_str} FROM {table_name} "
-        f"WHERE {fmt_timestamp_expr} >= '2022-06-05 23:48:00' "
-        f"AND {fmt_timestamp_expr} < '2022-06-05 23:58:00'"
+        f"WHERE {fmt_timestamp_expr} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
+        f"AND {fmt_timestamp_expr} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
 
     tile_generate_ins = TileGenerate(
@@ -52,6 +52,9 @@ async def test_generate_tile(session, base_sql_model, tile_registry_service):
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="OFFLINE",
+        tile_start_ts_str="2022-06-05 23:48:00",
+        tile_end_ts_str="2022-06-05 23:58:00",
+        update_last_run_metadata=False,
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
@@ -98,6 +101,9 @@ async def test_generate_tile_no_data(session, base_sql_model, tile_registry_serv
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="OFFLINE",
+        tile_start_ts_str=None,
+        tile_end_ts_str=None,
+        update_last_run_metadata=False,
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
@@ -129,8 +135,8 @@ async def test_generate_tile_new_value_column(session, base_sql_model, tile_regi
     fmt_timestamp_expr = format_timestamp_expr(session, InternalName.TILE_START_DATE)
     tile_sql = (
         f"SELECT index,{entity_col_names_str},{value_col_names_str} FROM {table_name} "
-        f"WHERE {fmt_timestamp_expr} >= '2022-06-05 23:48:00' "
-        f"AND {fmt_timestamp_expr} < '2022-06-05 23:58:00'"
+        f"WHERE {fmt_timestamp_expr} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
+        f"AND {fmt_timestamp_expr} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
 
     tile_generate_ins = TileGenerate(
@@ -144,6 +150,9 @@ async def test_generate_tile_new_value_column(session, base_sql_model, tile_regi
         value_column_names=value_col_names,
         value_column_types=value_col_types,
         tile_type="OFFLINE",
+        tile_start_ts_str="2022-06-05 23:48:00",
+        tile_end_ts_str="2022-06-05 23:58:00",
+        update_last_run_metadata=False,
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
@@ -160,8 +169,8 @@ async def test_generate_tile_new_value_column(session, base_sql_model, tile_regi
     value_col_names_2_str = ",".join(value_col_names_2)
     tile_sql_2 = (
         f"SELECT index,{entity_col_names_str},{value_col_names_2_str} FROM {table_name} "
-        f"WHERE {fmt_timestamp_expr} >= '2022-06-05 23:48:00' "
-        f"AND {fmt_timestamp_expr} < '2022-06-05 23:58:00'"
+        f"WHERE {fmt_timestamp_expr} >= {InternalName.TILE_START_DATE_SQL_PLACEHOLDER} "
+        f"AND {fmt_timestamp_expr} < {InternalName.TILE_END_DATE_SQL_PLACEHOLDER}"
     )
 
     tile_generate_ins = TileGenerate(
@@ -175,6 +184,9 @@ async def test_generate_tile_new_value_column(session, base_sql_model, tile_regi
         value_column_names=value_col_names_2,
         value_column_types=value_col_types_2,
         tile_type="OFFLINE",
+        tile_start_ts_str="2022-06-05 23:48:00",
+        tile_end_ts_str="2022-06-05 23:58:00",
+        update_last_run_metadata=False,
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
@@ -235,6 +247,9 @@ async def test_generate_tile_concurrent(session, base_sql_model, tile_registry_s
             value_column_names=value_col_names,
             value_column_types=value_col_types,
             tile_type="OFFLINE",
+            tile_start_ts_str=None,
+            tile_end_ts_str=None,
+            update_last_run_metadata=False,
             aggregation_id=agg_id,
             feature_store_id=ObjectId(),
             tile_registry_service=tile_registry_service,

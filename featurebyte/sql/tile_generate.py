@@ -5,9 +5,9 @@ Databricks Tile Generate Job Script
 from typing import Optional
 
 import dateutil.parser
-from pydantic import Field
 
 from featurebyte.common import date_util
+from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.tile import TileType
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -23,21 +23,34 @@ class TileGenerate(TileCommon):
     """
 
     tile_type: TileType
-    last_tile_start_str: Optional[str] = Field(default=None)
+    tile_start_ts_str: Optional[str]
+    tile_end_ts_str: Optional[str]
+    update_last_run_metadata: Optional[bool]
     tile_registry_service: TileRegistryService
 
     async def execute(self) -> None:
         """
         Execute tile generate operation
         """
+        final_sql = self.sql
+        if self.tile_start_ts_str is not None:
+            final_sql = final_sql.replace(
+                f"{InternalName.TILE_START_DATE_SQL_PLACEHOLDER}",
+                "'" + self.tile_start_ts_str + "'",
+            )
+        if self.tile_end_ts_str is not None:
+            final_sql = final_sql.replace(
+                f"{InternalName.TILE_END_DATE_SQL_PLACEHOLDER}", "'" + self.tile_end_ts_str + "'"
+            )
+
+        final_sql_with_index = self._construct_tile_sql_with_index(final_sql)
 
         tile_table_exist_flag = await self.table_exists(self.tile_id)
-        tile_sql = self._construct_tile_sql_with_index()
 
         await TileRegistry(
             session=self._session,
-            sql=self.sql,
-            sql_with_index=tile_sql,
+            sql=final_sql,
+            sql_with_index=final_sql_with_index,
             table_name=self.tile_id,
             table_exist=tile_table_exist_flag,
             time_modulo_frequency_second=self.time_modulo_frequency_second,
@@ -90,7 +103,7 @@ class TileGenerate(TileCommon):
             values_str = f"b.INDEX, {value_insert_cols_str}, current_timestamp()"
 
         merge_sql = f"""
-            merge into {self.tile_id} a using ({tile_sql}) b
+            merge into {self.tile_id} a using ({final_sql_with_index}) b
                 on {on_condition_str}
                 when matched then
                     update set a.created_at = current_timestamp(), {value_update_cols_str}
@@ -100,17 +113,18 @@ class TileGenerate(TileCommon):
         """
         await self._session.retry_sql(sql=merge_sql)
 
-        if self.last_tile_start_str:
+        if self.tile_end_ts_str is not None and self.update_last_run_metadata:
+            tile_end_date = dateutil.parser.isoparse(self.tile_end_ts_str)
             ind_value = date_util.timestamp_utc_to_tile_index(
-                dateutil.parser.isoparse(self.last_tile_start_str),
+                tile_end_date,
                 self.time_modulo_frequency_second,
                 self.blind_spot_second,
                 self.frequency_minute,
             )
 
             logger.debug(
-                "Using specified last_tile_start_str",
-                extra={"last_tile_start_str": self.last_tile_start_str, "ind_value": ind_value},
+                "Updating last run metadata for tile",
+                extra={"tile_end_ts_str": self.tile_end_ts_str, "ind_value": ind_value},
             )
 
             await self.tile_registry_service.update_last_run_metadata(
@@ -118,10 +132,10 @@ class TileGenerate(TileCommon):
                 aggregation_id=self.aggregation_id,
                 tile_type=self.tile_type,
                 tile_index=ind_value,
-                tile_end_date=dateutil.parser.isoparse(self.last_tile_start_str),
+                tile_end_date=tile_end_date,
             )
 
-    def _construct_tile_sql_with_index(self) -> str:
+    def _construct_tile_sql_with_index(self, tile_sql: str) -> str:
         if self.entity_column_names:
             entity_and_value_column_names_str = (
                 f"{self.entity_column_names_str}, {self.value_column_names_str}"
@@ -134,6 +148,6 @@ class TileGenerate(TileCommon):
                 index,
                 {entity_and_value_column_names_str},
                 current_timestamp() as created_at
-            from ({self.sql})
+            from ({tile_sql})
         """
         return tile_sql
