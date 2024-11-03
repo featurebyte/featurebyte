@@ -2,6 +2,8 @@
 Base materialize table test class
 """
 
+import os.path
+import tempfile
 from abc import abstractmethod
 from typing import Any, Dict, Type, TypeVar
 
@@ -128,3 +130,20 @@ class BaseMaterializedTableApiTest:
         table_under_test.update_description(None)
         assert table_under_test.description is None
         assert table_under_test.info()["description"] is None
+
+    def test_download(self, table_under_test):
+        """
+        Test download method
+        """
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = os.path.join(temp_dir, "output.parquet")
+            path = table_under_test.download(file_path)
+            assert path.exists()
+
+            # expect download to fail if file already exists
+            with pytest.raises(FileExistsError) as exc:
+                table_under_test.download(path)
+            assert f"{path} already exists" in str(exc.value)
+
+            # expect download to succeed if file already exists and overwrite is True
+            table_under_test.download(path, overwrite=True)

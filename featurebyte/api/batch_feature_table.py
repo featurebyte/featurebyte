@@ -115,7 +115,9 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         """
         return super().describe(size=size, seed=seed)
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download(
+        self, output_path: Optional[Union[str, Path]] = None, overwrite: bool = False
+    ) -> Path:
         """
         Downloads the batch feature table from the database.
 
@@ -123,6 +125,8 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         ----------
         output_path: Optional[Union[str, Path]]
             Location to save downloaded parquet file.
+        overwrite: bool
+            Overwrite the file if it already exists.
 
         Returns
         -------
@@ -146,7 +150,7 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
 
         # noqa: DAR402
         """
-        return super().download(output_path=output_path)
+        return super().download(output_path=output_path, overwrite=overwrite)
 
     def delete(self) -> None:
         """
