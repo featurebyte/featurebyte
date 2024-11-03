@@ -11,9 +11,9 @@ from asyncio import Future, Task
 from typing import Any, Coroutine, List
 
 from redis import Redis
-from redis.exceptions import LockNotOwnedError
 
 from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
+from featurebyte.utils.redis import acquire_lock
 
 SEMAPHORE_TIMEOUT_SECONDS = 30
 
@@ -151,8 +151,6 @@ class RedisFairCountingSemaphore:
 
         Raises
         ------
-        TimeoutError
-            If semaphore is not acquired within timeout
         RuntimeError
             If semaphore is already acquired
 
@@ -173,31 +171,16 @@ class RedisFairCountingSemaphore:
                 await self._refresh()
 
         # Try to acquire semaphore
-        now = time.time()
-        while time.time() - now < self._timeout:
-            # Acquire lock for semaphore
-            lock = self._redis.lock(self._lock, timeout=10)
-            if lock.acquire(blocking=False):
-                try:
-                    identifier = await self._acquire_semaphore()
-                    if identifier:
-                        self._identifier = identifier
-                        # Add task to refresh semaphore while semaphore is acquired
-                        self._semaphore_refresh_task = asyncio.create_task(
-                            _semaphore_refresh_task()
-                        )
-                        return self
-                finally:
-                    # Release lock
-                    if lock.owned():
-                        try:
-                            lock.release()
-                        except LockNotOwnedError:
-                            # Lock may have expired before release
-                            pass
-            await asyncio.sleep(0.1)
-        # Timeout trying to acquire semaphore
-        raise TimeoutError(f"Failed to acquire semaphore after {time.time() - now}s")
+        async with acquire_lock(
+            self._redis, self._lock, timeout=10, blocking_timeout=self._timeout
+        ):
+            identifier = await self._acquire_semaphore()
+            if identifier:
+                self._identifier = identifier
+                # Add task to refresh semaphore while semaphore is acquired
+                self._semaphore_refresh_task = asyncio.create_task(_semaphore_refresh_task())
+
+        return self
 
     async def __aexit__(self, *exc: dict[str, Any]) -> None:
         """
