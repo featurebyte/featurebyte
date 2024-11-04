@@ -210,7 +210,7 @@ def test_graph_interpreter_tile_gen(
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("sql_template")
+    info_dict.pop("tile_compute_query")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "tile_id_version": 1,
@@ -254,7 +254,7 @@ def test_graph_interpreter_on_demand_tile_gen(
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("sql_template")
+    info_dict.pop("tile_compute_query")
     assert_equal_with_expected_fixture(
         tile_gen_sqls[0].sql,
         "tests/fixtures/expected_tile_sql_on_demand.sql",
@@ -299,7 +299,7 @@ def test_graph_interpreter_tile_gen_with_category(
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("sql_template")
+    info_dict.pop("tile_compute_query")
 
     assert_equal_with_expected_fixture(
         tile_gen_sqls[0].sql,
@@ -347,7 +347,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     # Check required tile 1 (groupby keys: cust_id)
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("sql_template")
+    info_dict.pop("tile_compute_query")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "tile_id_version": 1,
@@ -384,7 +384,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     aggregation_id = "d5ebb5711120ac12cb84f6136654c6dba7e21774"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
-    info_dict.pop("sql_template")
+    info_dict.pop("tile_compute_query")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
         "tile_id_version": 1,
@@ -881,6 +881,24 @@ def test_databricks_source(
     tile_sql = tile_gen_sqls[0].sql
     expected = textwrap.dedent(
         f"""
+        WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
+          SELECT
+            *
+          FROM (
+            SELECT
+              `ts` AS `ts`,
+              `cust_id` AS `cust_id`,
+              `a` AS `a`,
+              `b` AS `b`,
+              (
+                `a` + `b`
+              ) AS `c`
+            FROM `db`.`public`.`event_table`
+          )
+          WHERE
+            `ts` >= CAST(__FB_START_DATE AS TIMESTAMP)
+            AND `ts` < CAST(__FB_END_DATE AS TIMESTAMP)
+        )
         SELECT
           index,
           `cust_id`,
@@ -890,24 +908,7 @@ def test_databricks_source(
           SELECT
             *,
             F_TIMESTAMP_TO_INDEX(CAST(`ts` AS TIMESTAMP), 1800, 900, 60) AS index
-          FROM (
-            SELECT
-              *
-            FROM (
-              SELECT
-                `ts` AS `ts`,
-                `cust_id` AS `cust_id`,
-                `a` AS `a`,
-                `b` AS `b`,
-                (
-                  `a` + `b`
-                ) AS `c`
-              FROM `db`.`public`.`event_table`
-            )
-            WHERE
-              `ts` >= CAST(__FB_START_DATE AS TIMESTAMP)
-              AND `ts` < CAST(__FB_END_DATE AS TIMESTAMP)
-          )
+          FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
         )
         GROUP BY
           index,
@@ -931,6 +932,21 @@ def test_tile_sql_order_dependent_aggregation(
     tile_sql = tile_gen_sqls[0].sql
     expected = textwrap.dedent(
         """
+        WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
+          SELECT
+            *
+          FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "a" AS "a",
+              "b" AS "b"
+            FROM "db"."public"."event_table"
+          )
+          WHERE
+            "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
+            AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
+        )
         SELECT
           index,
           "cust_id",
@@ -945,21 +961,7 @@ def test_tile_sql_order_dependent_aggregation(
             SELECT
               *,
               F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
-            FROM (
-              SELECT
-                *
-              FROM (
-                SELECT
-                  "ts" AS "ts",
-                  "cust_id" AS "cust_id",
-                  "a" AS "a",
-                  "b" AS "b"
-                FROM "db"."public"."event_table"
-              )
-              WHERE
-                "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-                AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
-            )
+            FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
           )
         )
         WHERE

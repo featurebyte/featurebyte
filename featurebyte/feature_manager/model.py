@@ -35,7 +35,7 @@ class ExtendedFeatureModel(FeatureModel):
                 time_modulo_frequency_second=info.time_modulo_frequency,
                 blind_spot_second=info.blind_spot,
                 frequency_minute=info.frequency // 60,
-                tile_sql=info.sql,
+                tile_compute_query=info.tile_compute_query,
                 entity_column_names=entity_column_names,
                 value_column_names=info.tile_value_columns,
                 value_column_types=info.tile_value_types,

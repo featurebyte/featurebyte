@@ -5,8 +5,9 @@ Tests for tile cache
 import pytest
 from sqlglot import expressions
 
+from featurebyte.enum import SourceType
+from featurebyte.models.tile_compute_query import QueryModel, TileComputeQuery
 from featurebyte.query_graph.sql.interpreter import TileGenSql
-from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.service.tile_cache_query_by_entity import TileCacheStatus, TileInfoKey
 
 
@@ -18,7 +19,11 @@ def create_tile_gen_sql(aggregation_id):
         tile_table_id=aggregation_id,
         tile_id_version=2,
         aggregation_id=aggregation_id,
-        sql_template=SqlExpressionTemplate(expressions.select("a")),
+        tile_compute_query=TileComputeQuery(
+            aggregation_query=QueryModel.from_expr(
+                expressions.select("a"), source_type=SourceType.SNOWFLAKE
+            )
+        ),
         columns=["a"],
         entity_columns=["a"],
         tile_value_columns=["a"],

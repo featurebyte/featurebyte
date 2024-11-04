@@ -4,7 +4,7 @@ On-demand tile computation for feature preview
 
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional
 
 import pandas as pd
 from sqlglot import expressions
@@ -259,12 +259,6 @@ def get_tile_sql(
         request_table_name=request_table_name,
         window=window,
     )
-    return cast(
-        Select,
-        tile_info.sql_template.render(
-            {
-                InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: entity_table_expr.subquery(),
-            },
-            as_str=False,
-        ),
-    )
+    return tile_info.tile_compute_query.replace_prerequisite_table_expr(
+        name=InternalName.ENTITY_TABLE_NAME, new_expr=entity_table_expr
+    ).get_combined_query_expr()

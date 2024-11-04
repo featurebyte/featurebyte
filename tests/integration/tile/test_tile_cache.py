@@ -57,7 +57,7 @@ async def check_entity_table_sql_and_tile_compute_sql(
     df_entity = df_entity.sort_values(entity_column).reset_index(drop=True)
     pd.testing.assert_frame_equal(df_entity, expected_entities, check_dtype=False)
 
-    df_tiles = await session.execute_query(request.tile_compute_sql)
+    df_tiles = await session.execute_query(request.tile_compute_query.get_combined_query_string())
     assert df_tiles[entity_column].isin(expected_entities[entity_column]).all()
 
 

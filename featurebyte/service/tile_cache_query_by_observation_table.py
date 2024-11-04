@@ -4,7 +4,7 @@ TileCacheQueryByObservationTableService class
 
 from __future__ import annotations
 
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 from bson import ObjectId
 from redis import Redis
@@ -74,20 +74,14 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
                 request_table_name=request_table_name,
                 tile_info=tile_info,
             )
-            tile_compute_sql = cast(
-                str,
-                tile_info.sql_template.render(
-                    {
-                        InternalName.ENTITY_TABLE_SQL_PLACEHOLDER: expressions.select(
-                            expressions.Star()
-                        ).from_(quoted_identifier(entity_table_name)),
-                    },
-                ),
+            tile_compute_query = tile_info.tile_compute_query.replace_prerequisite_table_expr(
+                InternalName.ENTITY_TABLE_NAME,
+                expressions.select(expressions.Star()).from_(quoted_identifier(entity_table_name)),
             )
             request = OnDemandTileComputeRequest(
                 tile_table_id=tile_info.tile_table_id,
                 aggregation_id=tile_info.aggregation_id,
-                tile_compute_sql=tile_compute_sql,
+                tile_compute_query=tile_compute_query,
                 tracker_sql=None,
                 observation_table_id=observation_table_id,
                 tile_gen_info=tile_info,

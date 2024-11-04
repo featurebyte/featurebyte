@@ -10,6 +10,7 @@ from typing import Optional, Set, Tuple, cast
 
 from bson import ObjectId
 
+from featurebyte.models.tile_compute_query import TileComputeQuery
 from featurebyte.query_graph.algorithm import dfs_traversal
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -21,10 +22,10 @@ from featurebyte.query_graph.sql.common import (
     EventTableTimestampFilter,
     OnDemandEntityFilters,
     SQLType,
+    sql_to_string,
 )
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 from featurebyte.query_graph.sql.source_info import SourceInfo
-from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
 
@@ -56,7 +57,7 @@ class TileGenSql:
     tile_table_id: str
     tile_id_version: int
     aggregation_id: str
-    sql_template: SqlExpressionTemplate
+    tile_compute_query: TileComputeQuery
     columns: list[str]
     entity_columns: list[str]
     tile_value_columns: list[str]
@@ -82,7 +83,10 @@ class TileGenSql:
         -------
         str
         """
-        return cast(str, self.sql_template.render())
+        return sql_to_string(
+            self.tile_compute_query.get_combined_query_expr(),
+            self.tile_compute_query.aggregation_query.source_type,
+        )
 
 
 JoinKeysLineageKey = Tuple[ObjectId, str]
@@ -370,7 +374,6 @@ class TileSQLGenerator:
             event_table_timestamp_filter=event_table_timestamp_filter,
             on_demand_entity_filters=on_demand_entity_filters,
         ).build(groupby_node)
-        sql = groupby_sql_node.sql
         tile_table_id = groupby_node.parameters.tile_id
         aggregation_id = groupby_node.parameters.aggregation_id
         entity_columns = groupby_sql_node.keys
@@ -378,13 +381,12 @@ class TileSQLGenerator:
         tile_value_types = [spec.tile_column_type for spec in groupby_sql_node.tile_specs]
         assert tile_table_id is not None, "Tile table ID is required"
         assert aggregation_id is not None, "Aggregation ID is required"
-        sql_template = SqlExpressionTemplate(sql_expr=sql, source_type=self.source_info.source_type)
         fjs = groupby_node.parameters.feature_job_setting
         info = TileGenSql(
             tile_table_id=tile_table_id,
             tile_id_version=groupby_node.parameters.tile_id_version,
             aggregation_id=aggregation_id,
-            sql_template=sql_template,
+            tile_compute_query=groupby_sql_node.get_tile_compute_query(),
             columns=groupby_sql_node.columns,
             entity_columns=entity_columns,
             tile_value_columns=tile_value_columns,
