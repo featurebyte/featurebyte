@@ -11,7 +11,7 @@ from bson import ObjectId
 from redis import Redis
 
 from featurebyte.enum import MaterializedTableNamePrefix
-from featurebyte.exception import DocumentConflictError
+from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_table_cache_metadata import (
     CachedDefinitionWithTable,
@@ -24,10 +24,14 @@ from featurebyte.schema.feature_table_cache_metadata import FeatureTableCacheMet
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.storage import Storage
+from featurebyte.utils.redis import acquire_lock
+
+logger = get_logger(__name__)
 
 FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS = int(
     os.getenv("FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS", "1000")
 )
+REDIS_LOCK_TIMEOUT = 240  # a maximum life for the lock in seconds
 
 
 class FeatureTableCacheMetadataService(
@@ -113,6 +117,20 @@ class FeatureTableCacheMetadataService(
         FeatureTableCacheMetadataModel
             Feature Table Cache model
         """
+        async with acquire_lock(
+            self.redis,
+            f"get_or_create_feature_table_cache:{observation_table_id}",
+            timeout=REDIS_LOCK_TIMEOUT,
+        ):
+            return await self._get_or_create_feature_table_cache(
+                observation_table_id, num_columns_to_insert
+            )
+
+    async def _get_or_create_feature_table_cache(
+        self,
+        observation_table_id: PydanticObjectId,
+        num_columns_to_insert: int,
+    ) -> FeatureTableCacheMetadataModel:
         query_filter = {"observation_table_id": observation_table_id}
 
         eligible_cache_metadata = None
@@ -135,14 +153,7 @@ class FeatureTableCacheMetadataService(
                 ),
                 feature_definitions=[],
             )
-            try:
-                eligible_cache_metadata = await self.create_document(document)
-            except DocumentConflictError:
-                # A FeatureTableCacheMetadataModel document was created after the existence check.
-                # Retrieve again.
-                return await self.get_or_create_feature_table_cache(
-                    observation_table_id, num_columns_to_insert
-                )
+            eligible_cache_metadata = await self.create_document(document)
 
         return eligible_cache_metadata
 
