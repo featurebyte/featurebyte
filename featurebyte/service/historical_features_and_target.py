@@ -260,12 +260,13 @@ async def get_historical_features(
         feature_compute_seconds = time.time() - tic
         logger.debug(f"compute_historical_features in total took {feature_compute_seconds:.2f}s")
     finally:
-        await session.drop_table(
-            table_name=request_table_name,
-            schema_name=session.schema_name,
-            database_name=session.database_name,
-            if_exists=True,
-        )
+        logger.warning("Disable cleaning up of temporary request table")
+        # await session.drop_table(
+        #     table_name=request_table_name,
+        #     schema_name=session.schema_name,
+        #     database_name=session.database_name,
+        #     if_exists=True,
+        # )
     return HistoricalFeaturesMetrics(
         tile_compute_seconds=tile_compute_seconds,
         feature_compute_seconds=feature_compute_seconds,
