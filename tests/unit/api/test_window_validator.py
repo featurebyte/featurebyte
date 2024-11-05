@@ -26,12 +26,12 @@ def test_validate_window__in_proper_range():
 @pytest.mark.parametrize(
     "window, feature_job_period, expected_error",
     [
-        ("366d", "15m", "window 366d needs to be less than 104 days"),
-        ("366d", "30m", "window 366d needs to be less than 208 days"),
-        ("420d", "1h", "window 420d needs to be less than 416 days"),
+        ("600d", "15m", "window 600d needs to be less than 525 days"),
+        ("1200d", "30m", "window 1200d needs to be less than 1050 days"),
+        ("2500d", "1h", "window 2500d needs to be less than 2100 days"),
         ("180d", "1h", None),
         ("1000d", "1d", None),
-        ("20000d", "1d", "window 20000d needs to be less than 10000 days"),
+        ("60000d", "1d", "window 60000d needs to be less than 50400 days"),
     ],
 )
 def test_validate_window__upper_limit(window, feature_job_period, expected_error):
