@@ -252,13 +252,7 @@ def test_databricks_schema_initializer__sql_objects(patched_databricks_session_c
     for item in sql_objects:
         item["filename"] = os.path.basename(item["filename"])
         item["type"] = item["type"].value
-    expected = [
-        {
-            "type": "table",
-            "filename": "T_TILE_MONITOR_SUMMARY.sql",
-            "identifier": "TILE_MONITOR_SUMMARY",
-        },
-    ]
+    expected = []
 
     def _sorted_result(lst):
         return sorted(lst, key=lambda x: x["filename"])

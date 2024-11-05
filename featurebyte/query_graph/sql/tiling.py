@@ -152,6 +152,38 @@ class TilingAggregator(ABC):
             agg_func,
         )
 
+    def construct_matching_type_tile_spec(
+        self,
+        tile_expr: Expression,
+        tile_column_name: str,
+        agg_func: AggFunc,
+        parent_column_dtype: DBVarType,
+    ) -> TileSpec:
+        """
+        Construct a TileSpec with the same type as the parent column
+
+        Parameters
+        ----------
+        tile_expr: Expression
+            SQL expression
+        tile_column_name: str
+            Alias for the result of the SQL expression
+        agg_func: AggFunc
+            Aggregation function
+        parent_column_dtype: DBVarType
+            Parent column data type
+
+        Returns
+        -------
+        TileSpec
+        """
+        return TileSpec(
+            tile_expr,
+            tile_column_name,
+            self.adapter.get_physical_type_from_dtype(parent_column_dtype),
+            agg_func,
+        )
+
 
 class OrderIndependentAggregator(TilingAggregator, ABC):
     """Base class for all aggregators are not order dependent"""
@@ -231,8 +263,11 @@ class MinAggregator(OrderIndependentAggregator):
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
         return [
-            self.construct_numeric_tile_spec(
-                expressions.Min(this=quoted_identifier(col.name)), f"value_{agg_id}", AggFunc.MIN
+            self.construct_matching_type_tile_spec(
+                expressions.Min(this=quoted_identifier(col.name)),
+                f"value_{agg_id}",
+                AggFunc.MIN,
+                col.dtype,
             )
         ]
 
@@ -246,8 +281,11 @@ class MaxAggregator(OrderIndependentAggregator):
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
         return [
-            self.construct_numeric_tile_spec(
-                expressions.Max(this=quoted_identifier(col.name)), f"value_{agg_id}", AggFunc.MAX
+            self.construct_matching_type_tile_spec(
+                expressions.Max(this=quoted_identifier(col.name)),
+                f"value_{agg_id}",
+                AggFunc.MAX,
+                col.dtype,
             )
         ]
 
@@ -393,11 +431,11 @@ class LatestValueAggregator(OrderDependentAggregator):
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
         return [
-            TileSpec(
+            self.construct_matching_type_tile_spec(
                 Anonymous(this="FIRST_VALUE", expressions=[quoted_identifier(col.name)]),
                 f"value_{agg_id}",
-                self.adapter.get_physical_type_from_dtype(col.dtype),
                 AggFunc.LATEST,
+                col.dtype,
             ),
         ]
 

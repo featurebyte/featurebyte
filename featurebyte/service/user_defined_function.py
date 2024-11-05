@@ -29,23 +29,23 @@ class UserDefinedFunctionService(
 
     document_class = UserDefinedFunctionModel
 
-    def _construct_get_query_filter(
+    async def construct_get_query_filter(
         self, document_id: ObjectId, use_raw_query_filter: bool = False, **kwargs: Any
     ) -> QueryFilter:
-        output = super()._construct_get_query_filter(
+        output = await super().construct_get_query_filter(
             document_id=document_id, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         # user defined function without catalog_id is a global function (used by all catalogs)
         output["catalog_id"] = {"$in": [None, self.catalog_id]}
         return output
 
-    def construct_list_query_filter(
+    async def construct_list_query_filter(
         self,
         query_filter: Optional[QueryFilter] = None,
         use_raw_query_filter: bool = False,
         **kwargs: Any,
     ) -> QueryFilter:
-        output = super().construct_list_query_filter(
+        output = await super().construct_list_query_filter(
             query_filter=query_filter, use_raw_query_filter=use_raw_query_filter, **kwargs
         )
         # user defined function without catalog_id is a global function (used by all catalogs)

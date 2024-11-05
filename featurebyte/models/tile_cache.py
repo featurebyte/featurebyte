@@ -5,12 +5,13 @@ Tile cache related models
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 from bson import ObjectId
 
 from featurebyte.enum import InternalName
-from featurebyte.models.tile import TileSpec
+from featurebyte.models.tile import OnDemandTileSpec, TileSpec
+from featurebyte.models.tile_compute_query import TileComputeQuery
 from featurebyte.query_graph.sql.interpreter import TileGenSql
 
 
@@ -75,11 +76,12 @@ class OnDemandTileComputeRequest:
 
     tile_table_id: str
     aggregation_id: str
-    tracker_sql: str
-    tile_compute_sql: str
+    tracker_sql: Optional[str]
+    observation_table_id: Optional[ObjectId]
+    tile_compute_query: TileComputeQuery
     tile_gen_info: TileGenSql
 
-    def to_tile_manager_input(self, feature_store_id: ObjectId) -> tuple[TileSpec, str]:
+    def to_tile_manager_input(self, feature_store_id: ObjectId) -> OnDemandTileSpec:
         """Returns a tuple required by FeatureListManager to compute tiles on-demand
 
         Parameters
@@ -89,8 +91,7 @@ class OnDemandTileComputeRequest:
 
         Returns
         -------
-        tuple[TileSpec, str]
-            Tuple of TileSpec and temp table name
+        OnDemandTileSpec
         """
         entity_column_names = self.tile_gen_info.entity_columns[:]
         if self.tile_gen_info.value_by_column is not None:
@@ -99,7 +100,7 @@ class OnDemandTileComputeRequest:
             time_modulo_frequency_second=self.tile_gen_info.time_modulo_frequency,
             blind_spot_second=self.tile_gen_info.blind_spot,
             frequency_minute=self.tile_gen_info.frequency // 60,
-            tile_sql=self.tile_compute_sql,
+            tile_compute_query=self.tile_compute_query,
             column_names=self.tile_gen_info.columns,
             entity_column_names=entity_column_names,
             value_column_names=self.tile_gen_info.tile_value_columns,
@@ -111,7 +112,11 @@ class OnDemandTileComputeRequest:
             entity_tracker_table_name=self.tile_info_key.get_entity_tracker_table_name(),
             windows=self.tile_gen_info.windows,
         )
-        return tile_spec, self.tracker_sql
+        return OnDemandTileSpec(
+            tile_spec=tile_spec,
+            tracker_sql=self.tracker_sql,
+            observation_table_id=self.observation_table_id,
+        )
 
     @property
     def tile_info_key(self) -> TileInfoKey:

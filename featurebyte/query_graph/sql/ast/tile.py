@@ -11,6 +11,12 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
 from featurebyte.enum import DBVarType, InternalName
+from featurebyte.models.tile_compute_query import (
+    Prerequisite,
+    PrerequisiteTable,
+    QueryModel,
+    TileComputeQuery,
+)
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.adapter import BaseAdapter
@@ -54,7 +60,6 @@ class BuildTileNode(TableNode):
 
     @property
     def sql(self) -> Expression:
-        input_filtered = self._get_input_filtered_within_date_range()
         tile_index_expr = alias_(
             self.adapter.call_udf(
                 "F_TIMESTAMP_TO_INDEX",
@@ -69,7 +74,7 @@ class BuildTileNode(TableNode):
             ),
             alias="index",
         )
-        input_tiled = select("*", tile_index_expr).from_(input_filtered.subquery(copy=False))
+        input_tiled = select("*", tile_index_expr).from_(InternalName.TILE_COMPUTE_INPUT_TABLE_NAME)
         keys = [quoted_identifier(k) for k in self.keys]
         if self.value_by is not None:
             keys.append(quoted_identifier(self.value_by))
@@ -78,6 +83,31 @@ class BuildTileNode(TableNode):
             return self._get_tile_sql_order_dependent(keys, input_tiled)
 
         return self._get_tile_sql_order_independent(keys, input_tiled)
+
+    def get_tile_compute_query(self) -> TileComputeQuery:
+        prerequisite_tables = []
+        source_type = self.context.source_info.source_type
+        if self.is_on_demand:
+            prerequisite_tables.append(
+                PrerequisiteTable(
+                    name=InternalName.ENTITY_TABLE_NAME.value,
+                    query=QueryModel.from_expr(
+                        expressions.Identifier(this=InternalName.ENTITY_TABLE_SQL_PLACEHOLDER),
+                        source_type=source_type,
+                    ),
+                )
+            )
+        input_filtered = self._get_input_filtered_within_date_range()
+        prerequisite_tables.append(
+            PrerequisiteTable(
+                name=InternalName.TILE_COMPUTE_INPUT_TABLE_NAME.value,
+                query=QueryModel.from_expr(input_filtered, source_type=source_type),
+            )
+        )
+        return TileComputeQuery(
+            prerequisite=Prerequisite(tables=prerequisite_tables),
+            aggregation_query=QueryModel.from_expr(self.sql, source_type=source_type),
+        )
 
     def _get_input_filtered_within_date_range(self) -> Select:
         """
@@ -130,7 +160,6 @@ class BuildTileNode(TableNode):
             input_expr=cast(Select, self.input_node.sql),
             entity_column_names=self.keys,
             timestamp_column=self.timestamp,
-            inject_entity_table_placeholder=True,
             adapter=self.adapter,
         )
 

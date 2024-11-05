@@ -1,4 +1,5 @@
 from featurebyte.query_graph.sql.tile_compute import OnDemandTileComputePlan
+from featurebyte.query_graph.sql.tile_util import get_max_window_sizes
 
 
 def test_combine_tile_tables(query_graph_with_similar_groupby_nodes, source_info):
@@ -15,4 +16,7 @@ def test_combine_tile_tables(query_graph_with_similar_groupby_nodes, source_info
         plan.process_node(graph, node)
 
     # Check maximum window size is tracked correctly
-    assert plan.get_max_window_size(tile_id) == 172800
+    max_window_sizes = get_max_window_sizes(
+        tile_info_list=plan.tile_infos, key_name="tile_table_id"
+    )
+    assert max_window_sizes[tile_id] == 172800

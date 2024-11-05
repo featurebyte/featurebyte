@@ -231,7 +231,9 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         """
         return super().describe(size=size, seed=seed)
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download(
+        self, output_path: Optional[Union[str, Path]] = None, overwrite: bool = False
+    ) -> Path:
         """
         Downloads the historical feature table from the database.
 
@@ -239,6 +241,8 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
         ----------
         output_path: Optional[Union[str, Path]]
             Location to save downloaded parquet file.
+        overwrite: bool
+            Overwrite the file if it already exists.
 
         Returns
         -------
@@ -262,7 +266,7 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         # noqa: DAR402
         """
-        return super().download(output_path=output_path)
+        return super().download(output_path=output_path, overwrite=overwrite)
 
     def delete(self) -> None:
         """

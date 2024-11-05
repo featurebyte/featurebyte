@@ -183,6 +183,9 @@ def test_download_report(saved_analysis):
         os.unlink(file_obj.name)
         analysis.download_report(output_path=file_obj.name)
 
+        # download should work if path exists and overwrite is True
+        analysis.download_report(output_path=file_obj.name, overwrite=True)
+
 
 def test_delete(saved_analysis):
     """

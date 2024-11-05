@@ -958,7 +958,7 @@ class BaseSession(BaseModel):
             expr = (
                 expressions.Select(expressions=[expressions.Star()])
                 .from_(get_fully_qualified_table_name(table_details.model_dump()))
-                .limit(1)
+                .limit(0)
             )
             await self.execute_query_long_running(
                 sql_to_string(expr, self.source_type), to_log_error=False

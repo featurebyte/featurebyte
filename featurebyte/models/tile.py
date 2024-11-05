@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from featurebyte.enum import InternalName, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.tile_compute_query import TileComputeQuery
 
 
 class TileType(StrEnum):
@@ -53,7 +54,8 @@ class TileSpec(FeatureByteBaseModel):
     time_modulo_frequency_second: int = Field(ge=0)
     blind_spot_second: int = Field(ge=0)
     frequency_minute: int = Field(gt=0)
-    tile_sql: str
+    tile_sql: Optional[str] = Field(default=None)
+    tile_compute_query: Optional[TileComputeQuery] = Field(default=None)
     entity_column_names: List[str]
     value_column_names: List[str]
     value_column_types: List[str]
@@ -134,6 +136,16 @@ class TileSpec(FeatureByteBaseModel):
         return self
 
 
+class OnDemandTileSpec(FeatureByteBaseModel):
+    """
+    Model for OnDemandTileSpec
+    """
+
+    tile_spec: TileSpec
+    tracker_sql: Optional[str] = None
+    observation_table_id: Optional[PydanticObjectId] = None
+
+
 class TileCommonParameters(FeatureByteBaseModel):
     """
     Model for common parameters used by various steps within a tile scheduled job
@@ -146,7 +158,8 @@ class TileCommonParameters(FeatureByteBaseModel):
     blind_spot_second: int
     frequency_minute: int
 
-    sql: str
+    sql: Optional[str] = None  # backward compatibility for legacy jobs
+    tile_compute_query: Optional[TileComputeQuery] = None
     entity_column_names: List[str]
     value_column_names: List[str]
     value_column_types: List[str]

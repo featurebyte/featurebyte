@@ -9,6 +9,74 @@ WITH REQUEST_TABLE AS (
     sum_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec,
     count_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec
   FROM (
+    WITH __FB_ENTITY_TABLE_NAME AS (
+      SELECT
+        "CUSTOMER_ID" AS "cust_id",
+        CAST(FLOOR((
+          DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
+        ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
+        DATEADD(
+          microsecond,
+          (
+            720 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
+          ) * -1,
+          CAST(FLOOR((
+            DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
+          ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP)
+        ) AS __FB_ENTITY_TABLE_START_DATE
+      FROM "REQUEST_TABLE"
+      GROUP BY
+        "CUSTOMER_ID"
+    ), __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
+      SELECT
+        R.*
+      FROM __FB_ENTITY_TABLE_NAME
+      INNER JOIN (
+        SELECT
+          "ts" AS "ts",
+          "cust_id" AS "cust_id",
+          "order_id" AS "order_id",
+          "order_method" AS "order_method",
+          (
+            "_fb_internal_order_id_item_count_None_order_id_None_input_2" + 123
+          ) AS "ord_size"
+        FROM (
+          SELECT
+            REQ."ts",
+            REQ."cust_id",
+            REQ."order_id",
+            REQ."order_method",
+            "T0"."_fb_internal_order_id_item_count_None_order_id_None_input_2" AS "_fb_internal_order_id_item_count_None_order_id_None_input_2"
+          FROM (
+            SELECT
+              "ts" AS "ts",
+              "cust_id" AS "cust_id",
+              "order_id" AS "order_id",
+              "order_method" AS "order_method"
+            FROM "db"."public"."event_table"
+          ) AS REQ
+          LEFT JOIN (
+            SELECT
+              ITEM."order_id" AS "order_id",
+              COUNT(*) AS "_fb_internal_order_id_item_count_None_order_id_None_input_2"
+            FROM (
+              SELECT
+                "order_id" AS "order_id",
+                "item_id" AS "item_id",
+                "item_name" AS "item_name",
+                "item_type" AS "item_type"
+              FROM "db"."public"."item_table"
+            ) AS ITEM
+            GROUP BY
+              ITEM."order_id"
+          ) AS T0
+            ON REQ."order_id" = T0."order_id"
+        )
+      ) AS R
+        ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
+        AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
+        AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
+    )
     SELECT
       index,
       "cust_id",
@@ -18,77 +86,7 @@ WITH REQUEST_TABLE AS (
       SELECT
         *,
         F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
-      FROM (
-        WITH __FB_ENTITY_TABLE_NAME AS (
-          (
-            SELECT
-              "CUSTOMER_ID" AS "cust_id",
-              CAST(FLOOR((
-                DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
-              ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
-              DATEADD(
-                microsecond,
-                (
-                  720 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
-                ) * -1,
-                CAST(FLOOR((
-                  DATE_PART(EPOCH_SECOND, MIN(POINT_IN_TIME)) - 1800
-                ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP)
-              ) AS __FB_ENTITY_TABLE_START_DATE
-            FROM "REQUEST_TABLE"
-            GROUP BY
-              "CUSTOMER_ID"
-          )
-        )
-        SELECT
-          R.*
-        FROM __FB_ENTITY_TABLE_NAME
-        INNER JOIN (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "order_id" AS "order_id",
-            "order_method" AS "order_method",
-            (
-              "_fb_internal_order_id_item_count_None_order_id_None_input_2" + 123
-            ) AS "ord_size"
-          FROM (
-            SELECT
-              REQ."ts",
-              REQ."cust_id",
-              REQ."order_id",
-              REQ."order_method",
-              "T0"."_fb_internal_order_id_item_count_None_order_id_None_input_2" AS "_fb_internal_order_id_item_count_None_order_id_None_input_2"
-            FROM (
-              SELECT
-                "ts" AS "ts",
-                "cust_id" AS "cust_id",
-                "order_id" AS "order_id",
-                "order_method" AS "order_method"
-              FROM "db"."public"."event_table"
-            ) AS REQ
-            LEFT JOIN (
-              SELECT
-                ITEM."order_id" AS "order_id",
-                COUNT(*) AS "_fb_internal_order_id_item_count_None_order_id_None_input_2"
-              FROM (
-                SELECT
-                  "order_id" AS "order_id",
-                  "item_id" AS "item_id",
-                  "item_name" AS "item_name",
-                  "item_type" AS "item_type"
-                FROM "db"."public"."item_table"
-              ) AS ITEM
-              GROUP BY
-                ITEM."order_id"
-            ) AS T0
-              ON REQ."order_id" = T0."order_id"
-          )
-        ) AS R
-          ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
-          AND R."ts" >= __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_START_DATE
-          AND R."ts" < __FB_ENTITY_TABLE_NAME.__FB_ENTITY_TABLE_END_DATE
-      )
+      FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
     )
     GROUP BY
       index,

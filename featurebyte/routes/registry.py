@@ -128,6 +128,7 @@ from featurebyte.service.item_table import ExtendedItemTableService, ItemTableSe
 from featurebyte.service.item_table_validation import ItemTableValidationService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.service.observation_table_tile_cache import ObservationTableTileCacheService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.offline_store_feature_table_comment import (
     OfflineStoreFeatureTableCommentService,
@@ -178,6 +179,9 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.service.tile.tile_task_executor import TileTaskExecutor
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.tile_cache_query_by_entity import TileCacheQueryByEntityService
+from featurebyte.service.tile_cache_query_by_observation_table import (
+    TileCacheQueryByObservationTableService,
+)
 from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -323,6 +327,7 @@ app_container_config.register_class(ObservationSetHelper)
 app_container_config.register_class(ObservationTableController)
 app_container_config.register_class(ObservationTableDeleteValidator)
 app_container_config.register_class(ObservationTableService)
+app_container_config.register_class(ObservationTableTileCacheService)
 app_container_config.register_class(OfflineStoreFeatureTableConstructionService)
 app_container_config.register_class(OfflineStoreFeatureTableService)
 app_container_config.register_class(OfflineStoreFeatureTableCommentService)
@@ -411,6 +416,7 @@ app_container_config.register_class(TaskManager)
 app_container_config.register_class(TempDataController)
 app_container_config.register_class(TileCacheService)
 app_container_config.register_class(TileCacheQueryByEntityService)
+app_container_config.register_class(TileCacheQueryByObservationTableService)
 app_container_config.register_class(TileColumnTypeExtractor)
 app_container_config.register_class(TileJobLogService)
 app_container_config.register_class(TileManagerService)

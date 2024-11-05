@@ -113,7 +113,9 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         display_html_in_notebook(self.analysis_report)
 
     @typechecked
-    def download_report(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download_report(
+        self, output_path: Optional[Union[str, Path]] = None, overwrite: bool = False
+    ) -> Path:
         """
         Downloads analysis report.
 
@@ -121,6 +123,8 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         ----------
         output_path: Optional[Union[str, Path]]
             Location to save downloaded report
+        overwrite: bool
+            Overwrite the file if it already exists
 
         Returns
         -------
@@ -142,7 +146,7 @@ class FeatureJobSettingAnalysis(FeatureJobSettingAnalysisModel, DeletableApiObje
         output_path = output_path or Path(f"./{file_name}")
         output_path = Path(output_path)
 
-        if output_path.exists():
+        if output_path.exists() and not overwrite:
             raise FileExistsError(f"{output_path} already exists.")
 
         with open(output_path, "wb") as file_obj:

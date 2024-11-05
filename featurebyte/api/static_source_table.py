@@ -142,7 +142,9 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
         """
         return super().describe(size=size, seed=seed)
 
-    def download(self, output_path: Optional[Union[str, Path]] = None) -> Path:
+    def download(
+        self, output_path: Optional[Union[str, Path]] = None, overwrite: bool = False
+    ) -> Path:
         """
         Downloads the static source table from the database.
 
@@ -150,6 +152,8 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
         ----------
         output_path: Optional[Union[str, Path]]
             Location to save downloaded parquet file.
+        overwrite: bool
+            Overwrite the file if it already exists.
 
         Returns
         -------
@@ -173,7 +177,7 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
 
         # noqa: DAR402
         """
-        return super().download(output_path=output_path)
+        return super().download(output_path=output_path, overwrite=overwrite)
 
     def delete(self) -> None:
         """

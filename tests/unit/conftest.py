@@ -8,6 +8,7 @@ import logging
 import os
 import tempfile
 import traceback
+import typing
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -15,12 +16,13 @@ from unittest import mock
 from unittest.mock import Mock, PropertyMock, patch
 from uuid import UUID, uuid4
 
+import httpx
 import pandas as pd
 import pytest
 import pytest_asyncio
 from bson import ObjectId
 from cachetools import TTLCache
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient as BaseTestClient
 from snowflake.connector import ProgrammingError
 from snowflake.connector.constants import QueryStatus
 
@@ -85,6 +87,41 @@ _ = [config_file_fixture, config_fixture, mock_config_path_env_fixture]
 TEST_REDIS_URI = "redis://localhost:36379"
 
 
+class Response(httpx.Response):
+    """
+    Response object with additional methods
+    """
+
+    def __init__(self, response: httpx.Response):
+        for key, value in response.__dict__.items():
+            setattr(self, key, value)
+
+    def iter_content(self, chunk_size=1):
+        return super().iter_bytes(chunk_size=chunk_size)
+
+
+class TestClient(BaseTestClient):
+    """
+    Override TestClient to handle streaming responses
+    """
+
+    def request(
+        self,
+        method: str,
+        url: httpx._types.URLTypes,
+        *args: typing.Any,
+        stream: bool = False,
+        **kwargs: typing.Any,
+    ) -> httpx.Response:
+        """
+        Override request method to handle streaming responses
+        """
+        if stream:
+            with super().stream(method, url, *args, **kwargs) as response:
+                return Response(response)
+        return super().request(method, url, *args, **kwargs)
+
+
 @pytest.fixture(name="mock_api_object_cache")
 def mock_api_object_cache_fixture():
     """Mock api object cache so that the time-to-live period is 0"""
@@ -131,6 +168,27 @@ def mock_redis_fixture():
         mock_redis.pipeline.return_value.execute.return_value = [0]
         mock_redis.zrank.return_value = 0
         yield mock_redis
+
+
+@pytest.fixture(autouse=True)
+def patched_query_cache_unique_identifier():
+    """
+    Patch ObjectId to return a fixed value
+    """
+    current = 0
+
+    def increasing_object_id():
+        # 0-pad with 24 characters
+        nonlocal current
+        out = f"{current:024d}"
+        current += 1
+        return out
+
+    with patch(
+        "featurebyte.service.query_cache_manager.ObjectId",
+        side_effect=increasing_object_id,
+    ):
+        yield
 
 
 @pytest.fixture(name="storage")
@@ -725,6 +783,7 @@ def credentials_fixture(snowflake_feature_store_params):
     return {
         snowflake_feature_store_params["name"]: CredentialModel(
             name="sf_featurestore",
+            group_ids=[],
             feature_store_id=ObjectId(),
             database_credential=UsernamePasswordCredential(
                 username="sf_user",
@@ -1450,9 +1509,45 @@ def snowflake_execute_query_for_materialized_table_fixture(
         yield mock_execute_query
 
 
+@pytest.fixture(name="snowflake_execute_query_for_observation_table")
+def snowflake_execute_query_for_observation_table_fixture(
+    snowflake_connector,
+    snowflake_query_map,
+):
+    """
+    Extended version of the default execute_query mock to handle more queries expected when running
+    observation table creation tasks.
+    """
+    _ = snowflake_connector
+
+    def side_effect(query, timeout=DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, to_log_error=True):
+        _ = timeout, to_log_error
+        if "COUNT(*)" in query:
+            res = [
+                {
+                    "row_count": 500,
+                }
+            ]
+        else:
+            res = snowflake_query_map.get(query)
+        if res is not None:
+            return pd.DataFrame(res)
+        return None
+
+    with mock.patch(
+        "featurebyte.session.snowflake.SnowflakeSession.execute_query"
+    ) as mock_execute_query:
+        mock_execute_query.side_effect = side_effect
+        yield mock_execute_query
+
+
 @pytest.fixture(name="observation_table_from_source")
 def observation_table_from_source_fixture(
-    snowflake_database_table, patched_observation_table_service, catalog, context
+    snowflake_database_table,
+    patched_observation_table_service,
+    snowflake_execute_query_for_observation_table,
+    catalog,
+    context,
 ):
     """
     Observation table created from SourceTable
@@ -2091,8 +2186,9 @@ def mock_snowflake_session_fixture():
         _no_schema_error=ProgrammingError,
     )
     session.clone_if_not_threadsafe.return_value = session
-    session.create_table_as = partial(SnowflakeSession.create_table_as, session)
-    session.retry_sql = partial(SnowflakeSession.retry_sql, session)
+    session.create_table_as.side_effect = partial(SnowflakeSession.create_table_as, session)
+    session.table_exists.side_effect = partial(SnowflakeSession.table_exists, session)
+    session.retry_sql.side_effect = partial(SnowflakeSession.retry_sql, session)
     session.list_table_schema.return_value = {}
     session.get_source_info.return_value = SourceInfo(
         database_name="sf_db", schema_name="sf_schema", source_type=SourceType.SNOWFLAKE

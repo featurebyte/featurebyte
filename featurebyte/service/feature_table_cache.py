@@ -698,6 +698,7 @@ class FeatureTableCacheService:
         bool
             Whether the output is a view
         """
+        first_tic = time.time()
         with timer(
             "Update feature table cache",
             logger,
@@ -733,4 +734,5 @@ class FeatureTableCacheService:
             select_expr=select_expr,
             kind="TABLE",
         )
+        historical_features_metrics.total_seconds = time.time() - first_tic
         return False, historical_features_metrics

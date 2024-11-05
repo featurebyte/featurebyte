@@ -242,7 +242,6 @@ EXPECTED_FUNCTIONS = [
 
 EXPECTED_TABLES = [
     "METADATA_SCHEMA",
-    "TILE_MONITOR_SUMMARY",
 ]
 
 METADATA_QUERY = 'SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM "sf_database"."FEATUREBYTE"."METADATA_SCHEMA"'
@@ -415,11 +414,6 @@ def test_schema_initializer__sql_objects(
             "filename": "F_VECTOR_COSINE_SIMILARITY.sql",
             "identifier": "F_VECTOR_COSINE_SIMILARITY",
             "type": "function",
-        },
-        {
-            "filename": "T_TILE_MONITOR_SUMMARY.sql",
-            "identifier": "TILE_MONITOR_SUMMARY",
-            "type": "table",
         },
     ]
 

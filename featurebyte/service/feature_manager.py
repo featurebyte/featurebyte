@@ -7,7 +7,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Set
 
-import pandas as pd
 from bson import ObjectId
 
 from featurebyte.common import date_util
@@ -15,7 +14,6 @@ from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import SourceType
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.feature_manager.sql_template import tm_feature_tile_monitor
 from featurebyte.logging import get_logger
 from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
@@ -393,7 +391,7 @@ class FeatureManagerService:
             tile_type=TileType.OFFLINE,
             end_ts_str=end_ts_str,
             start_ts_str=start_ts_str,
-            last_tile_start_ts_str=end_ts_str if update_last_run_metadata else None,
+            update_last_run_metadata=update_last_run_metadata,
         )
         if update_backfill_start_date:
             await self.tile_registry_service.update_backfill_metadata(
@@ -525,32 +523,6 @@ class FeatureManagerService:
                 await self.online_store_cleanup_scheduler_service.stop_job(table_name)
                 if session is not None:
                     await session.execute_query(f"DROP TABLE IF EXISTS {table_name}")
-
-    @staticmethod
-    async def retrieve_feature_tile_inconsistency_data(
-        session: BaseSession, query_start_ts: str, query_end_ts: str
-    ) -> pd.DataFrame:
-        """
-        Retrieve the raw table of feature tile inconsistency monitoring
-
-        Parameters
-        ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
-        query_start_ts: str
-            start monitoring timestamp of tile inconsistency
-        query_end_ts: str
-            end monitoring timestamp of tile inconsistency
-
-        Returns
-        -------
-            raw table of feature-tile inconsistency as dataframe
-        """
-        sql = tm_feature_tile_monitor.render(
-            query_start_ts=query_start_ts, query_end_ts=query_end_ts
-        )
-        result = await session.execute_query(sql)
-        return result
 
     @staticmethod
     async def may_register_databricks_udf_for_on_demand_feature(
