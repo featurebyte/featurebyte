@@ -5,6 +5,7 @@ Session related helper functions
 from __future__ import annotations
 
 import os
+from queue import Queue
 from typing import Any, Callable, Coroutine, List, Optional, Union
 
 import pandas as pd
@@ -114,6 +115,7 @@ async def execute_feature_query(
     session: BaseSession,
     feature_query: FeatureQuery,
     done_callback: Callable[[], Coroutine[Any, Any, None]],
+    materialized_feature_tables: Queue[str],
 ) -> None:
     """
     Process a single FeatureQuery
@@ -136,10 +138,14 @@ async def execute_feature_query(
     await session.execute_query_long_running(_to_query_str(feature_query.sql, session.source_type))
     try:
         await validate_output_row_index(session, feature_query.table_name)
+        materialized_feature_tables.put(feature_query.table_name)
     except InvalidOutputRowIndexError:
         formatted_feature_names = ", ".join(feature_query.feature_names)
+        formatted_table_name = (
+            f"{session.database_name}.{session.schema_name}.{feature_query.table_name}"
+        )
         raise InvalidOutputRowIndexError(
-            f"Row index column is invalid in the intermediate feature table: {feature_query.table_name}."
+            f"Row index column is invalid in the intermediate feature table: {formatted_table_name}."
             f" Feature names: {formatted_feature_names}"
         )
 
@@ -176,7 +182,7 @@ async def execute_feature_query_set(
     """
     session = session_handler.session
     total_num_queries = len(feature_query_set.feature_queries) + 1
-    materialized_feature_table = []
+    materialized_feature_tables: Queue[str] = Queue()
     processed = 0
 
     async def _progress_callback() -> None:
@@ -196,9 +202,9 @@ async def execute_feature_query_set(
                     session=session,
                     feature_query=feature_query,
                     done_callback=_progress_callback,
+                    materialized_feature_tables=materialized_feature_tables,
                 )
             )
-            materialized_feature_table.append(feature_query.table_name)
         if coroutines:
             with timer("Execute feature queries", logger=logger):
                 await run_coroutines(
@@ -219,7 +225,8 @@ async def execute_feature_query_set(
         return result
 
     finally:
-        for table_name in materialized_feature_table:
+        while not materialized_feature_tables.empty():
+            table_name = materialized_feature_tables.get_nowait()
             await session.drop_table(
                 database_name=session.database_name,
                 schema_name=session.schema_name,
