@@ -15,6 +15,7 @@ from sqlglot import expressions
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix
+from featurebyte.exception import InvalidOutputRowIndexError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -371,6 +372,7 @@ class FeatureTableCacheService:
         merge_target_table_alias = "feature_table_cache"
         merge_source_table_alias = "partial_features"
 
+        should_drop_output_table = True
         try:
             historical_features_metrics = await self._populate_intermediate_table(
                 feature_store=feature_store,
@@ -478,13 +480,25 @@ class FeatureTableCacheService:
                 sql_to_string(merge_expr, source_type=db_session.source_type)
             )
             historical_features_metrics.feature_cache_update_seconds = time.time() - tic
-        finally:
-            await db_session.drop_table(
-                database_name=db_session.database_name,
-                schema_name=db_session.schema_name,
-                table_name=intermediate_table_name,
-                if_exists=True,
+        except InvalidOutputRowIndexError:
+            logger.info(
+                "Skip dropping output table to due to invalid row index error",
+                extra={
+                    "database_name": db_session.database_name,
+                    "schema_name": db_session.schema_name,
+                    "table_name": intermediate_table_name,
+                },
             )
+            should_drop_output_table = False
+            raise
+        finally:
+            if should_drop_output_table:
+                await db_session.drop_table(
+                    database_name=db_session.database_name,
+                    schema_name=db_session.schema_name,
+                    table_name=intermediate_table_name,
+                    if_exists=True,
+                )
         await self.feature_table_cache_metadata_service.update_feature_table_cache(
             cache_metadata_id=cache_metadata.id,
             feature_definitions=[definition for _, definition in non_cached_nodes],
