@@ -53,6 +53,7 @@ from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.online_store import MySQLOnlineStoreDetails
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
+from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
@@ -1602,20 +1603,21 @@ def static_source_table_from_view_fixture(
 
 @pytest.fixture(name="historical_feature_table")
 def historical_feature_table_fixture(
-    float_feature, observation_table_from_source, snowflake_execute_query_for_materialized_table
+    float_feature,
+    observation_table_from_source,
+    snowflake_execute_query_for_materialized_table,
+    mocked_compute_tiles_on_demand,
 ):
     """
     Fixture for a HistoricalFeatureTable
     """
     _ = snowflake_execute_query_for_materialized_table
+    _ = mocked_compute_tiles_on_demand
     feature_list = FeatureList([float_feature], name="feature_list_for_historical_feature_table")
     feature_list.save()
-    with patch(
-        "featurebyte.service.historical_features_and_target.compute_tiles_on_demand",
-    ):
-        historical_feature_table = feature_list.compute_historical_feature_table(
-            observation_table_from_source, "my_historical_feature_table"
-        )
+    historical_feature_table = feature_list.compute_historical_feature_table(
+        observation_table_from_source, "my_historical_feature_table"
+    )
     return historical_feature_table
 
 
@@ -2260,7 +2262,8 @@ def online_store_table_version_service_fixture(app_container):
 def mocked_compute_tiles_on_demand():
     """Fixture for a mocked SnowflakeTileCache object"""
     with mock.patch(
-        "featurebyte.service.historical_features_and_target.compute_tiles_on_demand"
+        "featurebyte.service.historical_features_and_target.compute_tiles_on_demand",
+        return_value=TileComputeMetrics(),
     ) as mocked_compute_tiles_on_demand:
         yield mocked_compute_tiles_on_demand
 
