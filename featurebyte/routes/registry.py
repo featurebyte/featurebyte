@@ -159,7 +159,6 @@ from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.scd_table_validation import SCDTableValidationService
 from featurebyte.service.semantic import SemanticService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.service.session_validator import SessionValidatorService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.static_source_table import StaticSourceTableService
 from featurebyte.service.system_metrics import SystemMetricsService
@@ -381,7 +380,6 @@ app_container_config.register_class(SemanticController)
 app_container_config.register_class(SemanticService)
 app_container_config.register_class(SemanticRelationshipService)
 app_container_config.register_class(SessionManagerService)
-app_container_config.register_class(SessionValidatorService)
 app_container_config.register_class(StaticSourceTableController)
 app_container_config.register_class(StaticSourceTableService)
 app_container_config.register_class(SystemMetricsService)

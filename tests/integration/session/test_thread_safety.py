@@ -7,7 +7,7 @@ import threading
 
 import pytest
 
-from featurebyte.session.manager import SOURCE_TYPE_SESSION_MAP
+from featurebyte.service.session_manager import source_to_session_map
 
 
 def get_threadsafe_sessions():
@@ -17,7 +17,7 @@ def get_threadsafe_sessions():
     testable = {"snowflake", "spark"}
     threadsafe_sessions = {
         str(source_type)
-        for source_type, cls in SOURCE_TYPE_SESSION_MAP.items()
+        for source_type, cls in source_to_session_map.items()
         if cls.is_threadsafe()
     }
     return list(testable & threadsafe_sessions)

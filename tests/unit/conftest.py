@@ -61,8 +61,7 @@ from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.catalog import CatalogCreate
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
-from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, session_cache
-from featurebyte.session.manager import SessionManager
+from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.storage.local import LocalStorage
 from featurebyte.worker import get_redis
@@ -699,7 +698,7 @@ def mock_snowflake_execute_query(snowflake_connector, snowflake_query_map):
 
 
 @pytest.fixture(name="snowflake_feature_store_params")
-def snowflake_feature_store_params_fixture():
+def snowflake_feature_store_params():
     """
     Snowflake database source params fixture
     """
@@ -721,39 +720,38 @@ def snowflake_feature_store_params_fixture():
 
 
 @pytest.fixture(name="snowflake_feature_store")
-def snowflake_feature_store_fixture(
+def snowflake_feature_store(
     snowflake_feature_store_params, snowflake_execute_query, snowflake_feature_store_id
 ):
     """
     Snowflake database source fixture
     """
     _ = snowflake_execute_query
+    params = snowflake_feature_store_params.copy()
     try:
-        snowflake_feature_store_params["_id"] = snowflake_feature_store_id
-        snowflake_feature_store_params["type"] = "snowflake"
-        feature_store = FeatureStore(**snowflake_feature_store_params)
+        params["_id"] = snowflake_feature_store_id
+        params["type"] = "snowflake"
+        feature_store = FeatureStore(**params)
         feature_store.save()
         return feature_store
     except (DuplicatedRecordException, ObjectHasBeenSavedError):
-        return FeatureStore.get(snowflake_feature_store_params["name"])
+        return FeatureStore.get(params["name"])
 
 
-@pytest.fixture(name="credentials")
-def credentials_fixture(snowflake_feature_store_params):
+@pytest.fixture(name="snowflake_credentials")
+def snowflake_credentials(snowflake_feature_store_params):
     """
     Credentials fixture
     """
-    return {
-        snowflake_feature_store_params["name"]: CredentialModel(
-            name="sf_featurestore",
-            group_ids=[],
-            feature_store_id=ObjectId(),
-            database_credential=UsernamePasswordCredential(
-                username="sf_user",
-                password="sf_password",
-            ),
-        )
-    }
+    return CredentialModel(
+        name="sf_featurestore",
+        group_ids=[],
+        feature_store_id=ObjectId(),
+        database_credential=UsernamePasswordCredential(
+            username="sf_user",
+            password="sf_password",
+        ),
+    )
 
 
 @pytest.fixture(name="snowflake_data_source")
@@ -2088,17 +2086,6 @@ def request_column_point_in_time():
     return RequestColumn.point_in_time()
 
 
-@pytest.fixture(name="session_manager")
-def session_manager_fixture(credentials, snowflake_connector):
-    """
-    Session manager fixture
-    """
-
-    _ = snowflake_connector
-    session_cache.clear()
-    yield SessionManager(credentials=credentials)
-
-
 @pytest.fixture(name="mock_snowflake_session")
 def mock_snowflake_session_fixture():
     """
@@ -2192,20 +2179,6 @@ def mocked_compute_tiles_on_demand():
         yield mocked_compute_tiles_on_demand
 
 
-@pytest.fixture(name="noop_validate_feature_store_id_not_used_in_warehouse", autouse=True)
-def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
-    """
-    Set a no-op validator by default.
-
-    Functions that want to test the validation should inject an actual instance of the session validator.
-    """
-    with mock.patch(
-        "featurebyte.service.session_validator.SessionValidatorService.validate_feature_store_id_not_used_in_warehouse"
-    ) as mocked_exists:
-        mocked_exists.return_value = None
-        yield
-
-
 @pytest.fixture(name="api_object_to_id")
 def api_object_to_id_fixture():
     """
@@ -2283,6 +2256,27 @@ def catalog_fixture(snowflake_feature_store):
     Catalog fixture
     """
     return Catalog.create(name="catalog", feature_store_name=snowflake_feature_store.name)
+
+
+@pytest.fixture(name="app_container_no_catalog")
+def app_container_no_catalog_fixture(persistent, user, storage, temp_storage):
+    """
+    AppContainer fixture without catalog
+    """
+    return LazyAppContainer(
+        app_container_config=app_container_config,
+        instance_map={
+            "user": user,
+            "persistent": persistent,
+            "temp_storage": temp_storage,
+            "celery": get_celery(),
+            "storage": storage,
+            "catalog_id": None,
+            "task_id": uuid4(),
+            "progress": Mock(),
+            "redis_uri": TEST_REDIS_URI,
+        },
+    )
 
 
 @pytest.fixture(name="app_container")
@@ -2641,3 +2635,8 @@ def bigquery_source_info_fixture():
 def adapter_fixture(source_info):
     """Fixture for a default BaseAdapter object to use in tests"""
     return get_sql_adapter(source_info)
+
+
+@pytest.fixture(name="session_manager_service")
+def session_manager_service_fixture(app_container_no_catalog):
+    return app_container_no_catalog.session_manager_service

@@ -4,6 +4,7 @@ Tests for SessionManager class
 
 import logging
 import time
+from typing import cast
 from unittest import mock
 from unittest.mock import Mock, patch
 
@@ -15,8 +16,11 @@ from pytest import LogCaptureFixture
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.exception import SessionInitializationTimeOut
 from featurebyte.query_graph.node.schema import SQLiteDetails
-from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS, session_cache
-from featurebyte.session.manager import SessionManager
+from featurebyte.session.base import (
+    DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS,
+    BaseSession,
+    session_cache,
+)
 
 
 @pytest.fixture(autouse=True, name="caplog_handle")
@@ -28,17 +32,6 @@ def caplog_handle_fixture(caplog: LogCaptureFixture):
     caplog.set_level(logging.DEBUG, logger_name)
     yield caplog
     caplog.set_level(logging.NOTSET, logger_name)
-
-
-@pytest.fixture(name="session_manager")
-def session_manager_fixture(config, credentials, snowflake_connector):
-    """
-    Session manager fixture
-    """
-
-    _ = config, snowflake_connector
-    session_cache.clear()
-    yield SessionManager(credentials=credentials)
 
 
 @pytest.fixture(name="sqlite_feature_store")
@@ -59,15 +52,17 @@ def sqlite_feature_store_fixture(config):
 @pytest.mark.asyncio
 async def test_session_manager__get_cached_properly(
     snowflake_feature_store_params,
+    snowflake_credentials,
     sqlite_feature_store,
     snowflake_execute_query,
-    session_manager,
+    session_manager_service,
     caplog_handle,
 ):
     """
     Test session manager get cached properly
     """
     _ = snowflake_execute_query
+    session_cache.clear()  # Clear any previous session_cache entries from previous tests
     # check no record emit
     assert caplog_handle.records == []
 
@@ -82,62 +77,52 @@ async def test_session_manager__get_cached_properly(
 
     # retrieve data source session for the first time
     snowflake_feature_store = FeatureStore(**snowflake_feature_store_params, type="snowflake")
-    _ = await session_manager.get_session(snowflake_feature_store)
+    _ = await session_manager_service.get_session(snowflake_feature_store, snowflake_credentials)
     count, msg = count_create_session_logs()
     assert count == 1
     assert msg == "Create a new session for snowflake"
 
     # retrieve same data source for the second time, check that cached is used
-    _ = await session_manager.get_session(snowflake_feature_store)
+    _ = await session_manager_service.get_session(snowflake_feature_store, snowflake_credentials)
     count, msg = count_create_session_logs()
     assert count == 1
 
     # retrieve different data source
-    _ = await session_manager.get_session(sqlite_feature_store)
+    _ = await session_manager_service.get_session(sqlite_feature_store)
     count, msg = count_create_session_logs()
     assert count == 2
     assert msg == "Create a new session for sqlite"
 
     # clear the cache & call again
     session_cache.clear()
-    _ = await session_manager.get_session(snowflake_feature_store)
+    _ = await session_manager_service.get_session(snowflake_feature_store, snowflake_credentials)
     count, msg = count_create_session_logs()
     assert count == 3
     assert msg == "Create a new session for snowflake"
 
 
 @pytest.mark.asyncio
-async def test_session_manager__no_credentials(snowflake_feature_store):
-    """
-    Test exception raised when no credentials are provided
-    """
-    session_manager = SessionManager(credentials={})
-    with pytest.raises(ValueError) as exc:
-        _ = await session_manager.get_session(snowflake_feature_store)
-    assert 'Credentials do not contain info for the feature store "sf_featurestore"' in str(
-        exc.value
-    )
-
-
-@pytest.mark.asyncio
 async def test_session_manager_get_new_session_timeout(
     snowflake_feature_store_params,
-    snowflake_execute_query,
-    session_manager,
+    snowflake_credentials,
+    session_manager_service,
 ):
     """
     Test timeout exception raise during get new session
     """
     snowflake_feature_store = FeatureStore(**snowflake_feature_store_params, type="snowflake")
+    session_cache.clear()  # Clear any previous session_cache entries from previous tests
 
-    with patch("featurebyte.session.manager.SnowflakeSession.__init__") as mock_init:
+    with patch("featurebyte.service.session_manager.SnowflakeSession.__init__") as mock_init:
 
         def slow_init(*args, **kwargs):
             time.sleep(1)
 
         mock_init.side_effect = slow_init
         with pytest.raises(SessionInitializationTimeOut) as exc:
-            await session_manager.get_session(snowflake_feature_store, timeout=0.5)
+            await session_manager_service.get_session(
+                snowflake_feature_store, snowflake_credentials, timeout=0.5
+            )
         assert "Session creation timed out after" in str(exc.value)
 
 
@@ -146,7 +131,8 @@ async def cached_session_setup(
     snowflake_feature_store_params,
     snowflake_connector,
     snowflake_query_map,
-    session_manager,
+    snowflake_credentials,
+    session_manager_service,
 ):
     """Setup for cached session tests"""
     _ = snowflake_connector
@@ -158,13 +144,16 @@ async def cached_session_setup(
             return pd.DataFrame(res)
         return None
 
+    session_cache.clear()
     assert len(session_cache) == 0
     snowflake_feature_store = FeatureStore(**snowflake_feature_store_params, type="snowflake")
     with mock.patch(
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
     ) as mock_execute_query:
         mock_execute_query.side_effect = _side_effect
-        session = await session_manager.get_session(snowflake_feature_store, timeout=0.5)
+        session = await session_manager_service.get_session(
+            snowflake_feature_store, snowflake_credentials, timeout=0.5
+        )
 
     # check the session is cached
     session_cache_key = session._cache_key
@@ -188,7 +177,8 @@ async def test_session_manager__invalidate_cache_when_execute_query_failed(
         exc_message = "Some error"
         mock_get_async_query_stream.side_effect = Exception(exc_message)
         with pytest.raises(Exception, match=exc_message):
-            await session.execute_query("SELECT * FROM some_table")
+            base_session = cast(BaseSession, session)
+            await base_session.execute_query("SELECT * FROM some_table")
 
     # check the session is invalidated
     assert session_cache_key not in session_cache
@@ -212,9 +202,3 @@ async def test_session_manager__invalidate_cache_when_execute_query_blocking_fai
 
     # check the session is invalidated
     assert session_cache_key not in session_cache
-
-
-def test_construct_session_manager_with_empty_credentials():
-    """Test constructing session manager with empty credentials"""
-    session_manager = SessionManager(credentials={"store_name": None})
-    assert session_manager.credentials == {"store_name": None}
