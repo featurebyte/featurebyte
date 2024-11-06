@@ -12,6 +12,7 @@ from featurebyte.common.progress import divide_progress_callback
 from featurebyte.common.utils import timer
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
+from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.tile_cache import OnDemandTileComputeRequest, OnDemandTileComputeRequestSet
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -57,7 +58,7 @@ class TileCacheService:
         observation_table_id: Optional[ObjectId],
         serving_names_mapping: dict[str, str] | None = None,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-    ) -> None:
+    ) -> TileComputeMetrics:
         """
         Compute tiles on demand for the given graph and nodes.
 
@@ -81,6 +82,10 @@ class TileCacheService:
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
+
+        Returns
+        -------
+        TileComputeMetrics
         """
         feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
         if progress_callback is not None:
@@ -117,7 +122,7 @@ class TileCacheService:
                     extra={"n": len(required_tile_computations.compute_requests)},
                 )
                 with timer("Compute tiles on demand", logger):
-                    await self.invoke_tile_manager(
+                    tile_compute_metrics = await self.invoke_tile_manager(
                         required_requests=required_tile_computations.compute_requests,
                         session=session,
                         feature_store=feature_store,
@@ -125,8 +130,10 @@ class TileCacheService:
                     )
             else:
                 logger.debug("All required tiles can be reused")
+                tile_compute_metrics = TileComputeMetrics()
         finally:
             await self.cleanup_temp_tables(session=session, request_set=required_tile_computations)
+        return tile_compute_metrics
 
     async def invoke_tile_manager(
         self,
@@ -134,7 +141,7 @@ class TileCacheService:
         session: BaseSession,
         feature_store: FeatureStoreModel,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-    ) -> None:
+    ) -> TileComputeMetrics:
         """Interacts with FeatureListManager to compute tiles and update cache
 
         Parameters
@@ -147,12 +154,16 @@ class TileCacheService:
             Feature store model
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
+
+        Returns
+        -------
+        TileComputeMetrics
         """
         tile_inputs = []
         for request in required_requests:
             tile_input = request.to_tile_manager_input(feature_store_id=feature_store.id)
             tile_inputs.append(tile_input)
-        await self.tile_manager_service.generate_tiles_on_demand(
+        return await self.tile_manager_service.generate_tiles_on_demand(
             session=session, tile_inputs=tile_inputs, progress_callback=progress_callback
         )
 

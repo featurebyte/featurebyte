@@ -74,7 +74,7 @@ class TileCommon(TileCommonParameters, BaseSqlModel, ABC):
         return ",".join(self.value_column_types)
 
     @abstractmethod
-    async def execute(self) -> None:
+    async def execute(self) -> Any:
         """
         Base abstract method for tile related subclass
         """

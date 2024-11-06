@@ -32,6 +32,7 @@ def historical_feature_metrics_data(historical_feature_table_id):
     """
     return HistoricalFeaturesMetrics(
         tile_compute_seconds=3600,
+        tile_compute_metrics=None,
         feature_compute_seconds=7200,
         total_seconds=10000,
         historical_feature_table_id=historical_feature_table_id,
@@ -56,6 +57,7 @@ async def test_create_metrics(
     assert {
         "metrics_data": {
             "tile_compute_seconds": 3600,
+            "tile_compute_metrics": None,
             "feature_compute_seconds": 7200,
             "feature_cache_update_seconds": None,
             "historical_feature_table_id": historical_feature_table_id,

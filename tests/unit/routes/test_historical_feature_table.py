@@ -98,19 +98,17 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         _ = patched_observation_table_service
 
     @pytest.fixture(autouse=True)
-    def always_patched_get_historical_feature(self):
+    def always_patched_get_historical_feature(self, mocked_compute_tiles_on_demand):
         """
         Patch parts of compute_historical_features that have coverage elsewhere and not relevant to unit
         testing the routes
         """
+        _ = mocked_compute_tiles_on_demand
         with patch(
             "featurebyte.query_graph.sql.feature_historical.get_historical_features_expr",
             return_value=(expressions.select("*").from_("my_table"), ["a", "b", "c"]),
         ):
-            with patch(
-                "featurebyte.service.historical_features_and_target.compute_tiles_on_demand",
-            ):
-                yield
+            yield
 
     def test_create_422__failed_entity_validation_check(self, test_api_client_persistent):
         """Test that 422 is returned when payload fails validation check"""

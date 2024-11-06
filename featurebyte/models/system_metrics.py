@@ -27,6 +27,15 @@ class SystemMetricsType(StrEnum):
     SCHEDULED_FEATURE_MATERIALIZE = "scheduled_feature_materialize"
 
 
+class TileComputeMetrics(FeatureByteBaseModel):
+    """
+    TileGenerationMetrics class
+    """
+
+    view_cache_seconds: Optional[float] = None
+    compute_seconds: Optional[float] = None
+
+
 class HistoricalFeaturesMetrics(FeatureByteBaseModel):
     """
     HistoricalFeaturesMetrics class
@@ -34,6 +43,7 @@ class HistoricalFeaturesMetrics(FeatureByteBaseModel):
 
     historical_feature_table_id: Optional[PydanticObjectId] = None
     tile_compute_seconds: Optional[float] = None
+    tile_compute_metrics: Optional[TileComputeMetrics] = None
     feature_compute_seconds: Optional[float] = None
     feature_cache_update_seconds: Optional[float] = None
     total_seconds: Optional[float] = None

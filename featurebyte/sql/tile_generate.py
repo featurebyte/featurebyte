@@ -2,6 +2,7 @@
 Databricks Tile Generate Job Script
 """
 
+import time
 from typing import Optional
 
 import dateutil.parser
@@ -9,6 +10,7 @@ import dateutil.parser
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
+from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.tile import TileType
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.sql.tile_common import TileCommon
@@ -28,15 +30,21 @@ class TileGenerate(TileCommon):
     update_last_run_metadata: Optional[bool]
     tile_registry_service: TileRegistryService
 
-    async def execute(self) -> None:
+    async def execute(self) -> TileComputeMetrics:
         """
         Execute tile generate operation
+
+        Returns
+        -------
+        TileComputeMetrics
         """
         if self.sql is not None:
+            view_cache_seconds = None
             final_sql = self._replace_placeholder_dates(self.sql)
         else:
             assert self.tile_compute_query is not None
             tile_compute_query = self.tile_compute_query
+            tic = time.time()
             for table in self.tile_compute_query.prerequisite.tables:
                 replaced_query = self._replace_placeholder_dates(table.query.query_str)
                 if table.query.query_str != replaced_query:
@@ -44,6 +52,7 @@ class TileGenerate(TileCommon):
                         name=table.name,
                         new_query_str=replaced_query,
                     )
+            view_cache_seconds = time.time() - tic
             final_sql = tile_compute_query.get_combined_query_string()
 
         final_sql_with_index = self._construct_tile_sql_with_index(final_sql)
@@ -114,7 +123,9 @@ class TileGenerate(TileCommon):
                     insert ({insert_str})
                         values ({values_str})
         """
+        tic = time.time()
         await self._session.retry_sql(sql=merge_sql)
+        compute_seconds = time.time() - tic
 
         if self.tile_end_ts_str is not None and self.update_last_run_metadata:
             tile_end_date = dateutil.parser.isoparse(self.tile_end_ts_str)
@@ -137,6 +148,11 @@ class TileGenerate(TileCommon):
                 tile_index=ind_value,
                 tile_end_date=tile_end_date,
             )
+
+        return TileComputeMetrics(
+            view_cache_seconds=view_cache_seconds,
+            compute_seconds=compute_seconds,
+        )
 
     def _construct_tile_sql_with_index(self, tile_sql: str) -> str:
         if self.entity_column_names:

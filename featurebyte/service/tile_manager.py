@@ -12,6 +12,7 @@ from redis import Redis
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
+from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.tile import OnDemandTileSpec, TileScheduledJobParameters, TileSpec, TileType
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -60,7 +61,7 @@ class TileManagerService:
         session: BaseSession,
         tile_inputs: List[OnDemandTileSpec],
         progress_callback: Optional[Callable[[int, str], Coroutine[Any, Any, None]]] = None,
-    ) -> None:
+    ) -> TileComputeMetrics:
         """
         Generate Tiles and update tile entity checking table
 
@@ -72,6 +73,10 @@ class TileManagerService:
             list of TileSpec, temp_entity_table to update the feature store
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
+
+        Returns
+        -------
+        TileComputeMetrics
         """
         num_jobs = len(tile_inputs)
         processed = 0
@@ -106,17 +111,30 @@ class TileManagerService:
                     progress_callback=_progress_callback,
                 )
             )
-        await run_coroutines(coroutines, self.redis, str(feature_store_id), max_query_currency)
+        tile_compute_metrics_list: List[TileComputeMetrics] = await run_coroutines(
+            coroutines, self.redis, str(feature_store_id), max_query_currency
+        )
+        view_cache_seconds = 0.0
+        compute_seconds = 0.0
+        for metrics in tile_compute_metrics_list:
+            if metrics.view_cache_seconds is not None:
+                view_cache_seconds += metrics.view_cache_seconds
+            if metrics.compute_seconds is not None:
+                compute_seconds += metrics.compute_seconds
+        return TileComputeMetrics(
+            view_cache_seconds=view_cache_seconds,
+            compute_seconds=compute_seconds,
+        )
 
     async def _generate_tiles_on_demand_for_tile_spec(
         self,
         session: BaseSession,
         on_demand_tile_spec: OnDemandTileSpec,
         progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
-    ) -> None:
+    ) -> TileComputeMetrics:
         tic = time.time()
         session = await session.clone_if_not_threadsafe()
-        await self.generate_tiles(
+        tile_compute_metrics = await self.generate_tiles(
             session=session,
             tile_spec=on_demand_tile_spec.tile_spec,
             tile_type=TileType.OFFLINE,
@@ -152,6 +170,8 @@ class TileManagerService:
 
         if progress_callback:
             await progress_callback()
+
+        return tile_compute_metrics
 
     async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
         """
@@ -208,7 +228,7 @@ class TileManagerService:
         start_ts_str: Optional[str],
         end_ts_str: Optional[str],
         update_last_run_metadata: bool = False,
-    ) -> None:
+    ) -> TileComputeMetrics:
         """
         Manually trigger tile generation
 
@@ -227,6 +247,10 @@ class TileManagerService:
         update_last_run_metadata: bool
             whether to update last run metadata (intended to be set when enabling deployment and
             when running scheduled tile jobs)
+
+        Returns
+        -------
+        TileComputeMetrics
         """
         tile_generate_ins = TileGenerate(
             session=session,
@@ -247,7 +271,7 @@ class TileManagerService:
             aggregation_id=tile_spec.aggregation_id,
             tile_registry_service=self.tile_registry_service,
         )
-        await tile_generate_ins.execute()
+        return await tile_generate_ins.execute()
 
     async def update_tile_entity_tracker(
         self, session: BaseSession, tile_spec: TileSpec, temp_entity_table: str
