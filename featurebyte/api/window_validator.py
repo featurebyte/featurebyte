@@ -7,7 +7,8 @@ from typing import Optional
 
 from featurebyte.common.model_util import parse_duration_string, validate_offset_string
 
-MAX_NUM_TILES_FOR_AGGREGATION = int(os.getenv("FEATUREBYTE_MAX_NUM_TILES_FOR_AGGREGATION", "50400"))
+# Default allows up to 53 weeks of 10 min tiles
+MAX_NUM_TILES_FOR_AGGREGATION = int(os.getenv("FEATUREBYTE_MAX_NUM_TILES_FOR_AGGREGATION", "53424"))
 
 
 def validate_offset(offset: Optional[str]) -> None:
