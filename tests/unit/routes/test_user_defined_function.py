@@ -49,11 +49,9 @@ class TestUserDefinedFunctionApi(BaseCatalogApiTestSuite):
             yield payload
 
     @pytest.fixture(name="mock_get_session_to_throw_exception")
-    def mock_snowflake_execute_to_throw_exception_fixture(
-        self, session_manager, snowflake_execute_query
-    ):
+    def mock_snowflake_execute_to_throw_exception_fixture(self, snowflake_execute_query):
         """Mock get session to throw exception"""
-        _, _ = session_manager, snowflake_execute_query
+        _ = snowflake_execute_query
         with mock.patch(
             "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
         ) as mocked_get_session:

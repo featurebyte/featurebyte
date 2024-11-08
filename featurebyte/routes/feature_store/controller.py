@@ -4,11 +4,11 @@ FeatureStore API route controller
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Tuple
 
 from bson import ObjectId
 
-from featurebyte.exception import DataWarehouseConnectionError
+from featurebyte.exception import DataWarehouseConnectionError, FeatureStoreSchemaCollisionError
 from featurebyte.logging import get_logger
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -37,8 +37,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.preview import PreviewService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.service.session_validator import SessionValidatorService
-from featurebyte.session.base import MetadataSchemaInitializer
+from featurebyte.session.base import BaseSession, MetadataSchemaInitializer
 
 logger = get_logger(__name__)
 
@@ -57,7 +56,6 @@ class FeatureStoreController(
         feature_store_service: FeatureStoreService,
         preview_service: PreviewService,
         session_manager_service: SessionManagerService,
-        session_validator_service: SessionValidatorService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         credential_service: CredentialService,
         all_catalog_service: AllCatalogService,
@@ -66,11 +64,44 @@ class FeatureStoreController(
         super().__init__(feature_store_service)
         self.preview_service = preview_service
         self.session_manager_service = session_manager_service
-        self.session_validator_service = session_validator_service
         self.feature_store_warehouse_service = feature_store_warehouse_service
         self.credential_service = credential_service
         self.all_catalog_service = all_catalog_service
         self.task_controller = task_controller
+
+    @staticmethod
+    async def _check_feature_store_ownership(
+        db_session: BaseSession, feature_store_id: ObjectId
+    ) -> bool:
+        """
+        Check whether the DWH is already bound to a feature store.
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session object
+        feature_store_id: ObjectId
+            Feature store ID that you propose it to be bound to the DWH
+
+        Returns
+        -------
+        bool
+            True if the DWH is not bound to any feature store or the feature store ID matches the registered feature store ID
+            False if the DWH is already bound to another feature store
+        """
+        working_schema_metadata = await db_session.get_working_schema_metadata()
+        registered_feature_store_id = working_schema_metadata.get("feature_store_id")
+
+        # FeatureStore is not in use
+        # We can bind the feature store (mongodb.feature_store.id <=> DWH.metadata.feature_store_id)
+        if not registered_feature_store_id:
+            return True
+
+        # FeatureStore is in use
+        # But the feature store id matches the registered feature store id
+        if feature_store_id == registered_feature_store_id:
+            return True
+        return False
 
     async def create_feature_store(
         self,
@@ -91,78 +122,51 @@ class FeatureStoreController(
 
         Raises
         ------
-        Exception
+        FeatureStoreSchemaCollisionError
             If feature store already exists or initialization fails
+        Exception
+            If any other error occurs
         """
         # Validate whether the feature store trying to be created, collides with another feature store
-        #
-        # OUTCOMES
-        # exist in persistent | exist in DWH |           DWH                |     persistent
-        #        Y            |      N       |          create              | error on write
-        #        N            |      N       |          create              | write
-        #        Y            |      Y       | if matches in DWH, no error  | error on write
-        #                                    | if not, error                |
-        #        N            |      Y       | if matches in DWH, no error  | write
-        #                                    | if not, error                |
-        #
-        # Validate that feature store ID isn't claimed by the working schema.
-        # If the feature store ID is already in use, this will throw an error.
-        # Create the new feature store. If one already exists, we'll throw an error here.
-        logger.debug("Start create_feature_store")
+        # This occurs when you tried to bootstrap a new feature store with the same config as an existing one.
+        # 1. Person A creates a feature store with config Q.
+        #      + UUID Z is created in the mongodb.feature_store.id
+        #      + UUID Z is also stored in the DWH.(schema).metadata.feature_store_id
+        # 2. Person B tries to create a new feature store with the same config Q.
+        #      + UUID X is created in the mongodb.feature_store.id
+        #      + UUID Z is ALREADY stored in the DWH.(schema).metadata.feature_store_id
+        #      + A conflict occurs because the DWH is already bound to a previous feature store.
+        #      + We reject the creation of the new feature store and rollback the creation of the mongodb.feature_store.
+
         document = await self.service.create_document(data)
         credential_doc = None
         try:
             # Check credentials
-            credential = CredentialModel(
+            credentials = CredentialModel(
                 name=document.name,
                 feature_store_id=document.id,
                 database_credential=data.database_credential,
                 storage_credential=data.storage_credential,
             )
-
-            async def _temp_get_credential(
-                user_id: ObjectId, feature_store_name: str
-            ) -> CredentialModel:
-                """
-                Use the temporary credential to try to initialize the session.
-
-                Parameters
-                ----------
-                user_id: ObjectId
-                    user id
-                feature_store_name: str
-                    feature store name
-
-                Returns
-                -------
-                CredentialModel
-                    credentials
-                """
-                _ = user_id, feature_store_name
-                return credential
-
-            await self.session_validator_service.validate_feature_store_id_not_used_in_warehouse(
-                feature_store_name=data.name,
-                session_type=data.type,
-                details=data.details,
-                users_feature_store_id=document.id,
-                get_credential=_temp_get_credential,
-            )
-            logger.debug("End validate_feature_store_id_not_used_in_warehouse")
-
-            session = await self.session_manager_service.get_feature_store_session(
+            db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=FeatureStoreModel(
                     name=data.name, type=data.type, details=data.details
                 ),
-                get_credential=_temp_get_credential,
+                credentials_override=credentials,
             )
+
+            if not await self._check_feature_store_ownership(db_session, document.id):
+                raise FeatureStoreSchemaCollisionError(
+                    "DWH.feature_store is already owned by another mongodb.feature_store.id"
+                )
+
             # Try to persist credential
             credential_doc = await self.credential_service.create_document(
-                data=CredentialCreate(**credential.model_dump(by_alias=True))
+                data=CredentialCreate(**credentials.model_dump(by_alias=True))
             )
 
             # If no error thrown from creating, try to create the metadata table with the feature store ID.
-            metadata_schema_initializer = MetadataSchemaInitializer(session)
+            metadata_schema_initializer = MetadataSchemaInitializer(db_session)
             await metadata_schema_initializer.update_feature_store_id(str(document.id))
         except Exception:
             # If there is an error, delete the feature store + credential and re-raise the error.
@@ -176,7 +180,6 @@ class FeatureStoreController(
     async def list_databases(
         self,
         feature_store: FeatureStoreModel,
-        get_credential: Optional[Any] = None,
     ) -> List[str]:
         """
         List databases accessible by the feature store
@@ -185,8 +188,6 @@ class FeatureStoreController(
         ----------
         feature_store: FeatureStoreModel
             FeatureStoreModel object
-        get_credential: Optional[Any]
-            Get credential handler function
 
         Returns
         -------
@@ -194,7 +195,7 @@ class FeatureStoreController(
             List of database names
         """
         return await self.feature_store_warehouse_service.list_databases(
-            feature_store=feature_store, get_credential=get_credential
+            feature_store=feature_store,
         )
 
     async def list_schemas(
@@ -493,17 +494,18 @@ class FeatureStoreController(
             assert key in document.details.updatable_fields, f"Field is not updatable: {key}"
         updated_details = {**document.details.model_dump(by_alias=True), **details_dict}
 
-        # test connection
+        # test connection works with new details
         update_data = DatabaseDetailsServiceUpdate(details=updated_details)
         document.details = update_data.details
         session = await self.session_manager_service.get_feature_store_session(
-            feature_store=document, skip_validation=True
+            feature_store=document,
         )
         try:
             await session.list_databases()
         except session.no_schema_error as exc:
             raise DataWarehouseConnectionError(f"Invalid details: {exc}") from exc
 
+        # Update valid details
         await self.service.update_document(document_id=feature_store_id, data=update_data)
         return await self.service.get_document(feature_store_id)
 

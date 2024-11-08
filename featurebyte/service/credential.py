@@ -11,6 +11,7 @@ from cryptography.fernet import InvalidToken
 from redis import Redis
 
 from featurebyte.logging import get_logger
+from featurebyte.models import FeatureStoreModel
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent.base import Persistent
@@ -80,7 +81,7 @@ class CredentialService(
         return output
 
     async def get_credentials(
-        self, user_id: Optional[ObjectId], feature_store_name: str
+        self, user_id: Optional[ObjectId], feature_store: FeatureStoreModel
     ) -> Optional[CredentialModel]:
         """
         Find credential
@@ -89,24 +90,13 @@ class CredentialService(
         ----------
         user_id: ObjectId | None
             User ID
-        feature_store_name: str
-            Feature store name
+        feature_store: FeatureStoreModel
+            Feature store
 
         Returns
         -------
         CredentialModel | None
         """
-        feature_stores = await self.feature_store_service.list_documents(
-            query_filter={"name": feature_store_name}
-        )
-        if len(feature_stores) > 1:
-            logger.warning(f"Multiple feature stores found with name {feature_store_name}")
-        elif len(feature_stores) == 0:
-            logger.warning(f"No feature store found with name {feature_store_name}")
-            return None
-
-        feature_store = feature_stores[0]
-
         credentials = await self.list_documents(
             query_filter={"user_id": user_id, "feature_store_id": feature_store.id}
         )

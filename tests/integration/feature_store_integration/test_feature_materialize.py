@@ -433,6 +433,7 @@ async def deployed_feature_list_fixture(
         saved_last_ten_feature_list,
         saved_feature_list_all,
     ]:
+        print(f"Deploying feature list {saved_fl.name}")
         deployment = await _deploy_feature_list(
             app_container=app_container,
             saved_feature_list=saved_fl,

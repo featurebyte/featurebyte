@@ -69,8 +69,8 @@ from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.task_manager import TaskManager
-from featurebyte.session.manager import SessionManager
 from featurebyte.storage import LocalStorage
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
@@ -186,7 +186,7 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(name="credentials_mapping", scope="session")
-def credentials_mapping_fixture():
+def credentials_mapping():
     """
     Credentials for integration testing
     """
@@ -384,19 +384,6 @@ def mock_get_persistent_fixture(persistent):
         yield
 
 
-@pytest.fixture(name="noop_validate_feature_store_id_not_used_in_warehouse")
-def get_noop_validate_feature_store_id_not_used_in_warehouse_fixture():
-    """
-    Set a no-op validator by default.
-    Functions that want to test the validation should inject an actual instance of the session validator.
-    """
-    with mock.patch(
-        "featurebyte.service.session_validator.SessionValidatorService.validate_feature_store_id_not_used_in_warehouse"
-    ) as mocked_exists:
-        mocked_exists.return_value = None
-        yield
-
-
 @pytest.fixture(
     name="source_type", scope="session", params=SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
 )
@@ -492,7 +479,7 @@ def feature_store_details_fixture(source_type, sqlite_filename):  # pylint: disa
 
 
 @pytest.fixture(name="feature_store_name", scope="session")
-def feature_store_name_fixture(source_type):
+def feature_store_name(source_type):
     """
     Feature store name fixture
     """
@@ -500,7 +487,7 @@ def feature_store_name_fixture(source_type):
 
 
 @pytest.fixture(name="feature_store_credential", scope="session")
-def feature_store_credential_fixture(feature_store_name, credentials_mapping):
+def feature_store_credential(feature_store_name, credentials_mapping):
     """
     Fixture for a CredentialModel specific to source_type
     """
@@ -831,22 +818,18 @@ def sqlite_filename_fixture(transaction_data, source_type):
         yield
 
 
-@pytest.fixture(name="session_manager", scope="session")
-def get_session_manager(credentials_mapping):
-    """
-    Fixture to return a session manager with real login credentials
-    """
-    return SessionManager(credentials=credentials_mapping)
-
-
 @pytest.fixture(name="get_session_callback", scope="session")
-def get_session_callback_fixture(session_manager, feature_store):
+def get_session_callback_fixture(feature_store, feature_store_credential):
     """
     Fixture to return a callback that returns a session object
     """
 
+    # We are not using a SessionManagerService fixture, because scoped fixtures would not work
+    # SessionManagerService instantiated here functions as a utility module rather than a service
     async def callback():
-        return await session_manager.get_session(feature_store)
+        return await SessionManagerService(None, None).get_session(
+            feature_store, feature_store_credential
+        )
 
     return callback
 
@@ -954,32 +937,36 @@ async def datasets_registration_helper_fixture(
 
 
 @pytest_asyncio.fixture(name="session_without_datasets", scope="session")
-async def session_without_datasets_fixture(source_type, session_manager, feature_store):
+async def session_without_datasets_fixture(source_type, feature_store, feature_store_credential):
     """
     Fixture for a BaseSession based on source_type
     """
-    session = await session_manager.get_session(feature_store)
+    # We are using SessionManagerService as a static function
+    # so its constructor dependencies are irrelevant
+    db_session = await SessionManagerService(None, None).get_session(
+        feature_store, feature_store_credential
+    )
 
-    yield session
+    yield db_session
 
     if source_type == "snowflake":
-        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name}")
+        await db_session.execute_query(f"DROP SCHEMA IF EXISTS {db_session.schema_name}")
 
     elif source_type == "databricks":
-        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
-        session._dbfs_client.delete(path=session._storage_base_path, recursive=True)
+        await db_session.execute_query(f"DROP SCHEMA IF EXISTS {db_session.schema_name} CASCADE")
+        db_session._dbfs_client.delete(path=db_session._storage_base_path, recursive=True)
 
     elif source_type == "databricks_unity":
-        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
+        await db_session.execute_query(f"DROP SCHEMA IF EXISTS {db_session.schema_name} CASCADE")
 
     elif source_type == "spark":
-        await session.execute_query(f"DROP SCHEMA IF EXISTS {session.schema_name} CASCADE")
+        await db_session.execute_query(f"DROP SCHEMA IF EXISTS {db_session.schema_name} CASCADE")
         # clean up storage
         shutil.rmtree(Path(feature_store.details.storage_url).expanduser())
 
     elif source_type == "bigquery":
-        await session.execute_query(
-            f"DROP SCHEMA IF EXISTS `{session.database_name}`.`{session.schema_name}` CASCADE"
+        await db_session.execute_query(
+            f"DROP SCHEMA IF EXISTS `{db_session.database_name}`.`{db_session.schema_name}` CASCADE"
         )
 
 
@@ -1492,19 +1479,6 @@ def dimension_view_fixture(dimension_table):
     return dimension_table.get_view()
 
 
-@pytest.fixture(name="get_cred", scope="session")
-def get_get_cred(credentials_mapping):
-    """
-    Fixture to get a test get_credential
-    """
-
-    async def get_credential(user_id, feature_store_name):
-        _ = user_id
-        return credentials_mapping.get(feature_store_name)
-
-    return get_credential
-
-
 @pytest.fixture(autouse=True, scope="module")
 def mock_task_manager(request, persistent, storage):
     """
@@ -1703,6 +1677,22 @@ def online_store_compute_query_service_fixture(app_container) -> OnlineStoreComp
 def feature_store_service_fixture(app_container):
     """FeatureStore service"""
     return app_container.feature_store_service
+
+
+@pytest.fixture(name="session_manager_service")
+def session_manager_service_fixture(app_container):
+    """Session Manager service"""
+    # This is a weird case where we do not inject the dependencies
+    # We are using session manager service as a static function module
+    # so its constructor dependencies are irrelevant
+    #
+    # However, for most of the cases, the user injected will be the request user
+    # and the credential_service along with the user will be used to retrieve the user's credential
+    # to connect to the feature store
+    #
+    # Since we are always passing the `credentials_override` in the `get_session` method
+    # We will never need to use the credential_service to retrieve the user's credential
+    return SessionManagerService(None, None)
 
 
 @pytest.fixture(name="feature_table_cache_service")

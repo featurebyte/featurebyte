@@ -8,25 +8,28 @@ from featurebyte.session.databricks_unity import (
     DatabricksUnitySchemaInitializer,
     DatabricksUnitySession,
 )
-from featurebyte.session.manager import SessionManager
 
 
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
 @pytest.mark.asyncio
 async def test_schema_initializer(
-    config, session_without_datasets, feature_store, credentials_mapping
+    config,
+    session_without_datasets,
+    feature_store,
+    feature_store_credential,
+    session_manager_service,
 ):
     """
     Test the session initialization in snowflake works properly.
     """
     _ = config
-    session = session_without_datasets
-    assert isinstance(session, DatabricksUnitySession)
-    initializer = DatabricksUnitySchemaInitializer(session)
+    db_session = session_without_datasets
+    assert isinstance(db_session, DatabricksUnitySession)
+    initializer = DatabricksUnitySchemaInitializer(db_session)
 
     # query for the table in the metadata schema table
     get_version_query = "SELECT * FROM METADATA_SCHEMA"
-    results = await session.execute_query(get_version_query)
+    results = await db_session.execute_query(get_version_query)
 
     # verify that we only have one row
     assert results is not None
@@ -39,9 +42,8 @@ async def test_schema_initializer(
 
     # Try to retrieve the session again - this should trigger a re-initialization
     # Verify that there's still only one row in table
-    session_manager = SessionManager(credentials=credentials_mapping)
-    session = await session_manager.get_session(feature_store)
-    results = await session.execute_query(get_version_query)
+    db_session = await session_manager_service.get_session(feature_store, feature_store_credential)
+    results = await db_session.execute_query(get_version_query)
     assert results is not None
     assert len(results[working_schema_version_column]) == 1
     assert (

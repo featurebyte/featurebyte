@@ -12,27 +12,30 @@ from bson import ObjectId
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.session.bigquery import BigQuerySchemaInitializer, BigQuerySession
-from featurebyte.session.manager import SessionManager
 
 
 @pytest.mark.parametrize("source_type", ["bigquery"], indirect=True)
 @pytest.mark.asyncio
 async def test_schema_initializer(
-    config, session_without_datasets, feature_store, credentials_mapping
+    config,
+    session_without_datasets,
+    feature_store,
+    feature_store_credential,
+    session_manager_service,
 ):
     """
     Test the session initialization in bigquery works properly.
     """
     _ = config
-    session = session_without_datasets
-    assert isinstance(session, BigQuerySession)
-    initializer = BigQuerySchemaInitializer(session)
+    db_session = session_without_datasets
+    assert isinstance(db_session, BigQuerySession)
+    initializer = BigQuerySchemaInitializer(db_session)
 
     # query for the table in the metadata schema table
     get_version_query = (
-        f"SELECT * FROM {session.project_name}.{session.dataset_name}.METADATA_SCHEMA"
+        f"SELECT * FROM {db_session.project_name}.{db_session.dataset_name}.METADATA_SCHEMA"
     )
-    results = await session.execute_query(get_version_query)
+    results = await db_session.execute_query(get_version_query)
 
     # verify that we only have one row
     assert results is not None
@@ -45,9 +48,8 @@ async def test_schema_initializer(
 
     # Try to retrieve the session again - this should trigger a re-initialization
     # Verify that there's still only one row in table
-    session_manager = SessionManager(credentials=credentials_mapping)
-    session = await session_manager.get_session(feature_store)
-    results = await session.execute_query(get_version_query)
+    db_session = await session_manager_service.get_session(feature_store, feature_store_credential)
+    results = await db_session.execute_query(get_version_query)
     assert results is not None
     assert len(results[working_schema_version_column]) == 1
     assert (
@@ -70,9 +72,9 @@ async def test_list_tables(config, session_without_datasets):
     Test the session initialization in bigquery works properly.
     """
     _ = config
-    session = session_without_datasets
-    tables = await session.list_tables(
-        database_name=session.project_name, schema_name="demo_datasets"
+    db_session = session_without_datasets
+    tables = await db_session.list_tables(
+        database_name=db_session.project_name, schema_name="demo_datasets"
     )
     assert [table.dict() for table in tables] == [
         {"name": "__grocerycustomer", "description": None},

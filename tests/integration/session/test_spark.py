@@ -10,31 +10,38 @@ from pandas.testing import assert_frame_equal
 
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.session.base_spark import BaseSparkSession
-from featurebyte.session.manager import SessionManager
 
 
 @pytest.mark.parametrize("source_type", ["spark"], indirect=True)
 @pytest.mark.asyncio
 async def test_schema_initializer(
-    config, feature_store, credentials_mapping, session_without_datasets
+    config,
+    feature_store,
+    session_without_datasets,
+    feature_store_credential,
+    session_manager_service,
 ):
     """
     Test the session initialization in spark works properly.
     """
 
-    session = session_without_datasets
-    assert isinstance(session, BaseSparkSession)
-    initializer = session.initializer()
+    db_session = session_without_datasets
+    assert isinstance(db_session, BaseSparkSession)
+    initializer = db_session.initializer()
 
-    assert await session.list_databases() == ["spark_catalog"]
-    assert session.schema_name.lower() in await session.list_schemas(database_name="spark_catalog")
-    tables = await session.list_tables(
-        database_name="spark_catalog", schema_name=session.schema_name
+    assert await db_session.list_databases() == ["spark_catalog"]
+    assert db_session.schema_name.lower() in await db_session.list_schemas(
+        database_name="spark_catalog"
+    )
+    tables = await db_session.list_tables(
+        database_name="spark_catalog", schema_name=db_session.schema_name
     )
     table_names = [table.name for table in tables]
     assert "metadata_schema" in table_names
-    column_details = await session.list_table_schema(
-        database_name="spark_catalog", schema_name=session.schema_name, table_name="metadata_schema"
+    column_details = await db_session.list_table_schema(
+        database_name="spark_catalog",
+        schema_name=db_session.schema_name,
+        table_name="metadata_schema",
     )
     assert column_details == OrderedDict([
         (
@@ -57,7 +64,7 @@ async def test_schema_initializer(
 
     # query for the table in the metadata schema table
     get_version_query = "SELECT * FROM METADATA_SCHEMA"
-    results = await session.execute_query(get_version_query)
+    results = await db_session.execute_query(get_version_query)
 
     # verify that we only have one row
     assert results is not None
@@ -70,9 +77,8 @@ async def test_schema_initializer(
 
     # Try to retrieve the session again - this should trigger a re-initialization
     # Verify that there's still only one row in table
-    session_manager = SessionManager(credentials=credentials_mapping)
-    session = await session_manager.get_session(feature_store)
-    results = await session.execute_query(get_version_query)
+    db_session = await session_manager_service.get_session(feature_store, feature_store_credential)
+    results = await db_session.execute_query(get_version_query)
     assert results is not None
     assert len(results[working_schema_version_column]) == 1
     assert (

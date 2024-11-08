@@ -4,8 +4,6 @@ Credential API routes
 
 from __future__ import annotations
 
-from typing import Any
-
 from bson import ObjectId
 from fastapi import Request
 
@@ -60,13 +58,8 @@ class CredentialController(
         credentials: CredentialModel
             CredentialModel object
         """
-
-        # Override the get get_credentials function
-        async def credentials_get_override(_1: Any, _2: Any) -> CredentialModel:
-            return credentials
-
         session = await self.session_manager_service.get_feature_store_session(
-            feature_store, credentials_get_override
+            feature_store, credentials_override=credentials
         )
         # Raise Exception if the session is not valid
         await session.list_databases()

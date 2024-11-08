@@ -22,7 +22,6 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.query_graph.node.schema import SnowflakeDetails
-from featurebyte.session.manager import SessionManager
 
 
 def test_save__unexpected_creation_exception(snowflake_feature_store_params):
@@ -37,13 +36,19 @@ def test_save__unexpected_creation_exception(snowflake_feature_store_params):
 
 @pytest.mark.asyncio
 async def test_get_session(
-    snowflake_connector, snowflake_execute_query, snowflake_feature_store, credentials
+    snowflake_connector,
+    snowflake_execute_query,
+    snowflake_feature_store,
+    snowflake_credentials,
+    session_manager_service,
 ):
     """
     Test DatabaseSource.get_session return expected session
     """
     _ = snowflake_connector, snowflake_execute_query
-    session = await SessionManager(credentials=credentials).get_session(snowflake_feature_store)
+    session = await session_manager_service.get_session(
+        snowflake_feature_store, snowflake_credentials
+    )
     assert session.model_dump() == {
         "source_type": "snowflake",
         "account": "sf_account",

@@ -50,7 +50,7 @@ def deployed_feature_list_and_deployment_fixture(event_table):
 
 
 @pytest.fixture(name="migration_service")
-def migration_service_fixture(app_container, get_cred):
+def migration_service_fixture(app_container):
     """
     Fixture for DataWarehouseMigrationServiceV8
     """

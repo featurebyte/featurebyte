@@ -76,7 +76,8 @@ class FeatureStoreWarehouseService:
         await db_session.check_user_defined_function(user_defined_function=user_defined_function)
 
     async def list_databases(
-        self, feature_store: FeatureStoreModel, get_credential: Optional[Any]
+        self,
+        feature_store: FeatureStoreModel,
     ) -> List[str]:
         """
         List databases in feature store
@@ -85,8 +86,6 @@ class FeatureStoreWarehouseService:
         ----------
         feature_store: FeatureStoreModel
             FeatureStoreModel object
-        get_credential: Optional[Any]
-            Get credential handler function
 
         Returns
         -------
@@ -94,7 +93,7 @@ class FeatureStoreWarehouseService:
             List of database names
         """
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, get_credential=get_credential
+            feature_store=feature_store,
         )
         return await db_session.list_databases()
 

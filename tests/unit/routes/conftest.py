@@ -34,11 +34,11 @@ def api_client_persistent(persistent, user_id, temp_storage):
 
 
 @pytest.fixture(name="mock_get_session")
-def get_mocked_get_session_fixture(session_manager, snowflake_execute_query, adapter, source_info):
+def get_mocked_get_session_fixture(snowflake_execute_query, adapter, source_info):
     """
     Returns a mocked get_feature_store_session.
     """
-    _, _ = session_manager, snowflake_execute_query
+    _ = snowflake_execute_query
     with patch(
         "featurebyte.service.session_manager.SessionManagerService.get_feature_store_session"
     ) as mocked_get_session:
@@ -55,13 +55,13 @@ def get_mocked_get_session_fixture(session_manager, snowflake_execute_query, ada
 
 
 @pytest.fixture(autouse=True)
-def get_mock_get_session_fixture(session_manager, snowflake_execute_query):
+def get_mock_get_session_fixture(snowflake_execute_query):
     """
     Returns a mocked get_feature_store_session.
     """
-    _, _ = session_manager, snowflake_execute_query
+    _ = snowflake_execute_query
     with patch(
-        "featurebyte.service.session_manager.SessionManager.get_session"
+        "featurebyte.service.session_manager.SessionManagerService.get_session"
     ) as mocked_get_session:
         mocked_get_session.return_value = SnowflakeSession(
             source_type=SourceType.SNOWFLAKE,
