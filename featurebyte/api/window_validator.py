@@ -2,9 +2,13 @@
 Validate window parameter input.
 """
 
+import os
 from typing import Optional
 
 from featurebyte.common.model_util import parse_duration_string, validate_offset_string
+
+# Default allows up to 53 weeks of 10 min tiles
+MAX_NUM_TILES_FOR_AGGREGATION = int(os.getenv("FEATUREBYTE_MAX_NUM_TILES_FOR_AGGREGATION", "53424"))
 
 
 def validate_offset(offset: Optional[str]) -> None:
@@ -51,11 +55,11 @@ def validate_window(window: str, feature_job_frequency: str) -> None:
             f"window provided {window} needs to be greater than the feature_job_frequency {feature_job_frequency}"
         )
 
-    # arbitrary upper bound of 365 days
-    upper_bound_timerange_secs = 365 * 24 * 60 * 60
+    upper_bound_timerange_secs = MAX_NUM_TILES_FOR_AGGREGATION * feature_job_frequency_secs
     if window_secs > upper_bound_timerange_secs:
+        upper_bound_timerange_days = upper_bound_timerange_secs // (60 * 60 * 24)
         raise ValueError(
-            f"window {window} needs to be less than 365 days. Please specify a different time window."
+            f"window {window} needs to be less than {upper_bound_timerange_days} days. Please specify a different time window or increase the feature job period."
         )
 
     time_mod = window_secs % feature_job_frequency_secs
