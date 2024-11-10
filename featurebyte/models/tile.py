@@ -41,8 +41,6 @@ class TileSpec(FeatureByteBaseModel):
         hash value of tile id and name
     aggregation_id: str
         aggregation id for the tile
-    aggregation_function_name: Optional[str]
-        optional aggregation function name
     parent_column_name: Optional[str]
         optional parent column name from groupby node
     category_column_name: Optional[str]
@@ -61,7 +59,6 @@ class TileSpec(FeatureByteBaseModel):
     value_column_types: List[str]
     tile_id: str
     aggregation_id: str
-    aggregation_function_name: Optional[str] = Field(default=None)
     parent_column_name: Optional[str] = Field(default=None)
     category_column_name: Optional[str] = Field(default=None)
     feature_store_id: Optional[ObjectId] = Field(default=None)
