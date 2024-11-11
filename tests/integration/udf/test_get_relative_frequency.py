@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from sqlglot import parse_one
 
-from tests.integration.udf.util import execute_query_with_udf
+from tests.integration.udf.util import OVERFLOW_INT, execute_query_with_udf
 
 same_values = {"a": 1, "b": 1, "c": 1}
 ascending_values = {"a": 1, "b": 2, "c": 3}
@@ -23,6 +23,7 @@ ascending_values = {"a": 1, "b": 2, "c": 3}
         (ascending_values, "'a'", float(1 / 6)),
         (ascending_values, "'c'", float(1 / 2)),
         ({"a": 0}, "'a'", np.nan),
+        ({"a": OVERFLOW_INT}, "'a'", 1),
     ],
 )
 @pytest.mark.asyncio
