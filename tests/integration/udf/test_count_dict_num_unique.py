@@ -5,7 +5,7 @@ Tests for count dict num unique UDF
 import numpy as np
 import pytest
 
-from tests.integration.udf.util import execute_query_with_udf
+from tests.integration.udf.util import OVERFLOW_INT, execute_query_with_udf
 
 
 @pytest.mark.parametrize(
@@ -15,6 +15,7 @@ from tests.integration.udf.util import execute_query_with_udf
         ({}, 0),
         ({"a": 1}, 1),
         ({"a": 1, "b": 1, "c": 1}, 3),
+        ({"a": OVERFLOW_INT}, 1),
     ],
 )
 @pytest.mark.asyncio

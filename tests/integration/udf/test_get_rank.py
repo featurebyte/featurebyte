@@ -7,7 +7,7 @@ import pytest
 from sqlglot import parse_one
 
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from tests.integration.udf.util import execute_query_with_udf
+from tests.integration.udf.util import OVERFLOW_INT, execute_query_with_udf
 
 same_values = {"a": 1, "b": 1, "c": 1}
 ascending_values = {"a": 1, "b": 2, "c": 3}
@@ -31,6 +31,17 @@ ascending_values = {"a": 1, "b": 2, "c": 3}
         ({"a": 1, "b": 1, "c": 2}, "'c'", True, 1),
         ({"a": 1, "b": 2, "c": 2, "d": 3}, "'d'", False, 4),
         ({"a": 1, "b": 2, "c": 2, "d": 3}, "'c'", False, 2),
+        (
+            {
+                "a": OVERFLOW_INT + 1,
+                "b": OVERFLOW_INT + 2,
+                "c": OVERFLOW_INT + 2,
+                "d": OVERFLOW_INT + 3,
+            },
+            "'c'",
+            False,
+            2,
+        ),
     ],
 )
 @pytest.mark.asyncio
