@@ -5,7 +5,7 @@ Tests for count dict entropy UDF
 import numpy as np
 import pytest
 
-from tests.integration.udf.util import execute_query_with_udf
+from tests.integration.udf.util import OVERFLOW_INT, execute_query_with_udf
 
 
 @pytest.mark.parametrize(
@@ -19,6 +19,7 @@ from tests.integration.udf.util import execute_query_with_udf
         ({"a": 1, "b": 1, "c": 1}, 1.098612),
         ({"a": 1, "b": 2, "c": 3}, 1.011404),
         ({"a": -1, "b": 2, "c": -3}, 1.011404),
+        ({"a": OVERFLOW_INT, "b": OVERFLOW_INT * 2, "c": OVERFLOW_INT * 3}, 1.011404),
     ],
 )
 @pytest.mark.asyncio

@@ -1,10 +1,12 @@
 """
-Helper functions for udf teseting
+Helper functions for udf testing
 """
 
 from sqlglot import expressions
 
 from featurebyte.query_graph.sql.common import get_fully_qualified_function_call, sql_to_string
+
+OVERFLOW_INT = 123123123123123
 
 
 async def execute_query_with_udf(session, function_name, args):
