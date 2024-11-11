@@ -5,7 +5,6 @@ Note that we don't currently inherit from the base view test suite as there are 
 work on updating that in a follow-up.
 """
 
-import textwrap
 from datetime import datetime
 from unittest.mock import Mock, patch
 
@@ -22,7 +21,11 @@ from featurebyte.query_graph.node.cleaning_operation import (
     MissingValueImputation,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
+from tests.util.helper import (
+    assert_equal_with_expected_fixture,
+    check_sdk_code_generation,
+    compare_pydantic_obj,
+)
 
 
 @pytest.fixture
@@ -379,7 +382,7 @@ def test_update_feature_job_setting(snowflake_change_view):
 
 
 @pytest.mark.usefixtures("patched_datetime")
-def test_aggregate_over_feature_tile_sql(feature_from_change_view, source_info):
+def test_aggregate_over_feature_tile_sql(feature_from_change_view, source_info, update_fixtures):
     """
     Test tile sql is as expected for a feature created from ChangeView
     """
@@ -387,76 +390,15 @@ def test_aggregate_over_feature_tile_sql(feature_from_change_view, source_info):
     interpreter = GraphInterpreter(pruned_graph, source_info)
     tile_infos = interpreter.construct_tile_gen_sql(pruned_node, is_on_demand=False)
     assert len(tile_infos) == 1
-    expected_aggregation_id = pruned_graph.get_node_by_name("groupby_1").parameters.aggregation_id
-    expected = textwrap.dedent(
-        f"""
-        WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
-          SELECT
-            *
-          FROM (
-            SELECT
-              "col_text" AS "col_text",
-              "new_effective_timestamp" AS "new_effective_timestamp",
-              "past_effective_timestamp" AS "past_effective_timestamp",
-              "new_col_int" AS "new_col_int",
-              "past_col_int" AS "past_col_int"
-            FROM (
-              SELECT
-                "col_text",
-                "new_effective_timestamp",
-                "new_col_int",
-                LAG("new_effective_timestamp") OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "past_effective_timestamp",
-                "past_col_int"
-              FROM (
-                SELECT
-                  "col_text",
-                  "effective_timestamp" AS "new_effective_timestamp",
-                  "col_int" AS "new_col_int",
-                  LAG("col_int") OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS "past_col_int"
-                FROM (
-                  SELECT
-                    "col_int" AS "col_int",
-                    "col_float" AS "col_float",
-                    "is_active" AS "is_active",
-                    "col_text" AS "col_text",
-                    "col_binary" AS "col_binary",
-                    "col_boolean" AS "col_boolean",
-                    "effective_timestamp" AS "effective_timestamp",
-                    "end_timestamp" AS "end_timestamp",
-                    "date_of_birth" AS "date_of_birth",
-                    "created_at" AS "created_at",
-                    "cust_id" AS "cust_id"
-                  FROM "sf_database"."sf_schema"."scd_table"
-                )
-                QUALIFY
-                  "col_int" IS DISTINCT FROM LAG("col_int") OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp")
-              )
-            )
-          )
-          WHERE
-            "new_effective_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-            AND "new_effective_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
-        )
-        SELECT
-          index,
-          "col_text",
-          COUNT(*) AS value_{expected_aggregation_id}
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "new_effective_timestamp"), 0, 0, 1440) AS index
-          FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
-        )
-        GROUP BY
-          index,
-          "col_text"
-        """
-    ).strip()
-    assert tile_infos[0].sql == expected
+    assert_equal_with_expected_fixture(
+        tile_infos[0].sql,
+        "tests/fixtures/api/test_change_view/expected_aggregate_over_feature_tile.sql",
+        update_fixtures,
+    )
 
 
 def test_get_change_view__keep_record_creation_timestamp_column(
-    snowflake_scd_table, mock_api_object_cache
+    snowflake_scd_table, mock_api_object_cache, update_fixtures
 ):
     """
     Test create ChangeView using record creation timestamp column as track changes column
@@ -467,50 +409,11 @@ def test_get_change_view__keep_record_creation_timestamp_column(
     change_view = snowflake_scd_table.get_change_view(
         track_changes_column=snowflake_scd_table.record_creation_timestamp_column
     )
-    expected_sql = textwrap.dedent(
-        """
-        SELECT
-          CAST("col_text" AS VARCHAR) AS "col_text",
-          CAST("new_effective_timestamp" AS VARCHAR) AS "new_effective_timestamp",
-          CAST("past_effective_timestamp" AS VARCHAR) AS "past_effective_timestamp",
-          CAST("new_created_at" AS VARCHAR) AS "new_created_at",
-          CAST("past_created_at" AS VARCHAR) AS "past_created_at"
-        FROM (
-          SELECT
-            "col_text",
-            "new_effective_timestamp",
-            "new_created_at",
-            LAG("new_effective_timestamp") OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "past_effective_timestamp",
-            "past_created_at"
-          FROM (
-            SELECT
-              "col_text",
-              "effective_timestamp" AS "new_effective_timestamp",
-              "created_at" AS "new_created_at",
-              LAG("created_at") OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS "past_created_at"
-            FROM (
-              SELECT
-                "col_int" AS "col_int",
-                "col_float" AS "col_float",
-                "is_active" AS "is_active",
-                "col_text" AS "col_text",
-                "col_binary" AS "col_binary",
-                "col_boolean" AS "col_boolean",
-                "effective_timestamp" AS "effective_timestamp",
-                "end_timestamp" AS "end_timestamp",
-                "date_of_birth" AS "date_of_birth",
-                "created_at" AS "created_at",
-                "cust_id" AS "cust_id"
-              FROM "sf_database"."sf_schema"."scd_table"
-            )
-            QUALIFY
-              "created_at" IS DISTINCT FROM LAG("created_at") OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp")
-          )
-        )
-        LIMIT 10
-        """
-    ).strip()
-    assert change_view.preview_sql() == expected_sql
+    assert_equal_with_expected_fixture(
+        change_view.preview_sql(),
+        "tests/fixtures/api/test_change_view/keep_record_creation_timestamp_column_preview.sql",
+        update_fixtures,
+    )
     assert change_view.node.type == NodeType.GRAPH
     compare_pydantic_obj(
         change_view.node.parameters.graph.edges[:1],
@@ -525,56 +428,11 @@ def test_get_change_view__keep_record_creation_timestamp_column(
     change_view = snowflake_scd_table.get_change_view(
         track_changes_column=snowflake_scd_table.record_creation_timestamp_column
     )
-    expected_sql = textwrap.dedent(
-        """
-        SELECT
-          CAST("col_text" AS VARCHAR) AS "col_text",
-          CAST("new_effective_timestamp" AS VARCHAR) AS "new_effective_timestamp",
-          CAST("past_effective_timestamp" AS VARCHAR) AS "past_effective_timestamp",
-          CAST("new_created_at" AS VARCHAR) AS "new_created_at",
-          CAST("past_created_at" AS VARCHAR) AS "past_created_at"
-        FROM (
-          SELECT
-            "col_text",
-            "new_effective_timestamp",
-            "new_created_at",
-            LAG("new_effective_timestamp") OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "past_effective_timestamp",
-            "past_created_at"
-          FROM (
-            SELECT
-              "col_text",
-              "effective_timestamp" AS "new_effective_timestamp",
-              "created_at" AS "new_created_at",
-              LAG("created_at") OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS "past_created_at"
-            FROM (
-              SELECT
-                "col_int" AS "col_int",
-                "col_float" AS "col_float",
-                "is_active" AS "is_active",
-                "col_text" AS "col_text",
-                "col_binary" AS "col_binary",
-                "col_boolean" AS "col_boolean",
-                "effective_timestamp" AS "effective_timestamp",
-                "end_timestamp" AS "end_timestamp",
-                "date_of_birth" AS "date_of_birth",
-                CASE
-                  WHEN (
-                    "created_at" IS NULL
-                  )
-                  THEN '2020-01-01T00:00:00'
-                  ELSE "created_at"
-                END AS "created_at",
-                "cust_id" AS "cust_id"
-              FROM "sf_database"."sf_schema"."scd_table"
-            )
-            QUALIFY
-              "created_at" IS DISTINCT FROM LAG("created_at") OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp")
-          )
-        )
-        LIMIT 10
-        """
-    ).strip()
-    assert change_view.preview_sql() == expected_sql
+    assert_equal_with_expected_fixture(
+        change_view.preview_sql(),
+        "tests/fixtures/api/test_change_view/keep_record_creation_timestamp_column_cleaning_preview.sql",
+        update_fixtures,
+    )
 
     # check the change view graph node
     assert change_view.node.type == NodeType.GRAPH
@@ -632,7 +490,7 @@ def test_raw_accessor(snowflake_scd_table):
         _ = change_view.raw
 
 
-def test_filtered_view_output(saved_scd_table, cust_id_entity):
+def test_filtered_view_output(saved_scd_table, cust_id_entity, update_fixtures):
     """
     Test filtering ChangeView
     """
@@ -641,110 +499,25 @@ def test_filtered_view_output(saved_scd_table, cust_id_entity):
     mask = change_view.new_col_int > 10
     filtered_view = change_view[mask]
     output_sql = filtered_view.preview_sql()
-    expected_sql = """
-    SELECT
-      CAST("col_text" AS VARCHAR) AS "col_text",
-      CAST("new_effective_timestamp" AS VARCHAR) AS "new_effective_timestamp",
-      CAST("past_effective_timestamp" AS VARCHAR) AS "past_effective_timestamp",
-      "new_col_int" AS "new_col_int",
-      "past_col_int" AS "past_col_int"
-    FROM (
-      SELECT
-        "col_text",
-        "new_effective_timestamp",
-        "new_col_int",
-        LAG("new_effective_timestamp") OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "past_effective_timestamp",
-        "past_col_int"
-      FROM (
-        SELECT
-          "col_text",
-          "effective_timestamp" AS "new_effective_timestamp",
-          "col_int" AS "new_col_int",
-          LAG("col_int") OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS "past_col_int"
-        FROM (
-          SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "is_active" AS "is_active",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "effective_timestamp" AS "effective_timestamp",
-            "end_timestamp" AS "end_timestamp",
-            "date_of_birth" AS "date_of_birth",
-            "created_at" AS "created_at",
-            "cust_id" AS "cust_id"
-          FROM "sf_database"."sf_schema"."scd_table"
-        )
-        QUALIFY
-          "col_int" IS DISTINCT FROM LAG("col_int") OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp")
-      )
+    assert_equal_with_expected_fixture(
+        output_sql,
+        "tests/fixtures/api/test_change_view/filtered_view_preview.sql",
+        update_fixtures,
     )
-    WHERE
-      (
-        "new_col_int" > 10
-      )
-    LIMIT 10
-    """
-    assert output_sql.strip() == textwrap.dedent(expected_sql).strip()
 
 
-def test_change_view_column_lag(snowflake_change_view):
+def test_change_view_column_lag(snowflake_change_view, update_fixtures):
     """
     Test applying lag for any columns in the ChangeView works
     """
     columns = snowflake_change_view.columns[:]
     for col in columns:
         snowflake_change_view[f"lag_{col}"] = snowflake_change_view[col].lag("col_text")
-    expected = textwrap.dedent(
-        """
-        SELECT
-          CAST("col_text" AS VARCHAR) AS "col_text",
-          CAST("new_effective_timestamp" AS VARCHAR) AS "new_effective_timestamp",
-          CAST("past_effective_timestamp" AS VARCHAR) AS "past_effective_timestamp",
-          "new_col_int" AS "new_col_int",
-          "past_col_int" AS "past_col_int",
-          CAST(LAG("col_text", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS VARCHAR) AS "lag_col_text",
-          CAST(LAG("new_effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS VARCHAR) AS "lag_new_effective_timestamp",
-          CAST(LAG("past_effective_timestamp", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS VARCHAR) AS "lag_past_effective_timestamp",
-          LAG("new_col_int", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "lag_new_col_int",
-          LAG("past_col_int", 1) OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "lag_past_col_int"
-        FROM (
-          SELECT
-            "col_text",
-            "new_effective_timestamp",
-            "new_col_int",
-            LAG("new_effective_timestamp") OVER (PARTITION BY "col_text" ORDER BY "new_effective_timestamp") AS "past_effective_timestamp",
-            "past_col_int"
-          FROM (
-            SELECT
-              "col_text",
-              "effective_timestamp" AS "new_effective_timestamp",
-              "col_int" AS "new_col_int",
-              LAG("col_int") OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp") AS "past_col_int"
-            FROM (
-              SELECT
-                "col_int" AS "col_int",
-                "col_float" AS "col_float",
-                "is_active" AS "is_active",
-                "col_text" AS "col_text",
-                "col_binary" AS "col_binary",
-                "col_boolean" AS "col_boolean",
-                "effective_timestamp" AS "effective_timestamp",
-                "end_timestamp" AS "end_timestamp",
-                "date_of_birth" AS "date_of_birth",
-                "created_at" AS "created_at",
-                "cust_id" AS "cust_id"
-              FROM "sf_database"."sf_schema"."scd_table"
-            )
-            QUALIFY
-              "col_int" IS DISTINCT FROM LAG("col_int") OVER (PARTITION BY "col_text" ORDER BY "effective_timestamp")
-          )
-        )
-        LIMIT 10
-        """
-    ).strip()
-    assert snowflake_change_view.preview_sql() == expected
+    assert_equal_with_expected_fixture(
+        snowflake_change_view.preview_sql(),
+        "tests/fixtures/api/test_change_view/column_lag_preview.sql",
+        update_fixtures,
+    )
 
 
 def test_update_to_production_ready(feature_from_change_view):

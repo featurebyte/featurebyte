@@ -1,5 +1,3 @@
-import textwrap
-
 import pytest
 
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
@@ -7,6 +5,7 @@ from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.util import get_aggregation_identifier, get_tile_table_identifier_v1
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 def make_lag_node(graph, input_node, column_name, entity_column_name, timestamp_column_name):
@@ -90,7 +89,7 @@ def graph_with_window_function_filter(global_graph, input_node):
     yield graph, filtered_node_2
 
 
-def test_window_function(global_graph, input_node, source_info):
+def test_window_function(global_graph, input_node, source_info, update_fixtures):
     """Test tile sql when window function is involved
 
     Note that the tile start and end date filters are applied on a nested subquery containing the
@@ -155,67 +154,23 @@ def test_window_function(global_graph, input_node, source_info):
     )
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.BUILD_TILE, source_info=source_info)
     sql_tree = sql_graph.build(assign_node).sql
-    expected = textwrap.dedent(
-        """
-        SELECT
-          "ts" AS "ts",
-          "cust_id" AS "cust_id",
-          "a" AS "a",
-          "b" AS "b",
-          LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a"
-        FROM "db"."public"."event_table"
-        WHERE
-          (
-            "a" > 1000
-          )
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_window_functions/window_function_preview.sql",
+        update_fixtures,
+    )
 
     # check generated sql for building tiles
     interpreter = GraphInterpreter(graph, source_info)
     tile_gen_sql = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
-    expected = textwrap.dedent(
-        """
-        WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
-          SELECT
-            *
-          FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b",
-              LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
-            FROM "db"."public"."event_table"
-            WHERE
-              (
-                "a" > 1000
-              )
-          )
-          WHERE
-            "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-            AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
-        )
-        SELECT
-          index,
-          "cust_id",
-          COUNT(*) AS value_count_e2199e4018415026611a08411ff11e9ec48e0ca5
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 600, 1, 60) AS index
-          FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
-        )
-        GROUP BY
-          index,
-          "cust_id"
-        """
-    ).strip()
-    assert tile_gen_sql[0].sql == expected
+    assert_equal_with_expected_fixture(
+        tile_gen_sql[0].sql,
+        "tests/fixtures/query_graph/test_window_functions/window_function_tile.sql",
+        update_fixtures,
+    )
 
 
-def test_window_function__as_filter(global_graph, input_node, source_info):
+def test_window_function__as_filter(global_graph, input_node, source_info, update_fixtures):
     """Test when condition derived from window function is used as filter"""
     graph = global_graph
     lagged_a = make_lag_node(graph, input_node, "a", "cust_id", "ts")
@@ -245,53 +200,29 @@ def test_window_function__as_filter(global_graph, input_node, source_info):
     )
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALIZE, source_info=source_info)
     sql_tree = sql_graph.build(filtered_node).sql
-    expected = textwrap.dedent(
-        """
-        SELECT
-          "ts" AS "ts",
-          "cust_id" AS "cust_id",
-          "a" AS "a",
-          "b" AS "b",
-          LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a"
-        FROM "db"."public"."event_table"
-        QUALIFY
-          (
-            LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
-          )
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_window_functions/window_function_as_filter.sql",
+        update_fixtures,
+    )
 
 
-def test_window_function__multiple_filters(graph_with_window_function_filter, source_info):
+def test_window_function__multiple_filters(
+    graph_with_window_function_filter, source_info, update_fixtures
+):
     """Test when condition derived from window function is used as filter"""
     graph, filtered_node_2 = graph_with_window_function_filter
     sql_graph = SQLOperationGraph(graph, sql_type=SQLType.MATERIALIZE, source_info=source_info)
     sql_tree = sql_graph.build(filtered_node_2).sql
-    expected = textwrap.dedent(
-        """
-        SELECT
-          "ts" AS "ts",
-          "cust_id" AS "cust_id",
-          "a" AS "a",
-          "b" AS "b",
-          LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a"
-        FROM "db"."public"."event_table"
-        WHERE
-          (
-            "a" = 123
-          )
-        QUALIFY
-          (
-            LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
-          )
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_window_functions/window_function_multiple_filters.sql",
+        update_fixtures,
+    )
 
 
 def test_window_function__as_filter_qualify_not_supported(
-    graph_with_window_function_filter, spark_source_info
+    graph_with_window_function_filter, spark_source_info, update_fixtures
 ):
     """
     Test window function as filter but QUALIFY is not supported
@@ -301,39 +232,15 @@ def test_window_function__as_filter_qualify_not_supported(
         graph, sql_type=SQLType.MATERIALIZE, source_info=spark_source_info
     )
     sql_tree = sql_graph.build(node).sql
-    expected = textwrap.dedent(
-        """
-        SELECT
-          "ts",
-          "cust_id",
-          "a",
-          "b",
-          "prev_a"
-        FROM (
-          SELECT
-            "ts" AS "ts",
-            "cust_id" AS "cust_id",
-            "a" AS "a",
-            "b" AS "b",
-            LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) AS "prev_a",
-            (
-              LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
-            ) AS "__fb_qualify_condition_column"
-          FROM "db"."public"."event_table"
-          WHERE
-            (
-              "a" = 123
-            )
-        )
-        WHERE
-          "__fb_qualify_condition_column"
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_window_functions/window_function_qualify_not_supported.sql",
+        update_fixtures,
+    )
 
 
 def test_window_function__as_filter_qualify_not_supported_unnamed(
-    graph_with_window_function_filter, spark_source_info
+    graph_with_window_function_filter, spark_source_info, update_fixtures
 ):
     """
     Test window function as filter but QUALIFY is not supported. Project a temporary expression.
@@ -355,26 +262,8 @@ def test_window_function__as_filter_qualify_not_supported_unnamed(
         graph, sql_type=SQLType.MATERIALIZE, source_info=spark_source_info
     )
     sql_tree = sql_graph.build(add_node).sql_standalone
-    expected = textwrap.dedent(
-        """
-        SELECT
-          "Unnamed0"
-        FROM (
-          SELECT
-            (
-              "a" + 123
-            ) AS "Unnamed0",
-            (
-              LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts" NULLS LAST) > 0
-            ) AS "__fb_qualify_condition_column"
-          FROM "db"."public"."event_table"
-          WHERE
-            (
-              "a" = 123
-            )
-        )
-        WHERE
-          "__fb_qualify_condition_column"
-        """
-    ).strip()
-    assert sql_tree.sql(pretty=True) == expected
+    assert_equal_with_expected_fixture(
+        sql_tree.sql(pretty=True),
+        "tests/fixtures/query_graph/test_window_functions/window_function_qualify_not_supported_unnamed.sql",
+        update_fixtures,
+    )

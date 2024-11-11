@@ -1,10 +1,12 @@
 from featurebyte.common.model_util import get_version
 from featurebyte.feature_manager.model import ExtendedFeatureModel, TileSpec
 from featurebyte.models.base import VersionIdentifier
-from tests.util.helper import assert_sql_equal
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
-def test_extended_feature_model__float_feature(float_feature, snowflake_feature_store):
+def test_extended_feature_model__float_feature(
+    float_feature, snowflake_feature_store, update_fixtures
+):
     """Test ExtendedFeatureModel has correct tile_specs"""
     model = ExtendedFeatureModel(
         **float_feature.model_dump(exclude={"version": True}),
@@ -12,45 +14,10 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
     )
     aggregation_id = "e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
     tile_compute_query = model.tile_specs[0].tile_compute_query
-    assert_sql_equal(
+    assert_equal_with_expected_fixture(
         tile_compute_query.get_combined_query_expr().sql(pretty=True),
-        f"""
-        WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
-          SELECT
-            *
-          FROM (
-            SELECT
-              "col_int" AS "col_int",
-              "col_float" AS "col_float",
-              "col_char" AS "col_char",
-              "col_text" AS "col_text",
-              "col_binary" AS "col_binary",
-              "col_boolean" AS "col_boolean",
-              "event_timestamp" AS "event_timestamp",
-              "cust_id" AS "cust_id"
-            FROM "sf_database"."sf_schema"."sf_table"
-            WHERE
-              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
-          )
-          WHERE
-            "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-            AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
-        )
-        SELECT
-          index,
-          "cust_id",
-          SUM("col_float") AS value_sum_{aggregation_id}
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "event_timestamp"), 300, 600, 30) AS index
-          FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
-        )
-        GROUP BY
-          index,
-          "cust_id"
-        """,
+        "tests/fixtures/extended_feature_model/float_feature_tile_query.sql",
+        update_fixtures,
     )
     expected_tile_specs = [
         TileSpec(
@@ -73,7 +40,7 @@ def test_extended_feature_model__float_feature(float_feature, snowflake_feature_
 
 
 def test_extended_feature_model__agg_per_category_feature(
-    agg_per_category_feature, snowflake_feature_store
+    agg_per_category_feature, snowflake_feature_store, update_fixtures
 ):
     """Test ExtendedFeatureModel has correct tile_specs for category groupby feature"""
     model = ExtendedFeatureModel(
@@ -82,47 +49,10 @@ def test_extended_feature_model__agg_per_category_feature(
     )
     aggregation_id = "254bde514925221168a524ba7467c9b6ef83685d"
     tile_compute_query = model.tile_specs[0].tile_compute_query
-    assert_sql_equal(
+    assert_equal_with_expected_fixture(
         tile_compute_query.get_combined_query_expr().sql(pretty=True),
-        f"""
-        WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
-          SELECT
-            *
-          FROM (
-            SELECT
-              "col_int" AS "col_int",
-              "col_float" AS "col_float",
-              "col_char" AS "col_char",
-              "col_text" AS "col_text",
-              "col_binary" AS "col_binary",
-              "col_boolean" AS "col_boolean",
-              "event_timestamp" AS "event_timestamp",
-              "cust_id" AS "cust_id"
-            FROM "sf_database"."sf_schema"."sf_table"
-            WHERE
-              "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-              AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
-          )
-          WHERE
-            "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
-            AND "event_timestamp" < CAST(__FB_END_DATE AS TIMESTAMP)
-        )
-        SELECT
-          index,
-          "cust_id",
-          "col_int",
-          SUM("col_float") AS value_sum_{aggregation_id}
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "event_timestamp"), 300, 600, 30) AS index
-          FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
-        )
-        GROUP BY
-          index,
-          "cust_id",
-          "col_int"
-        """,
+        "tests/fixtures/extended_feature_model/agg_per_cadtegory_feature_tile_query.sql",
+        update_fixtures,
     )
     expected_tile_specs = [
         TileSpec(
