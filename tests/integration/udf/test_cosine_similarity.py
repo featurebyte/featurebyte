@@ -5,7 +5,7 @@ Tests for snowflake cosine similarity UDF
 import numpy as np
 import pytest
 
-from tests.integration.udf.util import execute_query_with_udf
+from tests.integration.udf.util import OVERFLOW_INT, execute_query_with_udf
 
 
 @pytest.mark.parametrize(
@@ -25,7 +25,7 @@ from tests.integration.udf.util import execute_query_with_udf
         ({"a": 1, "b": np.nan, "c": 3}, {"a": 1, "b": 2, "c": None}, 0.141421),
         ({"a": 1}, {"b": 2, "c": None}, 0),
         ({"a": 0}, {"b": 0}, 0),
-        ({"a": 123123123123123}, {"a": 123123123123123}, 1.0),
+        ({"a": OVERFLOW_INT}, {"a": OVERFLOW_INT}, 1.0),
     ],
 )
 @pytest.mark.asyncio
