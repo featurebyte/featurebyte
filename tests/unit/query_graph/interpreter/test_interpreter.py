@@ -852,7 +852,7 @@ def test_isnull(graph, node_input, source_info):
 
 
 def test_databricks_source(
-    query_graph_with_groupby, groupby_node_aggregation_id, databricks_source_info
+    query_graph_with_groupby, groupby_node_aggregation_id, databricks_source_info, update_fixtures
 ):
     """Test SQL generation for databricks source"""
     graph = query_graph_with_groupby
@@ -878,48 +878,15 @@ def test_databricks_source(
     # Check tile SQL
     tile_gen_sqls = interpreter.construct_tile_gen_sql(groupby_node, is_on_demand=False)
     assert len(tile_gen_sqls) == 1
-    tile_sql = tile_gen_sqls[0].sql
-    expected = textwrap.dedent(
-        f"""
-        WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
-          SELECT
-            *
-          FROM (
-            SELECT
-              `ts` AS `ts`,
-              `cust_id` AS `cust_id`,
-              `a` AS `a`,
-              `b` AS `b`,
-              (
-                `a` + `b`
-              ) AS `c`
-            FROM `db`.`public`.`event_table`
-          )
-          WHERE
-            `ts` >= CAST(__FB_START_DATE AS TIMESTAMP)
-            AND `ts` < CAST(__FB_END_DATE AS TIMESTAMP)
-        )
-        SELECT
-          index,
-          `cust_id`,
-          SUM(`a`) AS sum_value_avg_{groupby_node_aggregation_id},
-          COUNT(`a`) AS count_value_avg_{groupby_node_aggregation_id}
-        FROM (
-          SELECT
-            *,
-            F_TIMESTAMP_TO_INDEX(CAST(`ts` AS TIMESTAMP), 1800, 900, 60) AS index
-          FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
-        )
-        GROUP BY
-          index,
-          `cust_id`
-        """
-    ).strip()
-    assert tile_sql == expected
+    assert_equal_with_expected_fixture(
+        tile_gen_sqls[0].sql,
+        "tests/fixtures/expected_tile_sql_databricks.sql",
+        update_fixtures,
+    )
 
 
 def test_tile_sql_order_dependent_aggregation(
-    global_graph, latest_value_aggregation_feature_node, source_info
+    global_graph, latest_value_aggregation_feature_node, source_info, update_fixtures
 ):
     """
     Test generating tile sql for an order dependent aggregation
@@ -930,45 +897,11 @@ def test_tile_sql_order_dependent_aggregation(
     )
     assert len(tile_gen_sqls) == 1
     tile_sql = tile_gen_sqls[0].sql
-    expected = textwrap.dedent(
-        """
-        WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
-          SELECT
-            *
-          FROM (
-            SELECT
-              "ts" AS "ts",
-              "cust_id" AS "cust_id",
-              "a" AS "a",
-              "b" AS "b"
-            FROM "db"."public"."event_table"
-          )
-          WHERE
-            "ts" >= CAST(__FB_START_DATE AS TIMESTAMP)
-            AND "ts" < CAST(__FB_END_DATE AS TIMESTAMP)
-        )
-        SELECT
-          index,
-          "cust_id",
-          value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
-        FROM (
-          SELECT
-            index,
-            "cust_id",
-            ROW_NUMBER() OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-            FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
-          FROM (
-            SELECT
-              *,
-              F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
-            FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
-          )
-        )
-        WHERE
-          "__FB_ROW_NUMBER" = 1
-        """
-    ).strip()
-    assert tile_sql == expected
+    assert_equal_with_expected_fixture(
+        tile_sql,
+        "tests/fixtures/expected_tile_sql_order_dependent_aggregation.sql",
+        update_fixtures,
+    )
 
 
 def test_graph_interpreter_sample(simple_graph, source_info):
