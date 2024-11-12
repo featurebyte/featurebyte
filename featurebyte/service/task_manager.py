@@ -435,7 +435,7 @@ class TaskManager:
         else:
             await self.periodic_task_service.delete_document(document_id=data[0]["_id"])
 
-    async def revoke_task(self, task_id: str) -> None:
+    async def revoke_task(self, task_id: str, force: bool = False) -> None:
         """
         Revoke task
 
@@ -443,6 +443,8 @@ class TaskManager:
         ----------
         task_id: str
             Task ID
+        force: bool
+            Whether to force revoke
 
         Raises
         ------
@@ -454,16 +456,14 @@ class TaskManager:
         task = await self.get_task(task_id)
         if not task:
             raise TaskNotFound(f'Task (id: "{task_id}") not found.')
-        if task.status != TaskStatus.PENDING and not task.payload.get("is_revocable"):
+        if task.status != TaskStatus.PENDING and not task.payload.get("is_revocable") and not force:
             raise TaskNotRevocableError(f'Task (id: "{task_id}") does not support revoke.')
         if task.status in TaskStatus.non_terminal():
             self.celery.control.revoke(task_id, reply=True, terminate=True, signal="SIGTERM")
             # revoke all child tasks
             if task.child_task_ids:
                 for child_task_id in task.child_task_ids:
-                    self.celery.control.revoke(
-                        str(child_task_id), reply=True, terminate=True, signal="SIGTERM"
-                    )
+                    await self.revoke_task(str(child_task_id), force=True)
 
     async def rerun_task(self, task_id: str) -> str:
         """
