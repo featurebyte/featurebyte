@@ -33,6 +33,7 @@ def test_extended_feature_model__float_feature(
             aggregation_id=f"sum_{aggregation_id}",
             feature_store_id=snowflake_feature_store.id,
             parent_column_name="col_float",
+            aggregation_function_name="sum",
             windows=["30m", "2h", "1d"],
         )
     ]
@@ -69,6 +70,7 @@ def test_extended_feature_model__agg_per_category_feature(
             category_column_name="col_int",
             feature_store_id=snowflake_feature_store.id,
             parent_column_name="col_float",
+            aggregation_function_name="sum",
             windows=["30m", "2h", "1d"],
         )
     ]
