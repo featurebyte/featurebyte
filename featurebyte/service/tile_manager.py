@@ -213,6 +213,7 @@ class TileManagerService:
         on_demand_tile_spec: OnDemandTileSpec,
         progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
     ) -> TileComputeResult:
+        session = await session.clone_if_not_threadsafe()
         tile_generate_obj = self._get_tile_generate_object_from_tile_spec(
             session=session,
             tile_spec=on_demand_tile_spec.tile_spec,
@@ -234,6 +235,8 @@ class TileManagerService:
         grouping: Optional[TileTableGrouping],
         progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
     ) -> None:
+        session = await session.clone_if_not_threadsafe()
+
         if grouping is None:
             tile_spec = on_demand_tile_spec.tile_spec
         else:
