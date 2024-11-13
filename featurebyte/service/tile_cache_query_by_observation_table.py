@@ -11,6 +11,7 @@ from redis import Redis
 from sqlglot import expressions
 
 from featurebyte.common.progress import ProgressCallbackType
+from featurebyte.common.utils import timer
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.tile_cache import (
@@ -81,7 +82,9 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
                 expressions.Star()
             ).from_(quoted_identifier(entity_table_name))
 
-        combined_infos = combine_tile_compute_specs(list(unique_tile_infos.values()))
+        with timer("combine_tile_compute_specs", logger=logger):
+            combined_infos = combine_tile_compute_specs(list(unique_tile_infos.values()))
+
         logger.info(
             "Number of tile compute queries before and after combining: %s -> %s",
             len(unique_tile_infos),
