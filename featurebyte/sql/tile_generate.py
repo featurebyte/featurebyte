@@ -3,9 +3,11 @@ Databricks Tile Generate Job Script
 """
 
 import time
+from dataclasses import dataclass
 from typing import Optional
 
 import dateutil.parser
+from bson import ObjectId
 
 from featurebyte.common import date_util
 from featurebyte.enum import InternalName
@@ -17,6 +19,17 @@ from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class TileComputeResult:
+    """
+    Result for tile computation
+    """
+
+    computed_tiles_table_name: str
+    tile_sql: str
+    tile_compute_metrics: TileComputeMetrics
 
 
 class TileGenerate(TileCommon):
@@ -38,6 +51,32 @@ class TileGenerate(TileCommon):
         -------
         TileComputeMetrics
         """
+        tile_compute_result = await self.compute_tiles()
+        try:
+            await self.insert_tiles_and_update_metadata(
+                computed_tiles_table_name=tile_compute_result.computed_tiles_table_name,
+                tile_sql=tile_compute_result.tile_sql,
+            )
+        finally:
+            await self._session.drop_table(
+                tile_compute_result.computed_tiles_table_name,
+                schema_name=self._session.schema_name,
+                database_name=self._session.database_name,
+                if_exists=True,
+            )
+        return tile_compute_result.tile_compute_metrics
+
+    async def compute_tiles(self) -> TileComputeResult:
+        """
+        Compute tiles and store the result in a table for further processing. Caller is responsible
+        for cleaning up the table.
+
+        Returns
+        -------
+        TileComputeResult
+        """
+
+        # Get the final SQL query
         if self.sql is not None:
             view_cache_seconds = None
             final_sql = self._replace_placeholder_dates(self.sql)
@@ -55,16 +94,45 @@ class TileGenerate(TileCommon):
             view_cache_seconds = time.time() - tic
             final_sql = tile_compute_query.get_combined_query_string()
 
-        final_sql_with_index = self._construct_tile_sql_with_index(final_sql)
+        tile_sql = self._construct_tile_sql_with_index(final_sql)
 
-        tile_table_exist_flag = await self.table_exists(self.tile_id)
+        # Compute the tiles
+        tic = time.time()
+        computed_tiles_table_name = f"__TEMP_TILE_TABLE_{ObjectId()}".upper()
+        await self._session.create_table_as(
+            table_details=computed_tiles_table_name,
+            select_expr=tile_sql,
+        )
+        compute_seconds = time.time() - tic
 
+        return TileComputeResult(
+            computed_tiles_table_name=computed_tiles_table_name,
+            tile_sql=final_sql,
+            tile_compute_metrics=TileComputeMetrics(
+                view_cache_seconds=view_cache_seconds,
+                compute_seconds=compute_seconds,
+            ),
+        )
+
+    async def insert_tiles_and_update_metadata(
+        self,
+        computed_tiles_table_name: str,
+        tile_sql: str,
+    ) -> None:
+        """
+        Update tile tables with the computed tiles
+
+        Parameters
+        ----------
+        computed_tiles_table_name: str
+            Name of the table containing the computed tiles
+        tile_sql: str
+            SQL query used to compute the tiles
+        """
         await TileRegistry(
             session=self._session,
-            sql=final_sql,
-            sql_with_index=final_sql_with_index,
-            table_name=self.tile_id,
-            table_exist=tile_table_exist_flag,
+            sql=tile_sql,
+            computed_tiles_table_name=computed_tiles_table_name,
             time_modulo_frequency_second=self.time_modulo_frequency_second,
             blind_spot_second=self.blind_spot_second,
             frequency_minute=self.frequency_minute,
@@ -101,21 +169,22 @@ class TileGenerate(TileCommon):
 
         # insert new records and update existing records
         logger.debug("merging into tile table", extra={"tile_id": self.tile_id})
+        value_column_names_str = ",".join(self.value_column_names)
         if self.entity_column_names:
             on_condition_str = f"a.INDEX = b.INDEX AND {entity_filter_cols_str}"
             insert_str = (
-                f"INDEX, {self.entity_column_names_str}, {self.value_column_names_str}, CREATED_AT"
+                f"INDEX, {self.entity_column_names_str}, {value_column_names_str}, CREATED_AT"
             )
             values_str = (
                 f"b.INDEX, {entity_insert_cols_str}, {value_insert_cols_str}, current_timestamp()"
             )
         else:
             on_condition_str = "a.INDEX = b.INDEX"
-            insert_str = f"INDEX, {self.value_column_names_str}, CREATED_AT"
+            insert_str = f"INDEX, {value_column_names_str}, CREATED_AT"
             values_str = f"b.INDEX, {value_insert_cols_str}, current_timestamp()"
 
         merge_sql = f"""
-            merge into {self.tile_id} a using ({final_sql_with_index}) b
+            merge into {self.tile_id} a using {computed_tiles_table_name} b
                 on {on_condition_str}
                 when matched then
                     update set a.created_at = current_timestamp(), {value_update_cols_str}
@@ -123,9 +192,7 @@ class TileGenerate(TileCommon):
                     insert ({insert_str})
                         values ({values_str})
         """
-        tic = time.time()
         await self._session.retry_sql(sql=merge_sql)
-        compute_seconds = time.time() - tic
 
         if self.tile_end_ts_str is not None and self.update_last_run_metadata:
             tile_end_date = dateutil.parser.isoparse(self.tile_end_ts_str)
@@ -148,11 +215,6 @@ class TileGenerate(TileCommon):
                 tile_index=ind_value,
                 tile_end_date=tile_end_date,
             )
-
-        return TileComputeMetrics(
-            view_cache_seconds=view_cache_seconds,
-            compute_seconds=compute_seconds,
-        )
 
     def _construct_tile_sql_with_index(self, tile_sql: str) -> str:
         if self.entity_column_names:

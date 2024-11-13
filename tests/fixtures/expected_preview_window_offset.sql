@@ -4,9 +4,9 @@ WITH REQUEST_TABLE AS (
     'C1' AS "CUSTOMER_ID"
 ), TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   SELECT
-    sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f.INDEX,
-    sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f."cust_id",
-    value_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f
+    sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891.INDEX,
+    sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891."cust_id",
+    value_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891
   FROM (
     WITH __FB_ENTITY_TABLE_NAME AS (
       SELECT
@@ -34,8 +34,7 @@ WITH REQUEST_TABLE AS (
         SELECT
           "ts" AS "ts",
           "cust_id" AS "cust_id",
-          "a" AS "a",
-          "b" AS "b"
+          "a" AS "input_col_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891"
         FROM "db"."public"."event_table"
       ) AS R
         ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"
@@ -45,7 +44,7 @@ WITH REQUEST_TABLE AS (
     SELECT
       index,
       "cust_id",
-      SUM("a") AS value_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f
+      SUM("input_col_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891") AS value_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891
     FROM (
       SELECT
         *,
@@ -55,7 +54,7 @@ WITH REQUEST_TABLE AS (
     GROUP BY
       index,
       "cust_id"
-  ) AS sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f
+  ) AS sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891
 ), "REQUEST_TABLE_W86400_O28800_F3600_BS900_M1800_CUSTOMER_ID" AS (
   SELECT
     "POINT_IN_TIME",
@@ -76,19 +75,19 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ."POINT_IN_TIME",
     REQ."CUSTOMER_ID",
-    "T0"."_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f_o28800" AS "_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f_o28800"
+    "T0"."_fb_internal_CUSTOMER_ID_window_w86400_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891_o28800" AS "_fb_internal_CUSTOMER_ID_window_w86400_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891_o28800"
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       "POINT_IN_TIME",
       "CUSTOMER_ID",
-      SUM(value_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f) AS "_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f_o28800"
+      SUM(value_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891) AS "_fb_internal_CUSTOMER_ID_window_w86400_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891_o28800"
     FROM (
       SELECT
         REQ."POINT_IN_TIME",
         REQ."CUSTOMER_ID",
         TILE.INDEX,
-        TILE.value_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f
+        TILE.value_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891
       FROM "REQUEST_TABLE_W86400_O28800_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
       INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 24) = FLOOR(TILE.INDEX / 24)
@@ -100,7 +99,7 @@ WITH REQUEST_TABLE AS (
         REQ."POINT_IN_TIME",
         REQ."CUSTOMER_ID",
         TILE.INDEX,
-        TILE.value_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f
+        TILE.value_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891
       FROM "REQUEST_TABLE_W86400_O28800_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
       INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 24) - 1 = FLOOR(TILE.INDEX / 24)
@@ -117,5 +116,5 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  CAST("_fb_internal_CUSTOMER_ID_window_w86400_sum_ade668b7a6e2a4df48ce7d824fcc5efe5305272f_o28800" AS DOUBLE) AS "a_sum_24h_offset_8h"
+  CAST("_fb_internal_CUSTOMER_ID_window_w86400_sum_2cbc66fbb52aa9d8124dcb5cfbf1af0d9762e891_o28800" AS DOUBLE) AS "a_sum_24h_offset_8h"
 FROM _FB_AGGREGATED AS AGG

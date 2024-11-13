@@ -7,9 +7,7 @@ WITH __FB_ENTITY_TABLE_NAME AS (
   INNER JOIN (
     SELECT
       "ts" AS "ts",
-      "cust_id" AS "cust_id",
-      "order_id" AS "order_id",
-      "order_method" AS "order_method"
+      "cust_id" AS "cust_id"
     FROM "db"."public"."event_table"
   ) AS R
     ON R."cust_id" = __FB_ENTITY_TABLE_NAME."cust_id"

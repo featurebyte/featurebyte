@@ -7,29 +7,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import cast
 
-from sqlglot import expressions
-from sqlglot.expressions import Expression, Select, alias_, select
+from sqlglot.expressions import Expression, Select, alias_
 
-from featurebyte.enum import DBVarType, InternalName
-from featurebyte.models.tile_compute_query import (
-    Prerequisite,
-    PrerequisiteTable,
-    QueryModel,
-    TileComputeQuery,
-)
+from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
-from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
-from featurebyte.query_graph.sql.groupby_helper import (
-    GroupbyColumn,
-    GroupbyKey,
-    _split_agg_and_snowflake_vector_aggregation_columns,
-)
 from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
+from featurebyte.query_graph.sql.tile_compute_spec import TileComputeSpec, TileTableInputColumn
 from featurebyte.query_graph.sql.tiling import InputColumn, TileSpec, get_aggregator
 
 
@@ -60,6 +48,42 @@ class BuildTileNode(TableNode):
 
     @property
     def sql(self) -> Expression:
+        raise RuntimeError("sql property is not supported for BuildTileNode")
+
+    def get_tile_compute_spec(self) -> TileComputeSpec:
+        """
+        Get a TileComputeSpec object that fully describes the tile computation.
+
+        Returns
+        -------
+        TileComputeSpec
+        """
+        source_expr = cast(Select, self.input_node.get_sql_for_expressions([]))
+        if self.context.parameters["parent"] is None:
+            value_columns = []
+        else:
+            parent_col = self.context.parameters["parent"]
+            value_columns = [
+                TileTableInputColumn(
+                    name=self._get_aggregation_input_column_name(
+                        self.context.parameters["aggregation_id"]
+                    ),
+                    expr=self.input_node.columns_map[parent_col],
+                )
+            ]
+        key_columns = [
+            TileTableInputColumn(name=col, expr=self.input_node.columns_map[col])
+            for col in self.keys
+        ]
+        if self.value_by is not None:
+            value_by_column = TileTableInputColumn(
+                name=self.value_by, expr=self.input_node.columns_map[self.value_by]
+            )
+        else:
+            value_by_column = None
+        timestamp_column = TileTableInputColumn(
+            name=self.timestamp, expr=self.input_node.columns_map[self.timestamp]
+        )
         tile_index_expr = alias_(
             self.adapter.call_udf(
                 "F_TIMESTAMP_TO_INDEX",
@@ -74,186 +98,19 @@ class BuildTileNode(TableNode):
             ),
             alias="index",
         )
-        input_tiled = select("*", tile_index_expr).from_(InternalName.TILE_COMPUTE_INPUT_TABLE_NAME)
-        keys = [quoted_identifier(k) for k in self.keys]
-        if self.value_by is not None:
-            keys.append(quoted_identifier(self.value_by))
-
-        if self.is_order_dependent:
-            return self._get_tile_sql_order_dependent(keys, input_tiled)
-
-        return self._get_tile_sql_order_independent(keys, input_tiled)
-
-    def get_tile_compute_query(self) -> TileComputeQuery:
-        prerequisite_tables = []
-        source_type = self.context.source_info.source_type
-        if self.is_on_demand:
-            prerequisite_tables.append(
-                PrerequisiteTable(
-                    name=InternalName.ENTITY_TABLE_NAME.value,
-                    query=QueryModel.from_expr(
-                        expressions.Identifier(this=InternalName.ENTITY_TABLE_SQL_PLACEHOLDER),
-                        source_type=source_type,
-                    ),
-                )
-            )
-        input_filtered = self._get_input_filtered_within_date_range()
-        prerequisite_tables.append(
-            PrerequisiteTable(
-                name=InternalName.TILE_COMPUTE_INPUT_TABLE_NAME.value,
-                query=QueryModel.from_expr(input_filtered, source_type=source_type),
-            )
+        return TileComputeSpec(
+            source_expr=source_expr,
+            entity_table_expr=None,
+            timestamp_column=timestamp_column,
+            key_columns=key_columns,
+            value_by_column=value_by_column,
+            value_columns=value_columns,
+            tile_index_expr=tile_index_expr,
+            tile_column_specs=self.tile_specs,
+            is_order_dependent=self.is_order_dependent,
+            is_on_demand=self.is_on_demand,
+            source_info=self.context.source_info,
         )
-        return TileComputeQuery(
-            prerequisite=Prerequisite(tables=prerequisite_tables),
-            aggregation_query=QueryModel.from_expr(self.sql, source_type=source_type),
-        )
-
-    def _get_input_filtered_within_date_range(self) -> Select:
-        """
-        Construct sql to filter input data to be within a date range. Only data within this range
-        will be used to calculate tiles.
-
-        Returns
-        -------
-        Select
-        """
-        if self.is_on_demand:
-            return self._get_input_filtered_within_date_range_on_demand()
-        return self._get_input_filtered_within_date_range_scheduled()
-
-    def _get_input_filtered_within_date_range_scheduled(self) -> Select:
-        """
-        Construct sql with placeholders for start and end dates to be filled in by the scheduled
-        tile computation jobs
-
-        Returns
-        -------
-        Select
-        """
-        select_expr = select("*").from_(self.input_node.sql_nested())
-        timestamp_expr = self.adapter.normalize_timestamp_before_comparison(
-            quoted_identifier(self.timestamp)
-        )
-        start_expr = expressions.Cast(
-            this=expressions.Identifier(this=InternalName.TILE_START_DATE_SQL_PLACEHOLDER),
-            to=expressions.DataType.build("TIMESTAMP"),
-        )
-        end_expr = expressions.Cast(
-            this=expressions.Identifier(this=InternalName.TILE_END_DATE_SQL_PLACEHOLDER),
-            to=expressions.DataType.build("TIMESTAMP"),
-        )
-        start_cond = expressions.GTE(this=timestamp_expr, expression=start_expr)
-        end_cond = expressions.LT(this=timestamp_expr, expression=end_expr)
-        select_expr = select_expr.where(start_cond, end_cond, copy=False)
-        return select_expr
-
-    def _get_input_filtered_within_date_range_on_demand(self) -> Select:
-        """
-        Construct sql to filter the data used when building tiles for selected entities only
-
-        Returns
-        -------
-        Select
-        """
-        return get_table_filtered_by_entity(
-            input_expr=cast(Select, self.input_node.sql),
-            entity_column_names=self.keys,
-            timestamp_column=self.timestamp,
-            adapter=self.adapter,
-        )
-
-    @staticmethod
-    def _get_db_var_type_from_col_type(col_type: str) -> DBVarType:
-        mapping: dict[str, DBVarType] = {"ARRAY": DBVarType.ARRAY, "EMBEDDING": DBVarType.EMBEDDING}
-        return mapping.get(col_type, DBVarType.UNKNOWN)
-
-    def _get_tile_sql_order_independent(
-        self,
-        keys: list[Expression],
-        input_tiled: expressions.Select,
-    ) -> Expression:
-        inner_groupby_keys = [expressions.Identifier(this="index"), *keys]
-        groupby_keys = [GroupbyKey(expr=key, name=key.name) for key in inner_groupby_keys]
-        original_query = select().from_(input_tiled.subquery(copy=False))
-
-        groupby_columns = []
-        for spec in self.tile_specs:
-            groupby_columns.append(
-                GroupbyColumn(
-                    parent_dtype=self._get_db_var_type_from_col_type(spec.tile_column_type),
-                    agg_func=spec.tile_aggregation_type,
-                    parent_expr=spec.tile_expr,
-                    result_name=spec.tile_column_name,
-                    parent_cols=spec.tile_expr.expressions or [spec.tile_expr.alias_or_name],
-                    quote_result_name=False,
-                )
-            )
-        agg_exprs, vector_agg_exprs = _split_agg_and_snowflake_vector_aggregation_columns(
-            original_query,
-            groupby_keys,
-            groupby_columns,
-            None,
-            self.adapter.source_type,
-            is_tile=True,
-        )
-
-        return self.adapter.group_by(
-            original_query,
-            select_keys=inner_groupby_keys,
-            agg_exprs=agg_exprs,
-            keys=inner_groupby_keys,
-            vector_aggregate_columns=vector_agg_exprs,
-            quote_vector_agg_aliases=False,
-        )
-
-    def _get_tile_sql_order_dependent(
-        self,
-        keys: list[Expression],
-        input_tiled: expressions.Select,
-    ) -> Expression:
-        def _make_window_expr(expr: str | Expression) -> Expression:
-            order = expressions.Order(
-                expressions=[
-                    expressions.Ordered(this=quoted_identifier(self.timestamp), desc=True),
-                ]
-            )
-            partition_by = [cast(Expression, expressions.Identifier(this="index"))] + keys
-            window_expr = expressions.Window(this=expr, partition_by=partition_by, order=order)
-            return window_expr
-
-        window_exprs = [
-            alias_(
-                _make_window_expr(expressions.Anonymous(this="ROW_NUMBER")),
-                alias=self.ROW_NUMBER,
-                quoted=True,
-            ),
-            *[
-                alias_(_make_window_expr(spec.tile_expr), alias=spec.tile_column_name)
-                for spec in self.tile_specs
-            ],
-        ]
-        inner_expr = select(
-            "index",
-            *keys,
-            *window_exprs,
-        ).from_(input_tiled.subquery(copy=False), copy=False)
-
-        outer_condition = expressions.EQ(
-            this=quoted_identifier(self.ROW_NUMBER),
-            expression=make_literal_value(1),
-        )
-        tile_expr = (
-            select(
-                "index",
-                *keys,
-                *[spec.tile_column_name for spec in self.tile_specs],
-            )
-            .from_(inner_expr.subquery(copy=False))
-            .where(outer_condition, copy=False)
-        )
-
-        return tile_expr
 
     @classmethod
     def build(cls, context: SQLNodeContext) -> BuildTileNode | None:
@@ -283,11 +140,14 @@ class BuildTileNode(TableNode):
         input_node = context.input_sql_nodes[0]
         assert isinstance(input_node, TableNode)
         if parameters["parent"] is None:
-            parent_column = None
             parent_dtype = None
+            parent_column = None
         else:
             parent_dtype = get_parent_dtype(parameters["parent"], context.graph, context.query_node)
-            parent_column = InputColumn(name=parameters["parent"], dtype=parent_dtype)
+            parent_column = InputColumn(
+                name=cls._get_aggregation_input_column_name(parameters["aggregation_id"]),
+                dtype=parent_dtype,
+            )
         aggregator = get_aggregator(
             parameters["agg_func"], adapter=context.adapter, parent_dtype=parent_dtype
         )
@@ -315,3 +175,21 @@ class BuildTileNode(TableNode):
             adapter=context.adapter,
         )
         return sql_node
+
+    @staticmethod
+    def _get_aggregation_input_column_name(aggregation_id: str) -> str:
+        """
+        Get the column that should be constructed before performing tile aggregation based on the
+        aggregation id. The original column name doesn't matter because that is already factored in
+        the aggregation id.
+
+        Parameters
+        ----------
+        aggregation_id : str
+            Aggregation id
+
+        Returns
+        -------
+        str
+        """
+        return f"input_col_{aggregation_id}"

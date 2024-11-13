@@ -419,7 +419,7 @@ def test_extract_definition__join_with_groupby(
     )
 
     # construct another equivalent groupby feature with different user specified column names
-    join_node_params["left_output_columns"] = ["order_method_left"]
+    join_node_params["left_output_columns"] = ["order_method_left", "cust_id", "ts"]
     join_node_params["right_output_columns"] = [
         "order_id_right",
         "item_id_right",
@@ -634,12 +634,16 @@ def test_extract_definition__join_on_assign(global_graph, assign_join_feature_no
             "join_type": "inner",
             "left_input_columns": [
                 "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
+                "cust_id",
                 "order_method",
+                "ts",
             ],
             "left_on": "order_id",
             "left_output_columns": [
                 "left_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_column_e007333d31736e39a0c148e730a98bbc4cc6f823",
+                "left_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_cust_id",
                 "left_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_order_method",
+                "left_fa9b94eb2cdfbf4a9a33ddd987b51d9caaf9e506_ts",
             ],
             "metadata": None,
             "right_input_columns": [
@@ -723,19 +727,19 @@ def test_extract_definition__forward_aggregate(query_graph_and_assign_node, even
         expected={
             "agg_func": "sum",
             "entity_ids": None,
-            "keys": ["column_cc5a2868a817488c4a97385f271ea8e459e297eb"],
-            "name": "target_fd6dbe7f77a1fad176370bdb7712f82d794c23af",
+            "keys": ["column_83f21aa2ec6d182f0f578241eda01d24e52ff4a2"],
+            "name": "target_7b1c700f5d03c3f7d23e4bf630aaf576e5eceb0f",
             "offset": None,
-            "parent": "column_feea481253974aea85c8250764a2e885f03851de",
+            "parent": "column_41a32af12d0e8bc4d3405f31b9bf52034f7cb98e",
             "serving_names": ["CUST_ID"],
-            "timestamp_col": "column_d53dbf58718c6cf914d5fa867d92c36d6baadbee",
+            "timestamp_col": "column_5430b65a132f391e1ada3fe6389bee6e856bdd77",
             "value_by": None,
             "window": "604800s",
         },
     )
     project_node = output.graph.get_node_by_name("project_3")
     assert project_node.parameters.model_dump() == {
-        "columns": ["target_fd6dbe7f77a1fad176370bdb7712f82d794c23af"]
+        "columns": ["target_7b1c700f5d03c3f7d23e4bf630aaf576e5eceb0f"]
     }
 
 

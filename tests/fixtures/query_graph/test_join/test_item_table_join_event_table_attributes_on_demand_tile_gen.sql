@@ -6,10 +6,8 @@ WITH __FB_ENTITY_TABLE_NAME AS (
   FROM __FB_ENTITY_TABLE_NAME
   INNER JOIN (
     SELECT
-      L."order_method" AS "order_method",
-      R."order_id" AS "order_id",
-      R."item_id" AS "item_id",
-      R."item_name" AS "item_name",
+      L."ts" AS "ts",
+      L."cust_id" AS "cust_id",
       R."item_type" AS "item_type"
     FROM (
       SELECT
@@ -46,7 +44,7 @@ SELECT
   index,
   "cust_id",
   "item_type",
-  COUNT(*) AS value_count_d445f47d1ab8d2fa742190a9d0e595f23da0c25d
+  COUNT(*) AS value_count_1ce4ed1665a2441405f198edee6e7736e74d0b5a
 FROM (
   SELECT
     *,

@@ -14,7 +14,7 @@ WITH "REQUEST_TABLE_NO_TILE_W172800_F43200_BS900_M1800_CUSTOMER_ID" AS (
       "CUSTOMER_ID"
     FROM REQUEST_TABLE
   )
-), "VIEW_e035b6079455c5f6" AS (
+), "VIEW_f2d5e243bf091276" AS (
   SELECT
     *,
     DATE_PART(EPOCH_SECOND, "ts") AS "__FB_VIEW_TIMESTAMP_EPOCH"
@@ -22,6 +22,8 @@ WITH "REQUEST_TABLE_NO_TILE_W172800_F43200_BS900_M1800_CUSTOMER_ID" AS (
     SELECT
       "ts" AS "ts",
       "cust_id" AS "cust_id",
+      "biz_id" AS "biz_id",
+      "product_type" AS "product_type",
       "a" AS "a",
       "b" AS "b"
     FROM "db"."public"."event_table"

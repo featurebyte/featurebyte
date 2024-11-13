@@ -5,9 +5,7 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
     SELECT
       "ts" AS "ts",
       "cust_id" AS "cust_id",
-      "a" AS "a",
-      "b" AS "b",
-      LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts") AS "prev_a"
+      LAG("a", 1) OVER (PARTITION BY "cust_id" ORDER BY "ts") AS "input_col_count_c757fc5f20a0a22e1a234ed081c52553f524aa19"
     FROM "db"."public"."event_table"
     WHERE
       (
@@ -21,7 +19,7 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
 SELECT
   index,
   "cust_id",
-  COUNT(*) AS value_count_e2199e4018415026611a08411ff11e9ec48e0ca5
+  COUNT(*) AS value_count_c757fc5f20a0a22e1a234ed081c52553f524aa19
 FROM (
   SELECT
     *,

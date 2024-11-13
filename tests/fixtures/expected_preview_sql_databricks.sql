@@ -4,10 +4,10 @@ WITH REQUEST_TABLE AS (
     'C1' AS `CUSTOMER_ID`
 ), TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS (
   SELECT
-    avg_f777ffee22ceceebb438d61cb44de17eb593fd38.INDEX,
-    avg_f777ffee22ceceebb438d61cb44de17eb593fd38.`cust_id`,
-    sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38,
-    count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38
+    avg_29b9efc9d7c417ea107f038622d2579b1d6e1266.INDEX,
+    avg_29b9efc9d7c417ea107f038622d2579b1d6e1266.`cust_id`,
+    sum_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266,
+    count_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266
   FROM (
     WITH __FB_ENTITY_TABLE_NAME AS (
       SELECT
@@ -31,11 +31,7 @@ WITH REQUEST_TABLE AS (
         SELECT
           `ts` AS `ts`,
           `cust_id` AS `cust_id`,
-          `a` AS `a`,
-          `b` AS `b`,
-          (
-            `a` + `b`
-          ) AS `c`
+          `a` AS `input_col_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266`
         FROM `db`.`public`.`event_table`
       ) AS R
         ON R.`cust_id` = __FB_ENTITY_TABLE_NAME.`cust_id`
@@ -45,8 +41,8 @@ WITH REQUEST_TABLE AS (
     SELECT
       index,
       `cust_id`,
-      SUM(`a`) AS sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38,
-      COUNT(`a`) AS count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38
+      SUM(`input_col_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266`) AS sum_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266,
+      COUNT(`input_col_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266`) AS count_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266
     FROM (
       SELECT
         *,
@@ -56,7 +52,7 @@ WITH REQUEST_TABLE AS (
     GROUP BY
       index,
       `cust_id`
-  ) AS avg_f777ffee22ceceebb438d61cb44de17eb593fd38
+  ) AS avg_29b9efc9d7c417ea107f038622d2579b1d6e1266
 ), `REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID` AS (
   SELECT
     `POINT_IN_TIME`,
@@ -93,21 +89,21 @@ WITH REQUEST_TABLE AS (
   SELECT
     REQ.`POINT_IN_TIME`,
     REQ.`CUSTOMER_ID`,
-    `T0`.`_fb_internal_CUSTOMER_ID_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS `_fb_internal_CUSTOMER_ID_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`,
-    `T1`.`_fb_internal_CUSTOMER_ID_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS `_fb_internal_CUSTOMER_ID_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`
+    `T0`.`_fb_internal_CUSTOMER_ID_window_w7200_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266` AS `_fb_internal_CUSTOMER_ID_window_w7200_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266`,
+    `T1`.`_fb_internal_CUSTOMER_ID_window_w172800_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266` AS `_fb_internal_CUSTOMER_ID_window_w172800_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266`
   FROM REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
       `POINT_IN_TIME`,
       `CUSTOMER_ID`,
-      SUM(sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) / SUM(count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) AS `_fb_internal_CUSTOMER_ID_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`
+      SUM(sum_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266) / SUM(count_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266) AS `_fb_internal_CUSTOMER_ID_window_w7200_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266`
     FROM (
       SELECT
         REQ.`POINT_IN_TIME`,
         REQ.`CUSTOMER_ID`,
         TILE.INDEX,
-        TILE.count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38,
-        TILE.sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38
+        TILE.count_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266,
+        TILE.sum_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266
       FROM `REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID` AS REQ
       INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 2) = FLOOR(TILE.INDEX / 2)
@@ -119,8 +115,8 @@ WITH REQUEST_TABLE AS (
         REQ.`POINT_IN_TIME`,
         REQ.`CUSTOMER_ID`,
         TILE.INDEX,
-        TILE.count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38,
-        TILE.sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38
+        TILE.count_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266,
+        TILE.sum_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266
       FROM `REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID` AS REQ
       INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 2) - 1 = FLOOR(TILE.INDEX / 2)
@@ -137,14 +133,14 @@ WITH REQUEST_TABLE AS (
     SELECT
       `POINT_IN_TIME`,
       `CUSTOMER_ID`,
-      SUM(sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) / SUM(count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38) AS `_fb_internal_CUSTOMER_ID_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38`
+      SUM(sum_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266) / SUM(count_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266) AS `_fb_internal_CUSTOMER_ID_window_w172800_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266`
     FROM (
       SELECT
         REQ.`POINT_IN_TIME`,
         REQ.`CUSTOMER_ID`,
         TILE.INDEX,
-        TILE.count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38,
-        TILE.sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38
+        TILE.count_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266,
+        TILE.sum_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266
       FROM `REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID` AS REQ
       INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 48) = FLOOR(TILE.INDEX / 48)
@@ -156,8 +152,8 @@ WITH REQUEST_TABLE AS (
         REQ.`POINT_IN_TIME`,
         REQ.`CUSTOMER_ID`,
         TILE.INDEX,
-        TILE.count_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38,
-        TILE.sum_value_avg_f777ffee22ceceebb438d61cb44de17eb593fd38
+        TILE.count_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266,
+        TILE.sum_value_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266
       FROM `REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID` AS REQ
       INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
         ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 48) - 1 = FLOOR(TILE.INDEX / 48)
@@ -174,6 +170,6 @@ WITH REQUEST_TABLE AS (
 SELECT
   AGG.`POINT_IN_TIME`,
   AGG.`CUSTOMER_ID`,
-  CAST(`_fb_internal_CUSTOMER_ID_window_w7200_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS DOUBLE) AS `a_2h_average`,
-  CAST(`_fb_internal_CUSTOMER_ID_window_w172800_avg_f777ffee22ceceebb438d61cb44de17eb593fd38` AS DOUBLE) AS `a_48h_average`
+  CAST(`_fb_internal_CUSTOMER_ID_window_w7200_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266` AS DOUBLE) AS `a_2h_average`,
+  CAST(`_fb_internal_CUSTOMER_ID_window_w172800_avg_29b9efc9d7c417ea107f038622d2579b1d6e1266` AS DOUBLE) AS `a_48h_average`
 FROM _FB_AGGREGATED AS AGG

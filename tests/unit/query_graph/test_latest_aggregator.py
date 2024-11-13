@@ -85,7 +85,7 @@ def test_latest_aggregator(agg_specs_no_window, source_info, update_fixtures):
     )
 
     assert result.column_names == [
-        "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
+        "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_5d7c2d9af3442ddd52e26b3603f39aa922965d78"
     ]
     assert result.updated_index == 0
 
@@ -129,7 +129,7 @@ def test_latest_aggregator__online_retrieval(agg_specs_no_window, source_info, u
         update_fixture=update_fixtures,
     )
     assert result.column_names == [
-        "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
+        "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_5d7c2d9af3442ddd52e26b3603f39aa922965d78"
     ]
     assert result.updated_index == 0
 
@@ -155,6 +155,6 @@ def test_latest_aggregator_offset(agg_specs_offset, source_info, update_fixtures
         update_fixture=update_fixtures,
     )
     assert result.column_names == [
-        "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e_o172800",
+        "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_5d7c2d9af3442ddd52e26b3603f39aa922965d78_o172800",
     ]
     assert result.updated_index == 0

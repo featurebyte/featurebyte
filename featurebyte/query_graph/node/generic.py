@@ -1428,7 +1428,10 @@ class JoinNode(BasePrunableNode):
             row_index_lineage = append_to_lineage(inputs[0].row_index_lineage, self.name)
 
         # construct left & right output columns
-        left_cols = [left_columns[col_name] for col_name in params.left_input_columns]
+        try:
+            left_cols = [left_columns[col_name] for col_name in params.left_input_columns]
+        except:
+            raise
         right_cols = [right_columns[col_name] for col_name in params.right_input_columns]
 
         return OperationStructure(

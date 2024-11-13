@@ -584,6 +584,7 @@ class TileCacheQueryByEntityService(BaseTileCacheQueryService):
             observation_table_id=None,
             tile_compute_query=tile_compute_query,
             tile_gen_info=tile_info,
+            tile_table_groupings=None,
         )
         return request
 

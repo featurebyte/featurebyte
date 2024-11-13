@@ -8,9 +8,8 @@ WITH __FB_ENTITY_TABLE_NAME AS (
     SELECT
       L."ts" AS "ts",
       L."cust_id" AS "cust_id",
-      L."order_id" AS "order_id",
-      L."order_method" AS "order_method",
-      R."membership_status" AS "latest_membership_status"
+      R."membership_status" AS "latest_membership_status",
+      R."membership_status" AS "input_col_na_count_ceef05c78f167d6ed742d6457d0daa74066eb86e"
     FROM (
       SELECT
         "__FB_KEY_COL_0",
@@ -148,7 +147,9 @@ SELECT
   index,
   "cust_id",
   "latest_membership_status",
-  SUM(CAST("latest_membership_status" IS NULL AS INT)) AS value_na_count_ceef05c78f167d6ed742d6457d0daa74066eb86e
+  SUM(
+    CAST("input_col_na_count_ceef05c78f167d6ed742d6457d0daa74066eb86e" IS NULL AS INT)
+  ) AS value_na_count_ceef05c78f167d6ed742d6457d0daa74066eb86e
 FROM (
   SELECT
     *,

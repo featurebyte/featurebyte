@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from featurebyte.enum import InternalName, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.tile_compute_query import TileComputeQuery
+from featurebyte.query_graph.sql.tile_compute_combine import TileTableGrouping
 
 
 class TileType(StrEnum):
@@ -144,6 +145,7 @@ class OnDemandTileSpec(FeatureByteBaseModel):
     tile_spec: TileSpec
     tracker_sql: Optional[str] = None
     observation_table_id: Optional[PydanticObjectId] = None
+    tile_table_groupings: Optional[List[TileTableGrouping]] = None
 
 
 class TileCommonParameters(FeatureByteBaseModel):

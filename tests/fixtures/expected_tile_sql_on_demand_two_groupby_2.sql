@@ -7,12 +7,8 @@ WITH __FB_ENTITY_TABLE_NAME AS (
   INNER JOIN (
     SELECT
       "ts" AS "ts",
-      "cust_id" AS "cust_id",
-      "a" AS "a",
-      "b" AS "b",
-      (
-        "a" + "b"
-      ) AS "c"
+      "biz_id" AS "biz_id",
+      "a" AS "input_col_sum_8c11e770ad5121aec588693662ac607b4fba0528"
     FROM "db"."public"."event_table"
   ) AS R
     ON R."biz_id" = __FB_ENTITY_TABLE_NAME."biz_id"
@@ -22,7 +18,7 @@ WITH __FB_ENTITY_TABLE_NAME AS (
 SELECT
   index,
   "biz_id",
-  SUM("a") AS value_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774
+  SUM("input_col_sum_8c11e770ad5121aec588693662ac607b4fba0528") AS value_sum_8c11e770ad5121aec588693662ac607b4fba0528
 FROM (
   SELECT
     *,

@@ -172,7 +172,7 @@ def test_online_store_feature_compute_sql(query_graph_with_groupby, update_fixtu
     queries = get_online_store_precompute_queries(graph, node, adapter, True)
     assert len(queries) == 2
     tile_id = "8502F6BC497F17F84385ABE4346FD392F2F56725"
-    aggregation_id = "f37862722c21105449ad882409cf62a1ff7f5b35"
+    aggregation_id = "13c45b8622761dd28afb4640ac3ed355d57d789f"
     expected_query_params = {
         "tile_id": f"TILE_F3600_M1800_B900_{tile_id}",
         "aggregation_id": f"avg_{aggregation_id}",
@@ -224,14 +224,14 @@ def test_complex_features(complex_feature_query_graph, adapter, update_fixtures,
     assert len(queries) == 2
     expected_query_params_tile_1 = {
         "tile_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
-        "aggregation_id": "avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+        "aggregation_id": "avg_13c45b8622761dd28afb4640ac3ed355d57d789f",
         "table_name": "online_store_b3bad6f0a450e950306704a0ef7bd384756a05cc".upper(),
         "result_type": "FLOAT",
         "serving_names": ["CUSTOMER_ID"],
     }
     expected_query_params_tile_2 = {
         "tile_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
-        "aggregation_id": "sum_d5ebb5711120ac12cb84f6136654c6dba7e21774",
+        "aggregation_id": "sum_8c11e770ad5121aec588693662ac607b4fba0528",
         "table_name": "online_store_51064268424bf868a2ea2dc2f5789e7cb4df29bf".upper(),
         "result_type": "FLOAT",
         "serving_names": ["BUSINESS_ID"],
@@ -239,14 +239,14 @@ def test_complex_features(complex_feature_query_graph, adapter, update_fixtures,
     assert (
         queries[0].model_dump(exclude={"sql"}).items()
         >= {
-            "result_name": "_fb_internal_CUSTOMER_ID_window_w7200_avg_f37862722c21105449ad882409cf62a1ff7f5b35",
+            "result_name": "_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f",
             **expected_query_params_tile_1,
         }.items()
     )
     assert (
         queries[1].model_dump(exclude={"sql"}).items()
         >= {
-            "result_name": "_fb_internal_BUSINESS_ID_window_w604800_sum_d5ebb5711120ac12cb84f6136654c6dba7e21774",
+            "result_name": "_fb_internal_BUSINESS_ID_window_w604800_sum_8c11e770ad5121aec588693662ac607b4fba0528",
             **expected_query_params_tile_2,
         }.items()
     )

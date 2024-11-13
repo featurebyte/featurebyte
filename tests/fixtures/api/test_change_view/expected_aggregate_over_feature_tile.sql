@@ -3,11 +3,8 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
     *
   FROM (
     SELECT
-      "col_text" AS "col_text",
       "new_effective_timestamp" AS "new_effective_timestamp",
-      "past_effective_timestamp" AS "past_effective_timestamp",
-      "new_col_int" AS "new_col_int",
-      "past_col_int" AS "past_col_int"
+      "col_text" AS "col_text"
     FROM (
       SELECT
         "col_text",

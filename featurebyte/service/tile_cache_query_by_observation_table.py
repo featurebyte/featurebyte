@@ -11,7 +11,7 @@ from redis import Redis
 from sqlglot import expressions
 
 from featurebyte.common.progress import ProgressCallbackType
-from featurebyte.enum import InternalName
+from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.tile_cache import (
     OnDemandTileComputeRequest,
@@ -20,10 +20,13 @@ from featurebyte.models.tile_cache import (
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.interpreter import TileGenSql
+from featurebyte.query_graph.sql.tile_compute_combine import combine_tile_compute_specs
 from featurebyte.query_graph.sql.tile_util import construct_entity_table_query_for_window
 from featurebyte.service.observation_table_tile_cache import ObservationTableTileCacheService
 from featurebyte.service.tile_cache_query_base import BaseTileCacheQueryService
 from featurebyte.session.base import BaseSession
+
+logger = get_logger(__name__)
 
 
 class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
@@ -74,17 +77,27 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
                 request_table_name=request_table_name,
                 tile_info=tile_info,
             )
-            tile_compute_query = tile_info.tile_compute_query.replace_prerequisite_table_expr(
-                InternalName.ENTITY_TABLE_NAME,
-                expressions.select(expressions.Star()).from_(quoted_identifier(entity_table_name)),
-            )
+            tile_info.tile_compute_spec.entity_table_expr = expressions.select(
+                expressions.Star()
+            ).from_(quoted_identifier(entity_table_name))
+
+        combined_infos = combine_tile_compute_specs(list(unique_tile_infos.values()))
+        logger.info(
+            "Number of tile compute queries before and after combining: %s -> %s",
+            len(unique_tile_infos),
+            len(combined_infos),
+        )
+
+        for combined_info in combined_infos:
+            tile_info = combined_info.tile_info
             request = OnDemandTileComputeRequest(
                 tile_table_id=tile_info.tile_table_id,
                 aggregation_id=tile_info.aggregation_id,
-                tile_compute_query=tile_compute_query,
+                tile_compute_query=tile_info.tile_compute_query,
                 tracker_sql=None,
                 observation_table_id=observation_table_id,
                 tile_gen_info=tile_info,
+                tile_table_groupings=combined_info.tile_table_groupings,
             )
             compute_requests.append(request)
 

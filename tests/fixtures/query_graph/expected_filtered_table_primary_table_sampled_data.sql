@@ -1,5 +1,7 @@
 SELECT
   CAST(L."order_method" AS VARCHAR) AS "order_method",
+  L."cust_id" AS "cust_id",
+  L."ts" AS "ts",
   R."order_id" AS "order_id",
   R."item_id" AS "item_id",
   CAST(R."item_name" AS VARCHAR) AS "item_name",
