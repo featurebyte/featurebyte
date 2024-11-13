@@ -59,7 +59,7 @@ services:
         --hiveconf hive.server2.thrift.bind.host=0.0.0.0 \
         --hiveconf derby.system.home=/opt/spark/data/derby \
         --master=local[2] \
-        --conf spark.driver.memory=3G \
+        --conf spark.driver.memory=4G \
         --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension \
         --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog \
         --conf spark.sql.catalogImplementation=hive  \
