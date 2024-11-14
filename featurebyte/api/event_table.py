@@ -471,7 +471,7 @@ class EventTable(TableApiObject):
         return analysis
 
     @typechecked
-    def initialize_default_feature_job_setting(self) -> None:
+    def initialize_default_feature_job_setting(self, min_featurejob_period: int = 3600) -> None:
         """
         Initializes default feature job setting by performing an analysis on the table to streamline the process of
         setting Feature Job. This analysis relies on the presence of record creation timestamps in the source table,
@@ -498,6 +498,11 @@ class EventTable(TableApiObject):
         helps ensure consistency between offline and online feature values, and accurate historical serving that
         reflects the conditions present in the production environment.
 
+        Parameters
+        ----------
+        min_featurejob_period: int
+            Determines the minimum period (in seconds) between feature jobs. The default value is 3600 seconds (1 hour).
+
         Raises
         ------
         InvalidSettingsError
@@ -515,7 +520,9 @@ class EventTable(TableApiObject):
         if self.default_feature_job_setting:
             raise InvalidSettingsError("Default feature job setting is already initialized")
 
-        analysis = self.create_new_feature_job_setting_analysis()
+        analysis = self.create_new_feature_job_setting_analysis(
+            min_featurejob_period=min_featurejob_period
+        )
         self.update_default_feature_job_setting(analysis.get_recommendation())
 
     def list_feature_job_setting_analysis(self) -> Optional[pd.DataFrame]:

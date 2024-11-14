@@ -544,7 +544,7 @@ def test_update_default_feature_job_setting__using_feature_job_analysis(
             "event_table_candidate": None,
             "analysis_date": None,
             "analysis_length": 2419200,
-            "min_featurejob_period": 60,
+            "min_featurejob_period": 3600,
             "exclude_late_job": False,
             "blind_spot_buffer_setting": 5,
             "job_time_buffer_setting": "auto",
