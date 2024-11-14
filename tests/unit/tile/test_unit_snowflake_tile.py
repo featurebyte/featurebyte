@@ -9,6 +9,8 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.models.tile import OnDemandTileSpec, TileSpec, TileType
+from featurebyte.query_graph.sql.tile_compute_combine import TileTableGrouping
+from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
 def test_construct_snowflaketile_time_modulo_error():
@@ -140,8 +142,63 @@ async def test_generate_tiles_on_demand(
         [OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table")],
     )
 
-    # TODO: Add more assertions
     mock_update_tile_entity_tracker.assert_called_once()
+
+
+@mock.patch("featurebyte.service.feature_store.FeatureStoreService.get_document")
+@pytest.mark.asyncio
+async def test_generate_tiles_on_demand__observation_table_id(
+    mock_feature_store_service_get_document,
+    mock_snowflake_tile,
+    tile_manager_service,
+    mock_snowflake_session,
+    update_fixtures,
+):
+    """
+    Test generate_tiles_on_demand for observation table
+    """
+    mock_feature_store_service_get_document.return_value = Mock(
+        id=mock_snowflake_tile.feature_store_id, max_query_concurrency=None
+    )
+
+    observation_table_id = ObjectId()
+    await tile_manager_service.generate_tiles_on_demand(
+        mock_snowflake_session,
+        [
+            OnDemandTileSpec(
+                tile_spec=mock_snowflake_tile,
+                observation_table_id=observation_table_id,
+                tile_table_groupings=[
+                    TileTableGrouping(
+                        aggregation_id="agg_id_1",
+                        tile_id="tile_id_1",
+                        value_column_names=["col1"],
+                        value_column_types=["FLOAT"],
+                    ),
+                    TileTableGrouping(
+                        aggregation_id="agg_id_2",
+                        tile_id="tile_id_2",
+                        value_column_names=["col2"],
+                        value_column_types=["FLOAT"],
+                    ),
+                ],
+            )
+        ],
+    )
+
+    # Check the aggregation IDs are added to the observation table tile cache
+    service = tile_manager_service.observation_table_tile_cache_service
+    non_cached_ids = await service.get_non_cached_aggregation_ids(
+        observation_table_id=observation_table_id, aggregation_ids=["agg_id_1", "agg_id_2"]
+    )
+    assert non_cached_ids == []
+
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/generate_tiles_on_demand_for_obs_table.sql",
+        update_fixtures,
+    )
 
 
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.generate_tiles")
@@ -159,8 +216,8 @@ async def test_generate_tiles_on_demand__progress_update(
     """
     Test generate_tiles_on_demand
     """
-    mock_generate_tiles.size_effect = None
-    mock_update_tile_entity_tracker.size_effect = None
+    mock_generate_tiles.side_effect = None
+    mock_update_tile_entity_tracker.side_effect = None
     mock_feature_store_service_get_document.return_value = Mock(
         id=mock_snowflake_tile.feature_store_id, max_query_concurrency=None
     )
