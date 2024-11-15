@@ -360,6 +360,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     # store info contains the warehouse specific info for the feature list
     feast_enabled: bool = Field(default=False)
 
+    # this field will be deprecated in the future (moved to deployment record)
+    internal_store_info: Optional[Dict[str, Any]] = Field(alias="store_info", default=None)
+
     # pydantic validators
     _sort_ids_validator = field_validator(
         "online_enabled_feature_ids",

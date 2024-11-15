@@ -1,0 +1,47 @@
+[
+  {
+    "_id": {
+      "$oid": "6736ce9f496a7e859718107b"
+    },
+    "user_id": {
+      "$oid": "662a7b245587863a7f672e7a"
+    },
+    "name": "200 features: Loan_Default_Prediction_Feature_Set_V2",
+    "created_at": {
+      "$date": "2024-11-15T04:31:28.154Z"
+    },
+    "updated_at": {
+      "$date": "2024-11-15T05:14:26.537Z"
+    },
+    "block_modification_by": [],
+    "description": null,
+    "is_deleted": false,
+    "catalog_id": {
+      "$oid": "64708919ea4c4876a77d2b80"
+    },
+    "feature_list_id": {
+      "$oid": "6478ab35b68c91fb84f1e147"
+    },
+    "feature_list_namespace_id": {
+      "$oid": "673581f89385427653344fb5"
+    },
+    "enabled": true,
+    "context_id": {
+      "$oid": "6731ef3c0a3a81d7366a5cb7"
+    },
+    "use_case_id": {
+      "$oid": "6731ef3d0a3a81d7366a5cb8"
+    },
+    "registry_info": {
+      "registry_id": {
+        "$oid": "6736cea01b517fb9b6fb2dfa"
+      },
+      "registry_path": "catalog/6731e7ced6b3811a47ac6e9b/feast_registry/6736cea01b517fb9b6fb2dfa/feast_registry.pb"
+    },
+    "serving_entity_ids": [
+      {
+        "$oid": "6731ef340a3a81d7366a5caf"
+      }
+    ]
+  }
+]
