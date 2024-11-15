@@ -43,6 +43,21 @@ def databricks_use_case_fixture(transaction_entity, snowflake_event_view_with_en
     return use_case
 
 
+@pytest.fixture(name="another_databricks_use_case")
+def another_databricks_use_case_fixture(item_entity, snowflake_item_view_with_entity):
+    """Another databricks use case fixture"""
+    primary_entity = [item_entity.name]
+    target = snowflake_item_view_with_entity.item_amount.as_target("item_amount")
+    target.save()
+    context = Context.create(name="item_context", primary_entity=primary_entity)
+    use_case = UseCase.create(
+        name="item_use_case",
+        target_name=target.name,
+        context_name=context.name,
+    )
+    return use_case
+
+
 @pytest.fixture(name="relative_freq_feature")
 def relative_freq_feature_fixture(
     snowflake_event_view_with_entity, snowflake_scd_view, arbitrary_default_feature_job_setting
@@ -77,7 +92,7 @@ def count_feature_fixture(grouped_event_view, feature_group_feature_job_setting)
     return grouped["count_feature"]
 
 
-@pytest.fixture(name="databricks_deployment")
+@pytest.fixture(name="databricks_deployments")
 def databricks_deployment_fixture(
     float_feature,
     count_feature,
@@ -87,6 +102,7 @@ def databricks_deployment_fixture(
     relative_freq_feature,
     req_col_day_diff_feature,
     databricks_use_case,
+    another_databricks_use_case,
 ):
     """Databricks deployment fixture"""
     use_case = databricks_use_case
@@ -125,14 +141,25 @@ def databricks_deployment_fixture(
             make_production_ready=True, ignore_guardrails=True, use_case_name=use_case.name
         )
         deployment.enable()
-        yield deployment
+
+        another_deployment = feature_list.deploy(
+            deployment_name="another_deployment",
+            make_production_ready=True,
+            ignore_guardrails=True,
+            use_case_name=another_databricks_use_case.name,
+        )
+        another_deployment.enable()
+        yield deployment, another_deployment
 
 
 @pytest.fixture(name="cust_id_30m_suffix")
-def cust_id_30m_suffix_fixture(databricks_deployment):
+def cust_id_30m_suffix_fixture(databricks_deployments):
     """Offset table suffix fixture"""
-    relationships_info = databricks_deployment.feature_list.cached_model.relationships_info
-    return get_lookup_steps_unique_identifier(relationships_info)
+    relationships_info = databricks_deployments[0].feature_list.cached_model.relationships_info
+    suffix = get_lookup_steps_unique_identifier([
+        info for info in relationships_info if info.entity_column_name == "col_int"
+    ])
+    return suffix
 
 
 @pytest.fixture(name="mock_is_databricks_env")
@@ -161,7 +188,7 @@ def test_databricks_specs(
     ttl_non_ttl_composite_feature,
     req_col_day_diff_feature,
     relative_freq_feature,
-    databricks_deployment,
+    databricks_deployments,
     cust_id_30m_suffix,
 ):
     """Test databricks specs"""
@@ -336,8 +363,8 @@ def test_databricks_specs(
         registered_model_name="[REGISTERED_MODEL_NAME]",  # registered model name in the unity catalog
     )
     """
-    relationships_info = databricks_deployment.feature_list.cached_model.relationships_info
-    assert len(relationships_info) == 1
+    relationships_info = databricks_deployments[0].feature_list.cached_model.relationships_info
+    assert len(relationships_info) == 2
     replace_pairs = [
         ("[FEATURE_ID0]", str(count_feature.cached_model.id)),
         ("[FEATURE_ID1]", str(ttl_non_ttl_composite_feature.cached_model.id)),
@@ -348,11 +375,11 @@ def test_databricks_specs(
     for replace_pair in replace_pairs:
         expected = expected.replace(*replace_pair)
 
-    feat_specs = databricks_deployment.databricks.get_feature_specs_definition()
+    feat_specs = databricks_deployments[0].databricks.get_feature_specs_definition()
     assert feat_specs.strip() == textwrap.dedent(expected).strip()
 
     # test skip exclude columns
-    feat_specs = databricks_deployment.databricks.get_feature_specs_definition(
+    feat_specs = databricks_deployments[0].databricks.get_feature_specs_definition(
         skip_exclude_columns=["transaction_id"]
     )
     expected_sub_string = """
@@ -368,26 +395,34 @@ def test_databricks_specs(
     """
     assert textwrap.dedent(expected_sub_string).strip() in feat_specs
 
+    # check another deployment's feature specs
+    another_feature_specs = databricks_deployments[1].databricks.get_feature_specs_definition()
+    assert another_feature_specs != feat_specs
+    assert 'lookup_key=["item_id"]' in another_feature_specs
+    assert 'target_column = "item_amount"' in another_feature_specs
 
-def test_databricks_commands__run_in_non_databricks_env(databricks_deployment):
+
+def test_databricks_commands__run_in_non_databricks_env(databricks_deployments):
     """Test databricks commands run in non-databricks environment"""
     expected = "This method can only be called in a DataBricks environment."
     with pytest.raises(NotInDataBricksEnvironmentError, match=expected):
-        databricks_deployment.databricks.log_model(
+        databricks_deployments[0].databricks.log_model(
             model=None, artifact_path="some_path", flavor=None, registered_model_name="some_name"
         )
 
     with pytest.raises(NotInDataBricksEnvironmentError, match=expected):
-        _ = databricks_deployment.databricks.score_batch(model_uri="some_uri", df=pd.DataFrame())
+        _ = databricks_deployments[0].databricks.score_batch(
+            model_uri="some_uri", df=pd.DataFrame()
+        )
 
 
-def test_databricks_commands__missing_import(mock_is_databricks_env, databricks_deployment):
+def test_databricks_commands__missing_import(mock_is_databricks_env, databricks_deployments):
     """Test databricks commands with missing import"""
     _ = mock_is_databricks_env
 
     expected = "Please install the databricks feature engineering package to use this accessor."
     with pytest.raises(ImportError, match=expected):
-        databricks_deployment.databricks.log_model(
+        databricks_deployments[0].databricks.log_model(
             model=None,
             artifact_path="some_path",
             flavor=None,
@@ -395,12 +430,14 @@ def test_databricks_commands__missing_import(mock_is_databricks_env, databricks_
         )
 
     with pytest.raises(ImportError, match=expected):
-        _ = databricks_deployment.databricks.score_batch(model_uri="some_uri", df=pd.DataFrame())
+        _ = databricks_deployments[0].databricks.score_batch(
+            model_uri="some_uri", df=pd.DataFrame()
+        )
 
 
-def test_list_feature_table_names(databricks_deployment, cust_id_30m_suffix):
+def test_list_feature_table_names(databricks_deployments, cust_id_30m_suffix):
     """Test list feature table names"""
-    output = databricks_deployment.databricks.list_feature_table_names()
+    output = databricks_deployments[0].databricks.list_feature_table_names()
     assert output == [
         "feature_engineering.some_schema.cat1__no_entity_15m",
         "feature_engineering.some_schema.cat1__no_entity_30m",
@@ -409,7 +446,7 @@ def test_list_feature_table_names(databricks_deployment, cust_id_30m_suffix):
     ]
 
 
-def test_no_null_filling_on_count_feature(databricks_deployment, count_feature):
+def test_no_null_filling_on_count_feature(databricks_deployments, count_feature):
     """Test null filling UDF"""
     udf_info = count_feature.cached_model.offline_store_info.udf_info
     assert udf_info is None
