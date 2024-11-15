@@ -686,8 +686,13 @@ class FeastIntegrationService:
             else:
                 feature_table_map[source_table.name] = source_table
 
-        await self.feature_list_service.update_store_info(
+        await self.feature_list_service.update_document(
             document_id=feature_list.id,
+            data=FeatureListServiceUpdate(feast_enabled=True),
+        )
+        await self.deployment_service.update_store_info(
+            deployment=deployment,
+            feature_list=feature_list,
             features=online_enabled_features,
             feature_table_map=feature_table_map,
             serving_entity_specs=serving_entity_specs,

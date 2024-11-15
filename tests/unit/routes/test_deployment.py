@@ -143,6 +143,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "context_id": None,
                     "registry_info": None,
                     "serving_entity_ids": ["63f94ed6ea1f050131379214"],
+                    "store_info": None,
                     "is_deleted": False,
                 },
                 {
@@ -163,6 +164,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "context_id": None,
                     "registry_info": None,
                     "serving_entity_ids": ["63f94ed6ea1f050131379214"],
+                    "store_info": None,
                     "is_deleted": False,
                 },
                 {
@@ -183,6 +185,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "context_id": None,
                     "registry_info": None,
                     "serving_entity_ids": ["63f94ed6ea1f050131379214"],
+                    "store_info": None,
                     "is_deleted": False,
                 },
             ],
@@ -227,6 +230,7 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
                     "user_id": response_dict["data"][0]["user_id"],
                     "registry_info": None,
                     "serving_entity_ids": ["63f94ed6ea1f050131379214"],
+                    "store_info": None,
                     "is_deleted": False,
                 }
             ],

@@ -525,6 +525,7 @@ def test_get_feature_list(
             ("description", None),
             ("dtype_distribution", [{"dtype": "FLOAT", "count": 1}]),
             ("entity_ids", [str(cust_id_entity.id)]),
+            ("feast_enabled", False),
             ("feature_clusters", _get_new_value_from_audit_history("feature_clusters")),
             ("feature_clusters_path", _get_new_value_from_audit_history("feature_clusters_path")),
             ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
@@ -540,7 +541,6 @@ def test_get_feature_list(
             ("primary_entity_ids", [str(cust_id_entity.id)]),
             ("readiness_distribution", [{"readiness": "DRAFT", "count": 1}]),
             ("relationships_info", _get_new_value_from_audit_history("relationships_info")),
-            ("store_info", None),
             (
                 "supported_serving_entity_ids",
                 sorted([[str(cust_id_entity.id)], [str(transaction_entity.id)]]),
