@@ -7,5 +7,5 @@ CREATE OR REPLACE FUNCTION F_INDEX_TO_TIMESTAMP(tile_index INTEGER, time_modulo_
         time_modulo_frequency_seconds - blind_spot_seconds,
         TO_TIMESTAMP(tile_index*frequency_minute*60)
       ),
-      "yyyy-MM-dd'T'kk:mm:ss.SSS'Z'"
+      "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
     );
