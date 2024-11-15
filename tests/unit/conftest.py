@@ -55,7 +55,7 @@ from featurebyte.models.online_store import MySQLOnlineStoreDetails
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.task import Task as TaskModel
-from featurebyte.models.tile import TileSpec
+from featurebyte.models.tile import OnDemandTileComputeResult, TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -2278,7 +2278,9 @@ def mocked_compute_tiles_on_demand():
     """Fixture for a mocked SnowflakeTileCache object"""
     with mock.patch(
         "featurebyte.service.historical_features_and_target.compute_tiles_on_demand",
-        return_value=TileComputeMetrics(),
+        return_value=OnDemandTileComputeResult(
+            tile_compute_metrics=TileComputeMetrics(), on_demand_tile_tables=None
+        ),
     ) as mocked_compute_tiles_on_demand:
         yield mocked_compute_tiles_on_demand
 

@@ -16,7 +16,8 @@ from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
-from featurebyte.models.system_metrics import HistoricalFeaturesMetrics, TileComputeMetrics
+from featurebyte.models.system_metrics import HistoricalFeaturesMetrics
+from featurebyte.models.tile import OnDemandTileComputeResult
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
@@ -52,7 +53,7 @@ async def compute_tiles_on_demand(
     observation_table_id: Optional[ObjectId],
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-) -> TileComputeMetrics:
+) -> OnDemandTileComputeResult:
     """
     Compute tiles on demand
 
@@ -106,7 +107,7 @@ async def compute_tiles_on_demand(
         )
 
     try:
-        tile_compute_metrics = await tile_cache_service.compute_tiles_on_demand(
+        tile_compute_result = await tile_cache_service.compute_tiles_on_demand(
             session=session,
             graph=graph,
             nodes=nodes,
@@ -124,7 +125,7 @@ async def compute_tiles_on_demand(
                 schema_name=session.schema_name,
                 database_name=session.database_name,
             )
-    return tile_compute_metrics
+    return tile_compute_result
 
 
 async def get_historical_features(
@@ -191,6 +192,7 @@ async def get_historical_features(
         session, request_table_name, add_row_index=len(nodes) > NUM_FEATURES_PER_QUERY
     )
 
+    tile_compute_result = None
     try:
         # Compute tiles on demand if required
         tile_cache_progress_callback = (
@@ -203,7 +205,7 @@ async def get_historical_features(
             else None
         )
         tic = time.time()
-        tile_compute_metrics = await compute_tiles_on_demand(
+        tile_compute_result = await compute_tiles_on_demand(
             session=session,
             tile_cache_service=tile_cache_service,
             graph=graph,
@@ -242,6 +244,7 @@ async def get_historical_features(
             output_feature_names=get_feature_names(graph, nodes),
             request_table_name=request_table_name,
             parent_serving_preparation=parent_serving_preparation,
+            on_demand_tile_tables=tile_compute_result.on_demand_tile_tables,
             output_include_row_index=output_include_row_index,
             progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
         )
@@ -271,9 +274,20 @@ async def get_historical_features(
             database_name=session.database_name,
             if_exists=True,
         )
+        if (
+            tile_compute_result is not None
+            and tile_compute_result.on_demand_tile_tables is not None
+        ):
+            for table_name in tile_compute_result.materialized_on_demand_tile_table_names:
+                await session.drop_table(
+                    table_name=table_name,
+                    schema_name=session.schema_name,
+                    database_name=session.database_name,
+                    if_exists=True,
+                )
     return HistoricalFeaturesMetrics(
         tile_compute_seconds=tile_compute_seconds,
-        tile_compute_metrics=tile_compute_metrics,
+        tile_compute_metrics=tile_compute_result.tile_compute_metrics,
         feature_compute_seconds=feature_compute_seconds,
     )
 

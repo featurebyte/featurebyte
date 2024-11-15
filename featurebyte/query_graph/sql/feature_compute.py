@@ -19,6 +19,7 @@ from featurebyte.models.parent_serving import (
     FeatureNodeRelationshipsInfo,
     ParentServingPreparation,
 )
+from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.entity_lookup_plan import EntityColumn, EntityLookupPlanner
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -583,6 +584,7 @@ class FeatureExecutionPlanner:
         serving_names_mapping: dict[str, str] | None = None,
         source_info: SourceInfo | None = None,
         parent_serving_preparation: ParentServingPreparation | None = None,
+        on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
     ):
         if source_info is None:
             source_info = SourceInfo(
@@ -600,6 +602,15 @@ class FeatureExecutionPlanner:
         self.agg_result_name_include_serving_names = agg_result_name_include_serving_names
         self.is_online_serving = is_online_serving
         self.adapter = get_sql_adapter(source_info)
+
+        self.on_demand_tile_tables_mapping: Optional[dict[str, str]]
+        if on_demand_tile_tables is not None:
+            self.on_demand_tile_tables_mapping = {
+                tile_table.tile_table_id: tile_table.on_demand_table_name
+                for tile_table in on_demand_tile_tables
+            }
+        else:
+            self.on_demand_tile_tables_mapping = None
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
         """Generate FeatureExecutionPlan for given list of query graph Nodes
@@ -728,6 +739,7 @@ class FeatureExecutionPlanner:
             self.adapter,
             agg_result_name_include_serving_names=self.agg_result_name_include_serving_names,
             serving_names_mapping=self.serving_names_mapping,
+            on_demand_tile_tables_mapping=self.on_demand_tile_tables_mapping,
         )
 
     def get_non_tiling_specs(

@@ -15,12 +15,13 @@ from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.tile import (
+    OnDemandTileComputeResult,
     OnDemandTileSpec,
+    OnDemandTileTable,
     TileScheduledJobParameters,
     TileSpec,
     TileType,
 )
-from featurebyte.query_graph.sql.tile_compute_combine import TileTableGrouping
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table_tile_cache import ObservationTableTileCacheService
@@ -68,7 +69,7 @@ class TileManagerService:
         session: BaseSession,
         tile_inputs: List[OnDemandTileSpec],
         progress_callback: Optional[Callable[[int, str], Coroutine[Any, Any, None]]] = None,
-    ) -> TileComputeMetrics:
+    ) -> OnDemandTileComputeResult:
         """
         Generate Tiles and update tile entity checking table
 
@@ -83,7 +84,7 @@ class TileManagerService:
 
         Returns
         -------
-        TileComputeMetrics
+        OnDemandTileComputeResult
         """
         _compute_tiles_progress_callback, _update_tiles_progress_callback = (
             self._on_demand_tiles_progress_callbacks(
@@ -118,37 +119,51 @@ class TileManagerService:
         tile_compute_results: List[TileComputeResult] = await run_coroutines(
             coroutines, self.redis, str(feature_store_id), max_query_currency
         )
+
+        on_demand_tile_tables = []
         try:
             coroutines_update = []
             for on_demand_tile_spec, tile_compute_result in zip(tile_inputs, tile_compute_results):
                 if on_demand_tile_spec.tile_table_groupings is None:
-                    groupings = [None]
-                else:
-                    groupings = on_demand_tile_spec.tile_table_groupings  # type: ignore
-                for grouping in groupings:
                     coroutines_update.append(
                         self._on_demand_process_computed_tiles(
                             session=session,
                             computed_tiles_table_name=tile_compute_result.computed_tiles_table_name,
                             computed_tile_sql=tile_compute_result.tile_sql,
                             on_demand_tile_spec=on_demand_tile_spec,
-                            grouping=grouping,
                             progress_callback=_update_tiles_progress_callback,
                         )
                     )
-            if progress_callback:
-                await _update_tiles_progress_callback()
-            await run_coroutines(
-                coroutines_update, self.redis, str(feature_store_id), max_query_currency
-            )
-        finally:
-            for tile_compute_result in tile_compute_results:
-                await session.drop_table(
-                    table_name=tile_compute_result.computed_tiles_table_name,
-                    schema_name=session.schema_name,
-                    database_name=session.database_name,
-                    if_exists=True,
+                else:
+                    # Do not update permanent tile tables but use the computed tile table directly
+                    # in feature query.
+                    for grouping in on_demand_tile_spec.tile_table_groupings:
+                        on_demand_tile_tables.append(
+                            OnDemandTileTable(
+                                tile_table_id=grouping.tile_id,
+                                on_demand_table_name=tile_compute_result.computed_tiles_table_name,
+                            )
+                        )
+            if coroutines_update:
+                if progress_callback:
+                    await _update_tiles_progress_callback()
+                await run_coroutines(
+                    coroutines_update, self.redis, str(feature_store_id), max_query_currency
                 )
+        finally:
+            if not on_demand_tile_tables:
+                # Only cleanup if on_demand_tile_tables is empty, which indicates that permanent
+                # tile tables have been updated. Otherwise, we will need to keep the temporary tile
+                # tables available for feature query and clean up later.
+                for tile_compute_result in tile_compute_results:
+                    await session.drop_table(
+                        table_name=tile_compute_result.computed_tiles_table_name,
+                        schema_name=session.schema_name,
+                        database_name=session.database_name,
+                        if_exists=True,
+                    )
+
+        # Aggregate metrics from the tasks
         tile_compute_metrics_list: List[TileComputeMetrics] = [
             result.tile_compute_metrics for result in tile_compute_results
         ]
@@ -159,9 +174,14 @@ class TileManagerService:
                 view_cache_seconds += metrics.view_cache_seconds
             if metrics.compute_seconds is not None:
                 compute_seconds += metrics.compute_seconds
-        return TileComputeMetrics(
+        metrics = TileComputeMetrics(
             view_cache_seconds=view_cache_seconds,
             compute_seconds=compute_seconds,
+        )
+
+        return OnDemandTileComputeResult(
+            tile_compute_metrics=metrics,
+            on_demand_tile_tables=on_demand_tile_tables if on_demand_tile_tables else None,
         )
 
     @classmethod
@@ -175,10 +195,10 @@ class TileManagerService:
 
         num_tile_tables_to_insert = 0
         for on_demand_tile_spec in tile_inputs:
+            # Only need to update permanent tile tables if no groupings (i.e. the in-memory
+            # DataFrame flow that will soon be deprecated)
             if on_demand_tile_spec.tile_table_groupings is None:
                 num_tile_tables_to_insert += 1
-            else:
-                num_tile_tables_to_insert += len(on_demand_tile_spec.tile_table_groupings)
         num_tile_tables_inserted = -1
 
         num_total_items = num_tile_tables_to_compute + num_tile_tables_to_insert
@@ -232,19 +252,11 @@ class TileManagerService:
         computed_tiles_table_name: str,
         computed_tile_sql: str,
         on_demand_tile_spec: OnDemandTileSpec,
-        grouping: Optional[TileTableGrouping],
         progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
     ) -> None:
         session = await session.clone_if_not_threadsafe()
 
-        if grouping is None:
-            tile_spec = on_demand_tile_spec.tile_spec
-        else:
-            tile_spec = on_demand_tile_spec.tile_spec.copy()
-            tile_spec.tile_id = grouping.tile_id
-            tile_spec.aggregation_id = grouping.aggregation_id
-            tile_spec.value_column_names = grouping.value_column_names
-            tile_spec.value_column_types = grouping.value_column_types
+        tile_spec = on_demand_tile_spec.tile_spec
 
         tile_generate_obj = self._get_tile_generate_object_from_tile_spec(
             session=session,

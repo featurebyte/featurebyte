@@ -20,6 +20,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
+from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
@@ -256,6 +257,7 @@ def get_historical_features_expr(
     source_info: SourceInfo,
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
 ) -> Tuple[expressions.Select, list[str]]:
     """Construct the SQL code that extracts historical features
 
@@ -287,6 +289,7 @@ def get_historical_features_expr(
         source_info=source_info,
         is_online_serving=False,
         parent_serving_preparation=parent_serving_preparation,
+        on_demand_tile_tables=on_demand_tile_tables,
     )
     plan = planner.generate_plan(nodes)
 
@@ -309,6 +312,7 @@ def get_historical_features_query_set(
     output_feature_names: list[str],
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
     output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
 ) -> FeatureQuerySet:
@@ -358,6 +362,7 @@ def get_historical_features_query_set(
             source_info=source_info,
             request_table_name=request_table_name,
             parent_serving_preparation=parent_serving_preparation,
+            on_demand_tile_tables=on_demand_tile_tables,
         )
         output_query = sql_to_string(
             get_sql_adapter(source_info).create_table_as(
@@ -386,6 +391,7 @@ def get_historical_features_query_set(
             source_info=source_info,
             request_table_name=request_table_name,
             parent_serving_preparation=parent_serving_preparation,
+            on_demand_tile_tables=on_demand_tile_tables,
         )
         feature_set_table_name = f"{feature_set_table_name_prefix}_{i}"
         query = sql_to_string(

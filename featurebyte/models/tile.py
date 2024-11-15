@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from featurebyte.enum import InternalName, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.tile_compute_query import TileComputeQuery
 from featurebyte.query_graph.sql.tile_compute_combine import TileTableGrouping
 
@@ -146,6 +147,39 @@ class OnDemandTileSpec(FeatureByteBaseModel):
     tracker_sql: Optional[str] = None
     observation_table_id: Optional[PydanticObjectId] = None
     tile_table_groupings: Optional[List[TileTableGrouping]] = None
+
+
+class OnDemandTileTable(FeatureByteBaseModel):
+    """
+    Represents a table that stores the results of an on-demand tile computation
+
+    This model specifies that the tile columns associated with the `tile_table_id` are available in
+    the table named `on_demand_table_name`.
+    """
+
+    tile_table_id: str
+    on_demand_table_name: str
+
+
+class OnDemandTileComputeResult(FeatureByteBaseModel):
+    """
+    Represents the result of an on-demand tile computation
+
+    The field `on_demand_tile_tables` is populated when `tile_table_groupings` is specified during
+    computation.
+    """
+
+    tile_compute_metrics: TileComputeMetrics
+    on_demand_tile_tables: Optional[List[OnDemandTileTable]]
+
+    @property
+    def materialized_on_demand_tile_table_names(self) -> List[str]:
+        """
+        Get the list of materialized on-demand tile table names
+        """
+        if self.on_demand_tile_tables is None:
+            return []
+        return sorted({table.on_demand_table_name for table in self.on_demand_tile_tables})
 
 
 class TileCommonParameters(FeatureByteBaseModel):

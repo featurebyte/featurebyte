@@ -184,6 +184,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         adapter: BaseAdapter,
         agg_result_name_include_serving_names: bool,
         serving_names_mapping: dict[str, str] | None = None,
+        on_demand_tile_tables_mapping: dict[str, str] | None = None,
     ) -> list[TileBasedAggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
 
@@ -212,6 +213,9 @@ class TileBasedAggregationSpec(AggregationSpec):
         aggregation_id = groupby_node.parameters.aggregation_id
         assert tile_table_id is not None
         assert aggregation_id is not None
+
+        if on_demand_tile_tables_mapping is not None:
+            tile_table_id = on_demand_tile_tables_mapping[tile_table_id]
 
         aggregation_specs = []
         parent_dtype = None
