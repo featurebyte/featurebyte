@@ -175,6 +175,11 @@ class OnDemandTileComputeResult(FeatureByteBaseModel):
     def materialized_on_demand_tile_table_names(self) -> List[str]:
         """
         Get the list of materialized on-demand tile table names
+
+        Returns
+        -------
+        List[str]
+            List of materialized on-demand tile table names
         """
         if self.on_demand_tile_tables is None:
             return []

@@ -200,6 +200,8 @@ class TileBasedAggregationSpec(AggregationSpec):
             Mapping from original serving name to new serving name
         agg_result_name_include_serving_names: bool
             Whether to include serving names in the aggregation result names
+        on_demand_tile_tables_mapping: dict[str, str]
+            Optional mapping from tile table id to on-demand tile table name
 
         Returns
         -------

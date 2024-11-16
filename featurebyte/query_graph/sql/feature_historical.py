@@ -277,6 +277,8 @@ def get_historical_features_expr(
         Optional mapping from original serving name to new serving name
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    on_demand_tile_tables: Optional[list[OnDemandTileTable]]
+        List of on-demand tile tables if available
 
     Returns
     -------
@@ -338,6 +340,8 @@ def get_historical_features_query_set(
         Optional mapping from original serving name to new serving name
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    on_demand_tile_tables: Optional[list[OnDemandTileTable]]
+        List of on-demand tile tables if available
     output_include_row_index: bool
         Whether to include the TABLE_ROW_INDEX column in the output
     progress_message : str

@@ -581,7 +581,6 @@ class TileCacheQueryByEntityService(BaseTileCacheQueryService):
             tile_table_id=tile_info.tile_table_id,
             aggregation_id=aggregation_id,
             tracker_sql=sql_to_string(entity_table_expr, source_type=adapter.source_type),
-            observation_table_id=None,
             tile_compute_query=tile_compute_query,
             tile_gen_info=tile_info,
             tile_table_groupings=None,
