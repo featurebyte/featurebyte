@@ -3,14 +3,10 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
     *
   FROM (
     SELECT
-      "col_int" AS "col_int",
-      "col_float" AS "col_float",
-      "col_char" AS "col_char",
-      "col_text" AS "col_text",
-      "col_binary" AS "col_binary",
-      "col_boolean" AS "col_boolean",
       "event_timestamp" AS "event_timestamp",
-      "cust_id" AS "cust_id"
+      "cust_id" AS "cust_id",
+      "col_int" AS "col_int",
+      "col_float" AS "input_col_sum_254bde514925221168a524ba7467c9b6ef83685d"
     FROM "sf_database"."sf_schema"."sf_table"
     WHERE
       "event_timestamp" >= CAST(__FB_START_DATE AS TIMESTAMP)
@@ -24,7 +20,7 @@ SELECT
   index,
   "cust_id",
   "col_int",
-  SUM("col_float") AS value_sum_254bde514925221168a524ba7467c9b6ef83685d
+  SUM("input_col_sum_254bde514925221168a524ba7467c9b6ef83685d") AS value_sum_254bde514925221168a524ba7467c9b6ef83685d
 FROM (
   SELECT
     *,

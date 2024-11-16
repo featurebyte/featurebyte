@@ -170,11 +170,11 @@ def mock_redis_fixture():
         yield mock_redis
 
 
-@pytest.fixture(autouse=True)
-def patched_query_cache_unique_identifier():
+def get_increasing_object_id_callable():
     """
-    Patch ObjectId to return a fixed value
+    Get a callable that returns an increasing object id
     """
+
     current = 0
 
     def increasing_object_id():
@@ -184,9 +184,37 @@ def patched_query_cache_unique_identifier():
         current += 1
         return out
 
+    return increasing_object_id
+
+
+@pytest.fixture(autouse=True)
+def patched_query_cache_unique_identifier():
+    """
+    Patch ObjectId to return a fixed value
+    """
     with patch(
         "featurebyte.service.query_cache_manager.ObjectId",
-        side_effect=increasing_object_id,
+        side_effect=get_increasing_object_id_callable(),
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def patched_sql_common_unique_identifier():
+    """
+    Fixture to mock ObjectId to a fixed value
+    """
+    with patch("featurebyte.sql.common.ObjectId", side_effect=get_increasing_object_id_callable()):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def patched_tile_generate_unique_identifier():
+    """
+    Fixture to mock ObjectId to a fixed value
+    """
+    with patch(
+        "featurebyte.sql.tile_generate.ObjectId", side_effect=get_increasing_object_id_callable()
     ):
         yield
 

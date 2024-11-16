@@ -1,7 +1,5 @@
-ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 FLOAT;
-
-
-            merge into TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 a using (
+CREATE TABLE "__TEMP_TILE_TABLE_000000000000000000000001" AS
+SELECT * FROM (
             select
                 index,
                 "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9,
@@ -11,12 +9,6 @@ ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN value
     *
   FROM (
     SELECT
-      "col_int" AS "col_int",
-      "col_float" AS "col_float",
-      "col_char" AS "col_char",
-      "col_text" AS "col_text",
-      "col_binary" AS "col_binary",
-      "col_boolean" AS "col_boolean",
       "event_timestamp" AS "event_timestamp",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."sf_table"
@@ -41,7 +33,12 @@ FROM (
 GROUP BY
   index,
   "cust_id")
-        ) b
+        );
+
+ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 FLOAT;
+
+
+            merge into TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 a using __TEMP_TILE_TABLE_000000000000000000000001 b
                 on a.INDEX = b.INDEX AND EQUAL_NULL(a."cust_id", b."cust_id")
                 when matched then
                     update set a.created_at = current_timestamp(), a.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 = b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9
@@ -50,10 +47,8 @@ GROUP BY
                         values (b.INDEX, b."cust_id", b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9, current_timestamp())
         ;
 
-ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 FLOAT;
-
-
-            merge into TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 a using (
+CREATE TABLE "__TEMP_TILE_TABLE_000000000000000000000002" AS
+SELECT * FROM (
             select
                 index,
                 "cust_id", value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9,
@@ -63,12 +58,6 @@ ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN value
     *
   FROM (
     SELECT
-      "col_int" AS "col_int",
-      "col_float" AS "col_float",
-      "col_char" AS "col_char",
-      "col_text" AS "col_text",
-      "col_binary" AS "col_binary",
-      "col_boolean" AS "col_boolean",
       "event_timestamp" AS "event_timestamp",
       "cust_id" AS "cust_id"
     FROM "sf_database"."sf_schema"."sf_table"
@@ -93,7 +82,12 @@ FROM (
 GROUP BY
   index,
   "cust_id")
-        ) b
+        );
+
+ALTER TABLE TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 ADD COLUMN value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 FLOAT;
+
+
+            merge into TILE_COUNT_704BC9A2E9FE7B08D6C064FBACD6B3FCB0185DA9 a using __TEMP_TILE_TABLE_000000000000000000000002 b
                 on a.INDEX = b.INDEX AND EQUAL_NULL(a."cust_id", b."cust_id")
                 when matched then
                     update set a.created_at = current_timestamp(), a.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9 = b.value_count_704bc9a2e9fe7b08d6c064fbacd6b3fcb0185da9

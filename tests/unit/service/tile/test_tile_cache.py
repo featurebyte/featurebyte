@@ -5,13 +5,13 @@ Tests for tile cache
 import pytest
 from sqlglot import expressions
 
-from featurebyte.enum import SourceType
-from featurebyte.models.tile_compute_query import QueryModel, TileComputeQuery
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import TileGenSql
+from featurebyte.query_graph.sql.tile_compute_spec import TileComputeSpec, TileTableInputColumn
 from featurebyte.service.tile_cache_query_by_entity import TileCacheStatus, TileInfoKey
 
 
-def create_tile_gen_sql(aggregation_id):
+def create_tile_gen_sql(aggregation_id, source_info):
     """
     Helper function to create a TileGenSql object
     """
@@ -19,10 +19,20 @@ def create_tile_gen_sql(aggregation_id):
         tile_table_id=aggregation_id,
         tile_id_version=2,
         aggregation_id=aggregation_id,
-        tile_compute_query=TileComputeQuery(
-            aggregation_query=QueryModel.from_expr(
-                expressions.select("a"), source_type=SourceType.SNOWFLAKE
-            )
+        tile_compute_spec=TileComputeSpec(
+            source_expr=expressions.select().from_("some_table"),
+            entity_table_expr=None,
+            timestamp_column=TileTableInputColumn(
+                name="timestamp", expr=quoted_identifier("timestamp")
+            ),
+            key_columns=[TileTableInputColumn(name="cust_id", expr=quoted_identifier("cust_id"))],
+            value_by_column=None,
+            value_columns=[],
+            tile_index_expr=quoted_identifier("tile_index"),
+            tile_column_specs=[],
+            is_order_dependent=False,
+            is_on_demand=False,
+            source_info=source_info,
         ),
         columns=["a"],
         entity_columns=["a"],
@@ -41,35 +51,35 @@ def create_tile_gen_sql(aggregation_id):
 
 
 @pytest.fixture
-def tile_info_1():
+def tile_info_1(source_info):
     """
     Tile info 1 fixture
     """
-    return create_tile_gen_sql("agg_id_1")
+    return create_tile_gen_sql("agg_id_1", source_info)
 
 
 @pytest.fixture
-def tile_info_2():
+def tile_info_2(source_info):
     """
     Tile info 2 fixture
     """
-    return create_tile_gen_sql("agg_id_2")
+    return create_tile_gen_sql("agg_id_2", source_info)
 
 
 @pytest.fixture
-def tile_info_3():
+def tile_info_3(source_info):
     """
     Tile info 3 fixture
     """
-    return create_tile_gen_sql("agg_id_3")
+    return create_tile_gen_sql("agg_id_3", source_info)
 
 
 @pytest.fixture
-def tile_info_4():
+def tile_info_4(source_info):
     """
     Tile info 4 fixture
     """
-    return create_tile_gen_sql("agg_id_4")
+    return create_tile_gen_sql("agg_id_4", source_info)
 
 
 @pytest.fixture(name="tile_cache_status")

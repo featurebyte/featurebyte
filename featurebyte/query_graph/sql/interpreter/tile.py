@@ -26,6 +26,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.interpreter.base import BaseGraphInterpreter
 from featurebyte.query_graph.sql.source_info import SourceInfo
+from featurebyte.query_graph.sql.tile_compute_spec import TileComputeSpec
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.transform.pruning import prune_query_graph
 
@@ -57,7 +58,7 @@ class TileGenSql:
     tile_table_id: str
     tile_id_version: int
     aggregation_id: str
-    tile_compute_query: TileComputeQuery
+    tile_compute_spec: TileComputeSpec
     columns: list[str]
     entity_columns: list[str]
     tile_value_columns: list[str]
@@ -75,6 +76,17 @@ class TileGenSql:
     agg_func: str | None
 
     @property
+    def tile_compute_query(self) -> TileComputeQuery:
+        """
+        Get a TileComputeQuery object from the tile compute spec
+
+        Returns
+        -------
+        TileComputeQuery
+        """
+        return self.tile_compute_spec.get_tile_compute_query()
+
+    @property
     def sql(self) -> str:
         """
         Templated SQL code for building tiles
@@ -83,9 +95,10 @@ class TileGenSql:
         -------
         str
         """
+        tile_compute_query = self.tile_compute_spec.get_tile_compute_query()
         return sql_to_string(
-            self.tile_compute_query.get_combined_query_expr(),
-            self.tile_compute_query.aggregation_query.source_type,
+            tile_compute_query.get_combined_query_expr(),
+            tile_compute_query.aggregation_query.source_type,
         )
 
 
@@ -386,7 +399,7 @@ class TileSQLGenerator:
             tile_table_id=tile_table_id,
             tile_id_version=groupby_node.parameters.tile_id_version,
             aggregation_id=aggregation_id,
-            tile_compute_query=groupby_sql_node.get_tile_compute_query(),
+            tile_compute_spec=groupby_sql_node.get_tile_compute_spec(),
             columns=groupby_sql_node.columns,
             entity_columns=entity_columns,
             tile_value_columns=tile_value_columns,

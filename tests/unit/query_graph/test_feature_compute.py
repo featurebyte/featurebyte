@@ -515,7 +515,7 @@ def test_feature_execution_planner__query_graph_with_graph_node(
     query_graph, groupby_node = query_graph_with_cleaning_ops_and_groupby
     planner = FeatureExecutionPlanner(query_graph, source_info=source_info, is_online_serving=False)
     execution_plan = planner.generate_plan([groupby_node])
-    groupby_node_aggregation_id = "afacb99e2c3aa0d15070807b8a43294696753bc5"
+    groupby_node_aggregation_id = "8a71d7c7a86e5b0b808ed85f7e70ab6a3f4739a8"
     assert execution_plan.feature_specs == {
         "a_2h_average": FeatureSpec(
             feature_name="a_2h_average",

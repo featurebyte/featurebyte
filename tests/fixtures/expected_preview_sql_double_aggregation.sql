@@ -35,11 +35,9 @@ WITH REQUEST_TABLE AS (
         SELECT
           "ts" AS "ts",
           "cust_id" AS "cust_id",
-          "order_id" AS "order_id",
-          "order_method" AS "order_method",
           (
             "_fb_internal_order_id_item_count_None_order_id_None_input_2" + 123
-          ) AS "ord_size"
+          ) AS "input_col_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec"
         FROM (
           SELECT
             REQ."ts",
@@ -80,8 +78,8 @@ WITH REQUEST_TABLE AS (
     SELECT
       index,
       "cust_id",
-      SUM("ord_size") AS sum_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec,
-      COUNT("ord_size") AS count_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec
+      SUM("input_col_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec") AS sum_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec,
+      COUNT("input_col_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec") AS count_value_avg_5b9baeccc6b74c1d85cd9bb42307af39c7f53cec
     FROM (
       SELECT
         *,

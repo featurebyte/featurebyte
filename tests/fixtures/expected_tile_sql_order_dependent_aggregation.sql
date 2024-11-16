@@ -5,8 +5,7 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
     SELECT
       "ts" AS "ts",
       "cust_id" AS "cust_id",
-      "a" AS "a",
-      "b" AS "b"
+      "a" AS "input_col_latest_3f3abc1633f14c3f5e885311459179516d5622a0"
     FROM "db"."public"."event_table"
   )
   WHERE
@@ -16,13 +15,13 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
 SELECT
   index,
   "cust_id",
-  value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
+  value_latest_3f3abc1633f14c3f5e885311459179516d5622a0
 FROM (
   SELECT
     index,
     "cust_id",
     ROW_NUMBER() OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS "__FB_ROW_NUMBER",
-    FIRST_VALUE("a") OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_414e1c5ab2e329a43aabe6dc95bd30d1d9c311b0
+    FIRST_VALUE("input_col_latest_3f3abc1633f14c3f5e885311459179516d5622a0") OVER (PARTITION BY index, "cust_id" ORDER BY "ts" DESC NULLS LAST) AS value_latest_3f3abc1633f14c3f5e885311459179516d5622a0
   FROM (
     SELECT
       *,

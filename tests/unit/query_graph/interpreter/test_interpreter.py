@@ -210,7 +210,7 @@ def test_graph_interpreter_tile_gen(
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("tile_compute_query")
+    info_dict.pop("tile_compute_spec")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "tile_id_version": 1,
@@ -254,7 +254,7 @@ def test_graph_interpreter_on_demand_tile_gen(
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("tile_compute_query")
+    info_dict.pop("tile_compute_spec")
     assert_equal_with_expected_fixture(
         tile_gen_sqls[0].sql,
         "tests/fixtures/expected_tile_sql_on_demand.sql",
@@ -299,14 +299,14 @@ def test_graph_interpreter_tile_gen_with_category(
 
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("tile_compute_query")
+    info_dict.pop("tile_compute_spec")
 
     assert_equal_with_expected_fixture(
         tile_gen_sqls[0].sql,
         "tests/fixtures/expected_tile_sql_on_demand_with_category.sql",
         update_fixtures,
     )
-    aggregation_id = "4478d266b052ffb6b332e2ec9c2e486fca6c23c6"
+    aggregation_id = "dfee6d136c6d6db110606afd33ae34deb9b5e96f"
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_FEB86FDFF3B041DC98880F9B22EE9078FBCF5226",
         "tile_id_version": 1,
@@ -347,7 +347,7 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     # Check required tile 1 (groupby keys: cust_id)
     info = tile_gen_sqls[0]
     info_dict = asdict(info)
-    info_dict.pop("tile_compute_query")
+    info_dict.pop("tile_compute_spec")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725",
         "tile_id_version": 1,
@@ -381,10 +381,10 @@ def test_graph_interpreter_on_demand_tile_gen_two_groupby(
     )
 
     # Check required tile 2 (groupby keys: biz_id)
-    aggregation_id = "d5ebb5711120ac12cb84f6136654c6dba7e21774"
+    aggregation_id = "8c11e770ad5121aec588693662ac607b4fba0528"
     info = tile_gen_sqls[1]
     info_dict = asdict(info)
-    info_dict.pop("tile_compute_query")
+    info_dict.pop("tile_compute_spec")
     assert info_dict == {
         "tile_table_id": "TILE_F3600_M1800_B900_7BD30FF1B8E84ADD2B289714C473F1A21E9BC624",
         "tile_id_version": 1,
@@ -867,6 +867,8 @@ def test_databricks_source(
         SELECT
           `ts` AS `ts`,
           `cust_id` AS `cust_id`,
+          `biz_id` AS `biz_id`,
+          `product_type` AS `product_type`,
           `a` AS `a`,
           `b` AS `b`
         FROM `db`.`public`.`event_table`

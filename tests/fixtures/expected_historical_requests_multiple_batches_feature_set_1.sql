@@ -4,7 +4,7 @@ WITH _FB_AGGREGATED AS (
     REQ."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."CUSTOMER_ID" AS "CUSTOMER_ID",
-    REQ."_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e",
+    REQ."_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_5d7c2d9af3442ddd52e26b3603f39aa922965d78" AS "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_5d7c2d9af3442ddd52e26b3603f39aa922965d78",
     "T0"."_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2",
     "T0"."_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2" AS "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
   FROM (
@@ -12,7 +12,7 @@ WITH _FB_AGGREGATED AS (
       L."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       L."CUSTOMER_ID" AS "CUSTOMER_ID",
-      R.value_latest_b4a6546e024f3a059bd67f454028e56c5a37826e AS "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e"
+      R.value_latest_5d7c2d9af3442ddd52e26b3603f39aa922965d78 AS "_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_5d7c2d9af3442ddd52e26b3603f39aa922965d78"
     FROM (
       SELECT
         "__FB_KEY_COL_0",
@@ -97,7 +97,7 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."CUSTOMER_ID",
-  CAST("_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_b4a6546e024f3a059bd67f454028e56c5a37826e" AS DOUBLE) AS "a_latest_value",
+  CAST("_fb_internal_CUSTOMER_ID_BUSINESS_ID_latest_5d7c2d9af3442ddd52e26b3603f39aa922965d78" AS DOUBLE) AS "a_latest_value",
   CAST((
     "_fb_internal_CUSTOMER_ID_lookup_cust_value_1_input_2" + "_fb_internal_CUSTOMER_ID_lookup_cust_value_2_input_2"
   ) AS DOUBLE) AS "MY FEATURE"

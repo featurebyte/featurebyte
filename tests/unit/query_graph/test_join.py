@@ -160,7 +160,12 @@ def test_double_aggregation(
         global_graph, sql_type=SQLType.BUILD_TILE, source_info=source_info
     )
     _, node = order_size_agg_by_cust_id_graph
-    sql_tree = sql_graph.build(node).sql
+    sql_tree = (
+        sql_graph.build(node)
+        .get_tile_compute_spec()
+        .get_tile_compute_query()
+        .get_combined_query_expr()
+    )
     assert_equal_with_expected_fixture(
         sql_tree.sql(pretty=True),
         "tests/fixtures/query_graph/test_join/test_double_aggregation.sql",

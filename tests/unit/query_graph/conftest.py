@@ -130,6 +130,8 @@ def input_node_fixture(global_graph, input_details):
         "columns": [
             {"name": "ts", "dtype": DBVarType.TIMESTAMP},
             {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "biz_id", "dtype": DBVarType.INT},
+            {"name": "product_type", "dtype": DBVarType.INT},
             {"name": "a", "dtype": DBVarType.FLOAT},
             {"name": "b", "dtype": DBVarType.FLOAT},
         ],
@@ -511,7 +513,7 @@ def groupby_node_aggregation_id_fixture(query_graph_with_groupby):
     """Groupby node the aggregation id (without aggregation method part)"""
     groupby_node = query_graph_with_groupby.get_node_by_name("groupby_1")
     aggregation_id = groupby_node.parameters.aggregation_id.split("_")[1]
-    assert aggregation_id == "f37862722c21105449ad882409cf62a1ff7f5b35"
+    assert aggregation_id == "13c45b8622761dd28afb4640ac3ed355d57d789f"
     return aggregation_id
 
 
@@ -708,8 +710,8 @@ def join_node_params_fixture():
     return {
         "left_on": "order_id",
         "right_on": "order_id",
-        "left_input_columns": ["order_method"],
-        "left_output_columns": ["order_method"],
+        "left_input_columns": ["order_method", "cust_id", "ts"],
+        "left_output_columns": ["order_method", "cust_id", "ts"],
         "right_input_columns": ["order_id", "item_id", "item_name", "item_type"],
         "right_output_columns": ["order_id", "item_id", "item_name", "item_type"],
         "join_type": "inner",
@@ -1842,6 +1844,8 @@ def expected_pruned_graph_and_node_1(groupby_node_aggregation_id):
                     "columns": [
                         {"name": "ts", "dtype": "TIMESTAMP"},
                         {"name": "cust_id", "dtype": "INT"},
+                        {"name": "biz_id", "dtype": "INT"},
+                        {"name": "product_type", "dtype": "INT"},
                         {"name": "a", "dtype": "FLOAT"},
                         {"name": "b", "dtype": "FLOAT"},
                     ],
@@ -1927,6 +1931,8 @@ def expected_pruned_graph_and_node_2(groupby_node_aggregation_id):
                     "columns": [
                         {"name": "ts", "dtype": "TIMESTAMP"},
                         {"name": "cust_id", "dtype": "INT"},
+                        {"name": "biz_id", "dtype": "INT"},
+                        {"name": "product_type", "dtype": "INT"},
                         {"name": "a", "dtype": "FLOAT"},
                         {"name": "b", "dtype": "FLOAT"},
                     ],

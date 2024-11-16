@@ -13,6 +13,7 @@ from featurebyte.enum import InternalName
 from featurebyte.models.tile import OnDemandTileSpec, TileSpec
 from featurebyte.models.tile_compute_query import TileComputeQuery
 from featurebyte.query_graph.sql.interpreter import TileGenSql
+from featurebyte.query_graph.sql.tile_compute_combine import TileTableGrouping
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,7 @@ class OnDemandTileComputeRequest:
     observation_table_id: Optional[ObjectId]
     tile_compute_query: TileComputeQuery
     tile_gen_info: TileGenSql
+    tile_table_groupings: Optional[list[TileTableGrouping]]
 
     def to_tile_manager_input(self, feature_store_id: ObjectId) -> OnDemandTileSpec:
         """Returns a tuple required by FeatureListManager to compute tiles on-demand
@@ -116,6 +118,7 @@ class OnDemandTileComputeRequest:
             tile_spec=tile_spec,
             tracker_sql=self.tracker_sql,
             observation_table_id=self.observation_table_id,
+            tile_table_groupings=self.tile_table_groupings,
         )
 
     @property

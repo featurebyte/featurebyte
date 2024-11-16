@@ -139,6 +139,8 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     expected_columns = [
         {"name": "ts", "dtype": "TIMESTAMP", **common_column_params},
         {"name": "cust_id", "dtype": "INT", **common_column_params},
+        {"name": "biz_id", "dtype": "INT", **common_column_params},
+        {"name": "product_type", "dtype": "INT", **common_column_params},
         {"name": "a", "dtype": "FLOAT", **common_column_params},
         {"name": "b", "dtype": "FLOAT", **common_column_params},
     ]
@@ -174,6 +176,8 @@ def test_extract_operation__project_add_assign(query_graph_and_assign_node):
     assert to_dict(grp_op_struct.source_columns) == [
         {"name": "ts", "dtype": "TIMESTAMP", **common_column_params},
         {"name": "cust_id", "dtype": "INT", **common_column_params},
+        {"name": "biz_id", "dtype": "INT", **common_column_params},
+        {"name": "product_type", "dtype": "INT", **common_column_params},
         {"name": "a", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_1"})},
         {"name": "b", "dtype": "FLOAT", **extract_column_parameters(input_node, {"project_2"})},
     ]
@@ -1103,6 +1107,8 @@ def test_extract_operation_structure__graph_node_row_index_lineage(
     assert to_dict(op_struct.columns) == [
         {"name": "ts", "dtype": "TIMESTAMP", **common_params},
         {"name": "cust_id", "dtype": "INT", **common_params},
+        {"name": "biz_id", "dtype": "INT", **common_params},
+        {"name": "product_type", "dtype": "INT", **common_params},
         {"name": "b", "dtype": "FLOAT", **common_params},
         {
             "name": "a",

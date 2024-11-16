@@ -5,11 +5,7 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
     SELECT
       `ts` AS `ts`,
       `cust_id` AS `cust_id`,
-      `a` AS `a`,
-      `b` AS `b`,
-      (
-        `a` + `b`
-      ) AS `c`
+      `a` AS `input_col_avg_13c45b8622761dd28afb4640ac3ed355d57d789f`
     FROM `db`.`public`.`event_table`
   )
   WHERE
@@ -19,8 +15,8 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
 SELECT
   index,
   `cust_id`,
-  SUM(`a`) AS sum_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35,
-  COUNT(`a`) AS count_value_avg_f37862722c21105449ad882409cf62a1ff7f5b35
+  SUM(`input_col_avg_13c45b8622761dd28afb4640ac3ed355d57d789f`) AS sum_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f,
+  COUNT(`input_col_avg_13c45b8622761dd28afb4640ac3ed355d57d789f`) AS count_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f
 FROM (
   SELECT
     *,

@@ -3,23 +3,11 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
     *
   FROM (
     SELECT
-      "col_int" AS "col_int",
-      "col_float" AS "col_float",
-      "col_char" AS "col_char",
-      "col_text" AS "col_text",
-      "col_binary" AS "col_binary",
-      "col_boolean" AS "col_boolean",
       "event_timestamp" AS "event_timestamp",
       "cust_id" AS "cust_id",
-      "col_float_scd" AS "col_float_scd",
-      "col_binary_scd" AS "col_binary_scd",
-      "col_boolean_scd" AS "col_boolean_scd",
-      "date_of_birth_scd" AS "date_of_birth_scd",
-      "created_at_scd" AS "created_at_scd",
-      "cust_id_scd" AS "cust_id_scd",
       (
         "_fb_internal_cust_id_item_sum_item_amount_event_id_col_None_join_1" + "col_float_scd"
-      ) AS "added_feature"
+      ) AS "input_col_sum_e092d41d37fec1dfcd866be4be5058b8775d7100"
     FROM (
       SELECT
         REQ."col_int",
@@ -242,7 +230,7 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
 SELECT
   index,
   "cust_id",
-  SUM("added_feature") AS value_sum_e092d41d37fec1dfcd866be4be5058b8775d7100
+  SUM("input_col_sum_e092d41d37fec1dfcd866be4be5058b8775d7100") AS value_sum_e092d41d37fec1dfcd866be4be5058b8775d7100
 FROM (
   SELECT
     *,
