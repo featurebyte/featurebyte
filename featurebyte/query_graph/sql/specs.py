@@ -216,6 +216,8 @@ class TileBasedAggregationSpec(AggregationSpec):
         assert tile_table_id is not None
         assert aggregation_id is not None
 
+        # When tile tables are generated as temporary on-demand tables, the aggregation specs use
+        # the on-demand table name instead of the tile_id in the groupby node parameters.
         if on_demand_tile_tables_mapping is not None:
             tile_table_id = on_demand_tile_tables_mapping[tile_table_id]
 
