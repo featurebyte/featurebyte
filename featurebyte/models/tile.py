@@ -145,7 +145,6 @@ class OnDemandTileSpec(FeatureByteBaseModel):
 
     tile_spec: TileSpec
     tracker_sql: Optional[str] = None
-    observation_table_id: Optional[PydanticObjectId] = None
     tile_table_groupings: Optional[List[TileTableGrouping]] = None
 
 

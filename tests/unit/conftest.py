@@ -219,6 +219,18 @@ def patched_tile_generate_unique_identifier():
         yield
 
 
+@pytest.fixture(autouse=True)
+def patched_tile_cache_query_by_observation_table_unique_identifier():
+    """
+    Fixture to mock ObjectId to a fixed value
+    """
+    with patch(
+        "featurebyte.service.tile_cache_query_by_observation_table.ObjectId",
+        side_effect=get_increasing_object_id_callable(),
+    ):
+        yield
+
+
 @pytest.fixture(name="storage")
 def storage_fixture():
     """

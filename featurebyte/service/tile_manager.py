@@ -24,7 +24,6 @@ from featurebyte.models.tile import (
 )
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.observation_table_tile_cache import ObservationTableTileCacheService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.tile_registry_service import TileRegistryService
@@ -52,7 +51,6 @@ class TileManagerService:
         tile_registry_service: TileRegistryService,
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
-        observation_table_tile_cache_service: ObservationTableTileCacheService,
         redis: Redis[Any],
     ):
         self.online_store_table_version_service = online_store_table_version_service
@@ -61,7 +59,6 @@ class TileManagerService:
         self.tile_registry_service = tile_registry_service
         self.feature_service = feature_service
         self.feature_store_service = feature_store_service
-        self.observation_table_tile_cache_service = observation_table_tile_cache_service
         self.redis = redis
 
     async def generate_tiles_on_demand(
@@ -282,13 +279,6 @@ class TileManagerService:
                     "tile_id": tile_spec.tile_id,
                     "duration": time.time() - tic,
                 },
-            )
-        if on_demand_tile_spec.observation_table_id is not None:
-            await (
-                self.observation_table_tile_cache_service.add_aggregation_ids_for_observation_table(
-                    observation_table_id=on_demand_tile_spec.observation_table_id,
-                    aggregation_ids=[tile_spec.aggregation_id],
-                )
             )
         if progress_callback:
             await progress_callback()
