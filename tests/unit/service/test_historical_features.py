@@ -10,6 +10,8 @@ import pytest
 from freezegun import freeze_time
 
 from featurebyte import Feature, FeatureList, exception
+from featurebyte.models.system_metrics import TileComputeMetrics
+from featurebyte.models.tile import OnDemandTileComputeResult, OnDemandTileTable
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.service.historical_features import get_historical_features
@@ -274,6 +276,65 @@ async def test_get_historical_features__intermediate_tables_dropped(
             database_name="sf_db",
             if_exists=True,
         )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_historical_features__tile_tables_dropped(
+    float_feature,
+    mock_snowflake_session,
+    mocked_compute_tiles_on_demand,
+    output_table_details,
+    tile_cache_service,
+    snowflake_feature_store,
+):
+    """
+    Test temporary tile tables are dropped after get historical features
+    """
+    mocked_compute_tiles_on_demand.return_value = OnDemandTileComputeResult(
+        tile_compute_metrics=TileComputeMetrics(),
+        on_demand_tile_tables=[
+            OnDemandTileTable(
+                tile_table_id="TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
+                on_demand_table_name="__temp_tile_table_1",
+            ),
+            OnDemandTileTable(
+                tile_table_id="tile_id_1b",
+                on_demand_table_name="__temp_tile_table_1",
+            ),
+            OnDemandTileTable(
+                tile_table_id="tile_id_1c",
+                on_demand_table_name="__temp_tile_table_1",
+            ),
+        ],
+    )
+    df_request = pd.DataFrame({
+        "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
+        "cust_id": ["C1", "C2"],
+    })
+    mock_snowflake_session.generate_session_unique_id.return_value = "1"
+    await get_historical_features(
+        session=mock_snowflake_session,
+        tile_cache_service=tile_cache_service,
+        graph=float_feature.graph,
+        nodes=[float_feature.node],
+        observation_set=df_request,
+        feature_store=snowflake_feature_store,
+        output_table_details=output_table_details,
+    )
+    assert mock_snowflake_session.drop_table.call_args_list == [
+        call(
+            table_name="REQUEST_TABLE_1",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            if_exists=True,
+        ),
+        call(
+            table_name="__temp_tile_table_1",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            if_exists=True,
+        ),
     ]
 
 
