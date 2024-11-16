@@ -2,6 +2,10 @@
 Deployment migration service
 """
 
+from typing import List
+
+from bson import ObjectId
+
 from featurebyte.logging import get_logger
 from featurebyte.migration.service import migrate
 from featurebyte.migration.service.mixin import BaseDocumentServiceT, BaseMongoCollectionMigration
@@ -44,7 +48,7 @@ class DeploymentMigrationServiceV14(BaseMongoCollectionMigration):
         """Move store info from feature list to deployment record"""
         query_filter = await self.delegate_service.construct_list_query_filter()
         total = await self.get_total_record(query_filter=query_filter)
-        sample_ids = []
+        sample_ids: List[ObjectId] = []
 
         async for deployment_dict in self.delegate_service.list_documents_as_dict_iterator(
             query_filter=query_filter
@@ -65,6 +69,6 @@ class DeploymentMigrationServiceV14(BaseMongoCollectionMigration):
         async for deployment in self.delegate_service.list_documents_iterator(
             query_filter={"_id": {"$in": sample_ids}}
         ):
-            assert deployment.store_info, deployment
+            assert deployment.store_info, deployment  # type: ignore[attr-defined]
 
         logger.info("Migrated all records successfully (total: %d)", total)

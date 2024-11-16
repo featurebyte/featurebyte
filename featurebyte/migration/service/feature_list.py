@@ -232,7 +232,7 @@ class FeatureListMigrationServiceV7(FeatureListMigrationServiceV6):
         """Remove store info from feature list"""
         query_filter = await self.delegate_service.construct_list_query_filter()
         total = await self.get_total_record(query_filter=query_filter)
-        sample_ids = []
+        sample_ids: List[ObjectId] = []
 
         async for feature_list_dict in self.delegate_service.list_documents_as_dict_iterator(
             query_filter=query_filter
