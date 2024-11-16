@@ -220,7 +220,9 @@ def test_get_historical_feature_query_set__on_demand_tile_tables(
     Test historical features table when on demand tile tables are provided
     """
     request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
-    groupby_node = float_feature.graph.get_node_by_name("groupby_1")
+    graph = float_feature.graph
+    groupby_node_name = graph.get_input_node_names(float_feature.node)[0]
+    groupby_node = graph.get_node_by_name(groupby_node_name)
     on_demand_tile_tables = [
         OnDemandTileTable(
             tile_table_id=groupby_node.parameters.tile_id,
