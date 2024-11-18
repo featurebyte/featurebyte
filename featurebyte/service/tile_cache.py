@@ -19,7 +19,6 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.tile_cache_query_base import BaseTileCacheQueryService
-from featurebyte.service.tile_cache_query_by_entity import TileCacheQueryByEntityService
 from featurebyte.service.tile_cache_query_by_observation_table import (
     TileCacheQueryByObservationTableService,
 )
@@ -38,12 +37,11 @@ class TileCacheService:
         self,
         tile_manager_service: TileManagerService,
         feature_store_service: FeatureStoreService,
-        tile_cache_query_by_entity_service: TileCacheQueryByEntityService,
         tile_cache_query_by_observation_table_service: TileCacheQueryByObservationTableService,
     ):
         self.tile_manager_service = tile_manager_service
         self.feature_store_service = feature_store_service
-        self.tile_cache_query_by_entity_service = tile_cache_query_by_entity_service
+
         self.tile_cache_query_by_observation_table_service = (
             tile_cache_query_by_observation_table_service
         )
@@ -56,7 +54,6 @@ class TileCacheService:
         request_id: str,
         request_table_name: str,
         feature_store_id: ObjectId,
-        observation_table_id: Optional[ObjectId],
         serving_names_mapping: dict[str, str] | None = None,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> OnDemandTileComputeResult:
@@ -77,8 +74,6 @@ class TileCacheService:
             Request table name to use
         feature_store_id: ObjectId
             Feature store id
-        observation_table_id: Optional[ObjectId]
-            Observation table ID if available
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -98,10 +93,7 @@ class TileCacheService:
             tile_check_progress_callback, tile_compute_progress_callback = None, None
 
         tile_cache_query_service: BaseTileCacheQueryService
-        if observation_table_id is None:
-            tile_cache_query_service = self.tile_cache_query_by_entity_service
-        else:
-            tile_cache_query_service = self.tile_cache_query_by_observation_table_service
+        tile_cache_query_service = self.tile_cache_query_by_observation_table_service
 
         required_tile_computations = await tile_cache_query_service.get_required_computation(
             session=session,
@@ -111,7 +103,6 @@ class TileCacheService:
             nodes=nodes,
             request_table_name=request_table_name,
             serving_names_mapping=serving_names_mapping,
-            observation_table_id=observation_table_id,
             progress_callback=tile_check_progress_callback,
         )
 

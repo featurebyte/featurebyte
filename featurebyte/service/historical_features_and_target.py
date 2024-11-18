@@ -114,7 +114,6 @@ async def compute_tiles_on_demand(
             request_id=request_id,
             request_table_name=effective_request_table_name,
             feature_store_id=feature_store_id,
-            observation_table_id=observation_table_id,
             serving_names_mapping=serving_names_mapping,
             progress_callback=progress_callback,
         )

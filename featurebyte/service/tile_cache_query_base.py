@@ -7,7 +7,6 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Any, Optional
 
-from bson import ObjectId
 from redis import Redis
 
 from featurebyte.common.progress import ProgressCallbackType, divide_progress_callback
@@ -37,7 +36,6 @@ class BaseTileCacheQueryService:
         graph: QueryGraph,
         nodes: list[Node],
         request_table_name: str,
-        observation_table_id: Optional[ObjectId],
         serving_names_mapping: dict[str, str] | None = None,
         progress_callback: Optional[ProgressCallbackType] = None,
     ) -> OnDemandTileComputeRequestSet:
@@ -57,8 +55,6 @@ class BaseTileCacheQueryService:
             List of query graph node
         request_table_name : str
             Request table name to use
-        observation_table_id: Optional[ObjectId]
-            Observation table ID if available
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -87,7 +83,6 @@ class BaseTileCacheQueryService:
             feature_store=feature_store,
             request_id=request_id,
             request_table_name=request_table_name,
-            observation_table_id=observation_table_id,
             progress_callback=query_progress,
         )
 
@@ -99,7 +94,6 @@ class BaseTileCacheQueryService:
         feature_store: FeatureStoreModel,
         request_id: str,
         request_table_name: str,
-        observation_table_id: Optional[ObjectId],
         progress_callback: Optional[ProgressCallbackType] = None,
     ) -> OnDemandTileComputeRequestSet:
         """Get required computation implementation
@@ -116,8 +110,6 @@ class BaseTileCacheQueryService:
             Request ID
         request_table_name : str
             Request table name to use
-        observation_table_id: Optional[ObjectId]
-            Observation table id if available
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
 

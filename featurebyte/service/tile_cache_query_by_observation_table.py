@@ -42,7 +42,6 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
         feature_store: FeatureStoreModel,
         request_id: str,
         request_table_name: str,
-        observation_table_id: Optional[ObjectId],
         progress_callback: Optional[ProgressCallbackType] = None,
     ) -> OnDemandTileComputeRequestSet:
         unique_tile_infos = self.get_unique_tile_infos(tile_infos)
@@ -76,7 +75,6 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
                 tile_table_id=tile_info.tile_table_id,
                 aggregation_id=tile_info.aggregation_id,
                 tile_compute_query=tile_info.tile_compute_query,
-                tracker_sql=None,
                 tile_gen_info=tile_info,
                 tile_table_groupings=combined_info.tile_table_groupings,
             )

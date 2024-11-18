@@ -2,7 +2,6 @@
 Test cases for the HistoricalFeaturesService
 """
 
-from unittest import mock
 from unittest.mock import AsyncMock, Mock, call, patch
 
 import pandas as pd
@@ -336,57 +335,3 @@ async def test_get_historical_features__tile_tables_dropped(
             if_exists=True,
         ),
     ]
-
-
-@pytest.fixture(name="mocked_tile_cache")
-def mocked_tile_cache():
-    """Fixture for a mocked SnowflakeTileCache object"""
-    patched = {}
-    service_mod = "featurebyte.service.tile_cache_query_by_entity"
-    with mock.patch(
-        f"{service_mod}.TileCacheQueryByEntityService._get_compute_requests"
-    ) as mock_get_compute_requests:
-        with mock.patch(
-            f"{service_mod}.TileCacheQueryByEntityService._filter_keys_with_tracker",
-            return_value=[],
-        ):
-            with mock.patch(f"{service_mod}.run_coroutines"):
-                patched["_get_compute_requests"] = mock_get_compute_requests
-                yield patched
-
-
-@pytest.mark.asyncio
-async def test_get_historical_features__tile_cache_multiple_batches(
-    float_feature,
-    agg_per_category_feature,
-    tile_cache_service,
-    output_table_details,
-    mock_snowflake_session,
-    mocked_tile_cache,
-    snowflake_feature_store,
-):
-    """
-    Test that nodes for tile cache are batched correctly
-    """
-    df_request = pd.DataFrame({
-        "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
-        "cust_id": ["C1", "C2"],
-    })
-    mock_snowflake_session.generate_session_unique_id.return_value = "1"
-
-    complex_feature = float_feature * agg_per_category_feature.cd.entropy()
-    graph, _ = complex_feature.extract_pruned_graph_and_node()
-    nodes = [graph.get_node_by_name("groupby_1"), graph.get_node_by_name("groupby_2")]
-
-    with patch("featurebyte.service.tile_cache_query_by_entity.NUM_TRACKER_TABLES_PER_QUERY", 1):
-        _ = await get_historical_features(
-            session=mock_snowflake_session,
-            tile_cache_service=tile_cache_service,
-            graph=graph,
-            nodes=nodes,
-            observation_set=df_request,
-            feature_store=snowflake_feature_store,
-            output_table_details=output_table_details,
-        )
-
-    assert len(mocked_tile_cache["_get_compute_requests"].call_args_list) == 2
