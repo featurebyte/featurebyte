@@ -46,6 +46,7 @@ from featurebyte.query_graph.sql.online_serving import get_online_features
 from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.schema.info import DeploymentRequestCodeTemplate
 from featurebyte.service.entity import EntityService
+from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -82,22 +83,24 @@ class OnlineServingService:
         online_store_table_version_service: OnlineStoreTableVersionService,
         feature_store_service: FeatureStoreService,
         feature_list_namespace_service: FeatureListNamespaceService,
-        feature_list_service: FeatureListService,
         feature_service: FeatureService,
         entity_service: EntityService,
         table_service: TableService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
+        entity_serving_names_service: EntityServingNamesService,
+        feature_list_service: FeatureListService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.entity_validation_service = entity_validation_service
         self.online_store_table_version_service = online_store_table_version_service
         self.feature_list_namespace_service = feature_list_namespace_service
-        self.feature_list_service = feature_list_service
         self.feature_service = feature_service
         self.entity_service = entity_service
         self.table_service = table_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
+        self.entity_serving_names_service = entity_serving_names_service
+        self.feature_list_service = feature_list_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -394,7 +397,6 @@ class OnlineServingService:
     async def get_request_code_template(
         self,
         deployment: DeploymentModel,
-        feature_list: FeatureListModel,
         language: str,
     ) -> DeploymentRequestCodeTemplate:
         """
@@ -404,8 +406,6 @@ class OnlineServingService:
         ----------
         deployment: DeploymentModel
             Deployment model
-        feature_list: FeatureListModel
-            Feature List model
         language: str
             Language of the template
 
@@ -426,15 +426,24 @@ class OnlineServingService:
             raise UnsupportedRequestCodeTemplateLanguage("Supported languages: ['python', 'sh']")
 
         # construct entity serving names
-        entity_serving_names = await self.feature_list_service.get_sample_entity_serving_names(
-            feature_list_id=feature_list.id,
-            count=1,
-        )
+        if deployment.serving_entity_ids is None:
+            entity_serving_names = await self.feature_list_service.get_sample_entity_serving_names(
+                feature_list_id=deployment.feature_list_id,
+                count=1,
+            )
+        else:
+            entity_serving_names = (
+                await self.entity_serving_names_service.get_sample_entity_serving_names(
+                    entity_ids=deployment.serving_entity_ids,
+                    table_ids=None,
+                    count=1,
+                )
+            )
 
         # construct serving url
         headers = {
             "Content-Type": "application/json",
-            "active-catalog-id": str(feature_list.catalog_id),
+            "active-catalog-id": str(deployment.catalog_id),
             "Authorization": "Bearer <API_TOKEN>",
         }
 

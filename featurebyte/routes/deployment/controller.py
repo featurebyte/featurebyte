@@ -312,12 +312,8 @@ class DeploymentController(
         if not deployment.enabled:
             raise FeatureListNotOnlineEnabledError("Deployment is not enabled.")
 
-        feature_list = await self.feature_list_service.get_document(
-            document_id=deployment.feature_list_id
-        )
         return await self.online_serving_service.get_request_code_template(
             deployment=deployment,
-            feature_list=feature_list,
             language=language,
         )
 

@@ -346,3 +346,27 @@ def test_deployment_with_unbounded_window(
     )
 
     deployment.disable()
+
+
+def test_get_online_serving_code_uses_deployment_entities(deployment, config_file):
+    """Test feature get_online_serving_code"""
+    # Use config
+    Configurations(config_file, force=True)
+
+    deployment.enable()
+    assert deployment.enabled is True
+
+    with (
+        patch("featurebyte.service.deployment.DeploymentService.get_document") as mock_get_document,
+        patch(
+            "featurebyte.service.entity_serving_names.EntityServingNamesService.get_sample_entity_serving_names"
+        ) as mock_get_sample_entity_serving_names,
+    ):
+        mock_get_sample_entity_serving_names.return_value = [{"cust_id": "sample_cust_id"}]
+        deployment.get_online_serving_code()
+        deployment = mock_get_document.return_value
+        mock_get_sample_entity_serving_names.assert_called_once_with(
+            entity_ids=deployment.serving_entity_ids,
+            table_ids=None,
+            count=1,
+        )
