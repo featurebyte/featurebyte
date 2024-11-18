@@ -124,7 +124,7 @@ class TileCacheService:
                 logger.debug("All required tiles can be reused")
                 tile_compute_result = OnDemandTileComputeResult(
                     tile_compute_metrics=TileComputeMetrics(),
-                    on_demand_tile_tables=None,
+                    on_demand_tile_tables=[],
                 )
         finally:
             await self.cleanup_temp_tables(session=session, request_set=required_tile_computations)
