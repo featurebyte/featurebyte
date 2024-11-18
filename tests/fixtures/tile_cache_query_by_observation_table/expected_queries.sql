@@ -57,19 +57,21 @@ GROUP BY
   "cust_id")
         );
 
+CREATE TABLE "sf_db"."sf_schema"."ON_DEMAND_TILE_ENTITY_TABLE_000000000000000000000001" AS
 SELECT
-  *
-FROM "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295"
-LIMIT 0;
-
-ALTER TABLE TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295 ADD COLUMN value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295 FLOAT;
-
-
-            merge into TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295 a using __TEMP_TILE_TABLE_000000000000000000000000 b
-                on a.INDEX = b.INDEX AND EQUAL_NULL(a."cust_id", b."cust_id")
-                when matched then
-                    update set a.created_at = current_timestamp(), a.value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295 = b.value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295
-                when not matched then
-                    insert (INDEX, "cust_id", value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295, CREATED_AT)
-                        values (b.INDEX, b."cust_id", b.value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295, current_timestamp())
-        ;
+  "cust_id" AS "cust_id",
+  CAST(FLOOR((
+    DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 300
+  ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
+  DATEADD(
+    microsecond,
+    (
+      (
+        300 - 600
+      ) * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
+    ),
+    CAST('1970-01-01' AS TIMESTAMP)
+  ) AS __FB_ENTITY_TABLE_START_DATE
+FROM "my_request_table"
+GROUP BY
+  "cust_id";

@@ -9,6 +9,7 @@ import pytest
 from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
+from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
@@ -208,5 +209,43 @@ def test_get_historical_feature_query_set__output_include_row_index(
     assert_equal_with_expected_fixture(
         query_set.output_query,
         "tests/fixtures/expected_historical_requests_output_row_index.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_get_historical_feature_query_set__on_demand_tile_tables(
+    float_feature, output_table_details, fixed_object_id, update_fixtures, source_info
+):
+    """
+    Test historical features table when on demand tile tables are provided
+    """
+    request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
+    graph = float_feature.graph
+    groupby_node_name = graph.get_input_node_names(float_feature.node)[0]
+    groupby_node = graph.get_node_by_name(groupby_node_name)
+    on_demand_tile_tables = [
+        OnDemandTileTable(
+            tile_table_id=groupby_node.parameters.tile_id,
+            on_demand_table_name="__MY_TEMP_TILE_TABLE",
+        )
+    ]
+    query_set = get_historical_features_query_set(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=float_feature.graph,
+        nodes=[float_feature.node],
+        request_table_columns=request_table_columns,
+        source_info=source_info,
+        output_table_details=output_table_details,
+        output_feature_names=[float_feature.node.name],
+        output_include_row_index=True,
+        on_demand_tile_tables=on_demand_tile_tables,
+        progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
+    )
+    assert query_set.feature_queries == []
+    assert query_set.progress_message == PROGRESS_MESSAGE_COMPUTING_FEATURES
+    assert "__MY_TEMP_TILE_TABLE" in query_set.output_query
+    assert_equal_with_expected_fixture(
+        query_set.output_query,
+        "tests/fixtures/expected_historical_requests_on_demand_tile_tables.sql",
         update_fixture=update_fixtures,
     )

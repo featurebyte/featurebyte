@@ -184,6 +184,7 @@ class TileBasedAggregationSpec(AggregationSpec):
         adapter: BaseAdapter,
         agg_result_name_include_serving_names: bool,
         serving_names_mapping: dict[str, str] | None = None,
+        on_demand_tile_tables_mapping: dict[str, str] | None = None,
     ) -> list[TileBasedAggregationSpec]:
         """Construct an AggregationSpec from a query graph and groupby node
 
@@ -199,6 +200,8 @@ class TileBasedAggregationSpec(AggregationSpec):
             Mapping from original serving name to new serving name
         agg_result_name_include_serving_names: bool
             Whether to include serving names in the aggregation result names
+        on_demand_tile_tables_mapping: dict[str, str]
+            Optional mapping from tile table id to on-demand tile table name
 
         Returns
         -------
@@ -212,6 +215,11 @@ class TileBasedAggregationSpec(AggregationSpec):
         aggregation_id = groupby_node.parameters.aggregation_id
         assert tile_table_id is not None
         assert aggregation_id is not None
+
+        # When tile tables are generated as temporary on-demand tables, the aggregation specs use
+        # the on-demand table name instead of the tile_id in the groupby node parameters.
+        if on_demand_tile_tables_mapping is not None:
+            tile_table_id = on_demand_tile_tables_mapping[tile_table_id]
 
         aggregation_specs = []
         parent_dtype = None

@@ -4,10 +4,9 @@ TileCacheQueryByObservationTableService class
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from bson import ObjectId
-from redis import Redis
 from sqlglot import expressions
 
 from featurebyte.common.progress import ProgressCallbackType
@@ -23,7 +22,6 @@ from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.interpreter import TileGenSql
 from featurebyte.query_graph.sql.tile_compute_combine import combine_tile_compute_specs
 from featurebyte.query_graph.sql.tile_util import construct_entity_table_query_for_window
-from featurebyte.service.observation_table_tile_cache import ObservationTableTileCacheService
 from featurebyte.service.tile_cache_query_base import BaseTileCacheQueryService
 from featurebyte.session.base import BaseSession
 
@@ -37,14 +35,6 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
     This class uses ObservationTableTileCacheService to determine the required tile computation
     """
 
-    def __init__(
-        self,
-        redis: Redis[Any],
-        observation_table_tile_cache_service: ObservationTableTileCacheService,
-    ):
-        super().__init__(redis)
-        self.observation_table_tile_cache_service = observation_table_tile_cache_service
-
     async def get_required_computation_impl(
         self,
         tile_infos: list[TileGenSql],
@@ -55,17 +45,6 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
         observation_table_id: Optional[ObjectId],
         progress_callback: Optional[ProgressCallbackType] = None,
     ) -> OnDemandTileComputeRequestSet:
-        # Filter tile tables that have not been processed for the observation table
-        assert observation_table_id is not None
-        non_cached_ids = set(
-            await self.observation_table_tile_cache_service.get_non_cached_aggregation_ids(
-                observation_table_id=observation_table_id,
-                aggregation_ids=list({tile_info.aggregation_id for tile_info in tile_infos}),
-            )
-        )
-        tile_infos = [
-            tile_info for tile_info in tile_infos if tile_info.aggregation_id in non_cached_ids
-        ]
         unique_tile_infos = self.get_unique_tile_infos(tile_infos)
 
         # Construct tile compute requests
@@ -98,7 +77,6 @@ class TileCacheQueryByObservationTableService(BaseTileCacheQueryService):
                 aggregation_id=tile_info.aggregation_id,
                 tile_compute_query=tile_info.tile_compute_query,
                 tracker_sql=None,
-                observation_table_id=observation_table_id,
                 tile_gen_info=tile_info,
                 tile_table_groupings=combined_info.tile_table_groupings,
             )

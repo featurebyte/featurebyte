@@ -186,13 +186,6 @@ async def test_generate_tiles_on_demand__observation_table_id(
         ],
     )
 
-    # Check the aggregation IDs are added to the observation table tile cache
-    service = tile_manager_service.observation_table_tile_cache_service
-    non_cached_ids = await service.get_non_cached_aggregation_ids(
-        observation_table_id=observation_table_id, aggregation_ids=["agg_id_1", "agg_id_2"]
-    )
-    assert non_cached_ids == []
-
     queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
