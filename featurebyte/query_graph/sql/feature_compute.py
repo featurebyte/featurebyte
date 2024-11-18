@@ -604,7 +604,7 @@ class FeatureExecutionPlanner:
         self.adapter = get_sql_adapter(source_info)
 
         self.on_demand_tile_tables_mapping: Optional[dict[str, str]]
-        if on_demand_tile_tables is not None:
+        if on_demand_tile_tables:
             self.on_demand_tile_tables_mapping = {
                 tile_table.tile_table_id: tile_table.on_demand_table_name
                 for tile_table in on_demand_tile_tables

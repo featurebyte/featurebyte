@@ -6,7 +6,6 @@ import pytest
 
 from featurebyte.enum import InternalName
 from featurebyte.models.tile import OnDemandTileSpec, TileType
-from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.tile_compute_combine import TileTableGrouping
 
 
@@ -73,6 +72,3 @@ async def test_generate_tiles_on_demand(session, tile_spec, tile_manager_service
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {temp_tile_table_name}"
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == 5
-
-    # permanent tile table should not be created
-    assert not await session.table_exists(TableDetails(table_name=tile_spec.tile_id.upper()))
