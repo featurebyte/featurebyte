@@ -49,6 +49,7 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
@@ -87,6 +88,7 @@ class OnlineServingService:
         table_service: TableService,
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         entity_serving_names_service: EntityServingNamesService,
+        feature_list_service: FeatureListService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -98,6 +100,7 @@ class OnlineServingService:
         self.table_service = table_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.entity_serving_names_service = entity_serving_names_service
+        self.feature_list_service = feature_list_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -423,14 +426,19 @@ class OnlineServingService:
             raise UnsupportedRequestCodeTemplateLanguage("Supported languages: ['python', 'sh']")
 
         # construct entity serving names
-        assert deployment.serving_entity_ids is not None
-        entity_serving_names = (
-            await self.entity_serving_names_service.get_sample_entity_serving_names(
-                entity_ids=deployment.serving_entity_ids,
-                table_ids=None,
+        if deployment.serving_entity_ids is None:
+            entity_serving_names = await self.feature_list_service.get_sample_entity_serving_names(
+                feature_list_id=deployment.feature_list_id,
                 count=1,
             )
-        )
+        else:
+            entity_serving_names = (
+                await self.entity_serving_names_service.get_sample_entity_serving_names(
+                    entity_ids=deployment.serving_entity_ids,
+                    table_ids=None,
+                    count=1,
+                )
+            )
 
         # construct serving url
         headers = {
