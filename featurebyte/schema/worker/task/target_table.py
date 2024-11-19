@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, model_validator
 from featurebyte.enum import WorkerCommand
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.schema.target_table import TargetTableCreate
-from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskType
 
 
 class TargetTableTaskPayload(BaseTaskPayload, TargetTableCreate):
@@ -23,6 +23,7 @@ class TargetTableTaskPayload(BaseTaskPayload, TargetTableCreate):
 
     # instance variables
     observation_set_storage_path: Optional[str] = Field(default=None)
+    task_type: TaskType = Field(default=TaskType.CPU_TASK)
 
     @model_validator(mode="before")
     @classmethod
