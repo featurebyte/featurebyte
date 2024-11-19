@@ -352,7 +352,7 @@ def get_historical_features_query_set(
     FeatureQuerySet
     """
     # Process nodes in batches
-    node_groups = split_nodes(graph, nodes, NUM_FEATURES_PER_QUERY)
+    node_groups = split_nodes(graph, nodes, NUM_FEATURES_PER_QUERY, source_info)
 
     if len(node_groups) == 1:
         # Fallback to simpler non-batched query if there is only one group to avoid overhead
