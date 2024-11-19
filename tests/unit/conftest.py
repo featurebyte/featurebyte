@@ -2291,7 +2291,8 @@ def mocked_compute_tiles_on_demand():
     with mock.patch(
         "featurebyte.service.historical_features_and_target.compute_tiles_on_demand",
         return_value=OnDemandTileComputeResult(
-            tile_compute_metrics=TileComputeMetrics(), on_demand_tile_tables=None
+            tile_compute_metrics=TileComputeMetrics(),
+            on_demand_tile_tables=[],
         ),
     ) as mocked_compute_tiles_on_demand:
         yield mocked_compute_tiles_on_demand

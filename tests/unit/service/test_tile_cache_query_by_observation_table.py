@@ -3,7 +3,6 @@ Tests for TileCacheQueryByObservationTableService
 """
 
 import pytest
-from bson import ObjectId
 
 from featurebyte.service.tile_cache_query_by_observation_table import (
     TileCacheQueryByObservationTableService,
@@ -28,14 +27,6 @@ def tile_manager_service_fixture(app_container) -> TileManagerService:
     return app_container.tile_manager_service
 
 
-@pytest.fixture(name="observation_table_id")
-def observation_table_id_fixture():
-    """
-    Fixture for observation_table_id
-    """
-    return ObjectId()
-
-
 @pytest.mark.asyncio
 async def test_get_required_computation(
     service,
@@ -43,7 +34,6 @@ async def test_get_required_computation(
     mock_snowflake_session,
     feature_store,
     production_ready_feature,
-    observation_table_id,
     update_fixtures,
 ):
     """
@@ -60,7 +50,6 @@ async def test_get_required_computation(
                 production_ready_feature.graph.get_node_by_name(production_ready_feature.node_name)
             ],
             request_table_name="my_request_table",
-            observation_table_id=observation_table_id,
         )
 
     request_set = await _get_required_computation()
@@ -69,7 +58,6 @@ async def test_get_required_computation(
     compute_requests = request_set.compute_requests
     assert len(compute_requests) == 1
     request = compute_requests[0]
-    assert request.tracker_sql is None
     assert request_set.materialized_temp_table_names == {
         "ON_DEMAND_TILE_ENTITY_TABLE_000000000000000000000000"
     }

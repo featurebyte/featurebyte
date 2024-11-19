@@ -77,7 +77,6 @@ class OnDemandTileComputeRequest:
 
     tile_table_id: str
     aggregation_id: str
-    tracker_sql: Optional[str]
     tile_compute_query: TileComputeQuery
     tile_gen_info: TileGenSql
     tile_table_groupings: Optional[list[TileTableGrouping]]
@@ -115,7 +114,6 @@ class OnDemandTileComputeRequest:
         )
         return OnDemandTileSpec(
             tile_spec=tile_spec,
-            tracker_sql=self.tracker_sql,
             tile_table_groupings=self.tile_table_groupings,
         )
 

@@ -144,8 +144,7 @@ class OnDemandTileSpec(FeatureByteBaseModel):
     """
 
     tile_spec: TileSpec
-    tracker_sql: Optional[str] = None
-    tile_table_groupings: Optional[List[TileTableGrouping]] = None
+    tile_table_groupings: List[TileTableGrouping]
 
 
 class OnDemandTileTable(FeatureByteBaseModel):
@@ -169,7 +168,7 @@ class OnDemandTileComputeResult(FeatureByteBaseModel):
     """
 
     tile_compute_metrics: TileComputeMetrics
-    on_demand_tile_tables: Optional[List[OnDemandTileTable]]
+    on_demand_tile_tables: List[OnDemandTileTable]
 
     @property
     def materialized_on_demand_tile_table_names(self) -> List[str]:
@@ -181,8 +180,6 @@ class OnDemandTileComputeResult(FeatureByteBaseModel):
         List[str]
             List of materialized on-demand tile table names
         """
-        if self.on_demand_tile_tables is None:
-            return []
         return sorted({table.on_demand_table_name for table in self.on_demand_tile_tables})
 
 

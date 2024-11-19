@@ -119,32 +119,6 @@ async def test_schedule_offline_tiles(
         assert kwargs["offline_minutes"] == 1440
 
 
-@mock.patch("featurebyte.service.tile_manager.TileManagerService.update_tile_entity_tracker")
-@mock.patch("featurebyte.service.feature_store.FeatureStoreService.get_document")
-@pytest.mark.asyncio
-async def test_generate_tiles_on_demand(
-    mock_feature_store_service_get_document,
-    mock_update_tile_entity_tracker,
-    mock_snowflake_tile,
-    tile_manager_service,
-    mock_snowflake_session,
-):
-    """
-    Test generate_tiles_on_demand
-    """
-    mock_update_tile_entity_tracker.side_effect = None
-    mock_feature_store_service_get_document.return_value = Mock(
-        id=mock_snowflake_tile.feature_store_id, max_query_concurrency=None
-    )
-
-    await tile_manager_service.generate_tiles_on_demand(
-        mock_snowflake_session,
-        [OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table")],
-    )
-
-    mock_update_tile_entity_tracker.assert_called_once()
-
-
 @mock.patch("featurebyte.service.feature_store.FeatureStoreService.get_document")
 @pytest.mark.asyncio
 async def test_generate_tiles_on_demand__observation_table_id(
@@ -195,13 +169,11 @@ async def test_generate_tiles_on_demand__observation_table_id(
 
 
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.generate_tiles")
-@mock.patch("featurebyte.service.tile_manager.TileManagerService.update_tile_entity_tracker")
 @mock.patch("featurebyte.service.feature_store.FeatureStoreService.get_document")
 @pytest.mark.asyncio
 async def test_generate_tiles_on_demand__progress_update(
     mock_feature_store_service_get_document,
     mock_generate_tiles,
-    mock_update_tile_entity_tracker,
     mock_snowflake_tile,
     tile_manager_service,
     mock_snowflake_session,
@@ -210,32 +182,37 @@ async def test_generate_tiles_on_demand__progress_update(
     Test generate_tiles_on_demand
     """
     mock_generate_tiles.side_effect = None
-    mock_update_tile_entity_tracker.side_effect = None
     mock_feature_store_service_get_document.return_value = Mock(
         id=mock_snowflake_tile.feature_store_id, max_query_concurrency=None
     )
     mock_progress_callback = AsyncMock()
 
+    on_demand_tile_spec = OnDemandTileSpec(
+        tile_spec=mock_snowflake_tile,
+        tile_table_groupings=[
+            TileTableGrouping(
+                aggregation_id="agg_id_1",
+                tile_id="tile_id_1",
+                value_column_names=["col1"],
+                value_column_types=["FLOAT"],
+            ),
+        ],
+    )
     await tile_manager_service.generate_tiles_on_demand(
         mock_snowflake_session,
         [
-            OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table"),
-            OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table"),
-            OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table"),
-            OnDemandTileSpec(tile_spec=mock_snowflake_tile, tracker_sql="temp_entity_table"),
+            on_demand_tile_spec,
+            on_demand_tile_spec,
+            on_demand_tile_spec,
+            on_demand_tile_spec,
         ],
         progress_callback=mock_progress_callback,
     )
 
     assert mock_progress_callback.call_args_list == [
         call(0, "Computed 0 out of 4 tile tables"),
-        call(12, "Computed 1 out of 4 tile tables"),
-        call(25, "Computed 2 out of 4 tile tables"),
-        call(37, "Computed 3 out of 4 tile tables"),
-        call(50, "Computed 4 out of 4 tile tables"),
-        call(50, "Updated 0 out of 4 tile tables"),
-        call(62, "Updated 1 out of 4 tile tables"),
-        call(75, "Updated 2 out of 4 tile tables"),
-        call(87, "Updated 3 out of 4 tile tables"),
-        call(100, "Updated 4 out of 4 tile tables"),
+        call(25, "Computed 1 out of 4 tile tables"),
+        call(50, "Computed 2 out of 4 tile tables"),
+        call(75, "Computed 3 out of 4 tile tables"),
+        call(100, "Computed 4 out of 4 tile tables"),
     ]
