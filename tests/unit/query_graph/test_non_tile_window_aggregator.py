@@ -6,7 +6,8 @@ import pytest
 from sqlglot.expressions import select
 
 from featurebyte.query_graph.sql.aggregator.non_tile_window import NonTileWindowAggregator
-from featurebyte.query_graph.sql.common import construct_cte_sql
+from featurebyte.query_graph.sql.common import construct_cte_sql, sql_to_string
+from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.specifications.non_tile_window_aggregate import (
     NonTileWindowAggregateSpec,
 )
@@ -52,5 +53,28 @@ def test_non_tile_window_aggregate(agg_specs, update_fixtures, source_info):
         .select(1)
         .sql(pretty=True),
         "tests/fixtures/aggregator/expected_non_tile_window_aggregator_ctes.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_multiple_windows_complex_feature(
+    global_graph, non_tile_window_aggregate_complex_feature_node, update_fixtures, source_info
+):
+    """
+    Test non tile window aggregator with multiple windows
+    """
+    actual = sql_to_string(
+        get_historical_features_expr(
+            request_table_name="REQUEST_TABLE",
+            graph=global_graph,
+            nodes=[non_tile_window_aggregate_complex_feature_node],
+            request_table_columns=["POINT_IN_TIME", "CUSTOMER_ID"],
+            source_info=source_info,
+        )[0],
+        source_info.source_type,
+    )
+    assert_equal_with_expected_fixture(
+        actual,
+        "tests/fixtures/aggregator/expected_non_tile_window_complex_feature.sql",
         update_fixture=update_fixtures,
     )
