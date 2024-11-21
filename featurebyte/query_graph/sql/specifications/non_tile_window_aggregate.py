@@ -60,10 +60,16 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
 
     def get_source_hash_parameters(self) -> dict[str, Any]:
         # Input to be aggregated
-        params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
+        params: dict[str, Any] = {
+            "source_expr": self.source_expr.sql(),
+            "window": self.window,
+            "offset": self.offset,
+        }
 
         # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)
-        parameters_dict = self.parameters.model_dump(exclude={"parent", "agg_func", "name"})
+        parameters_dict = self.parameters.model_dump(
+            exclude={"parent", "agg_func", "name", "windows", "offset"}
+        )
         if parameters_dict.get("entity_ids") is not None:
             parameters_dict["entity_ids"] = [
                 str(entity_id) for entity_id in parameters_dict["entity_ids"]
