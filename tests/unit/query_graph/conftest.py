@@ -1477,7 +1477,10 @@ def time_since_last_event_feature_node_fixture(global_graph, input_node):
 
 
 @pytest.fixture(name="non_tile_window_aggregate_feature_node")
-def non_tile_window_ggregation_feature_node_fixture(global_graph, input_node):
+def non_tile_window_aggregation_feature_node_fixture(global_graph, input_node):
+    """
+    Fixture for a non-tile window aggregate feature node
+    """
     node_params = {
         "keys": ["cust_id"],
         "serving_names": ["CUSTOMER_ID"],
@@ -1505,6 +1508,60 @@ def non_tile_window_ggregation_feature_node_fixture(global_graph, input_node):
         node_params={"columns": ["a_48h_sum_no_tile"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[global_graph.get_node_by_name(aggregate_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="non_tile_window_aggregate_complex_feature_node")
+def non_tile_window_aggregation_complex_feature_node_fixture(global_graph, input_node):
+    """
+    Fixture for a complex non-tile window aggregate feature node with multiple windows
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "sum",
+        "feature_job_setting": {
+            "offset": "1800s",  # 30m
+            "period": "12h",  # 12h
+            "blind_spot": "900s",  # 15m
+        },
+        "timestamp": "ts",
+        "names": ["a_2h_sum_no_tile", "a_48h_sum_no_tile"],
+        "windows": ["2h", "48h"],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+    }
+    aggregate_node = global_graph.add_operation(
+        node_type=NodeType.NON_TILE_WINDOW_AGGREGATE,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[input_node],
+    )
+    temp_feature_1 = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_2h_sum_no_tile"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(aggregate_node.name)],
+    )
+    temp_feature_2 = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_48h_sum_no_tile"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(aggregate_node.name)],
+    )
+    div_feature = global_graph.add_operation(
+        node_type=NodeType.DIV,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[temp_feature_1, temp_feature_2],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.ALIAS,
+        node_params={"name": "a_2h_48h_sum_ratio_no_tile"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[div_feature],
     )
     return feature_node
 
