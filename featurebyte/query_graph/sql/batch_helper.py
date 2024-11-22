@@ -54,6 +54,8 @@ def split_nodes(
     planner = FeatureExecutionPlanner(graph=graph, is_online_serving=False)
     interpreter = GraphInterpreter(graph, source_info)
 
+    tile_compute_signature_mapping: dict[str, str] = {}
+
     def get_sort_key(node: Node) -> str:
         mapped_node = planner.graph.get_node_by_name(planner.node_name_map[node.name])
         agg_specs = planner.get_aggregation_specs(mapped_node)
@@ -61,13 +63,16 @@ def split_nodes(
 
         parts = [agg_spec.aggregation_type.value]
         if isinstance(agg_spec, TileBasedAggregationSpec):
-            tile_infos = interpreter.construct_tile_gen_sql(node, False)
-            hasher = hashlib.shake_128()
-            tile_compute_signature = get_tile_compute_spec_signature(
-                tile_infos[0].tile_compute_spec
-            )
-            hasher.update(json.dumps(tile_compute_signature, sort_keys=True).encode("utf-8"))
-            parts.append(hasher.hexdigest(20))
+            aggregation_id = agg_spec.aggregation_id
+            if aggregation_id not in tile_compute_signature_mapping:
+                tile_infos = interpreter.construct_tile_gen_sql(node, False)
+                tile_compute_signature = get_tile_compute_spec_signature(
+                    tile_infos[0].tile_compute_spec
+                )
+                hasher = hashlib.shake_128()
+                hasher.update(json.dumps(tile_compute_signature, sort_keys=True).encode("utf-8"))
+                tile_compute_signature_mapping[aggregation_id] = hasher.hexdigest(20)
+            parts.append(tile_compute_signature_mapping[aggregation_id])
         else:
             assert isinstance(agg_spec, NonTileBasedAggregationSpec)
             # These queries join with source tables directly. Sort by query node name of the source
