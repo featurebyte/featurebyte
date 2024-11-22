@@ -4,6 +4,9 @@ Helpers to split a QueryGraph and nodes into smaller batches
 
 from __future__ import annotations
 
+import hashlib
+import json
+
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName
@@ -12,7 +15,10 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec, TileBasedAggregationSpec
+from featurebyte.query_graph.sql.tile_compute_combine import get_tile_compute_spec_signature
 
 NUM_FEATURES_PER_QUERY = 20
 
@@ -21,7 +27,7 @@ def split_nodes(
     graph: QueryGraph,
     nodes: list[Node],
     num_features_per_query: int,
-    is_tile_cache: bool = False,
+    source_info: SourceInfo,
 ) -> list[list[Node]]:
     """
     Split nodes into multiple lists, each containing at most `num_features_per_query` nodes. Nodes
@@ -35,8 +41,8 @@ def split_nodes(
         List of nodes
     num_features_per_query : int
         Number of features per query
-    is_tile_cache : bool
-        Whether the output will be used for tile cache queries
+    source_info: SourceInfo
+        Source information
 
     Returns
     -------
@@ -46,6 +52,9 @@ def split_nodes(
         return [nodes]
 
     planner = FeatureExecutionPlanner(graph=graph, is_online_serving=False)
+    interpreter = GraphInterpreter(graph, source_info)
+
+    tile_compute_signature_mapping: dict[str, str] = {}
 
     def get_sort_key(node: Node) -> str:
         mapped_node = planner.graph.get_node_by_name(planner.node_name_map[node.name])
@@ -54,14 +63,16 @@ def split_nodes(
 
         parts = [agg_spec.aggregation_type.value]
         if isinstance(agg_spec, TileBasedAggregationSpec):
-            if is_tile_cache:
-                # Tile cache queries joins with entity tracker tables. These tables are organized by
-                # aggregation_id. The split should be random across different aggregation_id.
-                parts.append(agg_spec.aggregation_id)
-            else:
-                # Tile based aggregation joins with tile tables. Sort by tile_table_id first to
-                # group nodes that join with the same tile table.
-                parts.extend([agg_spec.tile_table_id, agg_spec.aggregation_id])
+            aggregation_id = agg_spec.aggregation_id
+            if aggregation_id not in tile_compute_signature_mapping:
+                tile_infos = interpreter.construct_tile_gen_sql(node, False)
+                tile_compute_signature = get_tile_compute_spec_signature(
+                    tile_infos[0].tile_compute_spec
+                )
+                hasher = hashlib.shake_128()
+                hasher.update(json.dumps(tile_compute_signature, sort_keys=True).encode("utf-8"))
+                tile_compute_signature_mapping[aggregation_id] = hasher.hexdigest(20)
+            parts.append(tile_compute_signature_mapping[aggregation_id])
         else:
             assert isinstance(agg_spec, NonTileBasedAggregationSpec)
             # These queries join with source tables directly. Sort by query node name of the source

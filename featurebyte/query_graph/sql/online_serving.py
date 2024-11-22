@@ -511,7 +511,7 @@ async def get_online_features(
     session = session_handler.session
 
     # Process nodes in batches
-    node_groups = split_nodes(graph, nodes, NUM_FEATURES_PER_QUERY)
+    node_groups = split_nodes(graph, nodes, NUM_FEATURES_PER_QUERY, source_info)
 
     if isinstance(request_data, pd.DataFrame):
         request_table_columns = request_data.columns.tolist()
