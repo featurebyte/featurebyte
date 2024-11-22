@@ -8,10 +8,13 @@ import copy
 from collections import defaultdict
 from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from typing import Any, List, Optional, cast
 
+from sqlglot import expressions
+
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.interpreter import TileGenSql
-from featurebyte.query_graph.sql.tile_compute_spec import TileComputeSpec
+from featurebyte.query_graph.sql.tile_compute_spec import TileComputeSpec, TileTableInputColumn
 
 
 @dataclass
@@ -64,7 +67,7 @@ def combine_tile_compute_specs(tile_infos: list[TileGenSql]) -> list[CombinedTil
     grouped_tile_infos = defaultdict(list)
 
     for tile_info in tile_infos:
-        key = _get_key(tile_info.tile_compute_spec)
+        key = get_tile_compute_spec_signature(tile_info.tile_compute_spec)
         grouped_tile_infos[key].append(tile_info)
 
     out = []
@@ -74,7 +77,7 @@ def combine_tile_compute_specs(tile_infos: list[TileGenSql]) -> list[CombinedTil
     return out
 
 
-def _get_key(tile_compute_spec: TileComputeSpec) -> Hashable:
+def get_tile_compute_spec_signature(tile_compute_spec: TileComputeSpec) -> Hashable:
     """
     Get a signature of the tile compute spec for combination
 
@@ -87,15 +90,31 @@ def _get_key(tile_compute_spec: TileComputeSpec) -> Hashable:
     -------
     Hashable
     """
-    signatures: list[Any] = [
+    items: list[Any] = [
         tile_compute_spec.source_expr,
         tile_compute_spec.entity_table_expr,
         tile_compute_spec.timestamp_column,
-        tuple(tile_compute_spec.key_columns),
+        tile_compute_spec.key_columns,
         tile_compute_spec.value_by_column,
         tile_compute_spec.tile_index_expr,
         tile_compute_spec.is_order_dependent,
     ]
+
+    source_type = tile_compute_spec.source_info.source_type
+
+    def _to_serializable_and_hashable(item: Any) -> Hashable:
+        if isinstance(item, expressions.Expression):
+            return sql_to_string(item, source_type)
+        elif isinstance(item, TileTableInputColumn):
+            return item.get_signature(source_type)
+        elif isinstance(item, list):
+            return tuple(_to_serializable_and_hashable(i) for i in item)
+        return cast(Hashable, item)
+
+    signatures = []
+    for _item in items:
+        signatures.append(_to_serializable_and_hashable(_item))
+
     return tuple(signatures)
 
 

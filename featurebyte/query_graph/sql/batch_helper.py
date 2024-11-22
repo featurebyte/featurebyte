@@ -4,6 +4,9 @@ Helpers to split a QueryGraph and nodes into smaller batches
 
 from __future__ import annotations
 
+import hashlib
+import json
+
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName
@@ -15,7 +18,7 @@ from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec, TileBasedAggregationSpec
-from featurebyte.query_graph.sql.tile_compute_combine import _get_key
+from featurebyte.query_graph.sql.tile_compute_combine import get_tile_compute_spec_signature
 
 NUM_FEATURES_PER_QUERY = 20
 
@@ -59,7 +62,12 @@ def split_nodes(
         parts = [agg_spec.aggregation_type.value]
         if isinstance(agg_spec, TileBasedAggregationSpec):
             tile_infos = interpreter.construct_tile_gen_sql(node, False)
-            parts.append(str(hash(_get_key(tile_infos[0].tile_compute_spec))))
+            hasher = hashlib.shake_128()
+            tile_compute_signature = get_tile_compute_spec_signature(
+                tile_infos[0].tile_compute_spec
+            )
+            hasher.update(json.dumps(tile_compute_signature, sort_keys=True).encode("utf-8"))
+            parts.append(hasher.hexdigest(20))
         else:
             assert isinstance(agg_spec, NonTileBasedAggregationSpec)
             # These queries join with source tables directly. Sort by query node name of the source

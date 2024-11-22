@@ -5,12 +5,12 @@ Models for tile compute query
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, cast
+from typing import Hashable, List, Optional, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.models.tile_compute_query import (
     Prerequisite,
     PrerequisiteTable,
@@ -19,7 +19,7 @@ from featurebyte.models.tile_compute_query import (
 )
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
 from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyColumn,
@@ -38,6 +38,9 @@ class TileTableInputColumn:
 
     name: str
     expr: Expression
+
+    def get_signature(self, source_type: SourceType) -> Hashable:
+        return self.name, sql_to_string(self.expr, source_type)
 
 
 @dataclass
