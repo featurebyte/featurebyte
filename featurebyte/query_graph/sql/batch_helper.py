@@ -38,8 +38,8 @@ def split_nodes(
         List of nodes
     num_features_per_query : int
         Number of features per query
-    is_tile_cache : bool
-        Whether the output will be used for tile cache queries
+    source_info: SourceInfo
+        Source information
 
     Returns
     -------
@@ -60,14 +60,6 @@ def split_nodes(
         if isinstance(agg_spec, TileBasedAggregationSpec):
             tile_infos = interpreter.construct_tile_gen_sql(node, False)
             parts.append(str(hash(_get_key(tile_infos[0].tile_compute_spec))))
-            # if is_tile_cache:
-            #     # Tile cache queries joins with entity tracker tables. These tables are organized by
-            #     # aggregation_id. The split should be random across different aggregation_id.
-            #     parts.append(agg_spec.aggregation_id)
-            # else:
-            #     # Tile based aggregation joins with tile tables. Sort by tile_table_id first to
-            #     # group nodes that join with the same tile table.
-            #     parts.extend([agg_spec.tile_table_id, agg_spec.aggregation_id])
         else:
             assert isinstance(agg_spec, NonTileBasedAggregationSpec)
             # These queries join with source tables directly. Sort by query node name of the source
