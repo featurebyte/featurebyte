@@ -2,12 +2,12 @@ CREATE TABLE "SOME_HISTORICAL_FEATURE_TABLE" AS
 SELECT
   REQ."POINT_IN_TIME",
   REQ."CUSTOMER_ID",
-  T2."a_2h_average",
-  T2."a_48h_average",
+  T3."a_2h_average",
+  T3."a_48h_average",
   T0."order_size",
   T1."MY FEATURE",
   T2."Current Membership Status",
-  T3."a_latest_value_past_90d",
+  T2."a_latest_value_past_90d",
   T1."a_latest_value",
   T0."asat_feature"
 FROM "REQUEST_TABLE" AS REQ
