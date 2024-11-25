@@ -170,6 +170,7 @@ class TileTaskExecutor:
             blind_spot_second=params.blind_spot_second,
             frequency_minute=params.frequency_minute,
             sql=params.sql,
+            tile_compute_query=params.tile_compute_query,
             entity_column_names=params.entity_column_names,
             value_column_names=params.value_column_names,
             value_column_types=params.value_column_types,
