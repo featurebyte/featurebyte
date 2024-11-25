@@ -5,6 +5,7 @@ Helpers for combining tile compute queries
 from __future__ import annotations
 
 import copy
+import os
 from collections import defaultdict
 from collections.abc import Hashable
 from dataclasses import dataclass
@@ -15,6 +16,8 @@ from sqlglot import expressions
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.interpreter import TileGenSql
 from featurebyte.query_graph.sql.tile_compute_spec import TileComputeSpec, TileTableInputColumn
+
+MAX_NUM_COLUMNS_PER_TILE_QUERY = int(os.getenv("MAX_NUM_COLUMNS_PER_TILE_QUERY", "500"))
 
 
 @dataclass
@@ -39,7 +42,9 @@ class CombinedTileGenSql:
     tile_table_groupings: list[TileTableGrouping]
 
 
-def combine_tile_compute_specs(tile_infos: list[TileGenSql]) -> list[CombinedTileGenSql]:
+def combine_tile_compute_specs(
+    tile_infos: list[TileGenSql], max_num_columns_per_query: int = MAX_NUM_COLUMNS_PER_TILE_QUERY
+) -> list[CombinedTileGenSql]:
     """
     Combine compatible tile compute queries into single queries. Takes a list of TileGenSql objects,
     each representing a tile compute query, and merges compatible tile queries into one. Two tile
@@ -59,6 +64,8 @@ def combine_tile_compute_specs(tile_infos: list[TileGenSql]) -> list[CombinedTil
     ----------
     tile_infos: list[TileGenSql]
         List of tile compute queries
+    max_num_columns_per_query: int
+        Maximum number of output columns per query
 
     Returns
     -------
@@ -71,8 +78,11 @@ def combine_tile_compute_specs(tile_infos: list[TileGenSql]) -> list[CombinedTil
         grouped_tile_infos[key].append(tile_info)
 
     out = []
-    for tile_infos_to_combine in grouped_tile_infos.values():
-        out.append(_get_combined_tile_infos(tile_infos_to_combine))
+    for all_infos in grouped_tile_infos.values():
+        for tile_infos_to_combine in _split_if_too_many_columns(
+            all_infos, max_num_columns_per_query
+        ):
+            out.append(_get_combined_tile_infos(tile_infos_to_combine))
 
     return out
 
@@ -116,6 +126,39 @@ def get_tile_compute_spec_signature(tile_compute_spec: TileComputeSpec) -> Hasha
         signatures.append(_to_serializable_and_hashable(_item))
 
     return tuple(signatures)
+
+
+def _split_if_too_many_columns(
+    tile_infos: list[TileGenSql], max_columns: int
+) -> list[list[TileGenSql]]:
+    """
+    Cap the number of output columns before combining tile compute queries. If the limit is
+    exceeded, split the group into smaller groups.
+
+    Parameters
+    ----------
+    tile_infos: list[TileGenSql]
+        List of tile compute queries
+    max_columns: int
+        Maximum number of columns before splitting
+
+    Returns
+    -------
+    list[list[TileGenSql]]
+    """
+    output = []
+    current_group = []
+    current_column_count = 0
+    for tile_info in tile_infos:
+        current_group.append(tile_info)
+        current_column_count += len(tile_info.tile_value_columns)
+        if current_column_count >= max_columns:
+            output.append(current_group)
+            current_group = []
+            current_column_count = 0
+    if current_group:
+        output.append(current_group)
+    return output
 
 
 def _get_combined_tile_infos(tile_infos: list[TileGenSql]) -> CombinedTileGenSql:

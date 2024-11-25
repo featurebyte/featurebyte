@@ -5,7 +5,7 @@ Tests for tile_compute_combine.py
 import pytest
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.tile_compute_combine import (
     TileTableGrouping,
     combine_tile_compute_specs,
@@ -63,7 +63,32 @@ def feature_3_fixture(snowflake_event_view_with_entity, feature_group_feature_jo
     return feature
 
 
-def get_tile_info(feature, source_info):
+@pytest.fixture(name="feature_many_tiles")
+def feature_many_tiles_fixture(snowflake_event_view_with_entity, feature_group_feature_job_setting):
+    """
+    Fixture for a feature with many tiles
+    """
+    view = snowflake_event_view_with_entity
+    final_feature = None
+    for i in range(20):
+        view["transformed_col"] = view["col_int"] + (i * 123.0)
+        feature_name = f"my_feature_{i}"
+        feature = view.groupby("cust_id").aggregate_over(
+            value_column="transformed_col",
+            method="max",
+            windows=["30m"],
+            feature_job_setting=feature_group_feature_job_setting,
+            feature_names=[feature_name],
+        )[feature_name]
+        if final_feature is None:
+            final_feature = feature
+        else:
+            final_feature += feature
+    final_feature.name = "complex_feature"
+    return final_feature
+
+
+def get_tile_infos(feature, source_info) -> list[TileGenSql]:
     """
     Helper function to get tile info from a feature
     """
@@ -71,15 +96,17 @@ def get_tile_info(feature, source_info):
     node = feature.node
     interpreter = GraphInterpreter(graph, source_info)
     tile_gen_sqls = interpreter.construct_tile_gen_sql(node, is_on_demand=True)
-    assert len(tile_gen_sqls) == 1
-    return tile_gen_sqls[0]
+    return tile_gen_sqls
 
 
-def get_tile_info_for_features(features, source_info):
+def get_tile_infos_for_features(features, source_info) -> list[TileGenSql]:
     """
     Helper function to get tile info for multiple features
     """
-    return [get_tile_info(feature, source_info) for feature in features]
+    tile_infos = []
+    for feature in features:
+        tile_infos.extend(get_tile_infos(feature, source_info))
+    return tile_infos
 
 
 @pytest.fixture(name="expected_combined_tile_table_groupings")
@@ -113,7 +140,7 @@ def test_tile_compute_combine(
     Test when combination is possible
     """
     result = combine_tile_compute_specs(
-        get_tile_info_for_features([feature_1, feature_2], source_info)
+        get_tile_infos_for_features([feature_1, feature_2], source_info)
     )
     assert len(result) == 1
     combined = result[0]
@@ -133,10 +160,10 @@ def test_tile_compute_no_combine(feature_1, feature_3, source_info):
     Test when combination is not possible
     """
     result = combine_tile_compute_specs(
-        get_tile_info_for_features([feature_1, feature_3], source_info)
+        get_tile_infos_for_features([feature_1, feature_3], source_info)
     )
     assert len(result) == 2
-    assert result[0].tile_info == get_tile_info(feature_1, source_info)
+    assert result[0].tile_info == get_tile_infos(feature_1, source_info)[0]
     assert result[0].tile_table_groupings == [
         TileTableGrouping(
             value_column_names=["value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"],
@@ -145,7 +172,7 @@ def test_tile_compute_no_combine(feature_1, feature_3, source_info):
             aggregation_id="sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
         )
     ]
-    assert result[1].tile_info == get_tile_info(feature_3, source_info)
+    assert result[1].tile_info == get_tile_infos(feature_3, source_info)[0]
     assert result[1].tile_table_groupings == [
         TileTableGrouping(
             value_column_names=[
@@ -171,7 +198,7 @@ def test_tile_compute_partial_combine(
     Test when combination is partially possible
     """
     result = combine_tile_compute_specs(
-        get_tile_info_for_features([feature_1, feature_2, feature_3], source_info)
+        get_tile_infos_for_features([feature_1, feature_2, feature_3], source_info),
     )
 
     assert len(result) == 2
@@ -187,7 +214,7 @@ def test_tile_compute_partial_combine(
     )
 
     # feature_3 not combined
-    assert result[1].tile_info == get_tile_info(feature_3, source_info)
+    assert result[1].tile_info == get_tile_infos(feature_3, source_info)[0]
     assert result[1].tile_table_groupings == [
         TileTableGrouping(
             value_column_names=[
@@ -199,3 +226,25 @@ def test_tile_compute_partial_combine(
             aggregation_id="avg_3e4c470d4a020c9ecbac9525189b19d6a01e5b47",
         )
     ]
+
+
+def test_tile_compute_combine_output_num_columns_limit(
+    feature_many_tiles, source_info, update_fixtures
+):
+    """
+    Test when combination is possible
+    """
+    result = combine_tile_compute_specs(
+        get_tile_infos_for_features([feature_many_tiles], source_info),
+        max_num_columns_per_query=10,
+    )
+    assert len(result) == 2
+
+    for i in range(2):
+        combined = result[i]
+        combined_tile_query = combined.tile_info.tile_compute_spec.get_tile_compute_query().get_combined_query_string()
+        assert_equal_with_expected_fixture(
+            combined_tile_query,
+            f"tests/fixtures/query_graph/expected_combined_tile_query_complex_{i}.sql",
+            update_fixtures,
+        )
