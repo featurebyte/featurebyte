@@ -231,6 +231,7 @@ def get_celery(
         "priority_steps": list(range(3)),
         "sep": ":",
         "queue_order_strategy": "priority",
+        "visibility_timeout": 36000,
     }
 
     # task tombstones options
