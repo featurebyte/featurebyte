@@ -220,6 +220,7 @@ def get_celery(
     celery_app.conf.task_track_started = True
     celery_app.conf.result_backend = f"featurebyte.worker:ExtendedMongoBackend+{mongo_uri}"
     celery_app.conf.broker_connection_retry_on_startup = True
+    celery_app.conf.worker_prefetch_multiplier = 1
 
     # task queues and routing
     celery_app.conf.task_routes = {
@@ -231,7 +232,7 @@ def get_celery(
         "priority_steps": list(range(3)),
         "sep": ":",
         "queue_order_strategy": "priority",
-        "visibility_timeout": 36000,
+        "visibility_timeout": 3600 * 24,
     }
 
     # task tombstones options
