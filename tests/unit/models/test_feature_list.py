@@ -37,12 +37,12 @@ def feature_list_model_dict_fixture():
         "catalog_id": DEFAULT_CATALOG_ID,
         "relationships_info": None,
         "features_entity_lookup_info": None,
-        "store_info": None,
         "supported_serving_entity_ids": [],
         "block_modification_by": [],
         "description": None,
         "is_deleted": False,
         "aggregation_ids": [],
+        "feast_enabled": False,
     }
 
 
@@ -84,6 +84,7 @@ def test_feature_list_model(feature_list_model_dict):
     feature_list_dict_sorted_ids["features_primary_entity_ids"] = []
     feature_list_dict_sorted_ids["table_ids"] = []
     feature_list_dict_sorted_ids["feature_clusters_path"] = None
+    feature_list_dict_sorted_ids["store_info"] = None
     assert serialized_feature_list == feature_list_dict_sorted_ids
 
     feature_list_json = feature_list.model_dump_json(by_alias=True)
@@ -105,7 +106,7 @@ def test_feature_list_model(feature_list_model_dict):
     assert loaded_old_feature_list == updated_feature_list
 
     # check that feature list store info for older record
-    assert loaded_old_feature_list.store_info.feast_enabled is False
+    assert loaded_old_feature_list.feast_enabled is False
 
 
 def test_feature_list_namespace_model(feature_list_namespace_model_dict):

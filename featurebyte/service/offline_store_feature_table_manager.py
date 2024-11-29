@@ -510,7 +510,7 @@ class OfflineStoreFeatureTableManagerService:
                 # skip the feature list to be disabled
                 continue
 
-            if feature_list.store_info.feast_enabled:
+            if feature_list.feast_enabled:
                 feature_lists.append(feature_list)
                 if (
                     feature_list_to_online_enable

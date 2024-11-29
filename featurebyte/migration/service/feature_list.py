@@ -223,3 +223,33 @@ class FeatureListMigrationServiceV7(FeatureListMigrationServiceV6):
     @migrate(version=7, description="Add table_ids to feature list record")
     async def run_migration(self) -> None:
         await super().run_migration()
+
+    @migrate(
+        version=15,
+        description="Remove store info from feature list records.",
+    )
+    async def remove_store_info_from_feature_list(self) -> None:
+        """Remove store info from feature list"""
+        query_filter = await self.delegate_service.construct_list_query_filter()
+        total = await self.get_total_record(query_filter=query_filter)
+        sample_ids: List[ObjectId] = []
+
+        async for feature_list_dict in self.delegate_service.list_documents_as_dict_iterator(
+            query_filter=query_filter
+        ):
+            store_info = feature_list_dict.get("store_info")
+            if store_info and store_info.get("feast_enabled"):
+                await self.delegate_service.update_documents(
+                    query_filter={"_id": feature_list_dict["_id"]},
+                    update={"$set": {"feast_enabled": True}},
+                )
+                if len(sample_ids) < 10:
+                    sample_ids.append(feature_list_dict["_id"])
+
+        # check that store info is migrated successfully
+        async for feature_list_dict in self.delegate_service.list_documents_as_dict_iterator(
+            query_filter={"_id": {"$in": sample_ids}}
+        ):
+            assert feature_list_dict["feast_enabled"], feature_list_dict
+
+        logger.info("Migrated all records successfully (total: %d)", total)

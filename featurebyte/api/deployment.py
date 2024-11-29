@@ -85,7 +85,7 @@ class Deployment(DeletableApiObject):
         if not self.enabled:
             raise DeploymentDataBricksAccessorError("Deployment is not enabled")
 
-        store_info = self.feature_list.cached_model.store_info  # type: ignore
+        store_info = self.cached_model.store_info  # type: ignore
         if store_info.type != "databricks_unity":
             raise DeploymentDataBricksAccessorError(
                 "Deployment is not using DataBricks Unity as the store"

@@ -250,7 +250,7 @@ class DeploymentController(
         catalog = await self.catalog_service.get_document(feature_list.catalog_id)
         try:
             result: Optional[OnlineFeaturesResponseModel]
-            if feature_list.store_info.feast_enabled and catalog.online_store_id is not None:
+            if feature_list.feast_enabled and catalog.online_store_id is not None:
                 feast_store = (
                     await self.feast_feature_store_service.get_feast_feature_store_for_deployment(
                         deployment=document

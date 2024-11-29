@@ -504,6 +504,37 @@
     "feature_list_namespace_id": {
       "$oid": "6478ab36173590eb5f4046ca"
     },
-    "online_enabled_feature_ids": []
+    "online_enabled_feature_ids": [],
+    "store_info": {
+      "type": "databricks_unity",
+      "feast_enabled": true,
+      "databricks_sdk_version": "0.16.3",
+      "feature_specs": [
+        {
+          "table_name": "ml.staging_prod.cat1_clientid_1d_via_sk_id_curr_55518d",
+          "lookup_key": [
+              "SK_ID_CURR"
+          ],
+          "timestamp_lookup_key": "timestamp_lookup_key",
+          "lookback_window": null,
+          "feature_names": [
+              "CLIENT_vs_OVERALL_Count_of_Late_Inst_status_Installments_by_PriorApplication_NAME_CLIENT_TYPE_52w_V241112"
+          ],
+          "rename_outputs": {
+              "CLIENT_vs_OVERALL_Count_of_Late_Inst_status_Installments_by_PriorApplication_NAME_CLIENT_TYPE_52w_V241112": "CLIENT_vs_OVERALL_Count_of_Late_Inst_status_Installments_by_PriorApplication_NAME_CLIENT_TYPE_52w"
+          }
+        }
+      ],
+      "base_dataframe_specs": [
+        {
+          "name": "SK_ID_CURR",
+          "dtype": "INT"
+        }
+      ],
+      "exclude_columns": [
+        "POINT_IN_TIME"
+      ],
+      "require_timestamp_lookup_key": true
+    }
   }
 ]

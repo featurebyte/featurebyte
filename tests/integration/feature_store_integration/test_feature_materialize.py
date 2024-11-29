@@ -408,7 +408,7 @@ async def _deploy_feature_list(app_container, saved_feature_list, deployment_nam
             feature_list_model = await app_container.feature_list_service.get_document(
                 saved_feature_list.id, populate_remote_attributes=False
             )
-            assert feature_list_model.store_info.feast_enabled
+            assert feature_list_model.feast_enabled
             return deployment
 
 

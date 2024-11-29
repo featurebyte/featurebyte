@@ -40,7 +40,6 @@ class BaseStoreInfo(FeatureByteBaseModel):
     """
 
     type: StoreInfoType
-    feast_enabled: bool = Field(default=False)
 
     @classmethod
     def create(

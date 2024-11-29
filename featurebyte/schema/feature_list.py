@@ -211,6 +211,7 @@ class FeatureListServiceUpdate(BaseDocumentServiceUpdateSchema, FeatureListUpdat
     deployed: Optional[bool] = Field(default=None)
     online_enabled_feature_ids: Optional[List[PydanticObjectId]] = Field(default=None)
     readiness_distribution: Optional[FeatureReadinessDistribution] = Field(default=None)
+    feast_enabled: Optional[bool] = Field(default=None)
 
 
 class ProductionReadyFractionComparison(FeatureByteBaseModel):

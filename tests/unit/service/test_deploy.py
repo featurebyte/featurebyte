@@ -481,7 +481,7 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     feature_list1 = await app_container.feature_list_service.get_document(
         document_id=feature_list1.id
     )
-    assert not feature_list1.store_info.feast_enabled
+    assert not feature_list1.feast_enabled
 
     # create another deployment using the same feature list when feast integration is enabled
     with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "False"}):
@@ -498,7 +498,7 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     feature_list1 = await app_container.feature_list_service.get_document(
         document_id=feature_list1.id
     )
-    assert not feature_list1.store_info.feast_enabled
+    assert not feature_list1.feast_enabled
 
     # create another deployment using a new feature list when feast integration is enabled
     with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
@@ -515,7 +515,7 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     feature_list2 = await app_container.feature_list_service.get_document(
         document_id=feature_list2.id
     )
-    assert feature_list2.store_info.feast_enabled
+    assert feature_list2.feast_enabled
 
     # disable deployment1 & deployment2, check feature list store info
     with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
@@ -532,7 +532,7 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     feature_list = await app_container.feature_list_service.get_document(
         document_id=deployment.feature_list_id
     )
-    assert not feature_list.store_info.feast_enabled
+    assert not feature_list.feast_enabled
 
     # enable deployment1 again & check feature list store info
     with patch.dict(os.environ, {"FEATUREBYTE_FEAST_INTEGRATION_ENABLED": "True"}):
@@ -547,7 +547,7 @@ async def test_deployment_enable__feast_enable_backward_compatibility(
     feature_list = await app_container.feature_list_service.get_document(
         document_id=deployment.feature_list_id
     )
-    assert feature_list.store_info.feast_enabled
+    assert feature_list.feast_enabled
 
 
 @pytest.mark.asyncio

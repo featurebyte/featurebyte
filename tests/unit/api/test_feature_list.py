@@ -525,6 +525,7 @@ def test_get_feature_list(
             ("description", None),
             ("dtype_distribution", [{"dtype": "FLOAT", "count": 1}]),
             ("entity_ids", [str(cust_id_entity.id)]),
+            ("feast_enabled", False),
             ("feature_clusters", _get_new_value_from_audit_history("feature_clusters")),
             ("feature_clusters_path", _get_new_value_from_audit_history("feature_clusters_path")),
             ("feature_ids", [str(saved_feature_list.feature_ids[0])]),

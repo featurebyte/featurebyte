@@ -25,7 +25,6 @@ from featurebyte.models.feature_list import (
     FeatureReadinessDistribution,
 )
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
-from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
@@ -33,7 +32,6 @@ from featurebyte.query_graph.model.entity_relationship_info import (
     EntityRelationshipInfo,
     FeatureEntityLookupInfo,
 )
-from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.feature_list import FeatureListServiceCreate, FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
@@ -542,51 +540,6 @@ class FeatureListService(
             user_id=self.user.id,
             disable_audit=self.should_disable_audit,
         )
-
-    async def update_store_info(
-        self,
-        document_id: ObjectId,
-        features: List[FeatureModel],
-        feature_table_map: Dict[str, OfflineStoreFeatureTableModel],
-        serving_entity_specs: Optional[List[ColumnSpec]],
-    ) -> None:
-        """
-        Update store info for a feature list
-
-        Parameters
-        ----------
-        document_id: ObjectId
-            Feature list id
-        features: List[FeatureModel]
-            List of features
-        feature_table_map: Dict[str, OfflineStoreFeatureTableModel]
-            Feature table map
-        serving_entity_specs: Optional[List[ColumnSpec]]
-            List of serving entity specs
-        """
-        feature_list = await self.get_document(
-            document_id=document_id, populate_remote_attributes=False
-        )
-        assert set(feature_list.feature_ids) == set(feature.id for feature in features)
-        self._check_document_modifiable(document=feature_list.model_dump(by_alias=True))
-
-        feature_store = await self.feature_store_service.get_document(
-            document_id=features[0].tabular_source.feature_store_id
-        )
-        feature_list.initialize_store_info(
-            features=features,
-            feature_store=feature_store,
-            feature_table_map=feature_table_map,
-            serving_entity_specs=serving_entity_specs,
-        )
-        if feature_list.internal_store_info:
-            await self.persistent.update_one(
-                collection_name=self.collection_name,
-                query_filter=await self.construct_get_query_filter(document_id=document_id),
-                update={"$set": {"store_info": feature_list.internal_store_info}},
-                user_id=self.user.id,
-                disable_audit=self.should_disable_audit,
-            )
 
     async def delete_document(
         self,
