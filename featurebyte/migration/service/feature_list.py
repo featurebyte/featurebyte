@@ -225,7 +225,7 @@ class FeatureListMigrationServiceV7(FeatureListMigrationServiceV6):
         await super().run_migration()
 
     @migrate(
-        version=15,
+        version=16,
         description="Remove store info from feature list records.",
     )
     async def remove_store_info_from_feature_list(self) -> None:
