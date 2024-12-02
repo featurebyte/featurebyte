@@ -225,7 +225,7 @@ class FeatureListMigrationServiceV7(FeatureListMigrationServiceV6):
         await super().run_migration()
 
     @migrate(
-        version=15,
+        version=16,
         description="Remove store info from feature list records.",
     )
     async def remove_store_info_from_feature_list(self) -> None:
@@ -241,7 +241,7 @@ class FeatureListMigrationServiceV7(FeatureListMigrationServiceV6):
             if store_info and store_info.get("feast_enabled"):
                 await self.delegate_service.update_documents(
                     query_filter={"_id": feature_list_dict["_id"]},
-                    update={"$set": {"feast_enabled": True}},
+                    update={"$unset": {"store_info": True}},
                 )
                 if len(sample_ids) < 10:
                     sample_ids.append(feature_list_dict["_id"])
@@ -250,6 +250,6 @@ class FeatureListMigrationServiceV7(FeatureListMigrationServiceV6):
         async for feature_list_dict in self.delegate_service.list_documents_as_dict_iterator(
             query_filter={"_id": {"$in": sample_ids}}
         ):
-            assert feature_list_dict["feast_enabled"], feature_list_dict
+            assert not feature_list_dict.get("store_info"), feature_list_dict
 
         logger.info("Migrated all records successfully (total: %d)", total)

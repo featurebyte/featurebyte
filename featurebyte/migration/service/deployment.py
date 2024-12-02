@@ -41,7 +41,7 @@ class DeploymentMigrationServiceV14(BaseMongoCollectionMigration):
         return self.deployment_service  # type: ignore[return-value]
 
     @migrate(
-        version=14,
+        version=15,
         description="Move store info from feature list to deployment record.",
     )
     async def move_store_info_from_feature_list_to_deployment(self) -> None:
