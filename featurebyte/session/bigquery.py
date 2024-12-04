@@ -28,7 +28,6 @@ from google.cloud.bigquery import (
 from google.cloud.bigquery.dbapi import Connection, DatabaseError
 from google.cloud.bigquery.enums import SqlTypeNames, StandardSqlTypeNames
 from google.cloud.bigquery.table import TableReference
-from google.cloud.bigquery_storage_v1 import BigQueryReadClient
 from google.oauth2 import service_account
 from pydantic import PrivateAttr
 
@@ -269,7 +268,8 @@ class BigQuerySession(BaseSession):
             )
             self._connection = Connection(
                 client=self._client,
-                bqstorage_client=BigQueryReadClient(credentials=self._credentials),
+                prefer_bqstorage_client=False,
+                # bqstorage_client=BigQueryReadClient(credentials=self._credentials),
             )
         except (MalformedError, DefaultCredentialsError) as exc:
             raise DataWarehouseConnectionError(str(exc)) from exc
