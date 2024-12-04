@@ -223,8 +223,9 @@ class SessionManagerService:
                 f'Credential used to access FeatureStore (name: "{feature_store.name}") is missing or invalid.'
             ) from exc
 
+    @classmethod
     async def get_session(
-        self,
+        cls,
         feature_store: FeatureStoreModel,
         credentials: Optional[CredentialModel] = None,
         timeout: float = NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
