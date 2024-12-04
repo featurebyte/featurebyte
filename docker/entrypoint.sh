@@ -80,7 +80,7 @@ _main() {
     elif [ "$1" = 'worker' ]; then
       celery --app featurebyte.worker.start.celery beat --loglevel=INFO --scheduler featurebyte.worker.schedulers.MongoScheduler --max-interval=1 &
       celery --app featurebyte.worker.start.celery worker -Q cpu_task,cpu_task:1,cpu_task:2,cpu_task:3 --loglevel=INFO --pool=prefork &
-      celery --app featurebyte.worker.start.celery worker -Q io_task,io_task:1,io_task:2,io_task:3 --loglevel=INFO --pool=gevent -c 500
+      HOSTNAME="featurebyte-docker-worker-io" celery --app featurebyte.worker.start.celery worker -Q io_task,io_task:1,io_task:2,io_task:3 --loglevel=INFO --pool=gevent -c 500
     elif [ "$1" = 'server' ]; then
       python /scripts/migration.py
       uvicorn featurebyte.app:app --host=$API_HOST --port=$API_PORT --timeout-keep-alive=300 --log-level=info
