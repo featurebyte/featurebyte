@@ -268,6 +268,7 @@ class BigQuerySession(BaseSession):
                 credentials=self._credentials,
                 client_info=ClientInfo(user_agent=APPLICATION_NAME),
             )
+            connection_args: dict[str, Any]
             if is_io_worker():
                 # Fetching result from cursor hangs in IO worker due to gevent if using BQ storage
                 # client. Set prefer_bqstorage_client to False to avoid this issue.
