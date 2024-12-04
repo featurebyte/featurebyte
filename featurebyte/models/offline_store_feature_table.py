@@ -32,6 +32,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.generic import GroupByNodeParameters
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
@@ -188,6 +189,10 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
         if self.internal_entity_universe is None:
             raise ValueError("entity_universe is not set")
         return EntityUniverseModel(**self.internal_entity_universe)
+
+    @property
+    def warehouse_tables(self) -> list[TableDetails]:
+        return [TableDetails(table_name=self.name)]
 
     @staticmethod
     def get_serving_names_for_table_name(
