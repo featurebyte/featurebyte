@@ -1,0 +1,134 @@
+"""
+Test catalog cleanup
+"""
+
+import re
+from unittest.mock import PropertyMock, patch
+
+import pytest
+
+from featurebyte.schema.worker.task.catalog_cleanup import CatalogCleanupTaskPayload
+
+
+def strip_variable_parts(table_name):
+    """
+    Strips variable IDs and numbers from the table name.
+
+    Args:
+        table_name (str): The original table name containing variable parts.
+
+    Returns:
+        str: The fixed part of the table name.
+    """
+    # Split the table name into parts separated by underscores
+    parts = table_name.split("_")
+    fixed_parts = []
+    for part in parts:
+        # Skip parts that are purely numeric
+        if part.isdigit():
+            continue
+        # Skip parts that are hex IDs of a certain length (e.g., 24 characters)
+        if re.fullmatch(r"[0-9a-fA-F]{16,}", part):
+            continue
+        # Otherwise, include the part
+        fixed_parts.append(part)
+    # Join the fixed parts back together
+    return "_".join(fixed_parts)
+
+
+def test_catalog_specific_model_classes(app_container):
+    """Test catalog specific model classes"""
+    catalog_cleanup_task = app_container.catalog_cleanup_task
+    class_names = [
+        _class.__name__ for _, _class in catalog_cleanup_task.catalog_specific_model_class_pairs
+    ]
+
+    assert sorted(class_names) == [
+        "BatchFeatureTableModel",
+        "BatchRequestTableModel",
+        "ContextModel",
+        "DeploymentModel",
+        "EntityModel",
+        "FeatureJobSettingAnalysisModel",
+        "FeatureListModel",
+        "FeatureListNamespaceModel",
+        "FeatureMaterializePrerequisite",
+        "FeatureMaterializeRun",
+        "FeatureModel",
+        "FeatureNamespaceModel",
+        "FeatureTableCacheMetadataModel",
+        "HistoricalFeatureTableModel",
+        "OfflineStoreFeatureTableModel",
+        "OnlineStoreComputeQueryModel",
+        "OnlineStoreTableVersion",
+        "PeriodicTask",
+        "ProxyTableModel",
+        "RelationshipInfoModel",
+        "StaticSourceTableModel",
+        "SystemMetricsModel",
+        "TargetModel",
+        "TargetNamespaceModel",
+        "TargetTableModel",
+        "TileJobLogModel",
+        "TileModel",
+        "UseCaseModel",
+    ]
+
+
+@pytest.fixture(name="catalog_with_associated_documents")
+def fixture_catalog_with_associated_documents(catalog, historical_feature_table):
+    """Catalog with associated documents"""
+    _ = historical_feature_table
+    return catalog
+
+
+@pytest.mark.asyncio
+@patch("featurebyte.session.base.BaseSession.drop_table")
+async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_documents, app_container):
+    """Test catalog cleanup"""
+    catalog = catalog_with_associated_documents
+
+    # check for drop table calls
+    assert mock_drop_table.call_count == 0
+
+    # check for storage documents
+    storage_path = app_container.storage.base_path
+    catalog_path = storage_path / "catalog" / str(catalog.id)
+    assert catalog_path.exists()
+    remote_files_before = [entry.name for entry in catalog_path.rglob("*") if entry.is_file()]
+    assert remote_files_before == ["feature_clusters.json"]
+
+    catalog_cleanup_task = app_container.catalog_cleanup_task
+    catalog_service = app_container.catalog_service
+    await catalog_service.soft_delete_document(document_id=catalog.id)
+    with patch.object(
+        type(catalog_cleanup_task),
+        "cleanup_threshold_in_days",
+        new_callable=PropertyMock,
+    ) as mock_property:
+        mock_property.return_value = 0
+        await catalog_cleanup_task.execute(payload=CatalogCleanupTaskPayload(catalog_id=catalog.id))
+
+    # check for drop table calls
+    called_table_names = []
+    for call_args in mock_drop_table.call_args_list:
+        assert call_args.kwargs["schema_name"] == "sf_schema"
+        assert call_args.kwargs["database_name"] == "sf_database"
+        called_table_names.append(strip_variable_parts(call_args.kwargs["table_name"]))
+    assert sorted(called_table_names) == [
+        "FEATURE_TABLE_CACHE",
+        "HISTORICAL_FEATURE_TABLE",
+        "OBSERVATION_TABLE",
+    ]
+
+    # check for remote files
+    remote_files_after = [entry for entry in catalog_path.rglob("*") if entry.is_file()]
+    assert remote_files_after == []
+
+    # check for mongo documents
+    for collection_name, _ in catalog_cleanup_task.catalog_specific_model_class_pairs:
+        _, matched = await app_container.persistent.find(
+            collection_name=collection_name,
+            query_filter={"catalog_id": catalog.id},
+        )
+        assert matched == 0
