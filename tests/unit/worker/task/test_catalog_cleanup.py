@@ -3,7 +3,7 @@ Test catalog cleanup
 """
 
 import re
-from unittest.mock import PropertyMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -101,13 +101,12 @@ async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_document
     catalog_cleanup_task = app_container.catalog_cleanup_task
     catalog_service = app_container.catalog_service
     await catalog_service.soft_delete_document(document_id=catalog.id)
-    with patch.object(
-        type(catalog_cleanup_task),
-        "cleanup_threshold_in_days",
-        new_callable=PropertyMock,
-    ) as mock_property:
-        mock_property.return_value = 0
-        await catalog_cleanup_task.execute(payload=CatalogCleanupTaskPayload(catalog_id=catalog.id))
+    await catalog_cleanup_task.execute(
+        payload=CatalogCleanupTaskPayload(
+            catalog_id=catalog.id,
+            cleanup_threshold_in_days=0,
+        )
+    )
 
     # check for drop table calls
     called_table_names = []

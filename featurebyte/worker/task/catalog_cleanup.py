@@ -27,14 +27,22 @@ from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
-DELETED_CATALOG_CLEANUP_THRESHOLD_IN_DAYS = 7
-
 
 def get_catalog_subclasses_in_module(
     module: Any,
 ) -> list[Type[FeatureByteCatalogBaseDocumentModel]]:
     """
     Retrieve strict subclasses of FeatureByteCatalogBaseDocumentModel defined in a given module.
+
+    Parameters
+    ----------
+    module : Any
+        module to search for subclasses
+
+    Returns
+    -------
+    list[Type[FeatureByteCatalogBaseDocumentModel]]
+        list of subclasses of FeatureByteCatalogBaseDocumentModel
     """
     classes = []
     for name, obj in inspect.getmembers(module, inspect.isclass):
@@ -77,18 +85,6 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
         self.persistent = persistent
         self.storage = storage
         self.session_manager_service = session_manager_service
-
-    @property
-    def cleanup_threshold_in_days(self) -> int:
-        """
-        Deleted catalog cleanup threshold in days
-
-        Returns
-        -------
-        int
-            deleted catalog cleanup threshold in days
-        """
-        return DELETED_CATALOG_CLEANUP_THRESHOLD_IN_DAYS
 
     @property
     def model_packages(self) -> list[Any]:
@@ -142,10 +138,9 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
     async def get_task_description(self, payload: CatalogCleanupTaskPayload) -> str:
         return "Catalog clean up task"
 
-    async def cleanup_warehouse_tables(
+    async def _cleanup_warehouse_tables(
         self, catalog: CatalogModel, warehouse_tables: set[TableDetails]
     ) -> None:
-        """Cleanup the warehouse tables associated with the catalog"""
         feature_store = await self.feature_store_service.get_document(
             catalog.default_feature_store_ids[0]
         )
@@ -163,13 +158,11 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
             except DataWarehouseOperationError:
                 pass
 
-    async def cleanup_store_files(self, remote_file_paths: set[Path]) -> None:
-        """Cleanup the storage files associated with the catalog"""
+    async def _cleanup_store_files(self, remote_file_paths: set[Path]) -> None:
         for remote_file_path in remote_file_paths:
             await self.storage.try_delete_if_exists(remote_file_path)
 
-    async def cleanup_catalog(self, catalog: CatalogModel) -> None:
-        """Cleanup the catalog & its associated data"""
+    async def _cleanup_catalog(self, catalog: CatalogModel) -> None:
         query_filter = {"catalog_id": catalog.id}
         for collection_name, model_class in self.catalog_specific_model_class_pairs:
             docs = await self.persistent.get_iterator(
@@ -187,11 +180,11 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                 remote_file_paths.update(obj.remote_storage_paths)
 
             # cleanup the warehouse tables & remote files
-            await self.cleanup_warehouse_tables(
+            await self._cleanup_warehouse_tables(
                 catalog=catalog,
                 warehouse_tables=warehouse_tables,
             )
-            await self.cleanup_store_files(remote_file_paths)
+            await self._cleanup_store_files(remote_file_paths)
 
             # delete the mongo documents
             await self.persistent.delete_many(
@@ -202,7 +195,7 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
 
     async def execute(self, payload: CatalogCleanupTaskPayload) -> Any:
         # compute the cutoff time
-        cutoff_time = datetime.now() - timedelta(days=self.cleanup_threshold_in_days)
+        cutoff_time = datetime.now() - timedelta(days=payload.cleanup_threshold_in_days)
         with self.all_catalog_service.allow_use_raw_query_filter():
             async for catalog in self.all_catalog_service.list_documents_iterator(
                 query_filter={
@@ -211,4 +204,4 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                 },
                 use_raw_query_filter=True,
             ):
-                await self.cleanup_catalog(catalog)
+                await self._cleanup_catalog(catalog)
