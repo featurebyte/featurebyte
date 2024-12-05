@@ -8,6 +8,7 @@ from typing import Any, Optional
 
 from bson import ObjectId
 
+from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
     DocumentError,
@@ -112,10 +113,22 @@ class VersionService:
                     # otherwise, do not create a replacement node for the group by node
                     if table.type == TableDataType.EVENT_TABLE:
                         assert isinstance(table, EventTableModel)
-                        feature_job_setting = table.default_feature_job_setting
-                        if not feature_job_setting:
+
+                        if not table.default_feature_job_setting:
                             raise NoFeatureJobSettingInSourceError(
                                 f"No feature job setting found in source id {table_id}"
+                            )
+                        feature_job_setting = table.default_feature_job_setting
+                        # Keep original job period if multiple of default period
+                        feature_period = parse_duration_string(
+                            group_by_node.parameters.feature_job_setting.period
+                        )
+                        default_period = parse_duration_string(
+                            table.default_feature_job_setting.period
+                        )
+                        if feature_period % default_period == 0:
+                            feature_job_setting.period = (
+                                group_by_node.parameters.feature_job_setting.period
                             )
                 else:
                     # use the provided feature job setting
