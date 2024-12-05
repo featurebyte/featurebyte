@@ -5,14 +5,15 @@ RequestInput is the base class for all request input types.
 from __future__ import annotations
 
 from abc import abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Literal, Optional, cast
 
+from dateutil import tz
 from pydantic import Field, PrivateAttr, StrictStr
 from sqlglot import expressions
 from sqlglot.expressions import Select
 
-from featurebyte.enum import SpecialColumnName, StrEnum
+from featurebyte.enum import DBVarType, SpecialColumnName, StrEnum
 from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -30,6 +31,8 @@ from featurebyte.query_graph.sql.materialisation import (
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.session.base import BaseSession
+
+HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
 
 class RequestInputType(StrEnum):
@@ -88,9 +91,9 @@ class BaseRequestInput(FeatureByteBaseModel):
         return int(result.iloc[0]["row_count"])  # type: ignore[union-attr]
 
     @abstractmethod
-    async def get_column_names(self, session: BaseSession) -> list[str]:
+    async def get_column_names_and_dtypes(self, session: BaseSession) -> Dict[str, DBVarType]:
         """
-        Get the column names of the table query
+        Get the column names and dtypes of the table query
 
         Parameters
         ----------
@@ -99,7 +102,7 @@ class BaseRequestInput(FeatureByteBaseModel):
 
         Returns
         -------
-        list[str]
+        Dict[str, DBVarType]
         """
 
     @staticmethod
@@ -148,20 +151,50 @@ class BaseRequestInput(FeatureByteBaseModel):
         """
         query_expr = self.get_query_expr(source_info=session.get_source_info())
 
+        # estimate the maximum POINT_IN_TIME value to filter the sample
+        column_names_and_dtypes = await self.get_column_names_and_dtypes(session=session)
+        available_columns = list(column_names_and_dtypes.keys())
+        if self.columns is None:
+            columns = available_columns
+        else:
+            columns = self.columns
+
+        if self.columns_rename_mapping is not None:
+            output_columns = [self.columns_rename_mapping.get(col, col) for col in columns]
+            column_names_and_dtypes = {
+                self.columns_rename_mapping.get(col, col): dtype
+                for col, dtype in column_names_and_dtypes.items()
+            }
+        else:
+            output_columns = columns
+
+        if SpecialColumnName.POINT_IN_TIME in output_columns and column_names_and_dtypes[
+            SpecialColumnName.POINT_IN_TIME
+        ] in {
+            DBVarType.TIMESTAMP,
+            DBVarType.TIMESTAMP_TZ,
+        }:
+            max_timestamp = datetime.utcnow() - timedelta(
+                hours=HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR
+            )
+            if sample_to_timestamp is None:
+                sample_to_timestamp = max_timestamp
+        else:
+            max_timestamp = None
+
         if self.columns is not None or self.columns_rename_mapping is not None:
-            available_columns = await self.get_column_names(session=session)
             self._validate_columns_and_rename_mapping(available_columns)
-            if self.columns is None:
-                columns = available_columns
-            else:
-                columns = self.columns
             query_expr = select_and_rename_columns(query_expr, columns, self.columns_rename_mapping)
 
         # apply time range filter if sample_from_timestamp and sample_to_timestamp are provided
-        time_range_conditions: list[expressions.Expression] = []
+        filter_conditions: list[expressions.Expression] = []
         adapter = get_sql_adapter(session.get_source_info())
         if sample_from_timestamp is not None:
-            time_range_conditions.append(
+            if sample_from_timestamp.tzinfo is not None:
+                sample_from_timestamp = sample_from_timestamp.astimezone(tz.UTC).replace(
+                    tzinfo=None
+                )
+            filter_conditions.append(
                 expressions.GTE(
                     this=adapter.normalize_timestamp_before_comparison(
                         quoted_identifier(SpecialColumnName.POINT_IN_TIME)
@@ -172,7 +205,11 @@ class BaseRequestInput(FeatureByteBaseModel):
                 )
             )
         if sample_to_timestamp is not None:
-            time_range_conditions.append(
+            if sample_to_timestamp.tzinfo is not None:
+                sample_to_timestamp = sample_to_timestamp.astimezone(tz.UTC).replace(tzinfo=None)
+            if max_timestamp is not None:
+                sample_to_timestamp = min(sample_to_timestamp, max_timestamp)
+            filter_conditions.append(
                 expressions.LT(
                     this=adapter.normalize_timestamp_before_comparison(
                         quoted_identifier(SpecialColumnName.POINT_IN_TIME)
@@ -182,7 +219,22 @@ class BaseRequestInput(FeatureByteBaseModel):
                     ),
                 )
             )
-        if time_range_conditions:
+        if self.columns_rename_mapping:
+            # select only rows where renamed columns are not null
+            for col_name in self.columns_rename_mapping.values():
+                filter_conditions.append(
+                    expressions.Is(
+                        this=quoted_identifier(col_name),
+                        expression=expressions.Not(this=expressions.Null()),
+                    )
+                )
+        if filter_conditions:
+            # if the expression is a select * from table, we need to select the columns explicitly
+            if query_expr.expressions and query_expr.expressions[0].name == "*":
+                query_expr = select_and_rename_columns(
+                    query_expr, columns, self.columns_rename_mapping
+                )
+
             query_expr = (
                 expressions.Select(
                     expressions=[
@@ -191,7 +243,7 @@ class BaseRequestInput(FeatureByteBaseModel):
                     ]
                 )
                 .from_(query_expr.subquery())
-                .where(expressions.And(expressions=time_range_conditions))
+                .where(expressions.And(expressions=filter_conditions))
             )
 
         if sample_rows is not None:
@@ -263,11 +315,13 @@ class ViewRequestInput(BaseRequestInput):
     def get_query_expr(self, source_info: SourceInfo) -> Select:
         return get_view_expr(graph=self.graph, node_name=self.node_name, source_info=source_info)
 
-    async def get_column_names(self, session: BaseSession) -> List[str]:
+    async def get_column_names_and_dtypes(self, session: BaseSession) -> Dict[str, DBVarType]:
         node = self.graph.get_node_by_name(self.node_name)
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
         op_struct = op_struct_info.operation_structure_map[node.name]
-        return cast(List[str], [column.name for column in op_struct.columns])
+        return cast(
+            Dict[str, DBVarType], {column.name: column.dtype for column in op_struct.columns}
+        )
 
 
 class SourceTableRequestInput(BaseRequestInput):
@@ -287,10 +341,10 @@ class SourceTableRequestInput(BaseRequestInput):
         _ = source_info
         return get_source_expr(source=self.source.table_details)
 
-    async def get_column_names(self, session: BaseSession) -> list[str]:
+    async def get_column_names_and_dtypes(self, session: BaseSession) -> Dict[str, DBVarType]:
         table_schema = await session.list_table_schema(
             table_name=self.source.table_details.table_name,
             database_name=self.source.table_details.database_name,
             schema_name=self.source.table_details.schema_name,
         )
-        return list(table_schema.keys())
+        return {key: value.dtype for key, value in table_schema.items()}

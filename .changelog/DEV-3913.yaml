@@ -16,14 +16,12 @@ component: service
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Fix observation table creation failure when using a datetime object with timezone as sample_from_timestamp or sample_to_timestamp."
+note: "Fixed overflow error for specific UDFs in Databricks SQL Warehouse."
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext:
-  The created observation table is also filtered to exclude rows where POINT_IN_TIME is too recent for
-  | feature materialization, or where mapped columns have NULL values.
 
 # SAMPLE
 #subtext: |

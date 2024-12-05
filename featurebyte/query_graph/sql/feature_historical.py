@@ -20,6 +20,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
+from featurebyte.models.request_input import HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR
 from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
@@ -35,8 +36,6 @@ from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, s
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.session.base import BaseSession
-
-HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
 PROGRESS_MESSAGE_COMPUTING_FEATURES = "Computing features"
 PROGRESS_MESSAGE_COMPUTING_TARGET = "Computing target"
