@@ -827,9 +827,7 @@ def get_session_callback_fixture(feature_store, feature_store_credential):
     # We are not using a SessionManagerService fixture, because scoped fixtures would not work
     # SessionManagerService instantiated here functions as a utility module rather than a service
     async def callback():
-        return await SessionManagerService(None, None).get_session(
-            feature_store, feature_store_credential
-        )
+        return await SessionManagerService.get_session(feature_store, feature_store_credential)
 
     return callback
 
@@ -941,11 +939,7 @@ async def session_without_datasets_fixture(source_type, feature_store, feature_s
     """
     Fixture for a BaseSession based on source_type
     """
-    # We are using SessionManagerService as a static function
-    # so its constructor dependencies are irrelevant
-    db_session = await SessionManagerService(None, None).get_session(
-        feature_store, feature_store_credential
-    )
+    db_session = await SessionManagerService.get_session(feature_store, feature_store_credential)
 
     yield db_session
 
