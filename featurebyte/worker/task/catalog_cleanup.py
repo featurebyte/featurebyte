@@ -16,6 +16,8 @@ from featurebyte.exception import DataWarehouseOperationError
 from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel, User
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.proxy_table import ProxyTableModel
+from featurebyte.models.task import Task
+from featurebyte.models.user_defined_function import UserDefinedFunctionModel
 from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.worker.task.catalog_cleanup import CatalogCleanupTaskPayload
@@ -192,6 +194,27 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                 query_filter=query_filter,
                 user_id=catalog.user_id,
             )
+
+        # cleanup user defined functions
+        await self.persistent.delete_many(
+            collection_name=UserDefinedFunctionModel.collection_name(),
+            query_filter={"catalog_id": catalog.id},
+            user_id=catalog.user_id,
+        )
+
+        # cleanup task documents
+        await self.persistent.delete_many(
+            collection_name=Task.collection_name(),
+            query_filter={"kwargs.catalog_id": str(catalog.id)},
+            user_id=catalog.user_id,
+        )
+
+        # cleanup the catalog document
+        await self.all_catalog_service.delete_document(
+            document_id=catalog.id,
+            user_id=catalog.user_id,
+            use_raw_query_filter=True,
+        )
 
     async def execute(self, payload: CatalogCleanupTaskPayload) -> Any:
         # compute the cutoff time

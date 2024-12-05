@@ -7,6 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
+from featurebyte import FunctionParameter, UserDefinedFunction
+from featurebyte.models.task import Task
 from featurebyte.schema.worker.task.catalog_cleanup import CatalogCleanupTaskPayload
 
 
@@ -79,6 +81,24 @@ def test_catalog_specific_model_classes(app_container):
 def fixture_catalog_with_associated_documents(catalog, historical_feature_table):
     """Catalog with associated documents"""
     _ = historical_feature_table
+
+    # create user defined functions (global & catalog specific)
+    func_param = FunctionParameter(name="x", dtype="FLOAT")
+    UserDefinedFunction.create(
+        name="cos_func",
+        sql_function_name="cos",
+        function_parameters=[func_param],
+        output_dtype="FLOAT",
+        is_global=True,
+    )
+
+    UserDefinedFunction.create(
+        name="cos_func_v2",
+        sql_function_name="cos",
+        function_parameters=[func_param],
+        output_dtype="FLOAT",
+        is_global=False,
+    )
     return catalog
 
 
@@ -98,6 +118,28 @@ async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_document
     remote_files_before = [entry.name for entry in catalog_path.rglob("*") if entry.is_file()]
     assert remote_files_before == ["feature_clusters.json"]
 
+    # check for user defined functions
+    _, matched = await app_container.persistent.find(
+        collection_name="user_defined_function",
+        query_filter={"catalog_id": catalog.id},
+    )
+    assert matched == 1
+
+    # check task documents
+    _, matched = await app_container.persistent.find(
+        collection_name=Task.collection_name(),
+        query_filter={"kwargs.catalog_id": str(catalog.id)},
+    )
+    assert matched == 4
+
+    # check for catalog document
+    _, matched = await app_container.persistent.find(
+        collection_name="catalog",
+        query_filter={"_id": catalog.id},
+    )
+    assert matched == 1
+
+    # soft delete the catalog & run the cleanup task
     catalog_cleanup_task = app_container.catalog_cleanup_task
     catalog_service = app_container.catalog_service
     await catalog_service.soft_delete_document(document_id=catalog.id)
@@ -131,3 +173,24 @@ async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_document
             query_filter={"catalog_id": catalog.id},
         )
         assert matched == 0
+
+    # check for user defined functions
+    _, matched = await app_container.persistent.find(
+        collection_name="user_defined_function",
+        query_filter={"catalog_id": catalog.id},
+    )
+    assert matched == 0
+
+    # check task documents
+    _, matched = await app_container.persistent.find(
+        collection_name=Task.collection_name(),
+        query_filter={"kwargs.catalog_id": str(catalog.id)},
+    )
+    assert matched == 0
+
+    # check for catalog document
+    _, matched = await app_container.persistent.find(
+        collection_name="catalog",
+        query_filter={"_id": catalog.id},
+    )
+    assert matched == 0
