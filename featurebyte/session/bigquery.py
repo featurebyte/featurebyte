@@ -32,6 +32,7 @@ from google.cloud.bigquery_storage_v1 import BigQueryReadClient
 from google.oauth2 import service_account
 from pydantic import PrivateAttr
 
+from featurebyte.common.env_util import is_io_worker
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import DBVarType, InternalName, SourceType
 from featurebyte.exception import DataWarehouseConnectionError
@@ -267,9 +268,21 @@ class BigQuerySession(BaseSession):
                 credentials=self._credentials,
                 client_info=ClientInfo(user_agent=APPLICATION_NAME),
             )
+            connection_args: dict[str, Any]
+            if is_io_worker():
+                # Fetching result from cursor hangs in IO worker due to gevent if using BQ storage
+                # client. Set prefer_bqstorage_client to False to avoid this issue.
+                logger.info("Not using BigQueryReadClient for BigQuery session")
+                connection_args = {
+                    "prefer_bqstorage_client": False,
+                }
+            else:
+                connection_args = {
+                    "bqstorage_client": BigQueryReadClient(credentials=self._credentials),
+                }
             self._connection = Connection(
                 client=self._client,
-                bqstorage_client=BigQueryReadClient(credentials=self._credentials),
+                **connection_args,
             )
         except (MalformedError, DefaultCredentialsError) as exc:
             raise DataWarehouseConnectionError(str(exc)) from exc
