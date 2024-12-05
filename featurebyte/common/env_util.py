@@ -122,3 +122,14 @@ def is_development_mode() -> bool:
     bool
     """
     return os.environ.get("FEATUREBYTE_EXECUTION_MODE") == "development"
+
+
+def is_io_worker() -> bool:
+    """
+    Check whether the code is running in IO worker
+
+    Returns
+    -------
+    bool
+    """
+    return "worker-io" in os.environ.get("HOSTNAME", "")
