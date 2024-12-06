@@ -2,8 +2,10 @@
 This module contains session to BigQuery integration tests.
 """
 
+import os
 from collections import OrderedDict
 from decimal import Decimal
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -11,6 +13,7 @@ from bson import ObjectId
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
+from featurebyte.session.base import session_cache
 from featurebyte.session.bigquery import BigQuerySchemaInitializer, BigQuerySession
 from featurebyte.session.manager import SessionManager
 
@@ -263,3 +266,30 @@ async def test_list_table_schema_decimal_parameterized(config, session_without_d
     assert table_schema["A"].dtype == DBVarType.FLOAT
     df = await session.execute_query("SELECT * FROM TABLE_DECIMAL_SCALE")
     assert df.iloc[0]["A"] == Decimal("1.234")
+
+
+@pytest.mark.parametrize("source_type", ["bigquery"], indirect=True)
+@pytest.mark.parametrize(
+    "hostname, bqstorage_client_expected",
+    [
+        ("featurebyte-worker-io", False),
+        ("featurebyte-worker-cpu", True),
+    ],
+)
+@pytest.mark.asyncio
+async def test_create_session__bqstorage_client(
+    feature_store,
+    hostname,
+    bqstorage_client_expected,
+    session_manager,
+):
+    """
+    Test bqstorage client is disabled when running on an IO worker.
+    """
+    session_cache.clear()
+    with patch.dict(os.environ, {"HOSTNAME": hostname}):
+        session = await session_manager.get_session(feature_store)
+    if bqstorage_client_expected:
+        assert session.connection._bqstorage_client is not None
+    else:
+        assert session.connection._bqstorage_client is None
