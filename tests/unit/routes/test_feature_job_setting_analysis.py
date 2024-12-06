@@ -417,8 +417,15 @@ class TestFeatureJobSettingAnalysisApi(BaseAsyncApiTestSuite):
         """
         test_api_client, _ = test_api_client_persistent
         analysis_id = create_success_response.json()["_id"]
-        response = test_api_client.delete(f"{self.base_route}/{analysis_id}")
-        assert response.status_code == HTTPStatus.OK, response.json()
+        with patch("featurebyte.storage.base.Storage.try_delete_if_exists") as mock_delete_file:
+            response = test_api_client.delete(f"{self.base_route}/{analysis_id}")
+            assert response.status_code == HTTPStatus.OK, response.json()
+
+        mock_call_args = mock_delete_file.call_args
+        assert mock_delete_file.call_count == 1
+        assert str(mock_call_args[0][0]).startswith(
+            f"feature_job_setting_analysis/{analysis_id}/data.json"
+        )
 
         # check analysis is no longer available
         response = test_api_client.get(f"{self.base_route}/{analysis_id}")

@@ -14,6 +14,7 @@ from featurebyte.models.base import (
     PydanticObjectId,
     UniqueValuesConstraint,
 )
+from featurebyte.query_graph.node.schema import TableDetails
 
 
 class OnlineStoreComputeQueryModel(FeatureByteCatalogBaseDocumentModel):
@@ -37,6 +38,10 @@ class OnlineStoreComputeQueryModel(FeatureByteCatalogBaseDocumentModel):
     table_name: str
     serving_names: List[StrictStr]
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+
+    @property
+    def warehouse_tables(self) -> list[TableDetails]:
+        return [TableDetails(table_name=self.tile_id), TableDetails(table_name=self.table_name)]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

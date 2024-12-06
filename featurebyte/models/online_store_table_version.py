@@ -10,6 +10,7 @@ import pymongo
 from pydantic import StrictStr
 
 from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel, UniqueValuesConstraint
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
@@ -19,6 +20,10 @@ class OnlineStoreTableVersion(FeatureByteCatalogBaseDocumentModel):
     online_store_table_name: StrictStr
     aggregation_result_name: StrictStr
     version: int
+
+    @property
+    def warehouse_tables(self) -> list[TableDetails]:
+        return [TableDetails(table_name=self.online_store_table_name)]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

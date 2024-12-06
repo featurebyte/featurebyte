@@ -14,6 +14,7 @@ from featurebyte.models.base import (
     UniqueConstraintResolutionSignature,
     UniqueValuesConstraint,
 )
+from featurebyte.query_graph.node.schema import TableDetails
 
 
 class CachedFeatureDefinition(FeatureByteBaseModel):
@@ -63,6 +64,10 @@ class FeatureTableCacheMetadataModel(FeatureByteCatalogBaseDocumentModel):
     observation_table_id: PydanticObjectId
     table_name: str
     feature_definitions: List[CachedFeatureDefinition]
+
+    @property
+    def warehouse_tables(self) -> list[TableDetails]:
+        return [TableDetails(table_name=self.table_name)]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

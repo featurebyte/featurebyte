@@ -16,7 +16,7 @@ from featurebyte.models.base import (
     UniqueValuesConstraint,
 )
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.query_graph.node.schema import ColumnSpec
+from featurebyte.query_graph.node.schema import ColumnSpec, TableDetails
 
 
 class ColumnSpecWithEntityId(ColumnSpec):
@@ -46,6 +46,10 @@ class MaterializedTableModel(FeatureByteCatalogBaseDocumentModel):
     columns_info: List[ColumnSpecWithEntityId]
     num_rows: int
     is_view: bool = Field(default=False)
+
+    @property
+    def warehouse_tables(self) -> list[TableDetails]:
+        return [self.location.table_details]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

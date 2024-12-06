@@ -16,6 +16,7 @@ from featurebyte.models.base import (
     PydanticObjectId,
     UniqueValuesConstraint,
 )
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 IncompleteTileTaskReason = Literal["failure", "timeout"]
@@ -45,6 +46,10 @@ class FeatureMaterializeRun(FeatureByteCatalogBaseDocumentModel):
     duration_from_scheduled_seconds: Optional[float] = Field(default=None)
     incomplete_tile_tasks: Optional[List[IncompleteTileTask]] = Field(default=None)
     deployment_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+
+    @property
+    def warehouse_tables(self) -> list[TableDetails]:
+        return [TableDetails(table_name=self.offline_store_feature_table_name)]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
