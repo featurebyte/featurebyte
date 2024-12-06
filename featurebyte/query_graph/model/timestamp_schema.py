@@ -4,6 +4,7 @@ Schema for timestamp columns
 
 from typing import Optional, Union
 
+from pydantic import Field
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from featurebyte.models.base import FeatureByteBaseModel
@@ -26,10 +27,9 @@ class TimestampSchema(FeatureByteBaseModel):
 
     format_string: Optional[str]
         Format string for the timestamp column represented as a string
-    timezone: Optional[Union[TimezoneName, TimezoneOffsetColumn]]
-        Timezone information for the timestamp column. If not provided, the timestamp should be
-        interpreted as UTC
+    timezone: Union[TimezoneName, TimezoneOffsetColumn]
+        Timezone information for the timestamp column. The default value is "Etc/UTC"
     """
 
     format_string: Optional[str] = None
-    timezone: Optional[Union[TimeZoneName, TimeZoneOffsetColumn]] = None
+    timezone: Union[TimeZoneName, TimeZoneOffsetColumn] = Field(default="Etc/UTC")

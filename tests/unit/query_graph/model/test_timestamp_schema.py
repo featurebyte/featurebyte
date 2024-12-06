@@ -7,6 +7,14 @@ import pytest
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 
 
+def test_timezone_name__default():
+    """
+    Test default timezone name
+    """
+    timestamp_schema = TimestampSchema()
+    assert timestamp_schema.timezone == "Etc/UTC"
+
+
 def test_timezone_name__valid():
     """
     Test valid timezone name
