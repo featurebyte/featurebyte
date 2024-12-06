@@ -234,7 +234,8 @@ def test_create_observation_table(
         )
         WHERE
             "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
-            "POINT_IN_TIME" IS NOT NULL
+            "POINT_IN_TIME" IS NOT NULL AND
+            "cust_id" IS NOT NULL
         """,
     )
     _, kwargs = snowflake_execute_query.call_args_list[-1]

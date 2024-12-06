@@ -5,7 +5,7 @@ RequestInput is the base class for all request input types.
 from __future__ import annotations
 
 from abc import abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, cast
 
 from dateutil import tz
@@ -31,8 +31,6 @@ from featurebyte.query_graph.sql.materialisation import (
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.session.base import BaseSession
-
-HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR = 48
 
 
 class RequestInputType(StrEnum):
@@ -132,6 +130,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         sample_rows: Optional[int],
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
+        columns_to_exclude_missing_values: Optional[List[str]] = None,
     ) -> None:
         """
         Materialize the request input table
@@ -148,93 +147,85 @@ class BaseRequestInput(FeatureByteBaseModel):
             The timestamp to sample from
         sample_to_timestamp: Optional[datetime]
             The timestamp to sample to
+        columns_to_exclude_missing_values: Optional[List[str]
+            The columns to exclude missing values from
         """
         query_expr = self.get_query_expr(source_info=session.get_source_info())
 
-        # estimate the maximum POINT_IN_TIME value to filter the sample
+        # derive output column names and dtypes
         column_names_and_dtypes = await self.get_column_names_and_dtypes(session=session)
         available_columns = list(column_names_and_dtypes.keys())
-        if self.columns is None:
-            columns = available_columns
-        else:
-            columns = self.columns
-
+        self._validate_columns_and_rename_mapping(available_columns)
+        input_columns = self.columns or available_columns
         if self.columns_rename_mapping is not None:
-            output_columns = [self.columns_rename_mapping.get(col, col) for col in columns]
-            column_names_and_dtypes = {
-                self.columns_rename_mapping.get(col, col): dtype
-                for col, dtype in column_names_and_dtypes.items()
+            output_column_names_and_dtypes = {
+                self.columns_rename_mapping.get(col, col): column_names_and_dtypes[col]
+                for col in input_columns
             }
+            output_columns = list(output_column_names_and_dtypes.keys())
         else:
-            output_columns = columns
+            output_column_names_and_dtypes = column_names_and_dtypes
+            output_columns = input_columns
 
-        if SpecialColumnName.POINT_IN_TIME in output_columns and column_names_and_dtypes[
-            SpecialColumnName.POINT_IN_TIME
-        ] in {
-            DBVarType.TIMESTAMP,
-            DBVarType.TIMESTAMP_TZ,
-        }:
-            max_timestamp = datetime.utcnow() - timedelta(
-                hours=HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR
-            )
-            if sample_to_timestamp is None:
-                sample_to_timestamp = max_timestamp
-        else:
-            max_timestamp = None
+        # always perform explicit column selection and renaming
+        query_expr = select_and_rename_columns(
+            query_expr, input_columns, self.columns_rename_mapping
+        )
 
-        if self.columns is not None or self.columns_rename_mapping is not None:
-            self._validate_columns_and_rename_mapping(available_columns)
-            query_expr = select_and_rename_columns(query_expr, columns, self.columns_rename_mapping)
-
-        # apply time range filter if sample_from_timestamp and sample_to_timestamp are provided
+        # add filter conditions to the query if necessary
         filter_conditions: list[expressions.Expression] = []
         adapter = get_sql_adapter(session.get_source_info())
-        if sample_from_timestamp is not None:
-            if sample_from_timestamp.tzinfo is not None:
-                sample_from_timestamp = sample_from_timestamp.astimezone(tz.UTC).replace(
-                    tzinfo=None
-                )
-            filter_conditions.append(
-                expressions.GTE(
-                    this=adapter.normalize_timestamp_before_comparison(
-                        quoted_identifier(SpecialColumnName.POINT_IN_TIME)
-                    ),
-                    expression=make_literal_value(
-                        sample_from_timestamp.isoformat(), cast_as_timestamp=True
-                    ),
-                )
-            )
-        if sample_to_timestamp is not None:
-            if sample_to_timestamp.tzinfo is not None:
-                sample_to_timestamp = sample_to_timestamp.astimezone(tz.UTC).replace(tzinfo=None)
-            if max_timestamp is not None:
-                sample_to_timestamp = min(sample_to_timestamp, max_timestamp)
-            filter_conditions.append(
-                expressions.LT(
-                    this=adapter.normalize_timestamp_before_comparison(
-                        quoted_identifier(SpecialColumnName.POINT_IN_TIME)
-                    ),
-                    expression=make_literal_value(
-                        sample_to_timestamp.isoformat(), cast_as_timestamp=True
-                    ),
-                )
-            )
-        if self.columns_rename_mapping:
-            # select only rows where renamed columns are not null
-            for col_name in self.columns_rename_mapping.values():
+
+        if SpecialColumnName.POINT_IN_TIME in output_columns and output_column_names_and_dtypes.get(
+            SpecialColumnName.POINT_IN_TIME
+        ) in {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}:
+            # add filter to exclude rows that are too old
+            if sample_from_timestamp is not None:
+                if sample_from_timestamp.tzinfo is not None:
+                    sample_from_timestamp = sample_from_timestamp.astimezone(tz.UTC).replace(
+                        tzinfo=None
+                    )
                 filter_conditions.append(
-                    expressions.Is(
-                        this=quoted_identifier(col_name),
-                        expression=expressions.Not(this=expressions.Null()),
+                    expressions.GTE(
+                        this=adapter.normalize_timestamp_before_comparison(
+                            quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+                        ),
+                        expression=make_literal_value(
+                            sample_from_timestamp.isoformat(), cast_as_timestamp=True
+                        ),
                     )
                 )
-        if filter_conditions:
-            # if the expression is a select * from table, we need to select the columns explicitly
-            if query_expr.expressions and query_expr.expressions[0].name == "*":
-                query_expr = select_and_rename_columns(
-                    query_expr, columns, self.columns_rename_mapping
+
+            # add filter to exclude rows that are too recent
+            if sample_to_timestamp is not None:
+                if sample_to_timestamp.tzinfo is not None:
+                    sample_to_timestamp = sample_to_timestamp.astimezone(tz.UTC).replace(
+                        tzinfo=None
+                    )
+                filter_conditions.append(
+                    expressions.LT(
+                        this=adapter.normalize_timestamp_before_comparison(
+                            quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+                        ),
+                        expression=make_literal_value(
+                            sample_to_timestamp.isoformat(), cast_as_timestamp=True
+                        ),
+                    )
                 )
 
+        # add filter to exclude rows with missing values in specified columns
+        if columns_to_exclude_missing_values:
+            # select only rows where renamed columns are not null
+            for col_name in columns_to_exclude_missing_values:
+                if col_name in output_columns:
+                    filter_conditions.append(
+                        expressions.Is(
+                            this=quoted_identifier(col_name),
+                            expression=expressions.Not(this=expressions.Null()),
+                        )
+                    )
+
+        if filter_conditions:
             query_expr = (
                 expressions.Select(
                     expressions=[

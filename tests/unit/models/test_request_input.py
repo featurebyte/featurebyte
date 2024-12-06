@@ -7,7 +7,6 @@ from datetime import datetime
 from functools import partial
 from unittest.mock import AsyncMock, Mock, call
 
-import freezegun
 import pandas as pd
 import pytest
 from dateutil import tz
@@ -35,8 +34,8 @@ def session_fixture(adapter):
             return_value={
                 "a": ColumnSpecWithDescription(name="a", dtype=DBVarType.INT),
                 "b": ColumnSpecWithDescription(name="a", dtype=DBVarType.INT),
-                "POINT_IN_TIME": ColumnSpecWithDescription(
-                    name="POINT_IN_TIME", dtype=DBVarType.TIMESTAMP
+                "event_timestamp": ColumnSpecWithDescription(
+                    name="event_timestamp", dtype=DBVarType.TIMESTAMP
                 ),
             }
         ),
@@ -102,7 +101,9 @@ async def test_materialize__with_columns_and_renames(
         columns_rename_mapping={"b": "NEW_B"},
         source=snowflake_database_table.tabular_source,
     )
-    await request_input.materialize(session, destination_table, None)
+    await request_input.materialize(
+        session, destination_table, None, columns_to_exclude_missing_values=["NEW_B"]
+    )
 
     assert session.list_table_schema.call_args_list == [
         call(table_name="sf_table", database_name="sf_database", schema_name="sf_schema")
@@ -141,7 +142,9 @@ async def test_materialize__with_renames_only(session, snowflake_database_table,
         columns_rename_mapping={"b": "NEW_B"},
         source=snowflake_database_table.tabular_source,
     )
-    await request_input.materialize(session, destination_table, None)
+    await request_input.materialize(
+        session, destination_table, None, columns_to_exclude_missing_values=["NEW_B"]
+    )
 
     assert session.list_table_schema.call_args_list == [
         call(table_name="sf_table", database_name="sf_database", schema_name="sf_schema")
@@ -201,7 +204,6 @@ async def test_materialize__invalid_rename_mapping(
 
 
 @pytest.mark.asyncio
-@freezegun.freeze_time("2011-03-08T15:37:00")
 async def test_materialize__from_view_with_columns_and_renames(
     session, destination_table, snowflake_event_table
 ):
@@ -216,7 +218,9 @@ async def test_materialize__from_view_with_columns_and_renames(
         graph=pruned_graph,
         node_name=mapped_node.name,
     )
-    await request_input.materialize(session, destination_table, None)
+    await request_input.materialize(
+        session, destination_table, None, columns_to_exclude_missing_values=["POINT_IN_TIME"]
+    )
 
     # No need to query database to get column names
     assert session.list_table_schema.call_args_list == []
@@ -245,7 +249,6 @@ async def test_materialize__from_view_with_columns_and_renames(
           )
         )
         WHERE
-            "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
             "POINT_IN_TIME" IS NOT NULL
         """
     ).strip()
@@ -253,7 +256,6 @@ async def test_materialize__from_view_with_columns_and_renames(
 
 
 @pytest.mark.asyncio
-@freezegun.freeze_time("2011-03-08T15:37:00")
 async def test_materialize__view_bigquery(
     session, destination_table, snowflake_event_table, bigquery_source_info, update_fixtures
 ):
@@ -327,8 +329,7 @@ async def test_materialize__with_sample_timestamp(
           )
         )
         WHERE
-            "POINT_IN_TIME" < CAST('2011-03-08T00:00:00' AS TIMESTAMP) AND
-            "POINT_IN_TIME" IS NOT NULL
+            "POINT_IN_TIME" < CAST('2011-03-08T00:00:00' AS TIMESTAMP)
         """
     ).strip()
     assert session.execute_query_long_running.call_args_list == [call(expected_query)]
@@ -344,7 +345,8 @@ async def test_materialize__with_sample_timestamp_biqquery(
     session.get_source_info.return_value = bigquery_source_info
     session.source_type = SourceType.BIGQUERY
     request_input = SourceTableRequestInput(
-        columns=["a", "b"],
+        columns=["a", "b", "event_timestamp"],
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
         source=snowflake_database_table.tabular_source,
     )
     await request_input.materialize(
@@ -360,11 +362,13 @@ async def test_materialize__with_sample_timestamp_biqquery(
         CREATE TABLE `sf_database`.`sf_schema`.`my_materialized_table` AS
         SELECT
           `a`,
-          `b`
+          `b`,
+          `POINT_IN_TIME`
         FROM (
           SELECT
-            `a`,
-            `b`
+            `a` AS `a`,
+            `b` AS `b`,
+            `event_timestamp` AS `POINT_IN_TIME`
           FROM (
             SELECT
               *
@@ -384,7 +388,8 @@ async def test_materialize__with_sample_timestamp_no_columns_rename(
     session, snowflake_event_table, destination_table
 ):
     """
-    Test materializing with sample from timestamp
+    Test materializing with sample from timestamp without column rename,
+    expect to have no time filtering since there is no POINT_IN_TIME column
     """
     view = snowflake_event_table.get_view()
     view = view[view.col_int == 1]
@@ -425,9 +430,6 @@ async def test_materialize__with_sample_timestamp_no_columns_rename(
               "col_int" = 1
             )
         )
-        WHERE
-            "POINT_IN_TIME" >= CAST('2011-03-08T00:00:00' AS TIMESTAMP) AND
-            "POINT_IN_TIME" < CAST('2012-05-09T00:00:00' AS TIMESTAMP)
         """
     ).strip()
     assert session.execute_query_long_running.call_args_list == [call(expected_query)]
@@ -498,52 +500,7 @@ async def test_materialize__with_sample_timestamp_with_tz(
         )
         WHERE
             "POINT_IN_TIME" >= CAST('2011-03-07T16:00:00' AS TIMESTAMP) AND
-            "POINT_IN_TIME" < CAST('2012-05-08T16:00:00' AS TIMESTAMP) AND
-            "POINT_IN_TIME" IS NOT NULL AND
-            "CUST_ID" IS NOT NULL
-        """
-    ).strip()
-    assert session.execute_query_long_running.call_args_list == [call(expected_query)]
-
-
-@pytest.mark.asyncio
-@freezegun.freeze_time("2011-03-08T15:37:00")
-async def test_materialize__with_point_in_time_limit(
-    session, snowflake_database_table, destination_table
-):
-    """
-    Test materializing when with point-in-time limited by filter
-    """
-    request_input = SourceTableRequestInput(
-        columns=["a", "b", "POINT_IN_TIME"],
-        source=snowflake_database_table.tabular_source,
-    )
-    await request_input.materialize(session, destination_table, None)
-
-    assert session.list_table_schema.call_args_list == [
-        call(table_name="sf_table", database_name="sf_database", schema_name="sf_schema")
-    ]
-
-    expected_query = textwrap.dedent(
-        """
-        CREATE TABLE "sf_database"."sf_schema"."my_materialized_table" AS
-        SELECT
-          "a",
-          "b",
-          "POINT_IN_TIME"
-        FROM (
-          SELECT
-            "a",
-            "b",
-            "POINT_IN_TIME"
-          FROM (
-            SELECT
-              *
-            FROM "sf_database"."sf_schema"."sf_table"
-          )
-        )
-        WHERE
-            "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP)
+            "POINT_IN_TIME" < CAST('2012-05-08T16:00:00' AS TIMESTAMP)
         """
     ).strip()
     assert session.execute_query_long_running.call_args_list == [call(expected_query)]

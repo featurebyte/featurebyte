@@ -40,14 +40,10 @@ class SourceTableObservationInput(SourceTableRequestInput):
     """
 
 
-class TargetInput(FeatureByteBaseModel):
+class NoOpMaterializeMixin:
     """
-    TargetInput is an input from a target that can be used to create an ObservationTableModel
+    No-op materialize mixin adds a no-op materialize method to the class
     """
-
-    target_id: Optional[PydanticObjectId] = Field(default=None)
-    observation_table_id: Optional[PydanticObjectId] = Field(default=None)
-    type: Literal[RequestInputType.OBSERVATION_TABLE, RequestInputType.DATAFRAME]
 
     async def materialize(
         self,
@@ -56,6 +52,7 @@ class TargetInput(FeatureByteBaseModel):
         sample_rows: Optional[int],
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
+        columns_to_exclude_missing_values: Optional[List[str]] = None,
     ) -> None:
         """
         No-op materialize. This method isn't needed for TargetInput since we materialize the target separately.
@@ -75,41 +72,28 @@ class TargetInput(FeatureByteBaseModel):
             The timestamp to sample from
         sample_to_timestamp: Optional[datetime]
             The timestamp to sample to
+        columns_to_exclude_missing_values: Optional[List[str]
+            The columns to exclude missing values from
         """
 
 
-class UploadedFileInput(FeatureByteBaseModel):
+class TargetInput(FeatureByteBaseModel, NoOpMaterializeMixin):
+    """
+    TargetInput is an input from a target that can be used to create an ObservationTableModel
+    """
+
+    target_id: Optional[PydanticObjectId] = Field(default=None)
+    observation_table_id: Optional[PydanticObjectId] = Field(default=None)
+    type: Literal[RequestInputType.OBSERVATION_TABLE, RequestInputType.DATAFRAME]
+
+
+class UploadedFileInput(FeatureByteBaseModel, NoOpMaterializeMixin):
     """
     UploadedFileInput is an input from an uploaded file that can be used to create an ObservationTableModel.
     """
 
     type: Literal[RequestInputType.UPLOADED_FILE]
     file_name: Optional[str] = Field(default=None)
-
-    async def materialize(
-        self,
-        session: BaseSession,
-        destination: TableDetails,
-        sample_rows: Optional[int],
-        sample_from_timestamp: Optional[datetime] = None,
-        sample_to_timestamp: Optional[datetime] = None,
-    ) -> None:
-        """
-        No-op materialize. This method isn't needed for UploadedFileInput since there is nothing to materialize/compute.
-
-        Parameters
-        ----------
-        session: BaseSession
-            The session to use to materialize the target input
-        destination: TableDetails
-            The destination table to materialize the target input to
-        sample_rows: Optional[int]
-            The number of rows to sample from the target input
-        sample_from_timestamp: Optional[datetime]
-            The timestamp to sample from
-        sample_to_timestamp: Optional[datetime]
-            The timestamp to sample to
-        """
 
 
 ObservationInput = Annotated[
