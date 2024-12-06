@@ -73,7 +73,7 @@ jobs:
       - name: Load REPOSITORY into env
         run: echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v2.0.0
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
         with:
