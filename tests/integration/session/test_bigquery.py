@@ -13,7 +13,6 @@ from bson import ObjectId
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
-from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import session_cache
 from featurebyte.session.bigquery import BigQuerySchemaInitializer, BigQuerySession
 from featurebyte.session.manager import SessionManager
@@ -279,14 +278,17 @@ async def test_list_table_schema_decimal_parameterized(config, session_without_d
 )
 @pytest.mark.asyncio
 async def test_create_session__bqstorage_client(
-    feature_store, feature_store_credential, hostname, bqstorage_client_expected
+    feature_store,
+    hostname,
+    bqstorage_client_expected,
+    session_manager,
 ):
     """
     Test bqstorage client is disabled when running on an IO worker.
     """
     session_cache.clear()
     with patch.dict(os.environ, {"HOSTNAME": hostname}):
-        session = await SessionManagerService.get_session(feature_store, feature_store_credential)
+        session = await session_manager.get_session(feature_store)
     if bqstorage_client_expected:
         assert session.connection._bqstorage_client is not None
     else:
