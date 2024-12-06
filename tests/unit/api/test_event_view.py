@@ -9,6 +9,7 @@ from datetime import datetime
 from unittest import mock
 from unittest.mock import AsyncMock, patch
 
+import freezegun
 import pandas as pd
 import pytest
 from bson import ObjectId
@@ -836,6 +837,7 @@ def test_sdk_code_generation(saved_event_table, update_fixtures):
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
+@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table_from_event_view__no_sample(
     snowflake_event_table, snowflake_execute_query, catalog, cust_id_entity
 ):
@@ -864,20 +866,29 @@ def test_create_observation_table_from_event_view__no_sample(
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
-          "event_timestamp" AS "POINT_IN_TIME",
-          "cust_id" AS "cust_id"
+          "POINT_IN_TIME",
+          "cust_id"
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "event_timestamp",
+            "event_timestamp" AS "POINT_IN_TIME",
             "cust_id" AS "cust_id"
-          FROM "sf_database"."sf_schema"."sf_table"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "event_timestamp",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."sf_table"
+          )
         )
+        WHERE
+            "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
+            "POINT_IN_TIME" IS NOT NULL AND
+            "cust_id" IS NOT NULL
         """,
     )
     _, kwargs = snowflake_execute_query.call_args_list[-1]
@@ -894,6 +905,7 @@ def test_create_observation_table_from_event_view__no_sample(
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
+@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table_from_event_view__with_sample(
     snowflake_event_table_with_entity, snowflake_execute_query, cust_id_entity
 ):
@@ -927,20 +939,29 @@ def test_create_observation_table_from_event_view__with_sample(
           *
         FROM (
           SELECT
-            "event_timestamp" AS "POINT_IN_TIME",
-            "cust_id" AS "cust_id"
+            "POINT_IN_TIME",
+            "cust_id"
           FROM (
             SELECT
-              "col_int" AS "col_int",
-              "col_float" AS "col_float",
-              "col_char" AS "col_char",
-              "col_text" AS "col_text",
-              "col_binary" AS "col_binary",
-              "col_boolean" AS "col_boolean",
-              "event_timestamp" AS "event_timestamp",
+              "event_timestamp" AS "POINT_IN_TIME",
               "cust_id" AS "cust_id"
-            FROM "sf_database"."sf_schema"."sf_table"
+            FROM (
+              SELECT
+                "col_int" AS "col_int",
+                "col_float" AS "col_float",
+                "col_char" AS "col_char",
+                "col_text" AS "col_text",
+                "col_binary" AS "col_binary",
+                "col_boolean" AS "col_boolean",
+                "event_timestamp" AS "event_timestamp",
+                "cust_id" AS "cust_id"
+              FROM "sf_database"."sf_schema"."sf_table"
+            )
           )
+          WHERE
+              "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
+              "POINT_IN_TIME" IS NOT NULL AND
+              "cust_id" IS NOT NULL
         ) TABLESAMPLE (14)
         ORDER BY
           RANDOM()

@@ -227,8 +227,8 @@ async def test_observation_table_sample_time_range(
     observation_table = view.create_observation_table(
         f"MY_OBSERVATION_TABLE_FROM_VIEW_{source_type}_TIME_RANGE_SAMPLED",
         sample_rows=sample_rows,
-        sample_from_timestamp="2001-02-01",
-        sample_to_timestamp="2001-06-30",
+        sample_from_timestamp="2001-02-01T00:00:00Z",
+        sample_to_timestamp="2001-06-30T00:00:00Z",
         columns=[view.timestamp_column, "ÜSER ID"],
         columns_rename_mapping={view.timestamp_column: "POINT_IN_TIME", "ÜSER ID": "üser id"},
     )
