@@ -371,7 +371,10 @@ class ObservationTableService(
             )
             db_session = await self.session_manager_service.get_feature_store_session(feature_store)
             # validate columns
-            available_columns = await data.request_input.get_column_names(db_session)
+            column_names_and_dtypes = await data.request_input.get_column_names_and_dtypes(
+                db_session
+            )
+            available_columns = list(column_names_and_dtypes.keys())
             columns_rename_mapping = data.request_input.columns_rename_mapping
             if columns_rename_mapping:
                 available_columns = [

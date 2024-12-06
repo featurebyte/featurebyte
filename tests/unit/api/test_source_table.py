@@ -4,6 +4,7 @@ Unit test for SourceTable
 
 from unittest.mock import AsyncMock, Mock, patch
 
+import freezegun
 import pandas as pd
 import pytest
 
@@ -191,6 +192,7 @@ def test_get_or_create_scd_table__create(snowflake_database_table_scd_table, cat
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
+@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table(
     snowflake_database_table, snowflake_execute_query, catalog, cust_id_entity, mock_log_handler
 ):
@@ -218,13 +220,22 @@ def test_create_observation_table(
         """
         CREATE TABLE "sf_database"."sf_schema"."OBSERVATION_TABLE" AS
         SELECT
-          "event_timestamp" AS "POINT_IN_TIME",
-          "cust_id" AS "cust_id"
+          "POINT_IN_TIME",
+          "cust_id"
         FROM (
           SELECT
-            *
-          FROM "sf_database"."sf_schema"."sf_table"
+            "event_timestamp" AS "POINT_IN_TIME",
+            "cust_id" AS "cust_id"
+          FROM (
+            SELECT
+              *
+            FROM "sf_database"."sf_schema"."sf_table"
+          )
         )
+        WHERE
+            "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
+            "POINT_IN_TIME" IS NOT NULL AND
+            "cust_id" IS NOT NULL
         """,
     )
     _, kwargs = snowflake_execute_query.call_args_list[-1]
@@ -241,6 +252,7 @@ def test_create_observation_table(
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
+@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table_with_sample_rows(
     snowflake_database_table, snowflake_execute_query, catalog
 ):
@@ -271,20 +283,35 @@ def test_create_observation_table_with_sample_rows(
           *
         FROM (
           SELECT
-            "col_int" AS "col_int",
-            "col_float" AS "col_float",
-            "col_char" AS "col_char",
-            "col_text" AS "col_text",
-            "col_binary" AS "col_binary",
-            "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "POINT_IN_TIME",
-            "created_at" AS "created_at",
-            "cust_id" AS "cust_id"
+            "col_int",
+            "col_float",
+            "col_char",
+            "col_text",
+            "col_binary",
+            "col_boolean",
+            "POINT_IN_TIME",
+            "created_at",
+            "cust_id"
           FROM (
             SELECT
-              *
-            FROM "sf_database"."sf_schema"."sf_table"
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "POINT_IN_TIME",
+              "created_at" AS "created_at",
+              "cust_id" AS "cust_id"
+            FROM (
+              SELECT
+                *
+              FROM "sf_database"."sf_schema"."sf_table"
+            )
           )
+          WHERE
+              "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
+              "POINT_IN_TIME" IS NOT NULL
         ) TABLESAMPLE (14)
         ORDER BY
           RANDOM()

@@ -8,11 +8,12 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, cast
 
+from dateutil import tz
 from pydantic import Field, PrivateAttr, StrictStr
 from sqlglot import expressions
 from sqlglot.expressions import Select
 
-from featurebyte.enum import SpecialColumnName, StrEnum
+from featurebyte.enum import DBVarType, SpecialColumnName, StrEnum
 from featurebyte.exception import ColumnNotFoundError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -88,9 +89,9 @@ class BaseRequestInput(FeatureByteBaseModel):
         return int(result.iloc[0]["row_count"])  # type: ignore[union-attr]
 
     @abstractmethod
-    async def get_column_names(self, session: BaseSession) -> list[str]:
+    async def get_column_names_and_dtypes(self, session: BaseSession) -> Dict[str, DBVarType]:
         """
-        Get the column names of the table query
+        Get the column names and dtypes of the table query
 
         Parameters
         ----------
@@ -99,7 +100,7 @@ class BaseRequestInput(FeatureByteBaseModel):
 
         Returns
         -------
-        list[str]
+        Dict[str, DBVarType]
         """
 
     @staticmethod
@@ -129,6 +130,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         sample_rows: Optional[int],
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
+        columns_to_exclude_missing_values: Optional[List[str]] = None,
     ) -> None:
         """
         Materialize the request input table
@@ -145,44 +147,85 @@ class BaseRequestInput(FeatureByteBaseModel):
             The timestamp to sample from
         sample_to_timestamp: Optional[datetime]
             The timestamp to sample to
+        columns_to_exclude_missing_values: Optional[List[str]
+            The columns to exclude missing values from
         """
         query_expr = self.get_query_expr(source_info=session.get_source_info())
 
-        if self.columns is not None or self.columns_rename_mapping is not None:
-            available_columns = await self.get_column_names(session=session)
-            self._validate_columns_and_rename_mapping(available_columns)
-            if self.columns is None:
-                columns = available_columns
-            else:
-                columns = self.columns
-            query_expr = select_and_rename_columns(query_expr, columns, self.columns_rename_mapping)
+        # derive output column names and dtypes
+        column_names_and_dtypes = await self.get_column_names_and_dtypes(session=session)
+        available_columns = list(column_names_and_dtypes.keys())
+        self._validate_columns_and_rename_mapping(available_columns)
+        input_columns = self.columns or available_columns
+        if self.columns_rename_mapping is not None:
+            output_column_names_and_dtypes = {
+                self.columns_rename_mapping.get(col, col): column_names_and_dtypes[col]
+                for col in input_columns
+            }
+            output_columns = list(output_column_names_and_dtypes.keys())
+        else:
+            output_column_names_and_dtypes = column_names_and_dtypes
+            output_columns = input_columns
 
-        # apply time range filter if sample_from_timestamp and sample_to_timestamp are provided
-        time_range_conditions: list[expressions.Expression] = []
+        # always perform explicit column selection and renaming
+        query_expr = select_and_rename_columns(
+            query_expr, input_columns, self.columns_rename_mapping
+        )
+
+        # add filter conditions to the query if necessary
+        filter_conditions: list[expressions.Expression] = []
         adapter = get_sql_adapter(session.get_source_info())
-        if sample_from_timestamp is not None:
-            time_range_conditions.append(
-                expressions.GTE(
-                    this=adapter.normalize_timestamp_before_comparison(
-                        quoted_identifier(SpecialColumnName.POINT_IN_TIME)
-                    ),
-                    expression=make_literal_value(
-                        sample_from_timestamp.isoformat(), cast_as_timestamp=True
-                    ),
+
+        if SpecialColumnName.POINT_IN_TIME in output_columns and output_column_names_and_dtypes.get(
+            SpecialColumnName.POINT_IN_TIME
+        ) in {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}:
+            # add filter to exclude rows that are too old
+            if sample_from_timestamp is not None:
+                if sample_from_timestamp.tzinfo is not None:
+                    sample_from_timestamp = sample_from_timestamp.astimezone(tz.UTC).replace(
+                        tzinfo=None
+                    )
+                filter_conditions.append(
+                    expressions.GTE(
+                        this=adapter.normalize_timestamp_before_comparison(
+                            quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+                        ),
+                        expression=make_literal_value(
+                            sample_from_timestamp.isoformat(), cast_as_timestamp=True
+                        ),
+                    )
                 )
-            )
-        if sample_to_timestamp is not None:
-            time_range_conditions.append(
-                expressions.LT(
-                    this=adapter.normalize_timestamp_before_comparison(
-                        quoted_identifier(SpecialColumnName.POINT_IN_TIME)
-                    ),
-                    expression=make_literal_value(
-                        sample_to_timestamp.isoformat(), cast_as_timestamp=True
-                    ),
+
+            # add filter to exclude rows that are too recent
+            if sample_to_timestamp is not None:
+                if sample_to_timestamp.tzinfo is not None:
+                    sample_to_timestamp = sample_to_timestamp.astimezone(tz.UTC).replace(
+                        tzinfo=None
+                    )
+                filter_conditions.append(
+                    expressions.LT(
+                        this=adapter.normalize_timestamp_before_comparison(
+                            quoted_identifier(SpecialColumnName.POINT_IN_TIME)
+                        ),
+                        expression=make_literal_value(
+                            sample_to_timestamp.isoformat(), cast_as_timestamp=True
+                        ),
+                    )
                 )
-            )
-        if time_range_conditions:
+
+        # add filter to exclude rows with missing values in specified columns
+        if columns_to_exclude_missing_values:
+            # select only rows where renamed columns are not null
+            for col_name in columns_to_exclude_missing_values:
+                if col_name in output_columns:
+                    filter_conditions.append(
+                        expressions.Is(
+                            this=quoted_identifier(col_name),
+                            expression=expressions.Not(this=expressions.Null()),
+                        )
+                    )
+
+        if filter_conditions:
             query_expr = (
                 expressions.Select(
                     expressions=[
@@ -191,7 +234,7 @@ class BaseRequestInput(FeatureByteBaseModel):
                     ]
                 )
                 .from_(query_expr.subquery())
-                .where(expressions.And(expressions=time_range_conditions))
+                .where(expressions.And(expressions=filter_conditions))
             )
 
         if sample_rows is not None:
@@ -263,11 +306,13 @@ class ViewRequestInput(BaseRequestInput):
     def get_query_expr(self, source_info: SourceInfo) -> Select:
         return get_view_expr(graph=self.graph, node_name=self.node_name, source_info=source_info)
 
-    async def get_column_names(self, session: BaseSession) -> List[str]:
+    async def get_column_names_and_dtypes(self, session: BaseSession) -> Dict[str, DBVarType]:
         node = self.graph.get_node_by_name(self.node_name)
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
         op_struct = op_struct_info.operation_structure_map[node.name]
-        return cast(List[str], [column.name for column in op_struct.columns])
+        return cast(
+            Dict[str, DBVarType], {column.name: column.dtype for column in op_struct.columns}
+        )
 
 
 class SourceTableRequestInput(BaseRequestInput):
@@ -287,10 +332,10 @@ class SourceTableRequestInput(BaseRequestInput):
         _ = source_info
         return get_source_expr(source=self.source.table_details)
 
-    async def get_column_names(self, session: BaseSession) -> list[str]:
+    async def get_column_names_and_dtypes(self, session: BaseSession) -> Dict[str, DBVarType]:
         table_schema = await session.list_table_schema(
             table_name=self.source.table_details.table_name,
             database_name=self.source.table_details.database_name,
             schema_name=self.source.table_details.schema_name,
         )
-        return list(table_schema.keys())
+        return {key: value.dtype for key, value in table_schema.items()}

@@ -139,6 +139,7 @@ if __name__ == "__main__":
         "cachetools",
         "cryptography",
         "databricks",
+        "dateutil",
         "fastapi",
         "jinja2",
         "matplotlib",
