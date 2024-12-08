@@ -1129,3 +1129,41 @@ class BaseAdapter(ABC):
             if pattern in date_format_string:
                 return True
         return False
+
+    @classmethod
+    def to_timestamp_from_string(cls, expr: Expression, format_string: str) -> Expression:
+        """
+        Convert a string to a local timestamp
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the string
+        format_string: str
+            Format string
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Anonymous(
+            this="TO_TIMESTAMP", expressions=[expr, make_literal_value(format_string)]
+        )
+
+    @classmethod
+    @abstractmethod
+    def convert_timezone_to_utc(cls, expr: Expression, timezone: str) -> Expression:
+        """
+        Convert a local timestamp to UTC timezone
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the timestamp in local timezone
+        timezone: str
+            Timezone
+
+        Returns
+        -------
+        Expression
+        """

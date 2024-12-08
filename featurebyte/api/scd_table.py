@@ -20,6 +20,7 @@ from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, SCDTableData
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ChangeViewMetadata, ViewMetadata
@@ -87,6 +88,14 @@ class SCDTable(TableApiObject):
     internal_current_flag_column: Optional[StrictStr] = Field(
         alias="current_flag_column", default=None
     )
+    internal_effective_timestamp_schema: Optional[TimestampSchema] = Field(
+        alias="effective_timestamp_schema",
+        default=None,
+    )
+    internal_end_timestamp_schema: Optional[TimestampSchema] = Field(
+        alias="end_timestamp_schema",
+        default=None,
+    )
 
     # pydantic validators
     _model_validator = model_validator(mode="after")(
@@ -98,9 +107,12 @@ class SCDTable(TableApiObject):
                     DBVarType.supported_timestamp_types(),
                 ),
                 ("internal_natural_key_column", DBVarType.supported_id_types()),
-                ("internal_effective_timestamp_column", DBVarType.supported_timestamp_types()),
+                (
+                    "internal_effective_timestamp_column",
+                    DBVarType.supported_generic_timestamp_types(),
+                ),
                 ("internal_surrogate_key_column", DBVarType.supported_id_types()),
-                ("internal_end_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("internal_end_timestamp_column", DBVarType.supported_generic_timestamp_types()),
                 ("internal_current_flag_column", None),
             ],
         )
@@ -407,6 +419,32 @@ class SCDTable(TableApiObject):
             return self.cached_model.effective_timestamp_column
         except RecordRetrievalException:
             return self.internal_effective_timestamp_column
+
+    @property
+    def effective_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Returns the schema of the effective timestamp column
+
+        Returns
+        -------
+        """
+        try:
+            return self.cached_model.effective_timestamp_schema
+        except RecordRetrievalException:
+            return self.internal_effective_timestamp_schema
+
+    @property
+    def end_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Returns the schema of the end timestamp column
+
+        Returns
+        -------
+        """
+        try:
+            return self.cached_model.end_timestamp_schema
+        except RecordRetrievalException:
+            return self.internal_end_timestamp_schema
 
     @property
     def surrogate_key_column(self) -> Optional[str]:

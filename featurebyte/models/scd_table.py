@@ -8,7 +8,7 @@ from typing import Any, ClassVar, List, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel, Field, model_validator
 
-from featurebyte.common.validator import construct_data_model_validator
+from featurebyte.common.validator import ColumnToTimestampSchema, construct_data_model_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.feature_store import TableModel
 from featurebyte.query_graph.graph_node.base import GraphNode
@@ -47,11 +47,15 @@ class SCDTableModel(SCDTableData, TableModel):
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
                 ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("effective_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("end_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("effective_timestamp_column", DBVarType.supported_generic_timestamp_types()),
+                ("end_timestamp_column", DBVarType.supported_generic_timestamp_types()),
                 ("natural_key_column", DBVarType.supported_id_types()),
                 ("surrogate_key_column", DBVarType.supported_id_types()),
                 ("current_flag_column", None),
+            ],
+            column_to_timestamp_schema_pairs=[
+                ColumnToTimestampSchema("effective_timestamp_column", "effective_timestamp_schema"),
+                ColumnToTimestampSchema("end_timestamp_column", "end_timestamp_schema"),
             ],
         )
     )

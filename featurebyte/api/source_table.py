@@ -697,6 +697,8 @@ class SourceTable(AbstractTableData):
         current_flag_column: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
+        effective_timestamp_schema: Optional[TimestampSchema] = None,
+        end_timestamp_schema: Optional[TimestampSchema] = None,
         _id: Optional[ObjectId] = None,
     ) -> SCDTable:
         """
@@ -742,6 +744,10 @@ class SourceTable(AbstractTableData):
             The optional column for the timestamp when a record was created.
         description: Optional[str]
             The optional description of the new table.
+        effective_timestamp_schema: Optional[TimestampSchema]
+            The optional timestamp schema for the effective timestamp column.
+        end_timestamp_schema: Optional[TimestampSchema]
+            The optional timestamp schema for the end timestamp column.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create a
             SCD table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -782,6 +788,8 @@ class SourceTable(AbstractTableData):
             effective_timestamp_column=effective_timestamp_column,
             end_timestamp_column=end_timestamp_column,
             current_flag_column=current_flag_column,
+            effective_timestamp_schema=effective_timestamp_schema,
+            end_timestamp_schema=end_timestamp_schema,
             description=description,
         )
 
@@ -1023,6 +1031,8 @@ class SourceTable(AbstractTableData):
         current_flag_column: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
+        effective_timestamp_schema: Optional[TimestampSchema] = None,
+        end_timestamp_schema: Optional[TimestampSchema] = None,
         _id: Optional[ObjectId] = None,
     ) -> SCDTable:
         """
@@ -1048,6 +1058,10 @@ class SourceTable(AbstractTableData):
             Record creation timestamp column from the given source table.
         description: Optional[str]
             The optional description of the table.
+        effective_timestamp_schema: Optional[TimestampSchema]
+            The optional timestamp schema for the effective timestamp column.
+        end_timestamp_schema: Optional[TimestampSchema]
+            The optional timestamp schema for the end timestamp column.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create a
             SCD table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -1071,6 +1085,8 @@ class SourceTable(AbstractTableData):
             end_timestamp_column=end_timestamp_column,
             current_flag_column=current_flag_column,
             description=description,
+            effective_timestamp_schema=effective_timestamp_schema,
+            end_timestamp_schema=end_timestamp_schema,
         )
 
     @typechecked
