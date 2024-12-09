@@ -39,6 +39,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "dtype": "VARCHAR",
@@ -47,6 +48,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "dtype": "VARCHAR",
@@ -55,6 +57,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "dtype": "FLOAT",
@@ -63,6 +66,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "dtype": "TIMESTAMP_TZ",
@@ -71,6 +75,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "dtype": "TIMESTAMP_TZ",
@@ -79,6 +84,7 @@ def item_table_dict_fixture(snowflake_database_table_item_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
         ],
         "created_at": None,

@@ -112,5 +112,6 @@
             "table_name": "scd_table"
         }
     },
+    "timestamp_schema": null,
     "type": "scd_table"
 }

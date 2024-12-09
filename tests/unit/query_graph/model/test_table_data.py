@@ -166,8 +166,8 @@ def source_table_input_node_fixture(feature_store_details, source_table_data):
         "name": "temp",
         "parameters": {
             "columns": [
-                {"name": "col_int", "dtype": "INT"},
-                {"name": "col_float", "dtype": "FLOAT"},
+                {"name": "col_int", "dtype": "INT", "timestamp_schema": None},
+                {"name": "col_float", "dtype": "FLOAT", "timestamp_schema": None},
             ],
             "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": None,
