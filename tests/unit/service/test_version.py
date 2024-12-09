@@ -682,6 +682,56 @@ async def test_create_new_feature_version_using_source_settings(
 
 
 @pytest.mark.asyncio
+async def test_create_new_feature_version_using_source_settings__period_unchanged(
+    version_service, event_table_service, feature, event_table
+):
+    """Test create new feature version using source settings but feature period is maintained"""
+    # check current feature settings
+    view_graph_params = feature.graph.get_node_by_name("graph_1").parameters
+    assert view_graph_params.metadata.column_cleaning_operations == []
+
+    group_by_params = feature.graph.get_node_by_name("groupby_1").parameters
+    assert group_by_params.feature_job_setting == FeatureJobSetting(
+        blind_spot="600s", period="1800s", offset="300s"
+    )
+
+    # prepare event table before create new version from source settings
+    columns_info_with_cdi = []
+    for col in event_table.columns_info:
+        if col.name == "col_float":
+            col.critical_data_info = CriticalDataInfo(
+                cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
+            )
+        columns_info_with_cdi.append(col)
+
+    await event_table_service.update_document(
+        document_id=event_table.id,
+        data=EventTableServiceUpdate(
+            default_feature_job_setting=FeatureJobSetting(
+                blind_spot="500s", period="10m", offset="200s"
+            ),
+            columns_info=columns_info_with_cdi,
+        ),
+    )
+
+    # create new version from source settings & check the feature job setting & table cleaning operations
+    new_version = await version_service.create_new_feature_version_using_source_settings(
+        document_id=feature.id
+    )
+    view_graph_params = new_version.graph.get_node_by_name("graph_1").parameters
+    assert view_graph_params.metadata.column_cleaning_operations == [
+        ColumnCleaningOperation(
+            column_name="col_float", cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
+        )
+    ]
+
+    group_by_params = new_version.graph.get_node_by_name("groupby_1").parameters
+    assert group_by_params.feature_job_setting == FeatureJobSetting(
+        blind_spot="500s", period="1800s", offset="200s"
+    )
+
+
+@pytest.mark.asyncio
 async def test_create_new_feature_version_using_source_settings__no_changes_throws_error(
     version_service,
     feature,
