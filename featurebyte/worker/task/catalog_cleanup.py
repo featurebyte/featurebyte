@@ -8,11 +8,13 @@ import importlib
 import inspect
 import pkgutil
 from datetime import datetime, timedelta
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Type
 
 import featurebyte.models
 from featurebyte.exception import DataWarehouseOperationError
+from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel, User
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.proxy_table import ProxyTableModel
@@ -28,6 +30,8 @@ from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
+
+logger = get_logger(__name__)
 
 
 def get_catalog_subclasses_in_module(
@@ -58,8 +62,8 @@ def get_catalog_subclasses_in_module(
                 obj.collection_name()
                 classes.append(obj)
             except AttributeError:
-                print(name, obj)
-                pass
+                logger.exception("Error getting collection name for class %s", obj)
+
     return classes
 
 
@@ -112,7 +116,7 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
         """
         return {"table": ProxyTableModel}
 
-    @property
+    @cached_property
     def catalog_specific_model_class_pairs(
         self,
     ) -> list[tuple[str, Type[FeatureByteCatalogBaseDocumentModel]]]:
@@ -157,8 +161,8 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                     schema_name=warehouse_table.schema_name or fs_source_info.schema_name,
                     database_name=warehouse_table.database_name or fs_source_info.database_name,
                 )
-            except DataWarehouseOperationError:
-                pass
+            except DataWarehouseOperationError as exc:
+                logger.exception(f"Error dropping warehouse table ({warehouse_table}): {exc}")
 
     async def _cleanup_store_files(self, remote_file_paths: set[Path]) -> None:
         for remote_file_path in remote_file_paths:
@@ -227,4 +231,7 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                 },
                 use_raw_query_filter=True,
             ):
-                await self._cleanup_catalog(catalog)
+                try:
+                    await self._cleanup_catalog(catalog)
+                except Exception as exc:
+                    logger.exception(f"Error cleaning up catalog ({catalog}): {exc}")
