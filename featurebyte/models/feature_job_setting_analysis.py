@@ -5,6 +5,7 @@ This module contains FeatureJobSettingAnalysis related models
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import pymongo
@@ -83,6 +84,10 @@ class FeatureJobSettingAnalysisModel(FeatureByteCatalogBaseDocumentModel):
     analysis_result: AnalysisResult
     analysis_report: str
     backtest_summaries: Optional[List[BackTestSummary]] = Field(default_factory=list)
+
+    @classmethod
+    def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:
+        return [Path(f"feature_job_setting_analysis/{document_dict['_id']}/data.json")]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

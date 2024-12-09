@@ -100,6 +100,8 @@ class FeatureListCreateTask(BaseTask[FeatureListCreateTaskPayload]):
             data=feature_list_create,
             progress_callback=self.task_progress_updater.update_progress,
         )
+        # cleanup the storage file
+        await self.storage.delete(remote_path=Path(payload.features_parameters_path))
         await self.task_progress_updater.update_progress(
             percent=100, message="Completed feature list creation"
         )

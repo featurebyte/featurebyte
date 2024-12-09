@@ -10,6 +10,7 @@ from featurebyte.worker.task.base import BaseTask, TaskT
 from featurebyte.worker.task.batch_feature_create import BatchFeatureCreateTask
 from featurebyte.worker.task.batch_feature_table import BatchFeatureTableTask
 from featurebyte.worker.task.batch_request_table import BatchRequestTableTask
+from featurebyte.worker.task.catalog_cleanup import CatalogCleanupTask
 from featurebyte.worker.task.catalog_online_store_update import CatalogOnlineStoreUpdateTask
 from featurebyte.worker.task.data_description import DataDescriptionTask
 from featurebyte.worker.task.deployment_create_update import DeploymentCreateUpdateTask
@@ -64,6 +65,7 @@ TASK_REGISTRY_MAP: Dict[Enum, Type[BaseTask[TaskT]]] = {  # type: ignore[valid-t
     WorkerCommand.TABLE_VALIDATION: TableValidationTask,
     WorkerCommand.TEST: TestTask,
     WorkerCommand.IO_TEST: TestIOTask,
+    WorkerCommand.CATALOG_CLEANUP: CatalogCleanupTask,
     # TO BE DEPRECATED
     WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE: FeatureListCreateWithBatchFeatureCreationTask,
 }

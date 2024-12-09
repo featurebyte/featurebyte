@@ -424,6 +424,28 @@ class FeatureByteCatalogBaseDocumentModel(FeatureByteBaseDocumentModel):
             values["catalog_id"] = DEFAULT_CATALOG_ID
         return values
 
+    @property
+    def remote_storage_paths(self) -> list[Path]:
+        """
+        Get remote storage paths
+
+        Returns
+        -------
+        list[Path]
+        """
+        return self._get_remote_attribute_paths(self.model_dump(by_alias=True))
+
+    @property
+    def warehouse_tables(self) -> list[Any]:
+        """
+        Get warehouse table details
+
+        Returns
+        -------
+        list[str]
+        """
+        return []
+
     class Settings(FeatureByteBaseDocumentModel.Settings):
         """
         MongoDB settings

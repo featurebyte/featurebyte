@@ -118,6 +118,7 @@ class Task(FeatureByteBaseDocumentModel):
             pymongo.operations.IndexModel("name"),
             pymongo.operations.IndexModel("start_time", expireAfterSeconds=3600 * 24 * 30),
             pymongo.operations.IndexModel("kwargs.is_scheduled_task"),
+            pymongo.operations.IndexModel("kwargs.catalog_id"),
             pymongo.operations.IndexModel("date_done"),
             [
                 ("name", pymongo.TEXT),

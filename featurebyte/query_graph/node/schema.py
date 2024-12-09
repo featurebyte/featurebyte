@@ -399,6 +399,9 @@ class TableDetails(FeatureByteBaseModel):
     schema_name: Optional[NameStr] = Field(default=None)
     table_name: NameStr
 
+    def __hash__(self) -> int:
+        return hash((self.database_name, self.schema_name, self.table_name))
+
 
 class ColumnSpec(FeatureByteBaseModel):
     """

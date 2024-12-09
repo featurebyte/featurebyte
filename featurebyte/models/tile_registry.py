@@ -16,6 +16,7 @@ from featurebyte.models.base import (
     PydanticObjectId,
     UniqueValuesConstraint,
 )
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
@@ -78,6 +79,10 @@ class TileModel(FeatureByteCatalogBaseDocumentModel):
     last_run_metadata_online: Optional[LastRunMetadata] = Field(default=None)
     last_run_metadata_offline: Optional[LastRunMetadata] = Field(default=None)
     backfill_metadata: Optional[BackfillMetadata] = Field(default=None)
+
+    @property
+    def warehouse_tables(self) -> list[TableDetails]:
+        return [TableDetails(table_name=self.tile_id)]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
