@@ -17,39 +17,48 @@
                     "columns": [
                         {
                             "dtype": "INT",
-                            "name": "col_int"
+                            "name": "col_int",
+                            "timestamp_schema": null
                         },
                         {
                             "dtype": "FLOAT",
-                            "name": "col_float"
+                            "name": "col_float",
+                            "timestamp_schema": null
                         },
                         {
                             "dtype": "CHAR",
-                            "name": "col_char"
+                            "name": "col_char",
+                            "timestamp_schema": null
                         },
                         {
                             "dtype": "VARCHAR",
-                            "name": "col_text"
+                            "name": "col_text",
+                            "timestamp_schema": null
                         },
                         {
                             "dtype": "BINARY",
-                            "name": "col_binary"
+                            "name": "col_binary",
+                            "timestamp_schema": null
                         },
                         {
                             "dtype": "BOOL",
-                            "name": "col_boolean"
+                            "name": "col_boolean",
+                            "timestamp_schema": null
                         },
                         {
                             "dtype": "TIMESTAMP_TZ",
-                            "name": "event_timestamp"
+                            "name": "event_timestamp",
+                            "timestamp_schema": null
                         },
                         {
                             "dtype": "TIMESTAMP_TZ",
-                            "name": "created_at"
+                            "name": "created_at",
+                            "timestamp_schema": null
                         },
                         {
                             "dtype": "INT",
-                            "name": "cust_id"
+                            "name": "cust_id",
+                            "timestamp_schema": null
                         }
                     ],
                     "event_timestamp_timezone_offset": null,

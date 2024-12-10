@@ -364,6 +364,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 "entity_id": None,
                 "name": "a",
                 "semantic_id": None,
+                "timestamp_schema": None,
             },
             {
                 "critical_data_info": None,
@@ -372,6 +373,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 "entity_id": None,
                 "name": "b",
                 "semantic_id": None,
+                "timestamp_schema": None,
             },
             {
                 "critical_data_info": None,
@@ -380,6 +382,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 "entity_id": None,
                 "name": "c",
                 "semantic_id": None,
+                "timestamp_schema": None,
             },
         ]
 

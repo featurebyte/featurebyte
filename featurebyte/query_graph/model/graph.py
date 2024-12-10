@@ -12,6 +12,7 @@ from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
+from featurebyte.query_graph.model.node_hash_util import exclude_default_timestamp_schema
 from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.query_graph.node.input import InputNode, ItemTableInputNodeParameters
@@ -239,6 +240,7 @@ class QueryGraphModel(FeatureByteBaseModel):
         if node.type == NodeType.INPUT:
             # exclude feature_store_details.details from input node hash if it exists
             node_parameters["feature_store_details"].pop("details", None)
+            exclude_default_timestamp_schema(node_parameters)
         if node.type == NodeType.GROUPBY:
             node_parameters.pop("tile_id_version", None)
             fjs = node_parameters.pop("feature_job_setting")

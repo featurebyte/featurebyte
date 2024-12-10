@@ -11,42 +11,48 @@
             "description": null,
             "dtype": "INT",
             "entity_id": "63f94ed6ea1f050131379204",
-            "name": "event_id_col"
+            "name": "event_id_col",
+            "timestamp_schema": null
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "VARCHAR",
             "entity_id": null,
-            "name": "item_id_col"
+            "name": "item_id_col",
+            "timestamp_schema": null
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "VARCHAR",
             "entity_id": null,
-            "name": "item_type"
+            "name": "item_type",
+            "timestamp_schema": null
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "FLOAT",
             "entity_id": null,
-            "name": "item_amount"
+            "name": "item_amount",
+            "timestamp_schema": null
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
-            "name": "created_at"
+            "name": "created_at",
+            "timestamp_schema": null
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "TIMESTAMP_TZ",
             "entity_id": null,
-            "name": "event_timestamp"
+            "name": "event_timestamp",
+            "timestamp_schema": null
         }
     ],
     "description": "test item table",

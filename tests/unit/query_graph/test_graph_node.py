@@ -20,9 +20,9 @@ def input_node_params_fixture(snowflake_feature_store_details_dict, snowflake_ta
     return {
         "type": "source_table",
         "columns": [
-            {"name": "col_int", "dtype": "INT"},
-            {"name": "col_float", "dtype": "FLOAT"},
-            {"name": "col_varchar", "dtype": "VARCHAR"},
+            {"name": "col_int", "dtype": "INT", "timestamp_schema": None},
+            {"name": "col_float", "dtype": "FLOAT", "timestamp_schema": None},
+            {"name": "col_varchar", "dtype": "VARCHAR", "timestamp_schema": None},
         ],
         "feature_store_details": snowflake_feature_store_details_dict,
         "table_details": snowflake_table_details_dict,
