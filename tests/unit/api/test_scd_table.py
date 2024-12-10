@@ -222,7 +222,6 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
         "created_at": None,
         "updated_at": None,
         "user_id": user_id,
-        "timestamp_schema": None,
         "is_deleted": False,
     }
 
