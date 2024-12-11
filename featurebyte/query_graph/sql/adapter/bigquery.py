@@ -50,8 +50,8 @@ class BigQueryAdapter(BaseAdapter):
             DBVarType.ARRAY: cls.DataType.ARRAY,
             DBVarType.EMBEDDING: cls.DataType.ARRAY,
         }
-        for dtype in DBVarType.dictionary_types():
-            mapping[dtype] = cls.DataType.OBJECT
+        for dict_dtype in DBVarType.dictionary_types():
+            mapping[dict_dtype] = cls.DataType.OBJECT
         if dtype in mapping:
             return mapping[dtype]
         return cls.DataType.STRING
