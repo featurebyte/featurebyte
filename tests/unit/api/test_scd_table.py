@@ -120,6 +120,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -128,6 +129,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -136,6 +138,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -144,6 +147,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -152,6 +156,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -160,6 +165,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -168,6 +174,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -176,6 +183,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "critical_data_info": None,
@@ -184,6 +192,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "entity_id": None,
                 "name": "date_of_birth",
                 "semantic_id": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -192,6 +201,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -200,6 +210,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
         ],
         "natural_key_column": "col_text",

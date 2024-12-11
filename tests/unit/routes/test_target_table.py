@@ -111,8 +111,13 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "block_modification_by": [],
             "catalog_id": catalog_id,
             "columns_info": [
-                {"dtype": "TIMESTAMP", "entity_id": None, "name": "POINT_IN_TIME"},
-                {"dtype": "INT", "entity_id": None, "name": "cust_id"},
+                {
+                    "dtype": "TIMESTAMP",
+                    "entity_id": None,
+                    "name": "POINT_IN_TIME",
+                    "timestamp_schema": None,
+                },
+                {"dtype": "INT", "entity_id": None, "name": "cust_id", "timestamp_schema": None},
             ],
             "context_id": None,
             "created_at": json_dict["created_at"],

@@ -101,6 +101,7 @@ def dimension_table_dict_fixture(snowflake_database_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -109,6 +110,7 @@ def dimension_table_dict_fixture(snowflake_database_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": "Float column",
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -117,6 +119,7 @@ def dimension_table_dict_fixture(snowflake_database_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": "Char column",
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -125,6 +128,7 @@ def dimension_table_dict_fixture(snowflake_database_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": "Text column",
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -133,6 +137,7 @@ def dimension_table_dict_fixture(snowflake_database_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -141,6 +146,7 @@ def dimension_table_dict_fixture(snowflake_database_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -149,6 +155,7 @@ def dimension_table_dict_fixture(snowflake_database_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": "Timestamp column",
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -157,6 +164,7 @@ def dimension_table_dict_fixture(snowflake_database_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "entity_id": None,
@@ -165,6 +173,7 @@ def dimension_table_dict_fixture(snowflake_database_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
         ],
         "dimension_id_column": "col_int",

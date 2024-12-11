@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, StrictStr, model_validator
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
@@ -410,3 +411,4 @@ class ColumnSpec(FeatureByteBaseModel):
 
     name: NameStr
     dtype: DBVarType
+    timestamp_schema: Optional[TimestampSchema] = None

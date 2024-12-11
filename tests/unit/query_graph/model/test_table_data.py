@@ -166,8 +166,8 @@ def source_table_input_node_fixture(feature_store_details, source_table_data):
         "name": "temp",
         "parameters": {
             "columns": [
-                {"name": "col_int", "dtype": "INT"},
-                {"name": "col_float", "dtype": "FLOAT"},
+                {"name": "col_int", "dtype": "INT", "timestamp_schema": None},
+                {"name": "col_float", "dtype": "FLOAT", "timestamp_schema": None},
             ],
             "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": None,
@@ -190,9 +190,9 @@ def event_input_node_fixture(feature_store_details, event_table_data):
         "name": "temp",
         "parameters": {
             "columns": [
-                {"name": "event_timestamp", "dtype": "TIMESTAMP"},
-                {"name": "event_id", "dtype": "INT"},
-                {"name": "amount", "dtype": "FLOAT"},
+                {"name": "event_timestamp", "dtype": "TIMESTAMP", "timestamp_schema": None},
+                {"name": "event_id", "dtype": "INT", "timestamp_schema": None},
+                {"name": "amount", "dtype": "FLOAT", "timestamp_schema": None},
             ],
             "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": event_table_data.id,
@@ -228,9 +228,9 @@ def dimension_input_node_fixture(feature_store_details, dimension_table_data):
         "name": "temp",
         "parameters": {
             "columns": [
-                {"name": "user_id", "dtype": "INT"},
-                {"name": "gender", "dtype": "VARCHAR"},
-                {"name": "age", "dtype": "INT"},
+                {"name": "user_id", "dtype": "INT", "timestamp_schema": None},
+                {"name": "gender", "dtype": "VARCHAR", "timestamp_schema": None},
+                {"name": "age", "dtype": "INT", "timestamp_schema": None},
             ],
             "feature_store_details": {"type": feature_store_details.type, "details": None},
             "id": dimension_table_data.id,
@@ -372,6 +372,7 @@ def test_event_view_graph_node(event_table_data, event_input_node):
                 "entity_id": None,
                 "critical_data_info": None,
                 "description": None,
+                "timestamp_schema": None,
             },
             {
                 "name": "amount",
@@ -385,6 +386,7 @@ def test_event_view_graph_node(event_table_data, event_input_node):
                     ]
                 },
                 "description": None,
+                "timestamp_schema": None,
             },
         ],
     )

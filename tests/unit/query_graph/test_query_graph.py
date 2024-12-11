@@ -343,7 +343,8 @@ def test_query_graph__representation():
                         "columns": [
                             {
                                 "name": "column",
-                                "dtype": "INT"
+                                "dtype": "INT",
+                                "timestamp_schema": null
                             }
                         ],
                         "table_details": {
