@@ -45,13 +45,12 @@ class BigQueryAdapter(BaseAdapter):
             DBVarType.INT: cls.DataType.FLOAT,
             DBVarType.FLOAT: cls.DataType.FLOAT,
             DBVarType.VARCHAR: cls.DataType.STRING,
+            DBVarType.OBJECT: cls.DataType.OBJECT,
             DBVarType.TIMESTAMP: cls.DataType.TIMESTAMP,
             DBVarType.TIMESTAMP_TZ: cls.DataType.TIMESTAMP,
             DBVarType.ARRAY: cls.DataType.ARRAY,
             DBVarType.EMBEDDING: cls.DataType.ARRAY,
         }
-        for dtype in DBVarType.dictionary_types():
-            mapping[dtype] = cls.DataType.OBJECT
         if dtype in mapping:
             return mapping[dtype]
         return cls.DataType.STRING
