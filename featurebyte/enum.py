@@ -216,7 +216,7 @@ class DBVarType(StrEnum):
         """
         # FIXME: remove this after we update to the dictionary type
         # Snowflake uses OBJECT for dictionary type & Spark uses STRUCT for dictionary type
-        return {cls.OBJECT, cls.STRUCT, cls.DICT, cls.MAP}
+        return {cls.OBJECT, cls.STRUCT, cls.DICT, cls.MAP, cls.FLAT_DICT}
 
     @classmethod
     def array_types(cls) -> set[DBVarType]:

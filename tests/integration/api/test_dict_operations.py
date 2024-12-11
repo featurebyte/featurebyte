@@ -5,7 +5,7 @@ Test operations on dict / cross aggregation features
 import pandas as pd
 import pytest
 
-from featurebyte import FeatureGroup
+from featurebyte import FeatureGroup, FeatureList
 from tests.util.helper import fb_assert_frame_equal
 
 
@@ -54,3 +54,32 @@ def test_key_with_highest_and_lowest_value(cross_aggregate_feature):
         }
     ])
     fb_assert_frame_equal(df, expected, dict_like_columns=["amount_sum_across_action_7d"])
+
+
+def test_flat_dict_feature(event_table):
+    """
+    Test feature with a FLAT_DICT dtype
+    """
+    view = event_table.get_view()
+    feature = view.groupby("ÜSER ID").aggregate_over(
+        "FLAT_DICT",
+        method="latest",
+        windows=[None],
+        feature_names=["flat_dict_latest_feature"],
+    )["flat_dict_latest_feature"]
+    feature_list = FeatureList([feature], name="flat_dict_feature")
+    df_obs = pd.DataFrame([
+        {
+            "POINT_IN_TIME": "2001-01-02 10:00:00",
+            "üser id": 1,
+        }
+    ])
+    df = feature_list.compute_historical_features(df_obs)
+    expected = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+            "üser id": 1,
+            "flat_dict_latest_feature": "{'a': 1, 'b': 9}",
+        }
+    ])
+    fb_assert_frame_equal(df, expected, dict_like_columns=["flat_dict_latest_feature"])
