@@ -226,6 +226,7 @@ class ClassEnum(Enum):
     ITEM_TABLE = ("featurebyte", "ItemTable")
     DIMENSION_TABLE = ("featurebyte", "DimensionTable")
     SCD_TABLE = ("featurebyte", "SCDTable")
+    TIME_SERIES_TABLE = ("featurebyte", "TimeSeriesTable")
 
     # view
     EVENT_VIEW = ("featurebyte", "EventView")
@@ -249,6 +250,8 @@ class ClassEnum(Enum):
     REQUEST_COLUMN = ("featurebyte.api.request_column", "RequestColumn")
     USER_DEFINED_FUNCTION = ("featurebyte", "UserDefinedFunction")
     HAVERSINE = ("featurebyte", "haversine")
+    TIMESTAMP_SCHEMA = ("featurebyte", "TimestampSchema")
+    TIME_INTERVAL = ("featurebyte", "TimeInterval")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any

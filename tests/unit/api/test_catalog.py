@@ -20,7 +20,12 @@ from pandas.testing import assert_frame_equal
 from pydantic import ValidationError
 from typeguard import TypeCheckError
 
-from featurebyte import MySQLOnlineStoreDetails, OnlineStore, UsernamePasswordCredential
+from featurebyte import (
+    MySQLOnlineStoreDetails,
+    OnlineStore,
+    TimeSeriesTable,
+    UsernamePasswordCredential,
+)
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.base_table import TableApiObject, TableListMixin
 from featurebyte.api.batch_feature_table import BatchFeatureTable
@@ -290,6 +295,7 @@ def test_all_methods_are_exposed_in_catalog(method_list):
         FeatureNamespace,  # same as (list|get)_feature
         ItemTable,  # accessible as part of catalog.(list|get)_table
         SCDTable,  # accessible as part of catalog.(list|get)_table
+        TimeSeriesTable,  # accessible as part of catalog.(list|get)_table
         SavableApiObject,
         DeletableApiObject,
         TableApiObject,
