@@ -43,6 +43,7 @@ from featurebyte.service.table import TableService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_namespace import TargetNamespaceService
 from featurebyte.service.target_table import TargetTableService
+from featurebyte.service.time_series_table import TimeSeriesTableService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 
@@ -81,6 +82,7 @@ DocumentServiceT = TypeVar(
     AllDeploymentService,
     UseCaseService,
     SystemMetricsService,
+    TimeSeriesTableService,
 )
 
 

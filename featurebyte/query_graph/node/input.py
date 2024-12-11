@@ -13,6 +13,8 @@ from typing_extensions import Annotated, Literal
 from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.time_series_table import TimeInterval
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.metadata.column import InColumnStr
 from featurebyte.query_graph.node.metadata.config import SDKCodeGenConfig
@@ -373,6 +375,48 @@ class SCDTableInputNodeParameters(BaseInputNodeParameters):
         return output
 
 
+class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
+    """TimeSeriesTableParameters"""
+
+    type: Literal[TableDataType.TIME_SERIES_TABLE] = TableDataType.TIME_SERIES_TABLE
+    id: Optional[PydanticObjectId] = Field(default=None)
+    id_column: Optional[InColumnStr] = Field(default=None)
+    reference_datetime_column: InColumnStr
+    reference_datetime_schema: TimestampSchema
+    time_interval: TimeInterval
+
+    @property
+    def variable_name_prefix(self) -> str:
+        return "time_series_table"
+
+    def extract_other_constructor_parameters(self, table_info: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
+            "series_id_column": self.id_column,
+            "reference_datetime_column": self.reference_datetime_column,
+            "reference_datetime_schema": ClassEnum.TIMESTAMP_SCHEMA(
+                format_string=self.reference_datetime_schema.format_string,
+                is_utc_time=self.reference_datetime_schema.is_utc_time,
+                timezone=self.reference_datetime_schema.timezone,
+            ),
+            "time_interval": ClassEnum.TIME_INTERVAL(
+                value=self.time_interval.value,
+                unit=self.time_interval.unit,
+            ),
+            "_id": ClassEnum.OBJECT_ID(self.id),
+        }
+
+    def construct_comment(
+        self, table_id_to_info: Dict[PydanticObjectId, Dict[str, Any]]
+    ) -> Optional[CommentStr]:
+        output = None
+        if self.id:
+            table_name = table_id_to_info.get(self.id, {}).get("name")
+            if table_name:
+                output = CommentStr(f'time_series_table name: "{table_name}"')
+        return output
+
+
 InputNodeParameters = Annotated[
     Union[
         EventTableInputNodeParameters,
@@ -380,6 +424,7 @@ InputNodeParameters = Annotated[
         SourceTableInputNodeParameters,
         DimensionTableInputNodeParameters,
         SCDTableInputNodeParameters,
+        TimeSeriesTableInputNodeParameters,
     ],
     Field(discriminator="type"),
 ]
@@ -399,6 +444,7 @@ class InputNode(BaseNode):
         TableDataType.ITEM_TABLE: ClassEnum.ITEM_TABLE,
         TableDataType.DIMENSION_TABLE: ClassEnum.DIMENSION_TABLE,
         TableDataType.SCD_TABLE: ClassEnum.SCD_TABLE,
+        TableDataType.TIME_SERIES_TABLE: ClassEnum.TIME_SERIES_TABLE,
     }
 
     @property

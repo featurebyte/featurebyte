@@ -15,8 +15,15 @@ from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableModel as BaseTableModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.scd_table import SCDTableModel
+from featurebyte.models.time_series_table import TimeSeriesTableModel
 
-TABLE_TYPES = [EventTableModel, ItemTableModel, DimensionTableModel, SCDTableModel]
+TABLE_TYPES = [
+    EventTableModel,
+    ItemTableModel,
+    DimensionTableModel,
+    SCDTableModel,
+    TimeSeriesTableModel,
+]
 if TYPE_CHECKING:
     TableModel = BaseTableModel
 else:

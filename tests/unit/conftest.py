@@ -27,6 +27,7 @@ from snowflake.connector import ProgrammingError
 from snowflake.connector.constants import QueryStatus
 
 from featurebyte import (
+    CronFeatureJobSetting,
     FeatureJobSetting,
     MissingValueImputation,
     SnowflakeDetails,
@@ -53,10 +54,13 @@ from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.online_store import MySQLOnlineStoreDetails
 from featurebyte.models.online_store_spec import OnlineFeatureSpec
+from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import OnDemandTileComputeResult, TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
+from featurebyte.query_graph.model.time_series_table import TimeInterval
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.routes.lazy_app_container import LazyAppContainer
@@ -549,6 +553,53 @@ def snowflake_query_map_fixture():
                 "comment": None,
             },
         ],
+        'SHOW COLUMNS IN "sf_database"."sf_schema"."time_series_table"': [
+            {
+                "column_name": "col_int",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
+            {
+                "column_name": "col_float",
+                "data_type": json.dumps({"type": "REAL"}),
+                "comment": "Float column",
+            },
+            {
+                "column_name": "col_char",
+                "data_type": json.dumps({"type": "TEXT", "length": 1}),
+                "comment": "Char column",
+            },
+            {
+                "column_name": "col_text",
+                "data_type": json.dumps({"type": "TEXT", "length": 2**24}),
+                "comment": "Text column",
+            },
+            {
+                "column_name": "col_binary",
+                "data_type": json.dumps({"type": "BINARY"}),
+                "comment": None,
+            },
+            {
+                "column_name": "col_boolean",
+                "data_type": json.dumps({"type": "BOOLEAN"}),
+                "comment": None,
+            },
+            {
+                "column_name": "date",
+                "data_type": json.dumps({"type": "TEXT", "length": 8}),
+                "comment": "Date column",
+            },
+            {
+                "column_name": "created_at",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
+            },
+            {
+                "column_name": "store_id",
+                "data_type": json.dumps({"type": "FIXED", "scale": 0}),
+                "comment": None,
+            },
+        ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_state_map"': [
             {
                 "column_name": "col_int",
@@ -695,6 +746,18 @@ def snowflake_query_map_fixture():
                 "TABLE_CATALOG": "sf_database",
                 "TABLE_TYPE": "VIEW",
                 "COMMENT": "Dimension table",
+            }
+        ],
+        (
+            'SELECT * FROM "sf_database"."INFORMATION_SCHEMA"."TABLES" WHERE '
+            "\"TABLE_SCHEMA\"='sf_schema' AND \"TABLE_NAME\"='time_series_table'"
+        ): [
+            {
+                "TABLE_NAME": "time_series_table",
+                "TABLE_SCHEMA": "sf_schema",
+                "TABLE_CATALOG": "sf_database",
+                "TABLE_TYPE": "VIEW",
+                "COMMENT": "SCD table",
             }
         ],
         "SELECT WORKING_SCHEMA_VERSION, FEATURE_STORE_ID FROM METADATA_SCHEMA": [],
@@ -918,6 +981,18 @@ def snowflake_database_table_item_table_same_event_id_fixture(snowflake_data_sou
     )
 
 
+@pytest.fixture(name="snowflake_database_time_series_table")
+def snowflake_database_time_series_table_fixture(snowflake_data_source):
+    """
+    SourceTable object fixture for TimeSeriesTable
+    """
+    yield snowflake_data_source.get_source_table(
+        database_name="sf_database",
+        schema_name="sf_schema",
+        table_name="time_series_table",
+    )
+
+
 @pytest.fixture(name="snowflake_feature_store_id")
 def snowflake_feature_store_id_fixture():
     """Snowflake feature store id"""
@@ -964,6 +1039,12 @@ def snowflake_item_table_id_fixture():
 def snowflake_item_table_id_2_fixture():
     """Snowflake event table ID"""
     return ObjectId("6337f9651050ee7d5980662e")
+
+
+@pytest.fixture(name="snowflake_time_series_table_id")
+def snowflake_time_series_table_id_fixture():
+    """Snowflake time series table ID"""
+    return ObjectId("6337f9651050ee7d5980662f")
 
 
 @pytest.fixture(name="cust_id_entity_id")
@@ -1197,6 +1278,30 @@ def snowflake_item_table_with_timezone_offset_column_fixture(
     yield item_table
 
 
+@pytest.fixture(name="snowflake_time_series_table")
+def snowflake_time_series_table_fixture(
+    snowflake_database_time_series_table,
+    snowflake_time_series_table_id,
+    catalog,
+    mock_detect_and_update_column_dtypes,
+):
+    """TimeSeriesTable object fixture"""
+    _ = catalog, mock_detect_and_update_column_dtypes
+    time_series_table = snowflake_database_time_series_table.create_time_series_table(
+        name="sf_time_series_table",
+        series_id_column="col_int",
+        reference_datetime_column="date",
+        reference_datetime_schema=TimestampSchema(timezone="Etc/UTC"),
+        time_interval=TimeInterval(value=1, unit="DAY"),
+        record_creation_timestamp_column="created_at",
+        description="test time series table",
+        _id=snowflake_time_series_table_id,
+    )
+    assert time_series_table.frame.node.parameters.id == time_series_table.id
+    assert time_series_table.id == snowflake_time_series_table_id
+    yield time_series_table
+
+
 @pytest.fixture(name="cust_id_entity")
 def cust_id_entity_fixture(cust_id_entity_id, catalog):
     """
@@ -1301,12 +1406,47 @@ def snowflake_event_table_with_entity_fixture(
     yield snowflake_event_table
 
 
+@pytest.fixture(name="snowflake_time_series_table_with_entity")
+def snowflake_time_series_table_with_entity_fixture(
+    snowflake_time_series_table,
+    cust_id_entity,
+    transaction_entity,
+    mock_api_object_cache,
+    mock_detect_and_update_column_dtypes,
+    patch_initialize_entity_dtype,
+):
+    """
+    Entity fixture that sets cust_id in snowflake_time_series_table as an Entity
+    """
+    _ = mock_api_object_cache, mock_detect_and_update_column_dtypes, patch_initialize_entity_dtype
+    snowflake_time_series_table.store_id.as_entity(cust_id_entity.name)
+    snowflake_time_series_table.col_int.as_entity(transaction_entity.name)
+    yield snowflake_time_series_table
+
+
 @pytest.fixture(name="arbitrary_default_feature_job_setting")
 def arbitrary_default_feature_job_setting_fixture():
     """
     Get arbitrary default feature job setting
     """
     return FeatureJobSetting(blind_spot="1m30s", period="15m", offset="3m")
+
+
+@pytest.fixture(name="arbitrary_default_cron_feature_job_setting")
+def arbitrary_default_cron_feature_job_setting_fixture():
+    """
+    Get arbitrary default feature job setting
+    """
+    return CronFeatureJobSetting(
+        crontab=Crontab(
+            minute=0,
+            hour=1,
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        ),
+        timezone="Etc/UTC",
+    )
 
 
 @pytest.fixture(name="snowflake_event_table_with_entity_and_feature_job")

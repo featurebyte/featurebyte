@@ -17,6 +17,7 @@ from featurebyte.models.feature_store import TableValidation, TableValidationSta
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.scd_table import SCDTableModel
+from featurebyte.models.time_series_table import TimeSeriesTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
@@ -38,6 +39,7 @@ from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionServi
 from featurebyte.service.table_columns_info import TableDocumentService
 from featurebyte.service.table_facade import TableFacadeService
 from featurebyte.service.target import TargetService
+from featurebyte.service.time_series_table import TimeSeriesTableService
 
 TableDocumentT = TypeVar(
     "TableDocumentT",
@@ -45,6 +47,7 @@ TableDocumentT = TypeVar(
     ItemTableModel,
     DimensionTableModel,
     SCDTableModel,
+    TimeSeriesTableModel,
 )
 TableDocumentServiceT = TypeVar(
     "TableDocumentServiceT",
@@ -52,6 +55,7 @@ TableDocumentServiceT = TypeVar(
     ItemTableService,
     DimensionTableService,
     SCDTableService,
+    TimeSeriesTableService,
 )
 
 

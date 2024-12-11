@@ -28,6 +28,8 @@ from featurebyte.query_graph.model.common_table import (
     SPECIFIC_DATA_TABLES,
     BaseTableData,
 )
+from featurebyte.query_graph.model.time_series_table import TimeInterval
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
     JoinEventTableAttributesMetadata,
@@ -622,6 +624,69 @@ class SCDTableData(BaseTableData):
         columns_info = self._prepare_change_view_columns_info(
             column_names=column_names, track_changes_column=track_changes_column
         )
+        return view_graph_node, columns_info
+
+
+class TimeSeriesTableData(BaseTableData):
+    """TimeSeriesTableData class"""
+
+    type: Literal[TableDataType.TIME_SERIES_TABLE] = TableDataType.TIME_SERIES_TABLE
+    id: PydanticObjectId = Field(default_factory=ObjectId, alias="_id")
+    series_id_column: Optional[StrictStr]
+    reference_datetime_column: StrictStr
+    reference_datetime_schema: TimestampSchema
+    time_interval: TimeInterval
+
+    @property
+    def primary_key_columns(self) -> List[str]:
+        if self.series_id_column:
+            return [self.series_id_column]
+        return []
+
+    def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
+        return InputNode(
+            name="temp",
+            parameters={
+                "id": self.id,
+                "id_column": self.series_id_column,
+                "feature_store_details": {"type": feature_store_details.type},
+                "reference_datetime_column": self.reference_datetime_column,
+                "reference_datetime_schema": self.reference_datetime_schema,
+                "time_interval": self.time_interval,
+                **self._get_common_input_node_parameters(),
+            },
+        )
+
+    def construct_time_series_view_graph_node(
+        self,
+        time_series_table_node: InputNode,
+        drop_column_names: List[str],
+        metadata: ViewMetadata,
+    ) -> Tuple[GraphNode, List[ColumnInfo]]:
+        """
+        Construct a graph node & columns info for TimeSeriesView of this time series table.
+
+        Parameters
+        ----------
+        time_series_table_node: InputNode
+            TimeSeries table node
+        drop_column_names: List[str]
+            List of column names to drop from the  time series table
+        metadata: ViewMetadata
+            Metadata to be added to the graph node
+
+        Returns
+        -------
+        Tuple[GraphNode, List[ColumnInfo]]
+        """
+        view_graph_node, _ = self.construct_view_graph_node(
+            graph_node_type=GraphNodeType.TIME_SERIES_VIEW,
+            data_node=time_series_table_node,
+            other_input_nodes=[],
+            drop_column_names=drop_column_names,
+            metadata=metadata,
+        )
+        columns_info = self.prepare_view_columns_info(drop_column_names=drop_column_names)
         return view_graph_node, columns_info
 
 

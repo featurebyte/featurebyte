@@ -114,6 +114,22 @@ class StrEnum(str, Enum):
         return str(self.value)
 
 
+class TimeIntervalUnit(StrEnum):
+    """
+    The TimeIntervalUnit enum class specifies supported time interval units
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TimeIntervalUnit")
+
+    MINUTE = "MINUTE", "minute"
+    HOUR = "HOUR", "hour"
+    DAY = "DAY", "day"
+    WEEK = "WEEK", "week"
+    MONTH = "MONTH", "month"
+    QUARTER = "QUARTER", "quarter"
+    YEAR = "YEAR", "year"
+
+
 class DBVarType(StrEnum):
     """
     The DBVarType enum class provides a way to represent various Database variable types supported by FeatureByte.
@@ -255,6 +271,17 @@ class DBVarType(StrEnum):
             self.INT: "int",
         }
         return mapping.get(self)  # type: ignore
+
+    @classmethod
+    def supported_datetime_types(cls) -> set[DBVarType]:
+        """
+        Supported datetime types
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.TIMESTAMP, cls.TIMESTAMP_TZ, cls.DATE, cls.VARCHAR}
 
 
 class AggFunc(StrEnum):
@@ -437,6 +464,7 @@ class TableDataType(StrEnum):
     ITEM_TABLE = "item_table"
     DIMENSION_TABLE = "dimension_table"
     SCD_TABLE = "scd_table"
+    TIME_SERIES_TABLE = "time_series_table"
 
 
 class ViewMode(StrEnum):
@@ -457,12 +485,14 @@ class SemanticType(StrEnum):
     EVENT_ID = "event_id"
     EVENT_TIMESTAMP = "event_timestamp"
     ITEM_ID = "item_id"
+    SERIES_ID = "series_id"
     RECORD_CREATION_TIMESTAMP = "record_creation_timestamp"
     SCD_CURRENT_FLAG = "scd_current_flag"
     SCD_EFFECTIVE_TIMESTAMP = "scd_effective_timestamp"
     SCD_END_TIMESTAMP = "scd_end_timestamp"
     SCD_NATURAL_KEY_ID = "scd_natural_key_id"
     SCD_SURROGATE_KEY_ID = "scd_surrogate_key_id"
+    TIME_SERIES_DATE_TIME = "time_series_date_time"
     TIME_ZONE = "time_zone"
 
 

@@ -21,6 +21,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneOffsetColumn
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.operation import (
     NodeOutputCategory,
@@ -335,6 +336,9 @@ class ProtectedColumnsQueryObject(QueryObject):
                 columns.append(attr_val)
             elif isinstance(attr_val, list) and all(isinstance(elem, str) for elem in attr_val):
                 columns.extend(attr_val)
+            elif isinstance(attr_val, TimestampSchema):
+                if attr_val.timezone and isinstance(attr_val.timezone, TimeZoneOffsetColumn):
+                    columns.extend(attr_val.timezone.column_name)
             else:
                 raise TypeError(f"Unsupported type for protected attribute '{attr}'!")
         return set(columns)

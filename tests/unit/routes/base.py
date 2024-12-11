@@ -935,7 +935,9 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
                 "semantic_id": None,
             },
             {"name": "event_date", "dtype": "TIMESTAMP", "entity_id": None, "semantic_id": None},
+            {"name": "date", "dtype": "VARCHAR", "entity_id": None, "semantic_id": None},
             {"name": "event_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
+            {"name": "series_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
             {"name": "dimension_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
             {"name": "surrogate_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
             {"name": "natural_id", "dtype": "INT", "entity_id": None, "semantic_id": None},
@@ -1005,7 +1007,7 @@ class BaseTableApiTestSuite(BaseCatalogApiTestSuite):
         test_api_client, _ = test_api_client_persistent
         random_id = ObjectId()
         response = test_api_client.patch(f"{self.base_route}/{random_id}", json=data_update_dict)
-        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
         assert response.json() == {
             "detail": (
                 f'{self.class_name} (id: "{random_id}") not found. '

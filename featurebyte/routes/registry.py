@@ -71,6 +71,7 @@ from featurebyte.routes.target_namespace.controller import TargetNamespaceContro
 from featurebyte.routes.target_table.controller import TargetTableController
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.routes.temp_data.controller import TempDataController
+from featurebyte.routes.time_series_table.controller import TimeSeriesTableController
 from featurebyte.routes.use_case.controller import UseCaseController
 from featurebyte.routes.user_defined_function.controller import UserDefinedFunctionController
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
@@ -184,6 +185,8 @@ from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.service.tile_manager import TileManagerService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
+from featurebyte.service.time_series_table import TimeSeriesTableService
+from featurebyte.service.time_series_table_validation import TimeSeriesTableValidationService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.service.user_defined_function import UserDefinedFunctionService
 from featurebyte.service.user_service import UserService
@@ -374,6 +377,10 @@ app_container_config.register_class(
     DimensionTableValidationService,
     dependency_override={"table_document_service": "dimension_table_service"},
 )
+app_container_config.register_class(
+    TimeSeriesTableValidationService,
+    dependency_override={"table_document_service": "time_series_table_service"},
+)
 app_container_config.register_class(ScheduledFeatureMaterializeTask)
 app_container_config.register_class(SchemaMetadataService)
 app_container_config.register_class(SemanticController)
@@ -420,6 +427,8 @@ app_container_config.register_class(TileManagerService)
 app_container_config.register_class(TileRegistryService)
 app_container_config.register_class(TileSchedulerService)
 app_container_config.register_class(TileTaskExecutor)
+app_container_config.register_class(TimeSeriesTableController)
+app_container_config.register_class(TimeSeriesTableService)
 app_container_config.register_class(
     UserDefinedFunctionController, dependency_override={"service": "user_defined_function_service"}
 )

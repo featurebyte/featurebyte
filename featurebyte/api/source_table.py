@@ -33,6 +33,8 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import BaseTableData, TabularSource
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.table import AllTableDataT, SourceTableData
+from featurebyte.query_graph.model.time_series_table import TimeInterval
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
@@ -48,6 +50,7 @@ if TYPE_CHECKING:
     from featurebyte.api.observation_table import ObservationTable
     from featurebyte.api.scd_table import SCDTable
     from featurebyte.api.static_source_table import StaticSourceTable
+    from featurebyte.api.time_series_table import TimeSeriesTable
 else:
     DimensionTable = TypeVar("DimensionTable")
     EventTable = TypeVar("EventTable")
@@ -452,7 +455,7 @@ class SourceTable(AbstractTableData):
         self,
         name: str,
         event_timestamp_column: str,
-        event_id_column: Optional[str] = None,
+        event_id_column: Optional[str],
         event_timestamp_timezone_offset: Optional[str] = None,
         event_timestamp_timezone_offset_column: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
@@ -783,6 +786,87 @@ class SourceTable(AbstractTableData):
         )
 
     @typechecked
+    def create_time_series_table(
+        self,
+        name: str,
+        reference_datetime_column: str,
+        reference_datetime_schema: TimestampSchema,
+        time_interval: TimeInterval,
+        series_id_column: Optional[str],
+        record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> TimeSeriesTable:
+        """
+        Creates and adds to the catalog an TimeSeriesTable object from a source table where each row indicates a specific
+        business event measured at a particular moment.
+
+        To create an TimeSeriesTable, you need to identify the columns representing the series key and reference datetime..
+
+        After creation, the table can optionally incorporate additional metadata at the column level to further aid
+        feature engineering. This can include identifying columns that identify or reference entities, providing
+        information about the semantics of the table columns, specifying default cleaning operations, or furnishing
+        descriptions of its columns.
+
+        Parameters
+        ----------
+        name: str
+            The desired name for the new table.
+        reference_datetime_column: str
+            The column that contains the reference datetime of the associated time series.
+        reference_datetime_schema: TimestampSchema
+            The schema of the reference datetime column.
+        time_interval: TimeInterval
+            The time interval of the time series.
+        series_id_column: Optional[str]
+            The column that represents the unique identifier for each time series.
+        record_creation_timestamp_column: str
+            The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description for the new table.
+        _id: Optional[ObjectId]
+            Identity value for constructed object. This should only be used for cases where we want to create an
+            event table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
+
+        Returns
+        -------
+        TimeSeriesTable
+            TimeSeriesTable created from the source table.
+
+        Examples
+        --------
+        Create an time series table from a source table.
+
+        >>> # Register GROCERYSALES as a time series table
+        >>> source_table = ds.get_source_table(  # doctest: +SKIP
+        ...     database_name="spark_catalog", schema_name="GROCERY", table_name="GROCERYSALES"
+        ... )
+        >>> sales_table = source_table.create_time_series_table(  # doctest: +SKIP
+        ...     name="GROCERYSALES",
+        ...     reference_datetime_column="Date",
+        ...     reference_datetime_schema=TimestampSchema(timezone="Etc/UTC"),
+        ...     time_interval=TimeInterval(value=1, unit="DAY"),
+        ...     series_id_column="StoreGuid",
+        ...     record_creation_timestamp_column="record_available_at",
+        ... )
+        """
+
+        from featurebyte.api.time_series_table import TimeSeriesTable
+
+        return TimeSeriesTable.create(
+            source_table=self,
+            name=name,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            reference_datetime_column=reference_datetime_column,
+            reference_datetime_schema=reference_datetime_schema,
+            time_interval=time_interval,
+            series_id_column=series_id_column,
+            description=description,
+            _id=_id,
+        )
+
+    @typechecked
     def get_or_create_event_table(
         self,
         name: str,
@@ -987,6 +1071,62 @@ class SourceTable(AbstractTableData):
             end_timestamp_column=end_timestamp_column,
             current_flag_column=current_flag_column,
             description=description,
+        )
+
+    @typechecked
+    def get_or_create_time_series_table(
+        self,
+        name: str,
+        reference_datetime_column: str,
+        reference_datetime_schema: TimestampSchema,
+        time_interval: TimeInterval,
+        series_id_column: Optional[str],
+        record_creation_timestamp_column: Optional[str] = None,
+        description: Optional[str] = None,
+        _id: Optional[ObjectId] = None,
+    ) -> TimeSeriesTable:
+        """
+        Get or create time series table from this source table. Internally, this method calls `TimeSeriesTable.get` by name,
+        if the table does not exist, it will be created.
+
+        Parameters
+        ----------
+        name: str
+            The desired name for the new table.
+        reference_datetime_column: str
+            The column that contains the reference datetime of the associated time series.
+        reference_datetime_schema: TimestampSchema
+            The schema of the reference datetime column.
+        time_interval: TimeInterval
+            The time interval of the time series.
+        series_id_column: Optional[str]
+            The column that represents the unique identifier for each time series.
+        record_creation_timestamp_column: str
+            The optional column for the timestamp when a record was created.
+        description: Optional[str]
+            The optional description of the table.
+        _id: Optional[ObjectId]
+            Identity value for constructed object. This should only be used for cases where we want to create a
+            time series table with a specific ID. This should not be a common operation, and is typically used in tests
+            only.
+
+        Returns
+        -------
+        TimeSeriesTable
+        """
+
+        from featurebyte.api.time_series_table import TimeSeriesTable
+
+        return TimeSeriesTable.get_or_create(
+            source_table=self,
+            name=name,
+            reference_datetime_column=reference_datetime_column,
+            reference_datetime_schema=reference_datetime_schema,
+            time_interval=time_interval,
+            series_id_column=series_id_column,
+            record_creation_timestamp_column=record_creation_timestamp_column,
+            description=description,
+            _id=_id,
         )
 
     def create_observation_table(
