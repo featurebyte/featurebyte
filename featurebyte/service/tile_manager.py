@@ -78,6 +78,8 @@ class TileManagerService:
             Instance of BaseSession to interact with the data warehouse
         tile_inputs: List[Tuple[TileSpec, str]]
             list of TileSpec, temp_entity_table to update the feature store
+        temp_tile_tables_tag: str
+            Tag to use when creating temporary tile tables
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
 

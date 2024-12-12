@@ -36,7 +36,27 @@ class WarehouseTableService(
         **kwargs: Any,
     ) -> WarehouseTableModel:
         """
-        Create a table using the create_table_as method with a session
+        Create a table using the create_table_as method with a session and create a
+        WarehouseTableModel record
+
+        Parameters
+        ----------
+        session: BaseSession
+            Database session
+        feature_store_id: ObjectId
+            Feature store ID
+        table_details: TableDetails | str
+            Table details to be passed to create_table_as
+        tag: Optional[str]
+            Tag to identify a collection of tables
+        time_to_live_seconds: Optional[int]
+            Time to live in seconds
+        **kwargs: Any
+            Additional keyword arguments to be passed to create_table_as
+
+        Returns
+        -------
+        WarehouseTableModel
         """
         await session.create_table_as(table_details=table_details, **kwargs)
         if isinstance(table_details, str):
@@ -70,7 +90,23 @@ class WarehouseTableService(
         **kwargs: Any,
     ) -> None:
         """
-        Drop a table using the drop_table method with a session
+        Drop a table using the drop_table method with a session and delete the corresponding
+        WarehouseTableModel record
+
+        Parameters
+        ----------
+        session: BaseSession
+            Database session
+        feature_store_id: ObjectId
+            Feature store ID
+        table_name: str
+            Table name
+        schema_name: Optional[str]
+            Schema name
+        database_name: Optional[str]
+            Database name
+        **kwargs: Any
+            Additional keyword arguments to be passed to drop_table
         """
         if database_name is None:
             database_name = session.database_name
@@ -103,10 +139,10 @@ class WarehouseTableService(
         tag: str
             Tag to filter by
 
-        Returns
-        -------
-        AsyncIterator[WarehouseTableModel]
-            Async iterator of WarehouseTableModel
+        Yields
+        ------
+        WarehouseTableModel
+            WarehouseTableModel documents matching the provided tag
         """
         query_filter = {"tag": str(tag)}
         async for doc in self.list_documents_iterator(query_filter=query_filter):

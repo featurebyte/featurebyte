@@ -75,6 +75,8 @@ class TileCacheService:
             Request table name to use
         feature_store_id: ObjectId
             Feature store id
+        temp_tile_tables_tag: str
+            Tag to identify the temporary tile tables for cleanup purpose
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -151,6 +153,8 @@ class TileCacheService:
             Session to interact with the data warehouse
         feature_store: FeatureStoreModel
             Feature store model
+        temp_tile_tables_tag: str
+            Tag to identify the temporary tile tables for cleanup purpose
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
 

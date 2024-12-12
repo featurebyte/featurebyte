@@ -73,6 +73,11 @@ class TileGenerate(TileCommon):
         Compute tiles and store the result in a table for further processing. Caller is responsible
         for cleaning up the table.
 
+        Parameters
+        ----------
+        temp_tile_tables_tag: Optional[str]
+            Tag for temporary tile tables
+
         Returns
         -------
         TileComputeResult

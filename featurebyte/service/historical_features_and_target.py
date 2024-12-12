@@ -154,6 +154,8 @@ async def get_historical_features(
         Session to use to make queries
     tile_cache_service: TileCacheService
         Tile cache service
+    warehouse_table_service: WarehouseTableService
+        Warehouse table service
     graph : QueryGraph
         Query graph
     nodes : list[Node]
