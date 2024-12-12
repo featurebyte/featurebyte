@@ -3,12 +3,13 @@ Periodic Task document model
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
 
 import pymongo
 from pydantic import Field
 from pymongo.operations import IndexModel
 
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
@@ -28,8 +29,10 @@ class Interval(FeatureByteBaseModel):
 
 class Crontab(FeatureByteBaseModel):
     """
-    Cron based job settings
+    Data class for a Crontab schedule
     """
+
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Crontab")
 
     minute: Union[str, int]
     hour: Union[str, int]
