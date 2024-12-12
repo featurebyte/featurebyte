@@ -325,13 +325,16 @@ class TimeSeriesTable(TableApiObject):
         --------
         Configure a feature job setting to run daily at 1:05 am..
 
-        >>> from featurebyte import CronFeatureJobSetting
+        >>> from featurebyte import CronFeatureJobSetting, Crontab
         >>> new_feature_job_setting = CronFeatureJobSetting(
-        ...     minute=5,
-        ...     hour=1,
-        ...     day_of_week="*",
-        ...     day_of_month="*",
-        ...     month="*",
+        ...     crontab=Crontab(
+        ...         minute=5,
+        ...         hour=1,
+        ...         day_of_week="*",
+        ...         day_of_month="*",
+        ...         month_of_year="*",
+        ...     ),
+        ...     timezone="Etc/UTC",
         ... )
 
 
