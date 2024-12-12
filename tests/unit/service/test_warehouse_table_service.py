@@ -10,6 +10,8 @@ from bson import ObjectId
 from freezegun import freeze_time
 from sqlglot import parse_one
 
+from featurebyte.query_graph.node.schema import TableDetails
+
 
 @pytest.fixture(name="service")
 def service_fixture(app_container):
@@ -68,6 +70,13 @@ def test_create_table_as_with_session(saved_warehouse_table, feature_store_id):
     }
     assert saved_warehouse_table.expires_at == datetime(2021, 1, 2, 10, 0, 0)
     assert saved_warehouse_table.tag == "my_tag"
+    assert saved_warehouse_table.warehouse_tables == [
+        TableDetails(**{
+            "database_name": "sf_db",
+            "schema_name": "sf_schema",
+            "table_name": "temp_tile_table",
+        })
+    ]
 
 
 @pytest.mark.asyncio

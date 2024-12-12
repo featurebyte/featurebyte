@@ -5,7 +5,7 @@ WarehouseTableModel
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 import pymongo
 
@@ -30,6 +30,10 @@ class WarehouseTableModel(FeatureByteCatalogBaseDocumentModel):
     location: TabularSource
     tag: Optional[str] = None
     expires_at: Optional[datetime] = None
+
+    @property
+    def warehouse_tables(self) -> list[Any]:
+        return [self.location.table_details]
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
