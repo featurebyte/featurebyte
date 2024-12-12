@@ -54,6 +54,7 @@ class TileCacheService:
         request_id: str,
         request_table_name: str,
         feature_store_id: ObjectId,
+        temp_tile_tables_tag: str,
         serving_names_mapping: dict[str, str] | None = None,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> OnDemandTileComputeResult:
@@ -74,6 +75,8 @@ class TileCacheService:
             Request table name to use
         feature_store_id: ObjectId
             Feature store id
+        temp_tile_tables_tag: str
+            Tag to identify the temporary tile tables for cleanup purpose
         serving_names_mapping : dict[str, str] | None
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -118,6 +121,7 @@ class TileCacheService:
                         required_requests=required_tile_computations.compute_requests,
                         session=session,
                         feature_store=feature_store,
+                        temp_tile_tables_tag=temp_tile_tables_tag,
                         progress_callback=tile_compute_progress_callback,
                     )
             else:
@@ -127,6 +131,7 @@ class TileCacheService:
                     on_demand_tile_tables=[],
                 )
         finally:
+            logger.info("Cleaning up tables in TileCacheService.compute_tiles_on_demand")
             await self.cleanup_temp_tables(session=session, request_set=required_tile_computations)
         return tile_compute_result
 
@@ -135,6 +140,7 @@ class TileCacheService:
         required_requests: list[OnDemandTileComputeRequest],
         session: BaseSession,
         feature_store: FeatureStoreModel,
+        temp_tile_tables_tag: str,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> OnDemandTileComputeResult:
         """Interacts with FeatureListManager to compute tiles and update cache
@@ -147,6 +153,8 @@ class TileCacheService:
             Session to interact with the data warehouse
         feature_store: FeatureStoreModel
             Feature store model
+        temp_tile_tables_tag: str
+            Tag to identify the temporary tile tables for cleanup purpose
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
 
@@ -159,7 +167,10 @@ class TileCacheService:
             tile_input = request.to_tile_manager_input(feature_store_id=feature_store.id)
             tile_inputs.append(tile_input)
         return await self.tile_manager_service.generate_tiles_on_demand(
-            session=session, tile_inputs=tile_inputs, progress_callback=progress_callback
+            session=session,
+            tile_inputs=tile_inputs,
+            temp_tile_tables_tag=temp_tile_tables_tag,
+            progress_callback=progress_callback,
         )
 
     @classmethod
@@ -176,10 +187,11 @@ class TileCacheService:
             OnDemandTileComputeRequestSet object
         """
         for temp_table_name in request_set.materialized_temp_table_names:
+            logger.info("Dropping temp table", extra={"table_name": temp_table_name})
             await session.drop_table(
                 table_name=temp_table_name,
                 schema_name=session.schema_name,
                 database_name=session.database_name,
                 if_exists=True,
             )
-        logger.debug("Cleaned up temp tables")
+        logger.info("Cleaned up temp tables")

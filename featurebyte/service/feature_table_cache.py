@@ -43,6 +43,7 @@ from featurebyte.service.historical_features_and_target import get_historical_fe
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.tile_cache import TileCacheService
+from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
 
 FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE = 10
@@ -63,6 +64,7 @@ class FeatureTableCacheService:
         entity_validation_service: EntityValidationService,
         tile_cache_service: TileCacheService,
         feature_list_service: FeatureListService,
+        warehouse_table_service: WarehouseTableService,
         redis: Redis[Any],
     ):
         self.feature_table_cache_metadata_service = feature_table_cache_metadata_service
@@ -71,6 +73,7 @@ class FeatureTableCacheService:
         self.entity_validation_service = entity_validation_service
         self.tile_cache_service = tile_cache_service
         self.feature_list_service = feature_list_service
+        self.warehouse_table_service = warehouse_table_service
         self.redis = redis
 
     async def definition_hashes_for_nodes(
@@ -340,6 +343,7 @@ class FeatureTableCacheService:
             return await get_historical_features(
                 session=db_session,
                 tile_cache_service=self.tile_cache_service,
+                warehouse_table_service=self.warehouse_table_service,
                 graph=graph,
                 nodes=nodes_only,
                 observation_set=observation_table,

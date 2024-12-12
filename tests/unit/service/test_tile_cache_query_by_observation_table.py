@@ -66,7 +66,9 @@ async def test_get_required_computation(
     tile_manager_inputs = [
         request.to_tile_manager_input(feature_store.id) for request in compute_requests
     ]
-    await tile_manager_service.generate_tiles_on_demand(mock_snowflake_session, tile_manager_inputs)
+    await tile_manager_service.generate_tiles_on_demand(
+        mock_snowflake_session, tile_manager_inputs, "some_tag"
+    )
     request_set = await _get_required_computation()
     assert len(request_set.compute_requests) == 1
     assert request_set.materialized_temp_table_names == {

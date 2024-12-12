@@ -29,6 +29,7 @@ from featurebyte.service.target_helper.base_feature_or_target_computer import (
     QueryExecutor,
 )
 from featurebyte.service.tile_cache import TileCacheService
+from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
 
 logger = get_logger(__name__)
@@ -56,9 +57,11 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
         self,
         tile_cache_service: TileCacheService,
         feature_table_cache_service: FeatureTableCacheService,
+        warehouse_table_service: WarehouseTableService,
     ):
         self.tile_cache_service = tile_cache_service
         self.feature_table_cache_service = feature_table_cache_service
+        self.warehouse_table_service = warehouse_table_service
 
     async def execute(self, executor_params: HistoricalFeatureExecutorParams) -> ExecutionResult:
         if (
@@ -83,6 +86,7 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
             historical_features_metrics = await get_historical_features(
                 session=executor_params.session,
                 tile_cache_service=self.tile_cache_service,
+                warehouse_table_service=self.warehouse_table_service,
                 graph=executor_params.graph,
                 nodes=executor_params.nodes,
                 observation_set=executor_params.observation_set,
