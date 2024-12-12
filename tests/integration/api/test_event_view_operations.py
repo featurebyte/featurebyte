@@ -598,9 +598,9 @@ def check_historical_features_system_metrics(config, historical_feature_table_id
     "in_out_formats",
     [
         ("dataframe", "dataframe"),
-        # ("dataframe", "table"),
-        # ("table", "table"),  # input is observation table
-        # ("uploaded_table", "table"),  # input is observation table from uploaded parquet file
+        ("dataframe", "table"),
+        ("table", "table"),  # input is observation table
+        ("uploaded_table", "table"),  # input is observation table from uploaded parquet file
     ],
 )
 @pytest.mark.usefixtures("patched_num_features_per_query")
