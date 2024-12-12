@@ -22,6 +22,12 @@ from featurebyte.sql.tile_registry import TileRegistry
 logger = get_logger(__name__)
 
 
+# Time to live for temporary tile tables. While this is set as 7 days, in the usual case the tables
+# are cleaned up immediately at the end of historical features computation. This is to handle the
+# cases where the tables are not cleaned up due to unexpected failures bypassing the cleanup logic.
+TEMP_TILE_TABLE_TTL_SECONDS = 86400 * 7
+
+
 @dataclass
 class TileComputeResult:
     """
@@ -112,6 +118,7 @@ class TileGenerate(TileCommon):
             tag=temp_tile_tables_tag,
             table_details=computed_tiles_table_name,
             select_expr=tile_sql,
+            time_to_live_seconds=TEMP_TILE_TABLE_TTL_SECONDS,
         )
         compute_seconds = time.time() - tic
 
