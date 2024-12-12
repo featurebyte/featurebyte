@@ -122,11 +122,14 @@ async def compute_tiles_on_demand(
     finally:
         logger.info("Cleaning up tables in historical_features_and_target.compute_tiles_on_demand")
         if parent_serving_preparation is not None:
+            logger.info("Dropping parent serving table")
             await session.drop_table(
                 table_name=effective_request_table_name,
                 schema_name=session.schema_name,
                 database_name=session.database_name,
+                if_exists=True,
             )
+            logger.info("Done dropping parent serving table")
     return tile_compute_result
 
 

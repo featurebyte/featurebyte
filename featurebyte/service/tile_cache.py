@@ -183,10 +183,11 @@ class TileCacheService:
             OnDemandTileComputeRequestSet object
         """
         for temp_table_name in request_set.materialized_temp_table_names:
+            logger.info("Dropping temp table", extra={"table_name": temp_table_name})
             await session.drop_table(
                 table_name=temp_table_name,
                 schema_name=session.schema_name,
                 database_name=session.database_name,
                 if_exists=True,
             )
-        logger.debug("Cleaned up temp tables")
+        logger.info("Cleaned up temp tables")
