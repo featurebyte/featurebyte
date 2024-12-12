@@ -22,6 +22,7 @@ from featurebyte.service.online_store_table_version import OnlineStoreTableVersi
 from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.tile_job_log import TileJobLogService
 from featurebyte.service.tile_registry_service import TileRegistryService
+from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_generate import TileGenerate
@@ -46,6 +47,7 @@ class TileTaskExecutor:
         feature_service: FeatureService,
         feature_materialize_sync_service: FeatureMaterializeSyncService,
         system_metrics_service: SystemMetricsService,
+        warehouse_table_service: WarehouseTableService,
     ):
         self.online_store_table_version_service = online_store_table_version_service
         self.online_store_compute_query_service = online_store_compute_query_service
@@ -54,6 +56,7 @@ class TileTaskExecutor:
         self.feature_service = feature_service
         self.feature_materialize_sync_service = feature_materialize_sync_service
         self.system_metrics_service = system_metrics_service
+        self.warehouse_table_service = warehouse_table_service
 
     async def execute(self, session: BaseSession, params: TileScheduledJobParameters) -> None:
         """
@@ -180,6 +183,7 @@ class TileTaskExecutor:
             update_last_run_metadata=True,
             aggregation_id=params.aggregation_id,
             tile_registry_service=self.tile_registry_service,
+            warehouse_table_service=self.warehouse_table_service,
         )
 
         tile_online_store_ins = TileScheduleOnlineStore(

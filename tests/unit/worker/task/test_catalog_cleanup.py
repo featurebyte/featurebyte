@@ -74,6 +74,7 @@ def test_catalog_specific_model_classes(app_container):
         "TileJobLogModel",
         "TileModel",
         "UseCaseModel",
+        "WarehouseTableModel",
     ]
 
 

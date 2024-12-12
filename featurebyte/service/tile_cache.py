@@ -54,6 +54,7 @@ class TileCacheService:
         request_id: str,
         request_table_name: str,
         feature_store_id: ObjectId,
+        temp_tile_tables_tag: str,
         serving_names_mapping: dict[str, str] | None = None,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> OnDemandTileComputeResult:
@@ -118,6 +119,7 @@ class TileCacheService:
                         required_requests=required_tile_computations.compute_requests,
                         session=session,
                         feature_store=feature_store,
+                        temp_tile_tables_tag=temp_tile_tables_tag,
                         progress_callback=tile_compute_progress_callback,
                     )
             else:
@@ -127,6 +129,7 @@ class TileCacheService:
                     on_demand_tile_tables=[],
                 )
         finally:
+            logger.info("Cleaning up tables in TileCacheService.compute_tiles_on_demand")
             await self.cleanup_temp_tables(session=session, request_set=required_tile_computations)
         return tile_compute_result
 
@@ -135,6 +138,7 @@ class TileCacheService:
         required_requests: list[OnDemandTileComputeRequest],
         session: BaseSession,
         feature_store: FeatureStoreModel,
+        temp_tile_tables_tag: str,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
     ) -> OnDemandTileComputeResult:
         """Interacts with FeatureListManager to compute tiles and update cache
@@ -159,7 +163,10 @@ class TileCacheService:
             tile_input = request.to_tile_manager_input(feature_store_id=feature_store.id)
             tile_inputs.append(tile_input)
         return await self.tile_manager_service.generate_tiles_on_demand(
-            session=session, tile_inputs=tile_inputs, progress_callback=progress_callback
+            session=session,
+            tile_inputs=tile_inputs,
+            temp_tile_tables_tag=temp_tile_tables_tag,
+            progress_callback=progress_callback,
         )
 
     @classmethod

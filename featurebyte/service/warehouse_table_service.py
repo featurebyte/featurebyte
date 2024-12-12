@@ -45,7 +45,11 @@ class WarehouseTableService(
             table_details.database_name = session.database_name
         if table_details.schema_name is None:
             table_details.schema_name = session.schema_name
-        expires_at = datetime.utcnow() + timedelta(seconds=time_to_live_seconds)
+        expires_at = (
+            datetime.utcnow() + timedelta(seconds=time_to_live_seconds)
+            if time_to_live_seconds is not None
+            else None
+        )
         model = WarehouseTableModel(
             location=TabularSource(
                 feature_store_id=feature_store_id,
@@ -63,7 +67,8 @@ class WarehouseTableService(
         table_name: str,
         schema_name: Optional[str] = None,
         database_name: Optional[str] = None,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """
         Drop a table using the drop_table method with a session
         """
@@ -75,6 +80,7 @@ class WarehouseTableService(
             table_name=table_name,
             schema_name=schema_name,
             database_name=database_name,
+            **kwargs,
         )
         location = TabularSource(
             feature_store_id=feature_store_id,

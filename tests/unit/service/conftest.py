@@ -242,6 +242,12 @@ def tile_cache_service_fixture(app_container):
     return app_container.tile_cache_service
 
 
+@pytest.fixture(name="warehouse_table_service")
+def warehouse_table_service_fixture(app_container):
+    """WarehouseTableService fixture"""
+    return app_container.warehouse_table_service
+
+
 @pytest.fixture(name="tile_job_log_service")
 def tile_job_log_service(app_container):
     """

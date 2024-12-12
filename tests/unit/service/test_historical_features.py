@@ -11,6 +11,8 @@ from freezegun import freeze_time
 from featurebyte import Feature, FeatureList, exception
 from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.tile import OnDemandTileComputeResult, OnDemandTileTable
+from featurebyte.models.warehouse_table import WarehouseTableModel
+from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.service.historical_features import get_historical_features
@@ -147,6 +149,7 @@ async def test_get_historical_features__missing_point_in_time(
     mock_snowflake_session,
     output_table_details,
     tile_cache_service,
+    warehouse_table_service,
     snowflake_feature_store,
 ):
     """Test validation of missing point in time for historical features"""
@@ -157,6 +160,7 @@ async def test_get_historical_features__missing_point_in_time(
         await get_historical_features(
             session=mock_snowflake_session,
             tile_cache_service=tile_cache_service,
+            warehouse_table_service=warehouse_table_service,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             observation_set=observation_set,
@@ -175,6 +179,7 @@ async def test_get_historical_features__too_recent_point_in_time(
     point_in_time_is_datetime_dtype,
     output_table_details,
     tile_cache_service,
+    warehouse_table_service,
     snowflake_feature_store,
 ):
     """Test validation of too recent point in time for historical features"""
@@ -189,6 +194,7 @@ async def test_get_historical_features__too_recent_point_in_time(
         await get_historical_features(
             session=mock_snowflake_session,
             tile_cache_service=tile_cache_service,
+            warehouse_table_service=warehouse_table_service,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             observation_set=observation_set,
@@ -208,6 +214,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     mocked_compute_tiles_on_demand,
     output_table_details,
     tile_cache_service,
+    warehouse_table_service,
     snowflake_feature_store,
 ):
     """
@@ -225,6 +232,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     await get_historical_features(
         session=mock_snowflake_session,
         tile_cache_service=tile_cache_service,
+        warehouse_table_service=warehouse_table_service,
         graph=float_feature.graph,
         nodes=[float_feature.node],
         observation_set=df_request,
@@ -248,6 +256,7 @@ async def test_get_historical_features__intermediate_tables_dropped(
     mocked_compute_tiles_on_demand,
     output_table_details,
     tile_cache_service,
+    warehouse_table_service,
     snowflake_feature_store,
 ):
     """
@@ -262,6 +271,7 @@ async def test_get_historical_features__intermediate_tables_dropped(
     await get_historical_features(
         session=mock_snowflake_session,
         tile_cache_service=tile_cache_service,
+        warehouse_table_service=warehouse_table_service,
         graph=float_feature.graph,
         nodes=[float_feature.node],
         observation_set=df_request,
@@ -285,12 +295,13 @@ async def test_get_historical_features__tile_tables_dropped(
     mocked_compute_tiles_on_demand,
     output_table_details,
     tile_cache_service,
+    warehouse_table_service,
     snowflake_feature_store,
 ):
     """
     Test temporary tile tables are dropped after get historical features
     """
-    mocked_compute_tiles_on_demand.return_value = OnDemandTileComputeResult(
+    tile_compute_result = OnDemandTileComputeResult(
         tile_compute_metrics=TileComputeMetrics(),
         on_demand_tile_tables=[
             OnDemandTileTable(
@@ -307,19 +318,48 @@ async def test_get_historical_features__tile_tables_dropped(
             ),
         ],
     )
+    mocked_compute_tiles_on_demand.return_value = tile_compute_result
     df_request = pd.DataFrame({
         "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
         "cust_id": ["C1", "C2"],
     })
     mock_snowflake_session.generate_session_unique_id.return_value = "1"
-    await get_historical_features(
-        session=mock_snowflake_session,
-        tile_cache_service=tile_cache_service,
-        graph=float_feature.graph,
-        nodes=[float_feature.node],
-        observation_set=df_request,
-        feature_store=snowflake_feature_store,
-        output_table_details=output_table_details,
+
+    async def mock_func(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        tile_table_names = {
+            table.on_demand_table_name for table in tile_compute_result.on_demand_tile_tables
+        }
+        for table_name in tile_table_names:
+            yield WarehouseTableModel(
+                location=TabularSource(
+                    feature_store_id=snowflake_feature_store.id,
+                    table_details=TableDetails(
+                        table_name=table_name,
+                        schema_name=mock_snowflake_session.schema_name,
+                        database_name=mock_snowflake_session.database_name,
+                    ),
+                )
+            )
+
+    with patch(
+        "featurebyte.service.warehouse_table_service.WarehouseTableService.list_warehouse_tables_by_tag",
+        side_effect=mock_func,
+    ) as patched_list_warehouse_tables_by_tag:
+        await get_historical_features(
+            session=mock_snowflake_session,
+            tile_cache_service=tile_cache_service,
+            warehouse_table_service=warehouse_table_service,
+            graph=float_feature.graph,
+            nodes=[float_feature.node],
+            observation_set=df_request,
+            feature_store=snowflake_feature_store,
+            output_table_details=output_table_details,
+        )
+
+    assert patched_list_warehouse_tables_by_tag.call_args == call(
+        "historical_features_SOME_HISTORICAL_FEATURE_TABLE"
     )
     assert mock_snowflake_session.drop_table.call_args_list == [
         call(
