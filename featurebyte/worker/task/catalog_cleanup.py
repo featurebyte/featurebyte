@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Type
 
 import featurebyte.models
+from featurebyte.common.progress import ProgressCallbackType, get_ranged_progress_callback
 from featurebyte.exception import DataWarehouseOperationError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel, User
@@ -62,7 +63,7 @@ def get_catalog_subclasses_in_module(
                 obj.collection_name()
                 classes.append(obj)
             except AttributeError:
-                logger.exception("Error getting collection name for class %s", obj)
+                logger.info("Skip extracting collection name for class %s", obj)
 
     return classes
 
@@ -168,9 +169,21 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
         for remote_file_path in remote_file_paths:
             await self.storage.try_delete_if_exists(remote_file_path)
 
-    async def _cleanup_catalog(self, catalog: CatalogModel) -> None:
+    async def _cleanup_catalog(
+        self, catalog: CatalogModel, progress_callback: ProgressCallbackType
+    ) -> None:
+        catalog_collection_percent = 90
+        mongo_progress_callback = get_ranged_progress_callback(
+            progress_callback=progress_callback,
+            from_percent=0,
+            to_percent=catalog_collection_percent,
+        )
         query_filter = {"catalog_id": catalog.id}
-        for collection_name, model_class in self.catalog_specific_model_class_pairs:
+        for i, (collection_name, model_class) in enumerate(self.catalog_specific_model_class_pairs):
+            await mongo_progress_callback(
+                percent=int(100 * i / len(self.catalog_specific_model_class_pairs)),
+                message=f"Cleaning up: {collection_name}",
+            )
             docs = await self.persistent.get_iterator(
                 collection_name=collection_name,
                 query_filter=query_filter,
@@ -186,6 +199,10 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                 remote_file_paths.update(obj.remote_storage_paths)
 
             # cleanup the warehouse tables & remote files
+            await mongo_progress_callback(
+                percent=int(100 * i / len(self.catalog_specific_model_class_pairs)),
+                message="Cleaning up warehouse tables & remote files",
+            )
             await self._cleanup_warehouse_tables(
                 catalog=catalog,
                 warehouse_tables=warehouse_tables,
@@ -193,13 +210,22 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
             await self._cleanup_store_files(remote_file_paths)
 
             # delete the mongo documents
+            await mongo_progress_callback(
+                percent=int(100 * i / len(self.catalog_specific_model_class_pairs)),
+                message="Cleaning up Mongo records",
+            )
             await self.persistent.delete_many(
-                collection_name=model_class.collection_name(),
+                collection_name=collection_name,
                 query_filter=query_filter,
                 user_id=catalog.user_id,
             )
 
         # cleanup user defined functions
+        await progress_callback(
+            percent=catalog_collection_percent + 1,
+            message="Cleaning up user defined functions",
+        )
+
         await self.persistent.delete_many(
             collection_name=UserDefinedFunctionModel.collection_name(),
             query_filter={"catalog_id": catalog.id},
@@ -207,6 +233,10 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
         )
 
         # cleanup task documents
+        await progress_callback(
+            percent=catalog_collection_percent + 2,
+            message="Cleaning up task documents",
+        )
         await self.persistent.delete_many(
             collection_name=Task.collection_name(),
             query_filter={"kwargs.catalog_id": str(catalog.id)},
@@ -214,6 +244,10 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
         )
 
         # cleanup the catalog document
+        await progress_callback(
+            percent=100,
+            message="Removing catalog document",
+        )
         await self.all_catalog_service.delete_document(
             document_id=catalog.id,
             user_id=catalog.user_id,
@@ -222,16 +256,35 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
 
     async def execute(self, payload: CatalogCleanupTaskPayload) -> Any:
         # compute the cutoff time
-        cutoff_time = datetime.now() - timedelta(days=payload.cleanup_threshold_in_days)
+        cutoff_time = datetime.utcnow() - timedelta(days=payload.cleanup_threshold_in_days)
         with self.all_catalog_service.allow_use_raw_query_filter():
-            async for catalog in self.all_catalog_service.list_documents_iterator(
-                query_filter={
-                    "is_deleted": True,
-                    "updated_at": {"$lt": cutoff_time},
-                },
-                use_raw_query_filter=True,
-            ):
+            catalogs_to_cleanup = [
+                catalog
+                async for catalog in self.all_catalog_service.list_documents_iterator(
+                    query_filter={
+                        "is_deleted": True,
+                        "updated_at": {"$lt": cutoff_time},
+                    },
+                    use_raw_query_filter=True,
+                )
+            ]
+            for i, catalog in enumerate(catalogs_to_cleanup):
+                catalog_progress_callback = get_ranged_progress_callback(
+                    progress_callback=self.task_progress_updater.update_progress,
+                    from_percent=int(100 * i / len(catalogs_to_cleanup)),
+                    to_percent=int(100 * (i + 1) / len(catalogs_to_cleanup)),
+                )
+                await catalog_progress_callback(
+                    percent=0,
+                    message=f'Cleaning up catalog "{catalog.name}"',
+                )
                 try:
-                    await self._cleanup_catalog(catalog)
+                    await self._cleanup_catalog(
+                        catalog, progress_callback=catalog_progress_callback
+                    )
                 except Exception as exc:
                     logger.exception(f"Error cleaning up catalog ({catalog}): {exc}")
+                    await catalog_progress_callback(
+                        percent=100,
+                        message=f"Error cleaning up catalog: {exc}",
+                    )
