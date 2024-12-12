@@ -67,10 +67,13 @@ class FeatureListCreateJob(FeatureByteBaseModel):
 
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
-    features: Union[
-        Annotated[List[FeatureParameters], Tag("feature_params")],
-        Annotated[List[PydanticObjectId], Tag("feature_ids")],
-    ] = Field(discriminator=Discriminator(feature_params_discriminator), min_length=1)
+    features: Annotated[
+        Union[
+            Annotated[List[FeatureParameters], Tag("feature_params"), Field(min_length=1)],
+            Annotated[List[PydanticObjectId], Tag("feature_ids"), Field(min_length=1)],
+        ],
+        Discriminator(feature_params_discriminator),
+    ]
     features_conflict_resolution: ConflictResolution
 
 
