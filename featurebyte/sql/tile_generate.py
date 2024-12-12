@@ -15,10 +15,17 @@ from featurebyte.logging import get_logger
 from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.tile import TileType
 from featurebyte.service.tile_registry_service import TileRegistryService
+from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_registry import TileRegistry
 
 logger = get_logger(__name__)
+
+
+# Time to live for temporary tile tables. While this is set as 7 days, in the usual case the tables
+# are cleaned up immediately at the end of historical features computation. This is to handle the
+# cases where the tables are not cleaned up due to unexpected failures bypassing the cleanup logic.
+TEMP_TILE_TABLE_TTL_SECONDS = 86400 * 7
 
 
 @dataclass
@@ -42,6 +49,7 @@ class TileGenerate(TileCommon):
     tile_end_ts_str: Optional[str]
     update_last_run_metadata: Optional[bool]
     tile_registry_service: TileRegistryService
+    warehouse_table_service: WarehouseTableService
 
     async def execute(self) -> TileComputeMetrics:
         """
@@ -51,7 +59,7 @@ class TileGenerate(TileCommon):
         -------
         TileComputeMetrics
         """
-        tile_compute_result = await self.compute_tiles()
+        tile_compute_result = await self.compute_tiles(None)
         try:
             await self.insert_tiles_and_update_metadata(
                 computed_tiles_table_name=tile_compute_result.computed_tiles_table_name,
@@ -66,10 +74,15 @@ class TileGenerate(TileCommon):
             )
         return tile_compute_result.tile_compute_metrics
 
-    async def compute_tiles(self) -> TileComputeResult:
+    async def compute_tiles(self, temp_tile_tables_tag: Optional[str]) -> TileComputeResult:
         """
         Compute tiles and store the result in a table for further processing. Caller is responsible
         for cleaning up the table.
+
+        Parameters
+        ----------
+        temp_tile_tables_tag: Optional[str]
+            Tag for temporary tile tables
 
         Returns
         -------
@@ -99,9 +112,13 @@ class TileGenerate(TileCommon):
         # Compute the tiles
         tic = time.time()
         computed_tiles_table_name = f"__TEMP_TILE_TABLE_{ObjectId()}".upper()
-        await self._session.create_table_as(
+        await self.warehouse_table_service.create_table_as_with_session(
+            session=self._session,
+            feature_store_id=self.feature_store_id,
+            tag=temp_tile_tables_tag,
             table_details=computed_tiles_table_name,
             select_expr=tile_sql,
+            time_to_live_seconds=TEMP_TILE_TABLE_TTL_SECONDS,
         )
         compute_seconds = time.time() - tic
 

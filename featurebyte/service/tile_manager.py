@@ -27,6 +27,7 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.tile_scheduler import TileSchedulerService
+from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.session_helper import run_coroutines
 from featurebyte.sql.tile_generate import TileComputeResult, TileGenerate
@@ -49,6 +50,7 @@ class TileManagerService:
         tile_registry_service: TileRegistryService,
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
+        warehouse_table_service: WarehouseTableService,
         redis: Redis[Any],
     ):
         self.online_store_table_version_service = online_store_table_version_service
@@ -57,12 +59,14 @@ class TileManagerService:
         self.tile_registry_service = tile_registry_service
         self.feature_service = feature_service
         self.feature_store_service = feature_store_service
+        self.warehouse_table_service = warehouse_table_service
         self.redis = redis
 
     async def generate_tiles_on_demand(
         self,
         session: BaseSession,
         tile_inputs: List[OnDemandTileSpec],
+        temp_tile_tables_tag: str,
         progress_callback: Optional[Callable[[int, str], Coroutine[Any, Any, None]]] = None,
     ) -> OnDemandTileComputeResult:
         """
@@ -74,6 +78,8 @@ class TileManagerService:
             Instance of BaseSession to interact with the data warehouse
         tile_inputs: List[Tuple[TileSpec, str]]
             list of TileSpec, temp_entity_table to update the feature store
+        temp_tile_tables_tag: str
+            Tag to use when creating temporary tile tables
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
 
@@ -106,6 +112,7 @@ class TileManagerService:
                 self._on_demand_compute_tiles(
                     session=session,
                     on_demand_tile_spec=on_demand_tile_spec,
+                    temp_tile_tables_tag=temp_tile_tables_tag,
                     progress_callback=_compute_tiles_progress_callback,
                 )
             )
@@ -171,6 +178,7 @@ class TileManagerService:
         self,
         session: BaseSession,
         on_demand_tile_spec: OnDemandTileSpec,
+        temp_tile_tables_tag: str,
         progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
     ) -> TileComputeResult:
         session = await session.clone_if_not_threadsafe()
@@ -181,7 +189,7 @@ class TileManagerService:
             start_ts_str=None,
             end_ts_str=None,
         )
-        result = await tile_generate_obj.compute_tiles()
+        result = await tile_generate_obj.compute_tiles(temp_tile_tables_tag=temp_tile_tables_tag)
         if progress_callback:
             await progress_callback()
         return result
@@ -260,6 +268,7 @@ class TileManagerService:
             update_last_run_metadata=update_last_run_metadata,
             aggregation_id=tile_spec.aggregation_id,
             tile_registry_service=self.tile_registry_service,
+            warehouse_table_service=self.warehouse_table_service,
         )
 
     async def generate_tiles(

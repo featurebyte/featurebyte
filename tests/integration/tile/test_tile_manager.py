@@ -64,6 +64,7 @@ async def test_generate_tiles_on_demand(session, tile_spec, tile_manager_service
                 ],
             )
         ],
+        "some_tag",
     )
 
     # check on demand tile table is created

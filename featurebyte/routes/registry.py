@@ -194,6 +194,7 @@ from featurebyte.service.validator.materialized_table_delete import ObservationT
 from featurebyte.service.validator.production_ready_validator import ProductionReadyValidator
 from featurebyte.service.version import VersionService
 from featurebyte.service.view_construction import ViewConstructionService
+from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.service.working_schema import WorkingSchemaService
 from featurebyte.utils.messaging import Progress
 from featurebyte.utils.persistent import MongoDBImpl
@@ -426,6 +427,7 @@ app_container_config.register_class(UserDefinedFunctionService)
 app_container_config.register_class(UserService)
 app_container_config.register_class(VersionService)
 app_container_config.register_class(ViewConstructionService)
+app_container_config.register_class(WarehouseTableService)
 app_container_config.register_class(WorkingSchemaService)
 app_container_config.register_class(UseCaseService)
 app_container_config.register_class(UseCaseController)

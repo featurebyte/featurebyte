@@ -34,6 +34,7 @@ from featurebyte.query_graph.sql.feature_historical import (
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.service.tile_cache import TileCacheService
+from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.session_helper import SessionHandler, execute_feature_query_set
 
@@ -50,7 +51,7 @@ async def compute_tiles_on_demand(
     request_table_columns: list[str],
     feature_store_id: ObjectId,
     serving_names_mapping: Optional[dict[str, str]],
-    observation_table_id: Optional[ObjectId],
+    temp_tile_tables_tag: str,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
 ) -> OnDemandTileComputeResult:
@@ -78,8 +79,8 @@ async def compute_tiles_on_demand(
     serving_names_mapping : dict[str, str] | None
         Optional serving names mapping if the training events data has different serving name
         columns than those defined in Entities
-    observation_table_id : Optional[ObjectId]
-        Observation table ID if available
+    temp_tile_tables_tag: str
+        Tag to identify the temporary tile tables for cleanup purpose
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
@@ -115,21 +116,27 @@ async def compute_tiles_on_demand(
             request_table_name=effective_request_table_name,
             feature_store_id=feature_store_id,
             serving_names_mapping=serving_names_mapping,
+            temp_tile_tables_tag=temp_tile_tables_tag,
             progress_callback=progress_callback,
         )
     finally:
+        logger.info("Cleaning up tables in historical_features_and_target.compute_tiles_on_demand")
         if parent_serving_preparation is not None:
+            logger.info("Dropping parent serving table")
             await session.drop_table(
                 table_name=effective_request_table_name,
                 schema_name=session.schema_name,
                 database_name=session.database_name,
+                if_exists=True,
             )
+            logger.info("Done dropping parent serving table")
     return tile_compute_result
 
 
 async def get_historical_features(
     session: BaseSession,
     tile_cache_service: TileCacheService,
+    warehouse_table_service: WarehouseTableService,
     graph: QueryGraph,
     nodes: list[Node],
     observation_set: Union[pd.DataFrame, ObservationTableModel],
@@ -147,6 +154,8 @@ async def get_historical_features(
         Session to use to make queries
     tile_cache_service: TileCacheService
         Tile cache service
+    warehouse_table_service: WarehouseTableService
+        Warehouse table service
     graph : QueryGraph
         Query graph
     nodes : list[Node]
@@ -172,9 +181,6 @@ async def get_historical_features(
     output_include_row_index = (
         isinstance(observation_set, ObservationTableModel) and observation_set.has_row_index is True
     )
-    observation_table_id = (
-        observation_set.id if isinstance(observation_set, ObservationTableModel) else None
-    )
     observation_set = get_internal_observation_set(observation_set)
 
     # Validate request
@@ -191,7 +197,7 @@ async def get_historical_features(
         session, request_table_name, add_row_index=len(nodes) > NUM_FEATURES_PER_QUERY
     )
 
-    tile_compute_result = None
+    temp_tile_tables_tag = f"historical_features_{output_table_details.table_name}"
     try:
         # Compute tiles on demand if required
         tile_cache_progress_callback = (
@@ -214,7 +220,7 @@ async def get_historical_features(
             request_table_columns=request_table_columns,
             feature_store_id=feature_store.id,
             serving_names_mapping=serving_names_mapping,
-            observation_table_id=observation_table_id,
+            temp_tile_tables_tag=temp_tile_tables_tag,
             parent_serving_preparation=parent_serving_preparation,
             progress_callback=(
                 tile_cache_progress_callback if tile_cache_progress_callback else None
@@ -267,23 +273,25 @@ async def get_historical_features(
         feature_compute_seconds = time.time() - tic
         logger.debug(f"compute_historical_features in total took {feature_compute_seconds:.2f}s")
     finally:
+        logger.info("Cleaning up tables in get_historical_features")
         await session.drop_table(
             table_name=request_table_name,
             schema_name=session.schema_name,
             database_name=session.database_name,
             if_exists=True,
         )
-        if (
-            tile_compute_result is not None
-            and tile_compute_result.on_demand_tile_tables is not None
+        async for warehouse_table in warehouse_table_service.list_warehouse_tables_by_tag(
+            temp_tile_tables_tag
         ):
-            for table_name in tile_compute_result.materialized_on_demand_tile_table_names:
-                await session.drop_table(
-                    table_name=table_name,
-                    schema_name=session.schema_name,
-                    database_name=session.database_name,
-                    if_exists=True,
-                )
+            await warehouse_table_service.drop_table_with_session(
+                session=session,
+                feature_store_id=feature_store.id,
+                table_name=warehouse_table.location.table_details.table_name,
+                schema_name=warehouse_table.location.table_details.schema_name,
+                database_name=warehouse_table.location.table_details.database_name,
+                if_exists=True,
+            )
+
     return HistoricalFeaturesMetrics(
         tile_compute_seconds=tile_compute_seconds,
         tile_compute_metrics=tile_compute_result.tile_compute_metrics,

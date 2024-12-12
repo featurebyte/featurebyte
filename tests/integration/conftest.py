@@ -1659,6 +1659,14 @@ def tile_registry_service_fixture(app_container):
     return app_container.tile_registry_service
 
 
+@pytest.fixture(name="warehouse_table_service")
+def warehouse_table_service_fixture(app_container):
+    """
+    Fixture for WarehouseTableService
+    """
+    return app_container.warehouse_table_service
+
+
 @pytest.fixture(name="online_store_compute_query_service")
 def online_store_compute_query_service_fixture(app_container) -> OnlineStoreComputeQueryService:
     """

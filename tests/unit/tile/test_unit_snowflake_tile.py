@@ -158,6 +158,7 @@ async def test_generate_tiles_on_demand__observation_table_id(
                 ],
             )
         ],
+        "some_tag",
     )
 
     queries = extract_session_executed_queries(mock_snowflake_session)
@@ -206,6 +207,7 @@ async def test_generate_tiles_on_demand__progress_update(
             on_demand_tile_spec,
             on_demand_tile_spec,
         ],
+        "some_tag",
         progress_callback=mock_progress_callback,
     )
 
