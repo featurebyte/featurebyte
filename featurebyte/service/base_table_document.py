@@ -76,6 +76,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
             "item_table": "ItemTable",
             "dimension_table": "DimensionTable",
             "scd_table": "SCDTable",
+            "time_series_table": "TimeSeriesTable",
         }
 
     @property

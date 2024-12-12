@@ -521,6 +521,7 @@ def test_create_scd_table_without_natural_key_column(
     event_table = snowflake_database_table.create_event_table(
         name="sf_event_table",
         event_timestamp_column="event_timestamp",
+        event_id_column=None,
         record_creation_timestamp_column="created_at",
         description="Some description",
     )

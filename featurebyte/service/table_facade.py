@@ -24,12 +24,15 @@ from featurebyte.service.scd_table_validation import SCDTableValidationService
 from featurebyte.service.table import TableService
 from featurebyte.service.table_columns_info import TableColumnsInfoService, TableDocumentService
 from featurebyte.service.table_status import TableStatusService
+from featurebyte.service.time_series_table import TimeSeriesTableService
+from featurebyte.service.time_series_table_validation import TimeSeriesTableValidationService
 
 TableValidationService = Union[
     EventTableValidationService,
     ItemTableValidationService,
     DimensionTableValidationService,
     SCDTableValidationService,
+    TimeSeriesTableValidationService,
 ]
 
 
@@ -46,10 +49,12 @@ class TableFacadeService:
         item_table_service: ItemTableService,
         dimension_table_service: DimensionTableService,
         scd_table_service: SCDTableService,
+        time_series_table_service: TimeSeriesTableService,
         event_table_validation_service: EventTableValidationService,
         item_table_validation_service: ItemTableValidationService,
         dimension_table_validation_service: DimensionTableValidationService,
         scd_table_validation_service: SCDTableValidationService,
+        time_series_table_validation_service: TimeSeriesTableValidationService,
         table_columns_info_service: TableColumnsInfoService,
         table_status_service: TableStatusService,
     ):
@@ -58,10 +63,12 @@ class TableFacadeService:
         self.item_table_service = item_table_service
         self.dimension_table_service = dimension_table_service
         self.scd_table_service = scd_table_service
+        self.time_series_table_service = time_series_table_service
         self.event_table_validation_service = event_table_validation_service
         self.item_table_validation_service = item_table_validation_service
         self.dimension_table_validation_service = dimension_table_validation_service
         self.scd_table_validation_service = scd_table_validation_service
+        self.time_series_table_validation_service = time_series_table_validation_service
         self.table_columns_info_service = table_columns_info_service
         self.table_status_service = table_status_service
 
@@ -83,6 +90,7 @@ class TableFacadeService:
             TableDataType.ITEM_TABLE: self.item_table_service,
             TableDataType.DIMENSION_TABLE: self.dimension_table_service,
             TableDataType.SCD_TABLE: self.scd_table_service,
+            TableDataType.TIME_SERIES_TABLE: self.time_series_table_service,
         }
         return table_service_map[table_type]  # type: ignore
 
@@ -106,6 +114,7 @@ class TableFacadeService:
             TableDataType.ITEM_TABLE: self.item_table_validation_service,
             TableDataType.DIMENSION_TABLE: self.dimension_table_validation_service,
             TableDataType.SCD_TABLE: self.scd_table_validation_service,
+            TableDataType.TIME_SERIES_TABLE: self.time_series_table_validation_service,
         }
         return table_service_map[table_type]  # type: ignore
 

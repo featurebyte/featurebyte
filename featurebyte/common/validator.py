@@ -7,6 +7,7 @@ from typing import Any, List, Optional, Set, Tuple
 from featurebyte.common.model_util import convert_version_string_to_dict, parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneOffsetColumn
 
 
 def construct_data_model_validator(
@@ -45,6 +46,14 @@ def construct_data_model_validator(
         col_name_to_field_name_map: dict[str, str] = {}
         for field_name, expected_db_types in expected_column_field_name_type_pairs:
             col_name = getattr(self, field_name)
+
+            # check timezone offset column if it is a TimestampSchema
+            if isinstance(col_name, TimestampSchema):
+                if isinstance(col_name.timezone, TimeZoneOffsetColumn):
+                    col_name = col_name.timezone.column_name
+                else:
+                    continue
+
             if col_name:
                 if col_name not in col_info_map:
                     raise ValueError(f'Column "{col_name}" not found in the table!')
