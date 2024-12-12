@@ -18,7 +18,9 @@ from tests.integration.tile.hepler import format_timestamp_expr
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile(session, base_sql_model, tile_registry_service):
+async def test_generate_tile(
+    session, base_sql_model, tile_registry_service, warehouse_table_service
+):
     """
     Test normal generation of tiles
     """
@@ -58,6 +60,7 @@ async def test_generate_tile(session, base_sql_model, tile_registry_service):
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
+        warehouse_table_service=warehouse_table_service,
     )
 
     await tile_generate_ins.execute()
@@ -69,7 +72,9 @@ async def test_generate_tile(session, base_sql_model, tile_registry_service):
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile_no_data(session, base_sql_model, tile_registry_service):
+async def test_generate_tile_no_data(
+    session, base_sql_model, tile_registry_service, warehouse_table_service
+):
     """
     Test generation of tile with no tile table
     """
@@ -107,6 +112,7 @@ async def test_generate_tile_no_data(session, base_sql_model, tile_registry_serv
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
+        warehouse_table_service=warehouse_table_service,
     )
 
     await tile_generate_ins.execute()
@@ -118,7 +124,9 @@ async def test_generate_tile_no_data(session, base_sql_model, tile_registry_serv
 
 @pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 @pytest.mark.asyncio
-async def test_generate_tile_new_value_column(session, base_sql_model, tile_registry_service):
+async def test_generate_tile_new_value_column(
+    session, base_sql_model, tile_registry_service, warehouse_table_service
+):
     """
     Test normal generation of tiles
     """
@@ -156,6 +164,7 @@ async def test_generate_tile_new_value_column(session, base_sql_model, tile_regi
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
+        warehouse_table_service=warehouse_table_service,
     )
 
     await tile_generate_ins.execute()
@@ -190,6 +199,7 @@ async def test_generate_tile_new_value_column(session, base_sql_model, tile_regi
         aggregation_id=agg_id,
         feature_store_id=ObjectId(),
         tile_registry_service=tile_registry_service,
+        warehouse_table_service=warehouse_table_service,
     )
 
     await tile_generate_ins.execute()
@@ -200,7 +210,9 @@ async def test_generate_tile_new_value_column(session, base_sql_model, tile_regi
 
 
 @pytest.mark.asyncio
-async def test_generate_tile_concurrent(session, base_sql_model, tile_registry_service):
+async def test_generate_tile_concurrent(
+    session, base_sql_model, tile_registry_service, warehouse_table_service
+):
     """
     Test multiple tasks generating the same tile table concurrently
     """
@@ -253,6 +265,7 @@ async def test_generate_tile_concurrent(session, base_sql_model, tile_registry_s
             aggregation_id=agg_id,
             feature_store_id=ObjectId(),
             tile_registry_service=tile_registry_service,
+            warehouse_table_service=warehouse_table_service,
         )
         await tile_generate_ins.execute()
 
