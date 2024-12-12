@@ -77,6 +77,7 @@ from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.observation_table import Purpose
 from featurebyte.models.online_store import MySQLOnlineStoreDetails, RedisOnlineStoreDetails
+from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
@@ -477,6 +478,7 @@ __all__ = [
     "Catalog",
     "ChangeView",
     "CronFeatureJobSetting",
+    "Crontab",
     "DataSource",
     "Deployment",
     "DimensionTable",

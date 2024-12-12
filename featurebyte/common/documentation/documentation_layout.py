@@ -911,8 +911,9 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
         The layout for the FeatureJob module.
     """
     return [
-        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "CronFeatureJobSetting"]),
+        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "Crontab"]),
+        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis"]),
         DocLayoutItem([
             UTILITY_CLASSES,

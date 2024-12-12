@@ -221,8 +221,10 @@ class CronFeatureJobSetting(FeatureByteBaseModel):
     - timezone: "Etc/UTC"
 
     >>> feature_job_setting = fb.CronFeatureJobSetting(  # doctest: +SKIP
-    ... crontab=Crontab(minute=10, hour="*", day_of_month="*", month_of_year="*", day_of_week="*")
-    ... timezone="Etc/UTC"
+    ...     crontab=Crontab(
+    ...         minute=10, hour="*", day_of_week="*", day_of_month="*", month_of_year="*"
+    ...     ),
+    ...     timezone="Etc/UTC",
     ... )
     """
 
