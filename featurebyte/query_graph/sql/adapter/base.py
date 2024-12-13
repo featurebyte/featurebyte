@@ -45,6 +45,7 @@ class BaseAdapter(ABC):
     """
 
     TABLESAMPLE_SUPPORTS_VIEW = True
+    TIMEZONE_DATE_FORMAT_EXPRESSIONS: List[str] = []
 
     def __init__(self, source_info: SourceInfo):
         self.source_info = source_info
@@ -1107,3 +1108,22 @@ class BaseAdapter(ABC):
         Expression
         """
         return expr
+
+    def format_string_has_timezone(self, date_format_string: str) -> bool:
+        """
+        Whether a date format string contains timezone information
+
+        Parameters
+        ----------
+        date_format_string: str
+            Date format string
+
+        Returns
+        -------
+        bool
+        """
+
+        for pattern in self.TIMEZONE_DATE_FORMAT_EXPRESSIONS:
+            if pattern in date_format_string:
+                return True
+        return False

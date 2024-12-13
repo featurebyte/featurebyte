@@ -235,7 +235,7 @@ class CronFeatureJobSetting(FeatureByteBaseModel):
     crontab: Crontab = Field(description="Crontab schedule for the feature job.")
     timezone: TimeZoneName = Field(
         default="Etc/UTC",
-        description="Timezone for the cron schedule. It is used to determine the time at which the feature job should ",
+        description="Timezone for the cron schedule. It is used to determine the time at which the feature job should run.",
     )
 
 

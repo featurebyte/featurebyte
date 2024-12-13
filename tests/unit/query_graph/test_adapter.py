@@ -133,3 +133,39 @@ def test_object_agg(source_type, expected):
         value_column=quoted_identifier("value_col"),
     )
     assert_sql_equal(sql_to_string(result, source_type), expected)
+
+
+@pytest.mark.parametrize(
+    "source_type,format_string,expected_has_timezone",
+    [
+        (SourceType.SNOWFLAKE, "YYYY-MM-DD HH24:MI:SS.FF TZH", True),
+        (SourceType.SNOWFLAKE, "YYYY-MM-DD HH24:MI:SS.FF TZH:TZM", True),
+        (SourceType.SNOWFLAKE, "YYYY-MM-DD HH24:MI:SS.FF", False),
+        (SourceType.SNOWFLAKE, None, False),
+        (SourceType.BIGQUERY, "%Y-%m-%d %H:%M:%S %z", True),
+        (SourceType.BIGQUERY, "%Y-%m-%d %H:%M:%S %Z", True),
+        (SourceType.BIGQUERY, "%Y-%m-%d %H:%M:%S", False),
+        (SourceType.BIGQUERY, None, False),
+        (SourceType.SPARK, "yyyy-MM-dd HH:mm:ss VV", True),
+        (SourceType.SPARK, "yyyy-MM-dd HH:mm:ss z", True),
+        (SourceType.SPARK, "yyyy-MM-dd HH:mm:ss Z", True),
+        (SourceType.SPARK, "yyyy-MM-dd HH:mm:ss", False),
+        (SourceType.SPARK, None, False),
+        (SourceType.DATABRICKS, "yyyy-MM-dd HH:mm:ss Z", True),
+        (SourceType.DATABRICKS, "yyyy-MM-dd HH:mm:ss O", True),
+        (SourceType.DATABRICKS, "yyyy-MM-dd HH:mm:ss X", True),
+        (SourceType.DATABRICKS, "yyyy-MM-dd HH:mm:ss", False),
+        (SourceType.DATABRICKS, None, False),
+        (SourceType.DATABRICKS_UNITY, "yyyy-MM-dd HH:mm:ss X", True),
+        (SourceType.DATABRICKS_UNITY, "yyyy-MM-dd HH:mm:ss x", True),
+        (SourceType.DATABRICKS_UNITY, "yyyy-MM-dd HH:mm:ss", False),
+        (SourceType.DATABRICKS_UNITY, None, False),
+    ],
+)
+def test_format_string_has_timezone(source_type, format_string, expected_has_timezone):
+    """
+    Test format string has timezone
+    """
+
+    adapter = get_sql_adapter_from_source_type(source_type)
+    assert adapter.format_string_has_timezone(format_string) == expected_has_timezone
