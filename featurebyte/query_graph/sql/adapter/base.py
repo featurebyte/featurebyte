@@ -1109,19 +1109,21 @@ class BaseAdapter(ABC):
         """
         return expr
 
-    def format_string_has_timezone(self, date_format_string: str) -> bool:
+    def format_string_has_timezone(self, date_format_string: Optional[str]) -> bool:
         """
         Whether a date format string contains timezone information
 
         Parameters
         ----------
-        date_format_string: str
+        date_format_string: Optional[str]
             Date format string
 
         Returns
         -------
         bool
         """
+        if date_format_string is None:
+            return False
 
         for pattern in self.TIMEZONE_DATE_FORMAT_EXPRESSIONS:
             if pattern in date_format_string:
