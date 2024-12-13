@@ -106,8 +106,11 @@ def fixture_catalog_with_associated_documents(catalog, historical_feature_table)
 
 
 @pytest.mark.asyncio
+@patch("featurebyte.worker.util.task_progress_updater.TaskProgressUpdater.update_progress")
 @patch("featurebyte.session.base.BaseSession.drop_table")
-async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_documents, app_container):
+async def test_catalog_cleanup(
+    mock_drop_table, mock_update_progress, catalog_with_associated_documents, app_container
+):
     """Test catalog cleanup"""
     catalog = catalog_with_associated_documents
 
@@ -234,3 +237,9 @@ async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_document
         query_filter={},
     )
     assert matched == 0
+
+    # check for progress updates percentage is increasing
+    percent = 0
+    for call_args in mock_update_progress.call_args_list:
+        assert call_args.args[0] >= percent
+        percent = call_args.args[0]

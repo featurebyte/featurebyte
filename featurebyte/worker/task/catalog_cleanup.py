@@ -173,6 +173,7 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
     async def _pre_cleanup_non_catalog_mongo_asset(
         self,
         catalog: CatalogModel,
+        progress_callback: ProgressCallbackType,
     ) -> None:
         """
         Handle the cleanup of non-catalog mongo assets before the catalog specific assets are cleaned up.
@@ -183,17 +184,18 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
         ----------
         catalog: CatalogModel
             Catalog model object
+        progress_callback: ProgressCallbackType
+            Progress callback
         """
 
     async def _post_cleanup_non_catalog_mongo_asset(
         self,
         catalog: CatalogModel,
         progress_callback: ProgressCallbackType,
-        catalog_collection_percent: int,
     ) -> None:
         # cleanup user defined functions
         await progress_callback(
-            percent=catalog_collection_percent + 1,
+            percent=30,
             message="Cleaning up user defined functions",
         )
 
@@ -205,7 +207,7 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
 
         # cleanup task documents
         await progress_callback(
-            percent=catalog_collection_percent + 2,
+            percent=60,
             message="Cleaning up task documents",
         )
         await self.persistent.delete_many(
@@ -229,18 +231,26 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
     async def _cleanup_catalog(
         self, catalog: CatalogModel, progress_callback: ProgressCallbackType
     ) -> None:
+        pre_cleanup_percent = 10
         catalog_collection_percent = 90
-        mongo_progress_callback = get_ranged_progress_callback(
-            progress_callback=progress_callback,
-            from_percent=0,
-            to_percent=catalog_collection_percent,
-        )
 
         # cleanup non-catalog mongo assets
-        await self._pre_cleanup_non_catalog_mongo_asset(catalog=catalog)
+        await self._pre_cleanup_non_catalog_mongo_asset(
+            catalog=catalog,
+            progress_callback=get_ranged_progress_callback(
+                progress_callback=progress_callback,
+                from_percent=0,
+                to_percent=pre_cleanup_percent,
+            ),
+        )
 
         # cleanup catalog specific mongo assets
         query_filter = {"catalog_id": catalog.id}
+        mongo_progress_callback = get_ranged_progress_callback(
+            progress_callback=progress_callback,
+            from_percent=pre_cleanup_percent,
+            to_percent=catalog_collection_percent,
+        )
         for i, (collection_name, model_class) in enumerate(self.catalog_specific_model_class_pairs):
             await mongo_progress_callback(
                 percent=int(100 * i / len(self.catalog_specific_model_class_pairs)),
@@ -289,8 +299,11 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
         # cleanup non-catalog mongo assets
         await self._post_cleanup_non_catalog_mongo_asset(
             catalog=catalog,
-            progress_callback=progress_callback,
-            catalog_collection_percent=catalog_collection_percent,
+            progress_callback=get_ranged_progress_callback(
+                progress_callback=progress_callback,
+                from_percent=catalog_collection_percent,
+                to_percent=100,
+            ),
         )
 
     async def execute(self, payload: CatalogCleanupTaskPayload) -> Any:
