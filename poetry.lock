@@ -6,6 +6,7 @@ server = ["cachetools", "celery", "celerybeat-mongo", "databricks-sdk", "databri
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
+content-hash = "9f5ed32f9ebb921244479ee1d494e52d4916243ac05302546a9514a6333fecf5"
 
 [[package]]
 name = "about-time"
@@ -7819,17 +7820,6 @@ python-versions = "*"
 files = [
     {file = "types-urllib3-1.26.25.14.tar.gz", hash = "sha256:229b7f577c951b8c1b92c1bc2b2fdb0b49847bd2af6d1cc2a2e3dd340f3bda8f"},
     {file = "types_urllib3-1.26.25.14-py3-none-any.whl", hash = "sha256:9683bbb7fb72e32bfe9d2be6e04875fbe1b3eeec3cbb4ea231435aa7fd6b4f0e"},
-]
-
-[[package]]
-name = "typing-extensions"
-version = "4.12.1"
-description = "Backported and Experimental Type Hints for Python 3.8+"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "typing_extensions-4.12.1-py3-none-any.whl", hash = "sha256:6024b58b69089e5a89c347397254e35f1bf02a907728ec7fee9bf0fe837d203a"},
-    {file = "typing_extensions-4.12.1.tar.gz", hash = "sha256:915f5e35ff76f56588223f15fdd5938f9a1cf9195c0de25130c627e4d597f6d1"},
 ]
 
 [[package]]
