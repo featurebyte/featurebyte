@@ -140,6 +140,7 @@ class GraphNodeType(StrEnum):
     DIMENSION_VIEW = "dimension_view"
     SCD_VIEW = "scd_view"
     CHANGE_VIEW = "change_view"
+    TIME_SERIES_VIEW = "time_series_view"
 
     # graph node type used for offline store ingest query graph
     OFFLINE_STORE_INGEST_QUERY = "offline_store_ingest_query"
@@ -159,6 +160,7 @@ class GraphNodeType(StrEnum):
             cls.DIMENSION_VIEW,
             cls.SCD_VIEW,
             cls.CHANGE_VIEW,
+            cls.TIME_SERIES_VIEW,
         }
 
 

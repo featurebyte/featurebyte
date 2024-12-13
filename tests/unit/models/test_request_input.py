@@ -43,6 +43,7 @@ def session_fixture(adapter):
     )
     session.create_table_as = partial(SnowflakeSession.create_table_as, session)
     session.execute_query_long_running.return_value = pd.DataFrame({"row_count": [1000]})
+    session.get_source_info.return_value.source_type = SourceType.SNOWFLAKE
     return session
 
 

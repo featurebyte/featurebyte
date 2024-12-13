@@ -25,6 +25,10 @@ class DatabricksAdapter(BaseAdapter):
 
     source_type = SourceType.DATABRICKS
 
+    # https://spark.apache.org/docs/latest/sql-ref-datetime-pattern.html
+    # https://docs.databricks.com/en/sql/language-manual/sql-ref-datetime-pattern.html
+    TIMEZONE_DATE_FORMAT_EXPRESSIONS = ["V", "z", "Z", "O", "X", "x"]
+
     class DataType(StrEnum):
         """
         Possible column types in DataBricks

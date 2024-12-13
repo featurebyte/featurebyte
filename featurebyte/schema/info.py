@@ -25,7 +25,12 @@ from featurebyte.models.online_store import OnlineStoreDetails
 from featurebyte.models.request_input import RequestInputType
 from featurebyte.models.user_defined_function import FunctionParameter
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
+)
+from featurebyte.query_graph.model.time_series_table import TimeInterval
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.schema import DatabaseDetails, TableDetails
 from featurebyte.schema.common.base import BaseBriefInfo, BaseInfo
 from featurebyte.schema.common.operation import DictProject
@@ -225,6 +230,18 @@ class SCDTableInfo(TableInfo):
     surrogate_key_column: Optional[str] = Field(default=None)
     end_timestamp_column: Optional[str] = Field(default=None)
     current_flag_column: Optional[str] = Field(default=None)
+
+
+class TimeSeriesTableInfo(TableInfo):
+    """
+    TimeSeriesTable info schema
+    """
+
+    series_id_column: Optional[str]
+    reference_datetime_column: str
+    reference_datetime_schema: TimestampSchema
+    time_interval: TimeInterval
+    default_feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
 
 
 class NamespaceInfo(BaseInfo):

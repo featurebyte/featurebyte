@@ -31,5 +31,6 @@
 /target_namespace
 /target_table
 /task
+/time_series_table
 /use_case
 /user_defined_function

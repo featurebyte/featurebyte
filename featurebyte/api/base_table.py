@@ -510,8 +510,9 @@ class TableApiObject(
         TableDataType.ITEM_TABLE,
         TableDataType.DIMENSION_TABLE,
         TableDataType.SCD_TABLE,
+        TableDataType.TIME_SERIES_TABLE,
     ] = Field(
-        description="Table type. Either source_table, event_table, item_table, dimension_table or scd_table."
+        description="Table type. Either source_table, event_table, item_table, dimension_table, scd_table or time_series_table."
     )
 
     # pydantic instance variable (internal use)

@@ -5,10 +5,12 @@ Feature Job Setting Model
 from typing import Any, ClassVar, Dict
 
 from pydantic import BaseModel, Field, model_validator
+from pydantic_extra_types.timezone_name import TimeZoneName
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.periodic_task import Crontab
 
 
 class FeatureJobSetting(FeatureByteBaseModel):
@@ -199,6 +201,42 @@ class FeatureJobSetting(FeatureByteBaseModel):
         if not isinstance(other, FeatureJobSetting):
             return NotImplemented
         return self.to_seconds() == other.to_seconds()
+
+
+class CronFeatureJobSetting(FeatureByteBaseModel):
+    """
+    CronFeatureJobSetting class is used to declare a cron-based Feature Job Setting.
+
+    The setting comprises two parameters:
+
+    - The crontab parameter specifies the cron schedule for the feature job.
+    - The timezone parameter defines the timezone for the cron schedule. It is used to determine the time at which the feature job should run.
+
+    Examples
+    --------
+    Consider a case study where a data warehouse refreshes each hour.
+    The data refresh starts 10 seconds after the hour based on the UTC timezone.
+
+    - crontab: "10 * * * *"
+    - timezone: "Etc/UTC"
+
+    >>> feature_job_setting = fb.CronFeatureJobSetting(  # doctest: +SKIP
+    ...     crontab=Crontab(
+    ...         minute=10, hour="*", day_of_week="*", day_of_month="*", month_of_year="*"
+    ...     ),
+    ...     timezone="Etc/UTC",
+    ... )
+    """
+
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.FeatureJobSetting")
+
+    # instance variables
+    crontab: Crontab = Field(description="Crontab schedule for the feature job.")
+    timezone: TimeZoneName = Field(
+        default="Etc/UTC",
+        description="Timezone for the cron schedule. It is used to determine the time at which the feature job should run.",
+    )
 
 
 class TableFeatureJobSetting(FeatureByteBaseModel):

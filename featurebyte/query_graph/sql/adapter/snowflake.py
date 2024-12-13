@@ -30,6 +30,9 @@ class SnowflakeAdapter(BaseAdapter):
 
     source_type = SourceType.SNOWFLAKE
 
+    # https://docs.snowflake.com/en/sql-reference/data-types-datetime
+    TIMEZONE_DATE_FORMAT_EXPRESSIONS = ["TZH", "TZM"]
+
     class SnowflakeDataType(StrEnum):
         """
         Possible column types in Snowflake online store tables

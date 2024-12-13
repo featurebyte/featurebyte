@@ -120,6 +120,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, CLASS_METHODS, "DimensionTable.get_by_id"]),
         DocLayoutItem([TABLE, CLASS_METHODS, "SCDTable.get_by_id"]),
         DocLayoutItem([TABLE, CLASS_METHODS, "ItemTable.get_by_id"]),
+        DocLayoutItem([TABLE, CLASS_METHODS, "TimeSeriesTable.get_by_id"]),
         DocLayoutItem([
             TABLE,
             SET_FEATURE_JOB,
@@ -149,6 +150,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, GET_VIEW, "EventTable.get_view"]),
         DocLayoutItem([TABLE, GET_VIEW, "SCDTable.get_view"]),
         DocLayoutItem([TABLE, GET_VIEW, "ItemTable.get_view"]),
+        DocLayoutItem([TABLE, GET_VIEW, "TimeSeriesTable.get_view"]),
         DocLayoutItem(
             [TABLE, INFO, "Table.column_cleaning_operations"],
             doc_path_override="api.base_table.TableApiObject.column_cleaning_operations.md",
@@ -212,6 +214,7 @@ def _get_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TABLE, TYPE, "EventTable"]),
         DocLayoutItem([TABLE, TYPE, "ItemTable"]),
         DocLayoutItem([TABLE, TYPE, "SCDTable"]),
+        DocLayoutItem([TABLE, TYPE, "TimeSeriesTable"]),
         DocLayoutItem(
             [TABLE, ADD_METADATA, "Table.update_record_creation_timestamp_column"],
             doc_path_override="api.base_table.TableApiObject.update_record_creation_timestamp_column.md",
@@ -555,6 +558,10 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, INFO, "SCDView.end_timestamp_column"]),
         DocLayoutItem([VIEW, INFO, "SCDView.natural_key_column"]),
         DocLayoutItem([VIEW, INFO, "SCDView.surrogate_key_column"]),
+        DocLayoutItem([VIEW, INFO, "TimeSeriesView.series_id_column"]),
+        DocLayoutItem([VIEW, INFO, "TimeSeriesView.reference_datetime_column"]),
+        DocLayoutItem([VIEW, INFO, "TimeSeriesView.reference_datetime_schema"]),
+        DocLayoutItem([VIEW, INFO, "TimeSeriesView.time_interval"]),
         DocLayoutItem([VIEW, INFO, "View.columns"]),
         DocLayoutItem([VIEW, INFO, "View.columns_info"]),
         DocLayoutItem([VIEW, INFO, "View.column_cleaning_operations"]),
@@ -569,6 +576,7 @@ def _get_view_layout() -> List[DocLayoutItem]:
         DocLayoutItem([VIEW, TYPE, "EventView"]),
         DocLayoutItem([VIEW, TYPE, "ItemView"]),
         DocLayoutItem([VIEW, TYPE, "SCDView"]),
+        DocLayoutItem([VIEW, TYPE, "TimeSeriesView"]),
     ]
 
 
@@ -828,6 +836,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "SourceType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "StorageType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "TableStatus"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TimeIntervalUnit"]),
         DocLayoutItem(
             [UTILITY_CLASSES, GROUPBY, "view.GroupBy"], doc_path_override="api.groupby.GroupBy.md"
         ),
@@ -862,6 +871,8 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "GCSStorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
+        DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimestampSchema"]),
+        DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeInterval"]),
         DocLayoutItem([UTILITY_CLASSES, REQUEST_COLUMN, "RequestColumn.point_in_time"]),
         DocLayoutItem([UTILITY_CLASSES, USER_DEFINED_FUNCTION, "FunctionParameter"]),
         DocLayoutItem([UTILITY_CLASSES, ONLINE_STORE_DETAILS, "RedisOnlineStoreDetails"]),
@@ -900,6 +911,8 @@ def _get_feature_job_layout() -> List[DocLayoutItem]:
         The layout for the FeatureJob module.
     """
     return [
+        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "CronFeatureJobSetting"]),
+        DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "Crontab"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSetting"]),
         DocLayoutItem([UTILITY_CLASSES, FEATURE_JOB_SETTING, "FeatureJobSettingAnalysis"]),
         DocLayoutItem([

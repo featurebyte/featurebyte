@@ -43,4 +43,6 @@ def get_sql_adapter(source_info: SourceInfo) -> BaseAdapter:
         return SparkAdapter(source_info)
     if source_type == SourceType.BIGQUERY:
         return BigQueryAdapter(source_info)
+
+    assert source_type == SourceType.SNOWFLAKE, f"Unsupported source type: {source_type}"
     return SnowflakeAdapter(source_info)

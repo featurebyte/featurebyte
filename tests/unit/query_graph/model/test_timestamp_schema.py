@@ -12,7 +12,7 @@ def test_timezone_name__default():
     Test default timezone name
     """
     timestamp_schema = TimestampSchema()
-    assert timestamp_schema.timezone == "Etc/UTC"
+    assert timestamp_schema.timezone is None
 
 
 def test_timezone_name__valid():

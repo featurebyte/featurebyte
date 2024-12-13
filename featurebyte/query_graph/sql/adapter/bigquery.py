@@ -28,6 +28,9 @@ class BigQueryAdapter(BaseAdapter):
 
     TABLESAMPLE_SUPPORTS_VIEW = False
 
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time
+    TIMEZONE_DATE_FORMAT_EXPRESSIONS = ["%z", "%Z", "%Ez"]
+
     class DataType(StrEnum):
         """
         Possible column types in BigQuery online store tables
