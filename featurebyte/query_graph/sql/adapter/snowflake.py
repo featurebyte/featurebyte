@@ -107,12 +107,13 @@ class SnowflakeAdapter(BaseAdapter):
             DBVarType.INT: cls.SnowflakeDataType.FLOAT,
             DBVarType.FLOAT: cls.SnowflakeDataType.FLOAT,
             DBVarType.VARCHAR: cls.SnowflakeDataType.VARCHAR,
-            DBVarType.OBJECT: cls.SnowflakeDataType.OBJECT,
             DBVarType.TIMESTAMP: cls.SnowflakeDataType.TIMESTAMP_NTZ,
             DBVarType.TIMESTAMP_TZ: cls.SnowflakeDataType.TIMESTAMP_TZ,
             DBVarType.ARRAY: cls.SnowflakeDataType.ARRAY,
             DBVarType.EMBEDDING: cls.SnowflakeDataType.ARRAY,
         }
+        for dict_dtype in DBVarType.dictionary_types():
+            mapping[dict_dtype] = cls.SnowflakeDataType.OBJECT
         if dtype in mapping:
             return mapping[dtype]
         # Currently we don't expect features or tiles to be of any other types than above.
