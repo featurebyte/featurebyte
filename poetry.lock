@@ -6,7 +6,7 @@ server = ["cachetools", "celery", "celerybeat-mongo", "databricks-sdk", "databri
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4"
-content-hash = "377917a691f3e5b8e0e44048c9888f9a8e12d5ed56808d337cc79d08d4606d53"
+content-hash = "cc6b25d6f3d3a475638a863165a0d0f2b153986e6306da6ee827230435496baf"
 
 [[package]]
 name = "about-time"
@@ -6342,13 +6342,13 @@ files = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.18"
+version = "0.0.17"
 description = "A streaming multipart parser for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "python_multipart-0.0.18-py3-none-any.whl", hash = "sha256:efe91480f485f6a361427a541db4796f9e1591afc0fb8e7a4ba06bfbc6708996"},
-    {file = "python_multipart-0.0.18.tar.gz", hash = "sha256:7a68db60c8bfb82e460637fa4750727b45af1d5e2ed215593f917f64694d34fe"},
+    {file = "python_multipart-0.0.17-py3-none-any.whl", hash = "sha256:15dc4f487e0a9476cc1201261188ee0940165cffc94429b6fc565c4d3045cb5d"},
+    {file = "python_multipart-0.0.17.tar.gz", hash = "sha256:41330d831cae6e2f22902704ead2826ea038d0419530eadff3ea80175aec5538"},
 ]
 
 [[package]]
