@@ -2,6 +2,7 @@
 Test catalog cleanup
 """
 
+import asyncio
 import re
 from unittest.mock import patch
 
@@ -9,6 +10,7 @@ import pytest
 
 from featurebyte import FunctionParameter, UserDefinedFunction
 from featurebyte.models.task import Task
+from featurebyte.persistent.audit import get_audit_collection_name
 from featurebyte.schema.worker.task.catalog_cleanup import CatalogCleanupTaskPayload
 
 
@@ -104,10 +106,20 @@ def fixture_catalog_with_associated_documents(catalog, historical_feature_table)
 
 
 @pytest.mark.asyncio
+@patch("featurebyte.worker.util.task_progress_updater.TaskProgressUpdater.update_progress")
 @patch("featurebyte.session.base.BaseSession.drop_table")
-async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_documents, app_container):
+async def test_catalog_cleanup(
+    mock_drop_table, mock_update_progress, catalog_with_associated_documents, app_container
+):
     """Test catalog cleanup"""
     catalog = catalog_with_associated_documents
+
+    # check for table audit documents
+    _, matched = await app_container.persistent.find(
+        collection_name=get_audit_collection_name("table"),
+        query_filter={},
+    )
+    assert matched == 6  # there are some table audit documents
 
     # check for drop table calls
     assert mock_drop_table.call_count == 0
@@ -125,6 +137,12 @@ async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_document
         query_filter={"catalog_id": catalog.id},
     )
     assert matched == 1
+
+    _, matched = await app_container.persistent.find(
+        collection_name=get_audit_collection_name("user_defined_function"),
+        query_filter={},
+    )
+    assert matched == 2
 
     # check task documents
     _, matched = await app_container.persistent.find(
@@ -144,6 +162,11 @@ async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_document
     catalog_cleanup_task = app_container.catalog_cleanup_task
     catalog_service = app_container.catalog_service
     await catalog_service.soft_delete_document(document_id=catalog.id)
+
+    # add a delay to ensure the soft delete is completed
+    await asyncio.sleep(1)
+
+    # run the cleanup task
     await catalog_cleanup_task.execute(
         payload=CatalogCleanupTaskPayload(
             catalog_id=catalog.id,
@@ -175,12 +198,25 @@ async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_document
         )
         assert matched == 0
 
+        # check for audit documents
+        _, matched = await app_container.persistent.find(
+            collection_name=get_audit_collection_name(collection_name),
+            query_filter={},
+        )
+        assert matched == 0
+
     # check for user defined functions
     _, matched = await app_container.persistent.find(
         collection_name="user_defined_function",
         query_filter={"catalog_id": catalog.id},
     )
     assert matched == 0
+
+    _, matched = await app_container.persistent.find(
+        collection_name=get_audit_collection_name("user_defined_function"),
+        query_filter={},
+    )
+    assert matched == 1  # due to the global user defined function
 
     # check task documents
     _, matched = await app_container.persistent.find(
@@ -195,3 +231,15 @@ async def test_catalog_cleanup(mock_drop_table, catalog_with_associated_document
         query_filter={"_id": catalog.id},
     )
     assert matched == 0
+
+    _, matched = await app_container.persistent.find(
+        collection_name=get_audit_collection_name("catalog"),
+        query_filter={},
+    )
+    assert matched == 0
+
+    # check for progress updates percentage is increasing
+    percent = 0
+    for call_args in mock_update_progress.call_args_list:
+        assert call_args.args[0] >= percent
+        percent = call_args.args[0]

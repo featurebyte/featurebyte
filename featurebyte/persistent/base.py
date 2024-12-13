@@ -426,6 +426,47 @@ class Persistent(ABC):
         """
         return await self._delete_many(collection_name=collection_name, query_filter=query_filter)
 
+    async def perma_delete(
+        self,
+        collection_name: str,
+        query_filter: QueryFilter,
+        with_audit: bool = True,
+    ) -> int:
+        """
+        Permanently delete records from collection and optionally its audit records
+
+        Parameters
+        ----------
+        collection_name: str
+            Name of collection to use
+        query_filter: QueryFilter
+            Conditions to filter on
+        with_audit: bool
+            Whether to delete audit records as well
+
+        Returns
+        -------
+        int
+            Number of records deleted
+        """
+        if with_audit:
+            doc_iterator = await self.get_iterator(collection_name, query_filter)
+            doc_ids = [doc["_id"] async for doc in doc_iterator]
+            await self.delete_many(
+                collection_name=get_audit_collection_name(collection_name),
+                query_filter={"document_id": {"$in": doc_ids}},
+                user_id=None,
+                disable_audit=True,
+            )
+
+        deleted_cnt = await self.delete_many(
+            collection_name=collection_name,
+            query_filter=query_filter,
+            user_id=None,
+            disable_audit=True,
+        )
+        return int(deleted_cnt)
+
     @asynccontextmanager
     async def start_transaction(self) -> AsyncIterator[Persistent]:
         """

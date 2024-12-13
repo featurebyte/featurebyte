@@ -445,6 +445,40 @@ async def test_delete_many(mongo_persistent, test_documents, disable_audit):
         assert audit_doc["previous_values"] == doc
 
 
+@pytest.mark.parametrize("with_audit", [False, True])
+@pytest.mark.asyncio
+async def test_perma_delete(mongo_persistent, test_document, with_audit):
+    """Test perma delete"""
+    persistent, _ = mongo_persistent
+
+    # insert a doc
+    inserted_id = await persistent.insert_one(
+        collection_name="data", document=test_document, user_id=None
+    )
+
+    # check audit records are inserted
+    _, origin_audit_cnt = await persistent.get_audit_logs(
+        collection_name="data", document_id=inserted_id
+    )
+    assert origin_audit_cnt == 1
+
+    # perma delete the doc
+    await persistent.perma_delete(
+        collection_name="data", query_filter={"_id": inserted_id}, with_audit=with_audit
+    )
+
+    # check the doc is deleted
+    doc = await persistent.find_one(collection_name="data", query_filter={"_id": inserted_id})
+    assert doc is None
+
+    # check audit records are deleted
+    _, audit_cnt = await persistent.get_audit_logs(collection_name="data", document_id=inserted_id)
+    if with_audit:
+        assert audit_cnt == 0
+    else:
+        assert audit_cnt == origin_audit_cnt
+
+
 @pytest.mark.asyncio
 async def test_get_audit_logs(mongo_persistent, test_document):
     """
