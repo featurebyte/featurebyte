@@ -202,7 +202,7 @@ def get_app() -> FastAPI:
     FastAPI
         FastAPI object
     """
-    _app = FastAPI(lifespan=lifespan)
+    _app: FastAPI = FastAPI(lifespan=lifespan)
 
     # Register routers that are not catalog-specific
     non_catalog_specific_routers: List[BaseRouter] = [
@@ -294,8 +294,7 @@ def get_app() -> FastAPI:
         await redis_to_websocket(websocket, channel)
 
     # Add exception middleware
-    _app.add_middleware(ExceptionMiddleware)
-
+    _app.add_middleware(ExceptionMiddleware)  # type: ignore
     return _app
 
 
