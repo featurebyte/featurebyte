@@ -762,7 +762,7 @@ async def test_scd_view_timestamp_schema(
         name=table_name,
         natural_key_column="user_id",
         effective_timestamp_column="effective_timestamp_column",
-        timestamp_schema=timestamp_schema,
+        effective_timestamp_schema=timestamp_schema,
     )
     view = scd_table.get_view()
     df_preview = view.preview()
