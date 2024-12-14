@@ -189,7 +189,25 @@ class InputNode(TableNode):
         timestamp_schema: TimestampSchema,
         adapter: BaseAdapter,
     ) -> Expression:
+        """
+        Get expression for a timestamp column converted to UTC
+
+        Parameters
+        ----------
+        column_spec : ColumnSpec
+            Column specification
+        timestamp_schema : TimestampSchema
+            Timestamp schema
+        adapter : BaseAdapter
+            SQL adapter
+
+        Returns
+        -------
+        Expression
+        """
+        # Original datetime column (could be a timestamp, date or string)
         column_expr: Expression = expressions.Identifier(this=column_spec.name, quoted=True)
+
         if column_spec.dtype == DBVarType.VARCHAR:
             assert timestamp_schema.format_string is not None
             column_expr = adapter.to_timestamp_from_string(
@@ -198,7 +216,14 @@ class InputNode(TableNode):
         elif column_spec.dtype == DBVarType.DATE:
             # Treat date type columns as end of day in the local timezone
             column_expr = adapter.dateadd_second(make_literal_value(86400), column_expr)
-        # TODO: timezone in a column to be handled later
-        assert isinstance(timestamp_schema.timezone, TimeZoneName)
-        column_expr = adapter.convert_timezone_to_utc(column_expr, timestamp_schema.timezone)
+
+        if timestamp_schema.is_utc_time:
+            # Already in UTC, nothing to do
+            return column_expr
+
+        if timestamp_schema.timezone is not None:
+            # TODO: timezone in a column to be handled later
+            assert isinstance(timestamp_schema.timezone, TimeZoneName)
+            column_expr = adapter.convert_timezone_to_utc(column_expr, timestamp_schema.timezone)
+
         return column_expr

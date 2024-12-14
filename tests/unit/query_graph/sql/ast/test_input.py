@@ -25,6 +25,13 @@ from tests.util.helper import assert_equal_with_expected_fixture
         ),
         ("date", DBVarType.DATE, TimestampSchema(timezone="Asia/Singapore")),
         ("timestamp", DBVarType.TIMESTAMP, TimestampSchema(timezone="Asia/Singapore")),
+        (
+            "varchar_utc",
+            DBVarType.VARCHAR,
+            TimestampSchema(
+                format_string="%Y-%m-%d %H:%M:%S", timezone="Asia/Singapore", is_utc_time=True
+            ),
+        ),
     ],
 )
 def test_scd_timestamp_schema(
