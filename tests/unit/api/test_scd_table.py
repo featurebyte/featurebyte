@@ -582,6 +582,7 @@ def test_timestamp_schema__effective_timestamp_column(snowflake_database_table_s
         if column_info.name == "col_text":
             assert column_info_dict["timestamp_schema"] == {
                 "format_string": "%Y-%m-%d",
+                "is_utc_time": None,
                 "timezone": "Etc/UTC",
             }
         else:
@@ -617,6 +618,7 @@ def test_timestamp_schema__end_timestamp_column(snowflake_database_table_scd_tab
         if column_info.name == "col_text":
             assert column_info_dict["timestamp_schema"] == {
                 "format_string": "%Y-%m-%d",
+                "is_utc_time": None,
                 "timezone": "Etc/UTC",
             }
         else:

@@ -90,8 +90,10 @@ def construct_data_model_validator(
         timestamp_schema_mapping = {}
         for column_to_timestamp_schema in column_to_timestamp_schema_pairs or []:
             col_name = getattr(self, column_to_timestamp_schema.column_field_name)
+            if not col_name:
+                continue
             timestamp_schema = getattr(self, column_to_timestamp_schema.timestamp_schema_field_name)
-            if col_name and timestamp_schema:
+            if timestamp_schema:
                 timestamp_schema_mapping[col_name] = timestamp_schema
             col_dtype = col_info_map[col_name].get("dtype")
             if col_dtype in ambiguous_timestamp_types and not timestamp_schema:
