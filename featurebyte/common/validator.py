@@ -85,7 +85,7 @@ def construct_data_model_validator(
 
         # Validate and get timestamp_schema for special columns
         ambiguous_timestamp_types = (
-            DBVarType.supported_generic_timestamp_types() - DBVarType.supported_timestamp_types()
+            DBVarType.supported_datetime_types() - DBVarType.supported_timestamp_types()
         )
         timestamp_schema_mapping = {}
         for column_to_timestamp_schema in column_to_timestamp_schema_pairs or []:

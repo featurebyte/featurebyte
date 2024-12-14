@@ -179,17 +179,6 @@ class DBVarType(StrEnum):
         return {cls.TIMESTAMP, cls.TIMESTAMP_TZ}
 
     @classmethod
-    def supported_generic_timestamp_types(cls) -> set[DBVarType]:
-        """
-        Supported timestamp types that are more generic, including DATE and string
-
-        Returns
-        -------
-        set[DBVarType]
-        """
-        return {cls.TIMESTAMP, cls.TIMESTAMP_TZ, cls.DATE, cls.VARCHAR}
-
-    @classmethod
     def supported_id_types(cls) -> set[DBVarType]:
         """
         Supported id column types

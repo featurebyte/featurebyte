@@ -47,8 +47,8 @@ class SCDTableModel(SCDTableData, TableModel):
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
                 ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
-                ("effective_timestamp_column", DBVarType.supported_generic_timestamp_types()),
-                ("end_timestamp_column", DBVarType.supported_generic_timestamp_types()),
+                ("effective_timestamp_column", DBVarType.supported_datetime_types()),
+                ("end_timestamp_column", DBVarType.supported_datetime_types()),
                 ("natural_key_column", DBVarType.supported_id_types()),
                 ("surrogate_key_column", DBVarType.supported_id_types()),
                 ("current_flag_column", None),

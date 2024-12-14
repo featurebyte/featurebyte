@@ -109,10 +109,10 @@ class SCDTable(TableApiObject):
                 ("internal_natural_key_column", DBVarType.supported_id_types()),
                 (
                     "internal_effective_timestamp_column",
-                    DBVarType.supported_generic_timestamp_types(),
+                    DBVarType.supported_datetime_types(),
                 ),
                 ("internal_surrogate_key_column", DBVarType.supported_id_types()),
-                ("internal_end_timestamp_column", DBVarType.supported_generic_timestamp_types()),
+                ("internal_end_timestamp_column", DBVarType.supported_datetime_types()),
                 ("internal_current_flag_column", None),
             ],
         )
