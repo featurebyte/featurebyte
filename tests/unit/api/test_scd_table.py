@@ -642,3 +642,25 @@ def test_timestamp_schema__mandatory_if_not_timestamp(snowflake_database_table_s
         " timestamp_schema is required for col_text with ambiguous timestamp type VARCHAR"
         in str(exc.value)
     )
+
+
+def test_timestamp_schema__format_string_mandatory_for_varchar(
+    snowflake_database_table_scd_table, catalog
+):
+    """
+    Test timestamp_schema validation at ColumnSpec level
+    """
+    _ = catalog
+
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_database_table_scd_table.get_or_create_scd_table(
+            name="sf_scd_table",
+            natural_key_column="col_int",
+            effective_timestamp_column="col_text",
+            current_flag_column="is_active",
+            record_creation_timestamp_column="created_at",
+            effective_timestamp_schema=TimestampSchema(
+                timezone="Etc/UTC",
+            ),
+        )
+    assert "format_string is required in the timestamp_schema for column col_text" in str(exc.value)
