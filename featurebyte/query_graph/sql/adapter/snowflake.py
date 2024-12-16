@@ -500,7 +500,7 @@ class SnowflakeAdapter(BaseAdapter):
         )
 
     @classmethod
-    def convert_timezone_to_utc(cls, expr: Expression, timezone: str) -> Expression:
+    def convert_timezone_to_utc(cls, expr: Expression, timezone: Expression) -> Expression:
         return expressions.Anonymous(
             this="CONVERT_TIMEZONE",
             expressions=[make_literal_value(timezone), make_literal_value("UTC"), expr],

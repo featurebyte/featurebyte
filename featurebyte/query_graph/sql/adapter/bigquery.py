@@ -337,10 +337,10 @@ class BigQueryAdapter(BaseAdapter):
         )
 
     @classmethod
-    def convert_timezone_to_utc(cls, expr: Expression, timezone: str) -> Expression:
+    def convert_timezone_to_utc(cls, expr: Expression, timezone: Expression) -> Expression:
         return cls._ensure_datetime(
             expressions.Anonymous(
                 this="TIMESTAMP",
-                expressions=[cls._ensure_datetime(expr), make_literal_value(timezone)],
+                expressions=[cls._ensure_datetime(expr), timezone],
             )
         )

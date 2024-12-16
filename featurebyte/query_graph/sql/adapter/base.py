@@ -1152,7 +1152,7 @@ class BaseAdapter(ABC):
 
     @classmethod
     @abstractmethod
-    def convert_timezone_to_utc(cls, expr: Expression, timezone: str) -> Expression:
+    def convert_timezone_to_utc(cls, expr: Expression, timezone: Expression) -> Expression:
         """
         Convert a local timestamp to UTC timezone
 
@@ -1160,8 +1160,8 @@ class BaseAdapter(ABC):
         ----------
         expr: Expression
             Expression representing the timestamp in local timezone
-        timezone: str
-            Timezone
+        timezone: Expression
+            Timezone name expression
 
         Returns
         -------

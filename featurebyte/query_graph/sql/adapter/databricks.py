@@ -299,7 +299,5 @@ class DatabricksAdapter(BaseAdapter):
         return expressions.Anonymous(this="RANDOM", expressions=[make_literal_value(seed)])
 
     @classmethod
-    def convert_timezone_to_utc(cls, expr: Expression, timezone: str) -> Expression:
-        return expressions.Anonymous(
-            this="to_utc_timestamp", expressions=[expr, make_literal_value(timezone)]
-        )
+    def convert_timezone_to_utc(cls, expr: Expression, timezone: Expression) -> Expression:
+        return expressions.Anonymous(this="to_utc_timestamp", expressions=[expr, timezone])
