@@ -33,11 +33,19 @@ from tests.util.helper import assert_equal_with_expected_fixture
             ),
         ),
         (
-            "varchar_tz_column",
+            "varchar_tz_column_timezone",
             DBVarType.VARCHAR,
             TimestampSchema(
                 format_string="%Y-%m-%d %H:%M:%S",
                 timezone=TimeZoneOffsetColumn(column_name="tz_col", type="timezone"),
+            ),
+        ),
+        (
+            "varchar_tz_column_offset",
+            DBVarType.VARCHAR,
+            TimestampSchema(
+                format_string="%Y-%m-%d %H:%M:%S",
+                timezone=TimeZoneOffsetColumn(column_name="tz_col", type="offset"),
             ),
         ),
     ],
