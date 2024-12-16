@@ -710,38 +710,36 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
 @pytest.mark.parametrize(
     "timestamp_value, timezone_offset_column, timestamp_schema, expected",
     [
-        # (
-        #     pd.Timestamp("2022-01-15 10:00:00"),
-        #     None,
-        #     TimestampSchema(timezone="Asia/Singapore"),
-        #     pd.Timestamp("2022-01-15 02:00:00"),
-        # ),
-        # (
-        #     pd.Timestamp("2022-01-15 10:00:00"),
-        #     None,
-        #     TimestampSchema(timezone="UTC"),
-        #     pd.Timestamp("2022-01-15 10:00:00"),
-        # ),
-        # (
-        #     "20220115",
-        #     None,
-        #     TimestampSchema(format_string="<date_format_placeholder>"),
-        #     "2022-01-15 00:00:00",
-        # ),
-        # (
-        #     "20220115",
-        #     None,
-        #     TimestampSchema(format_string="<date_format_placeholder>", timezone="America/New_York"),
-        #     "2022-01-15 05:00:00",
-        # ),
-        # (
-        #     pd.Timestamp("2022-01-15 10:00:00"),
-        #     {"tz_offset": "Asia/Singapore"},
-        #     TimestampSchema(
-        #         timezone=TimeZoneOffsetColumn(column_name="tz_offset", type="timezone")
-        #     ),
-        #     pd.Timestamp("2022-01-15 02:00:00"),
-        # ),
+        (
+            pd.Timestamp("2022-01-15 10:00:00"),
+            None,
+            TimestampSchema(timezone="Asia/Singapore"),
+            pd.Timestamp("2022-01-15 02:00:00"),
+        ),
+        (
+            pd.Timestamp("2022-01-15 10:00:00"),
+            None,
+            TimestampSchema(timezone="UTC"),
+            pd.Timestamp("2022-01-15 10:00:00"),
+        ),
+        (
+            "20220115",
+            None,
+            TimestampSchema(format_string="<date_format_placeholder>"),
+            "2022-01-15 00:00:00",
+        ),
+        (
+            "20220115",
+            None,
+            TimestampSchema(format_string="<date_format_placeholder>", timezone="America/New_York"),
+            "2022-01-15 05:00:00",
+        ),
+        (
+            pd.Timestamp("2022-01-15 10:00:00"),
+            {"tz_offset": "Asia/Singapore"},
+            TimestampSchema(timezone=TimeZoneColumn(column_name="tz_offset", type="timezone")),
+            pd.Timestamp("2022-01-15 02:00:00"),
+        ),
         (
             pd.Timestamp("2022-01-15 10:00:00"),
             {"tz_offset": "+08:00"},
