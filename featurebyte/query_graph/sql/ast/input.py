@@ -13,7 +13,7 @@ from sqlglot.expressions import Expression, Select
 
 from featurebyte.enum import DBVarType, InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneOffsetColumn
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.input import SampleParameters
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.sql.adapter import BaseAdapter
@@ -229,7 +229,7 @@ class InputNode(TableNode):
                 timezone = make_literal_value(timestamp_schema.timezone)
                 timezone_type = "name"
             else:
-                assert isinstance(timestamp_schema.timezone, TimeZoneOffsetColumn)
+                assert isinstance(timestamp_schema.timezone, TimeZoneColumn)
                 timezone = quoted_identifier(timestamp_schema.timezone.column_name)
                 if timestamp_schema.timezone.type == "offset":
                     timezone_type = "offset"

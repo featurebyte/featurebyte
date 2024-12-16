@@ -11,7 +11,7 @@ from bson import ObjectId
 from sqlglot import expressions
 
 from featurebyte import Entity, FeatureJobSetting, FeatureList, SCDTable
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneOffsetColumn
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
@@ -745,7 +745,7 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
         (
             pd.Timestamp("2022-01-15 10:00:00"),
             {"tz_offset": "+08:00"},
-            TimestampSchema(timezone=TimeZoneOffsetColumn(column_name="tz_offset", type="offset")),
+            TimestampSchema(timezone=TimeZoneColumn(column_name="tz_offset", type="offset")),
             pd.Timestamp("2022-01-15 02:00:00"),
         ),
     ],

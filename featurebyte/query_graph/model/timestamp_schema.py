@@ -10,9 +10,9 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.models.base import FeatureByteBaseModel
 
 
-class TimeZoneOffsetColumn(FeatureByteBaseModel):
+class TimeZoneColumn(FeatureByteBaseModel):
     """
-    Represents a column that contains the timezone offset
+    Represents a column that contains the timezone information
 
     column_name: str
         Column name that contains the timezone offset
@@ -43,4 +43,4 @@ class TimestampSchema(FeatureByteBaseModel):
 
     format_string: Optional[str] = None
     is_utc_time: Optional[bool] = None
-    timezone: Optional[Union[TimeZoneName, TimeZoneOffsetColumn]] = None
+    timezone: Optional[Union[TimeZoneName, TimeZoneColumn]] = None

@@ -6,7 +6,7 @@ import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneOffsetColumn
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, sql_to_string
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -37,7 +37,7 @@ from tests.util.helper import assert_equal_with_expected_fixture
             DBVarType.VARCHAR,
             TimestampSchema(
                 format_string="%Y-%m-%d %H:%M:%S",
-                timezone=TimeZoneOffsetColumn(column_name="tz_col", type="timezone"),
+                timezone=TimeZoneColumn(column_name="tz_col", type="timezone"),
             ),
         ),
         (
@@ -45,7 +45,7 @@ from tests.util.helper import assert_equal_with_expected_fixture
             DBVarType.VARCHAR,
             TimestampSchema(
                 format_string="%Y-%m-%d %H:%M:%S",
-                timezone=TimeZoneOffsetColumn(column_name="tz_col", type="offset"),
+                timezone=TimeZoneColumn(column_name="tz_col", type="offset"),
             ),
         ),
     ],
