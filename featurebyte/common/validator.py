@@ -103,9 +103,9 @@ def construct_data_model_validator(
 
         # Update columns_info with timestamp_schema
         if timestamp_schema_mapping:
-            for col_info in col_info_map.values():
-                if col_info.get("name") in timestamp_schema_mapping:
-                    col_info["timestamp_schema"] = timestamp_schema_mapping[col_info.get("name")]
+            for col_name, timestamp_schema in timestamp_schema_mapping.items():
+                if col_name in col_info_map:
+                    col_info_map[col_name]["timestamp_schema"] = timestamp_schema
             updated_columns_info = [ColumnInfo(**col_info) for col_info in col_info_map.values()]
             self.__dict__[columns_info_key] = updated_columns_info
 
