@@ -8,8 +8,12 @@ import numpy as np
 import pandas as pd
 import pytest
 from bson import ObjectId
+from sqlglot import expressions
 
-from featurebyte import Entity, FeatureJobSetting, FeatureList
+from featurebyte import Entity, FeatureJobSetting, FeatureList, SCDTable
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import (
@@ -669,3 +673,161 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table, so
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)
     assert df.iloc[0].to_dict() == expected
+
+
+def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
+    """
+    Test SCDView with custom date format
+    """
+    scd_view = scd_table_custom_date_format.get_view()
+    feature = scd_view.groupby("User Status").aggregate_asat(
+        value_column=None, method="count", feature_name="Current Number of Users With This Status"
+    )
+    feature_list = FeatureList([feature], name="test_scd_view_custom_date_format")
+    observations_set = pd.DataFrame({
+        "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
+        "user_status_2": ["STÀTUS_CODE_47"] * 10,
+    })
+    expected = observations_set.copy()
+    expected["Current Number of Users With This Status"] = [
+        1,
+        1,
+        2,
+        1,
+        1,
+        1,
+        np.nan,
+        np.nan,
+        np.nan,
+        np.nan,
+    ]
+    df = feature_list.compute_historical_features(observations_set)
+    # databricks return POINT_IN_TIME with "Etc/UTC" timezone
+    tz_localize_if_needed(df, source_type)
+    pd.testing.assert_frame_equal(df, expected, check_dtype=False)
+
+
+@pytest.mark.parametrize(
+    "timestamp_value, timestamp_schema, expected",
+    [
+        (
+            pd.Timestamp("2022-01-15 10:00:00"),
+            TimestampSchema(timezone="Asia/Singapore"),
+            pd.Timestamp("2022-01-15 02:00:00"),
+        ),
+        (
+            pd.Timestamp("2022-01-15 10:00:00"),
+            TimestampSchema(timezone="UTC"),
+            pd.Timestamp("2022-01-15 10:00:00"),
+        ),
+        (
+            "20220115",
+            TimestampSchema(format_string="<date_format_placeholder>"),
+            "2022-01-15 00:00:00",
+        ),
+        (
+            "20220115",
+            TimestampSchema(format_string="<date_format_placeholder>", timezone="America/New_York"),
+            "2022-01-15 05:00:00",
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_scd_view_timestamp_schema(
+    session_without_datasets,
+    data_source,
+    scd_table_timestamp_format_string,
+    timestamp_value,
+    timestamp_schema,
+    expected,
+):
+    """
+    Test different specification of timestamp schema when constructing SCDTable
+    """
+    if timestamp_schema.format_string == "<date_format_placeholder>":
+        timestamp_schema.format_string = scd_table_timestamp_format_string
+    session = session_without_datasets
+    df_scd = pd.DataFrame({
+        "effective_timestamp_column": pd.Series([timestamp_value]),
+        "user_id": ["user_1"],
+        "value": [123],
+    })
+    table_name = "test_scd_view_timestamp_schema_{}".format(ObjectId()).upper()
+    await session.register_table(table_name, df_scd)
+    source_table = data_source.get_source_table(
+        database_name=session.database_name, schema_name=session.schema_name, table_name=table_name
+    )
+    scd_table = SCDTable.create(
+        source_table=source_table,
+        name=table_name,
+        natural_key_column="user_id",
+        effective_timestamp_column="effective_timestamp_column",
+        effective_timestamp_schema=timestamp_schema,
+    )
+    view = scd_table.get_view()
+    df_preview = view.preview()
+    actual = df_preview["effective_timestamp_column"].iloc[0]
+    if isinstance(actual, str) and ".000" in actual:
+        actual = actual.replace(".000", "")
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "date_value, timestamp_schema, expected",
+    [
+        (
+            "2022-01-15",
+            TimestampSchema(timezone="Etc/UTC"),
+            pd.Timestamp("2022-01-16"),
+        ),
+        (
+            "2022-01-15",
+            TimestampSchema(timezone="Asia/Singapore"),
+            pd.Timestamp("2022-01-15 16:00:00"),
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_scd_view_date_type(
+    session_without_datasets,
+    data_source,
+    date_value,
+    timestamp_schema,
+    expected,
+):
+    """
+    Test SCDView with date type as effective timestamp column
+    """
+    session = session_without_datasets
+    create_table_query = expressions.select(
+        expressions.alias_(
+            expressions.Date(this=make_literal_value(date_value)),
+            "effective_timestamp_column",
+            quoted=True,
+        ),
+        expressions.alias_(make_literal_value("user_1"), "user_id", quoted=True),
+        expressions.alias_(make_literal_value(123), "value", quoted=True),
+    )
+    table_name = "test_scd_view_date_type_{}".format(ObjectId()).upper()
+    await session.create_table_as(
+        table_details=TableDetails(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+            table_name=table_name,
+        ),
+        select_expr=create_table_query,
+    )
+    source_table = data_source.get_source_table(
+        database_name=session.database_name, schema_name=session.schema_name, table_name=table_name
+    )
+    scd_table = SCDTable.create(
+        source_table=source_table,
+        name=table_name,
+        natural_key_column="user_id",
+        effective_timestamp_column="effective_timestamp_column",
+        effective_timestamp_schema=timestamp_schema,
+    )
+    view = scd_table.get_view()
+    df_preview = view.preview()
+    actual = df_preview["effective_timestamp_column"].iloc[0]
+    assert actual == expected

@@ -180,7 +180,7 @@ class BigQueryAdapter(BaseAdapter):
         cls, quantity_expr: Expression, timestamp_expr: Expression, unit: str
     ) -> Expression:
         return expressions.DatetimeAdd(
-            this=timestamp_expr,
+            this=cls._ensure_datetime(timestamp_expr),
             expression=expressions.Cast(
                 this=quantity_expr, to=expressions.DataType.build("BIGINT")
             ),
@@ -327,4 +327,20 @@ class BigQueryAdapter(BaseAdapter):
                 expression=expr,
             ),
             expression=make_literal_value(180),
+        )
+
+    @classmethod
+    def to_timestamp_from_string(cls, expr: Expression, format_string: str) -> Expression:
+        return expressions.Anonymous(
+            this="PARSE_DATETIME",
+            expressions=[make_literal_value(format_string), expr],
+        )
+
+    @classmethod
+    def convert_timezone_to_utc(cls, expr: Expression, timezone: str) -> Expression:
+        return cls._ensure_datetime(
+            expressions.Anonymous(
+                this="TIMESTAMP",
+                expressions=[cls._ensure_datetime(expr), make_literal_value(timezone)],
+            )
         )

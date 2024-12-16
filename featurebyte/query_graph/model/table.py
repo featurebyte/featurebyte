@@ -420,6 +420,8 @@ class SCDTableData(BaseTableData):
     surrogate_key_column: Optional[StrictStr]
     end_timestamp_column: Optional[StrictStr] = Field(default=None)
     current_flag_column: Optional[StrictStr] = Field(default=None)
+    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    end_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
     @property
     def primary_key_columns(self) -> List[str]:

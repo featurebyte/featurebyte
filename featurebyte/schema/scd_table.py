@@ -12,6 +12,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.table import TableCreate, TableServiceUpdate, TableUpdate
 
@@ -30,6 +31,8 @@ class SCDTableCreate(TableCreate):
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(
         default=FeatureJobSetting(blind_spot="0h", offset="0h", period="24h")
     )
+    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    end_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
     # pydantic validators
     _special_columns_validator = field_validator(

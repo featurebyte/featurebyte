@@ -412,3 +412,12 @@ class ColumnSpec(FeatureByteBaseModel):
     name: NameStr
     dtype: DBVarType
     timestamp_schema: Optional[TimestampSchema] = None
+
+    @model_validator(mode="after")
+    def _validate_string_timestamp_format_string(self) -> "ColumnSpec":
+        if self.dtype == DBVarType.VARCHAR and self.timestamp_schema is not None:
+            if self.timestamp_schema.format_string is None:
+                raise ValueError(
+                    f"format_string is required in the timestamp_schema for column {self.name}"
+                )
+        return self

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, List, Optional, Set, Tuple
 
 from featurebyte.common.model_util import convert_version_string_to_dict, parse_duration_string
@@ -10,9 +11,20 @@ from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneOffsetColumn
 
 
+@dataclass
+class ColumnToTimestampSchema:
+    """
+    Represents a mapping between a column field name and a timestamp schema field name
+    """
+
+    column_field_name: str
+    timestamp_schema_field_name: str
+
+
 def construct_data_model_validator(
     columns_info_key: str,
     expected_column_field_name_type_pairs: List[Tuple[str, Optional[Set[DBVarType]]]],
+    column_to_timestamp_schema_pairs: Optional[List[ColumnToTimestampSchema]] = None,
 ) -> Any:
     """
     Construct table model model_validator used to validate model input table
@@ -23,6 +35,8 @@ def construct_data_model_validator(
         Key to access columns_info in the model
     expected_column_field_name_type_pairs: List[Tuple[str, Optional[Set[DBVarType]]]]
         List of expected column name & type pairs (if type is None, type check will be skipped)
+    column_to_timestamp_schema_pairs: Optional[List[ColumnToTimestampSchema]]
+        List of column to timestamp schema mapping
 
     Returns
     -------
@@ -68,6 +82,33 @@ def construct_data_model_validator(
                         f'have to be different columns in the table but "{col_name}" is specified for both.'
                     )
                 col_name_to_field_name_map[col_name] = field_name
+
+        # Validate and get timestamp_schema for special columns
+        ambiguous_timestamp_types = (
+            DBVarType.supported_datetime_types() - DBVarType.supported_timestamp_types()
+        )
+        timestamp_schema_mapping = {}
+        for column_to_timestamp_schema in column_to_timestamp_schema_pairs or []:
+            col_name = getattr(self, column_to_timestamp_schema.column_field_name)
+            if not col_name:
+                continue
+            timestamp_schema = getattr(self, column_to_timestamp_schema.timestamp_schema_field_name)
+            if timestamp_schema:
+                timestamp_schema_mapping[col_name] = timestamp_schema
+            col_dtype = col_info_map[col_name].get("dtype")
+            if col_dtype in ambiguous_timestamp_types and not timestamp_schema:
+                raise ValueError(
+                    f"timestamp_schema is required for {col_name} with ambiguous timestamp type {col_dtype}"
+                )
+
+        # Update columns_info with timestamp_schema
+        if timestamp_schema_mapping:
+            for col_name, timestamp_schema in timestamp_schema_mapping.items():
+                if col_name in col_info_map:
+                    col_info_map[col_name]["timestamp_schema"] = timestamp_schema
+            updated_columns_info = [ColumnInfo(**col_info) for col_info in col_info_map.values()]
+            self.__dict__[columns_info_key] = updated_columns_info
+
         return self
 
     return _model_validator

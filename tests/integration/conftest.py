@@ -58,6 +58,7 @@ from featurebyte.models.credential import (
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.schema import (
     BigQueryDetails,
     DatabricksUnityDetails,
@@ -747,6 +748,21 @@ def scd_dataframe_fixture(transaction_data):
     yield data
 
 
+@pytest.fixture(name="scd_dataframe_custom_date_format", scope="session")
+def scd_dataframe_custom_date_format_fixture(scd_dataframe):
+    """
+    DataFrame fixture with slowly changing dimension with custom date format
+    """
+    data = scd_dataframe.copy()
+    data["Effective Timestamp"] = data["Effective Timestamp"].dt.strftime("%Y%m%d")
+    data = (
+        data.drop_duplicates(["User ID", "Effective Timestamp"])
+        .sort_values(["User ID", "Effective Timestamp"])
+        .reset_index(drop=True)
+    )
+    yield data
+
+
 @pytest.fixture(name="observation_table_dataframe", scope="session")
 def observation_table_dataframe_fixture(scd_dataframe):
     """
@@ -848,6 +864,14 @@ def scd_data_table_name_fixture():
     return "SCD_DATA_TABLE"
 
 
+@pytest.fixture(name="scd_data_table_name_custom_date_format", scope="session")
+def scd_data_table_name_custom_date_format_fixture():
+    """
+    Get the scd table name used in integration tests.
+    """
+    return "SCD_DATA_TABLE_CUSTOM_DATE_FORMAT"
+
+
 @pytest_asyncio.fixture(name="dataset_registration_helper", scope="session")
 async def datasets_registration_helper_fixture(
     transaction_data_upper_case,
@@ -855,7 +879,9 @@ async def datasets_registration_helper_fixture(
     dimension_dataframe,
     dimension_data_table_name,
     scd_dataframe,
+    scd_dataframe_custom_date_format,
     scd_data_table_name,
+    scd_data_table_name_custom_date_format,
     observation_table_dataframe,
 ):
     """
@@ -919,6 +945,7 @@ async def datasets_registration_helper_fixture(
 
     # SCD table
     helper.add_table(scd_data_table_name, scd_dataframe)
+    helper.add_table(scd_data_table_name_custom_date_format, scd_dataframe_custom_date_format)
 
     # Observation table
     helper.add_table("ORIGINAL_OBSERVATION_TABLE", observation_table_dataframe)
@@ -1212,6 +1239,22 @@ def status_entity_fixture(catalog):
     return entity
 
 
+@pytest.fixture(name="status2_entity", scope="session")
+def status2_entity_fixture(catalog):
+    """
+    Fixture for an Entity "UserStatus2" (used in the custom date SCD table to avoid relationships
+    validation error)
+    """
+    _ = catalog
+    entity = Entity(
+        _id=ObjectId("67568d709f33e94aafce2458"),
+        name="UserStatus2",
+        serving_names=["user_status_2"],
+    )
+    entity.save()
+    return entity
+
+
 def tag_entities_for_event_table(event_table):
     """
     Helper function to tag entities for the event table fixture
@@ -1425,12 +1468,37 @@ def scd_data_tabular_source_fixture(
     return database_table
 
 
+@pytest.fixture(name="scd_data_tabular_source_custom_date_format", scope="session")
+def scd_data_tabular_source_custom_date_format_fixture(
+    session,
+    data_source,
+    scd_data_table_name_custom_date_format,
+):
+    """
+    Fixture for scd table tabular source
+    """
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name=scd_data_table_name_custom_date_format,
+    )
+    return database_table
+
+
 @pytest.fixture(name="scd_table_name", scope="session")
 def scd_table_name_fixture(source_type):
     """
     Fixture for the SCDTable name
     """
     return f"{source_type}_scd_table"
+
+
+@pytest.fixture(name="scd_table_name_custom_date_format", scope="session")
+def scd_table_name_custom_date_format_fixture(source_type):
+    """
+    Fixture for the SCDTable name
+    """
+    return f"{source_type}_scd_table_custom_date_format"
 
 
 def tag_entities_for_scd_table(scd_table):
@@ -1462,6 +1530,47 @@ def scd_table_fixture(
         surrogate_key_column="ID",
     )
     tag_entities_for_scd_table(scd_table)
+    return scd_table
+
+
+@pytest.fixture(name="scd_table_timestamp_format_string", scope="session")
+def scd_table_timestamp_format_string_fixture(source_type):
+    """
+    Fixture for custom date format string that is platform specific
+    """
+    if source_type == SourceType.SNOWFLAKE:
+        return "YYYYMMDD"
+    if source_type == SourceType.BIGQUERY:
+        return "%Y%m%d"
+    return "yyyyMMdd"
+
+
+@pytest.fixture(name="scd_table_custom_date_format", scope="session")
+def scd_table_custom_date_format_fixture(
+    scd_data_tabular_source_custom_date_format,
+    scd_table_name_custom_date_format,
+    scd_table_timestamp_format_string,
+    user_entity,
+    status2_entity,
+    catalog,
+):
+    """
+    Fixture for a SCDTable in integration tests
+    """
+    _ = catalog
+    _ = user_entity
+    _ = status2_entity
+    scd_table = scd_data_tabular_source_custom_date_format.create_scd_table(
+        name=scd_table_name_custom_date_format,
+        natural_key_column="User ID",
+        effective_timestamp_column="Effective Timestamp",
+        surrogate_key_column="ID",
+        effective_timestamp_schema=TimestampSchema(
+            format_string=scd_table_timestamp_format_string, timezone="Asia/Singapore"
+        ),
+    )
+    scd_table["User ID"].as_entity("User")
+    scd_table["User Status"].as_entity("UserStatus2")
     return scd_table
 
 

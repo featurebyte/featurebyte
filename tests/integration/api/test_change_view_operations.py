@@ -169,3 +169,26 @@ async def test_change_view_correctness(session, data_source):
     df = change_view.preview()
 
     pd.testing.assert_frame_equal(df, df_expected)
+
+
+def test_change_view_custom_date_format(scd_table_custom_date_format, source_type):
+    """
+    Test change view operations with an SCDTable with custom date format
+    """
+    change_view = scd_table_custom_date_format.get_change_view("User Status")
+
+    count_1w_feature = change_view.groupby("User ID").aggregate_over(
+        value_column=None,
+        method=AggFunc.COUNT,
+        windows=["1w"],
+        feature_names=["count_1w"],
+    )["count_1w"]
+    df = count_1w_feature.preview(
+        pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}])
+    )
+    tz_localize_if_needed(df, source_type)
+    assert df.iloc[0].to_dict() == {
+        "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
+        "üser id": 1,
+        "count_1w": 1,
+    }

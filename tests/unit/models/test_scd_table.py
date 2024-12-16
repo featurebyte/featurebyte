@@ -140,6 +140,8 @@ def get_base_expected_scd_table_model(scd_table_model, scd_columns_info):
         "description": None,
         "is_deleted": False,
         "validation": None,
+        "effective_timestamp_schema": None,
+        "end_timestamp_schema": None,
     }
 
 

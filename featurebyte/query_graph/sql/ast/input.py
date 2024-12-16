@@ -7,13 +7,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from pydantic_extra_types.timezone_name import TimeZoneName
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
-from featurebyte.enum import InternalName, TableDataType
+from featurebyte.enum import DBVarType, InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.input import SampleParameters
+from featurebyte.query_graph.node.schema import ColumnSpec
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
+from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
 
@@ -162,6 +167,63 @@ class InputNode(TableNode):
         """
         columns_map: dict[str, Expression] = {}
         for col_dict in context.parameters["columns"]:
-            colname = col_dict["name"]
-            columns_map[colname] = expressions.Identifier(this=colname, quoted=True)
+            column_spec = ColumnSpec(**col_dict)
+            colname = column_spec.name
+            timestamp_schema = column_spec.timestamp_schema
+            if (
+                timestamp_schema is not None
+                and context.parameters["type"] == TableDataType.SCD_TABLE
+            ):
+                column_expr = cls._get_generic_timestamp_column_expr(
+                    column_spec, timestamp_schema, context.adapter
+                )
+            else:
+                column_expr = expressions.Identifier(this=colname, quoted=True)
+            columns_map[colname] = column_expr
         return columns_map
+
+    @classmethod
+    def _get_generic_timestamp_column_expr(
+        cls,
+        column_spec: ColumnSpec,
+        timestamp_schema: TimestampSchema,
+        adapter: BaseAdapter,
+    ) -> Expression:
+        """
+        Get expression for a timestamp column converted to UTC
+
+        Parameters
+        ----------
+        column_spec : ColumnSpec
+            Column specification
+        timestamp_schema : TimestampSchema
+            Timestamp schema
+        adapter : BaseAdapter
+            SQL adapter
+
+        Returns
+        -------
+        Expression
+        """
+        # Original datetime column (could be a timestamp, date or string)
+        column_expr: Expression = expressions.Identifier(this=column_spec.name, quoted=True)
+
+        if column_spec.dtype == DBVarType.VARCHAR:
+            assert timestamp_schema.format_string is not None
+            column_expr = adapter.to_timestamp_from_string(
+                column_expr, timestamp_schema.format_string
+            )
+        elif column_spec.dtype == DBVarType.DATE:
+            # Treat date type columns as end of day in the local timezone
+            column_expr = adapter.dateadd_second(make_literal_value(86400), column_expr)
+
+        if timestamp_schema.is_utc_time:
+            # Already in UTC, nothing to do
+            return column_expr
+
+        if timestamp_schema.timezone is not None:
+            # TODO: timezone in a column to be handled later
+            assert isinstance(timestamp_schema.timezone, TimeZoneName)
+            column_expr = adapter.convert_timezone_to_utc(column_expr, timestamp_schema.timezone)
+
+        return column_expr

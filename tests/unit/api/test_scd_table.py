@@ -12,10 +12,12 @@ from featurebyte.api.scd_table import SCDTable
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
+    RecordCreationException,
     RecordRetrievalException,
 )
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
 from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
 
@@ -216,7 +218,9 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
         "natural_key_column": "col_text",
         "surrogate_key_column": "col_int",
         "effective_timestamp_column": "effective_timestamp",
+        "effective_timestamp_schema": None,
         "end_timestamp_column": "end_timestamp",
+        "end_timestamp_schema": None,
         "current_flag": "is_active",
         "record_creation_timestamp_column": "created_at",
         "created_at": None,
@@ -547,3 +551,116 @@ def test_create_scd_table_without_natural_key_column(
 
     # expect subset to work
     _ = scd_view[["col_float", "col_text"]]
+
+
+def test_timestamp_schema__effective_timestamp_column(snowflake_database_table_scd_table, catalog):
+    """
+    Test SCDTable creation with timestamp schema
+    """
+    _ = catalog
+
+    scd_table = snowflake_database_table_scd_table.get_or_create_scd_table(
+        name="sf_scd_table",
+        natural_key_column="col_int",
+        effective_timestamp_column="col_text",
+        current_flag_column="is_active",
+        record_creation_timestamp_column="created_at",
+        effective_timestamp_schema=TimestampSchema(
+            format_string="%Y-%m-%d",
+            timezone="Etc/UTC",
+        ),
+    )
+
+    # Check columns info set up correctly
+    assert scd_table.effective_timestamp_column == "col_text"
+    assert scd_table.effective_timestamp_schema == TimestampSchema(
+        format_string="%Y-%m-%d",
+        timezone="Etc/UTC",
+    )
+    for column_info in scd_table.columns_info:
+        column_info_dict = column_info.model_dump()
+        if column_info.name == "col_text":
+            assert column_info_dict["timestamp_schema"] == {
+                "format_string": "%Y-%m-%d",
+                "is_utc_time": None,
+                "timezone": "Etc/UTC",
+            }
+        else:
+            assert column_info_dict["timestamp_schema"] is None
+
+
+def test_timestamp_schema__end_timestamp_column(snowflake_database_table_scd_table, catalog):
+    """
+    Test SCDTable creation with timestamp schema
+    """
+    _ = catalog
+
+    scd_table = snowflake_database_table_scd_table.get_or_create_scd_table(
+        name="sf_scd_table",
+        natural_key_column="col_int",
+        effective_timestamp_column="effective_timestamp",
+        end_timestamp_column="col_text",
+        record_creation_timestamp_column="created_at",
+        end_timestamp_schema=TimestampSchema(
+            format_string="%Y-%m-%d",
+            timezone="Etc/UTC",
+        ),
+    )
+
+    # Check columns info set up correctly
+    assert scd_table.end_timestamp_column == "col_text"
+    assert scd_table.end_timestamp_schema == TimestampSchema(
+        format_string="%Y-%m-%d",
+        timezone="Etc/UTC",
+    )
+    for column_info in scd_table.columns_info:
+        column_info_dict = column_info.model_dump()
+        if column_info.name == "col_text":
+            assert column_info_dict["timestamp_schema"] == {
+                "format_string": "%Y-%m-%d",
+                "is_utc_time": None,
+                "timezone": "Etc/UTC",
+            }
+        else:
+            assert column_info_dict["timestamp_schema"] is None
+
+
+def test_timestamp_schema__mandatory_if_not_timestamp(snowflake_database_table_scd_table, catalog):
+    """
+    Test timestamp_schema
+    """
+    _ = catalog
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_database_table_scd_table.get_or_create_scd_table(
+            name="sf_scd_table",
+            natural_key_column="col_int",
+            effective_timestamp_column="col_text",
+            current_flag_column="is_active",
+            record_creation_timestamp_column="created_at",
+        )
+    assert (
+        " timestamp_schema is required for col_text with ambiguous timestamp type VARCHAR"
+        in str(exc.value)
+    )
+
+
+def test_timestamp_schema__format_string_mandatory_for_varchar(
+    snowflake_database_table_scd_table, catalog
+):
+    """
+    Test timestamp_schema validation at ColumnSpec level
+    """
+    _ = catalog
+
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_database_table_scd_table.get_or_create_scd_table(
+            name="sf_scd_table",
+            natural_key_column="col_int",
+            effective_timestamp_column="col_text",
+            current_flag_column="is_active",
+            record_creation_timestamp_column="created_at",
+            effective_timestamp_schema=TimestampSchema(
+                timezone="Etc/UTC",
+            ),
+        )
+    assert "format_string is required in the timestamp_schema for column col_text" in str(exc.value)
