@@ -500,8 +500,31 @@ class SnowflakeAdapter(BaseAdapter):
         )
 
     @classmethod
-    def convert_timezone_to_utc(cls, expr: Expression, timezone: Expression) -> Expression:
+    def convert_timezone_to_utc(
+        cls,
+        expr: Expression,
+        timezone: Expression,
+        timezone_type: Literal["name", "offset"],
+    ) -> Expression:
+        if timezone_type == "name":
+            return expressions.Anonymous(
+                this="CONVERT_TIMEZONE",
+                expressions=[make_literal_value(timezone), make_literal_value("UTC"), expr],
+            )
+        timestamp_str = expressions.Anonymous(
+            this="TO_CHAR",
+            expressions=[
+                expr,
+                make_literal_value("YYYY-MM-DD HH24:MI:SS"),
+            ],
+        )
+        timestamp_str_with_tz = expressions.Concat(
+            expressions=[timestamp_str, make_literal_value(" "), timezone],
+        )
+        timestamp_tz = expressions.Anonymous(
+            this="TO_TIMESTAMP_TZ", expressions=[timestamp_str_with_tz]
+        )
         return expressions.Anonymous(
             this="CONVERT_TIMEZONE",
-            expressions=[make_literal_value(timezone), make_literal_value("UTC"), expr],
+            expressions=[make_literal_value("UTC"), timestamp_tz],
         )

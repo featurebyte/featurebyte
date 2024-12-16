@@ -1152,7 +1152,9 @@ class BaseAdapter(ABC):
 
     @classmethod
     @abstractmethod
-    def convert_timezone_to_utc(cls, expr: Expression, timezone: Expression) -> Expression:
+    def convert_timezone_to_utc(
+        cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
+    ) -> Expression:
         """
         Convert a local timestamp to UTC timezone
 
@@ -1161,7 +1163,10 @@ class BaseAdapter(ABC):
         expr: Expression
             Expression representing the timestamp in local timezone
         timezone: Expression
-            Timezone name expression
+            Timezone expression
+        timezone_type: Literal["name", "offset"]
+            Type of timezone expression. "name" for timezone names such as "America/New_York", and
+            "offset" for timezone offsets such as "-08:00"
 
         Returns
         -------

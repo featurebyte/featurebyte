@@ -5,7 +5,7 @@ Module for input data sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from pydantic_extra_types.timezone_name import TimeZoneName
 from sqlglot import expressions
@@ -208,6 +208,7 @@ class InputNode(TableNode):
         # Original datetime column (could be a timestamp, date or string)
         column_expr: Expression = expressions.Identifier(this=column_spec.name, quoted=True)
 
+        # Convert to timestamp in local time
         if column_spec.dtype == DBVarType.VARCHAR:
             assert timestamp_schema.format_string is not None
             column_expr = adapter.to_timestamp_from_string(
@@ -221,14 +222,19 @@ class InputNode(TableNode):
             # Already in UTC, nothing to do
             return column_expr
 
+        # Convert to timestamp in UTC
         if timestamp_schema.timezone is not None:
+            timezone_type: Literal["offset", "name"]
             if isinstance(timestamp_schema.timezone, TimeZoneName):
-                timezone_name = make_literal_value(timestamp_schema.timezone)
+                timezone = make_literal_value(timestamp_schema.timezone)
+                timezone_type = "name"
             else:
                 assert isinstance(timestamp_schema.timezone, TimeZoneOffsetColumn)
-                # TODO: timezone offset column with a format string to be handled later
-                assert timestamp_schema.timezone.type == "timezone"
-                timezone_name = quoted_identifier(timestamp_schema.timezone.column_name)
-            column_expr = adapter.convert_timezone_to_utc(column_expr, timezone_name)
+                timezone = quoted_identifier(timestamp_schema.timezone.column_name)
+                if timestamp_schema.timezone.type == "offset":
+                    timezone_type = "offset"
+                else:
+                    timezone_type = "name"
+            column_expr = adapter.convert_timezone_to_utc(column_expr, timezone, timezone_type)
 
         return column_expr
