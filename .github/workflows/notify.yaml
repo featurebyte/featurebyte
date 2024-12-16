@@ -15,33 +15,23 @@ jobs:
     - env:
         SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
       name: Send Slack notification to user-experience channel
-      uses: slackapi/slack-github-action@v1.27.0
+      uses: slackapi/slack-github-action@v2.0.0
       with:
-        channel-id: C042PLEC8D9
-        payload: |-
-          {
-              "text": "${{ github.event.repository.name }} Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]",
-              "blocks": [
-                  {
-                      "type": "section",
-                      "text": {
-                          "type": "mrkdwn",
-                          "text": "`${{ github.event.repository.name }}` Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]"
-                      }
-                  },
-                  {
-                      "type": "section",
-                      "text": {
-                          "type": "mrkdwn",
-                          "text": "Actor: ${{ github.actor }}"
-                      }
-                  },
-                  {
-                      "type": "section",
-                      "text": {
-                          "type": "mrkdwn",
-                          "text": "Changes: ${{ github.event.pull_request._links.html.href }}/files"
-                      }
-                  }
-              ]
-          }
+        method: chat.postMessage
+        token: ${{ secrets.SLACK_OAUTH }}
+        payload: |
+          channel: C042PLEC8D9
+          text: "${{ github.event.repository.name }} Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]"
+          blocks:
+            - type: section
+              text:
+                type: mrkdwn
+                text: "`${{ github.event.repository.name }}` Breaking changes -- ${{ github.event.pull_request.title }} [#${{ github.event.number }}]"
+            - type: section
+              text:
+                type: mrkdwn
+                text: "Actor: ${{ github.actor }}"
+            - type: section
+              text:
+                type: mrkdwn
+                text: "Changes: ${{ github.event.pull_request._links.html.href }}/files"

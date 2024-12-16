@@ -68,33 +68,22 @@ jobs:
             exit 1
           fi
           echo "CHANNEL_ID=${AUTHOR_ID}" >> $GITHUB_ENV
-      - name: Load LINT_RESULT into env
-        run: echo "LINT_RESULT=${{ needs.lint.result }}" >> $GITHUB_ENV
       - name: Load REPOSITORY into env
         run: echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
-        uses: slackapi/slack-github-action@v1.27.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
+        uses: slackapi/slack-github-action@v2.0.0
         with:
-          channel-id: ${{ env.CHANNEL_ID }}
-          payload: |-
-            {
-                "text": "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.LINT_RESULT }}]",
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "```lint: [${{ env.LINT_RESULT }}]```"
-                        }
-                    }
-                ]
-            }
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_OAUTH }}
+          payload: |
+            channel: ${{ env.CHANNEL_ID }}
+            text: "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ needs.lint.result }}]"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "```lint: [${{ needs.lint.result }}]```"
