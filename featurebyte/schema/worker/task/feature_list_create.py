@@ -35,19 +35,12 @@ def feature_params_discriminator(value: Any) -> Literal["feature_ids", "feature_
     -------
     Literal["feature_ids", "feature_params"]
     """
-    if not value:
+    if isinstance(value, list):
+        if value:
+            return feature_params_discriminator(value[0])
         return "feature_ids"
-
     if isinstance(value, (dict, FeatureParameters)):
         return "feature_params"
-
-    while isinstance(value, list):
-        value = value[0]
-        if not value:
-            return "feature_ids"
-        if isinstance(value, (dict, FeatureParameters)):
-            return "feature_params"
-
     return "feature_ids"
 
 
