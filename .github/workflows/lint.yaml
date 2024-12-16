@@ -68,8 +68,6 @@ jobs:
             exit 1
           fi
           echo "CHANNEL_ID=${AUTHOR_ID}" >> $GITHUB_ENV
-      - name: Load LINT_RESULT into env
-        run: echo "LINT_RESULT=${{ needs.lint.result }}" >> $GITHUB_ENV
       - name: Load REPOSITORY into env
         run: echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
@@ -79,7 +77,7 @@ jobs:
           token: ${{ secrets.SLACK_OAUTH }}
           payload: |
             channel: ${{ env.CHANNEL_ID }}
-            text: "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.LINT_RESULT }}]"
+            text: "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ needs.lint.result }}]"
             blocks:
               - type: section
                 text:
@@ -88,4 +86,4 @@ jobs:
               - type: section
                 text:
                   type: mrkdwn
-                  text: "```lint: [${{ env.LINT_RESULT }}]```"
+                  text: "```lint: [${{ needs.lint.result }}]```"

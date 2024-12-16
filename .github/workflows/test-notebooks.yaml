@@ -189,7 +189,7 @@ jobs:
           token: ${{ secrets.SLACK_OAUTH }}
           payload: |
             channel: ${{ env.CHANNEL_ID }}
-            text: "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.TEST_QUICK_START_NOTEBOOKS_RESULT }}, ${{ env.TEST_DEEP_DIVE_NOTEBOOKS_RESULT }}, ${{ env.TEST_PLAYGROUND_NOTEBOOKS_RESULT }}]"
+            text: "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ needs.test-quick-start-notebooks.result }}, ${{ needs.test-deep-dive-notebooks.result }}, ${{ needs.test-playground-notebooks.result }}]"
             blocks:
               - type: section
                 text:
