@@ -179,35 +179,28 @@ jobs:
             exit 1
           fi
           echo "CHANNEL_ID=${AUTHOR_ID}" >> $GITHUB_ENV
-      - name: Load results into env
+      - name: Set Environment
         run: |
-          echo "TEST_QUICK_START_NOTEBOOKS_RESULT=${{ needs.test-quick-start-notebooks.result }}" >> $GITHUB_ENV
-          echo "TEST_DEEP_DIVE_NOTEBOOKS_RESULT=${{ needs.test-deep-dive-notebooks.result }}" >> $GITHUB_ENV
-          echo "TEST_PLAYGROUND_NOTEBOOKS_RESULT=${{ needs.test-playground-notebooks.result }}" >> $GITHUB_ENV
           echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
         uses: slackapi/slack-github-action@v2.0.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
         with:
-          channel-id: ${{ env.CHANNEL_ID }}
-          payload: |-
-            {
-                "text": "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.TEST_QUICK_START_NOTEBOOKS_RESULT }}, ${{ env.TEST_DEEP_DIVE_NOTEBOOKS_RESULT }}, ${{ env.TEST_PLAYGROUND_NOTEBOOKS_RESULT }}]",
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "```test-quick-start-notebooks: [${{ env.TEST_QUICK_START_NOTEBOOKS_RESULT }}]\ntest-deep-dive-notebooks: [${{ env.TEST_DEEP_DIVE_NOTEBOOKS_RESULT }}]\ntest-playground-notebooks: [${{ env.TEST_PLAYGROUND_NOTEBOOKS_RESULT }}]```"
-                        }
-                    }
-                ]
-            }
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_OAUTH }}
+          payload: |
+            channel: ${{ env.CHANNEL_ID }}
+            text: "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.TEST_QUICK_START_NOTEBOOKS_RESULT }}, ${{ env.TEST_DEEP_DIVE_NOTEBOOKS_RESULT }}, ${{ env.TEST_PLAYGROUND_NOTEBOOKS_RESULT }}]"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |-
+                    ```
+                    test-quick-start-notebooks: [${{ needs.test-quick-start-notebooks.result }}]
+                    test-deep-dive-notebooks:   [${{ needs.test-deep-dive-notebooks.result }}]
+                    test-playground-notebooks:  [${{ needs.test-playground-notebooks.result }}]
+                    ```

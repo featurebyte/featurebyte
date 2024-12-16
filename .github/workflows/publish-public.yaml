@@ -184,27 +184,24 @@ jobs:
         run: echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
         uses: slackapi/slack-github-action@v2.0.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
         with:
-          channel-id: ${{ env.CHANNEL_ID }}
-          payload: |-
-            {
-                "text": "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.PUBLISH_RESULT }}]",
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url || env.REPOSITORY_URL }}"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "```publish: [${{ env.PUBLISH_RESULT }}]\n\ntest-pypi: [${{ github.event.inputs.test-pypi }}]\npypi: [${{ github.event.inputs.pypi }}]\ndocker: [${{ github.event.inputs.docker }}]```"
-                        }
-                    }
-                ]
-            }
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_OAUTH }}
+          payload: |
+            channel: ${{ env.CHANNEL_ID }}
+            text: "${{ env.REPOSITORY }} [${{ github.workflow }}] [${{ env.PUBLISH_RESULT }}]"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url || env.REPOSITORY_URL }}"
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |-
+                    ```
+                    publish: [${{ env.PUBLISH_RESULT }}]
+                      test-pypi: [${{ github.event.inputs.test-pypi }}]
+                      pypi:      [${{ github.event.inputs.pypi }}]
+                      docker:    [${{ github.event.inputs.docker }}]
+                    ```

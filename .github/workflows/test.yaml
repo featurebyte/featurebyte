@@ -494,9 +494,9 @@ jobs:
       - test-unit
       - test-integration-spark
       - test-integration-databricks-unity
-      - test-docs
       - test-integration-snowflake
       - test-integration-bigquery
+      - test-docs
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -595,11 +595,11 @@ jobs:
           include-hidden-files: true
   slack:
     needs:
-      - build-jar
       - test-unit
       - test-integration-snowflake
       - test-integration-spark
       - test-integration-databricks-unity
+      - test-integration-bigquery
       - test-docs
       - validate
     if: ${{ always() }}
@@ -624,37 +624,34 @@ jobs:
             exit 1
           fi
           echo "CHANNEL_ID=${AUTHOR_ID}" >> $GITHUB_ENV
-      - name: Get Results
+      - name: Set Environment
         run: |
-          echo "BUILD_JAR_RESULT=${{ needs.build-jar.result }}" >> $GITHUB_ENV
-          echo "TEST_UNIT_RESULT=${{ needs.test-unit.result }}" >> $GITHUB_ENV
-          echo "TEST_INTEG_RESULT=${{ needs.test-integration-snowflake.result }},${{ needs.test-integration-spark.result }},${{ needs.test-integration-databricks-unity.result }}" >> $GITHUB_ENV
-          echo "TEST_DOCS_RESULT=${{ needs.test-docs.result }}" >> $GITHUB_ENV
-          echo "VALIDATE_RESULT=${{ needs.validate.result }}" >> $GITHUB_ENV
           echo "REPOSITORY=$(echo '${{ github.repository }}' | cut -d / -f2)" >> $GITHUB_ENV
       - name: Send Slack notification with workflow result.
         uses: slackapi/slack-github-action@v2.0.0
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_OAUTH }}
         with:
-          channel-id: ${{ env.CHANNEL_ID }}
-          payload: |-
-            {
-                "text": "${{ env.REPOSITORY }}[${{ github.workflow }}] [${{ env.BUILD_JAR_RESULT }}, ${{ env.TEST_UNIT_RESULT }}, ${{ env.TEST_INTEG_RESULT }}, ${{ env.TEST_DOCS_RESULT}}, ${{ env.VALIDATE_RESULT }}]",
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": "```build_jar: [${{ env.BUILD_JAR_RESULT }}]\n--> test_unit [${{ env.TEST_UNIT_RESULT }}]\n--> test_integration [${{ env.TEST_INTEG_RESULT }}]\n--> test_docs [${{ env.TEST_DOCS_RESULT }}]\n----> validate [${{ env.VALIDATE_RESULT }}]```"
-                        }
-                    }
-                ]
-            }
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_OAUTH }}
+          payload: |
+            channel: ${{ env.CHANNEL_ID }}
+            text: "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "`${{ env.REPOSITORY }} [${{ github.workflow }}]`: ${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: |-
+                    ```
+                    test_unit: [${{ needs.test-unit.result }}]
+                    test_docs: [${{ needs.test-docs.result }}]
+                    test_integration:
+                      snowflake:        [${{ needs.test-integration-snowflake.result }}]
+                      spark:            [${{ needs.test-integration-spark.result }}]
+                      databricks-unity: [${{ needs.test-integration-databricks-unity.result }}]
+                      bigquery:         [${{ needs.test-integration-bigquery.result }}]
+
+                    validate: [${{ needs.validate.result }}]
+                    ```
