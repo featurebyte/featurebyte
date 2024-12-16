@@ -1188,7 +1188,7 @@ class TestFeatureListApi(BaseCatalogApiTestSuite):
         assert task_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
         assert (
             task_response.json()["detail"][0]["msg"]
-            == "Value should have at least 1 item after validation, not 0"
+            == "List should have at least 1 item after validation, not 0"
         )
 
     def test_request_sample_entity_serving_names(

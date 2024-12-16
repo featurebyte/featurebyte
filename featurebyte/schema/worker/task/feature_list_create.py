@@ -47,10 +47,13 @@ def feature_params_discriminator(value: Any) -> Literal["feature_ids", "feature_
 class FeaturesParameters(FeatureByteBaseModel):
     """Feature list feature parameters"""
 
-    features: Union[
-        Annotated[List[FeatureParameters], Tag("feature_params")],
-        Annotated[List[PydanticObjectId], Tag("feature_ids")],
-    ] = Field(discriminator=Discriminator(feature_params_discriminator), min_length=1)
+    features: Annotated[
+        Union[
+            Annotated[List[FeatureParameters], Tag("feature_params"), Field(min_length=1)],
+            Annotated[List[PydanticObjectId], Tag("feature_ids"), Field(min_length=1)],
+        ],
+        Discriminator(feature_params_discriminator),
+    ]
 
 
 class FeatureListCreateTaskPayload(BaseTaskPayload):
