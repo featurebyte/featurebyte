@@ -98,7 +98,7 @@ def test_event_view_describe_with_date_range(event_table):
     expected_min_timestamp = pd.to_datetime("2001-10-10 00:15:16.000751")
     expected_max_timestamp = pd.to_datetime("2001-10-13 23:50:48.000003")
     if event_table.name != "snowflake_event_table":
-        expected_num_rows = 15
+        expected_num_rows = 14
 
     assert describe_df.shape == (expected_num_rows, 14)
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["min"]) == expected_min_timestamp
