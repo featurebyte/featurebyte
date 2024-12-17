@@ -1632,7 +1632,7 @@ def query_graph_single_node(
             "type": "input",
             "parameters": {
                 "type": "event_table",
-                "columns": [{"name": "column", "dtype": "FLOAT", "timestamp_schema": None}],
+                "columns": [{"name": "column", "dtype": "FLOAT", "dtype_metadata": None}],
                 "table_details": event_table_details.model_dump(),
                 "feature_store_details": snowflake_feature_store_details_dict,
                 "timestamp_column": None,

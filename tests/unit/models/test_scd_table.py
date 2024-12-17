@@ -26,7 +26,7 @@ def get_scd_columns_info():
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "timestamp_schema": None,
+            "dtype_metadata": None,
         },
         {
             "name": "natural_id",
@@ -35,7 +35,7 @@ def get_scd_columns_info():
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "timestamp_schema": None,
+            "dtype_metadata": None,
         },
         {
             "name": "surrogate_id",
@@ -44,7 +44,7 @@ def get_scd_columns_info():
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "timestamp_schema": None,
+            "dtype_metadata": None,
         },
         {
             "name": "created_at",
@@ -53,7 +53,7 @@ def get_scd_columns_info():
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "timestamp_schema": None,
+            "dtype_metadata": None,
         },
         {
             "name": "effective_at",
@@ -62,7 +62,7 @@ def get_scd_columns_info():
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "timestamp_schema": None,
+            "dtype_metadata": None,
         },
         {
             "name": "end_at",
@@ -71,7 +71,7 @@ def get_scd_columns_info():
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "timestamp_schema": None,
+            "dtype_metadata": None,
         },
         {
             "name": "enabled",
@@ -80,7 +80,7 @@ def get_scd_columns_info():
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "timestamp_schema": None,
+            "dtype_metadata": None,
         },
     ]
 

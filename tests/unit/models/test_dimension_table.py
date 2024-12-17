@@ -26,7 +26,7 @@ def get_dimension_columns_info():
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "timestamp_schema": None,
+            "dtype_metadata": None,
         },
         {
             "name": "dimension_id",
@@ -35,7 +35,7 @@ def get_dimension_columns_info():
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "timestamp_schema": None,
+            "dtype_metadata": None,
         },
         {
             "name": "created_at",
@@ -44,7 +44,7 @@ def get_dimension_columns_info():
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "timestamp_schema": None,
+            "dtype_metadata": None,
         },
     ]
 
