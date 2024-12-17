@@ -10,89 +10,89 @@
             "critical_data_info": null,
             "description": null,
             "dtype": "INT",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "col_int",
-            "timestamp_schema": null
+            "name": "col_int"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "FLOAT",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "col_float",
-            "timestamp_schema": null
+            "name": "col_float"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "BOOL",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "is_active",
-            "timestamp_schema": null
+            "name": "is_active"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "VARCHAR",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "col_text",
-            "timestamp_schema": null
+            "name": "col_text"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "BINARY",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "col_binary",
-            "timestamp_schema": null
+            "name": "col_binary"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "BOOL",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "col_boolean",
-            "timestamp_schema": null
+            "name": "col_boolean"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "TIMESTAMP_TZ",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "effective_timestamp",
-            "timestamp_schema": null
+            "name": "effective_timestamp"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "TIMESTAMP_TZ",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "end_timestamp",
-            "timestamp_schema": null
+            "name": "end_timestamp"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "TIMESTAMP",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "date_of_birth",
-            "timestamp_schema": null
+            "name": "date_of_birth"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "TIMESTAMP_TZ",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "created_at",
-            "timestamp_schema": null
+            "name": "created_at"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "INT",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "cust_id",
-            "timestamp_schema": null
+            "name": "cust_id"
         }
     ],
     "current_flag_column": "is_active",
