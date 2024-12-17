@@ -8,7 +8,7 @@ from typing import Any, List, Optional, Set, Tuple
 from featurebyte.common.model_util import convert_version_string_to_dict, parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneOffsetColumn
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 
 
 @dataclass
@@ -63,7 +63,7 @@ def construct_data_model_validator(
 
             # check timezone offset column if it is a TimestampSchema
             if isinstance(col_name, TimestampSchema):
-                if isinstance(col_name.timezone, TimeZoneOffsetColumn):
+                if isinstance(col_name.timezone, TimeZoneColumn):
                     col_name = col_name.timezone.column_name
                 else:
                     continue

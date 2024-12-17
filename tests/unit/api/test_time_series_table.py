@@ -31,7 +31,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
 )
 from featurebyte.query_graph.model.time_series_table import TimeInterval
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneOffsetColumn
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.cleaning_operation import (
     DisguisedValueImputation,
     MissingValueImputation,
@@ -1014,7 +1014,7 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
         reference_datetime_column="date",
         reference_datetime_schema=TimestampSchema(
             format_string=None,
-            timezone=TimeZoneOffsetColumn(
+            timezone=TimeZoneColumn(
                 column_name="col_text",
                 type="offset",
                 format_string="TZH:TZM",
@@ -1038,7 +1038,7 @@ def test_timezone_offset__invalid_column(snowflake_database_time_series_table, c
             reference_datetime_column="date",
             reference_datetime_schema=TimestampSchema(
                 format_string=None,
-                timezone=TimeZoneOffsetColumn(
+                timezone=TimeZoneColumn(
                     column_name="col_float",
                     type="offset",
                     format_string="TZH:TZM",

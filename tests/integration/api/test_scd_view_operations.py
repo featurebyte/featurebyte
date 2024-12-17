@@ -11,7 +11,7 @@ from bson import ObjectId
 from sqlglot import expressions
 
 from featurebyte import Entity, FeatureJobSetting, FeatureList, SCDTable
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
@@ -708,27 +708,43 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
 
 
 @pytest.mark.parametrize(
-    "timestamp_value, timestamp_schema, expected",
+    "timestamp_value, timezone_offset_column, timestamp_schema, expected",
     [
         (
             pd.Timestamp("2022-01-15 10:00:00"),
+            None,
             TimestampSchema(timezone="Asia/Singapore"),
             pd.Timestamp("2022-01-15 02:00:00"),
         ),
         (
             pd.Timestamp("2022-01-15 10:00:00"),
+            None,
             TimestampSchema(timezone="UTC"),
             pd.Timestamp("2022-01-15 10:00:00"),
         ),
         (
             "20220115",
+            None,
             TimestampSchema(format_string="<date_format_placeholder>"),
             "2022-01-15 00:00:00",
         ),
         (
             "20220115",
+            None,
             TimestampSchema(format_string="<date_format_placeholder>", timezone="America/New_York"),
             "2022-01-15 05:00:00",
+        ),
+        (
+            pd.Timestamp("2022-01-15 10:00:00"),
+            {"tz_offset": "Asia/Singapore"},
+            TimestampSchema(timezone=TimeZoneColumn(column_name="tz_offset", type="timezone")),
+            pd.Timestamp("2022-01-15 02:00:00"),
+        ),
+        (
+            pd.Timestamp("2022-01-15 10:00:00"),
+            {"tz_offset": "+08:00"},
+            TimestampSchema(timezone=TimeZoneColumn(column_name="tz_offset", type="offset")),
+            pd.Timestamp("2022-01-15 02:00:00"),
         ),
     ],
 )
@@ -738,6 +754,7 @@ async def test_scd_view_timestamp_schema(
     data_source,
     scd_table_timestamp_format_string,
     timestamp_value,
+    timezone_offset_column,
     timestamp_schema,
     expected,
 ):
@@ -752,6 +769,10 @@ async def test_scd_view_timestamp_schema(
         "user_id": ["user_1"],
         "value": [123],
     })
+    if timezone_offset_column is not None:
+        assert isinstance(timezone_offset_column, dict)
+        for k, v in timezone_offset_column.items():
+            df_scd[k] = v
     table_name = "test_scd_view_timestamp_schema_{}".format(ObjectId()).upper()
     await session.register_table(table_name, df_scd)
     source_table = data_source.get_source_table(

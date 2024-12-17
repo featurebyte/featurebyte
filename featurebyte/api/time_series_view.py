@@ -15,7 +15,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.time_series_table import TimeInterval
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneOffsetColumn
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.input import InputNode, TimeSeriesTableInputNodeParameters
 
 
@@ -118,7 +118,7 @@ class TimeSeriesView(View, GroupByMixin, RawMixin):
     def _get_additional_inherited_columns(self) -> set[str]:
         columns = {self.timestamp_column}
         if self.reference_datetime_schema is not None:
-            if isinstance(self.reference_datetime_schema.timezone, TimeZoneOffsetColumn):
+            if isinstance(self.reference_datetime_schema.timezone, TimeZoneColumn):
                 columns.add(self.reference_datetime_schema.timezone.column_name)
         return columns
 
