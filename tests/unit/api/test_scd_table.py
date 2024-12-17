@@ -580,13 +580,15 @@ def test_timestamp_schema__effective_timestamp_column(snowflake_database_table_s
     for column_info in scd_table.columns_info:
         column_info_dict = column_info.model_dump()
         if column_info.name == "col_text":
-            assert column_info_dict["timestamp_schema"] == {
-                "format_string": "%Y-%m-%d",
-                "is_utc_time": None,
-                "timezone": "Etc/UTC",
+            assert column_info_dict["dtype_metadata"] == {
+                "timestamp_schema": {
+                    "format_string": "%Y-%m-%d",
+                    "is_utc_time": None,
+                    "timezone": "Etc/UTC",
+                }
             }
         else:
-            assert column_info_dict["timestamp_schema"] is None
+            assert column_info_dict["dtype_metadata"] is None
 
 
 def test_timestamp_schema__end_timestamp_column(snowflake_database_table_scd_table, catalog):
@@ -616,13 +618,15 @@ def test_timestamp_schema__end_timestamp_column(snowflake_database_table_scd_tab
     for column_info in scd_table.columns_info:
         column_info_dict = column_info.model_dump()
         if column_info.name == "col_text":
-            assert column_info_dict["timestamp_schema"] == {
-                "format_string": "%Y-%m-%d",
-                "is_utc_time": None,
-                "timezone": "Etc/UTC",
+            assert column_info_dict["dtype_metadata"] == {
+                "timestamp_schema": {
+                    "format_string": "%Y-%m-%d",
+                    "is_utc_time": None,
+                    "timezone": "Etc/UTC",
+                }
             }
         else:
-            assert column_info_dict["timestamp_schema"] is None
+            assert column_info_dict["dtype_metadata"] is None
 
 
 def test_timestamp_schema__mandatory_if_not_timestamp(snowflake_database_table_scd_table, catalog):
