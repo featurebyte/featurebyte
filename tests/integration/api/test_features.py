@@ -4,9 +4,15 @@ Tests for more features
 
 import numpy as np
 import pandas as pd
+import pytest
+from bson import ObjectId
 
 from featurebyte import FeatureList
-from tests.util.helper import fb_assert_frame_equal, tz_localize_if_needed
+from tests.util.helper import (
+    create_observation_table_from_dataframe,
+    fb_assert_frame_equal,
+    tz_localize_if_needed,
+)
 
 
 def test_features_without_entity(event_table):
@@ -226,3 +232,51 @@ def test_relative_frequency_with_non_string_keys(event_table, scd_table):
         }
     ])
     fb_assert_frame_equal(df, expected, dict_like_columns=["dict_feature"])
+
+
+@pytest.mark.asyncio
+async def test_latest_array_with_feature_table_cache(event_table, session, data_source):
+    """
+    Test latest feature with array type source column
+    """
+    event_view = event_table.get_view()
+
+    feature = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="ARRAY_STRING",
+        method="latest",
+        windows=["14d"],
+        feature_names=["latest_array_string_feature"],
+    )["latest_array_string_feature"]
+    feature_2 = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="ARRAY",
+        method="latest",
+        windows=["14d"],
+        feature_names=["latest_array_feature"],
+    )["latest_array_feature"]
+    feature_list = FeatureList([feature, feature_2], name="latest_array_feature_list")
+    preview_param = {
+        "POINT_IN_TIME": pd.Timestamp("2002-01-02 10:00:00"),
+        "üser id": 1,
+    }
+    observations_df = pd.DataFrame([preview_param])
+    observation_table = await create_observation_table_from_dataframe(
+        session, observations_df, data_source
+    )
+    df = feature_list.compute_historical_feature_table(
+        observation_table, f"table_{ObjectId()}"
+    ).to_pandas()
+    expected = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2002-01-02 10:00:00"),
+            "üser id": 1,
+            "latest_array_string_feature": ["a", "b", "c"],
+            "latest_array_feature": [
+                "0.5198448427193927",
+                "0.130800057877837",
+                "0.8889922844595354",
+                "0.14526240204589713",
+                "0.051483377270627906",
+            ],
+        }
+    ])
+    fb_assert_frame_equal(df, expected)
