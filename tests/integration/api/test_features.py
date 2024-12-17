@@ -7,7 +7,8 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte import FeatureList
+from featurebyte import FeatureList, SourceType
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import (
     create_observation_table_from_dataframe,
     fb_assert_frame_equal,
@@ -234,6 +235,7 @@ def test_relative_frequency_with_non_string_keys(event_table, scd_table):
     fb_assert_frame_equal(df, expected, dict_like_columns=["dict_feature"])
 
 
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_latest_array_with_feature_table_cache(event_table, session, data_source):
     """
@@ -265,18 +267,28 @@ async def test_latest_array_with_feature_table_cache(event_table, session, data_
     df = feature_list.compute_historical_feature_table(
         observation_table, f"table_{ObjectId()}"
     ).to_pandas()
+    if session.source_type != SourceType.SNOWFLAKE:
+        expected_latest_array_feature = [
+            "0.5198448427193927",
+            "0.130800057877837",
+            "0.8889922844595354",
+            "0.14526240204589713",
+            "0.051483377270627906",
+        ]
+    else:
+        expected_latest_array_feature = [
+            0.5198448427193927,
+            0.130800057877837,
+            0.8889922844595354,
+            0.1452624020458971,
+            0.05148337727062791,
+        ]
     expected = pd.DataFrame([
         {
             "POINT_IN_TIME": pd.Timestamp("2002-01-02 10:00:00"),
             "üser id": 1,
             "latest_array_string_feature": ["a", "b", "c"],
-            "latest_array_feature": [
-                "0.5198448427193927",
-                "0.130800057877837",
-                "0.8889922844595354",
-                "0.14526240204589713",
-                "0.051483377270627906",
-            ],
+            "latest_array_feature": expected_latest_array_feature,
         }
     ])
     fb_assert_frame_equal(df, expected)

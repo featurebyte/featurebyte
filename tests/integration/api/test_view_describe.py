@@ -47,6 +47,7 @@ def test_event_view_describe(event_table, default_columns_batch_size):
         "TRANSACTION_ID",
         "EMBEDDING_ARRAY",
         "ARRAY",
+        "ARRAY_STRING",
         "FLAT_DICT",
         "NESTED_DICT",
     ]
@@ -77,7 +78,7 @@ def test_event_view_describe(event_table, default_columns_batch_size):
         ]
 
     assert describe_df.index.tolist() == expected_row_idx
-    assert describe_df.shape == (len(expected_row_idx), 13)
+    assert describe_df.shape == (len(expected_row_idx), 14)
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["min"]) == expected_min_timestamp
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
@@ -97,9 +98,9 @@ def test_event_view_describe_with_date_range(event_table):
     expected_min_timestamp = pd.to_datetime("2001-10-10 00:15:16.000751")
     expected_max_timestamp = pd.to_datetime("2001-10-13 23:50:48.000003")
     if event_table.name != "snowflake_event_table":
-        expected_num_rows = 14
+        expected_num_rows = 15
 
-    assert describe_df.shape == (expected_num_rows, 13)
+    assert describe_df.shape == (expected_num_rows, 14)
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["min"]) == expected_min_timestamp
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
