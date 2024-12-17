@@ -148,9 +148,7 @@ class FeatureTableCacheMetadataService(
             )
             document = FeatureTableCacheMetadataModel(
                 observation_table_id=observation_table.id,
-                table_name=self._get_feature_cache_table_name(
-                    observation_table_id, num_cache_tables
-                ),
+                table_name=self._get_feature_cache_table_name(),
                 feature_definitions=[],
             )
             eligible_cache_metadata = await self.create_document(document)
@@ -158,12 +156,8 @@ class FeatureTableCacheMetadataService(
         return eligible_cache_metadata
 
     @staticmethod
-    def _get_feature_cache_table_name(
-        observation_table_id: PydanticObjectId,
-        num_cache_tables: int,
-    ) -> str:
-        suffix = num_cache_tables + 1
-        return f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{str(observation_table_id)}_{suffix}"
+    def _get_feature_cache_table_name() -> str:
+        return f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{str(ObjectId())}"
 
     async def update_feature_table_cache(
         self,
