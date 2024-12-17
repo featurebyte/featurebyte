@@ -62,7 +62,7 @@ async def test_get_or_create_feature_table_cache_creates_from_scratch(
     assert document.observation_table_id == observation_table_doc.id
     assert (
         document.table_name
-        == f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{observation_table_doc.id}_1"
+        == f"{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_000000000000000000000000"
     )
     assert document.feature_definitions == []
 
@@ -373,7 +373,7 @@ async def test_get_or_create_feature_table_cache_exceed_limit(
     cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
         observation_table_id=observation_table_doc.id
     )
-    assert cache_metadata.table_name == f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_1"
+    assert cache_metadata.table_name == "FEATURE_TABLE_CACHE_000000000000000000000000"
     assert len(cached_definitions) == 2
 
     # Insert one
@@ -398,19 +398,19 @@ async def test_get_or_create_feature_table_cache_exceed_limit(
             feature_id=cached_definitions[0].feature_id,
             definition_hash="feature_3_definition_hash",
             feature_name="FEATURE_feature_3_definition_hash",
-            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_2",
+            table_name="FEATURE_TABLE_CACHE_000000000000000000000001",
         ),
         CachedDefinitionWithTable(
             feature_id=cached_definitions[1].feature_id,
             definition_hash="feature_1_definition_hash",
             feature_name="FEATURE_feature_1_definition_hash",
-            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_1",
+            table_name="FEATURE_TABLE_CACHE_000000000000000000000000",
         ),
         CachedDefinitionWithTable(
             feature_id=cached_definitions[2].feature_id,
             definition_hash="feature_2_definition_hash",
             feature_name="FEATURE_feature_2_definition_hash",
-            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_1",
+            table_name="FEATURE_TABLE_CACHE_000000000000000000000000",
         ),
     ]
 
@@ -436,24 +436,24 @@ async def test_get_or_create_feature_table_cache_exceed_limit(
             feature_id=cached_definitions[0].feature_id,
             definition_hash="feature_3_definition_hash",
             feature_name="FEATURE_feature_3_definition_hash",
-            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_2",
+            table_name="FEATURE_TABLE_CACHE_000000000000000000000001",
         ),
         CachedDefinitionWithTable(
             feature_id=cached_definitions[1].feature_id,
             definition_hash="feature_4_definition_hash",
             feature_name="FEATURE_feature_4_definition_hash",
-            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_2",
+            table_name="FEATURE_TABLE_CACHE_000000000000000000000001",
         ),
         CachedDefinitionWithTable(
             feature_id=cached_definitions[2].feature_id,
             definition_hash="feature_1_definition_hash",
             feature_name="FEATURE_feature_1_definition_hash",
-            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_1",
+            table_name="FEATURE_TABLE_CACHE_000000000000000000000000",
         ),
         CachedDefinitionWithTable(
             feature_id=cached_definitions[3].feature_id,
             definition_hash="feature_2_definition_hash",
             feature_name="FEATURE_feature_2_definition_hash",
-            table_name=f"FEATURE_TABLE_CACHE_{observation_table_doc.id}_1",
+            table_name="FEATURE_TABLE_CACHE_000000000000000000000000",
         ),
     ]
