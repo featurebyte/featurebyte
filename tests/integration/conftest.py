@@ -1326,6 +1326,7 @@ def event_view_fixture(event_table):
         "TRANSACTION_ID",
         "EMBEDDING_ARRAY",
         "ARRAY",
+        "ARRAY_STRING",
         "FLAT_DICT",
         "NESTED_DICT",
     ]
