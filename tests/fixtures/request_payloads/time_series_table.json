@@ -9,56 +9,56 @@
         {
             "description": null,
             "dtype": "INT",
-            "name": "col_int",
-            "timestamp_schema": null
+            "dtype_metadata": null,
+            "name": "col_int"
         },
         {
             "description": "Float column",
             "dtype": "FLOAT",
-            "name": "col_float",
-            "timestamp_schema": null
+            "dtype_metadata": null,
+            "name": "col_float"
         },
         {
             "description": "Char column",
             "dtype": "CHAR",
-            "name": "col_char",
-            "timestamp_schema": null
+            "dtype_metadata": null,
+            "name": "col_char"
         },
         {
             "description": "Text column",
             "dtype": "VARCHAR",
-            "name": "col_text",
-            "timestamp_schema": null
+            "dtype_metadata": null,
+            "name": "col_text"
         },
         {
             "description": null,
             "dtype": "BINARY",
-            "name": "col_binary",
-            "timestamp_schema": null
+            "dtype_metadata": null,
+            "name": "col_binary"
         },
         {
             "description": null,
             "dtype": "BOOL",
-            "name": "col_boolean",
-            "timestamp_schema": null
+            "dtype_metadata": null,
+            "name": "col_boolean"
         },
         {
             "description": "Date column",
             "dtype": "VARCHAR",
-            "name": "date",
-            "timestamp_schema": null
+            "dtype_metadata": null,
+            "name": "date"
         },
         {
             "description": null,
             "dtype": "TIMESTAMP_TZ",
-            "name": "created_at",
-            "timestamp_schema": null
+            "dtype_metadata": null,
+            "name": "created_at"
         },
         {
             "description": null,
             "dtype": "INT",
-            "name": "store_id",
-            "timestamp_schema": null
+            "dtype_metadata": null,
+            "name": "store_id"
         }
     ],
     "default_feature_job_setting": null,

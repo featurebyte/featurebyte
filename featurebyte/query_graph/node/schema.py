@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, StrictStr, model_validator
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.source_info import SourceInfo
 
@@ -411,13 +412,31 @@ class ColumnSpec(FeatureByteBaseModel):
 
     name: NameStr
     dtype: DBVarType
-    timestamp_schema: Optional[TimestampSchema] = None
+    dtype_metadata: Optional[DBVarTypeMetadata] = None
 
     @model_validator(mode="after")
     def _validate_string_timestamp_format_string(self) -> "ColumnSpec":
-        if self.dtype == DBVarType.VARCHAR and self.timestamp_schema is not None:
-            if self.timestamp_schema.format_string is None:
+        if (
+            self.dtype == DBVarType.VARCHAR
+            and self.dtype_metadata is not None
+            and self.dtype_metadata.timestamp_schema is not None
+        ):
+            if self.dtype_metadata.timestamp_schema.format_string is None:
                 raise ValueError(
                     f"format_string is required in the timestamp_schema for column {self.name}"
                 )
         return self
+
+    @property
+    def timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Returns the timestamp schema object if available
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+            Timestamp schema
+        """
+        if self.dtype_metadata is not None:
+            return self.dtype_metadata.timestamp_schema
+        return None

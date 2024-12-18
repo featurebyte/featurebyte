@@ -10,49 +10,49 @@
             "critical_data_info": null,
             "description": null,
             "dtype": "INT",
+            "dtype_metadata": null,
             "entity_id": "63f94ed6ea1f050131379204",
-            "name": "event_id_col",
-            "timestamp_schema": null
+            "name": "event_id_col"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "VARCHAR",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "item_id_col",
-            "timestamp_schema": null
+            "name": "item_id_col"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "VARCHAR",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "item_type",
-            "timestamp_schema": null
+            "name": "item_type"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "FLOAT",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "item_amount",
-            "timestamp_schema": null
+            "name": "item_amount"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "TIMESTAMP_TZ",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "created_at",
-            "timestamp_schema": null
+            "name": "created_at"
         },
         {
             "critical_data_info": null,
             "description": null,
             "dtype": "TIMESTAMP_TZ",
+            "dtype_metadata": null,
             "entity_id": null,
-            "name": "event_timestamp",
-            "timestamp_schema": null
+            "name": "event_timestamp"
         }
     ],
     "description": "test item table",

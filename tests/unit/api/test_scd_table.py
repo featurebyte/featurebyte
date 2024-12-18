@@ -122,7 +122,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
             {
                 "entity_id": None,
@@ -131,7 +131,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
             {
                 "entity_id": None,
@@ -140,7 +140,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
             {
                 "entity_id": None,
@@ -149,7 +149,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
             {
                 "entity_id": None,
@@ -158,7 +158,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
             {
                 "entity_id": None,
@@ -167,7 +167,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
             {
                 "entity_id": None,
@@ -176,7 +176,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
             {
                 "entity_id": None,
@@ -185,7 +185,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
             {
                 "critical_data_info": None,
@@ -194,7 +194,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "entity_id": None,
                 "name": "date_of_birth",
                 "semantic_id": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
             {
                 "entity_id": None,
@@ -203,7 +203,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
             {
                 "entity_id": None,
@@ -212,7 +212,7 @@ def scd_table_dict_fixture(snowflake_database_table_scd_table, user_id):
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": None,
-                "timestamp_schema": None,
+                "dtype_metadata": None,
             },
         ],
         "natural_key_column": "col_text",
@@ -580,13 +580,15 @@ def test_timestamp_schema__effective_timestamp_column(snowflake_database_table_s
     for column_info in scd_table.columns_info:
         column_info_dict = column_info.model_dump()
         if column_info.name == "col_text":
-            assert column_info_dict["timestamp_schema"] == {
-                "format_string": "%Y-%m-%d",
-                "is_utc_time": None,
-                "timezone": "Etc/UTC",
+            assert column_info_dict["dtype_metadata"] == {
+                "timestamp_schema": {
+                    "format_string": "%Y-%m-%d",
+                    "is_utc_time": None,
+                    "timezone": "Etc/UTC",
+                }
             }
         else:
-            assert column_info_dict["timestamp_schema"] is None
+            assert column_info_dict["dtype_metadata"] is None
 
 
 def test_timestamp_schema__end_timestamp_column(snowflake_database_table_scd_table, catalog):
@@ -616,13 +618,15 @@ def test_timestamp_schema__end_timestamp_column(snowflake_database_table_scd_tab
     for column_info in scd_table.columns_info:
         column_info_dict = column_info.model_dump()
         if column_info.name == "col_text":
-            assert column_info_dict["timestamp_schema"] == {
-                "format_string": "%Y-%m-%d",
-                "is_utc_time": None,
-                "timezone": "Etc/UTC",
+            assert column_info_dict["dtype_metadata"] == {
+                "timestamp_schema": {
+                    "format_string": "%Y-%m-%d",
+                    "is_utc_time": None,
+                    "timezone": "Etc/UTC",
+                }
             }
         else:
-            assert column_info_dict["timestamp_schema"] is None
+            assert column_info_dict["dtype_metadata"] is None
 
 
 def test_timestamp_schema__mandatory_if_not_timestamp(snowflake_database_table_scd_table, catalog):

@@ -68,7 +68,7 @@ def test_scd_timestamp_schema(
         "columns": [
             {
                 **{"name": "ts", "dtype": dtype},
-                **{"timestamp_schema": timestamp_schema_dict},
+                **{"dtype_metadata": {"timestamp_schema": timestamp_schema_dict}},
             },
             {"name": "cust_id", "dtype": DBVarType.INT},
             {"name": "a", "dtype": DBVarType.FLOAT},

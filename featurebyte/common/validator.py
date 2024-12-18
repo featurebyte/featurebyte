@@ -105,7 +105,14 @@ def construct_data_model_validator(
         if timestamp_schema_mapping:
             for col_name, timestamp_schema in timestamp_schema_mapping.items():
                 if col_name in col_info_map:
-                    col_info_map[col_name]["timestamp_schema"] = timestamp_schema
+                    col_info = col_info_map[col_name]
+                    dtype_metadata = col_info.get("dtype_metadata")
+                    if dtype_metadata is None:
+                        dtype_metadata = {}
+                    else:
+                        dtype_metadata = dict(dtype_metadata)
+                    dtype_metadata["timestamp_schema"] = timestamp_schema
+                    col_info["dtype_metadata"] = dtype_metadata
             updated_columns_info = [ColumnInfo(**col_info) for col_info in col_info_map.values()]
             self.__dict__[columns_info_key] = updated_columns_info
 

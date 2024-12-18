@@ -125,15 +125,15 @@ class TestContextApi(BaseCatalogApiTestSuite):
             "output_type": "frame",
             "parameters": {
                 "columns": [
-                    {"dtype": "INT", "name": "col_int", "timestamp_schema": None},
-                    {"dtype": "FLOAT", "name": "col_float", "timestamp_schema": None},
-                    {"dtype": "CHAR", "name": "col_char", "timestamp_schema": None},
-                    {"dtype": "VARCHAR", "name": "col_text", "timestamp_schema": None},
-                    {"dtype": "BINARY", "name": "col_binary", "timestamp_schema": None},
-                    {"dtype": "BOOL", "name": "col_boolean", "timestamp_schema": None},
-                    {"dtype": "TIMESTAMP", "name": "event_timestamp", "timestamp_schema": None},
-                    {"dtype": "TIMESTAMP", "name": "created_at", "timestamp_schema": None},
-                    {"dtype": "INT", "name": "cust_id", "timestamp_schema": None},
+                    {"dtype": "INT", "name": "col_int", "dtype_metadata": None},
+                    {"dtype": "FLOAT", "name": "col_float", "dtype_metadata": None},
+                    {"dtype": "CHAR", "name": "col_char", "dtype_metadata": None},
+                    {"dtype": "VARCHAR", "name": "col_text", "dtype_metadata": None},
+                    {"dtype": "BINARY", "name": "col_binary", "dtype_metadata": None},
+                    {"dtype": "BOOL", "name": "col_boolean", "dtype_metadata": None},
+                    {"dtype": "TIMESTAMP", "name": "event_timestamp", "dtype_metadata": None},
+                    {"dtype": "TIMESTAMP", "name": "created_at", "dtype_metadata": None},
+                    {"dtype": "INT", "name": "cust_id", "dtype_metadata": None},
                 ],
                 "feature_store_details": {
                     "details": {
