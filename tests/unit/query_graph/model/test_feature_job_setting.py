@@ -6,7 +6,10 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import FeatureJobSetting
-from featurebyte.query_graph.model.feature_job_setting import TableIdFeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    TableIdFeatureJobSetting,
+)
 
 
 def test_equality_of_feature_job_setting():
@@ -59,4 +62,37 @@ def test_feature_job_setting():
         FeatureJobSetting(blind_spot="1h", period="1d", offset="1h", execution_buffer="1h")
 
     expected_msg = "Setting execution_buffer is not supported."
+    assert expected_msg in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "valid_crontab",
+    [
+        "0 0 1 * *",
+        "0 0 * * *",
+        "0 * * * *",
+        "* * * * *",
+    ],
+)
+def test_cron_feature_job_setting__valid_crontab_expressiom(valid_crontab):
+    """Test cron feature job setting"""
+
+    CronFeatureJobSetting(crontab=valid_crontab)
+
+
+@pytest.mark.parametrize(
+    "invalid_crontab",
+    [
+        "0.1 0 0 * *",
+        "a 0 1 * *",
+        "0 0 0 * *",
+        "Some text",
+    ],
+)
+def test_cron_feature_job_setting__invalid_crontab_expressiom(invalid_crontab):
+    """Test cron feature job setting"""
+    with pytest.raises(ValueError) as exc_info:
+        CronFeatureJobSetting(crontab=invalid_crontab)
+
+    expected_msg = f"Invalid crontab expression: {invalid_crontab}"
     assert expected_msg in str(exc_info.value)

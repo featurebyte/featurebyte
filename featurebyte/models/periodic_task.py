@@ -36,9 +36,9 @@ class Crontab(FeatureByteBaseModel):
 
     minute: Union[str, int]
     hour: Union[str, int]
-    day_of_week: Union[str, int]
     day_of_month: Union[str, int]
     month_of_year: Union[str, int]
+    day_of_week: Union[str, int]
 
 
 class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
