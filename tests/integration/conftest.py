@@ -637,6 +637,7 @@ def transaction_dataframe(source_type):
     if source_type != "sqlite":
         data["embedding_array"] = [rng.random(10).tolist() for _ in range(row_number)]
         data["array"] = [rng.random(rng.randint(5, 10)).tolist() for _ in range(row_number)]
+        data["array_string"] = [["a", "b", "c"] for _ in range(row_number)]
         data["flat_dict"] = [
             {"a": rng.randint(0, 10), "b": rng.randint(0, 10)} for _ in range(row_number)
         ]
@@ -1291,6 +1292,7 @@ def create_transactions_event_table_from_data_source(
         "TRANSACTION_ID": "VARCHAR",
         "EMBEDDING_ARRAY": "ARRAY",
         "ARRAY": "ARRAY",
+        "ARRAY_STRING": "ARRAY",
         "FLAT_DICT": "DICT",
         "NESTED_DICT": "DICT",
     })
@@ -1361,6 +1363,7 @@ def event_view_fixture(event_table):
         "TRANSACTION_ID",
         "EMBEDDING_ARRAY",
         "ARRAY",
+        "ARRAY_STRING",
         "FLAT_DICT",
         "NESTED_DICT",
     ]
