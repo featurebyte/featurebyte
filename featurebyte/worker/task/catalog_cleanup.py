@@ -12,6 +12,8 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Type
 
+from pydantic import ValidationError
+
 import featurebyte.models
 from featurebyte.common.env_util import is_development_mode
 from featurebyte.common.progress import ProgressCallbackType, get_ranged_progress_callback
@@ -265,10 +267,23 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
             warehouse_tables = set()
             remote_file_paths = set()
             async for doc_dict in docs:
-                obj = model_class(**doc_dict)
-                assert isinstance(obj, FeatureByteCatalogBaseDocumentModel)
-                warehouse_tables.update(obj.warehouse_tables)
-                remote_file_paths.update(obj.remote_storage_paths)
+                try:
+                    obj = model_class(**doc_dict)
+                    assert isinstance(obj, FeatureByteCatalogBaseDocumentModel)
+                    warehouse_tables.update(obj.warehouse_tables)
+                    remote_file_paths.update(obj.remote_storage_paths)
+                except ValidationError as exc:
+                    if is_development_mode():
+                        raise
+
+                    # failed to parse the document, probably due to schema changes
+                    logger.info(
+                        "Failed to parse document %s (%s): %s",
+                        collection_name,
+                        doc_dict["_id"],
+                        exc,
+                    )
+                    pass
 
             # cleanup the warehouse tables & remote files
             await mongo_progress_callback(
