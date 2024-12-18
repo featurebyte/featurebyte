@@ -10,6 +10,7 @@ from pydantic import Field
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.metadata.column import InColumnStr
@@ -42,7 +43,7 @@ class AggregationOpStructMixin(BaseNode, ABC):
         columns: List[ViewDataColumn],
         node_name: str,
         other_node_names: Set[str],
-        output_var_type: DBVarType,
+        output_var_type: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         """
         Construct aggregations based on node parameters
@@ -55,7 +56,7 @@ class AggregationOpStructMixin(BaseNode, ABC):
             Node name
         other_node_names: Set[str]
             Set of node names (input lineage)
-        output_var_type: DBVarType
+        output_var_type: DBVarTypeInfo
             Aggregation output variable type
 
         Returns
@@ -178,13 +179,15 @@ class AggregationOpStructMixin(BaseNode, ABC):
         if agg_func:
             assert isinstance(self.parameters, BaseGroupbyParameters)
             aggregation_func_obj = construct_agg_func(agg_func)
-            input_var_type = parent_columns[0].dtype if parent_columns else columns[0].dtype
+            input_var_type = (
+                parent_columns[0].dtype_info if parent_columns else columns[0].dtype_info
+            )
             output_var_type = aggregation_func_obj.derive_output_var_type(
                 input_var_type=input_var_type, category=self.parameters.value_by
             )
         else:
-            # to be overriden at the _get_aggregations
-            output_var_type = DBVarType.UNKNOWN
+            # to be overridden at the _get_aggregations
+            output_var_type = DBVarTypeInfo(dtype=DBVarType.UNKNOWN)
 
         return OperationStructure(
             columns=columns,

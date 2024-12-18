@@ -13,9 +13,9 @@ from typeguard import typechecked
 from featurebyte.core.generic import QueryObject
 from featurebyte.core.mixin import GetAttrMixin, OpsMixin
 from featurebyte.core.series import FrozenSeries, Series
-from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 
 
@@ -37,7 +37,7 @@ class BaseFrame(QueryObject):
     )
 
     @property
-    def column_var_type_map(self) -> dict[str, DBVarType]:
+    def column_var_type_map(self) -> dict[str, DBVarTypeInfo]:
         """
         Column name to DB var type mapping
 
@@ -45,7 +45,7 @@ class BaseFrame(QueryObject):
         -------
         dict[str, DBVarType]
         """
-        return {col.name: col.dtype for col in self.columns_info}
+        return {col.name: col.dtype_info for col in self.columns_info}
 
     @property
     def dtypes(self) -> pd.Series:
@@ -56,7 +56,9 @@ class BaseFrame(QueryObject):
         -------
         pd.Series
         """
-        return pd.Series(self.column_var_type_map)
+        return pd.Series({
+            col_name: dtype_info.dtype for col_name, dtype_info in self.column_var_type_map.items()
+        })
 
     @property
     def columns(self) -> list[str]:
@@ -158,7 +160,7 @@ class FrozenFrame(GetAttrMixin, BaseFrame, OpsMixin):
                 tabular_source=self.tabular_source,
                 node_name=node.name,
                 name=item,
-                dtype=self.column_var_type_map[item],
+                dtype=self.column_var_type_map[item].dtype,
                 **self._getitem_series_params,
             )
             output.set_parent(self)

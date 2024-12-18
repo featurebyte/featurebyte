@@ -119,7 +119,7 @@ def test__setitem__int_series_assign_float_value(bool_series, int_series):
     assert int_series.dtype == DBVarType.INT
     int_series[bool_series] = 1.1
     assert int_series.dtype == DBVarType.FLOAT
-    assert int_series.parent.column_var_type_map[int_series.name] == DBVarType.FLOAT
+    assert int_series.parent.column_var_type_map[int_series.name].dtype == DBVarType.FLOAT
 
 
 def test__setitem__cond_assign_with_same_input_nodes(bool_series):

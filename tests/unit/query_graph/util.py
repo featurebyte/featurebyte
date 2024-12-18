@@ -36,7 +36,16 @@ def to_dict(obj, exclude=None, include=None):
     if isinstance(
         obj, (SourceDataColumn, DerivedDataColumn, AggregationColumn, PostAggregationColumn)
     ):
-        return to_dict(asdict(obj), exclude=exclude, include=include)
+        col_dict = to_dict(asdict(obj), exclude=exclude, include=include)
+        if "dtype_info" in col_dict:
+            col_dict["dtype"] = col_dict.pop("dtype_info")["dtype"]
+        if isinstance(obj, AggregationColumn):
+            if "column" in col_dict:
+                col_dict["column"] = to_dict(obj.column)
+        if isinstance(obj, (DerivedDataColumn, PostAggregationColumn)):
+            if "columns" in col_dict:
+                col_dict["columns"] = [to_dict(col) for col in obj.columns]
+        return col_dict
     if hasattr(obj, "dict"):
         return to_dict(obj.model_dump(), exclude=exclude, include=include)
     return obj

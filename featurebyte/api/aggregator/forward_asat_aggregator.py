@@ -112,7 +112,7 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
         assert target_name is not None
         agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
         output_var_type = self.get_output_var_type(agg_method, method, value_column)
-        target = self.view.project_target_from_node(node, target_name, output_var_type)
+        target = self.view.project_target_from_node(node, target_name, output_var_type.dtype)
         if not skip_fill_na:
             return self._fill_feature_or_target(target, method, target_name, fill_value)  # type: ignore[return-value]
         return target

@@ -11,6 +11,7 @@ from typing_extensions import Literal
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithSingleOperandNode,
@@ -47,8 +48,8 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
     type: Literal[NodeType.DT_EXTRACT] = NodeType.DT_EXTRACT
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.INT
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.INT)
 
     @property
     def max_input_count(self) -> int:
@@ -186,8 +187,8 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
             "minute": 60,
         }
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.dt.{self.parameters.property}"
@@ -227,8 +228,8 @@ class DateDifferenceNode(BaseSeriesOutputNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.TIMEDELTA
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.TIMEDELTA)
 
     def _derive_python_code(
         self,
@@ -301,8 +302,8 @@ class TimeDeltaNode(BaseSeriesOutputNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.TIMEDELTA
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.TIMEDELTA)
 
     def _derive_python_code(
         self,
@@ -397,12 +398,12 @@ class DateAddNode(BaseSeriesOutputNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         if inputs[0].output_category == NodeOutputCategory.FEATURE:
             # when the inputs[0] is requested column, inputs[0].columns is empty.
             # in this case, we should derive the var type from inputs[0].aggregations
-            return inputs[0].aggregations[0].dtype
-        return inputs[0].columns[0].dtype
+            return inputs[0].aggregations[0].dtype_info
+        return inputs[0].columns[0].dtype_info
 
     def _derive_python_code(
         self,

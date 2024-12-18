@@ -361,7 +361,7 @@ class ViewColumn(Series, SampleMixin):
         return view.project_target_from_node(
             input_node=lookup_node,
             target_name=target_name,
-            target_dtype=view.column_var_type_map[input_column_name],
+            target_dtype=view.column_var_type_map[input_column_name].dtype,
         )
 
     @typechecked
@@ -1663,7 +1663,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             feature = self.project_feature_from_node(
                 node=lookup_node,
                 feature_name=feature_name,
-                feature_dtype=self.column_var_type_map[input_column_name],
+                feature_dtype=self.column_var_type_map[input_column_name].dtype,
             )
             features.append(feature)
 

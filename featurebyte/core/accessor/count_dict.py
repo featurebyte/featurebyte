@@ -456,7 +456,7 @@ class CountDictAccessor:
         series_operator = DefaultSeriesBinaryOperator(self._feature_obj, key)
         return series_operator.operate(
             node_type=NodeType.GET_VALUE,
-            output_var_type=get_value_node.derive_var_type([op_struct]),
+            output_var_type=get_value_node.derive_var_type([op_struct]).dtype,
             additional_node_params=additional_node_params,
         )
 

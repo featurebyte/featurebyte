@@ -175,7 +175,7 @@ def test__setitem__str_key_scalar_value(
     """
     dataframe[key] = value
     dataframe_dict = dataframe.model_dump()
-    assert dataframe.column_var_type_map[key] == expected_type
+    assert dataframe.column_var_type_map[key].dtype == expected_type
     assert dataframe_dict["node_name"] == "assign_1"
     node = get_node(dataframe_dict["graph"], "assign_1")
     assert node == {
@@ -233,7 +233,7 @@ def test__setitem__str_key_series_value(
     assert isinstance(value, Series)
     dataframe[key] = value
     dataframe_dict = dataframe.model_dump()
-    assert dataframe.column_var_type_map[key] == expected_type
+    assert dataframe.column_var_type_map[key].dtype == expected_type
     assert dataframe_dict["node_name"] == "assign_1"
     node = get_node(dataframe_dict["graph"], "assign_1")
     assert node == {

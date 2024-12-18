@@ -103,7 +103,7 @@ class ForwardAggregator(BaseAggregator):
         # Project, build and return Target
         assert target_name is not None
         target = self.view.project_target_from_node(
-            forward_aggregate_node, target_name, output_var_type
+            forward_aggregate_node, target_name, output_var_type.dtype
         )
         if not skip_fill_na:
             return self._fill_feature_or_target(target, method, target_name, fill_value)  # type: ignore[return-value]

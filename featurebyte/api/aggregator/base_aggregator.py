@@ -14,6 +14,7 @@ from featurebyte.api.view import View
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.agg_func import AggFuncType
 from featurebyte.typing import OptionalScalar, get_or_default
@@ -114,7 +115,7 @@ class BaseAggregator(ABC):
 
     def get_output_var_type(
         self, agg_method: AggFuncType, method: str, value_column: Optional[str]
-    ) -> DBVarType:
+    ) -> DBVarTypeInfo:
         """
         Get output variable type for aggregation method.
 
@@ -129,7 +130,7 @@ class BaseAggregator(ABC):
 
         Returns
         -------
-        DBVarType
+        DBVarTypeInfo
 
         Raises
         ------
@@ -140,10 +141,10 @@ class BaseAggregator(ABC):
         if value_column in self.view.column_var_type_map:
             input_var_type = self.view.column_var_type_map[value_column]
         else:
-            input_var_type = DBVarType.FLOAT
-        if not agg_method.is_var_type_supported(input_var_type):
+            input_var_type = DBVarTypeInfo(dtype=DBVarType.FLOAT)
+        if not agg_method.is_var_type_supported(input_var_type.dtype):
             raise ValueError(
-                f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
+                f'Aggregation method "{method}" does not support "{input_var_type.dtype}" input variable'
             )
         return agg_method.derive_output_var_type(
             input_var_type=input_var_type, category=self.category
@@ -165,7 +166,7 @@ class BaseAggregator(ABC):
         feature = self.view.project_feature_from_node(
             node=aggregation_node,
             feature_name=feature_name,
-            feature_dtype=var_type,
+            feature_dtype=var_type.dtype,
         )
         if not skip_fill_na:
             self._fill_feature_or_target(feature, method, feature_name, fill_value)
