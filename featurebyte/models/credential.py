@@ -251,7 +251,7 @@ class ServiceAccountCredentialMixin(FeatureByteBaseModel):
 
 class GoogleCredential(BaseDatabaseCredential, ServiceAccountCredentialMixin):
     """
-    Data class for an google credential.
+    Data class for a Google service account credential.
 
     Examples
     --------
