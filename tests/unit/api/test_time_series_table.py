@@ -763,13 +763,6 @@ def test_default_feature_job_setting_history(saved_time_series_table):
             (
                 "UPDATE",
                 'update: "sf_time_series_table"',
-                "default_feature_job_setting.crontab.day_of_week",
-                "*",
-                "*",
-            ),
-            (
-                "UPDATE",
-                'update: "sf_time_series_table"',
                 "default_feature_job_setting.crontab.day_of_month",
                 "*",
                 "*",
@@ -778,6 +771,13 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "UPDATE",
                 'update: "sf_time_series_table"',
                 "default_feature_job_setting.crontab.month_of_year",
+                "*",
+                "*",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_time_series_table"',
+                "default_feature_job_setting.crontab.day_of_week",
                 "*",
                 "*",
             ),
