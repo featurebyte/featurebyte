@@ -42,11 +42,12 @@ from featurebyte import (
     OnlineStore,
     RedisOnlineStoreDetails,
     SnowflakeDetails,
+    TimeInterval,
 )
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
-from featurebyte.enum import InternalName, SourceType, StorageType
+from featurebyte.enum import InternalName, SourceType, StorageType, TimeIntervalUnit
 from featurebyte.logging import get_logger
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.credential import (
@@ -764,6 +765,28 @@ def scd_dataframe_custom_date_format_fixture(scd_dataframe):
     yield data
 
 
+@pytest.fixture(name="time_series_dataframe", scope="session")
+def time_series_dataframe_fixture(scd_dataframe):
+    """
+    DataFrame fixture for time series data
+    """
+    start_date = scd_dataframe["Effective Timestamp"].dt.floor("d").min()
+    num_rows = 100
+    dfs = []
+    series_ids = ["S{}".format(i) for i in range(10)]
+    reference_dates = (
+        pd.date_range(start_date, freq="1d", periods=num_rows).to_series().dt.strftime("%Y%m%d")
+    )
+    for i, series_id in enumerate(series_ids):
+        df = pd.DataFrame({
+            "reference_datetime_col": reference_dates,
+            "series_id_col": [series_id] * num_rows,
+            "value_col": np.arange(0, num_rows) / num_rows + i,
+        })
+        dfs.append(df)
+    return pd.concat(dfs, ignore_index=True)
+
+
 @pytest.fixture(name="observation_table_dataframe", scope="session")
 def observation_table_dataframe_fixture(scd_dataframe):
     """
@@ -883,6 +906,7 @@ async def datasets_registration_helper_fixture(
     scd_dataframe_custom_date_format,
     scd_data_table_name,
     scd_data_table_name_custom_date_format,
+    time_series_dataframe,
     observation_table_dataframe,
 ):
     """
@@ -947,6 +971,9 @@ async def datasets_registration_helper_fixture(
     # SCD table
     helper.add_table(scd_data_table_name, scd_dataframe)
     helper.add_table(scd_data_table_name_custom_date_format, scd_dataframe_custom_date_format)
+
+    # Time series table
+    helper.add_table("TIME_SERIES_TABLE", time_series_dataframe)
 
     # Observation table
     helper.add_table("ORIGINAL_OBSERVATION_TABLE", observation_table_dataframe)
@@ -1256,6 +1283,19 @@ def status2_entity_fixture(catalog):
     return entity
 
 
+@pytest.fixture(name="series_entity", scope="session")
+def series_entity_fixture(catalog):
+    """
+    Fixture for an Entity "Series"
+    """
+    _ = catalog
+    entity = Entity(
+        _id=ObjectId("676268f0b0f7b5c9c7683e45"), name="Series", serving_names=["series_id"]
+    )
+    entity.save()
+    return entity
+
+
 def tag_entities_for_event_table(event_table):
     """
     Helper function to tag entities for the event table fixture
@@ -1488,6 +1528,23 @@ def scd_data_tabular_source_custom_date_format_fixture(
     return database_table
 
 
+@pytest.fixture(name="time_series_data_tabular_source", scope="session")
+def time_series_data_tabular_source_custom_date_format_fixture(
+    session,
+    data_source,
+    scd_data_table_name_custom_date_format,
+):
+    """
+    Fixture for scd table tabular source
+    """
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name="TIME_SERIES_TABLE",
+    )
+    return database_table
+
+
 @pytest.fixture(name="scd_table_name", scope="session")
 def scd_table_name_fixture(source_type):
     """
@@ -1502,6 +1559,14 @@ def scd_table_name_custom_date_format_fixture(source_type):
     Fixture for the SCDTable name
     """
     return f"{source_type}_scd_table_custom_date_format"
+
+
+@pytest.fixture(name="time_series_table_name", scope="session")
+def time_series_table_name_fixture(source_type):
+    """
+    Fixture for the TimeSeriesTable name
+    """
+    return f"{source_type}_time_series_table"
 
 
 def tag_entities_for_scd_table(scd_table):
@@ -1575,6 +1640,29 @@ def scd_table_custom_date_format_fixture(
     scd_table["User ID"].as_entity("User")
     scd_table["User Status"].as_entity("UserStatus2")
     return scd_table
+
+
+@pytest.fixture(name="time_series_table", scope="session")
+def time_series_table_fixture(
+    time_series_data_tabular_source,
+    time_series_table_name,
+    scd_table_timestamp_format_string,
+    series_entity,
+    catalog,
+):
+    """
+    Fixture for a SCDTable in integration tests
+    """
+    _ = catalog
+    time_series_table = time_series_data_tabular_source.create_time_series_table(
+        name=time_series_table_name,
+        reference_datetime_column="reference_datetime_col",
+        reference_datetime_schema=TimestampSchema(format_string=scd_table_timestamp_format_string),
+        time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
+        series_id_column="series_id_col",
+    )
+    time_series_table["series_id_col"].as_entity(series_entity.name)
+    return time_series_table
 
 
 @pytest.fixture(name="dimension_view", scope="session")
