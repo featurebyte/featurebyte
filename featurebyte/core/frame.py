@@ -16,6 +16,7 @@ from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 
 
@@ -46,6 +47,17 @@ class BaseFrame(QueryObject):
         dict[str, DBVarType]
         """
         return {col.name: col.dtype for col in self.columns_info}
+
+    @property
+    def column_dtype_info_map(self) -> dict[str, DBVarTypeInfo]:
+        """
+        Column name to column dtype info mapping
+
+        Returns
+        -------
+        dict[str, dict[str, Any]]
+        """
+        return {col.name: col.dtype_info for col in self.columns_info}
 
     @property
     def dtypes(self) -> pd.Series:

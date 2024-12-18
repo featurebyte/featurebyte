@@ -148,7 +148,7 @@ class TilingAggregator(ABC):
         return TileSpec(
             tile_expr,
             tile_column_name,
-            self.adapter.get_physical_type_from_dtype(DBVarType.EMBEDDING),
+            self.adapter.get_physical_type_from_dtype(DBVarType.ARRAY),
             agg_func,
         )
 
