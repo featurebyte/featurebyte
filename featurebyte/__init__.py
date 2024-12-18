@@ -68,6 +68,7 @@ from featurebyte.models.credential import (
     AccessTokenCredential,
     AzureBlobStorageCredential,
     GCSStorageCredential,
+    GoogleCredential,
     KerberosKeytabCredential,
     S3StorageCredential,
     UsernamePasswordCredential,
@@ -96,6 +97,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     ValueBeyondEndpointImputation,
 )
 from featurebyte.query_graph.node.schema import (
+    BigQueryDetails,
     DatabricksDetails,
     DatabricksUnityDetails,
     SnowflakeDetails,
@@ -514,6 +516,7 @@ __all__ = [
     "UseCase",
     "Context",
     # feature store details
+    "BigQueryDetails",
     "DatabricksDetails",
     "DatabricksUnityDetails",
     "SnowflakeDetails",
@@ -522,6 +525,7 @@ __all__ = [
     "AzureBlobStorageCredential",
     "AccessTokenCredential",
     "Credential",
+    "GoogleCredential",
     "GCSStorageCredential",
     "S3StorageCredential",
     "UsernamePasswordCredential",

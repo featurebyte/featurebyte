@@ -334,6 +334,9 @@ class BigQueryDetails(BaseDatabaseDetails):  # pylint: disable=abstract-method
     ... )
     """
 
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.BigQueryDetails")
+
     project_name: StrictStr = Field(
         description="The name of the project to use for creation of output tables."
     )
