@@ -273,6 +273,9 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                     warehouse_tables.update(obj.warehouse_tables)
                     remote_file_paths.update(obj.remote_storage_paths)
                 except ValidationError as exc:
+                    if is_development_mode():
+                        raise
+
                     # failed to parse the document, probably due to schema changes
                     logger.info(
                         "Failed to parse document %s (%s): %s",
