@@ -874,7 +874,7 @@ class SeriesOutputNodeOpStructMixin:
     output_type: NodeOutputType
 
     @abstractmethod
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         """
         Derive variable type from the input operation structures
 
@@ -924,7 +924,7 @@ class SeriesOutputNodeOpStructMixin:
                     columns=columns,
                     transform=self.transform_info,  # type: ignore
                     node_name=self.name,
-                    dtype_info=self.derive_var_type(inputs),
+                    dtype_info=self.derive_dtype_info(inputs),
                 )
             ]
         else:
@@ -935,7 +935,7 @@ class SeriesOutputNodeOpStructMixin:
                     columns=aggregations,
                     transform=self.transform_info,  # type: ignore
                     node_name=self.name,
-                    dtype_info=self.derive_var_type(inputs),
+                    dtype_info=self.derive_dtype_info(inputs),
                 )
             ]
 
@@ -1152,7 +1152,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 class BinaryOpWithBoolOutputNode(BaseSeriesOutputWithAScalarParamNode):
     """BinaryLogicalOpNode class"""
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return DBVarTypeInfo(dtype=DBVarType.BOOL)
 
     def _generate_odfv_expression_with_null_value_handling_for_single_input(
@@ -1179,7 +1179,7 @@ class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
 
     parameters: ValueWithRightOpNodeParameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         input_var_types = {inp.series_output_dtype.dtype for inp in inputs}
         if DBVarType.FLOAT in input_var_types:
             return DBVarTypeInfo(dtype=DBVarType.FLOAT)

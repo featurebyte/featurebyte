@@ -543,7 +543,7 @@ class LagNode(BaseSeriesOutputNode):
         # entity column
         return [self.parameters.entity_columns[input_index - 1]]
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return inputs[0].series_output_dtype
 
     def _derive_sdk_code(
@@ -2088,7 +2088,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return inputs[0].series_output_dtype
 
     def _prepare_var_name_and_mask_var_name(

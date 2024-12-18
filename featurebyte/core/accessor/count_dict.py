@@ -454,7 +454,7 @@ class CountDictAccessor:
         get_value_node = GetValueFromDictionaryNode(name="temp", parameters=additional_node_params)
 
         series_operator = DefaultSeriesBinaryOperator(self._feature_obj, key)
-        output_dtype_info = get_value_node.derive_var_type([op_struct])
+        output_dtype_info = get_value_node.derive_dtype_info([op_struct])
         return series_operator.operate(
             node_type=NodeType.GET_VALUE,
             output_var_type=output_dtype_info.dtype,

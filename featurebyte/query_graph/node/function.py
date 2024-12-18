@@ -159,7 +159,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
             return []
         return [column_input_args[input_index]]  # type: ignore
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return DBVarTypeInfo(dtype=self.parameters.output_dtype)
 
     def _derive_node_operation_info(

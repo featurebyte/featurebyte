@@ -32,7 +32,7 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
 
     type: Literal[NodeType.VECTOR_COSINE_SIMILARITY] = NodeType.VECTOR_COSINE_SIMILARITY
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     @property

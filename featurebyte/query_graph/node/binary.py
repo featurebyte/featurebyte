@@ -150,7 +150,7 @@ class DivideNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.DIV] = NodeType.DIV
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         _ = inputs
         return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
@@ -178,7 +178,7 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
 
     type: Literal[NodeType.POWER] = NodeType.POWER
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
@@ -202,7 +202,7 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return DBVarTypeInfo(dtype=DBVarType.BOOL)
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:

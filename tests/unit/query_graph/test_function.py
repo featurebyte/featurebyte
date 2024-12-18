@@ -48,7 +48,7 @@ def test_generic_function__view_type(global_graph, input_node, database_details)
 
     # check node methods & attributes
     assert gfunc.max_input_count == 1
-    assert gfunc.derive_var_type(inputs=[]).dtype == DBVarType.FLOAT
+    assert gfunc.derive_dtype_info(inputs=[]).dtype == DBVarType.FLOAT
 
     # check output operation structure
     op_struct = global_graph.extract_operation_structure(node=gfunc, keep_all_source_columns=True)
@@ -117,7 +117,7 @@ def test_generic_function__feature_type(
 
     # check node methods & attributes
     assert gfunc.max_input_count == 1
-    assert gfunc.derive_var_type(inputs=[]).dtype == DBVarType.FLOAT
+    assert gfunc.derive_dtype_info(inputs=[]).dtype == DBVarType.FLOAT
 
     # check output operation structure
     op_struct = graph.extract_operation_structure(
