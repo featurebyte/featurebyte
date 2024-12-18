@@ -1180,10 +1180,10 @@ class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
     parameters: ValueWithRightOpNodeParameters
 
     def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
-        input_var_types = {inp.series_output_dtype.dtype for inp in inputs}
+        input_var_types = {inp.series_output_dtype_info.dtype for inp in inputs}
         if DBVarType.FLOAT in input_var_types:
             return DBVarTypeInfo(dtype=DBVarType.FLOAT)
-        return inputs[0].series_output_dtype
+        return inputs[0].series_output_dtype_info
 
     def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
         if self.parameters.right_op:

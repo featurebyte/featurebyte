@@ -45,7 +45,7 @@ class AbsoluteNode(BaseSeriesOutputWithSingleOperandNode):
     type: Literal[NodeType.ABS] = NodeType.ABS
 
     def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
-        return inputs[0].series_output_dtype
+        return inputs[0].series_output_dtype_info
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.abs()"

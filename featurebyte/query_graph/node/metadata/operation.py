@@ -485,7 +485,7 @@ class OperationStructure:
             assert len(self.aggregations) == len(set(agg.name for agg in self.aggregations))
 
     @property
-    def series_output_dtype(self) -> DBVarTypeInfo:
+    def series_output_dtype_info(self) -> DBVarTypeInfo:
         """
         Retrieve the series output variable type
 

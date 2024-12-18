@@ -517,7 +517,7 @@ class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
         method = agg_column.method
         assert method is not None
         agg_func = construct_agg_func(method)
-        # derive the output_var_type using aggregation's parent column without passing category parameter
+        # derive the output_dtype_info using aggregation's parent column without passing category parameter
         # as count method doesn't have any parent column, take the first input column as parent column
         parent_column = agg_column.column
         if parent_column is None:

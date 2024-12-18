@@ -43,7 +43,7 @@ class AggregationOpStructMixin(BaseNode, ABC):
         columns: List[ViewDataColumn],
         node_name: str,
         other_node_names: Set[str],
-        output_var_type: DBVarTypeInfo,
+        output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         """
         Construct aggregations based on node parameters
@@ -56,7 +56,7 @@ class AggregationOpStructMixin(BaseNode, ABC):
             Node name
         other_node_names: Set[str]
             Set of node names (input lineage)
-        output_var_type: DBVarTypeInfo
+        output_dtype_info: DBVarTypeInfo
             Aggregation output variable type
 
         Returns
@@ -179,15 +179,15 @@ class AggregationOpStructMixin(BaseNode, ABC):
         if agg_func:
             assert isinstance(self.parameters, BaseGroupbyParameters)
             aggregation_func_obj = construct_agg_func(agg_func)
-            input_var_type = (
+            input_dtype_info = (
                 parent_columns[0].dtype_info if parent_columns else columns[0].dtype_info
             )
-            output_var_type = aggregation_func_obj.derive_output_dtype_info(
-                input_dtype_info=input_var_type, category=self.parameters.value_by
+            output_dtype_info = aggregation_func_obj.derive_output_dtype_info(
+                input_dtype_info=input_dtype_info, category=self.parameters.value_by
             )
         else:
             # to be overridden at the _get_aggregations
-            output_var_type = DBVarTypeInfo(dtype=DBVarType.UNKNOWN)
+            output_dtype_info = DBVarTypeInfo(dtype=DBVarType.UNKNOWN)
 
         return OperationStructure(
             columns=columns,
@@ -195,7 +195,7 @@ class AggregationOpStructMixin(BaseNode, ABC):
                 columns,
                 node_name=self.name,
                 other_node_names=other_node_names,
-                output_var_type=output_var_type,
+                output_dtype_info=output_dtype_info,
             ),
             output_type=self.output_type,
             output_category=output_category,
