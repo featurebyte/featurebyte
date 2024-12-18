@@ -173,7 +173,7 @@ class BaseNode(FeatureByteBaseModel):
         return out
 
     @classmethod
-    def detect_var_type_from_value(cls, value: Any) -> DBVarTypeInfo:
+    def detect_dtype_info_from_value(cls, value: Any) -> DBVarTypeInfo:
         """
         Detect variable type of the given scalar value
 

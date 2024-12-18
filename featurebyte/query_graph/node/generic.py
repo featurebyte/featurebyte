@@ -449,7 +449,7 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             columns = series_input.columns
             dtype = series_input.series_output_dtype
         else:
-            dtype = self.detect_var_type_from_value(self.parameters.value)
+            dtype = self.detect_dtype_info_from_value(self.parameters.value)
 
         return self._construct_operation_structure(
             input_operation_info=input_operation_info,
