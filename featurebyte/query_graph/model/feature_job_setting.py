@@ -4,6 +4,7 @@ Feature Job Setting Model
 
 from typing import Any, ClassVar, Dict, Union
 
+from croniter import croniter
 from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 from pydantic_extra_types.timezone_name import TimeZoneName
 from typing_extensions import Annotated, Literal
@@ -222,9 +223,7 @@ class CronFeatureJobSetting(FeatureByteBaseModel):
     - timezone: "Etc/UTC"
 
     >>> feature_job_setting = fb.CronFeatureJobSetting(  # doctest: +SKIP
-    ...     crontab=Crontab(
-    ...         minute=10, hour="*", day_of_week="*", day_of_month="*", month_of_year="*"
-    ...     ),
+    ...     crontab="10 * * * *",
     ...     timezone="Etc/UTC",
     ... )
     """
@@ -233,11 +232,42 @@ class CronFeatureJobSetting(FeatureByteBaseModel):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.FeatureJobSetting")
 
     # instance variables
-    crontab: Crontab = Field(description="Crontab schedule for the feature job.")
+    crontab: Union[str, Crontab] = Field(description="Crontab schedule for the feature job.")
     timezone: TimeZoneName = Field(
         default="Etc/UTC",
         description="Timezone for the cron schedule. It is used to determine the time at which the feature job should run.",
     )
+
+    @model_validator(mode="after")
+    def _validate_cron_expression(self) -> "CronFeatureJobSetting":
+        """Validate cron expression
+
+        Raises
+        ------
+        ValueError
+            If the crontab expression is invalid
+
+        Returns
+        -------
+        CronFeatureJobSetting
+        """
+
+        if isinstance(self.crontab, str):
+            # check if the crontab expression is valid
+            crontab = self.crontab.strip()
+            if not croniter.is_valid(crontab):
+                raise ValueError(f"Invalid crontab expression: {crontab}")
+            cron_parts = crontab.split(" ")
+
+            # convert crontab expression to Crontab object
+            parts = ["minute", "hour", "day_of_month", "month_of_year", "day_of_week"]
+            if len(cron_parts) != len(parts):
+                raise ValueError(f"Invalid crontab expression: {crontab}")
+            self.crontab = Crontab(**{
+                part: int(cron_parts[i]) if cron_parts[i].isdigit() else cron_parts[i]
+                for i, part in enumerate(parts)
+            })
+        return self
 
 
 def feature_job_setting_discriminator(value: Any) -> Literal["interval", "cron"]:

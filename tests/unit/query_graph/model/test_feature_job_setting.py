@@ -66,6 +66,39 @@ def test_feature_job_setting():
     assert expected_msg in str(exc_info.value)
 
 
+@pytest.mark.parametrize(
+    "valid_crontab",
+    [
+        "0 0 1 * *",
+        "0 0 * * *",
+        "0 * * * *",
+        "* * * * *",
+    ],
+)
+def test_cron_feature_job_setting__valid_crontab_expressiom(valid_crontab):
+    """Test cron feature job setting"""
+
+    CronFeatureJobSetting(crontab=valid_crontab)
+
+
+@pytest.mark.parametrize(
+    "invalid_crontab",
+    [
+        "0.1 0 0 * *",
+        "a 0 1 * *",
+        "0 0 0 * *",
+        "Some text",
+    ],
+)
+def test_cron_feature_job_setting__invalid_crontab_expressiom(invalid_crontab):
+    """Test cron feature job setting"""
+    with pytest.raises(ValueError) as exc_info:
+        CronFeatureJobSetting(crontab=invalid_crontab)
+
+    expected_msg = f"Invalid crontab expression: {invalid_crontab}"
+    assert expected_msg in str(exc_info.value)
+
+
 def test_table_feature_job_setting_deserialization():
     """Test feature job setting deserialization"""
     data_1 = {

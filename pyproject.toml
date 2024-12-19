@@ -130,6 +130,7 @@ websocket-client = "^1.5.1"
 wheel = "0.40.0"
 google-cloud-bigquery-storage = "^2.25.0"
 pydantic-extra-types = "^2.10.0"
+croniter = "^6.0.0"
 
 [tool.poetry.extras]
 server = ["cachetools", "databricks-sdk", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "thrift-sasl", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "requests-kerberos", "feast"]

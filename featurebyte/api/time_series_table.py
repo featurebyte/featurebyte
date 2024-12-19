@@ -327,13 +327,7 @@ class TimeSeriesTable(TableApiObject):
 
         >>> from featurebyte import CronFeatureJobSetting, Crontab
         >>> new_feature_job_setting = CronFeatureJobSetting(
-        ...     crontab=Crontab(
-        ...         minute=5,
-        ...         hour=1,
-        ...         day_of_week="*",
-        ...         day_of_month="*",
-        ...         month_of_year="*",
-        ...     ),
+        ...     crontab="5 1 * * *",
         ...     timezone="Etc/UTC",
         ... )
 
