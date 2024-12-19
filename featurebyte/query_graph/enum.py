@@ -61,6 +61,7 @@ class NodeType(StrEnum):
     FORWARD_AGGREGATE = "forward_aggregate"
     FORWARD_AGGREGATE_AS_AT = "forward_aggregate_as_at"
     NON_TILE_WINDOW_AGGREGATE = "non_tile_window_aggregate"
+    TIME_SERIES_WINDOW_AGGREGATE = "time_series_window_aggregate"
 
     # other operations
     ASSIGN = "assign"

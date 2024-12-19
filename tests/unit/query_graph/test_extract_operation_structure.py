@@ -815,6 +815,66 @@ def test_extract_operation__aggregate_asat_feature(
     assert primary_input_nodes == [scd_table_input_node]
 
 
+@pytest.mark.parametrize("keep_all_source_columns", [True, False])
+def test_extract_operation__time_series_window_aggregate_feature(
+    global_graph,
+    time_series_window_aggregate_feature_node,
+    time_series_table_input_node,
+    keep_all_source_columns,
+):
+    """Test extract_operation_structure: features derived from aggregate_asat"""
+    op_struct = global_graph.extract_operation_structure(
+        node=time_series_window_aggregate_feature_node,
+        keep_all_source_columns=keep_all_source_columns,
+    )
+    common_data_params = extract_column_parameters(time_series_table_input_node)
+    expected_columns = [
+        {"name": "snapshot_date", "dtype": "VARCHAR", **common_data_params},
+    ]
+    if keep_all_source_columns:
+        expected_columns.append({
+            "name": "cust_id",
+            "dtype": "INT",
+            **common_data_params,
+        })
+    expected_columns.append({"name": "a", "dtype": "FLOAT", **common_data_params})
+
+    expected_aggregations = [
+        {
+            "name": "a_7d_sum",
+            "dtype": "FLOAT",
+            "filter": False,
+            "node_names": {"input_1", "project_1", "time_series_window_aggregate_1"},
+            "node_name": "time_series_window_aggregate_1",
+            "method": "sum",
+            "keys": ["cust_id"],
+            "window": "7 DAY",
+            "category": None,
+            "offset": None,
+            "type": "aggregation",
+            "column": {
+                "dtype": "FLOAT",
+                "name": "a",
+                **common_data_params,
+            },
+            "aggregation_type": "time_series_window_aggregate",
+        }
+    ]
+
+    assert to_dict(op_struct.columns) == expected_columns
+    assert to_dict(op_struct.aggregations) == expected_aggregations
+    assert op_struct.output_category == "feature"
+    assert op_struct.output_type == "series"
+    assert op_struct.row_index_lineage == ("time_series_window_aggregate_1",)
+    assert op_struct.is_time_based is True
+
+    # check main input nodes
+    primary_input_nodes = global_graph.get_primary_input_nodes(
+        node_name=time_series_window_aggregate_feature_node.name
+    )
+    assert primary_input_nodes == [time_series_table_input_node]
+
+
 def test_extract_operation__alias(global_graph, input_node):
     """Test extract_operation_structure: alias"""
     project_node = global_graph.add_operation(
