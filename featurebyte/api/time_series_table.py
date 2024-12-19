@@ -150,9 +150,9 @@ class TimeSeriesTable(TableApiObject):
         )
 
         # The input of view graph node is the table node. The final graph looks like this:
-        #    +-----------+     +----------------------------+
+        #    +-----------+     +----------------------------------+
         #    | InputNode + --> | GraphNode(type:time_series_view) +
-        #    +-----------+     +----------------------------+
+        #    +-----------+     +----------------------------------+
         drop_column_names = drop_column_names or []
         if view_mode == ViewMode.AUTO and self.record_creation_timestamp_column:
             drop_column_names.append(self.record_creation_timestamp_column)

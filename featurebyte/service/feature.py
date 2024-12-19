@@ -174,10 +174,7 @@ class FeatureService(BaseFeatureService[FeatureModel, FeatureServiceCreate]):
             if table_id not in table_id_to_feature_job_setting:
                 table_id_to_feature_job_setting[table_id] = feature_job_setting
             else:
-                if (
-                    table_id_to_feature_job_setting[table_id].to_seconds()
-                    != feature_job_setting.to_seconds()
-                ):
+                if table_id_to_feature_job_setting[table_id] != feature_job_setting:
                     raise DocumentCreationError(
                         f"Feature job settings for table {table_id} are not consistent. "
                         f"Two different feature job settings are found: "

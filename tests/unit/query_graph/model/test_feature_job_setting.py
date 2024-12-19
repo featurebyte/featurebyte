@@ -6,7 +6,11 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import FeatureJobSetting
-from featurebyte.query_graph.model.feature_job_setting import TableIdFeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    TableFeatureJobSetting,
+    TableIdFeatureJobSetting,
+)
 
 
 def test_equality_of_feature_job_setting():
@@ -60,3 +64,70 @@ def test_feature_job_setting():
 
     expected_msg = "Setting execution_buffer is not supported."
     assert expected_msg in str(exc_info.value)
+
+
+def test_table_feature_job_setting_deserialization():
+    """Test feature job setting deserialization"""
+    data_1 = {
+        "table_name": "table_name",
+        "feature_job_setting": {
+            "blind_spot": "1h",
+            "period": "1d",
+            "offset": "1h",
+        },
+    }
+
+    data_2 = {
+        "table_name": "table_name",
+        "feature_job_setting": {
+            "crontab": {
+                "minute": 0,
+                "hour": 0,
+                "day_of_week": "*",
+                "day_of_month": "*",
+                "month_of_year": "*",
+            },
+            "timezone": "UTC",
+        },
+    }
+
+    setting1 = TableFeatureJobSetting(**data_1)
+    setting2 = TableFeatureJobSetting(**data_2)
+    assert isinstance(setting1.feature_job_setting, FeatureJobSetting)
+    assert isinstance(setting2.feature_job_setting, CronFeatureJobSetting)
+
+
+def test_table_id_feature_job_setting_deserialization():
+    """Test feature job setting deserialization"""
+    table_id = ObjectId()
+    data_1 = {
+        "table_id": table_id,
+        "feature_job_setting": {
+            "blind_spot": "1h",
+            "period": "1d",
+            "offset": "1h",
+        },
+    }
+
+    data_2 = {
+        "table_id": table_id,
+        "feature_job_setting": {
+            "crontab": {
+                "minute": 0,
+                "hour": 0,
+                "day_of_week": "*",
+                "day_of_month": "*",
+                "month_of_year": "*",
+            },
+            "timezone": "UTC",
+        },
+    }
+
+    setting1 = TableIdFeatureJobSetting(**data_1)
+    setting2 = TableIdFeatureJobSetting(**data_2)
+    assert isinstance(setting1.feature_job_setting, FeatureJobSetting)
+    assert isinstance(setting2.feature_job_setting, CronFeatureJobSetting)
+
+    # check hash of table setting
+    settings = {setting1, setting2}
+    assert len(settings) == 2
