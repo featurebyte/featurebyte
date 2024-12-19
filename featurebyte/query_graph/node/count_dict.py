@@ -14,6 +14,7 @@ from typing_extensions import Annotated, Literal
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
 from featurebyte.query_graph.node.metadata.config import (
@@ -170,10 +171,10 @@ class CountDictTransformNode(BaseCountDictOpNode):
         "key_with_lowest_value",
     }
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         if self.parameters.transform_type in self.transform_types_with_varchar_output:
-            return DBVarType.VARCHAR
-        return DBVarType.FLOAT
+            return DBVarTypeInfo(dtype=DBVarType.VARCHAR)
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str, other_operands: List[str]) -> str:
         params = ""
@@ -324,8 +325,8 @@ class CosineSimilarityNode(BaseCountDictOpNode):
 
     type: Literal[NodeType.COSINE_SIMILARITY] = NodeType.COSINE_SIMILARITY
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str, other_operands: List[str]) -> str:
         return f"{operand}.cd.cosine_similarity(other={other_operands[0]})"
@@ -404,8 +405,8 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.ARRAY
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.ARRAY)
 
     def _derive_sdk_code(
         self,
@@ -508,7 +509,7 @@ class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
 
     type: Literal[NodeType.GET_VALUE] = NodeType.GET_VALUE
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         aggregations = inputs[0].aggregations
         agg_column = aggregations[0]
         # This assumes that dictionary features are never post-processed.
@@ -516,12 +517,12 @@ class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
         method = agg_column.method
         assert method is not None
         agg_func = construct_agg_func(method)
-        # derive the output_var_type using aggregation's parent column without passing category parameter
+        # derive the output_dtype_info using aggregation's parent column without passing category parameter
         # as count method doesn't have any parent column, take the first input column as parent column
         parent_column = agg_column.column
         if parent_column is None:
             parent_column = inputs[0].columns[0]
-        return agg_func.derive_output_var_type(parent_column.dtype, category=None)
+        return agg_func.derive_output_dtype_info(parent_column.dtype_info, category=None)
 
     def generate_expression(self, operand: str, other_operands: List[str]) -> str:
         param = other_operands[0] if other_operands else self.get_key_value()
@@ -588,8 +589,8 @@ class GetRankFromDictionaryNode(BaseCountDictWithKeyOpNode):
     type: Literal[NodeType.GET_RANK] = NodeType.GET_RANK
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str, other_operands: List[str]) -> str:
         key = other_operands[0] if other_operands else self.get_key_value()
@@ -677,8 +678,8 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictWithKeyOpNode):
 
     type: Literal[NodeType.GET_RELATIVE_FREQUENCY] = NodeType.GET_RELATIVE_FREQUENCY
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str, other_operands: List[str]) -> str:
         param = other_operands[0] if other_operands else self.get_key_value()

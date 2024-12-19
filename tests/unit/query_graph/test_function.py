@@ -7,6 +7,7 @@ from bson import ObjectId
 
 from featurebyte.enum import AggFunc, DBVarType, TableDataType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
@@ -47,7 +48,7 @@ def test_generic_function__view_type(global_graph, input_node, database_details)
 
     # check node methods & attributes
     assert gfunc.max_input_count == 1
-    assert gfunc.derive_var_type(inputs=[]) == DBVarType.FLOAT
+    assert gfunc.derive_dtype_info(inputs=[]).dtype == DBVarType.FLOAT
 
     # check output operation structure
     op_struct = global_graph.extract_operation_structure(node=gfunc, keep_all_source_columns=True)
@@ -57,7 +58,7 @@ def test_generic_function__view_type(global_graph, input_node, database_details)
     assert op_struct.columns == [
         DerivedDataColumn(
             name=None,
-            dtype=DBVarType.FLOAT,
+            dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
             filter=False,
             node_names={"input_1", "project_1", "generic_function_1"},
             node_name="generic_function_1",
@@ -65,7 +66,7 @@ def test_generic_function__view_type(global_graph, input_node, database_details)
             columns=[
                 SourceDataColumn(
                     name="a",
-                    dtype=DBVarType.FLOAT,
+                    dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
                     filter=False,
                     node_names={"input_1", "project_1"},
                     node_name="input_1",
@@ -116,7 +117,7 @@ def test_generic_function__feature_type(
 
     # check node methods & attributes
     assert gfunc.max_input_count == 1
-    assert gfunc.derive_var_type(inputs=[]) == DBVarType.FLOAT
+    assert gfunc.derive_dtype_info(inputs=[]).dtype == DBVarType.FLOAT
 
     # check output operation structure
     op_struct = graph.extract_operation_structure(
@@ -132,7 +133,7 @@ def test_generic_function__feature_type(
     assert op_struct.columns == [
         SourceDataColumn(
             name=col_name,
-            dtype=DBVarType(var_type),
+            dtype_info=DBVarTypeInfo(dtype=var_type),
             filter=False,
             node_names={"input_1"},
             node_name="input_1",
@@ -144,7 +145,7 @@ def test_generic_function__feature_type(
     assert op_struct.aggregations == [
         PostAggregationColumn(
             name=None,
-            dtype=DBVarType.FLOAT,
+            dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
             filter=False,
             node_names={"input_1", "groupby_1", "project_3", "generic_function_1"},
             node_name="generic_function_1",
@@ -152,7 +153,7 @@ def test_generic_function__feature_type(
             columns=[
                 AggregationColumn(
                     name="a_2h_average",
-                    dtype=DBVarType.FLOAT,
+                    dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
                     filter=False,
                     node_names={"input_1", "groupby_1", "project_3"},
                     node_name="groupby_1",
@@ -164,7 +165,7 @@ def test_generic_function__feature_type(
                     aggregation_type="groupby",
                     column=SourceDataColumn(
                         name="a",
-                        dtype=DBVarType.FLOAT,
+                        dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
                         filter=False,
                         node_names={"input_1"},
                         node_name="input_1",

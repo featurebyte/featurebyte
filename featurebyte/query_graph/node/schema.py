@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field, StrictStr, model_validator
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr
-from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.source_info import SourceInfo
 
@@ -443,3 +443,15 @@ class ColumnSpec(FeatureByteBaseModel):
         if self.dtype_metadata is not None:
             return self.dtype_metadata.timestamp_schema
         return None
+
+    @property
+    def dtype_info(self) -> DBVarTypeInfo:
+        """
+        Returns the database var type info object
+
+        Returns
+        -------
+        DBVarTypeInfo
+            Var type info
+        """
+        return DBVarTypeInfo(dtype=self.dtype, metadata=self.dtype_metadata)

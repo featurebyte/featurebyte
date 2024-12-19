@@ -470,7 +470,7 @@ class InputNode(BaseNode):
                     table_type=TableDataType(self.parameters.type),
                     node_names={self.name},
                     node_name=self.name,
-                    dtype=DBVarType(column.dtype),
+                    dtype_info=column.dtype_info,
                     filter=False,
                 )
                 for column in self.parameters.columns

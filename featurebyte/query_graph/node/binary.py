@@ -9,6 +9,7 @@ from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputWithAScalarParamNode,
     BinaryArithmeticOpNode,
@@ -149,9 +150,9 @@ class DivideNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.DIV] = NodeType.DIV
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         _ = inputs
-        return DBVarType.FLOAT
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} / {right_operand}"
@@ -177,8 +178,8 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
 
     type: Literal[NodeType.POWER] = NodeType.POWER
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.pow({right_operand})"
@@ -201,8 +202,8 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.BOOL
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.BOOL)
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.isin({right_operand})"

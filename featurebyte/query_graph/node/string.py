@@ -13,6 +13,7 @@ from typing_extensions import Literal
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputWithSingleOperandNode,
     BinaryArithmeticOpNode,
@@ -49,8 +50,8 @@ class LengthNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.LENGTH] = NodeType.LENGTH
     parameters: FeatureByteBaseModel = Field(default_factory=FeatureByteBaseModel)
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.INT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.INT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.str.len()"
@@ -74,8 +75,8 @@ class TrimNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.TRIM] = NodeType.TRIM
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.VARCHAR
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.VARCHAR)
 
     def generate_expression(self, operand: str) -> str:
         value = None
@@ -120,8 +121,8 @@ class ReplaceNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.REPLACE] = NodeType.REPLACE
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.VARCHAR
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.VARCHAR)
 
     def generate_expression(self, operand: str) -> str:
         pattern = ValueStr.create(self.parameters.pattern)
@@ -152,8 +153,8 @@ class PadNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.PAD] = NodeType.PAD
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.VARCHAR
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.VARCHAR)
 
     def generate_expression(self, operand: str) -> str:
         width = self.parameters.length
@@ -220,8 +221,8 @@ class StringCaseNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.STR_CASE] = NodeType.STR_CASE
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.VARCHAR
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.VARCHAR)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.str.{self.parameters.case}()"
@@ -247,8 +248,8 @@ class StringContainsNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.STR_CONTAINS] = NodeType.STR_CONTAINS
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.BOOL
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.BOOL)
 
     def generate_expression(self, operand: str) -> str:
         pattern = ValueStr.create(self.parameters.pattern)
@@ -277,8 +278,8 @@ class SubStringNode(BaseStringAccessorOpNode):
     type: Literal[NodeType.SUBSTRING] = NodeType.SUBSTRING
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.VARCHAR
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.VARCHAR)
 
     def generate_expression(self, operand: str) -> str:
         stop = None
@@ -305,8 +306,8 @@ class ConcatNode(BinaryArithmeticOpNode):
     type: Literal[NodeType.CONCAT] = NodeType.CONCAT
     parameters: ValueWithRightOpNodeParameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.VARCHAR
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.VARCHAR)
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} + {right_operand}"

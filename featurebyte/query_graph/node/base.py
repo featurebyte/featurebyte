@@ -26,6 +26,7 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.config import (
     BaseCodeGenConfig,
@@ -172,7 +173,7 @@ class BaseNode(FeatureByteBaseModel):
         return out
 
     @classmethod
-    def detect_var_type_from_value(cls, value: Any) -> DBVarType:
+    def detect_dtype_info_from_value(cls, value: Any) -> DBVarTypeInfo:
         """
         Detect variable type of the given scalar value
 
@@ -183,17 +184,17 @@ class BaseNode(FeatureByteBaseModel):
 
         Returns
         -------
-        DBVarType
+        DBVarTypeInfo
         """
         if isinstance(value, bool):
-            return DBVarType.BOOL
+            return DBVarTypeInfo(dtype=DBVarType.BOOL)
         if isinstance(value, int):
-            return DBVarType.INT
+            return DBVarTypeInfo(dtype=DBVarType.INT)
         if isinstance(value, float):
-            return DBVarType.FLOAT
+            return DBVarTypeInfo(dtype=DBVarType.FLOAT)
         if isinstance(value, str):
-            return DBVarType.VARCHAR
-        return DBVarType.UNKNOWN
+            return DBVarTypeInfo(dtype=DBVarType.VARCHAR)
+        return DBVarTypeInfo(dtype=DBVarType.UNKNOWN)
 
     @classmethod
     def _extract_column_str_values(
@@ -873,7 +874,7 @@ class SeriesOutputNodeOpStructMixin:
     output_type: NodeOutputType
 
     @abstractmethod
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         """
         Derive variable type from the input operation structures
 
@@ -884,7 +885,7 @@ class SeriesOutputNodeOpStructMixin:
 
         Returns
         -------
-        DBVarType
+        DBVarTypeInfo
         """
 
     def _derive_node_operation_info(
@@ -923,7 +924,7 @@ class SeriesOutputNodeOpStructMixin:
                     columns=columns,
                     transform=self.transform_info,  # type: ignore
                     node_name=self.name,
-                    dtype=self.derive_var_type(inputs),
+                    dtype_info=self.derive_dtype_info(inputs),
                 )
             ]
         else:
@@ -934,7 +935,7 @@ class SeriesOutputNodeOpStructMixin:
                     columns=aggregations,
                     transform=self.transform_info,  # type: ignore
                     node_name=self.name,
-                    dtype=self.derive_var_type(inputs),
+                    dtype_info=self.derive_dtype_info(inputs),
                 )
             ]
 
@@ -1151,8 +1152,8 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 class BinaryOpWithBoolOutputNode(BaseSeriesOutputWithAScalarParamNode):
     """BinaryLogicalOpNode class"""
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.BOOL
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.BOOL)
 
     def _generate_odfv_expression_with_null_value_handling_for_single_input(
         self, left_operand: str, right_operand: str
@@ -1178,11 +1179,11 @@ class BinaryArithmeticOpNode(BaseSeriesOutputWithAScalarParamNode):
 
     parameters: ValueWithRightOpNodeParameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        input_var_types = {inp.series_output_dtype for inp in inputs}
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        input_var_types = {inp.series_output_dtype_info.dtype for inp in inputs}
         if DBVarType.FLOAT in input_var_types:
-            return DBVarType.FLOAT
-        return inputs[0].series_output_dtype
+            return DBVarTypeInfo(dtype=DBVarType.FLOAT)
+        return inputs[0].series_output_dtype_info
 
     def _reorder_operands(self, left_operand: str, right_operand: str) -> Tuple[str, str]:
         if self.parameters.right_op:

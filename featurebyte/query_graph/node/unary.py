@@ -10,6 +10,7 @@ from typing_extensions import Literal
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.base import BaseSeriesOutputWithSingleOperandNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import ExpressionStr, VariableNameStr
@@ -25,8 +26,8 @@ class NotNode(BaseSeriesOutputWithSingleOperandNode):
         Union[Type[VariableNameStr], Type[ExpressionStr]]
     ] = ExpressionStr
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.BOOL
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.BOOL)
 
     def generate_expression(self, operand: str) -> str:
         return f"~{operand}"
@@ -43,8 +44,8 @@ class AbsoluteNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.ABS] = NodeType.ABS
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return inputs[0].series_output_dtype
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return inputs[0].series_output_dtype_info
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.abs()"
@@ -58,8 +59,8 @@ class SquareRootNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.SQRT] = NodeType.SQRT
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.sqrt()"
@@ -76,8 +77,8 @@ class FloorNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.FLOOR] = NodeType.FLOOR
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.INT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.INT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.floor()"
@@ -94,8 +95,8 @@ class CeilNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.CEIL] = NodeType.CEIL
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.INT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.INT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.ceil()"
@@ -112,8 +113,8 @@ class CosNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.COS] = NodeType.COS
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.cos()"
@@ -130,8 +131,8 @@ class SinNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.SIN] = NodeType.SIN
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.sin()"
@@ -148,8 +149,8 @@ class TanNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.TAN] = NodeType.TAN
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.tan()"
@@ -166,8 +167,8 @@ class AcosNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.ACOS] = NodeType.ACOS
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.acos()"
@@ -184,8 +185,8 @@ class AsinNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.ASIN] = NodeType.ASIN
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.asin()"
@@ -202,8 +203,8 @@ class AtanNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.ATAN] = NodeType.ATAN
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.atan()"
@@ -220,8 +221,8 @@ class LogNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.LOG] = NodeType.LOG
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.log()"
@@ -238,8 +239,8 @@ class ExponentialNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.EXP] = NodeType.EXP
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.exp()"
@@ -256,8 +257,8 @@ class IsNullNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.IS_NULL] = NodeType.IS_NULL
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.BOOL
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.BOOL)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.isnull()"
@@ -281,14 +282,14 @@ class CastNode(BaseSeriesOutputWithSingleOperandNode):
     type: Literal[NodeType.CAST] = NodeType.CAST
     parameters: Parameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         if self.parameters.type == "int":
-            return DBVarType.INT
+            return DBVarTypeInfo(dtype=DBVarType.INT)
         if self.parameters.type == "float":
-            return DBVarType.FLOAT
+            return DBVarTypeInfo(dtype=DBVarType.FLOAT)
         if self.parameters.type == "str":
-            return DBVarType.VARCHAR
-        return DBVarType.UNKNOWN  # type: ignore[unreachable]
+            return DBVarTypeInfo(dtype=DBVarType.VARCHAR)
+        return DBVarTypeInfo(dtype=DBVarType.UNKNOWN)  # type: ignore[unreachable]
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.astype({self.parameters.type})"
@@ -308,8 +309,8 @@ class IsStringNode(BaseSeriesOutputWithSingleOperandNode):
 
     type: Literal[NodeType.IS_STRING] = NodeType.IS_STRING
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.BOOL
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.BOOL)
 
     def generate_expression(self, operand: str) -> str:
         raise RuntimeError("Not implemented")

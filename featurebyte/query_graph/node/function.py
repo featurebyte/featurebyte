@@ -12,6 +12,7 @@ from typing_extensions import Annotated, Literal
 from featurebyte.enum import DBVarType, FunctionParameterInputForm
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
 from featurebyte.query_graph.node.metadata.config import (
     OnDemandFunctionCodeGenConfig,
@@ -158,8 +159,8 @@ class GenericFunctionNode(BaseSeriesOutputNode):
             return []
         return [column_input_args[input_index]]  # type: ignore
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return self.parameters.output_dtype
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=self.parameters.output_dtype)
 
     def _derive_node_operation_info(
         self,
@@ -195,7 +196,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
                     columns=columns,
                     transform=self.parameters.name,
                     node_name=self.name,
-                    dtype=self.parameters.output_dtype,
+                    dtype_info=DBVarTypeInfo(dtype=self.parameters.output_dtype),
                 )
             ]
         else:
@@ -206,7 +207,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
                     columns=aggregations,
                     transform=self.parameters.name,
                     node_name=self.name,
-                    dtype=self.parameters.output_dtype,
+                    dtype_info=DBVarTypeInfo(dtype=self.parameters.output_dtype),
                 )
             ]
 

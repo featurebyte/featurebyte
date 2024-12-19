@@ -11,6 +11,7 @@ from typing_extensions import Annotated, Literal
 from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 
 AGG_FUNCS = []
 
@@ -26,15 +27,15 @@ class BaseAggFunc(FeatureByteBaseModel):
             # only add agg method class to AGG_FUNCS if the type variable is a literal (to filter out base classes)
             AGG_FUNCS.append(cls)
 
-    def derive_output_var_type(
-        self, input_var_type: DBVarType, category: Optional[str] = None
-    ) -> DBVarType:
+    def derive_output_dtype_info(
+        self, input_dtype_info: DBVarTypeInfo, category: Optional[str] = None
+    ) -> DBVarTypeInfo:
         """
-        Derive output var type based on input_var_type & aggregation method
+        Derive output var type based on input_dtype_info & aggregation method
 
         Parameters
         ----------
-        input_var_type: DBVarType
+        input_dtype_info: DBVarTypeInfo
             Input variable type
         category : Optional[str]
             Optional category parameter to enable aggregation per category. It should be a column
@@ -42,18 +43,18 @@ class BaseAggFunc(FeatureByteBaseModel):
 
         Returns
         -------
-        DBVarType
+        DBVarTypeInfo
         """
-        if input_var_type == DBVarType.UNKNOWN:
-            return DBVarType.UNKNOWN
+        if input_dtype_info.dtype == DBVarType.UNKNOWN:
+            return DBVarTypeInfo(dtype=DBVarType.UNKNOWN)
         if category:
-            return DBVarType.OBJECT
-        return self._derive_output_var_type(input_var_type=input_var_type, category=category)
+            return DBVarTypeInfo(dtype=DBVarType.OBJECT)
+        return self._derive_output_dtype_info(input_dtype_info=input_dtype_info, category=category)
 
     @abstractmethod
-    def _derive_output_var_type(
-        self, input_var_type: DBVarType, category: Optional[str] = None
-    ) -> DBVarType: ...
+    def _derive_output_dtype_info(
+        self, input_dtype_info: DBVarTypeInfo, category: Optional[str] = None
+    ) -> DBVarTypeInfo: ...
 
     @abstractmethod
     def is_var_type_supported(self, input_var_type: DBVarType) -> bool:
@@ -82,10 +83,10 @@ class SumAggFunc(BaseAggFunc):
         DBVarType.EMBEDDING: DBVarType.EMBEDDING,
     }
 
-    def _derive_output_var_type(
-        self, input_var_type: DBVarType, category: Optional[str] = None
-    ) -> DBVarType:
-        return self._var_type_map[input_var_type]
+    def _derive_output_dtype_info(
+        self, input_dtype_info: DBVarTypeInfo, category: Optional[str] = None
+    ) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=self._var_type_map[input_dtype_info.dtype])
 
     def is_var_type_supported(self, input_var_type: DBVarType) -> bool:
         return input_var_type in self._var_type_map
@@ -102,10 +103,10 @@ class BaseNumAggFunc(BaseAggFunc):
         DBVarType.EMBEDDING: DBVarType.EMBEDDING,
     }
 
-    def _derive_output_var_type(
-        self, input_var_type: DBVarType, category: Optional[str] = None
-    ) -> DBVarType:
-        return self._var_type_map[input_var_type]
+    def _derive_output_dtype_info(
+        self, input_dtype_info: DBVarTypeInfo, category: Optional[str] = None
+    ) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=self._var_type_map[input_dtype_info.dtype])
 
     def is_var_type_supported(self, input_var_type: DBVarType) -> bool:
         return input_var_type in self._var_type_map
@@ -126,10 +127,10 @@ class StdAggFunc(BaseNumAggFunc):
 class MatchingVarTypeAggFunc(BaseAggFunc):
     """MatchingVarTypeAggFunc class where output type is the same as input type"""
 
-    def _derive_output_var_type(
-        self, input_var_type: DBVarType, category: Optional[str] = None
-    ) -> DBVarType:
-        return input_var_type
+    def _derive_output_dtype_info(
+        self, input_dtype_info: DBVarTypeInfo, category: Optional[str] = None
+    ) -> DBVarTypeInfo:
+        return input_dtype_info
 
     def is_var_type_supported(self, input_var_type: DBVarType) -> bool:
         return True
@@ -150,10 +151,10 @@ class MinAggFunc(MatchingVarTypeAggFunc):
 class BaseCountAggFunc(BaseAggFunc):
     """BaseCountAggFunc class"""
 
-    def _derive_output_var_type(
-        self, input_var_type: DBVarType, category: Optional[str] = None
-    ) -> DBVarType:
-        return DBVarType.INT
+    def _derive_output_dtype_info(
+        self, input_dtype_info: DBVarTypeInfo, category: Optional[str] = None
+    ) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.INT)
 
     def is_var_type_supported(self, input_var_type: DBVarType) -> bool:
         return True
