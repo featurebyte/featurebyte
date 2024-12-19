@@ -288,6 +288,37 @@ def event_table_input_node_with_id_fixture(
     return node_input
 
 
+@pytest.fixture(name="time_series_table_input_node")
+def time_series_table_input_node_fixture(global_graph, input_details):
+    """Fixture of an input node for a time series table"""
+    input_details = copy.deepcopy(input_details)
+    input_details["table_details"]["table_name"] = "customer_snapshot"
+    node_params = {
+        "type": "time_series_table",
+        "columns": [
+            {
+                "name": "snapshot_date",
+                "dtype": DBVarType.VARCHAR,
+                "dtype_metadata": {"timestamp_schema": {"format_string": "YYYYMMDD"}},
+            },
+            {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "a", "dtype": DBVarType.FLOAT},
+        ],
+        "reference_datetime_column": "snapshot_date",
+        "reference_datetime_schema": {"timestamp_schema": {"format_string", "YYYYMMDD"}},
+        "time_interval": {"unit": "DAY", "value": 1},
+        "id": ObjectId("67643eeab0f7b5c9c7683e46"),
+    }
+    node_params.update(input_details)
+    node_input = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    return node_input
+
+
 @pytest.fixture(name="query_graph_and_assign_node")
 def query_graph_and_assign_node_fixture(global_graph, input_node):
     """Fixture of a query with some operations ready to run groupby"""
@@ -1562,6 +1593,46 @@ def non_tile_window_aggregation_complex_feature_node_fixture(global_graph, input
         node_params={"name": "a_2h_48h_sum_ratio_no_tile"},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[div_feature],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="time_series_window_aggregate_feature_node")
+def time_series_window_aggregate_feature_node_fixture(global_graph, time_series_table_input_node):
+    """
+    Fixture for a time series window aggregate feature node
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "sum",
+        "feature_job_setting": {
+            "crontab": "0 0 * * *",  # daily at midnight
+            "timezone": "Etc/UTC",
+        },
+        "names": ["a_7d_sum"],
+        "windows": [{"unit": "DAY", "size": 7}],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+        "reference_datetime_column": "snapshot_date",
+        "reference_datetime_schema": {
+            "format_string": "YYYYMMDD",
+            "timezone": "Asia/Singapore",
+        },
+        "time_interval": {"unit": "DAY", "value": 1},
+    }
+    aggregate_node = global_graph.add_operation(
+        node_type=NodeType.TIME_SERIES_WINDOW_AGGREGATE,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[time_series_table_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_7d_sum"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(aggregate_node.name)],
     )
     return feature_node
 
