@@ -5,8 +5,9 @@ Feature Job Setting Model
 from typing import Any, ClassVar, Dict, Union
 
 from croniter import croniter
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 from pydantic_extra_types.timezone_name import TimeZoneName
+from typing_extensions import Annotated, Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
@@ -269,6 +270,37 @@ class CronFeatureJobSetting(FeatureByteBaseModel):
         return self
 
 
+def feature_job_setting_discriminator(value: Any) -> Literal["interval", "cron"]:
+    """
+    Discriminator for feature job setting
+
+    Parameters
+    ----------
+    value : Any
+        Input value
+
+    Returns
+    -------
+    Literal["interval", "cron"]
+    """
+    if isinstance(value, dict):
+        if "crontab" in value:
+            return "cron"
+        return "interval"
+    if isinstance(value, FeatureJobSetting):
+        return "interval"
+    return "cron"
+
+
+FeatureJobSettingUnion = Annotated[
+    Union[
+        Annotated[FeatureJobSetting, Tag("interval")],
+        Annotated[CronFeatureJobSetting, Tag("cron")],
+    ],
+    Discriminator(feature_job_setting_discriminator),
+]
+
+
 class TableFeatureJobSetting(FeatureByteBaseModel):
     """
     The TableFeatureJobSetting object serves as a link between a table and a specific feature job setting configuration.
@@ -318,7 +350,7 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
     table_name: str = Field(
         description="Name of the table to which the feature job setting applies feature_job_setting."
     )
-    feature_job_setting: FeatureJobSetting = Field(
+    feature_job_setting: FeatureJobSettingUnion = Field(
         description="Feature class that contains specific settings that should be applied to feature jobs that "
         "involve time aggregate operations and use timestamps from the table specified in the table_name parameter."
     )
@@ -330,10 +362,14 @@ class TableIdFeatureJobSetting(FeatureByteBaseModel):
     """
 
     table_id: PydanticObjectId
-    feature_job_setting: FeatureJobSetting
+    feature_job_setting: FeatureJobSettingUnion
 
     def __hash__(self) -> int:
-        return hash(f"{self.table_id}_{self.feature_job_setting.to_seconds()}")
+        if isinstance(self.feature_job_setting, FeatureJobSetting):
+            return hash(f"{self.table_id}_{self.feature_job_setting.to_seconds()}")
+        return hash(
+            f"{self.table_id}_{self.feature_job_setting.crontab}_{self.feature_job_setting.timezone}"
+        )
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, (TableIdFeatureJobSetting, dict)):

@@ -99,8 +99,7 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
                 this_feature_job_setting = table_id_to_feature_job_settings.get(table_id)
                 if (
                     this_feature_job_setting
-                    and this_feature_job_setting.to_seconds()
-                    != other_feature_job_setting.to_seconds()
+                    and this_feature_job_setting != other_feature_job_setting
                 ):
                     error_message = (
                         f"Feature job setting (table ID: {table_id}) of "

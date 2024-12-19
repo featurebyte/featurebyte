@@ -8,6 +8,7 @@ from typing import Any, Optional
 
 from bson import ObjectId
 
+from featurebyte import CronFeatureJobSetting
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
     DocumentError,
@@ -85,14 +86,24 @@ class VersionService:
         ------
         NoFeatureJobSettingInSourceError
             If the source table does not have a default feature job setting
+        DocumentError
+            If the provided feature job setting is a cron job setting
         """
         node_name_to_replacement_node: dict[str, Node] = {}
         table_feature_job_settings = table_feature_job_settings or []
         if table_feature_job_settings or use_source_settings:
-            table_name_to_feature_job_setting: dict[str, FeatureJobSetting] = {
-                data_feature_job_setting.table_name: data_feature_job_setting.feature_job_setting
-                for data_feature_job_setting in table_feature_job_settings
-            }
+            table_name_to_feature_job_setting: dict[str, FeatureJobSetting] = {}
+            for data_feature_job_setting in table_feature_job_settings:
+                if isinstance(data_feature_job_setting.feature_job_setting, CronFeatureJobSetting):
+                    # TODO: Add support for cron feature job setting (DEV-3924)
+                    raise DocumentError(
+                        "Cron feature job setting is not supported for creating new feature version."
+                    )
+
+                table_name_to_feature_job_setting[data_feature_job_setting.table_name] = (
+                    data_feature_job_setting.feature_job_setting
+                )
+
             table_id_to_table: dict[ObjectId, ProxyTableModel] = {
                 doc["_id"]: ProxyTableModel(**doc)  # type: ignore
                 async for doc in self.table_service.list_documents_as_dict_iterator(

@@ -16,7 +16,10 @@ from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.mixin import QueryGraphMixin
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandFunctionCodeGenConfig
@@ -315,7 +318,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         self,
         feature_versioned_name: str,
         feature_dtype: DBVarType,
-        feature_job_settings: List[FeatureJobSetting],
+        feature_job_settings: List[FeatureJobSettingUnion],
         feature_id: ObjectId,
         has_ttl: bool,
         null_filling_value: Optional[Scalar] = None,
@@ -329,7 +332,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             Feature versioned name
         feature_dtype: DBVarType
             Output dtype of the feature
-        feature_job_settings: List[FeatureJobSetting]
+        feature_job_settings: List[FeatureJobSettingUnion]
             List of feature job settings used by the feature
         feature_id: ObjectId
             Feature ID
@@ -337,13 +340,26 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             Whether the feature has time-to-live (TTL) component
         null_filling_value: Optional[Scalar]
             Null filling value
+
+        Raises
+        ------
+        ValueError
+            If CronFeatureJobSetting is found
         """
+        interval_feature_job_settings = []
+        for feature_job_setting in feature_job_settings:
+            if isinstance(feature_job_setting, FeatureJobSetting):
+                interval_feature_job_settings.append(feature_job_setting)
+            else:
+                # TODO: Add support for cron feature job setting (DEV-3924)
+                raise ValueError("CronFeatureJobSetting is not supported")
+
         self.time_to_live_in_secs = None
         self.null_filling_value = null_filling_value
         if has_ttl and feature_job_settings:
             self.time_to_live_in_secs = min(
                 get_time_aggregate_ttl_in_secs(feature_job_setting)
-                for feature_job_setting in feature_job_settings
+                for feature_job_setting in interval_feature_job_settings
             )
 
         unique_func_name = f"{sanitize_identifier(feature_versioned_name)}_{feature_id}"
