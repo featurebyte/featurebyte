@@ -73,7 +73,7 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
         construct_data_model_validator(
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
-                ("reference_datetime_column", DBVarType.supported_datetime_types()),
+                ("reference_datetime_column", DBVarType.supported_ts_datetime_types()),
                 ("reference_datetime_schema", {DBVarType.VARCHAR}),
                 ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
                 ("series_id_column", DBVarType.supported_id_types()),
