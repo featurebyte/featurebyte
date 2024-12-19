@@ -283,6 +283,17 @@ class DBVarType(StrEnum):
         """
         return {cls.TIMESTAMP, cls.TIMESTAMP_TZ, cls.DATE, cls.VARCHAR}
 
+    @classmethod
+    def supported_ts_datetime_types(cls) -> set[DBVarType]:
+        """
+        Supported datetime types for time series tables
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.TIMESTAMP, cls.DATE, cls.VARCHAR}
+
 
 class AggFunc(StrEnum):
     """
