@@ -1,5 +1,47 @@
 # Changelog
 
+## v2.1.0 (2024-12-20)
+
+### 💡 Enhancements
+
++ `warehouse_session` SessionManager caching logic is refactored to be in SessionManagerService
+  Deprecation of SessionManager in its entirety in favor of SessionManagerService
++ `warehouse_session` Simplification of FeatureStoreController DWH creation logic
++ `route` Add route to preview a feature from a historical feature table.
++ `session` Add support to configure max query concurrency for a feature store
++ `service` Implementing UserGroups for credential management
++ `task_manager` Add support for re-submitting failed jobs in the task manager
++ `service` Add validation for event ID column dtypes between item and event table during item table registration.
++ `warehouse_session` Deprecating of SessionManager instance variables
++ `api` Add overwrite parameter to file download methods in the SDK.
++ `session` Enforce application-wide concurrency limit on long running SQL execution
++ `api` Add support for sampling by time range during registration of observation tables from source table or view.
++ `service` Add data structures, routes and api for creation and manipulation of new Time Series table type
+  Feature creation functionality for Time Series table type to be added later
++ `service` Improve tile cache working table query efficiency in BigQuery
++ `warehouse_session` Merging functionality of SessionManagerService and SessionValidatorService
++ `service` Support non-timestamp special columns in SCDTable
++ `session` Cancel the query when interrupted by timeout or asyncio task cancellation.
++ `service` Prevent users to tag multiple columns with the same entity in the same table.
++ `service` Entity tags will be automatically removed when the table is deprecated.
++ `service` Implemented a consistency check to ensure entity data types are consistent between associated tables.
+
+### ⚠️ Deprecations
+
++ `service` Merging MongodbBackedCredentialProvider with CredentialService
+
+### 🐛 Bug Fixes
+
++ `service` Fixed an error in historical feature materialization when performing min/max aggregations on timestamp columns.
++ `service` Fixed overflow error for specific UDFs in Databricks SQL Warehouse.
++ `service` Fix computation of complex count distinct aggregation features involving multiple windows
++ `model` Move the `store_info` attribute from feature list model to deployment model.
++ `service` Fix scheduled tile task error due to missing `tile_compute_query`
++ `service` Fixed online serving code using serving entities from feature list instead of deployment.
++ `service` Fix entity untagging bug when removing ancestor IDs that can be reached by multiple paths
++ `service` Fix observation table creation failure when using a datetime object with timezone as sample_from_timestamp or sample_to_timestamp.
+  The created observation table is also filtered to exclude rows where POINT_IN_TIME is too recent for | feature materialization, or where mapped columns have NULL values.
+
 ## v2.0.1 (2024-09-13)
 
 ### 💡 Enhancements
