@@ -10,7 +10,6 @@ from pydantic import ValidationError
 from featurebyte import TimeInterval
 from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import TableStatus
-from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.time_series_table import TimeSeriesTableModel
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
@@ -20,9 +19,7 @@ from featurebyte.query_graph.node.schema import TableDetails
 @pytest.fixture(name="feature_job_setting")
 def feature_job_setting_fixture():
     """Fixture for a Feature Job Setting"""
-    feature_job_setting = CronFeatureJobSetting(
-        crontab=Crontab(minute=0, hour=0, day_of_month="*", month_of_year="*", day_of_week="*")
-    )
+    feature_job_setting = CronFeatureJobSetting(crontab="0 0 * * *", timezone="Etc/UTC")
     return feature_job_setting
 
 
@@ -144,9 +141,5 @@ def test_invalid_job_setting__invalid_timezone():
 def test_invalid_job_setting__invalid_crontab():
     """Test validation on invalid job settings"""
     with pytest.raises(ValidationError) as exc_info:
-        CronFeatureJobSetting(
-            crontab=Crontab(
-                minute=0.1, hour=0, day_of_month="*", month_of_year="*", day_of_week="*"
-            )
-        )
-    assert "validation errors for Crontab\nminute.str" in str(exc_info.value)
+        CronFeatureJobSetting(crontab="0.1 0 * * *")
+    assert "Invalid crontab expression: 0.1 0 * * *" in str(exc_info.value)
