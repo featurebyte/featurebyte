@@ -85,7 +85,12 @@ async def test_get_historical_feature_tables_parallel(
         feature_table_name = f"my_feature_table_{i}"
         feature_table = fb.HistoricalFeatureTable.get(feature_table_name)
         df_preview = feature_table.preview()
-        assert df_preview.columns.tolist() == ["POINT_IN_TIME", "üser id", f"my_feature_{i}"]
+        assert df_preview.columns.tolist() == [
+            "POINT_IN_TIME",
+            "üser id",
+            "common_feature",
+            f"my_feature_{i}",
+        ]
 
     # Check feature cache metadata and table are expected
     cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(

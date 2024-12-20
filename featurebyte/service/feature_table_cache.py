@@ -44,7 +44,8 @@ from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, BaseSession
+from featurebyte.utils.redis import acquire_lock
 
 FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE = 10
 
@@ -354,6 +355,52 @@ class FeatureTableCacheService:
                 progress_callback=progress_callback,
             )
 
+    async def _ensure_feature_cache_table_columns(
+        self,
+        db_session: BaseSession,
+        cache_metadata: FeatureTableCacheMetadataModel,
+        graph: QueryGraph,
+        non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
+    ):
+        async with acquire_lock(
+            self.redis,
+            f"feature_table_cache_update:{cache_metadata.table_name}",
+            timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+        ):
+            # Only insert non-existing columns to the table. We need to acquire a lock to handle the
+            # case where multiple requests are trying to add the same feature to the cache table at
+            # the same time.
+            adapter = db_session.adapter
+            table_expr = expressions.Table(
+                this=quoted_identifier(cache_metadata.table_name),
+                db=quoted_identifier(db_session.schema_name),
+                catalog=quoted_identifier(db_session.database_name),
+            )
+            existing_columns = set(
+                col.upper()
+                for col in (
+                    await db_session.list_table_schema(
+                        table_name=cache_metadata.table_name,
+                        database_name=db_session.database_name,
+                        schema_name=db_session.schema_name,
+                        timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+                    )
+                ).keys()
+            )
+            columns_expr = [
+                expressions.ColumnDef(
+                    this=quoted_identifier(cast(str, definition.feature_name)),
+                    kind=adapter.get_physical_type_from_dtype(
+                        extract_dtype_from_graph(graph, node)
+                    ),
+                )
+                for node, definition in non_cached_nodes
+                if definition.feature_name.upper() not in existing_columns
+            ]
+            await db_session.execute_query_long_running(
+                adapter.alter_table_add_columns(table_expr, columns_expr)
+            )
+
     async def _materialize_and_update_cache(  # pylint: disable=too-many-arguments
         self,
         feature_store: FeatureStoreModel,
@@ -415,29 +462,15 @@ class FeatureTableCacheService:
                 )
 
             # alter cached tables adding columns for new features
-            adapter = db_session.adapter
-            table_exr = expressions.Table(
-                this=quoted_identifier(cache_metadata.table_name),
-                db=quoted_identifier(db_session.schema_name),
-                catalog=quoted_identifier(db_session.database_name),
+            await self._ensure_feature_cache_table_columns(
+                db_session=db_session,
+                cache_metadata=cache_metadata,
+                graph=graph,
+                non_cached_nodes=non_cached_nodes,
             )
-            columns_expr = [
-                expressions.ColumnDef(
-                    this=quoted_identifier(cast(str, definition.feature_name)),
-                    kind=adapter.get_physical_type_from_dtype(
-                        extract_dtype_from_graph(graph, node)
-                    ),
-                )
-                for node, definition in non_cached_nodes
-            ]
-            tic = time.time()
-            try:
-                await db_session.retry_sql(adapter.alter_table_add_columns(table_exr, columns_expr))
-            except db_session.no_schema_error:
-                # Can occur on concurrent historical feature tasks on overlapping features
-                pass
 
             # merge temp table into cache table
+            tic = time.time()
             merge_conditions = [
                 expressions.EQ(
                     this=get_qualified_column_identifier(
