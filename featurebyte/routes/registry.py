@@ -79,6 +79,7 @@ from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.deploy import (
     DeployFeatureListManagementService,
     DeployFeatureManagementService,
@@ -264,6 +265,7 @@ app_container_config.register_class(CredentialController)
 app_container_config.register_class(CredentialService)
 app_container_config.register_class(SpecializedDtypeDetectionService)
 app_container_config.register_class(ContextService)
+app_container_config.register_class(CronHelper)
 app_container_config.register_class(DataWarehouseMigrationMixin)
 app_container_config.register_class(DeployFeatureManagementService)
 app_container_config.register_class(DeployFeatureListManagementService)

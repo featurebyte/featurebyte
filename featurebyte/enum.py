@@ -429,6 +429,8 @@ class InternalName(StrEnum):
 
     INPUT_TABLE_SQL_PLACEHOLDER = "__FB_INPUT_TABLE_SQL_PLACEHOLDER"
 
+    CRON_JOB_SCHEDULE_DATETIME = "__FB_CRON_JOB_SCHEDULE_DATETIME"
+
 
 class WorkerCommand(StrEnum):
     """
