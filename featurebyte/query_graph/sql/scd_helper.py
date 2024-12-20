@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Literal, Optional, cast
 
 from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression, Select, alias_, select
+from sqlglot.expressions import Expression, Identifier, Select, alias_, select
 
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -37,7 +37,7 @@ class Table:
     Representation of a table to be used in SCD join
     """
 
-    expr: str | Select
+    expr: str | Expression
     timestamp_column: str | Expression
     join_keys: list[str]
     input_columns: list[str]
@@ -80,7 +80,9 @@ class Table:
             # This is when joining with tile tables. We can assume that tile index (the timestamp
             # column) will not have any missing values, so remove_missing_timestamp_values is
             # ignored.
-            return expressions.Table(this=expressions.Identifier(this=self.expr), alias=alias)
+            return expressions.Table(this=Identifier(this=self.expr), alias=alias)
+        if isinstance(self.expr, Identifier):
+            return expressions.Table(this=self.expr, alias=alias)
         assert isinstance(self.expr, Select)
         if remove_missing_timestamp_values:
             expr = self.expr_with_non_missing_timestamp_values
