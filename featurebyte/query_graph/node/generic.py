@@ -12,7 +12,13 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
+)
+from featurebyte.query_graph.model.time_series_table import TimeInterval
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.model.window import FeatureWindow
 from featurebyte.query_graph.node.base import (
     BaseNode,
     BasePrunableNode,
@@ -1957,6 +1963,69 @@ class NonTileWindowAggregateNode(BaseWindowAggregateNode):
     type: Literal[NodeType.NON_TILE_WINDOW_AGGREGATE] = NodeType.NON_TILE_WINDOW_AGGREGATE
     output_type: NodeOutputType = NodeOutputType.FRAME
     parameters: NonTileWindowAggregateParameters
+
+
+class TimeSeriesWindowAggregateParameters(BaseGroupbyParameters):
+    """Parameters for AggregateAsAtNode"""
+
+    windows: List[FeatureWindow]
+    reference_datetime_column: InColumnStr
+    reference_datetime_schema: TimestampSchema
+    time_interval: TimeInterval
+    names: List[OutColumnStr]
+    feature_job_setting: CronFeatureJobSetting
+    offset: Optional[FeatureWindow] = None
+
+
+class TimeSeriesWindowAggregateNode(AggregationOpStructMixin):
+    """
+    TimeSeriesWindowAggregateNode class.
+    """
+
+    type: Literal[NodeType.TIME_SERIES_WINDOW_AGGREGATE] = NodeType.TIME_SERIES_WINDOW_AGGREGATE
+    output_type: NodeOutputType = NodeOutputType.FRAME
+    parameters: TimeSeriesWindowAggregateParameters
+
+    def _get_aggregations(
+        self,
+        columns: List[ViewDataColumn],
+        node_name: str,
+        other_node_names: Set[str],
+        output_dtype_info: DBVarTypeInfo,
+    ) -> List[AggregationColumn]:
+        col_name_map = {col.name: col for col in columns}
+        return [
+            AggregationColumn(
+                name=name,
+                method=self.parameters.agg_func,
+                keys=self.parameters.keys,
+                window=window.to_string(),
+                category=self.parameters.value_by,
+                offset=self.parameters.offset.to_string() if self.parameters.offset else None,
+                column=col_name_map.get(self.parameters.parent),
+                filter=any(col.filter for col in columns),
+                aggregation_type=self.type,  # type: ignore[arg-type]
+                node_names={node_name}.union(other_node_names),
+                node_name=node_name,
+                dtype_info=output_dtype_info,
+            )
+            for name, window in zip(self.parameters.names, self.parameters.windows)
+        ]
+
+    def _exclude_source_columns(self) -> List[str]:
+        return [str(key) for key in self.parameters.keys]
+
+    def _is_time_based(self) -> bool:
+        return True
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
 
 
 class AliasNode(BaseNode):
