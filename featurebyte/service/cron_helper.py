@@ -120,7 +120,7 @@ class CronHelper:
         cron_feature_job_setting: CronFeatureJobSetting,
     ) -> None:
         """
-        Register the cron job schedule based on the min and max point in time
+        Register a table containing the cron job schedule based on the min and max point in time
 
         Parameters
         ----------
@@ -153,8 +153,8 @@ class CronHelper:
         output_table_name: str,
     ) -> None:
         """
-        Register a new request table by joining the original request table with the cron job
-        schedule table
+        Register a new request table by joining each row in the request table to the latest row in
+        the cron job schedule table where the job datetime is before the point in time.
 
         Parameters
         ----------
