@@ -23,25 +23,28 @@ async def test_get_historical_feature_tables_parallel(
     """
     # Create feature lists
     num_features = 4
-    num_hashes_expected = 0
     features_mapping = {}
+
+    common_feature = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["24h"],
+        feature_names=["common_feature"],
+    )["common_feature"]
+    num_hashes_expected = 1
+
+    # Create feature list with overlapping features
     for i in range(num_features):
         event_view["derived_value_column"] = (10.0 + i) * event_view["ÀMOUNT"]
-        if i < 2:
-            # Duplicate features with different names but the same definition hash
-            kwargs = {"method": "count", "value_column": None}
-            if i == 0:
-                num_hashes_expected += 1
-        else:
-            kwargs = {"method": "sum", "value_column": "derived_value_column"}
-            num_hashes_expected += 1
+        kwargs = {"method": "sum", "value_column": "derived_value_column"}
+        num_hashes_expected += 1
         feature_name = f"my_feature_{i}"
         feature = event_view.groupby("ÜSER ID").aggregate_over(
             windows=["24h"],
             feature_names=[feature_name],
             **kwargs,
         )[feature_name]
-        features_mapping[i] = fb.FeatureList([feature], name=feature_name)
+        features_mapping[i] = fb.FeatureList([common_feature, feature], name=feature_name)
 
     # Create observation table
     df_observation_set = pd.DataFrame({
