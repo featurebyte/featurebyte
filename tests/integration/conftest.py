@@ -765,6 +765,23 @@ def scd_dataframe_custom_date_format_fixture(scd_dataframe):
     yield data
 
 
+@pytest.fixture(name="scd_dataframe_custom_date_with_tz_format", scope="session")
+def scd_dataframe_custom_date_with_tz_format_fixture(scd_dataframe):
+    """
+    DataFrame fixture with slowly changing dimension with custom date format (with timezone)
+    """
+    data = scd_dataframe.copy()
+    data["Effective Timestamp"] = (
+        data["Effective Timestamp"].dt.tz_convert("Asia/Singapore").astype(str)
+    )
+    data = (
+        data.drop_duplicates(["User ID", "Effective Timestamp"])
+        .sort_values(["User ID", "Effective Timestamp"])
+        .reset_index(drop=True)
+    )
+    yield data
+
+
 @pytest.fixture(name="time_series_dataframe", scope="session")
 def time_series_dataframe_fixture(scd_dataframe):
     """
@@ -896,6 +913,14 @@ def scd_data_table_name_custom_date_format_fixture():
     return "SCD_DATA_TABLE_CUSTOM_DATE_FORMAT"
 
 
+@pytest.fixture(name="scd_data_table_name_custom_date_with_tz_format", scope="session")
+def scd_data_table_name_custom_date_with_tz_format_fixture():
+    """
+    Get the scd table name used in integration tests (custom date with timezone)
+    """
+    return "SCD_DATA_TABLE_CUSTOM_DATE_WITH_TZ_FORMAT"
+
+
 @pytest_asyncio.fixture(name="dataset_registration_helper", scope="session")
 async def datasets_registration_helper_fixture(
     transaction_data_upper_case,
@@ -904,8 +929,10 @@ async def datasets_registration_helper_fixture(
     dimension_data_table_name,
     scd_dataframe,
     scd_dataframe_custom_date_format,
+    scd_dataframe_custom_date_with_tz_format,
     scd_data_table_name,
     scd_data_table_name_custom_date_format,
+    scd_data_table_name_custom_date_with_tz_format,
     time_series_dataframe,
     observation_table_dataframe,
 ):
@@ -971,6 +998,9 @@ async def datasets_registration_helper_fixture(
     # SCD table
     helper.add_table(scd_data_table_name, scd_dataframe)
     helper.add_table(scd_data_table_name_custom_date_format, scd_dataframe_custom_date_format)
+    helper.add_table(
+        scd_data_table_name_custom_date_with_tz_format, scd_dataframe_custom_date_with_tz_format
+    )
 
     # Time series table
     helper.add_table("TIME_SERIES_TABLE", time_series_dataframe)
@@ -1528,6 +1558,23 @@ def scd_data_tabular_source_custom_date_format_fixture(
     return database_table
 
 
+@pytest.fixture(name="scd_data_tabular_source_custom_date_with_tz_format", scope="session")
+def scd_data_tabular_source_custom_date_with_tz_format_fixture(
+    session,
+    data_source,
+    scd_data_table_name_custom_date_with_tz_format,
+):
+    """
+    Fixture for scd table tabular source
+    """
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name=scd_data_table_name_custom_date_with_tz_format,
+    )
+    return database_table
+
+
 @pytest.fixture(name="time_series_data_tabular_source", scope="session")
 def time_series_data_tabular_source_custom_date_format_fixture(
     session,
@@ -1559,6 +1606,14 @@ def scd_table_name_custom_date_format_fixture(source_type):
     Fixture for the SCDTable name
     """
     return f"{source_type}_scd_table_custom_date_format"
+
+
+@pytest.fixture(name="scd_table_name_custom_date_with_tz_format", scope="session")
+def scd_table_name_custom_date_with_tz_format_fixture(source_type):
+    """
+    Fixture for the SCDTable name (with timezone)
+    """
+    return f"{source_type}_scd_table_custom_date_with_tz_format"
 
 
 @pytest.fixture(name="time_series_table_name", scope="session")
@@ -1611,6 +1666,18 @@ def scd_table_timestamp_format_string_fixture(source_type):
     if source_type == SourceType.BIGQUERY:
         return "%Y%m%d"
     return "yyyyMMdd"
+
+
+@pytest.fixture(name="scd_table_timestamp_with_tz_format_string", scope="session")
+def scd_table_timestamp_with_tz_format_string_fixture(source_type):
+    """
+    Fixture for custom date format string that is platform specific (with timezone)
+    """
+    if source_type == SourceType.SNOWFLAKE:
+        return "YYYY-MM-DD HH24:MI:SSTZH:TZM"
+    if source_type == SourceType.BIGQUERY:
+        return "%Y-%m-%d %H:%M:%S%Ez"
+    return "yyyy-MM-dd HH:mm:ssXXX"
 
 
 @pytest.fixture(name="scd_table_custom_date_format", scope="session")

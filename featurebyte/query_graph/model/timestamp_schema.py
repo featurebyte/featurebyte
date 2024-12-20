@@ -4,6 +4,7 @@ Schema for timestamp columns
 
 from typing import ClassVar, Literal, Optional, Union
 
+from pydantic import model_validator
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -44,3 +45,9 @@ class TimestampSchema(FeatureByteBaseModel):
     format_string: Optional[str] = None
     is_utc_time: Optional[bool] = None
     timezone: Optional[Union[TimeZoneName, TimeZoneColumn]] = None
+
+    @model_validator(mode="after")
+    def _validate_settings(self) -> "TimestampSchema":
+        if self.is_utc_time is False and self.timezone is None:
+            raise ValueError("Timezone must be provided for local time")
+        return self
