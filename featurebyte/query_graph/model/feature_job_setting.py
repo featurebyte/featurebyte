@@ -267,6 +267,12 @@ class CronFeatureJobSetting(FeatureByteBaseModel):
                 part: int(cron_parts[i]) if cron_parts[i].isdigit() else cron_parts[i]
                 for i, part in enumerate(parts)
             })
+
+        # limit max frequency to hourly
+        assert isinstance(self.crontab, Crontab)
+        if isinstance(self.crontab.minute, str) and not self.crontab.minute.isdigit():
+            raise ValueError("Cron schedule more frequent than hourly is not supported.")
+
         return self
 
 

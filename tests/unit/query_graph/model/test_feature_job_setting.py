@@ -72,11 +72,10 @@ def test_feature_job_setting():
         "0 0 1 * *",
         "0 0 * * *",
         "0 * * * *",
-        "* * * * *",
     ],
 )
-def test_cron_feature_job_setting__valid_crontab_expressiom(valid_crontab):
-    """Test cron feature job setting"""
+def test_cron_feature_job_setting__valid_crontab_expression(valid_crontab):
+    """Test cron feature job setting with valid crontab expression"""
 
     CronFeatureJobSetting(crontab=valid_crontab)
 
@@ -90,12 +89,28 @@ def test_cron_feature_job_setting__valid_crontab_expressiom(valid_crontab):
         "Some text",
     ],
 )
-def test_cron_feature_job_setting__invalid_crontab_expressiom(invalid_crontab):
-    """Test cron feature job setting"""
+def test_cron_feature_job_setting__invalid_crontab_expression(invalid_crontab):
+    """Test cron feature job setting with invalid crontab expression"""
     with pytest.raises(ValueError) as exc_info:
         CronFeatureJobSetting(crontab=invalid_crontab)
 
     expected_msg = f"Invalid crontab expression: {invalid_crontab}"
+    assert expected_msg in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "invalid_crontab",
+    [
+        "* * * * *",
+        "*/15 * * * *",
+    ],
+)
+def test_cron_feature_job_setting__too_frequent_crontab(invalid_crontab):
+    """Test cron feature job setting with too frequent crontab expression"""
+    with pytest.raises(ValueError) as exc_info:
+        CronFeatureJobSetting(crontab=invalid_crontab)
+
+    expected_msg = "Cron schedule more frequent than hourly is not supported."
     assert expected_msg in str(exc_info.value)
 
 

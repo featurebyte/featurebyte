@@ -82,7 +82,7 @@ class TimeSeriesTable(TableApiObject):
                     "internal_record_creation_timestamp_column",
                     DBVarType.supported_timestamp_types(),
                 ),
-                ("internal_reference_datetime_column", DBVarType.supported_datetime_types()),
+                ("internal_reference_datetime_column", DBVarType.supported_ts_datetime_types()),
                 ("internal_series_id_column", DBVarType.supported_id_types()),
             ],
         )
