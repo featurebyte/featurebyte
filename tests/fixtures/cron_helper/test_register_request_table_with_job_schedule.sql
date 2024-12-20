@@ -18,7 +18,7 @@ FROM (
       SELECT
         CAST(CONVERT_TIMEZONE('UTC', "POINT_IN_TIME") AS TIMESTAMP) AS "__FB_TS_COL",
         NULL AS "__FB_EFFECTIVE_TS_COL",
-        2 AS "__FB_TS_TIE_BREAKER_COL",
+        0 AS "__FB_TS_TIE_BREAKER_COL",
         "POINT_IN_TIME" AS "POINT_IN_TIME",
         "SERIES_ID" AS "SERIES_ID"
       FROM "request_table"
@@ -29,11 +29,11 @@ FROM (
         1 AS "__FB_TS_TIE_BREAKER_COL",
         NULL AS "POINT_IN_TIME",
         NULL AS "SERIES_ID"
-      FROM "cron_schedule_1"
+      FROM "__temp_cron_job_schedule_000000000000000000000000"
     )
   )
   WHERE
     "__FB_EFFECTIVE_TS_COL" IS NULL
 ) AS L
-LEFT JOIN "cron_schedule_1" AS R
+LEFT JOIN "__temp_cron_job_schedule_000000000000000000000000" AS R
   ON L."__FB_LAST_TS" = R."__FB_CRON_JOB_SCHEDULE_DATETIME";

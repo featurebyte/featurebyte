@@ -22,7 +22,7 @@ def cron_helper_fixture(app_container):
 
 
 @pytest.mark.asyncio
-async def test_register_schedule_and_request_table(session_without_datasets, cron_helper):
+async def test_register_request_table_with_job_schedule(session_without_datasets, cron_helper):
     """
     Test registering a schedule table and a request table with schedule
     """
@@ -36,25 +36,18 @@ async def test_register_schedule_and_request_table(session_without_datasets, cro
         "SERIES_ID": [1, 2, 3],
     })
     request_table_name = f"request_table_{ObjectId()}"
-    job_schedule_table_name = f"job_schedule_table_{ObjectId()}"
     await session.register_table(request_table_name, df_request_table)
-
-    await cron_helper.register_cron_job_schedule(
-        session=session,
-        job_schedule_table_name=job_schedule_table_name,
-        min_point_in_time=df_request_table["POINT_IN_TIME"].min(),
-        max_point_in_time=df_request_table["POINT_IN_TIME"].max(),
-        cron_feature_job_setting=CronFeatureJobSetting(
-            crontab="0 10 * * *",
-        ),
-    )
 
     output_table_name = f"output_table_{ObjectId()}"
     await cron_helper.register_request_table_with_job_schedule(
         session=session,
         request_table_name=request_table_name,
         request_table_columns=["POINT_IN_TIME", "SERIES_ID"],
-        job_schedule_table_name=job_schedule_table_name,
+        min_point_in_time=df_request_table["POINT_IN_TIME"].min(),
+        max_point_in_time=df_request_table["POINT_IN_TIME"].max(),
+        cron_feature_job_setting=CronFeatureJobSetting(
+            crontab="0 10 * * *",
+        ),
         output_table_name=output_table_name,
     )
 

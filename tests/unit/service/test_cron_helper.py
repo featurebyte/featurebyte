@@ -3,10 +3,12 @@ Tests for cron_helper.py
 """
 
 from datetime import datetime
+from unittest.mock import call
 
 import pytest
 
 from featurebyte import CronFeatureJobSetting
+from featurebyte.enum import InternalName
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
@@ -25,7 +27,7 @@ def test_get_cron_schedule(cron_helper):
     feature_job_setting = CronFeatureJobSetting(
         crontab="0 10 * * 1",
     )
-    datetimes = cron_helper.get_cron_job_schedule(
+    datetimes = cron_helper._get_cron_job_schedule(
         min_point_in_time=datetime(2024, 1, 15, 10, 0, 0),
         max_point_in_time=datetime(2024, 2, 15, 10, 0, 0),
         cron_feature_job_setting=feature_job_setting,
@@ -54,12 +56,34 @@ async def test_register_request_table_with_job_schedule(
         session=mock_snowflake_session,
         request_table_name="request_table",
         request_table_columns=["POINT_IN_TIME", "SERIES_ID"],
-        job_schedule_table_name="cron_schedule_1",
+        min_point_in_time=datetime(2024, 1, 15, 10, 0, 0),
+        max_point_in_time=datetime(2024, 2, 15, 10, 0, 0),
+        cron_feature_job_setting=CronFeatureJobSetting(
+            crontab="0 10 * * 1",
+        ),
         output_table_name="request_table_cron_schedule_1",
     )
+
+    # Check executed queries
     query = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         query,
         "tests/fixtures/cron_helper/test_register_request_table_with_job_schedule.sql",
         update_fixtures,
     )
+
+    # Check temporary schedule table registered
+    args, _ = mock_snowflake_session.register_table.call_args
+    df_schedule = args[1]
+    assert df_schedule.columns.to_list() == [InternalName.CRON_JOB_SCHEDULE_DATETIME]
+    assert df_schedule.shape[0] == 9
+
+    # Check temporary schedule table dropped
+    assert mock_snowflake_session.drop_table.call_args_list == [
+        call(
+            table_name=f'__temp_cron_job_schedule_{"0" * 24}',
+            schema_name=mock_snowflake_session.schema_name,
+            database_name=mock_snowflake_session.database_name,
+            if_exists=True,
+        )
+    ]
