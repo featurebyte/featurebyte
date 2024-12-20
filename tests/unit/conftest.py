@@ -1542,8 +1542,20 @@ def snowflake_scd_view_with_entity_fixture(snowflake_scd_table_with_entity):
     return snowflake_scd_table_with_entity.get_view()
 
 
+@pytest.fixture(name="freeze_time_observation_table_task")
+def freeze_time_observation_table_task_fixture():
+    """
+    Freeze time for ObservationTableTask due to freezegun not working well with pydantic in some
+    cases (in this case, apparently only the ObservationTableTask)
+    """
+    frozen_datetime = "2011-03-08T15:37:00"
+    with patch("featurebyte.worker.task.observation_table.datetime") as mock_datetime:
+        mock_datetime.utcnow.return_value = pd.Timestamp(frozen_datetime).to_pydatetime()
+        yield
+
+
 @pytest.fixture(name="patched_observation_table_service")
-def patched_observation_table_service_fixture():
+def patched_observation_table_service_fixture(freeze_time_observation_table_task):
     """
     Patch ObservationTableService.validate_materialized_table_and_get_metadata
     """
