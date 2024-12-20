@@ -361,7 +361,7 @@ class FeatureTableCacheService:
         cache_metadata: FeatureTableCacheMetadataModel,
         graph: QueryGraph,
         non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
-    ):
+    ) -> None:
         async with acquire_lock(
             self.redis,
             f"feature_table_cache_update:{cache_metadata.table_name}",
@@ -389,13 +389,14 @@ class FeatureTableCacheService:
             )
             columns_expr = [
                 expressions.ColumnDef(
-                    this=quoted_identifier(cast(str, definition.feature_name)),
+                    this=quoted_identifier(definition.feature_name),
                     kind=adapter.get_physical_type_from_dtype(
                         extract_dtype_from_graph(graph, node)
                     ),
                 )
                 for node, definition in non_cached_nodes
-                if definition.feature_name.upper() not in existing_columns
+                if definition.feature_name is not None
+                and definition.feature_name.upper() not in existing_columns
             ]
             await db_session.execute_query_long_running(
                 adapter.alter_table_add_columns(table_expr, columns_expr)
