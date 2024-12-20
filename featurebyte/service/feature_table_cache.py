@@ -398,8 +398,10 @@ class FeatureTableCacheService:
                 if definition.feature_name is not None
                 and definition.feature_name.upper() not in existing_columns
             ]
-            await db_session.execute_query_long_running(
-                adapter.alter_table_add_columns(table_expr, columns_expr)
+            # While "column already exist" error is not expected, still retry to handle other errors
+            # such as rate limiting (occurring in tests for BigQuery)
+            await db_session.retry_sql(
+                adapter.alter_table_add_columns(table_expr, columns_expr),
             )
 
     async def _materialize_and_update_cache(  # pylint: disable=too-many-arguments
