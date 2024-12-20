@@ -6,7 +6,6 @@ import textwrap
 from unittest import mock
 from unittest.mock import AsyncMock, patch
 
-import freezegun
 import pandas as pd
 import pytest
 
@@ -315,8 +314,7 @@ def test_sdk_code_generation(saved_time_series_table, update_fixtures):
     )
 
 
-@pytest.mark.usefixtures("patched_observation_table_service")
-@freezegun.freeze_time("2011-03-08T15:37:00")
+@pytest.mark.usefixtures("patched_observation_table_service", "freeze_time_observation_table_task")
 def test_create_observation_table_from_time_series_view__no_sample(
     snowflake_time_series_table, snowflake_execute_query, catalog, cust_id_entity
 ):
@@ -382,10 +380,11 @@ def test_create_observation_table_from_time_series_view__no_sample(
     )
 
 
-@pytest.mark.usefixtures("patched_observation_table_service")
-@freezegun.freeze_time("2011-03-08T15:37:00")
+@pytest.mark.usefixtures("patched_observation_table_service", "freeze_time_observation_table_task")
 def test_create_observation_table_from_time_series_view__with_sample(
-    snowflake_time_series_table_with_entity, snowflake_execute_query, cust_id_entity
+    snowflake_time_series_table_with_entity,
+    snowflake_execute_query,
+    cust_id_entity,
 ):
     """
     Test creating ObservationTable from an TimeSeriesView

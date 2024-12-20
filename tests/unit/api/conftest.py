@@ -542,3 +542,15 @@ def patch_alive_progress_fixture():
     yield patched
     for patcher in started_patchers:
         patcher.stop()
+
+
+@pytest.fixture
+def freeze_time_observation_table_task():
+    """
+    Freeze time for ObservationTableTask due to freezegun not working well with pydantic in some
+    cases (in this case, apparently only the ObservationTableTask)
+    """
+    frozen_datetime = "2011-03-08T15:37:00"
+    with patch("featurebyte.worker.task.observation_table.datetime") as mock_datetime:
+        mock_datetime.utcnow.return_value = pd.Timestamp(frozen_datetime).to_pydatetime()
+        yield
