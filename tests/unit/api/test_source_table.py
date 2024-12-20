@@ -4,6 +4,7 @@ Unit test for SourceTable
 
 from unittest.mock import AsyncMock, Mock, patch
 
+import freezegun
 import pandas as pd
 import pytest
 
@@ -191,6 +192,7 @@ def test_get_or_create_scd_table__create(snowflake_database_table_scd_table, cat
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
+@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table(
     snowflake_database_table, snowflake_execute_query, catalog, cust_id_entity, mock_log_handler
 ):
@@ -199,14 +201,12 @@ def test_create_observation_table(
     """
     _ = catalog
 
-    with patch("featurebyte.worker.task.observation_table.datetime") as mock_datetime:
-        mock_datetime.utcnow.return_value = pd.Timestamp("2011-03-08T15:37:00").to_pydatetime()
-        observation_table = snowflake_database_table.create_observation_table(
-            "my_observation_table",
-            columns=["event_timestamp", "cust_id"],
-            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
-            primary_entities=[cust_id_entity.name],
-        )
+    observation_table = snowflake_database_table.create_observation_table(
+        "my_observation_table",
+        columns=["event_timestamp", "cust_id"],
+        columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+        primary_entities=[cust_id_entity.name],
+    )
 
     # Check return type
     assert isinstance(observation_table, ObservationTable)
@@ -252,23 +252,22 @@ def test_create_observation_table(
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
+@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table_with_sample_rows(
     snowflake_database_table, snowflake_execute_query, catalog
 ):
     """
     Test creating ObservationTable from SourceTable with sampling
     """
-    with patch("featurebyte.worker.task.observation_table.datetime") as mock_datetime:
-        mock_datetime.utcnow.return_value = pd.Timestamp("2011-03-08T15:37:00").to_pydatetime()
-        with patch(
-            "featurebyte.models.request_input.BaseRequestInput.get_row_count",
-            AsyncMock(return_value=1000),
-        ):
-            observation_table = snowflake_database_table.create_observation_table(
-                "my_observation_table",
-                sample_rows=100,
-                columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
-            )
+    with patch(
+        "featurebyte.models.request_input.BaseRequestInput.get_row_count",
+        AsyncMock(return_value=1000),
+    ):
+        observation_table = snowflake_database_table.create_observation_table(
+            "my_observation_table",
+            sample_rows=100,
+            columns_rename_mapping={"event_timestamp": "POINT_IN_TIME"},
+        )
 
     # Check return type
     assert isinstance(observation_table, ObservationTable)
