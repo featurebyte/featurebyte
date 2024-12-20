@@ -9,7 +9,6 @@ from datetime import datetime
 from unittest import mock
 from unittest.mock import AsyncMock, patch
 
-import freezegun
 import pandas as pd
 import pytest
 from bson import ObjectId
@@ -837,7 +836,6 @@ def test_sdk_code_generation(saved_event_table, update_fixtures):
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table_from_event_view__no_sample(
     snowflake_event_table, snowflake_execute_query, catalog, cust_id_entity
 ):
@@ -905,7 +903,6 @@ def test_create_observation_table_from_event_view__no_sample(
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table_from_event_view__with_sample(
     snowflake_event_table_with_entity, snowflake_execute_query, cust_id_entity
 ):

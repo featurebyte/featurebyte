@@ -190,7 +190,7 @@ def test_get_or_create_scd_table__create(snowflake_database_table_scd_table, cat
     assert scd_table.current_flag_column == "is_active"
 
 
-@pytest.mark.usefixtures("patched_observation_table_service", "freeze_time_observation_table_task")
+@pytest.mark.usefixtures("patched_observation_table_service")
 def test_create_observation_table(
     snowflake_database_table, snowflake_execute_query, catalog, cust_id_entity, mock_log_handler
 ):
@@ -249,7 +249,7 @@ def test_create_observation_table(
     )
 
 
-@pytest.mark.usefixtures("patched_observation_table_service", "freeze_time_observation_table_task")
+@pytest.mark.usefixtures("patched_observation_table_service")
 def test_create_observation_table_with_sample_rows(
     snowflake_database_table, snowflake_execute_query, catalog
 ):
