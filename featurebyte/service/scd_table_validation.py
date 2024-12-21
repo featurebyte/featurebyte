@@ -41,7 +41,7 @@ class SCDTableValidationService(
     @classmethod
     def table_needs_validation(cls, table_model: SCDTableModel) -> bool:
         needs_validation = BaseTableValidationService.table_needs_validation(table_model)
-        if not needs_validation and table_model.natural_key_column is not None:
+        if not needs_validation and table_model.natural_key_column is None:
             return False
         return True
 
