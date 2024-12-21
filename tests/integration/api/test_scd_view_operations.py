@@ -726,7 +726,7 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
             "20220115",
             None,
             TimestampSchema(format_string="<date_format_placeholder>"),
-            "2022-01-15 00:00:00",
+            "2022-01-15 00:00:00+00",
         ),
         (
             "20220115",
