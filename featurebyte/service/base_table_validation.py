@@ -137,7 +137,13 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         )
         query = sql_to_string(query_expr, source_type=adapter.source_type)
         # check that the format string is valid for the first num_records
-        await session.execute_query_long_running(query)
+        try:
+            await session.execute_query_long_running(query)
+        except Exception as exc:
+            raise TableValidationError(
+                f"Timestamp column '{col_info.name}' has invalid format string '{timestamp_schema.format_string}'. "
+                f"Error: {str(exc)}"
+            )
 
         # check no more than one timezone information
         if (
