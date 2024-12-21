@@ -332,7 +332,7 @@ class BigQueryAdapter(BaseAdapter):
     @classmethod
     def to_timestamp_from_string(cls, expr: Expression, format_string: str) -> Expression:
         return expressions.Anonymous(
-            this="PARSE_DATETIME",
+            this="PARSE_TIMESTAMP",
             expressions=[make_literal_value(format_string), expr],
         )
 

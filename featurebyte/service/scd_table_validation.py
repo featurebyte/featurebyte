@@ -40,11 +40,12 @@ class SCDTableValidationService(
 
     @classmethod
     def table_needs_validation(cls, table_model: SCDTableModel) -> bool:
-        if table_model.natural_key_column is None:
+        needs_validation = BaseTableValidationService.table_needs_validation(table_model)
+        if not needs_validation and table_model.natural_key_column is None:
             return False
         return True
 
-    async def validate_table(
+    async def _validate_table(
         self,
         session: BaseSession,
         table_model: SCDTableModel,
