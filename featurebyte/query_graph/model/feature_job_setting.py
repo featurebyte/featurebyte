@@ -238,6 +238,18 @@ class CronFeatureJobSetting(FeatureByteBaseModel):
         description="Timezone for the cron schedule. It is used to determine the time at which the feature job should run.",
     )
 
+    def get_cron_expression(self) -> str:
+        """
+        Get cron expression
+
+        Returns
+        -------
+        """
+        crontab = self.crontab
+        if isinstance(crontab, str):
+            return crontab
+        return f"{crontab.minute} {crontab.hour} {crontab.day_of_month} {crontab.month_of_year} {crontab.day_of_week}"
+
     @model_validator(mode="after")
     def _validate_cron_expression(self) -> "CronFeatureJobSetting":
         """Validate cron expression
