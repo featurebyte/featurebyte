@@ -813,6 +813,7 @@ class BaseSession(BaseModel):
         schema_name: str,
         database_name: str,
         if_exists: bool = False,
+        timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
     ) -> None:
         """
         Drop a table
@@ -827,6 +828,8 @@ class BaseSession(BaseModel):
             Database name
         if_exists : bool
             If True, drop the table only if it exists
+        timeout : float
+            Timeout in seconds
 
         Raises
         ------
@@ -848,7 +851,7 @@ class BaseSession(BaseModel):
                 ),
                 source_type=self.source_type,
             )
-            await self.execute_query(query)
+            await self.execute_query(query, timeout=timeout)
 
         try:
             await _drop(is_view=False)
