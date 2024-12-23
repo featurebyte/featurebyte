@@ -163,7 +163,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
 
         # check whether the document has time schema in the columns with string type
         sql_adapter = get_sql_adapter(source_info=feature_store.get_source_info())
-        for col_info in document.columns_info:
+        for col_info in document.columns_info:  # type: ignore
             if (
                 col_info.dtype == DBVarType.VARCHAR
                 and col_info.dtype_metadata
