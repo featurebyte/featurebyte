@@ -9,10 +9,13 @@ from typing import Any, Optional, TypeVar
 from bson import ObjectId
 from redis import Redis
 
+from featurebyte.enum import DBVarType
+from featurebyte.exception import DocumentCreationError
 from featurebyte.models.base import UniqueConstraintResolutionSignature
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.table import TableCreate, TableServiceUpdate
 from featurebyte.service.base_document import BaseDocumentService
@@ -142,7 +145,7 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
 
     async def create_document(self, data: DocumentCreate) -> Document:
         # retrieve feature store to check the feature_store_id is valid
-        _ = await self.feature_store_service.get_document(
+        feature_store = await self.feature_store_service.get_document(
             document_id=data.tabular_source.feature_store_id
         )
 
@@ -157,6 +160,26 @@ class BaseTableDocumentService(BaseDocumentService[Document, DocumentCreate, Doc
         document = self.document_class(
             user_id=self.user.id, status=TableStatus.PUBLIC_DRAFT, **payload_dict
         )
+
+        # check whether the document has time schema in the columns with string type
+        sql_adapter = get_sql_adapter(source_info=feature_store.get_source_info())
+        for col_info in document.columns_info:  # type: ignore
+            if (
+                col_info.dtype == DBVarType.VARCHAR
+                and col_info.dtype_metadata
+                and col_info.dtype_metadata.timestamp_schema
+            ):
+                timestamp_schema = col_info.dtype_metadata.timestamp_schema
+                assert timestamp_schema.format_string is not None
+                if (
+                    sql_adapter.format_string_has_timezone(timestamp_schema.format_string)
+                    and timestamp_schema.timezone
+                ):
+                    # format string and timezone are both present
+                    raise DocumentCreationError(
+                        f"Timestamp column '{col_info.name}' has timezone information in the data and in the schema. "
+                        f"Please remove timezone information from the data or from the schema."
+                    )
 
         # check any conflict with existing documents
         await self._check_document_unique_constraints(document=document)

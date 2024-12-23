@@ -105,7 +105,7 @@ async def test_validate_scd_table__valid(
     })
     await session.register_table(table_name, df_scd)
     table_model = await document_service.create_document(scd_create_payload)
-    await service.validate_table(session, table_model)
+    await service._validate_table(session, table_model)
 
 
 @pytest.mark.parametrize("table_name", ["test_validate_scd_table__invalid_multiple_active_records"])
@@ -138,7 +138,7 @@ async def test_validate_scd_table__invalid_multiple_active_records(
     await session.register_table(table_name, df_scd)
     table_model = await document_service.create_document(scd_create_with_end_date_payload)
     with pytest.raises(TableValidationError) as exc_info:
-        await service.validate_table(session, table_model)
+        await service._validate_table(session, table_model)
     assert (
         str(exc_info.value)
         == "Multiple active records found for the same natural key. Examples of natural keys with multiple active records are: [1000]"
@@ -172,7 +172,7 @@ async def test_validate_scd_table__invalid_multiple_records_per_ts_id(
     await session.register_table(table_name, df_scd)
     table_model = await document_service.create_document(scd_create_payload)
     with pytest.raises(TableValidationError) as exc_info:
-        await service.validate_table(session, table_model)
+        await service._validate_table(session, table_model)
     assert (
         str(exc_info.value)
         == "Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: [1000]"

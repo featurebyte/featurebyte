@@ -7,10 +7,19 @@ from __future__ import annotations
 from typing import Generic
 
 from bson import ObjectId
+from sqlglot import expressions
+from sqlglot.expressions import select
 
 from featurebyte.common.model_util import get_utc_now
+from featurebyte.enum import DBVarType
 from featurebyte.exception import TableValidationError
-from featurebyte.models.feature_store import TableValidation, TableValidationStatus
+from featurebyte.models.feature_store import TableModel, TableValidation, TableValidationStatus
+from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    quoted_identifier,
+    sql_to_string,
+)
 from featurebyte.service.base_table_document import (
     BaseTableDocumentService,
     DocumentCreate,
@@ -87,8 +96,54 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         -------
         bool
         """
-        _ = table_model
+        assert isinstance(table_model, TableModel)
+        for col_info in table_model.columns_info:
+            if (
+                col_info.dtype == DBVarType.VARCHAR
+                and col_info.dtype_metadata
+                and col_info.dtype_metadata.timestamp_schema
+            ):
+                return True
         return False
+
+    @staticmethod
+    async def _validate_timestamp_format_string(
+        col_info: ColumnInfo, session: BaseSession, table_model: TableModel, num_records: int
+    ) -> None:
+        assert col_info.dtype_metadata is not None
+        assert col_info.dtype_metadata.timestamp_schema is not None
+
+        adapter = session.adapter
+        timestamp_schema = col_info.dtype_metadata.timestamp_schema
+        assert timestamp_schema.format_string is not None
+
+        query_expr = (
+            select(
+                expressions.alias_(
+                    adapter.to_timestamp_from_string(
+                        quoted_identifier(col_info.name),
+                        timestamp_schema.format_string,
+                    ),
+                    alias=col_info.name,
+                    quoted=True,
+                )
+            )
+            .from_(
+                get_fully_qualified_table_name(
+                    table_model.tabular_source.table_details.model_dump()
+                )
+            )
+            .limit(num_records)
+        )
+        query = sql_to_string(query_expr, source_type=adapter.source_type)
+        # check that the format string is valid for the first num_records
+        try:
+            await session.execute_query_long_running(query)
+        except Exception as exc:
+            raise TableValidationError(
+                f"Timestamp column '{col_info.name}' has invalid format string '{timestamp_schema.format_string}'. "
+                f"Error: {str(exc)}"
+            )
 
     async def validate_table(
         self,
@@ -109,6 +164,32 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         num_records: int
             Number of records to return in the error message
         """
+        assert isinstance(table_model, TableModel)
+        for col_info in table_model.columns_info:
+            if (
+                col_info.dtype == DBVarType.VARCHAR
+                and col_info.dtype_metadata
+                and col_info.dtype_metadata.timestamp_schema
+            ):
+                await self._validate_timestamp_format_string(
+                    col_info=col_info,
+                    session=session,
+                    table_model=table_model,
+                    num_records=num_records,
+                )
+
+        await self._validate_table(
+            session=session,
+            table_model=table_model,  # type: ignore
+            num_records=num_records,
+        )
+
+    async def _validate_table(
+        self,
+        session: BaseSession,
+        table_model: Document,
+        num_records: int = 10,
+    ) -> None:
         _ = session
         _ = table_model
         _ = num_records

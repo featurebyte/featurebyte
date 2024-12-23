@@ -790,6 +790,8 @@ async def test_scd_view_timestamp_schema(
     actual = df_preview["effective_timestamp_column"].iloc[0]
     if isinstance(actual, str) and ".000" in actual:
         actual = actual.replace(".000", "")
+    if isinstance(actual, str) and "+00" in actual:
+        actual = actual.replace("+00", "")
     assert actual == expected
 
 
@@ -852,3 +854,69 @@ async def test_scd_view_date_type(
     df_preview = view.preview()
     actual = df_preview["effective_timestamp_column"].iloc[0]
     assert actual == expected
+
+
+def test_timestamp_schema_validation(
+    mock_task_manager,
+    scd_data_tabular_source_custom_date_with_tz_format,
+    scd_table_name_custom_date_with_tz_format,
+    scd_table_timestamp_with_tz_format_string,
+    config,
+):
+    """Test timestamp schema validation for SCD table"""
+    _ = mock_task_manager
+    client = config.get_client()
+
+    # create SCD table with timestamp schema containing timezone information
+    scd_table = scd_data_tabular_source_custom_date_with_tz_format.create_scd_table(
+        name=scd_table_name_custom_date_with_tz_format,
+        natural_key_column="User ID",
+        effective_timestamp_column="Effective Timestamp",
+        surrogate_key_column="ID",
+        effective_timestamp_schema=TimestampSchema(
+            format_string="kkk",
+            timezone="Asia/Singapore",  # invalid format string
+        ),
+    )
+
+    # check table validation (expecting failure)
+    response = client.get(f"/scd_table/{scd_table.id}")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["validation"] == {
+        "status": "FAILED",
+        "validation_message": response_dict["validation"]["validation_message"],
+        "task_id": None,
+        "updated_at": response_dict["validation"]["updated_at"],
+    }
+    assert (
+        "Timestamp column 'Effective Timestamp' has invalid format string 'kkk'."
+        in response_dict["validation"]["validation_message"]
+    )
+
+    # clean up SCD table
+    scd_table.delete()
+
+    # create SCD table with timestamp schema without timezone information
+    scd_table = scd_data_tabular_source_custom_date_with_tz_format.create_scd_table(
+        name=scd_table_name_custom_date_with_tz_format,
+        natural_key_column="User ID",
+        effective_timestamp_column="Effective Timestamp",
+        surrogate_key_column="ID",
+        effective_timestamp_schema=TimestampSchema(
+            format_string=scd_table_timestamp_with_tz_format_string
+        ),
+    )
+
+    # check table validation
+    client = config.get_client()
+    response = client.get(f"/scd_table/{scd_table.id}")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["validation"] == {
+        "status": "PASSED",
+        "validation_message": None,
+        "task_id": None,
+        "updated_at": response_dict["validation"]["updated_at"],
+    }
+    scd_table.delete()
