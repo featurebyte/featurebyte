@@ -779,6 +779,10 @@ def scd_dataframe_custom_date_with_tz_format_fixture(scd_dataframe):
         .sort_values(["User ID", "Effective Timestamp"])
         .reset_index(drop=True)
     )
+
+    timestamps = pd.to_datetime(data["Effective Timestamp"])
+    data["timezone_offset"] = timestamps.dt.strftime("%z")
+    data["effective_timestamp"] = timestamps.dt.strftime("%Y-%m-%d %H:%M:%S")
     yield data
 
 
