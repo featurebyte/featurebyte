@@ -152,7 +152,10 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             column_expr = convert_timezone_to_utc(
                 timezone_obj=timestamp_schema.timezone,
                 adapter=adapter,
-                column_expr=expressions.Identifier(this=col_info.name, quoted=True),
+                column_expr=adapter.to_timestamp_from_string(
+                    quoted_identifier(col_info.name),
+                    timestamp_schema.format_string,
+                ),
             )
             query_expr = (
                 select(column_expr)
