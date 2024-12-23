@@ -861,7 +861,6 @@ def test_timestamp_schema_validation(
     scd_data_tabular_source_custom_date_with_tz_format,
     scd_table_name_custom_date_with_tz_format,
     scd_table_timestamp_with_tz_format_string,
-    scd_table_timestamp_format_string,
     config,
 ):
     """Test timestamp schema validation for SCD table"""
@@ -922,13 +921,14 @@ def test_timestamp_schema_validation(
     scd_table.delete()
 
     # create SCD table with offset timezone information
+    format_string = "yyyy-MM-dd HH:mm:ss"
     scd_table = scd_data_tabular_source_custom_date_with_tz_format.create_scd_table(
         name=scd_table_name_custom_date_with_tz_format,
         natural_key_column="User ID",
         effective_timestamp_column="effective_timestamp",
         surrogate_key_column="ID",
         effective_timestamp_schema=TimestampSchema(
-            format_string=scd_table_timestamp_format_string,
+            format_string=format_string,
             timezone="America/New_York",
         ),
     )
@@ -952,7 +952,7 @@ def test_timestamp_schema_validation(
         effective_timestamp_column="effective_timestamp",
         surrogate_key_column="ID",
         effective_timestamp_schema=TimestampSchema(
-            format_string=scd_table_timestamp_format_string,
+            format_string=format_string,
             timezone=TimeZoneColumn(column_name="timezone_offset", type="offset"),
         ),
     )
