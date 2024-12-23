@@ -54,7 +54,7 @@ def convert_timezone_to_utc(
     else:
         assert isinstance(timezone_obj, TimeZoneColumn)
         timezone = quoted_identifier(timezone_obj.column_name)
-        if timezone.type == "offset":
+        if timezone_obj.type == "offset":
             timezone_type = "offset"
         else:
             timezone_type = "name"
