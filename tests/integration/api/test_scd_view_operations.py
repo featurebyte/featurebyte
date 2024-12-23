@@ -874,7 +874,7 @@ def test_timestamp_schema_validation(
         effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
         effective_timestamp_schema=TimestampSchema(
-            format_string="xyz",
+            format_string="kkk",
             timezone="Asia/Singapore",  # invalid format string
         ),
     )
@@ -890,7 +890,7 @@ def test_timestamp_schema_validation(
         "updated_at": response_dict["validation"]["updated_at"],
     }
     assert (
-        "Timestamp column 'Effective Timestamp' has invalid format string 'xyz'."
+        "Timestamp column 'Effective Timestamp' has invalid format string 'kkk'."
         in response_dict["validation"]["validation_message"]
     )
 
