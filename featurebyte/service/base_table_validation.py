@@ -145,16 +145,6 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                 f"Error: {str(exc)}"
             )
 
-        # check no more than one timezone information
-        if (
-            adapter.format_string_has_timezone(timestamp_schema.format_string)
-            and timestamp_schema.timezone is not None
-        ):
-            raise TableValidationError(
-                f"Timestamp column '{col_info.name}' has timezone information in the data and in the schema. "
-                f"Please remove timezone information from the data or from the schema."
-            )
-
     async def validate_table(
         self,
         session: BaseSession,

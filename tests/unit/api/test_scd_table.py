@@ -668,3 +668,21 @@ def test_timestamp_schema__format_string_mandatory_for_varchar(
             ),
         )
     assert "format_string is required in the timestamp_schema for column col_text" in str(exc.value)
+
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_database_table_scd_table.get_or_create_scd_table(
+            name="sf_scd_table",
+            natural_key_column="col_int",
+            effective_timestamp_column="col_text",
+            current_flag_column="is_active",
+            record_creation_timestamp_column="created_at",
+            effective_timestamp_schema=TimestampSchema(
+                timezone="Etc/UTC",
+                format_string="YYYY-MM-DD HH24:MI:SSTZH:TZM",
+            ),
+        )
+    expected = (
+        "Timestamp column 'col_text' has timezone information in the data and in the schema. "
+        "Please remove timezone information from the data or from the schema."
+    )
+    assert expected in str(exc.value)

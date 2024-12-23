@@ -726,7 +726,7 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
             "20220115",
             None,
             TimestampSchema(format_string="<date_format_placeholder>"),
-            "2022-01-15 00:00:00+00",
+            "2022-01-15 00:00:00",
         ),
         (
             "20220115",
@@ -790,6 +790,8 @@ async def test_scd_view_timestamp_schema(
     actual = df_preview["effective_timestamp_column"].iloc[0]
     if isinstance(actual, str) and ".000" in actual:
         actual = actual.replace(".000", "")
+    if isinstance(actual, str) and "+00" in actual:
+        actual = actual.replace("+00", "")
     assert actual == expected
 
 
@@ -872,7 +874,8 @@ def test_timestamp_schema_validation(
         effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
         effective_timestamp_schema=TimestampSchema(
-            format_string=scd_table_timestamp_with_tz_format_string, timezone="Asia/Singapore"
+            format_string="xyz",
+            timezone="Asia/Singapore",  # invalid format string
         ),
     )
 
@@ -882,13 +885,16 @@ def test_timestamp_schema_validation(
     response_dict = response.json()
     assert response_dict["validation"] == {
         "status": "FAILED",
-        "validation_message": (
-            "Timestamp column 'Effective Timestamp' has timezone information in the data and in the schema. "
-            "Please remove timezone information from the data or from the schema."
-        ),
+        "validation_message": response_dict["validation"]["validation_message"],
         "task_id": None,
         "updated_at": response_dict["validation"]["updated_at"],
     }
+    assert (
+        "Timestamp column 'Effective Timestamp' has invalid format string 'xyz'."
+        in response_dict["validation"]["validation_message"]
+    )
+
+    # clean up SCD table
     scd_table.delete()
 
     # create SCD table with timestamp schema without timezone information
