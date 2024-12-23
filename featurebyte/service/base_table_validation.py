@@ -13,8 +13,10 @@ from sqlglot.expressions import select
 from featurebyte.common.model_util import get_utc_now
 from featurebyte.enum import DBVarType
 from featurebyte.exception import TableValidationError
+from featurebyte.models.entity_universe import columns_not_null
 from featurebyte.models.feature_store import TableModel, TableValidation, TableValidationStatus
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.sql.ast.input import convert_timezone_to_utc
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
@@ -117,6 +119,9 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         timestamp_schema = col_info.dtype_metadata.timestamp_schema
         assert timestamp_schema.format_string is not None
 
+        source_table_expr = get_fully_qualified_table_name(
+            table_model.tabular_source.table_details.model_dump()
+        )
         query_expr = (
             select(
                 expressions.alias_(
@@ -128,11 +133,8 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                     quoted=True,
                 )
             )
-            .from_(
-                get_fully_qualified_table_name(
-                    table_model.tabular_source.table_details.model_dump()
-                )
-            )
+            .from_(source_table_expr)
+            .where(columns_not_null([col_info.name]))
             .limit(num_records)
         )
         query = sql_to_string(query_expr, source_type=adapter.source_type)
@@ -144,6 +146,28 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                 f"Timestamp column '{col_info.name}' has invalid format string '{timestamp_schema.format_string}'. "
                 f"Error: {str(exc)}"
             )
+
+        if timestamp_schema.timezone is not None:
+            # Convert to timestamp in UTC using the provided timezone information
+            column_expr = convert_timezone_to_utc(
+                timezone_obj=timestamp_schema.timezone,
+                adapter=adapter,
+                column_expr=expressions.Identifier(this=col_info.name, quoted=True),
+            )
+            query_expr = (
+                select(column_expr)
+                .from_(source_table_expr)
+                .where(columns_not_null([col_info.name]))
+            )
+            query = sql_to_string(query_expr, source_type=adapter.source_type)
+            # check that the offset is valid for the first num_records
+            try:
+                await session.execute_query_long_running(query)
+            except Exception as exc:
+                raise TableValidationError(
+                    f"Timestamp column '{col_info.name}' has invalid timezone '{timestamp_schema.timezone}'. "
+                    f"Error: {str(exc)}"
+                )
 
     async def validate_table(
         self,
