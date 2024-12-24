@@ -776,6 +776,7 @@ def scd_dataframe_custom_date_with_tz_format_fixture(scd_dataframe):
     )
     timestamps = pd.to_datetime(data["Effective Timestamp"])
     data["timezone_offset"] = timestamps.dt.strftime("%z")
+    data["invalid_timezone_offset"] = "xyz" + data["timezone_offset"]
     data["effective_timestamp"] = timestamps.dt.strftime("%Y%m%d")
     data = (
         data.drop_duplicates(["User ID", "effective_timestamp"])
