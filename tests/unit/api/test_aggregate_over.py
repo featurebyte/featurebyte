@@ -3,11 +3,16 @@ Unit tests for aggregate_over
 """
 
 import pytest
+from bson import ObjectId
 
-from featurebyte import FeatureJobSetting
 from featurebyte.enum import DBVarType
 from featurebyte.models import FeatureModel
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
+)
+from featurebyte.query_graph.model.window import FeatureWindow
 from tests.util.helper import get_node
 
 
@@ -195,6 +200,60 @@ def test_count_distinct_agg_func(snowflake_event_view_with_entity, cust_id_entit
         "timestamp": "event_timestamp",
         "value_by": None,
         "windows": ["7d"],
+    }
+
+    # check feature can be saved
+    feature.save()
+
+
+def test_time_series_view_aggregate_over(snowflake_time_series_view_with_entity):
+    """
+    Test aggregate_over for time series view
+    """
+    view = snowflake_time_series_view_with_entity
+    feature = view.groupby("store_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=[FeatureWindow(unit="MONTH", size=3)],
+        feature_names=["col_float_sum_3month"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 1 * *",
+        ),
+    )["col_float_sum_3month"]
+    feature_dict = feature.model_dump()
+    node = get_node(feature_dict["graph"], "time_series_window_aggregate_1")
+    assert node == {
+        "name": "time_series_window_aggregate_1",
+        "type": "time_series_window_aggregate",
+        "output_type": "frame",
+        "parameters": {
+            "keys": ["store_id"],
+            "parent": "col_float",
+            "agg_func": "sum",
+            "value_by": None,
+            "serving_names": ["cust_id"],
+            "entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
+            "windows": [{"unit": "MONTH", "size": 3}],
+            "reference_datetime_column": "date",
+            "reference_datetime_schema": {
+                "format_string": "YYYY-MM-DD HH24:MI:SS",
+                "is_utc_time": None,
+                "timezone": "Etc/UTC",
+            },
+            "time_interval": {"unit": "DAY", "value": 1},
+            "names": ["col_float_sum_3month"],
+            "feature_job_setting": {
+                "crontab": {
+                    "minute": 0,
+                    "hour": 8,
+                    "day_of_month": 1,
+                    "month_of_year": "*",
+                    "day_of_week": "*",
+                },
+                "timezone": "Etc/UTC",
+            },
+            "offset": None,
+        },
     }
 
     # check feature can be saved

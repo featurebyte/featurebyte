@@ -22,9 +22,14 @@ from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.target import Target
+from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import AggFunc
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
+)
+from featurebyte.query_graph.model.window import FeatureWindow
 from featurebyte.typing import OptionalScalar
 
 
@@ -83,7 +88,7 @@ class GroupBy:
     @typechecked
     def __init__(
         self,
-        obj: Union[EventView, ItemView, ChangeView, SCDView],
+        obj: Union[EventView, ItemView, ChangeView, SCDView, TimeSeriesView],
         keys: Union[str, List[str]],
         category: Optional[str] = None,
     ):
@@ -130,13 +135,13 @@ class GroupBy:
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
-        windows: List[Optional[str]],
+        windows: List[Optional[str] | FeatureWindow],
         feature_names: List[str],
         timestamp_column: Optional[str] = None,
-        feature_job_setting: Optional[FeatureJobSetting] = None,
+        feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
-        offset: Optional[str] = None,
+        offset: Optional[str | FeatureWindow] = None,
     ) -> FeatureGroup:
         """
         The aggregate_over method of a GroupBy instance returns a FeatureGroup containing Aggregate Over a Window

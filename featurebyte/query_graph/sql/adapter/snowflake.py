@@ -22,6 +22,8 @@ from featurebyte.query_graph.sql.common import (
     sql_to_string,
 )
 
+ROW_ID_COLUMN_NAME = "__row_id"
+
 
 class SnowflakeAdapter(BaseAdapter):
     """

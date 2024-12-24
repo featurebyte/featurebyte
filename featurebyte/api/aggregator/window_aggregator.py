@@ -12,11 +12,16 @@ from featurebyte.api.change_view import ChangeView
 from featurebyte.api.event_view import EventView
 from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.item_view import ItemView
+from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
 from featurebyte.enum import AggFunc
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
+)
+from featurebyte.query_graph.model.window import FeatureWindow
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.transform.reconstruction import (
@@ -33,7 +38,11 @@ class WindowAggregator(BaseAggregator):
 
     @property
     def supported_views(self) -> List[Type[View]]:
-        return [EventView, ItemView, ChangeView]
+        return [EventView, ItemView, ChangeView, TimeSeriesView]
+
+    @property
+    def is_time_series_aggregation(self) -> bool:
+        return isinstance(self.view, TimeSeriesView)
 
     @property
     def aggregation_method_name(self) -> str:
@@ -43,13 +52,13 @@ class WindowAggregator(BaseAggregator):
         self,
         value_column: Optional[str],
         method: str,
-        windows: List[Optional[str]],
+        windows: List[Optional[str | FeatureWindow]],
         feature_names: List[str],
         timestamp_column: Optional[str] = None,
-        feature_job_setting: Optional[FeatureJobSetting] = None,
+        feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
-        offset: Optional[str] = None,
+        offset: Optional[str | FeatureWindow] = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -133,12 +142,12 @@ class WindowAggregator(BaseAggregator):
         self,
         value_column: Optional[str],
         method: str,
-        windows: list[Optional[str]],
+        windows: list[Optional[str] | FeatureWindow],
         feature_names: list[str],
-        feature_job_setting: Optional[FeatureJobSetting],
+        feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting],
         fill_value: OptionalScalar,
         skip_fill_na: bool,
-        offset: Optional[str],
+        offset: Optional[str | FeatureWindow],
     ) -> None:
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
@@ -161,27 +170,39 @@ class WindowAggregator(BaseAggregator):
 
         number_of_unbounded_windows = len([w for w in windows if w is None])
 
-        if number_of_unbounded_windows > 0:
-            if method != AggFunc.LATEST:
-                raise ValueError('Unbounded window is only supported for the "latest" method')
+        if self.is_time_series_aggregation:
+            if number_of_unbounded_windows > 0:
+                raise ValueError("Unbounded window is not supported for time series aggregation")
+        else:
+            if number_of_unbounded_windows > 0:
+                if method != AggFunc.LATEST:
+                    raise ValueError('Unbounded window is only supported for the "latest" method')
 
-            if self.category is not None:
-                raise ValueError("category is not supported for aggregation with unbounded window")
+                if self.category is not None:
+                    raise ValueError(
+                        "category is not supported for aggregation with unbounded window"
+                    )
 
-        parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
-        if windows is not None:
-            for window in windows:
-                if window is not None:
-                    validate_window(window, parsed_feature_job_setting.period)
+            parsed_feature_job_setting = FeatureJobSetting(
+                **self._get_job_setting_params(feature_job_setting)
+            )
+            if windows is not None:
+                for window in windows:
+                    if window is not None:
+                        if isinstance(window, FeatureWindow):
+                            raise ValueError("FeatureWindow is only supported for TimeSeriesView")
+                        validate_window(window, parsed_feature_job_setting.period)
 
-        if offset is not None:
-            validate_window(offset, parsed_feature_job_setting.period)
+            if offset is not None:
+                if isinstance(offset, FeatureWindow):
+                    raise ValueError("FeatureWindow is only supported for TimeSeriesView")
+                validate_window(offset, parsed_feature_job_setting.period)
 
     def _get_job_setting_params(
-        self, feature_job_setting: Optional[FeatureJobSetting]
-    ) -> FeatureJobSetting:
+        self, feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting]
+    ) -> dict[str, Any]:
         if feature_job_setting is not None:
-            return feature_job_setting
+            return feature_job_setting.model_dump()
 
         # Return default if no feature_job_setting is provided.
         default_setting = self.view.default_feature_job_setting
@@ -190,37 +211,55 @@ class WindowAggregator(BaseAggregator):
                 f"feature_job_setting is required as the {type(self.view).__name__} does not "
                 "have a default feature job setting"
             )
-        return cast(FeatureJobSetting, default_setting)
+        return default_setting.model_dump()  # type: ignore[no-any-return]
 
     def _prepare_node_parameters(
         self,
         value_column: Optional[str],
         method: Optional[str],
-        windows: Optional[list[Optional[str]]],
-        offset: Optional[str],
+        windows: Optional[list[Optional[str] | FeatureWindow]],
+        offset: Optional[str | FeatureWindow],
         feature_names: Optional[list[str]],
         timestamp_column: Optional[str] = None,
         value_by_column: Optional[str] = None,
-        feature_job_setting: Optional[FeatureJobSetting] = None,
+        feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting] = None,
     ) -> dict[str, Any]:
-        parsed_feature_job_setting = self._get_job_setting_params(feature_job_setting)
-        tile_id_version = int(os.environ.get("FEATUREBYTE_TILE_ID_VERSION", "2"))
-        return {
+        feature_job_setting_dict = self._get_job_setting_params(feature_job_setting)
+        params: dict[str, Any] = {
             "keys": self.keys,
             "parent": value_column,
             "agg_func": method,
             "value_by": value_by_column,
             "windows": windows,
             "offset": offset,
-            "timestamp": timestamp_column or self.view.timestamp_column,
-            "feature_job_setting": parsed_feature_job_setting.model_dump(),
+            "feature_job_setting": feature_job_setting_dict,
             "names": feature_names,
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
-            "tile_id_version": tile_id_version,
         }
+        if self.is_time_series_aggregation:
+            assert isinstance(self.view, TimeSeriesView)
+            params.update({
+                "reference_datetime_column": self.view.reference_datetime_column,
+                "reference_datetime_schema": self.view.reference_datetime_schema.model_dump(),
+                "time_interval": self.view.time_interval.model_dump(),
+            })
+        else:
+            tile_id_version = int(os.environ.get("FEATUREBYTE_TILE_ID_VERSION", "2"))
+            params.update({
+                "timestamp": timestamp_column or self.view.timestamp_column,
+                "tile_id_version": tile_id_version,
+            })
+        return params
 
     def _add_aggregation_node(self, agg_func: AggFunc, node_params: dict[str, Any]) -> Node:
+        if self.is_time_series_aggregation:
+            return self.view.graph.add_operation(
+                node_type=NodeType.TIME_SERIES_WINDOW_AGGREGATE,
+                node_params=node_params,
+                node_output_type=NodeOutputType.FRAME,
+                input_nodes=[self.view.node],
+            )
         if agg_func == AggFunc.COUNT_DISTINCT:
             return self.view.graph.add_operation(
                 node_type=NodeType.NON_TILE_WINDOW_AGGREGATE,

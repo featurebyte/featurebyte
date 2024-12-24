@@ -245,6 +245,7 @@ class ClassEnum(Enum):
     # others
     COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")
     FEATURE_JOB_SETTING = ("featurebyte", "FeatureJobSetting")
+    CRON_FEATURE_JOB_SETTING = ("featurebyte", "CronFeatureJobSetting")
     TO_TIMEDELTA = ("featurebyte", "to_timedelta")
     COLUMN_CLEANING_OPERATION = ("featurebyte", "ColumnCleaningOperation")
     REQUEST_COLUMN = ("featurebyte.api.request_column", "RequestColumn")
@@ -252,6 +253,7 @@ class ClassEnum(Enum):
     HAVERSINE = ("featurebyte", "haversine")
     TIMESTAMP_SCHEMA = ("featurebyte", "TimestampSchema")
     TIME_INTERVAL = ("featurebyte", "TimeInterval")
+    FEATURE_WINDOW = ("featurebyte", "FeatureWindow")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any

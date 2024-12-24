@@ -1575,6 +1575,14 @@ def snowflake_scd_view_with_entity_fixture(snowflake_scd_table_with_entity):
     return snowflake_scd_table_with_entity.get_view()
 
 
+@pytest.fixture(name="snowflake_time_series_view_with_entity")
+def snowflake_time_series_view_with_entity_fixture(snowflake_time_series_table_with_entity):
+    """
+    Snowflake time series view with entity
+    """
+    return snowflake_time_series_table_with_entity.get_view()
+
+
 @pytest.fixture(name="freeze_time_observation_table_task")
 def freeze_time_observation_table_task_fixture():
     """
