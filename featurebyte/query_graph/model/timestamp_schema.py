@@ -21,7 +21,6 @@ class TimeZoneColumn(FeatureByteBaseModel):
 
     column_name: str
     type: Literal["offset", "timezone"]
-    format_string: Optional[str] = None
 
 
 TimeZoneUnion = Union[TimeZoneName, TimeZoneColumn]

@@ -496,3 +496,18 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
         # check deleted table
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.NOT_FOUND, response.json()
+
+    def test_create_with_unsupported_reference_timestamp_schema(self, test_api_client_persistent):
+        """
+        Test create with unsupported reference timestamp schema
+        """
+        test_api_client, _ = test_api_client_persistent
+        payload = self.payload.copy()
+        payload["reference_datetime_schema"]["format_string"] = "YYYY-MM-DD HH:MM:SS TZH:TZM"
+        response = test_api_client.post(self.base_route, json=payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        response_json = response.json()
+        assert (
+            response_json["detail"]
+            == "Timezone information in time series table reference datetime column is not supported."
+        )
