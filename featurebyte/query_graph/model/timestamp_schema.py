@@ -24,6 +24,9 @@ class TimeZoneColumn(FeatureByteBaseModel):
     format_string: Optional[str] = None
 
 
+TimeZoneUnion = Union[TimeZoneName, TimeZoneColumn]
+
+
 class TimestampSchema(FeatureByteBaseModel):
     """
     Schema for a timestamp column. To be embedded within a ColumnSpec
@@ -44,7 +47,7 @@ class TimestampSchema(FeatureByteBaseModel):
 
     format_string: Optional[str] = None
     is_utc_time: Optional[bool] = None
-    timezone: Optional[Union[TimeZoneName, TimeZoneColumn]] = None
+    timezone: Optional[TimeZoneUnion] = None
 
     @model_validator(mode="after")
     def _validate_settings(self) -> "TimestampSchema":

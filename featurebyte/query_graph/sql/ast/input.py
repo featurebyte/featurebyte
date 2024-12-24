@@ -13,7 +13,11 @@ from sqlglot.expressions import Expression, Select
 
 from featurebyte.enum import DBVarType, InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
+from featurebyte.query_graph.model.timestamp_schema import (
+    TimestampSchema,
+    TimeZoneColumn,
+    TimeZoneUnion,
+)
 from featurebyte.query_graph.node.input import SampleParameters
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.query_graph.sql.adapter import BaseAdapter
@@ -21,6 +25,40 @@ from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
+
+
+def convert_timezone_to_utc(
+    timezone_obj: TimeZoneUnion, adapter: BaseAdapter, column_expr: Expression
+) -> Expression:
+    """
+    Convert timestamp column to UTC
+
+    Parameters
+    ----------
+    timezone_obj: TimeZoneUnion
+        Timezone information
+    adapter: BaseAdapter
+        SQL adapter
+    column_expr: Expression
+        Column expression
+
+
+    Returns
+    -------
+    Expression
+    """
+    timezone_type: Literal["offset", "name"]
+    if isinstance(timezone_obj, TimeZoneName):
+        timezone = make_literal_value(timezone_obj)
+        timezone_type = "name"
+    else:
+        assert isinstance(timezone_obj, TimeZoneColumn)
+        timezone = quoted_identifier(timezone_obj.column_name)
+        if timezone_obj.type == "offset":
+            timezone_type = "offset"
+        else:
+            timezone_type = "name"
+    return adapter.convert_timezone_to_utc(column_expr, timezone, timezone_type)
 
 
 @dataclass
@@ -224,17 +262,9 @@ class InputNode(TableNode):
 
         # Convert to timestamp in UTC
         if timestamp_schema.timezone is not None:
-            timezone_type: Literal["offset", "name"]
-            if isinstance(timestamp_schema.timezone, TimeZoneName):
-                timezone = make_literal_value(timestamp_schema.timezone)
-                timezone_type = "name"
-            else:
-                assert isinstance(timestamp_schema.timezone, TimeZoneColumn)
-                timezone = quoted_identifier(timestamp_schema.timezone.column_name)
-                if timestamp_schema.timezone.type == "offset":
-                    timezone_type = "offset"
-                else:
-                    timezone_type = "name"
-            column_expr = adapter.convert_timezone_to_utc(column_expr, timezone, timezone_type)
-
+            column_expr = convert_timezone_to_utc(
+                timezone_obj=timestamp_schema.timezone,
+                adapter=adapter,
+                column_expr=column_expr,
+            )
         return column_expr
