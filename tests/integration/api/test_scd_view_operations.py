@@ -891,7 +891,7 @@ def test_timestamp_schema_validation(
         "updated_at": response_dict["validation"]["updated_at"],
     }
     assert (
-        "Timestamp column 'Effective Timestamp' has invalid format string 'kkk'."
+        "Timestamp column 'Effective Timestamp' has invalid format string (kkk)."
         in response_dict["validation"]["validation_message"]
     )
 
@@ -992,7 +992,7 @@ def test_timestamp_schema_validation(
         "updated_at": response_dict["validation"]["updated_at"],
     }
     assert (
-        "Timestamp column 'effective_timestamp' has invalid timezone 'column_name='invalid_timezone_offset' type='offset' format_string=None'."
+        "Timestamp column 'effective_timestamp' has invalid timezone (column_name='invalid_timezone_offset' type='offset')."
         in response_dict["validation"]["validation_message"]
     )
     scd_table.delete()
