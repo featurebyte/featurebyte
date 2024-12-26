@@ -143,7 +143,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             await session.execute_query_long_running(query)
         except Exception as exc:
             raise TableValidationError(
-                f"Timestamp column '{col_info.name}' has invalid format string '{timestamp_schema.format_string}'. "
+                f"Timestamp column '{col_info.name}' has invalid format string ({timestamp_schema.format_string}). "
                 f"Error: {str(exc)}"
             )
 
@@ -168,7 +168,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                 await session.execute_query_long_running(query)
             except Exception as exc:
                 raise TableValidationError(
-                    f"Timestamp column '{col_info.name}' has invalid timezone '{timestamp_schema.timezone}'. "
+                    f"Timestamp column '{col_info.name}' has invalid timezone ({timestamp_schema.timezone}). "
                     f"Error: {str(exc)}"
                 )
 
