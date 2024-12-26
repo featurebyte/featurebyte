@@ -341,6 +341,9 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
 
         return self
 
+    def __hash__(self) -> int:
+        return hash(f"{self.crontab}_{self.timezone}")
+
 
 def feature_job_setting_discriminator(value: Any) -> Literal["interval", "cron"]:
     """
