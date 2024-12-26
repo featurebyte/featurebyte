@@ -17,7 +17,9 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.generic import GroupByNodeParameters
@@ -57,7 +59,7 @@ class OfflineStoreInfoInitializationService:
     async def offline_store_feature_table_creator(
         self,
         primary_entity_ids: Sequence[ObjectId],
-        feature_job_setting: Optional[FeatureJobSetting],
+        feature_job_setting: Optional[FeatureJobSettingUnion],
         has_ttl: bool,
         catalog_id: ObjectId,
         table_name_prefix: str,

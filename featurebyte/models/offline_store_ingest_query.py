@@ -105,7 +105,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # whether the offline store ingest query graph has time-to-live (TTL) component
     primary_entity_ids: List[PydanticObjectId]
     primary_entity_dtypes: List[DBVarType]
-    feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    feature_job_setting: Optional[FeatureJobSettingUnion] = Field(default=None)
     has_ttl: bool
 
     # pydantic validators

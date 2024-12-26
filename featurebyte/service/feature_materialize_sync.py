@@ -19,7 +19,10 @@ from featurebyte.models.feature_materialize_prerequisite import (
 )
 from featurebyte.models.feature_materialize_run import FeatureMaterializeRun, IncompleteTileTask
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
+    FeatureJobSettingUnion,
+)
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
@@ -158,6 +161,11 @@ class FeatureMaterializeSyncService:
         ----------
         offline_store_feature_table_id: ObjectId
             Offline store feature table id
+
+        Raises
+        ------
+        NotImplementedError
+            If the feature job setting type is not supported
         """
         feature_table = await self.offline_store_feature_table_service.get_document(
             offline_store_feature_table_id
@@ -183,6 +191,12 @@ class FeatureMaterializeSyncService:
 
         feature_job_setting = feature_table.feature_job_setting
         assert feature_job_setting is not None
+
+        if not isinstance(feature_job_setting, FeatureJobSetting):
+            # DEV-3924: this method should be implemented for cron feature job setting
+            raise NotImplementedError(
+                f"Feature job setting type {type(feature_job_setting)} is not supported"
+            )
 
         tic = prerequisite.scheduled_job_ts.timestamp()
         prerequisite_met = False
@@ -298,10 +312,16 @@ class FeatureMaterializeSyncService:
     def _get_scheduled_job_ts_from_datetime(
         cls,
         input_dt: datetime,
-        feature_job_setting: FeatureJobSetting,
+        feature_job_setting: FeatureJobSettingUnion,
     ) -> datetime:
-        return get_current_job_datetime(
-            input_dt=input_dt,
-            frequency_minutes=feature_job_setting.period_seconds // 60,
-            time_modulo_frequency_seconds=feature_job_setting.offset_seconds,
+        if isinstance(feature_job_setting, FeatureJobSetting):
+            return get_current_job_datetime(
+                input_dt=input_dt,
+                frequency_minutes=feature_job_setting.period_seconds // 60,
+                time_modulo_frequency_seconds=feature_job_setting.offset_seconds,
+            )
+
+        # DEV-3924: this method should be implemented for cron feature job setting
+        raise NotImplementedError(
+            f"Feature job setting type {type(feature_job_setting)} is not supported"
         )

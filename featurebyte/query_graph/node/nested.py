@@ -29,7 +29,10 @@ from featurebyte.query_graph.enum import (
     NodeOutputType,
     NodeType,
 )
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.metadata.config import (
@@ -173,7 +176,7 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     """
 
     aggregation_nodes_info: List[AggregationNodeInfo]
-    feature_job_setting: Optional[FeatureJobSetting]
+    feature_job_setting: Optional[FeatureJobSettingUnion]
     has_ttl: bool
     offline_store_table_name: str
     output_dtype: DBVarType
@@ -791,7 +794,7 @@ class BaseGraphNode(BasePrunableNode):
             ttl_handling_column = column_name
             config_for_ttl = config
             assert self.parameters.feature_job_setting is not None
-            ttl_seconds = 2 * self.parameters.feature_job_setting.period_seconds
+            ttl_seconds = self.parameters.feature_job_setting.extract_ttl_seconds()
 
         return self._derive_on_demand_view_or_user_defined_function_helper(
             var_name_generator=var_name_generator,

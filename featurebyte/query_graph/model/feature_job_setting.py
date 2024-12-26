@@ -10,12 +10,51 @@ from pydantic_extra_types.timezone_name import TimeZoneName
 from typing_extensions import Annotated, Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
+from featurebyte.common.model_util import (
+    convert_seconds_to_time_format,
+    parse_duration_string,
+    validate_job_setting_parameters,
+)
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.periodic_task import Crontab
 
 
-class FeatureJobSetting(FeatureByteBaseModel):
+class BaseFeatureJobSetting(FeatureByteBaseModel):
+    """
+    Base Feature Job Setting class
+    """
+
+    def extract_offline_store_feature_table_name_postfix(self, max_length: int) -> str:
+        """
+        Extract offline store feature table name postfix
+
+        Parameters
+        ----------
+        max_length: int
+            Maximum length of the postfix
+
+        Raises
+        ------
+        NotImplementedError
+            If method not implemented
+        """
+        # DEV-3924: this method should be implemented for cron feature job setting
+        raise NotImplementedError("Method not implemented")
+
+    def extract_ttl_seconds(self) -> int:
+        """
+        Extract TTL in seconds
+
+        Raises
+        ------
+        NotImplementedError
+            If method not implemented
+        """
+        # DEV-3924: this method should be implemented for cron feature job setting
+        raise NotImplementedError("Method not implemented")
+
+
+class FeatureJobSetting(BaseFeatureJobSetting):
     """
     FeatureJobSetting class is used to declare the Feature Job Setting.
 
@@ -196,16 +235,31 @@ class FeatureJobSetting(FeatureByteBaseModel):
             execution_buffer=f"{fjs['execution_buffer']}s",
         )
 
+    def extract_offline_store_feature_table_name_postfix(self, max_length: int) -> str:
+        # take the frequency part of the feature job setting
+        postfix = ""
+        for component in reversed(range(1, 5)):
+            postfix = convert_seconds_to_time_format(self.period_seconds, components=component)
+            if len(postfix) <= max_length:
+                break
+        return postfix
+
+    def extract_ttl_seconds(self) -> int:
+        ttl_seconds = 2 * self.period_seconds
+        return ttl_seconds
+
     def __hash__(self) -> int:
         return hash(f"{self.period_seconds}_{self.offset_seconds}_{self.blind_spot_seconds}")
 
     def __eq__(self, other: object) -> bool:
+        if isinstance(other, CronFeatureJobSetting):
+            return False
         if not isinstance(other, FeatureJobSetting):
             return NotImplemented
         return self.to_seconds() == other.to_seconds()
 
 
-class CronFeatureJobSetting(FeatureByteBaseModel):
+class CronFeatureJobSetting(BaseFeatureJobSetting):
     """
     CronFeatureJobSetting class is used to declare a cron-based Feature Job Setting.
 
