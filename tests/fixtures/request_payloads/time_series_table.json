@@ -45,7 +45,13 @@
         {
             "description": "Date column",
             "dtype": "VARCHAR",
-            "dtype_metadata": null,
+            "dtype_metadata": {
+                "timestamp_schema": {
+                    "format_string": "YYYY-MM-DD HH24:MI:SS",
+                    "is_utc_time": null,
+                    "timezone": "Etc/UTC"
+                }
+            },
             "name": "date"
         },
         {
@@ -67,7 +73,7 @@
     "record_creation_timestamp_column": "created_at",
     "reference_datetime_column": "date",
     "reference_datetime_schema": {
-        "format_string": null,
+        "format_string": "YYYY-MM-DD HH24:MI:SS",
         "is_utc_time": null,
         "timezone": "Etc/UTC"
     },

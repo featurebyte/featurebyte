@@ -23,5 +23,6 @@ class TableValidationTaskPayload(BaseTaskPayload):
         TableDataType.ITEM_TABLE,
         TableDataType.DIMENSION_TABLE,
         TableDataType.SCD_TABLE,
+        TableDataType.TIME_SERIES_TABLE,
     ]
     table_id: PydanticObjectId

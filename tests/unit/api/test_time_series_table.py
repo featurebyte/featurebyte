@@ -43,6 +43,11 @@ from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
 @pytest.fixture(name="time_series_table_dict")
 def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id):
     """TimeSeriesTable in serialized dictionary format"""
+    ts_schema = {
+        "format_string": "YYYY-MM-DD HH24:MI:SS",
+        "timezone": "Etc/UTC",
+        "is_utc_time": None,
+    }
     return {
         "type": "time_series_table",
         "name": "sf_time_series_table",
@@ -117,7 +122,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": "Date column",
-                "dtype_metadata": None,
+                "dtype_metadata": {"timestamp_schema": ts_schema},
             },
             {
                 "entity_id": None,
@@ -140,11 +145,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
         ],
         "series_id_column": "col_int",
         "reference_datetime_column": "date",
-        "reference_datetime_schema": {
-            "format_string": None,
-            "timezone": "Etc/UTC",
-            "is_utc_time": None,
-        },
+        "reference_datetime_schema": ts_schema,
         "time_interval": {"unit": "DAY", "value": 1},
         "record_creation_timestamp_column": "created_at",
         "default_feature_job_setting": None,
@@ -167,7 +168,9 @@ def test_create_time_series_table(
         name="sf_time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         description="Some description",
@@ -199,7 +202,9 @@ def test_create_time_series_table(
             name=123,
             series_id_column="col_int",
             reference_datetime_column=234,
-            reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+            ),
             time_interval=TimeInterval(value=1, unit="DAY"),
             record_creation_timestamp_column=345,
         )
@@ -218,7 +223,9 @@ def test_create_time_series_table__duplicated_record(
             name="sf_time_series_table",
             series_id_column="col_int",
             reference_datetime_column="date",
-            reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+            ),
             time_interval=TimeInterval(value=1, unit="DAY"),
             record_creation_timestamp_column="created_at",
         )
@@ -238,7 +245,9 @@ def test_create_time_series_table__retrieval_exception(snowflake_database_time_s
                 name="sf_time_series_table",
                 series_id_column="col_int",
                 reference_datetime_column="date",
-                reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+                reference_datetime_schema=TimestampSchema(
+                    format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+                ),
                 time_interval=TimeInterval(value=1, unit="DAY"),
                 record_creation_timestamp_column="created_at",
             )
@@ -354,7 +363,9 @@ def test_info__time_series_table_without_record_creation_date(
         name="sf_time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
     )
 
@@ -504,7 +515,9 @@ def test_time_series_table__record_creation_exception(
                 name="sf_time_series_table",
                 series_id_column="col_int",
                 reference_datetime_column="date",
-                reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+                reference_datetime_schema=TimestampSchema(
+                    format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+                ),
                 time_interval=TimeInterval(value=1, unit="DAY"),
                 record_creation_timestamp_column="created_at",
                 _id=snowflake_time_series_table_id,
@@ -590,7 +603,9 @@ def test_update_record_creation_timestamp_column__unsaved_object(
         name="time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
     )
     assert time_series_table.record_creation_timestamp_column is None
@@ -981,7 +996,9 @@ def test_timezone__valid(snowflake_database_time_series_table, catalog):
         name="sf_time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=None, timezone="Asia/Singapore"),
+        reference_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Asia/Singapore"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
     )
     assert time_series_table.reference_datetime_schema.timezone == "Asia/Singapore"
@@ -999,7 +1016,9 @@ def test_timezone__invalid(snowflake_database_time_series_table, catalog):
             name="sf_time_series_table",
             series_id_column="col_int",
             reference_datetime_column="date",
-            reference_datetime_schema=TimestampSchema(format_string=None, timezone="Space/Time"),
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Space/Time"
+            ),
             time_interval=TimeInterval(value=1, unit="DAY"),
         )
     assert "Invalid timezone name." in str(exc.value)
@@ -1013,11 +1032,10 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
         series_id_column="col_int",
         reference_datetime_column="date",
         reference_datetime_schema=TimestampSchema(
-            format_string=None,
+            format_string="YYYY-MM-DD HH24:MI:SS",
             timezone=TimeZoneColumn(
                 column_name="col_text",
                 type="offset",
-                format_string="TZH:TZM",
             ),
         ),
         time_interval=TimeInterval(value=1, unit="DAY"),
@@ -1026,6 +1044,18 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
 
     input_node_params = time_series_table.frame.node.parameters
     assert input_node_params.reference_datetime_schema.timezone.column_name == "col_text"
+
+    # check tagged semantic
+    column_semantic_map = {}
+    for col_info in time_series_table.info(verbose=True)["columns_info"]:
+        if col_info["semantic"]:
+            column_semantic_map[col_info["name"]] = col_info["semantic"]
+
+    assert column_semantic_map == {
+        "col_int": "series_id",
+        "date": "time_series_date_time",
+        "col_text": "time_zone",
+    }
 
 
 def test_timezone_offset__invalid_column(snowflake_database_time_series_table, catalog):
@@ -1037,7 +1067,7 @@ def test_timezone_offset__invalid_column(snowflake_database_time_series_table, c
             series_id_column="col_int",
             reference_datetime_column="date",
             reference_datetime_schema=TimestampSchema(
-                format_string=None,
+                format_string="YYYY-MM-DD HH24:MI:SS",
                 timezone=TimeZoneColumn(
                     column_name="col_float",
                     type="offset",
@@ -1141,7 +1171,9 @@ def test_create_time_series_table_without_series_id_column(
         name="sf_time_series_table",
         series_id_column=None,
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         description="Some description",
