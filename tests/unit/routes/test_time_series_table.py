@@ -120,7 +120,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
             "series_id_column": "series_id",
             "reference_datetime_column": "date",
             "reference_datetime_schema": {
-                "format_string": None,
+                "format_string": "YYYY-MM-DD HH24:MI:SS",
                 "timezone": "Etc/UTC",
                 "is_utc_time": None,
             },
@@ -384,7 +384,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
             "series_id_column": "col_int",
             "reference_datetime_column": "date",
             "reference_datetime_schema": {
-                "format_string": None,
+                "format_string": "YYYY-MM-DD HH24:MI:SS",
                 "timezone": "Etc/UTC",
                 "is_utc_time": None,
             },

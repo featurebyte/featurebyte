@@ -1315,7 +1315,9 @@ def snowflake_time_series_table_fixture(
         name="sf_time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         description="test time series table",
