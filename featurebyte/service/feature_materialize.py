@@ -741,6 +741,8 @@ class FeatureMaterializeService:
                 current_feature_table,
                 materialized_features,
             ) in materialized_features_set.iterate_materialized_features():
+                if not materialized_features.column_names:
+                    continue
                 await self._initialize_new_columns_offline_and_online(
                     session=session,
                     current_feature_table=current_feature_table,
