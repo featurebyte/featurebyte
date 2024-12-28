@@ -79,7 +79,7 @@ from tests.unit.conftest_config import (
     config_fixture,
     mock_config_path_env_fixture,
 )
-from tests.util.helper import inject_request_side_effect
+from tests.util.helper import inject_request_side_effect, safe_freeze_time
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
@@ -1581,9 +1581,7 @@ def freeze_time_observation_table_task_fixture():
     Freeze time for ObservationTableTask due to freezegun not working well with pydantic in some
     cases (in this case, apparently only the ObservationTableTask)
     """
-    frozen_datetime = "2011-03-08T15:37:00"
-    with patch("featurebyte.worker.task.observation_table.datetime") as mock_datetime:
-        mock_datetime.utcnow.return_value = pd.Timestamp(frozen_datetime).to_pydatetime()
+    with safe_freeze_time("2011-03-08T15:37:00"):
         yield
 
 

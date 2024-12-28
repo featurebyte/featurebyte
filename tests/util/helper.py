@@ -1089,8 +1089,9 @@ def safe_freeze_time(frozen_datetime):
     Freeze time workaround due to freezegun not working well with pydantic in some cases
     """
     mod_lists = [
-        "featurebyte.service.feature_materialize.datetime",
         "featurebyte.common.model_util.datetime",
+        "featurebyte.service.feature_materialize.datetime",
+        "featurebyte.worker.task.observation_table.datetime",
     ]
     with ExitStack() as stack:
         for mod in mod_lists:
