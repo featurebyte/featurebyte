@@ -2,6 +2,7 @@
 Test FeatureMaterializeService
 """
 
+from contextlib import contextmanager
 from dataclasses import asdict
 from datetime import datetime
 from unittest.mock import Mock, call, patch
@@ -10,7 +11,6 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 from bson import ObjectId
-from freezegun import freeze_time
 
 from featurebyte.common.model_util import get_version
 from featurebyte.models.feature_materialize_run import FeatureMaterializeRun
@@ -26,6 +26,30 @@ from tests.util.helper import (
     extract_session_executed_queries,
     get_relationship_info,
 )
+
+
+@contextmanager
+def safe_freeze_time_for_mod(target_mod, frozen_datetime):
+    """
+    Freeze time workaround due to freezegun not working well with pydantic in some cases
+    """
+    with patch(target_mod) as patched_datetime:
+        datetime_obj = pd.Timestamp(frozen_datetime).to_pydatetime()
+        patched_datetime.utcnow.return_value = datetime_obj
+        patched_datetime.today.return_value = datetime_obj.date()
+        yield
+
+
+@contextmanager
+def safe_freeze_time(frozen_datetime):
+    """
+    Freeze time workaround due to freezegun not working well with pydantic in some cases
+    """
+    with safe_freeze_time_for_mod(
+        "featurebyte.service.feature_materialize.datetime", frozen_datetime
+    ):
+        with safe_freeze_time_for_mod("featurebyte.common.model_util.datetime", frozen_datetime):
+            yield
 
 
 @pytest.fixture(name="mock_get_feature_store_session")
@@ -280,7 +304,7 @@ def freeze_feature_timestamp_fixture():
     """
     Patch ObjectId to return a fixed value so that queries are deterministic
     """
-    with freeze_time("2022-01-01 00:00:00"):
+    with safe_freeze_time("2022-01-01 00:00:00"):
         yield
 
 
@@ -448,7 +472,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
         )
     ]
 
-    with freeze_time("2022-01-02 00:00:00"):
+    with safe_freeze_time("2022-01-02 00:00:00"):
         await feature_materialize_service.scheduled_materialize_features(
             offline_store_feature_table
         )
@@ -513,7 +537,7 @@ async def test_scheduled_materialize_features_batch_columns(
         )
     ]
 
-    with freeze_time("2022-01-02 00:00:00"):
+    with safe_freeze_time("2022-01-02 00:00:00"):
         with patch("featurebyte.service.feature_materialize.NUM_COLUMNS_PER_MATERIALIZE", 1):
             await feature_materialize_service.scheduled_materialize_features(
                 offline_store_feature_table_with_precomputed_lookup
@@ -1137,7 +1161,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
         await service.update_document(document_id=table.id, data=update_schema)
 
     # Run scheduled materialize at a later date
-    with freeze_time(datetime(2022, 1, 6)):
+    with safe_freeze_time(datetime(2022, 1, 6)):
         await feature_materialize_service.scheduled_materialize_features(
             feature_table_model=offline_store_feature_table_with_precomputed_lookup,
         )
@@ -1194,7 +1218,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features_
         await service.update_document(document_id=table.id, data=update_schema)
 
     # Run scheduled materialize at a later date
-    with freeze_time(datetime(2022, 1, 6)):
+    with safe_freeze_time(datetime(2022, 1, 6)):
         await feature_materialize_service.scheduled_materialize_features(
             feature_table_model=offline_store_feature_table_with_precomputed_lookup,
         )
