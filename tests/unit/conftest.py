@@ -884,9 +884,28 @@ def snowflake_feature_store_params():
     }
 
 
+@pytest.fixture(name="patched_to_thread")
+def patched_to_thread_fixture():
+    """
+    Patch to_thread function to run the function synchronously in session manager to avoid tests
+    hanging due to asyncio
+    """
+
+    def _patched_to_thread(func, timeout, error_handler, *args, **kwargs):
+        _ = timeout
+        _ = error_handler
+        return func(*args, **kwargs)
+
+    with patch("featurebyte.service.session_manager.to_thread", side_effect=_patched_to_thread):
+        yield
+
+
 @pytest.fixture(name="snowflake_feature_store")
 def snowflake_feature_store(
-    snowflake_feature_store_params, snowflake_execute_query, snowflake_feature_store_id
+    snowflake_feature_store_params,
+    snowflake_execute_query,
+    snowflake_feature_store_id,
+    patched_to_thread,
 ):
     """
     Snowflake database source fixture
