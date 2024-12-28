@@ -2,7 +2,6 @@
 Test FeatureMaterializeService
 """
 
-from contextlib import contextmanager
 from dataclasses import asdict
 from datetime import datetime
 from unittest.mock import Mock, call, patch
@@ -25,31 +24,8 @@ from tests.util.helper import (
     deploy_feature_ids,
     extract_session_executed_queries,
     get_relationship_info,
+    safe_freeze_time,
 )
-
-
-@contextmanager
-def safe_freeze_time_for_mod(target_mod, frozen_datetime):
-    """
-    Freeze time workaround due to freezegun not working well with pydantic in some cases
-    """
-    with patch(target_mod) as patched_datetime:
-        datetime_obj = pd.Timestamp(frozen_datetime).to_pydatetime()
-        patched_datetime.utcnow.return_value = datetime_obj
-        patched_datetime.today.return_value = datetime_obj.date()
-        yield
-
-
-@contextmanager
-def safe_freeze_time(frozen_datetime):
-    """
-    Freeze time workaround due to freezegun not working well with pydantic in some cases
-    """
-    with safe_freeze_time_for_mod(
-        "featurebyte.service.feature_materialize.datetime", frozen_datetime
-    ):
-        with safe_freeze_time_for_mod("featurebyte.common.model_util.datetime", frozen_datetime):
-            yield
 
 
 @pytest.fixture(name="mock_get_feature_store_session")

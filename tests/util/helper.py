@@ -11,10 +11,10 @@ import re
 import sys
 import tempfile
 import textwrap
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import ExitStack, asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Generator
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -1069,3 +1069,30 @@ def get_sql_adapter_from_source_type(source_type):
     return get_sql_adapter(
         SourceInfo(source_type=source_type, database_name="my_db", schema_name="my_schema")
     )
+
+
+@contextmanager
+def safe_freeze_time_for_mod(target_mod, frozen_datetime):
+    """
+    Manually patch datetime for a specific module without freezegun
+    """
+    with patch(target_mod) as patched_datetime:
+        datetime_obj = pd.Timestamp(frozen_datetime).to_pydatetime()
+        patched_datetime.utcnow.return_value = datetime_obj
+        patched_datetime.today.return_value = datetime_obj.date()
+        yield
+
+
+@contextmanager
+def safe_freeze_time(frozen_datetime):
+    """
+    Freeze time workaround due to freezegun not working well with pydantic in some cases
+    """
+    mod_lists = [
+        "featurebyte.service.feature_materialize.datetime",
+        "featurebyte.common.model_util.datetime",
+    ]
+    with ExitStack() as stack:
+        for mod in mod_lists:
+            stack.enter_context(safe_freeze_time_for_mod(mod, frozen_datetime))
+        yield
