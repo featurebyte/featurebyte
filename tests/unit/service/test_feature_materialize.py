@@ -10,7 +10,6 @@ import pandas as pd
 import pytest
 import pytest_asyncio
 from bson import ObjectId
-from freezegun import freeze_time
 
 from featurebyte.common.model_util import get_version
 from featurebyte.models.feature_materialize_run import FeatureMaterializeRun
@@ -25,6 +24,7 @@ from tests.util.helper import (
     deploy_feature_ids,
     extract_session_executed_queries,
     get_relationship_info,
+    safe_freeze_time,
 )
 
 
@@ -280,7 +280,7 @@ def freeze_feature_timestamp_fixture():
     """
     Patch ObjectId to return a fixed value so that queries are deterministic
     """
-    with freeze_time("2022-01-01 00:00:00"):
+    with safe_freeze_time("2022-01-01 00:00:00"):
         yield
 
 
@@ -448,7 +448,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
         )
     ]
 
-    with freeze_time("2022-01-02 00:00:00"):
+    with safe_freeze_time("2022-01-02 00:00:00"):
         await feature_materialize_service.scheduled_materialize_features(
             offline_store_feature_table
         )
@@ -513,7 +513,7 @@ async def test_scheduled_materialize_features_batch_columns(
         )
     ]
 
-    with freeze_time("2022-01-02 00:00:00"):
+    with safe_freeze_time("2022-01-02 00:00:00"):
         with patch("featurebyte.service.feature_materialize.NUM_COLUMNS_PER_MATERIALIZE", 1):
             await feature_materialize_service.scheduled_materialize_features(
                 offline_store_feature_table_with_precomputed_lookup
@@ -1137,7 +1137,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features(
         await service.update_document(document_id=table.id, data=update_schema)
 
     # Run scheduled materialize at a later date
-    with freeze_time(datetime(2022, 1, 6)):
+    with safe_freeze_time(datetime(2022, 1, 6)):
         await feature_materialize_service.scheduled_materialize_features(
             feature_table_model=offline_store_feature_table_with_precomputed_lookup,
         )
@@ -1194,7 +1194,7 @@ async def test_precomputed_lookup_feature_table__scheduled_materialize_features_
         await service.update_document(document_id=table.id, data=update_schema)
 
     # Run scheduled materialize at a later date
-    with freeze_time(datetime(2022, 1, 6)):
+    with safe_freeze_time(datetime(2022, 1, 6)):
         await feature_materialize_service.scheduled_materialize_features(
             feature_table_model=offline_store_feature_table_with_precomputed_lookup,
         )
