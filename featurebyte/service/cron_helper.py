@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import datetime
 
 import pandas as pd
+import pytz
 from bson import ObjectId
 from croniter import croniter_range
 from dateutil.relativedelta import relativedelta
@@ -105,9 +106,13 @@ class CronHelper:
         -------
         list[datetime]
         """
-        start = min_point_in_time - MAX_INTERVAL
+        start = pytz.utc.localize(min_point_in_time - MAX_INTERVAL)
+        end = pytz.utc.localize(max_point_in_time)
+        tz = pytz.timezone(cron_feature_job_setting.timezone)
+        start_local = start.astimezone(tz)
+        end_local = end.astimezone(tz)
         return list(
-            croniter_range(start, max_point_in_time, cron_feature_job_setting.get_cron_expression())
+            croniter_range(start_local, end_local, cron_feature_job_setting.get_cron_expression())
         )
 
     @classmethod
@@ -138,8 +143,14 @@ class CronHelper:
         cron_job_schedule = cls._get_cron_job_schedule(
             min_point_in_time, max_point_in_time, cron_feature_job_setting
         )
+        cron_job_schedule_utc = [dt.astimezone(pytz.utc) for dt in cron_job_schedule]
         df_cron_job_schedule = pd.DataFrame({
-            InternalName.CRON_JOB_SCHEDULE_DATETIME: cron_job_schedule
+            InternalName.CRON_JOB_SCHEDULE_DATETIME: [
+                dt.replace(tzinfo=None) for dt in cron_job_schedule
+            ],
+            InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC: [
+                dt.replace(tzinfo=None) for dt in cron_job_schedule_utc
+            ],
         })
         await session.register_table(job_schedule_table_name, df_cron_job_schedule)
 
@@ -178,7 +189,7 @@ class CronHelper:
         )
         right_table = Table(
             expr=quoted_identifier(job_schedule_table_name),
-            timestamp_column=InternalName.CRON_JOB_SCHEDULE_DATETIME,
+            timestamp_column=InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC,
             join_keys=[],
             input_columns=[InternalName.CRON_JOB_SCHEDULE_DATETIME],
             output_columns=[InternalName.CRON_JOB_SCHEDULE_DATETIME],
