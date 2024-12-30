@@ -7,10 +7,11 @@ import datetime
 import time
 
 import pytest
+import pytz
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import DEFAULT_CATALOG_ID
-from featurebyte.models.periodic_task import Interval
+from featurebyte.models.periodic_task import Crontab, Interval
 from featurebyte.models.task import LogMessage, ProgressHistory, Task
 from featurebyte.schema.task import TaskId, TaskStatus
 from featurebyte.schema.worker.task.test import TestIOTaskPayload, TestTaskPayload
@@ -118,6 +119,45 @@ async def test_schedule_interval_task(task_manager, payload):
     # check if task is running
     periodic_task = await task_manager.get_periodic_task(periodic_task_id)
     assert periodic_task.total_run_count > 2
+
+    # delete task
+    await task_manager.delete_periodic_task(periodic_task_id)
+    with pytest.raises(DocumentNotFoundError):
+        await task_manager.get_periodic_task(periodic_task_id)
+
+
+@pytest.mark.parametrize("worker_type", ["cpu"], indirect=True)
+@pytest.mark.parametrize("timezone", [None, "Asia/Singapore"])
+@pytest.mark.asyncio
+async def test_schedule_cron_task(task_manager, payload, timezone):
+    """Test task manager service"""
+    sg_time = datetime.datetime.now(pytz.timezone("Asia/Singapore"))
+    periodic_task_id = await task_manager.schedule_cron_task(
+        name="Run test task for specific hours",
+        payload=payload,
+        crontab=Crontab(
+            minute="*",
+            # specify 2 hours to run the task to ensure it runs at least once in the test
+            # even if the test is run at the end of the hour
+            hour=f"{sg_time.hour}, {sg_time.hour + 1}",
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        ),
+        timezone=timezone,
+    )
+
+    # wait for 1.5 minute
+    await asyncio.sleep(90)
+
+    # check if task is running
+    periodic_task = await task_manager.get_periodic_task(periodic_task_id)
+    if timezone:
+        # if timezone is specified, the task will run in the specified timezone
+        assert periodic_task.total_run_count >= 1
+    else:
+        # if no timezone is specified, the task will run in UTC (expect no run)
+        assert periodic_task.total_run_count == 0
 
     # delete task
     await task_manager.delete_periodic_task(periodic_task_id)
