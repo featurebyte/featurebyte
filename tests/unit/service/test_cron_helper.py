@@ -3,15 +3,25 @@ Tests for cron_helper.py
 """
 
 from datetime import datetime
-from unittest.mock import call
 
+import pandas as pd
 import pytest
 import pytz
 from pandas import Timestamp
 
-from featurebyte import CronFeatureJobSetting
+from featurebyte import CronFeatureJobSetting, Crontab
 from featurebyte.enum import InternalName
-from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.cron import (
+    JobScheduleTable,
+    JobScheduleTableSet,
+    get_request_table_joined_job_schedule_expr,
+)
+from tests.util.helper import (
+    assert_equal_with_expected_fixture,
+    assert_sql_equal,
+    extract_session_executed_queries,
+)
 
 
 @pytest.fixture(name="cron_helper")
@@ -29,7 +39,7 @@ def test_get_cron_schedule(cron_helper):
     feature_job_setting = CronFeatureJobSetting(
         crontab="0 10 * * 1",
     )
-    datetimes = cron_helper._get_cron_job_schedule(
+    datetimes = cron_helper.get_cron_job_schedule(
         min_point_in_time=datetime(2024, 1, 15, 10, 0, 0),
         max_point_in_time=datetime(2024, 2, 15, 10, 0, 0),
         cron_feature_job_setting=feature_job_setting,
@@ -49,23 +59,93 @@ def test_get_cron_schedule(cron_helper):
 
 
 @pytest.mark.asyncio
+async def test_register_job_schedule_tables(cron_helper, mock_snowflake_session):
+    """
+    Test register_job_schedule_tables
+    """
+    cron_feature_job_settings = [
+        CronFeatureJobSetting(crontab="0 10 * * 1"),
+        CronFeatureJobSetting(crontab="30 8 * * *"),
+    ]
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
+        "min": [pd.Timestamp("2024-01-15 10:00:00")],
+        "max": [pd.Timestamp("2024-02-25 10:00:00")],
+    })
+    job_schedule_table_set = await cron_helper.register_job_schedule_tables(
+        session=mock_snowflake_session,
+        request_table_name="request_table",
+        cron_feature_job_settings=cron_feature_job_settings,
+    )
+    assert job_schedule_table_set == JobScheduleTableSet(
+        tables=[
+            JobScheduleTable(
+                table_name="__temp_cron_job_schedule_000000000000000000000000",
+                cron_feature_job_setting=CronFeatureJobSetting(
+                    crontab=Crontab(
+                        minute=0, hour=10, day_of_month="*", month_of_year="*", day_of_week=1
+                    ),
+                    timezone="Etc/UTC",
+                ),
+            ),
+            JobScheduleTable(
+                table_name="__temp_cron_job_schedule_000000000000000000000001",
+                cron_feature_job_setting=CronFeatureJobSetting(
+                    crontab=Crontab(
+                        minute=30, hour=8, day_of_month="*", month_of_year="*", day_of_week="*"
+                    ),
+                    timezone="Etc/UTC",
+                ),
+            ),
+        ]
+    )
+    query = extract_session_executed_queries(mock_snowflake_session)
+    assert_sql_equal(
+        query,
+        """
+        SELECT
+          MIN("POINT_IN_TIME") AS "min",
+          MAX("POINT_IN_TIME") AS "max"
+        FROM "request_table";
+        """,
+    )
+
+
+@pytest.mark.asyncio
 async def test_register_request_table_with_job_schedule(
     cron_helper, mock_snowflake_session, update_fixtures
 ):
     """
     Test register_request_table_with_job_schedule
     """
-    await cron_helper.register_request_table_with_job_schedule(
-        session=mock_snowflake_session,
-        request_table_name="request_table",
-        request_table_columns=["POINT_IN_TIME", "SERIES_ID"],
+    session = mock_snowflake_session
+
+    # Register job schedule table
+    job_schedule_table_name = "__temp_cron_job_schedule_000000000000000000000000"
+    await cron_helper.register_cron_job_schedule(
+        session=session,
+        job_schedule_table_name=job_schedule_table_name,
         min_point_in_time=datetime(2024, 1, 15, 10, 0, 0),
         max_point_in_time=datetime(2024, 2, 15, 10, 0, 0),
         cron_feature_job_setting=CronFeatureJobSetting(
             crontab="0 10 * * 1",
             timezone="Asia/Tokyo",
         ),
-        output_table_name="request_table_cron_schedule_1",
+    )
+
+    # Register a request table joined with schedule table
+    joined_expr = get_request_table_joined_job_schedule_expr(
+        request_table_name="request_table",
+        request_table_columns=["POINT_IN_TIME", "SERIES_ID"],
+        job_schedule_table_name=job_schedule_table_name,
+        adapter=session.adapter,
+    )
+    await session.create_table_as(
+        TableDetails(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+            table_name="request_table_cron_schedule_1",
+        ),
+        joined_expr,
     )
 
     # Check executed queries
@@ -104,14 +184,4 @@ async def test_register_request_table_with_job_schedule(
         Timestamp("2024-01-29 01:00:00"),
         Timestamp("2024-02-05 01:00:00"),
         Timestamp("2024-02-12 01:00:00"),
-    ]
-
-    # Check temporary schedule table dropped
-    assert mock_snowflake_session.drop_table.call_args_list == [
-        call(
-            table_name=f'__temp_cron_job_schedule_{"0" * 24}',
-            schema_name=mock_snowflake_session.schema_name,
-            database_name=mock_snowflake_session.database_name,
-            if_exists=True,
-        )
     ]

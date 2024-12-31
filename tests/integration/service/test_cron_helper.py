@@ -2,6 +2,8 @@
 Integration tests for CronHelper
 """
 
+from datetime import datetime
+
 import pandas as pd
 import pytest
 from bson import ObjectId
@@ -9,8 +11,58 @@ from sqlglot import expressions
 
 from featurebyte import CronFeatureJobSetting
 from featurebyte.enum import InternalName
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
+from featurebyte.query_graph.sql.cron import get_request_table_joined_job_schedule_expr
+from featurebyte.service.cron_helper import CronHelper
+from featurebyte.session.base import BaseSession
 from tests.util.helper import fb_assert_frame_equal
+
+
+async def register_request_table_with_job_schedule(
+    cron_helper: CronHelper,
+    session: BaseSession,
+    request_table_name: str,
+    request_table_columns: list[str],
+    min_point_in_time: datetime,
+    max_point_in_time: datetime,
+    cron_feature_job_setting: CronFeatureJobSetting,
+    output_table_name: str,
+) -> None:
+    """
+    Test helper to register a new request table that has an additional column for the last cron job
+    time corresponding to each point in time
+    """
+    job_schedule_table_name = f"__temp_cron_job_schedule_{ObjectId()}"
+    try:
+        await cron_helper.register_cron_job_schedule(
+            session=session,
+            job_schedule_table_name=job_schedule_table_name,
+            min_point_in_time=min_point_in_time,
+            max_point_in_time=max_point_in_time,
+            cron_feature_job_setting=cron_feature_job_setting,
+        )
+        joined_expr = get_request_table_joined_job_schedule_expr(
+            request_table_name=request_table_name,
+            request_table_columns=request_table_columns,
+            job_schedule_table_name=job_schedule_table_name,
+            adapter=session.adapter,
+        )
+        await session.create_table_as(
+            TableDetails(
+                database_name=session.database_name,
+                schema_name=session.schema_name,
+                table_name=output_table_name,
+            ),
+            joined_expr,
+        )
+    finally:
+        await session.drop_table(
+            table_name=job_schedule_table_name,
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+            if_exists=True,
+        )
 
 
 @pytest.fixture(name="cron_helper")
@@ -41,7 +93,8 @@ async def test_register_request_table_with_job_schedule__utc_tz(
     await session.register_table(request_table_name, df_request_table)
 
     output_table_name = f"output_table_{ObjectId()}"
-    await cron_helper.register_request_table_with_job_schedule(
+    await register_request_table_with_job_schedule(
+        cron_helper=cron_helper,
         session=session,
         request_table_name=request_table_name,
         request_table_columns=["POINT_IN_TIME", "SERIES_ID"],
@@ -89,7 +142,8 @@ async def test_register_request_table_with_job_schedule__non_utc_tz(
     await session.register_table(request_table_name, df_request_table)
 
     output_table_name = f"output_table_{ObjectId()}"
-    await cron_helper.register_request_table_with_job_schedule(
+    await register_request_table_with_job_schedule(
+        cron_helper=cron_helper,
         session=session,
         request_table_name=request_table_name,
         request_table_columns=["POINT_IN_TIME", "SERIES_ID"],
