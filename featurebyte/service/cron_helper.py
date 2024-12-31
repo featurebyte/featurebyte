@@ -11,12 +11,15 @@ import pytz
 from bson import ObjectId
 from croniter import croniter_range
 from dateutil.relativedelta import relativedelta
+from sqlglot import expressions
 
-from featurebyte import CronFeatureJobSetting
 from featurebyte.enum import InternalName, SpecialColumnName
-from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.common import quoted_identifier
-from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
+from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
+from featurebyte.query_graph.sql.cron import (
+    JobScheduleTable,
+    JobScheduleTableSet,
+)
 from featurebyte.session.base import BaseSession
 
 MAX_INTERVAL = relativedelta(months=1)
@@ -28,19 +31,15 @@ class CronHelper:
     """
 
     @classmethod
-    async def register_request_table_with_job_schedule(
+    async def register_job_schedule_tables(
         cls,
         session: BaseSession,
         request_table_name: str,
-        request_table_columns: list[str],
-        min_point_in_time: datetime,
-        max_point_in_time: datetime,
-        cron_feature_job_setting: CronFeatureJobSetting,
-        output_table_name: str,
-    ) -> None:
+        cron_feature_job_settings: list[CronFeatureJobSetting],
+    ) -> JobScheduleTableSet:
         """
-        Register a new request table that has an additional column for the last cron job time
-        corresponding to each point in time
+        Register job schedule tables for the given cron feature job settings. Caller is responsible
+        for dropping the tables after use.
 
         Parameters
         ----------
@@ -48,43 +47,52 @@ class CronHelper:
             Session object
         request_table_name: str
             Request table name
-        request_table_columns: list[str]
-            Request table columns
-        min_point_in_time: datetime
-            Minimum point in time used to determine the range of cron job schedule
-        max_point_in_time: datetime
-            Maximum point in time used to determine the range of cron job schedule
-        cron_feature_job_setting: CronFeatureJobSetting
-            Cron feature job setting to simulate
-        output_table_name: str
-            Output table name of the request table with the cron job schedule
+        cron_feature_job_settings: list[CronFeatureJobSetting]
+            List of cron feature job settings
+
+        Returns
+        -------
+        JobScheduleTableSet
         """
-        job_schedule_table_name = f"__temp_cron_job_schedule_{ObjectId()}"
-        try:
-            await cls._register_cron_job_schedule(
+        point_in_time_min_max_query = expressions.select(
+            expressions.alias_(
+                expressions.Min(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME)),
+                alias="min",
+                quoted=True,
+            ),
+            expressions.alias_(
+                expressions.Max(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME)),
+                alias="max",
+                quoted=True,
+            ),
+        ).from_(
+            quoted_identifier(request_table_name),
+        )
+        point_in_time_stats = await session.execute_query_long_running(
+            sql_to_string(point_in_time_min_max_query, session.source_type)
+        )
+        min_point_in_time = point_in_time_stats["min"].iloc[0]  # type: ignore[index]
+        max_point_in_time = point_in_time_stats["max"].iloc[0]  # type: ignore[index]
+        job_schedule_table_set = JobScheduleTableSet(tables=[])
+        for cron_feature_job_setting in cron_feature_job_settings:
+            job_schedule_table_name = f"__temp_cron_job_schedule_{ObjectId()}"
+            await cls.register_cron_job_schedule(
                 session=session,
                 job_schedule_table_name=job_schedule_table_name,
                 min_point_in_time=min_point_in_time,
                 max_point_in_time=max_point_in_time,
                 cron_feature_job_setting=cron_feature_job_setting,
             )
-            await cls._join_request_table_with_job_schedule(
-                session=session,
-                request_table_name=request_table_name,
-                request_table_columns=request_table_columns,
-                job_schedule_table_name=job_schedule_table_name,
-                output_table_name=output_table_name,
-            )
-        finally:
-            await session.drop_table(
+            job_schedule_table = JobScheduleTable(
                 table_name=job_schedule_table_name,
-                schema_name=session.schema_name,
-                database_name=session.database_name,
-                if_exists=True,
+                cron_feature_job_setting=cron_feature_job_setting,
             )
+            job_schedule_table_set.tables.append(job_schedule_table)
+
+        return job_schedule_table_set
 
     @classmethod
-    def _get_cron_job_schedule(
+    def get_cron_job_schedule(
         cls,
         min_point_in_time: datetime,
         max_point_in_time: datetime,
@@ -116,7 +124,7 @@ class CronHelper:
         )
 
     @classmethod
-    async def _register_cron_job_schedule(
+    async def register_cron_job_schedule(
         cls,
         session: BaseSession,
         job_schedule_table_name: str,
@@ -140,7 +148,7 @@ class CronHelper:
         cron_feature_job_setting: CronFeatureJobSetting
             Cron feature job setting to simulate
         """
-        cron_job_schedule = cls._get_cron_job_schedule(
+        cron_job_schedule = cls.get_cron_job_schedule(
             min_point_in_time, max_point_in_time, cron_feature_job_setting
         )
         cron_job_schedule_utc = [dt.astimezone(pytz.utc) for dt in cron_job_schedule]
@@ -153,59 +161,3 @@ class CronHelper:
             ],
         })
         await session.register_table(job_schedule_table_name, df_cron_job_schedule)
-
-    @classmethod
-    async def _join_request_table_with_job_schedule(
-        cls,
-        session: BaseSession,
-        request_table_name: str,
-        request_table_columns: list[str],
-        job_schedule_table_name: str,
-        output_table_name: str,
-    ) -> None:
-        """
-        Register a new request table by joining each row in the request table to the latest row in
-        the cron job schedule table where the job datetime is before the point in time.
-
-        Parameters
-        ----------
-        session: BaseSession
-            Session object
-        request_table_name: str
-            Request table name
-        request_table_columns: list[str]
-            Request table columns
-        job_schedule_table_name: str
-            Job schedule table name
-        output_table_name: str
-            Output table name of the request table with the cron job schedule
-        """
-        left_table = Table(
-            expr=quoted_identifier(request_table_name),
-            timestamp_column=SpecialColumnName.POINT_IN_TIME,
-            join_keys=[],
-            input_columns=request_table_columns,
-            output_columns=request_table_columns,
-        )
-        right_table = Table(
-            expr=quoted_identifier(job_schedule_table_name),
-            timestamp_column=InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC,
-            join_keys=[],
-            input_columns=[InternalName.CRON_JOB_SCHEDULE_DATETIME],
-            output_columns=[InternalName.CRON_JOB_SCHEDULE_DATETIME],
-        )
-        joined_expr = get_scd_join_expr(
-            left_table=left_table,
-            right_table=right_table,
-            join_type="left",
-            adapter=session.adapter,
-            allow_exact_match=False,
-        )
-        await session.create_table_as(
-            TableDetails(
-                database_name=session.database_name,
-                schema_name=session.schema_name,
-                table_name=output_table_name,
-            ),
-            joined_expr,
-        )
