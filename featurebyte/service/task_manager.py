@@ -10,6 +10,7 @@ from uuid import UUID
 
 from bson import ObjectId
 from celery import Celery
+from pydantic_extra_types.timezone_name import TimeZoneName
 from redis import Redis
 
 from featurebyte.exception import TaskNotFound, TaskNotRerunnableError, TaskNotRevocableError
@@ -270,6 +271,7 @@ class TaskManager:
         time_modulo_frequency_second: Optional[int] = None,
         start_after: Optional[datetime.datetime] = None,
         time_limit: Optional[int] = None,
+        timezone: Optional[TimeZoneName] = None,
     ) -> ObjectId:
         """
         Schedule task to run periodically
@@ -288,6 +290,8 @@ class TaskManager:
             Start after this time
         time_limit: Optional[int]
             Execution time limit in seconds
+        timezone: Optional[TimeZoneName]
+            Timezone used to schedule the task
 
         Returns
         -------
@@ -317,6 +321,7 @@ class TaskManager:
             last_run_at=last_run_at,
             queue=payload.queue,
             soft_time_limit=time_limit,
+            timezone=timezone,
         )
         await self.periodic_task_service.create_document(data=periodic_task)
         return periodic_task.id
@@ -328,6 +333,7 @@ class TaskManager:
         crontab: Crontab,
         start_after: Optional[datetime.datetime] = None,
         time_limit: Optional[int] = None,
+        timezone: Optional[TimeZoneName] = None,
     ) -> ObjectId:
         """
         Schedule task to run on cron setting
@@ -344,6 +350,8 @@ class TaskManager:
             Start after this time
         time_limit: Optional[int]
             Execution time limit in seconds
+        timezone: Optional[TimeZoneName]
+            Timezone used to schedule the task
 
         Returns
         -------
@@ -359,6 +367,7 @@ class TaskManager:
             kwargs=self._get_kwargs_from_task_payload(payload),
             start_after=start_after,
             soft_time_limit=time_limit,
+            timezone=timezone,
         )
         await self.periodic_task_service.create_document(data=periodic_task)
         return periodic_task.id

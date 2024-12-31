@@ -79,7 +79,7 @@ from tests.unit.conftest_config import (
     config_fixture,
     mock_config_path_env_fixture,
 )
-from tests.util.helper import inject_request_side_effect
+from tests.util.helper import inject_request_side_effect, safe_freeze_time
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
@@ -884,9 +884,28 @@ def snowflake_feature_store_params():
     }
 
 
+@pytest.fixture(name="patched_to_thread")
+def patched_to_thread_fixture():
+    """
+    Patch to_thread function to run the function synchronously in session manager to avoid tests
+    hanging due to asyncio
+    """
+
+    def _patched_to_thread(func, timeout, error_handler, *args, **kwargs):
+        _ = timeout
+        _ = error_handler
+        return func(*args, **kwargs)
+
+    with patch("featurebyte.service.session_manager.to_thread", side_effect=_patched_to_thread):
+        yield
+
+
 @pytest.fixture(name="snowflake_feature_store")
 def snowflake_feature_store(
-    snowflake_feature_store_params, snowflake_execute_query, snowflake_feature_store_id
+    snowflake_feature_store_params,
+    snowflake_execute_query,
+    snowflake_feature_store_id,
+    patched_to_thread,
 ):
     """
     Snowflake database source fixture
@@ -1315,7 +1334,9 @@ def snowflake_time_series_table_fixture(
         name="sf_time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         description="test time series table",
@@ -1560,9 +1581,7 @@ def freeze_time_observation_table_task_fixture():
     Freeze time for ObservationTableTask due to freezegun not working well with pydantic in some
     cases (in this case, apparently only the ObservationTableTask)
     """
-    frozen_datetime = "2011-03-08T15:37:00"
-    with patch("featurebyte.worker.task.observation_table.datetime") as mock_datetime:
-        mock_datetime.utcnow.return_value = pd.Timestamp(frozen_datetime).to_pydatetime()
+    with safe_freeze_time("2011-03-08T15:37:00"):
         yield
 
 

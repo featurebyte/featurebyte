@@ -7,6 +7,7 @@ from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
 
 import pymongo
 from pydantic import Field
+from pydantic_extra_types.timezone_name import TimeZoneName
 from pymongo.operations import IndexModel
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -76,6 +77,7 @@ class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
     description: Optional[str] = Field(default=None)
 
     no_changes: Optional[bool] = Field(default=False)
+    timezone: Optional[TimeZoneName] = Field(default=None)
 
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """

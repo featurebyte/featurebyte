@@ -45,7 +45,9 @@ time_series_table = TimeSeriesTable(
     series_id_column="col_int",
     reference_datetime_column="date",
     reference_datetime_schema=TimestampSchema(
-        format_string=None, is_utc_time=None, timezone="Etc/UTC"
+        format_string="YYYY-MM-DD HH24:MI:SS",
+        is_utc_time=None,
+        timezone="Etc/UTC",
     ),
     time_interval=TimeInterval(value=1, unit="DAY"),
     _id=ObjectId("{table_id}"),
