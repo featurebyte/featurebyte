@@ -64,6 +64,27 @@ def get_cron_feature_job_settings(
     return list(cron_feature_job_settings)
 
 
+def get_request_table_with_job_schedule_name(
+    request_table_name: str, feature_job_setting: CronFeatureJobSetting
+) -> str:
+    """
+    Get the name of the request table with the cron job schedule
+
+    Parameters
+    ----------
+    request_table_name: str
+        Request table name
+    feature_job_setting: CronFeatureJobSetting
+        Cron feature job setting to simulate
+
+    Returns
+    -------
+    str
+        Request table name with the cron job schedule
+    """
+    return f"{request_table_name}_{feature_job_setting.get_cron_expression()}_{feature_job_setting.timezone}"
+
+
 def get_request_table_joined_job_schedule_expr(
     request_table_name: str,
     request_table_columns: list[str],

@@ -40,6 +40,26 @@ class Crontab(FeatureByteBaseModel):
     month_of_year: Union[str, int]
     day_of_week: Union[str, int]
 
+    def __hash__(self) -> int:
+        return hash((
+            self.minute,
+            self.hour,
+            self.day_of_month,
+            self.month_of_year,
+            self.day_of_week,
+        ))
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Crontab):
+            return False
+        return (
+            self.minute == other.minute
+            and self.hour == other.hour
+            and self.day_of_month == other.day_of_month
+            and self.month_of_year == other.month_of_year
+            and self.day_of_week == other.day_of_week
+        )
+
 
 class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
     """
