@@ -35,25 +35,6 @@ class JobScheduleTableSet:
 
     tables: list[JobScheduleTable]
 
-    def get_table_name_for_cron_expression(self, cron_expression: str) -> str:
-        """
-        Get the table name for a given cron expression
-
-        Parameters
-        ----------
-        cron_expression: str
-            Cron expression
-
-        Returns
-        -------
-        str
-            Table name for the cron expression
-        """
-        for table in self.tables:
-            if table.cron_feature_job_setting.get_cron_expression() == cron_expression:
-                return table.table_name
-        raise ValueError(f"No table found for cron expression: {cron_expression}")
-
 
 def get_cron_feature_job_settings(
     graph: QueryGraph, nodes: list[Node]
@@ -81,27 +62,6 @@ def get_cron_feature_job_settings(
             cron_feature_job_setting = time_series_agg_node.parameters.feature_job_setting
             cron_feature_job_settings.add(cron_feature_job_setting)
     return list(cron_feature_job_settings)
-
-
-def get_request_table_with_job_schedule_name(
-    request_table_name: str, feature_job_setting: CronFeatureJobSetting
-) -> str:
-    """
-    Get the name of the request table with the cron job schedule
-
-    Parameters
-    ----------
-    request_table_name: str
-        Request table name
-    feature_job_setting: CronFeatureJobSetting
-        Cron feature job setting to simulate
-
-    Returns
-    -------
-    str
-        Request table name with the cron job schedule
-    """
-    return f"{request_table_name}_{feature_job_setting.get_sanitized_cron_expression()}"
 
 
 def get_request_table_joined_job_schedule_expr(
