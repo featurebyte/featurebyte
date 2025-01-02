@@ -32,6 +32,7 @@ from featurebyte.query_graph.sql.batch_helper import (
     split_nodes,
 )
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.sql.cron import JobScheduleTableSet
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.session.base import BaseSession
@@ -258,6 +259,7 @@ def get_historical_features_expr(
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
+    job_schedule_table_set: Optional[JobScheduleTableSet] = None,
 ) -> Tuple[expressions.Select, list[str]]:
     """Construct the SQL code that extracts historical features
 
@@ -279,6 +281,9 @@ def get_historical_features_expr(
         Preparation required for serving parent features
     on_demand_tile_tables: Optional[list[OnDemandTileTable]]
         List of on-demand tile tables if available
+    job_schedule_table_set: Optional[JobScheduleTableSet]
+        Job schedule table set if available. These will be used to compute features that are using
+        a cron-based feature job setting.
 
     Returns
     -------
@@ -292,6 +297,7 @@ def get_historical_features_expr(
         is_online_serving=False,
         parent_serving_preparation=parent_serving_preparation,
         on_demand_tile_tables=on_demand_tile_tables,
+        job_schedule_table_set=job_schedule_table_set,
     )
     plan = planner.generate_plan(nodes)
 
@@ -315,6 +321,7 @@ def get_historical_features_query_set(
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
+    job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
 ) -> FeatureQuerySet:
@@ -342,6 +349,9 @@ def get_historical_features_query_set(
         Preparation required for serving parent features
     on_demand_tile_tables: Optional[list[OnDemandTileTable]]
         List of on-demand tile tables if available
+    job_schedule_table_set: Optional[JobScheduleTableSet]
+        Job schedule table set if available. These will be used to compute features that are using
+        a cron-based feature job setting.
     output_include_row_index: bool
         Whether to include the TABLE_ROW_INDEX column in the output
     progress_message : str
@@ -367,6 +377,7 @@ def get_historical_features_query_set(
             request_table_name=request_table_name,
             parent_serving_preparation=parent_serving_preparation,
             on_demand_tile_tables=on_demand_tile_tables,
+            job_schedule_table_set=job_schedule_table_set,
         )
         output_query = sql_to_string(
             get_sql_adapter(source_info).create_table_as(
@@ -396,6 +407,7 @@ def get_historical_features_query_set(
             request_table_name=request_table_name,
             parent_serving_preparation=parent_serving_preparation,
             on_demand_tile_tables=on_demand_tile_tables,
+            job_schedule_table_set=job_schedule_table_set,
         )
         feature_set_table_name = f"{feature_set_table_name_prefix}_{i}"
         query = sql_to_string(

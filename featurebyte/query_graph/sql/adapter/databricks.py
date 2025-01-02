@@ -11,7 +11,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType, SourceType, StrEnum
+from featurebyte.enum import DBVarType, SourceType, StrEnum, TimeIntervalUnit
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -305,3 +305,19 @@ class DatabricksAdapter(BaseAdapter):
     ) -> Expression:
         _ = timezone_type
         return expressions.Anonymous(this="to_utc_timestamp", expressions=[expr, timezone])
+
+    @classmethod
+    def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
+        mapping = {
+            TimeIntervalUnit.YEAR: "YEAR",
+            TimeIntervalUnit.QUARTER: "QUARTER",
+            TimeIntervalUnit.MONTH: "MONTH",
+            TimeIntervalUnit.WEEK: "WEEK",
+            TimeIntervalUnit.DAY: "DAY",
+            TimeIntervalUnit.HOUR: "HOUR",
+            TimeIntervalUnit.MINUTE: "MINUTE",
+        }
+        return expressions.Anonymous(
+            this="date_trunc",
+            expressions=[make_literal_value(mapping[unit]), timestamp_expr],
+        )
