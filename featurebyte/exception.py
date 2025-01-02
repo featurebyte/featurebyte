@@ -562,3 +562,9 @@ class InvalidOutputRowIndexError(FeatureByteException):
     """
     Raise when output row index is invalid
     """
+
+
+class CronNotImplementedError(NotImplementedError):
+    """
+    Raise when cron is not implemented
+    """

@@ -2,6 +2,7 @@
 Feature Job Setting Model
 """
 
+from abc import abstractmethod
 from typing import Any, ClassVar, Dict, Union
 
 from croniter import croniter
@@ -15,6 +16,7 @@ from featurebyte.common.model_util import (
     parse_duration_string,
     validate_job_setting_parameters,
 )
+from featurebyte.exception import CronNotImplementedError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.periodic_task import Crontab
 
@@ -24,6 +26,7 @@ class BaseFeatureJobSetting(FeatureByteBaseModel):
     Base Feature Job Setting class
     """
 
+    @abstractmethod
     def extract_offline_store_feature_table_name_postfix(self, max_length: int) -> str:
         """
         Extract offline store feature table name postfix
@@ -32,26 +35,13 @@ class BaseFeatureJobSetting(FeatureByteBaseModel):
         ----------
         max_length: int
             Maximum length of the postfix
-
-        Raises
-        ------
-        NotImplementedError
-            If method not implemented
         """
-        # DEV-3924: this method should be implemented for cron feature job setting
-        raise NotImplementedError("Method not implemented")
 
+    @abstractmethod
     def extract_ttl_seconds(self) -> int:
         """
         Extract TTL in seconds
-
-        Raises
-        ------
-        NotImplementedError
-            If method not implemented
         """
-        # DEV-3924: this method should be implemented for cron feature job setting
-        raise NotImplementedError("Method not implemented")
 
 
 class FeatureJobSetting(BaseFeatureJobSetting):
@@ -340,6 +330,12 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
             raise ValueError("Cron schedule more frequent than hourly is not supported.")
 
         return self
+
+    def extract_offline_store_feature_table_name_postfix(self, max_length: int) -> str:
+        raise CronNotImplementedError("Cron feature job setting is not supported")
+
+    def extract_ttl_seconds(self) -> int:
+        raise CronNotImplementedError("Cron feature job setting is not supported")
 
     def __hash__(self) -> int:
         return hash((self.crontab, self.timezone))

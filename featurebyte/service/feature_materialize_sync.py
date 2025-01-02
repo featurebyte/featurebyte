@@ -11,6 +11,7 @@ from typing import List, Optional
 from bson import ObjectId
 
 from featurebyte.common.date_util import get_current_job_datetime
+from featurebyte.exception import CronNotImplementedError
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_materialize_prerequisite import (
     FeatureMaterializePrerequisite,
@@ -164,7 +165,7 @@ class FeatureMaterializeSyncService:
 
         Raises
         ------
-        NotImplementedError
+        CronNotImplementedError
             If the feature job setting type is not supported
         """
         feature_table = await self.offline_store_feature_table_service.get_document(
@@ -193,8 +194,7 @@ class FeatureMaterializeSyncService:
         assert feature_job_setting is not None
 
         if not isinstance(feature_job_setting, FeatureJobSetting):
-            # DEV-3924: this method should be implemented for cron feature job setting
-            raise NotImplementedError(
+            raise CronNotImplementedError(
                 f"Feature job setting type {type(feature_job_setting)} is not supported"
             )
 
@@ -321,7 +321,6 @@ class FeatureMaterializeSyncService:
                 time_modulo_frequency_seconds=feature_job_setting.offset_seconds,
             )
 
-        # DEV-3924: this method should be implemented for cron feature job setting
-        raise NotImplementedError(
+        raise CronNotImplementedError(
             f"Feature job setting type {type(feature_job_setting)} is not supported"
         )

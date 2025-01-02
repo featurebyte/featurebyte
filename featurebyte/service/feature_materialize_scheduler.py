@@ -6,6 +6,7 @@ from typing import Optional
 
 from bson import ObjectId
 
+from featurebyte.exception import CronNotImplementedError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
@@ -50,7 +51,7 @@ class FeatureMaterializeSchedulerService:
 
         Raises
         ------
-        NotImplementedError
+        CronNotImplementedError
             If the feature job setting type is not supported
         """
         await self._stop_deprecated_job(offline_store_feature_table.id)
@@ -79,8 +80,7 @@ class FeatureMaterializeSchedulerService:
                         time_modulo_frequency_second=offline_store_feature_table.feature_job_setting.offset_seconds,
                     )
                 else:
-                    # DEV-3924: this method should be implemented for cron feature job setting
-                    raise NotImplementedError(
+                    raise CronNotImplementedError(
                         f"Feature job setting type {type(offline_store_feature_table.feature_job_setting)} is not supported"
                     )
             except DuplicateDocumentError:

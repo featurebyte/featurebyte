@@ -11,6 +11,7 @@ from bson import ObjectId
 from featurebyte import CronFeatureJobSetting
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
+    CronNotImplementedError,
     DocumentError,
     NoChangesInFeatureVersionError,
     NoFeatureJobSettingInSourceError,
@@ -86,7 +87,7 @@ class VersionService:
         ------
         NoFeatureJobSettingInSourceError
             If the source table does not have a default feature job setting
-        DocumentError
+        CronNotImplementedError
             If the provided feature job setting is a cron job setting
         """
         node_name_to_replacement_node: dict[str, Node] = {}
@@ -95,8 +96,7 @@ class VersionService:
             table_name_to_feature_job_setting: dict[str, FeatureJobSetting] = {}
             for data_feature_job_setting in table_feature_job_settings:
                 if isinstance(data_feature_job_setting.feature_job_setting, CronFeatureJobSetting):
-                    # TODO: Add support for cron feature job setting (DEV-3924)
-                    raise DocumentError(
+                    raise CronNotImplementedError(
                         "Cron feature job setting is not supported for creating new feature version."
                     )
 
