@@ -342,7 +342,12 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         return self
 
     def __hash__(self) -> int:
-        return hash(f"{self.crontab}_{self.timezone}")
+        return hash((self.crontab, self.timezone))
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CronFeatureJobSetting):
+            return False
+        return self.crontab == other.crontab and self.timezone == other.timezone
 
 
 def feature_job_setting_discriminator(value: Any) -> Literal["interval", "cron"]:
