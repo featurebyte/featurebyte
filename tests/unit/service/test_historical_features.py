@@ -8,12 +8,13 @@ import pandas as pd
 import pytest
 from freezegun import freeze_time
 
-from featurebyte import Feature, FeatureList, exception
+from featurebyte import CronFeatureJobSetting, Feature, FeatureList, exception
 from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.tile import OnDemandTileComputeResult, OnDemandTileTable
 from featurebyte.models.warehouse_table import WarehouseTableModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.cron import JobScheduleTable, JobScheduleTableSet
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.service.historical_features import get_historical_features
 
@@ -275,24 +276,41 @@ async def test_get_historical_features__intermediate_tables_dropped(
         "cust_id": ["C1", "C2"],
     })
     mock_snowflake_session.generate_session_unique_id.return_value = "1"
-    await get_historical_features(
-        session=mock_snowflake_session,
-        tile_cache_service=tile_cache_service,
-        warehouse_table_service=warehouse_table_service,
-        cron_helper=cron_helper,
-        graph=float_feature.graph,
-        nodes=[float_feature.node],
-        observation_set=df_request,
-        feature_store=snowflake_feature_store,
-        output_table_details=output_table_details,
-    )
+    with patch.object(
+        cron_helper, "register_job_schedule_tables"
+    ) as mock_register_job_schedule_tables:
+        mock_register_job_schedule_tables.return_value = JobScheduleTableSet(
+            tables=[
+                JobScheduleTable(
+                    table_name="cron_schedule_1",
+                    cron_feature_job_setting=CronFeatureJobSetting(crontab="0 0 * * *"),
+                )
+            ]
+        )
+        await get_historical_features(
+            session=mock_snowflake_session,
+            tile_cache_service=tile_cache_service,
+            warehouse_table_service=warehouse_table_service,
+            cron_helper=cron_helper,
+            graph=float_feature.graph,
+            nodes=[float_feature.node],
+            observation_set=df_request,
+            feature_store=snowflake_feature_store,
+            output_table_details=output_table_details,
+        )
     assert mock_snowflake_session.drop_table.call_args_list == [
         call(
             table_name="REQUEST_TABLE_1",
             schema_name="sf_schema",
             database_name="sf_db",
             if_exists=True,
-        )
+        ),
+        call(
+            table_name="cron_schedule_1",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            if_exists=True,
+        ),
     ]
 
 
