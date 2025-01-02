@@ -150,6 +150,7 @@ async def test_get_historical_features__missing_point_in_time(
     output_table_details,
     tile_cache_service,
     warehouse_table_service,
+    cron_helper,
     snowflake_feature_store,
 ):
     """Test validation of missing point in time for historical features"""
@@ -161,6 +162,7 @@ async def test_get_historical_features__missing_point_in_time(
             session=mock_snowflake_session,
             tile_cache_service=tile_cache_service,
             warehouse_table_service=warehouse_table_service,
+            cron_helper=cron_helper,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             observation_set=observation_set,
@@ -180,6 +182,7 @@ async def test_get_historical_features__too_recent_point_in_time(
     output_table_details,
     tile_cache_service,
     warehouse_table_service,
+    cron_helper,
     snowflake_feature_store,
 ):
     """Test validation of too recent point in time for historical features"""
@@ -195,6 +198,7 @@ async def test_get_historical_features__too_recent_point_in_time(
             session=mock_snowflake_session,
             tile_cache_service=tile_cache_service,
             warehouse_table_service=warehouse_table_service,
+            cron_helper=cron_helper,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             observation_set=observation_set,
@@ -215,6 +219,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     output_table_details,
     tile_cache_service,
     warehouse_table_service,
+    cron_helper,
     snowflake_feature_store,
 ):
     """
@@ -233,6 +238,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
         session=mock_snowflake_session,
         tile_cache_service=tile_cache_service,
         warehouse_table_service=warehouse_table_service,
+        cron_helper=cron_helper,
         graph=float_feature.graph,
         nodes=[float_feature.node],
         observation_set=df_request,
@@ -257,6 +263,7 @@ async def test_get_historical_features__intermediate_tables_dropped(
     output_table_details,
     tile_cache_service,
     warehouse_table_service,
+    cron_helper,
     snowflake_feature_store,
 ):
     """
@@ -272,6 +279,7 @@ async def test_get_historical_features__intermediate_tables_dropped(
         session=mock_snowflake_session,
         tile_cache_service=tile_cache_service,
         warehouse_table_service=warehouse_table_service,
+        cron_helper=cron_helper,
         graph=float_feature.graph,
         nodes=[float_feature.node],
         observation_set=df_request,
@@ -296,6 +304,7 @@ async def test_get_historical_features__tile_tables_dropped(
     output_table_details,
     tile_cache_service,
     warehouse_table_service,
+    cron_helper,
     snowflake_feature_store,
 ):
     """
@@ -351,6 +360,7 @@ async def test_get_historical_features__tile_tables_dropped(
             session=mock_snowflake_session,
             tile_cache_service=tile_cache_service,
             warehouse_table_service=warehouse_table_service,
+            cron_helper=cron_helper,
             graph=float_feature.graph,
             nodes=[float_feature.node],
             observation_set=df_request,

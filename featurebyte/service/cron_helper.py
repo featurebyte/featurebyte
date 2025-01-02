@@ -71,9 +71,11 @@ class CronHelper:
         point_in_time_stats = await session.execute_query_long_running(
             sql_to_string(point_in_time_min_max_query, session.source_type)
         )
+        job_schedule_table_set = JobScheduleTableSet(tables=[])
+        if point_in_time_stats is None:
+            return job_schedule_table_set
         min_point_in_time = point_in_time_stats["min"].iloc[0]  # type: ignore[index]
         max_point_in_time = point_in_time_stats["max"].iloc[0]  # type: ignore[index]
-        job_schedule_table_set = JobScheduleTableSet(tables=[])
         for cron_feature_job_setting in cron_feature_job_settings:
             job_schedule_table_name = f"__temp_cron_job_schedule_{ObjectId()}"
             await cls.register_cron_job_schedule(

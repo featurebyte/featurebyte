@@ -5,7 +5,7 @@ Tests for TimeSeriesWindowAggregator
 import pytest
 from sqlglot.expressions import select
 
-from featurebyte import FeatureWindow
+from featurebyte.query_graph.model.window import FeatureWindow
 from featurebyte.query_graph.sql.aggregator.time_series_window import TimeSeriesWindowAggregator
 from featurebyte.query_graph.sql.common import construct_cte_sql
 from featurebyte.query_graph.sql.specifications.time_series_window_aggregate import (
