@@ -6,11 +6,13 @@ from typing import Optional
 
 from bson import ObjectId
 
+from featurebyte.exception import CronNotImplementedError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
 from featurebyte.models.periodic_task import Interval, PeriodicTask
 from featurebyte.persistent import DuplicateDocumentError
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.worker.task.feature_materialize_sync import (
     FeatureMaterializeSyncTaskPayload,
 )
@@ -46,6 +48,11 @@ class FeatureMaterializeSchedulerService:
         ----------
         offline_store_feature_table: OfflineStoreFeatureTableModel
             Offline store feature table
+
+        Raises
+        ------
+        CronNotImplementedError
+            If the feature job setting type is not supported
         """
         await self._stop_deprecated_job(offline_store_feature_table.id)
         payload = FeatureMaterializeSyncTaskPayload(
@@ -62,15 +69,20 @@ class FeatureMaterializeSchedulerService:
             try:
                 if offline_store_feature_table.feature_job_setting is None:
                     return
-                await self.task_manager.schedule_interval_task(
-                    name=self._get_job_id(offline_store_feature_table.id),
-                    payload=payload,
-                    interval=Interval(
-                        every=offline_store_feature_table.feature_job_setting.period_seconds,
-                        period="seconds",
-                    ),
-                    time_modulo_frequency_second=offline_store_feature_table.feature_job_setting.offset_seconds,
-                )
+                if isinstance(offline_store_feature_table.feature_job_setting, FeatureJobSetting):
+                    await self.task_manager.schedule_interval_task(
+                        name=self._get_job_id(offline_store_feature_table.id),
+                        payload=payload,
+                        interval=Interval(
+                            every=offline_store_feature_table.feature_job_setting.period_seconds,
+                            period="seconds",
+                        ),
+                        time_modulo_frequency_second=offline_store_feature_table.feature_job_setting.offset_seconds,
+                    )
+                else:
+                    raise CronNotImplementedError(
+                        f"Feature job setting type {type(offline_store_feature_table.feature_job_setting)} is not supported"
+                    )
             except DuplicateDocumentError:
                 logger.warning(
                     "Duplicate feature materialize job",

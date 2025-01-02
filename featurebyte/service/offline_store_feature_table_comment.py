@@ -7,11 +7,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
 
+from featurebyte.exception import CronNotImplementedError
 from featurebyte.logging import get_logger
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.session_manager import SessionManagerService
@@ -112,6 +114,11 @@ class OfflineStoreFeatureTableCommentService:
         Returns
         -------
         TableComment
+
+        Raises
+        ------
+        CronNotImplementedError
+            If feature job setting type is not supported
         """
         primary_entities = await self.entity_service.get_entities(
             set(feature_table_model.primary_entity_ids)
@@ -129,6 +136,11 @@ class OfflineStoreFeatureTableCommentService:
             sentences = ["This feature table consists of features without a primary entity"]
         if feature_table_model.feature_job_setting:
             job_setting = feature_table_model.feature_job_setting
+            if not isinstance(job_setting, FeatureJobSetting):
+                raise CronNotImplementedError(
+                    f"Feature job setting type {type(job_setting)} is not supported"
+                )
+
             sentences.append(
                 f"It is updated every {job_setting.period_seconds} second(s), with a blind spot"
                 f" of {job_setting.blind_spot_seconds} second(s) and a time modulo frequency of"

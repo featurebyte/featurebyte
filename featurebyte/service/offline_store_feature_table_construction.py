@@ -31,6 +31,7 @@ from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQuer
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSettingUnion
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode
 from featurebyte.query_graph.node.mixin import BaseGroupbyParameters
@@ -65,7 +66,7 @@ class OfflineStoreFeatureTableConstructionService:
     async def get_dummy_offline_store_feature_table_model(
         self,
         primary_entity_ids: Sequence[ObjectId],
-        feature_job_setting: Optional[FeatureJobSetting],
+        feature_job_setting: Optional[FeatureJobSettingUnion],
         has_ttl: bool,
         feature_store_id: ObjectId,
         catalog_id: ObjectId,
@@ -79,7 +80,7 @@ class OfflineStoreFeatureTableConstructionService:
         ----------
         primary_entity_ids: Sequence[ObjectId]
             List of primary entity ids
-        feature_job_setting: Optional[FeatureJobSetting]
+        feature_job_setting: Optional[FeatureJobSettingUnion]
             Feature job setting of the feature table
         has_ttl: bool
             Whether the feature table has TTL
@@ -106,6 +107,10 @@ class OfflineStoreFeatureTableConstructionService:
             graph=QueryGraph(),
             node_names=[],
         )
+
+        if isinstance(feature_job_setting, FeatureJobSetting):
+            feature_job_setting = feature_job_setting.normalize()
+
         return OfflineStoreFeatureTableModel(
             name="",  # to be filled in later
             name_prefix=table_name_prefix,
@@ -119,7 +124,7 @@ class OfflineStoreFeatureTableConstructionService:
             output_dtypes=[],
             entity_universe=None,
             has_ttl=has_ttl,
-            feature_job_setting=feature_job_setting.normalize() if feature_job_setting else None,
+            feature_job_setting=feature_job_setting,
             feature_store_id=feature_store_id,
             catalog_id=catalog_id,
         )

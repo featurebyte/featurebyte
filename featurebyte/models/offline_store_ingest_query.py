@@ -13,6 +13,7 @@ from pydantic import Field, field_validator
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import DBVarType
+from featurebyte.exception import CronNotImplementedError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.mixin import QueryGraphMixin
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
@@ -105,7 +106,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # whether the offline store ingest query graph has time-to-live (TTL) component
     primary_entity_ids: List[PydanticObjectId]
     primary_entity_dtypes: List[DBVarType]
-    feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    feature_job_setting: Optional[FeatureJobSettingUnion] = Field(default=None)
     has_ttl: bool
 
     # pydantic validators
@@ -343,7 +344,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
 
         Raises
         ------
-        ValueError
+        CronNotImplementedError
             If CronFeatureJobSetting is found
         """
         interval_feature_job_settings = []
@@ -351,8 +352,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             if isinstance(feature_job_setting, FeatureJobSetting):
                 interval_feature_job_settings.append(feature_job_setting)
             else:
-                # TODO: Add support for cron feature job setting (DEV-3924)
-                raise ValueError("CronFeatureJobSetting is not supported")
+                raise CronNotImplementedError("CronFeatureJobSetting is not supported")
 
         self.time_to_live_in_secs = None
         self.null_filling_value = null_filling_value
