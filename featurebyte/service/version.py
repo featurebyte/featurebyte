@@ -16,7 +16,6 @@ from featurebyte.exception import (
     NoChangesInFeatureVersionError,
     NoFeatureJobSettingInSourceError,
 )
-from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.proxy_table import ProxyTableModel
@@ -94,14 +93,14 @@ class VersionService:
         table_feature_job_settings = table_feature_job_settings or []
         if table_feature_job_settings or use_source_settings:
             table_name_to_feature_job_setting: dict[str, FeatureJobSetting] = {}
-            for data_feature_job_setting in table_feature_job_settings:
-                if isinstance(data_feature_job_setting.feature_job_setting, CronFeatureJobSetting):
+            for table_feature_job_setting in table_feature_job_settings:
+                if isinstance(table_feature_job_setting.feature_job_setting, CronFeatureJobSetting):
                     raise CronNotImplementedError(
                         "Cron feature job setting is not supported for creating new feature version."
                     )
 
-                table_name_to_feature_job_setting[data_feature_job_setting.table_name] = (
-                    data_feature_job_setting.feature_job_setting
+                table_name_to_feature_job_setting[table_feature_job_setting.table_name] = (
+                    table_feature_job_setting.feature_job_setting
                 )
 
             table_id_to_table: dict[ObjectId, ProxyTableModel] = {
@@ -121,8 +120,10 @@ class VersionService:
                 if use_source_settings:
                     # use the event table source's default feature job setting if table is event table
                     # otherwise, do not create a replacement node for the group by node
-                    if table.type == TableDataType.EVENT_TABLE:
-                        assert isinstance(table, EventTableModel)
+                    if table.type in TableDataType.with_default_feature_job_setting():
+                        assert hasattr(
+                            table, "default_feature_job_setting"
+                        ), "Table should have default feature job setting attribute."
                         feature_job_setting = table.default_feature_job_setting
                         if not feature_job_setting:
                             raise NoFeatureJobSettingInSourceError(
