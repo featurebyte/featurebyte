@@ -12,7 +12,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Identifier, Select, alias_, select
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
+from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum, TimeIntervalUnit
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter, VectorAggColumn
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -527,4 +527,21 @@ class SnowflakeAdapter(BaseAdapter):
         return expressions.Anonymous(
             this="CONVERT_TIMEZONE",
             expressions=[make_literal_value("UTC"), timestamp_tz],
+        )
+
+    @classmethod
+    def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
+        mapping = {
+            TimeIntervalUnit.YEAR: "year",
+            TimeIntervalUnit.QUARTER: "quarter",
+            TimeIntervalUnit.WEEK: "week",
+            TimeIntervalUnit.MONTH: "month",
+            TimeIntervalUnit.DAY: "day",
+            TimeIntervalUnit.HOUR: "hour",
+            TimeIntervalUnit.MINUTE: "minute",
+        }
+        mapped_unit = mapping[unit]
+        return expressions.Anonymous(
+            this="DATE_TRUNC",
+            expressions=[make_literal_value(mapped_unit), timestamp_expr],
         )

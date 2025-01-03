@@ -38,6 +38,7 @@ class Aggregate(TableNode):
         NodeType.AGGREGATE_AS_AT,
         NodeType.ITEM_GROUPBY,
         NodeType.NON_TILE_WINDOW_AGGREGATE,
+        NodeType.TIME_SERIES_WINDOW_AGGREGATE,
         NodeType.FORWARD_AGGREGATE,
         NodeType.FORWARD_AGGREGATE_AS_AT,
     ]

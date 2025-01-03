@@ -848,7 +848,7 @@ def test_extract_operation__time_series_window_aggregate_feature(
             "node_name": "time_series_window_aggregate_1",
             "method": "sum",
             "keys": ["cust_id"],
-            "window": "7 DAY",
+            "window": "7_DAY",
             "category": None,
             "offset": None,
             "type": "aggregation",

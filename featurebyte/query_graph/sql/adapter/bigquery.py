@@ -11,7 +11,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Anonymous, Expression
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType, SourceType, StrEnum
+from featurebyte.enum import DBVarType, SourceType, StrEnum, TimeIntervalUnit
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -346,4 +346,20 @@ class BigQueryAdapter(BaseAdapter):
                 this="TIMESTAMP",
                 expressions=[cls._ensure_datetime(expr), timezone],
             )
+        )
+
+    @classmethod
+    def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
+        mapping = {
+            TimeIntervalUnit.YEAR: "YEAR",
+            TimeIntervalUnit.QUARTER: "QUARTER",
+            TimeIntervalUnit.MONTH: "MONTH",
+            TimeIntervalUnit.WEEK: "WEEK",
+            TimeIntervalUnit.DAY: "DAY",
+            TimeIntervalUnit.HOUR: "HOUR",
+            TimeIntervalUnit.MINUTE: "MINUTE",
+        }
+        return expressions.Anonymous(
+            this="TIMESTAMP_TRUNC",
+            expressions=[timestamp_expr, expressions.Var(this=mapping[unit])],
         )

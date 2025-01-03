@@ -82,7 +82,7 @@ def get_request_table_with_job_schedule_name(
     str
         Request table name with the cron job schedule
     """
-    return f"{request_table_name}_{feature_job_setting.get_cron_expression()}_{feature_job_setting.timezone}"
+    return f"{request_table_name}_{feature_job_setting.get_cron_expression_with_timezone()}"
 
 
 def get_request_table_joined_job_schedule_expr(

@@ -13,7 +13,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import DBVarType, InternalName, TimeIntervalUnit
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -66,6 +66,40 @@ class BaseAdapter(ABC):
         -------
         Expression
         """
+
+    @classmethod
+    def to_epoch_months(cls, timestamp_expr: Expression) -> Expression:
+        """
+        Expression to convert a timestamp to epoch months
+
+        Parameters
+        ----------
+        timestamp_expr : Expression
+            Input expression
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Sub(
+            this=expressions.Mul(
+                this=expressions.Paren(
+                    this=expressions.Sub(
+                        this=expressions.Extract(
+                            this=expressions.Var(this=cls.get_datetime_extract_property("year")),
+                            expression=timestamp_expr,
+                        ),
+                        expression=make_literal_value(1970),
+                    )
+                ),
+                expression=make_literal_value(12),
+            )
+            + expressions.Extract(
+                this=expressions.Var(this=cls.get_datetime_extract_property("month")),
+                expression=timestamp_expr,
+            ),
+            expression=make_literal_value(1),
+        )
 
     @classmethod
     @abstractmethod
@@ -1167,6 +1201,24 @@ class BaseAdapter(ABC):
         timezone_type: Literal["name", "offset"]
             Type of timezone expression. "name" for timezone names such as "America/New_York", and
             "offset" for timezone offsets such as "-08:00"
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
+    def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
+        """
+        Truncate a timestamp to the specified unit
+
+        Parameters
+        ----------
+        timestamp_expr: Expression
+            Timestamp expression
+        unit: TimeIntervalUnit
+            Unit to truncate to
 
         Returns
         -------

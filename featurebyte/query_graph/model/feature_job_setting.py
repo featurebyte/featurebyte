@@ -294,6 +294,16 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
             return crontab
         return f"{crontab.minute} {crontab.hour} {crontab.day_of_month} {crontab.month_of_year} {crontab.day_of_week}"
 
+    def get_cron_expression_with_timezone(self) -> str:
+        """
+        Get cron expression with timezone
+
+        Returns
+        -------
+        str
+        """
+        return f"{self.get_cron_expression()}_{self.timezone}"
+
     @model_validator(mode="after")
     def _validate_cron_expression(self) -> "CronFeatureJobSetting":
         """Validate cron expression
