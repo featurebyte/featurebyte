@@ -9,11 +9,10 @@ from featurebyte.exception import DocumentUpdateError, NoChangesInFeatureVersion
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.feature_store import TableStatus
-from featurebyte.query_graph.enum import GraphNodeType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.nested import BaseViewGraphNodeParameters
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.table import TableService
@@ -193,15 +192,13 @@ class ProductionReadyValidator:
         Dict[str, Any]
             feature job setting diffs
         """
-        for current_node in table_source_graph.iterate_nodes(
-            target_node=table_source_node, node_type=NodeType.GROUPBY
+        for current_node, _ in table_source_graph.iterate_group_by_node_and_table_id_pairs(
+            target_node=table_source_node
         ):
             # Get corresponding group by node in promoted graph
-            promoted_group_by_node = promoted_feature_graph.get_node_by_name(current_node.name)
-            assert isinstance(current_node, GroupByNode)
-            assert isinstance(promoted_group_by_node, GroupByNode)
+            promoted_agg_node = promoted_feature_graph.get_node_by_name(current_node.name)
             source_feature_job_setting = current_node.parameters.feature_job_setting
-            promoted_feature_job_setting = promoted_group_by_node.parameters.feature_job_setting
+            promoted_feature_job_setting = promoted_agg_node.parameters.feature_job_setting  # type: ignore
             if source_feature_job_setting != promoted_feature_job_setting:
                 return {
                     "data_source": source_feature_job_setting,
