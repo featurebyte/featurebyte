@@ -2001,3 +2001,34 @@ def test_feature_or_view_column_name_contains_quote(
 
     # check feature can be saved without error
     feature.save()
+
+
+def test_create_new_version_for_non_tile_window_aggregate(
+    snowflake_event_table_with_entity, count_distinct_window_aggregate_feature
+):
+    """Test create new version for non-tile window aggregate feature"""
+    count_distinct_window_aggregate_feature.save()
+
+    feature_job_setting = FeatureJobSetting(blind_spot="45m", period="30m", offset="15m")
+    new_version = count_distinct_window_aggregate_feature.create_new_version(
+        table_feature_job_settings=[
+            TableFeatureJobSetting(
+                table_name=snowflake_event_table_with_entity.name,
+                feature_job_setting=feature_job_setting,
+            )
+        ],
+    )
+
+    # check non-tile window aggregate feature's new version
+    assert new_version.cached_model.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_event_table_with_entity.id,
+            feature_job_setting=feature_job_setting,
+        )
+    ]
+    assert set(new_version.cached_model.graph.nodes_map.keys()) == {
+        "input_1",
+        "graph_1",
+        "non_tile_window_aggregate_1",
+        "project_1",
+    }

@@ -26,7 +26,6 @@ from featurebyte.query_graph.model.feature_job_setting import (
 )
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
-from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListNewVersionCreate, FeatureListServiceCreate
 from featurebyte.service.feature import FeatureService
@@ -110,7 +109,7 @@ class VersionService:
                 )
             }
             for (
-                group_by_node,
+                agg_node,
                 table_id,
             ) in feature.graph.iterate_group_by_node_and_table_id_pairs(target_node=feature.node):
                 # prepare feature job setting
@@ -137,11 +136,12 @@ class VersionService:
                 if feature_job_setting:
                     # input node will be used when we need to support updating specific
                     # GroupBy node given event table ID
-                    parameters = group_by_node.parameters.model_dump()
+                    parameters = agg_node.parameters.model_dump()
                     parameters["feature_job_setting"] = feature_job_setting.model_dump()
-                    if group_by_node.parameters.model_dump() != parameters:
-                        node_name_to_replacement_node[group_by_node.name] = GroupByNode(**{
-                            **group_by_node.model_dump(),
+                    if agg_node.parameters.model_dump() != parameters:
+                        node_class = type(agg_node)
+                        node_name_to_replacement_node[agg_node.name] = node_class(**{
+                            **agg_node.model_dump(),
                             "parameters": parameters,
                         })
 
