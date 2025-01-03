@@ -3,6 +3,7 @@ from dataclasses import asdict
 import numpy as np
 import pandas as pd
 import scipy as sp
+from sqlglot import expressions
 
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
@@ -11,6 +12,8 @@ from featurebyte.query_graph.node.metadata.operation import (
     PostAggregationColumn,
     SourceDataColumn,
 )
+from featurebyte.query_graph.sql.aggregator.base import Aggregator
+from featurebyte.query_graph.sql.common import construct_cte_sql
 
 
 def to_dict(obj, exclude=None, include=None):
@@ -117,3 +120,23 @@ def evaluate_and_compare_odfv_and_udf_results(
     pd.testing.assert_series_equal(
         out_odfv_null, out_udf_null, check_dtype=False, check_names=False
     )
+
+
+def get_combined_aggregation_expr_from_aggregator(
+    aggregator: Aggregator, request_columns: list[str] | None = None
+):
+    """
+    Get the combined aggregation expression from the aggregator
+    """
+    if request_columns is None:
+        request_columns = ["cust_id"]
+    result = aggregator.update_aggregation_table_expr(
+        expressions.select("POINT_IN_TIME", *request_columns).from_("REQUEST_TABLE"),
+        "POINT_IN_TIME",
+        ["POINT_IN_TIME"] + request_columns,
+        0,
+    )
+    result_expr = result.updated_table_expr
+    select_with_ctes = construct_cte_sql(aggregator.get_common_table_expressions("REQUEST_TABLE"))
+    result_expr.args["with"] = select_with_ctes.args["with"]
+    return result_expr
