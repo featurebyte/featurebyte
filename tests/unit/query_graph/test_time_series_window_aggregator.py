@@ -3,14 +3,13 @@ Tests for TimeSeriesWindowAggregator
 """
 
 import pytest
-from sqlglot.expressions import select
 
 from featurebyte.query_graph.model.window import FeatureWindow
 from featurebyte.query_graph.sql.aggregator.time_series_window import TimeSeriesWindowAggregator
-from featurebyte.query_graph.sql.common import construct_cte_sql
 from featurebyte.query_graph.sql.specifications.time_series_window_aggregate import (
     TimeSeriesWindowAggregateSpec,
 )
+from tests.unit.query_graph.util import get_combined_aggregation_expr_from_aggregator
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -84,15 +83,7 @@ def test_aggregator(request, test_case_name, update_fixtures, source_info):
 
     aggregator = TimeSeriesWindowAggregator(source_info=source_info)
     aggregator.update(agg_spec)
-    result = aggregator.update_aggregation_table_expr(
-        select("POINT_IN_TIME", "cust_id").from_("REQUEST_TABLE"),
-        "POINT_IN_TIME",
-        ["POINT_IN_TIME", "cust_id"],
-        0,
-    )
-    result_expr = result.updated_table_expr
-    select_with_ctes = construct_cte_sql(aggregator.get_common_table_expressions("REQUEST_TABLE"))
-    result_expr.args["with"] = select_with_ctes.args["with"]
+    result_expr = get_combined_aggregation_expr_from_aggregator(aggregator)
     assert_equal_with_expected_fixture(
         result_expr.sql(pretty=True),
         f"tests/fixtures/aggregator/expected_non_tile_window_aggregator_{test_case_name}.sql",
