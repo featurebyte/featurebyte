@@ -135,7 +135,7 @@ class VersionService:
 
                 if feature_job_setting:
                     # input node will be used when we need to support updating specific
-                    # GroupBy node given event table ID
+                    # aggregation node given table ID
                     parameters = agg_node.parameters.model_dump()
                     parameters["feature_job_setting"] = feature_job_setting.model_dump()
                     if agg_node.parameters.model_dump() != parameters:
