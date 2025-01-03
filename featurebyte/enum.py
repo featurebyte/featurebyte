@@ -480,6 +480,17 @@ class TableDataType(StrEnum):
     SCD_TABLE = "scd_table"
     TIME_SERIES_TABLE = "time_series_table"
 
+    @classmethod
+    def with_default_feature_job_setting(cls) -> set[str]:
+        """
+        Table data types that have default feature job setting
+
+        Returns
+        -------
+        set[str]
+        """
+        return {cls.EVENT_TABLE, cls.SCD_TABLE, cls.TIME_SERIES_TABLE}
+
 
 class ViewMode(StrEnum):
     """

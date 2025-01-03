@@ -21,6 +21,7 @@ from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSetting,
     TableFeatureJobSetting,
+    TableIdFeatureJobSetting,
 )
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
@@ -633,7 +634,10 @@ async def test_create_new_feature_version__with_item_event_feature(
 
 @pytest.mark.asyncio
 async def test_create_new_feature_version_using_source_settings(
-    version_service, event_table_service, feature, event_table
+    version_service,
+    event_table_service,
+    feature,
+    event_table,
 ):
     """Test create new feature version using source settings"""
     # check current feature settings
@@ -679,6 +683,51 @@ async def test_create_new_feature_version_using_source_settings(
     assert group_by_params.feature_job_setting == FeatureJobSetting(
         blind_spot="3600s", period="7200s", offset="1800s"
     )
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_version_using_source_settings_scd_table(
+    version_service, snowflake_scd_table_with_entity, arbitrary_default_feature_job_setting
+):
+    """Test create new feature version using source settings for SCD table"""
+    change_view = snowflake_scd_table_with_entity.get_change_view(
+        track_changes_column="col_boolean"
+    )
+
+    # check the fjs is different from the default fjs
+    assert (
+        arbitrary_default_feature_job_setting
+        != snowflake_scd_table_with_entity.default_feature_job_setting
+    )
+
+    feature_group = change_view.groupby("col_text").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["30d"],
+        feature_names=["feat_30d"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+    )
+    feature = feature_group["feat_30d"]
+    feature.save()
+
+    # check feature's table feature job setting
+    assert feature.cached_model.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_scd_table_with_entity.id,
+            feature_job_setting=arbitrary_default_feature_job_setting,
+        )
+    ]
+
+    # check create new version using source settings
+    new_version = await version_service.create_new_feature_version_using_source_settings(
+        document_id=feature.id
+    )
+    assert new_version.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_scd_table_with_entity.id,
+            feature_job_setting=snowflake_scd_table_with_entity.default_feature_job_setting,
+        )
+    ]
 
 
 @pytest.mark.asyncio
