@@ -18,7 +18,11 @@ class FeatureWindow(FeatureByteBaseModel):
         return f"{self.size}_{self.unit}"
 
     def is_fixed_size(self) -> bool:
-        return self.unit not in {TimeIntervalUnit.MONTH, TimeIntervalUnit.YEAR}
+        return self.unit not in {
+            TimeIntervalUnit.MONTH,
+            TimeIntervalUnit.QUARTER,
+            TimeIntervalUnit.YEAR,
+        }
 
     def to_seconds(self) -> int:
         """
@@ -47,9 +51,11 @@ class FeatureWindow(FeatureByteBaseModel):
         """
         if self.unit == TimeIntervalUnit.MONTH:
             return self.size
+        elif self.unit == TimeIntervalUnit.QUARTER:
+            return self.size * 3
         assert (
             self.unit == TimeIntervalUnit.YEAR
-        ), "Only month and year window can be converted to months"
+        ), "Only month, quarter, and year window can be converted to months"
         return self.size * 12
 
     def __hash__(self) -> int:
