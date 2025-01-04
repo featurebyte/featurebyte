@@ -52,7 +52,7 @@ class WindowAggregator(BaseAggregator):
         self,
         value_column: Optional[str],
         method: str,
-        windows: List[Optional[str | FeatureWindow]],
+        windows: List[Optional[str] | FeatureWindow],
         feature_names: List[str],
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting] = None,
@@ -173,6 +173,21 @@ class WindowAggregator(BaseAggregator):
         if self.is_time_series_aggregation:
             if number_of_unbounded_windows > 0:
                 raise ValueError("Unbounded window is not supported for time series aggregation")
+            for window in windows:
+                assert window is not None  # due to the above check
+                if not isinstance(window, FeatureWindow):
+                    raise ValueError(
+                        "Please specify windows as a list of FeatureWindow for TimeSeriesView"
+                    )
+            if offset is not None:
+                if not isinstance(offset, FeatureWindow):
+                    raise ValueError("Please specify offset as FeatureWindow for TimeSeriesView")
+            if feature_job_setting is not None and not isinstance(
+                feature_job_setting, CronFeatureJobSetting
+            ):
+                raise ValueError(
+                    "feature_job_setting must be CronFeatureJobSetting for TimeSeriesView"
+                )
         else:
             if number_of_unbounded_windows > 0:
                 if method != AggFunc.LATEST:
@@ -216,8 +231,8 @@ class WindowAggregator(BaseAggregator):
     def _prepare_node_parameters(
         self,
         value_column: Optional[str],
-        method: Optional[str],
-        windows: Optional[list[Optional[str] | FeatureWindow]],
+        method: str,
+        windows: list[Optional[str] | FeatureWindow],
         offset: Optional[str | FeatureWindow],
         feature_names: Optional[list[str]],
         timestamp_column: Optional[str] = None,
