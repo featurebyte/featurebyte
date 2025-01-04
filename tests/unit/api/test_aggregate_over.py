@@ -262,6 +262,27 @@ def test_time_series_view_aggregate_over(snowflake_time_series_view_with_entity)
     feature.save()
 
 
+def test_time_series_view_aggregate_over__only_cron_feature_job_setting(
+    snowflake_time_series_view_with_entity,
+):
+    """
+    Test aggregate_over for time series view only accepts CronFeatureJobSetting
+    """
+    view = snowflake_time_series_view_with_entity
+    with pytest.raises(ValueError) as exc_info:
+        _ = view.groupby("store_id").aggregate_over(
+            value_column="col_float",
+            method="sum",
+            windows=[FeatureWindow(unit="MONTH", size=3)],
+            feature_names=["col_float_sum_3month"],
+            feature_job_setting=FeatureJobSetting(blind_spot="0", period="1d", offset="1h"),
+        )
+    assert (
+        str(exc_info.value)
+        == "feature_job_setting must be CronFeatureJobSetting for TimeSeriesView"
+    )
+
+
 @pytest.mark.parametrize("is_offset", [True, False])
 def test_time_series_view_aggregate_over__only_feature_window(
     snowflake_time_series_view_with_entity, is_offset
@@ -321,3 +342,25 @@ def test_non_time_series_view_aggregate_over__only_str_window(
     with pytest.raises(ValueError) as exc_info:
         _ = view.groupby("cust_id").aggregate_over(**args)
     assert str(exc_info.value) == expected
+
+
+def test_non_time_series_view_aggregate_over__only_str_window__non_cron_feature_job_setting(
+    snowflake_event_view_with_entity,
+):
+    """
+    Test non-time series view aggregate_over only accepts FeatureJobSetting
+    """
+    with pytest.raises(ValueError) as exc_info:
+        _ = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+            value_column="col_int",
+            method="count_distinct",
+            windows=["7d"],
+            feature_names=["col_int_count_distinct_7d"],
+            feature_job_setting=CronFeatureJobSetting(
+                crontab="0 8 1 * *",
+            ),
+        )
+    assert (
+        str(exc_info.value)
+        == "feature_job_setting must be FeatureJobSetting for non-TimeSeriesView"
+    )

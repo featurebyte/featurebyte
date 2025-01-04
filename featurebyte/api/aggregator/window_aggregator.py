@@ -198,9 +198,16 @@ class WindowAggregator(BaseAggregator):
                         "category is not supported for aggregation with unbounded window"
                     )
 
+            if feature_job_setting is not None and not isinstance(
+                feature_job_setting, FeatureJobSetting
+            ):
+                raise ValueError(
+                    "feature_job_setting must be FeatureJobSetting for non-TimeSeriesView"
+                )
             parsed_feature_job_setting = FeatureJobSetting(
                 **self._get_job_setting_params(feature_job_setting)
             )
+
             if windows is not None:
                 for window in windows:
                     if window is not None:
