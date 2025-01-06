@@ -662,3 +662,21 @@ def test_target_lookup_sdk_code_generation(snowflake_scd_table, cust_id_entity, 
         update_fixtures=update_fixtures,
         table_id=snowflake_scd_table.id,
     )
+
+
+def test_ts_window_agg_feature_sdk_code_generation(
+    snowflake_time_series_table_with_entity,
+    ts_window_aggregate_feature,
+    update_fixtures,
+):
+    """Test SDK code generation for time series window aggregation feature"""
+    ts_window_aggregate_feature.save()
+
+    check_sdk_code_generation(
+        ts_window_aggregate_feature,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/ts_window_aggregate_feature.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_time_series_table_with_entity.id,
+    )
