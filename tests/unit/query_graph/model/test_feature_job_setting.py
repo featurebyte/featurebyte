@@ -179,3 +179,37 @@ def test_table_id_feature_job_setting_deserialization():
     # check hash of table setting
     settings = {setting1, setting2}
     assert len(settings) == 2
+
+
+@pytest.mark.parametrize(
+    "crontab_expr,expected",
+    [
+        ("0 * * * *", "hourly"),  # Every hour
+        ("0 */3 * * *", "hourly"),  # Every 3 hours
+        ("0 0 * * *", "daily"),  # Every day at midnight
+        ("15 14 * * *", "daily"),  # Every day at a specific time
+        ("0 0 */2 * *", "daily"),  # Every two days at midnight
+        ("0 0 * * MON-FRI", "daily"),  # Every weekday at midnight
+        ("0 9 * * 1-5", "daily"),  # Every weekday at 9:00 AM
+        ("30 3 * * 0", "weekly"),  # Every Sunday at 3:30 AM
+        ("0 0 * * 6,0", "weekly"),  # Every Saturday and Sunday at midnight
+        ("0 0 * * 1,3,5", "weekly"),  # Every Monday, Wednesday, and Friday at midnight
+        ("0 0 * * 1", "weekly"),  # Every Monday at midnight
+        ("0 22 * * 1-5", "daily"),  # Every specific weekdays (Monday through Friday) at 22:00
+        # ("0 17 * * 5L", "monthly"),  # Every last Friday of the month at 17:00 (Non-standard)
+        ("0 0 * * 1#1", "monthly"),  # Every first Monday of the month at midnight (Non-standard)
+        ("59 23 L * *", "monthly"),  # Last day of every month at 23:59 (Non-standard)
+        ("0 0 5 * *", "monthly"),  # Every 5th day of the month at midnight
+        ("0 0 1 * *", "monthly"),  # Every 1st of the month at midnight
+        ("0 12 1,15 * *", "monthly"),  # Every 1st and 15th of the month at noon
+        ("0 0 1 1,4,7,10 *", "monthly"),  # Every 1st of January, April, July, October at midnight
+        ("0 0 1 1 *", "yearly"),  # Every 1st of January at midnight
+        ("0 0 29 2 *", "yearly"),  # Every leap day at midnight
+        ("0 0 1 1 *", "yearly"),  # Every year on January 1st at midnight
+        ("0 0 1 7 *", "yearly"),  # Every year on July 1st at midnight
+    ],
+)
+def test_extract_offline_store_feature_table_name_postfix(crontab_expr, expected):
+    """Test extracting offline store feature table name postfix"""
+    fjs = CronFeatureJobSetting(crontab=crontab_expr)
+    assert fjs.extract_offline_store_feature_table_name_postfix(10) == expected

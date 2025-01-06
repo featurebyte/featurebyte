@@ -342,7 +342,55 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         return self
 
     def extract_offline_store_feature_table_name_postfix(self, max_length: int) -> str:
-        raise CronNotImplementedError("Cron feature job setting is not supported")
+        crontab = self.crontab
+
+        assert isinstance(crontab, Crontab)
+        hour = crontab.hour
+        day_of_month = crontab.day_of_month
+        month_of_year = crontab.month_of_year
+        day_of_week = crontab.day_of_week
+
+        # Helper functions
+        def has_step(field: Union[int, str]) -> bool:
+            return isinstance(field, str) and "/" in field
+
+        def has_multiple(field: Union[int, str]) -> bool:
+            return isinstance(field, str) and "," in field
+
+        def has_range(field: Union[int, str]) -> bool:
+            return isinstance(field, str) and "-" in field
+
+        def has_non_standard(field: Union[int, str]) -> bool:
+            return isinstance(field, str) and ("#" in field)
+
+        # Check for yearly (single month and specific day_of_month)
+        if month_of_year != "*" and not has_multiple(month_of_year) and day_of_month != "*":
+            return "yearly"[:max_length]
+
+        # Check for monthly or daily based on day_of_month
+        if day_of_month != "*":
+            if has_step(day_of_month):
+                return "daily"[:max_length]
+            else:
+                return "monthly"[:max_length]
+
+        # Check for monthly based on non-standard day_of_week
+        if has_non_standard(day_of_week):
+            return "monthly"[:max_length]
+
+        # Check for weekly or daily based on day_of_week
+        if day_of_week != "*":
+            if has_range(day_of_week):
+                return "daily"[:max_length]
+            else:
+                return "weekly"[:max_length]
+
+        # Check for hourly
+        if hour == "*" or has_step(hour) or has_multiple(hour) or has_range(hour):
+            return "hourly"[:max_length]
+
+        # Default to daily
+        return "daily"[:max_length]
 
     def extract_ttl_seconds(self) -> int:
         raise CronNotImplementedError("Cron feature job setting is not supported")

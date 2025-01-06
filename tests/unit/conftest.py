@@ -29,6 +29,7 @@ from snowflake.connector.constants import QueryStatus
 from featurebyte import (
     CronFeatureJobSetting,
     FeatureJobSetting,
+    FeatureWindow,
     MissingValueImputation,
     SnowflakeDetails,
     UsernamePasswordCredential,
@@ -2393,6 +2394,23 @@ def count_distinct_window_aggregate_feature_fixture(
         feature_names=["col_int_distinct_count_48h"],
         feature_job_setting=feature_group_feature_job_setting,
     )["col_int_distinct_count_48h"]
+    return feature
+
+
+@pytest.fixture(name="ts_window_aggregate_feature")
+def ts_window_aggregate_feature_fixture(snowflake_time_series_view_with_entity):
+    """
+    Fixture for a feature using time series window aggregate
+    """
+    feature = snowflake_time_series_view_with_entity.groupby("store_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=[FeatureWindow(unit="MONTH", size=3)],
+        feature_names=["col_float_sum_3month"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 1 * *",
+        ),
+    )["col_float_sum_3month"]
     return feature
 
 

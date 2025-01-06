@@ -10,6 +10,7 @@ import pytest_asyncio
 from bson import ObjectId
 from pydantic import ValidationError
 
+from featurebyte import CronFeatureJobSetting
 from featurebyte.common.model_util import get_version
 from featurebyte.exception import (
     DocumentError,
@@ -726,6 +727,37 @@ async def test_create_new_feature_version_using_source_settings_scd_table(
         TableIdFeatureJobSetting(
             table_id=snowflake_scd_table_with_entity.id,
             feature_job_setting=snowflake_scd_table_with_entity.default_feature_job_setting,
+        )
+    ]
+
+
+@pytest.mark.asyncio
+async def test_create_new_feature_version_using_source_settings_ts_window_agg_feature(
+    version_service, snowflake_time_series_table_with_entity, ts_window_aggregate_feature
+):
+    """Test create new feature version using source settings for SCD table"""
+    ts_window_aggregate_feature.save()
+
+    assert ts_window_aggregate_feature.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_time_series_table_with_entity.id,
+            feature_job_setting=CronFeatureJobSetting(crontab="0 8 1 * *"),
+        )
+    ]
+
+    # update the default feature job setting of the time series table
+    snowflake_time_series_table_with_entity.update_default_feature_job_setting(
+        feature_job_setting=CronFeatureJobSetting(crontab="0 8 2 * *")
+    )
+
+    # check create new version using source settings
+    new_version = await version_service.create_new_feature_version_using_source_settings(
+        document_id=ts_window_aggregate_feature.id
+    )
+    assert new_version.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_time_series_table_with_entity.id,
+            feature_job_setting=CronFeatureJobSetting(crontab="0 8 2 * *"),
         )
     ]
 
