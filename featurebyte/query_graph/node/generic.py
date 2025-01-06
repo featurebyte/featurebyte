@@ -1976,6 +1976,17 @@ class TimeSeriesWindowAggregateParameters(BaseGroupbyParameters):
     feature_job_setting: CronFeatureJobSetting
     offset: Optional[FeatureWindow] = None
 
+    @property
+    def timestamp(self) -> str:
+        """
+        Get the timestamp column name used in QueryGraph.iterate_group_by_node_and_table_id_pairs
+
+        Returns
+        -------
+        str
+        """
+        return self.reference_datetime_column
+
 
 class TimeSeriesWindowAggregateNode(AggregationOpStructMixin):
     """
