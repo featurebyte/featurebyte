@@ -2027,6 +2027,63 @@ class TimeSeriesWindowAggregateNode(AggregationOpStructMixin):
     def max_input_count(self) -> int:
         return 1
 
+    def _derive_sdk_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: SDKCodeGenConfig,
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        fjs = self.parameters.feature_job_setting
+        feature_job_setting: ObjectClass = ClassEnum.CRON_FEATURE_JOB_SETTING(
+            crontab=fjs.get_cron_expression(),
+            timezone=fjs.timezone,
+        )
+        windows = [
+            ClassEnum.FEATURE_WINDOW(
+                unit=window.unit,
+                size=window.size,
+            )
+            for window in self.parameters.windows
+        ]
+        offset = (
+            ClassEnum.FEATURE_WINDOW(
+                unit=self.parameters.offset.unit,
+                size=self.parameters.offset.size,
+            )
+            if self.parameters.offset
+            else None
+        )
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+            node_name=self.name,
+        )
+        expression = get_object_class_from_function_call(
+            callable_name=f"{grouped}.aggregate_over",
+            value_column=self.parameters.parent,
+            method=self.parameters.agg_func,
+            windows=windows,
+            feature_names=self.parameters.names,
+            feature_job_setting=feature_job_setting,
+            skip_fill_na=True,
+            offset=offset,
+        )
+        statements.append((out_var_name, expression))
+        return statements, out_var_name
+
 
 class AliasNode(BaseNode):
     """AliasNode class"""
