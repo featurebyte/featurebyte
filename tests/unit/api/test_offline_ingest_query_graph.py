@@ -10,6 +10,7 @@ import pytest
 from bson import json_util
 
 from featurebyte import Entity, FeatureJobSetting, RequestColumn
+from featurebyte.exception import RecordUpdateException
 from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.transform.offline_store_ingest import AggregationNodeInfo
@@ -505,6 +506,17 @@ def test_feature__composite_count_dict(
     assert feature_model.offline_store_info.is_decomposed is True
     check_decomposed_graph_output_node_hash(feature_model=feature_model)
     check_on_demand_feature_code_generation(feature_model=feature_model)
+
+
+def test_time_window_aggregate_feature(ts_window_aggregate_feature, caplog):
+    """Test that a feature with time window aggregate feature."""
+    ts_window_aggregate_feature.save()
+
+    with pytest.raises(RecordUpdateException):
+        deploy_features_through_api([ts_window_aggregate_feature])
+
+    assert "get_entity_universe_constructor" in caplog.text
+    assert "NotImplementedError: Unsupported node type: time_series_window_aggregate" in caplog.text
 
 
 def test_feature__input_has_ingest_query_graph_node(test_dir):

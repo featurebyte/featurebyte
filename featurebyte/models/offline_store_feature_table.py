@@ -30,7 +30,6 @@ from featurebyte.models.parent_serving import FeatureNodeRelationshipsInfo
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
-    FeatureJobSetting,
     FeatureJobSettingUnion,
 )
 from featurebyte.query_graph.node.generic import GroupByNodeParameters
@@ -407,7 +406,7 @@ def get_combined_ingest_graph(
     features: List[FeatureModel],
     primary_entities: List[EntityModel],
     has_ttl: bool,
-    feature_job_setting: Optional[FeatureJobSetting],
+    feature_job_setting: Optional[FeatureJobSettingUnion],
 ) -> OfflineIngestGraphMetadata:
     """
     Returns a combined ingest graph and related information for all features belonging to a
@@ -421,7 +420,7 @@ def get_combined_ingest_graph(
         List of primary entity models
     has_ttl : bool
         Whether the feature table has TTL
-    feature_job_setting : Optional[FeatureJobSetting]
+    feature_job_setting : Optional[FeatureJobSettingUnion]
         Feature job setting
 
     Returns
