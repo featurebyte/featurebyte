@@ -160,6 +160,9 @@ def test_aggregate_over_latest(time_series_table):
     feature_list = FeatureList([feature_1, feature_2], "test_feature_list")
     df_features = feature_list.compute_historical_features(preview_params)
     expected = preview_params.copy()
+    # Point in time of "2001-01-10 10:00:00" UTC is "2001-01-10 18:00:00" Asia/Singapore, at
+    # which point the last feature job is at "2001-01-10 10:00:00" Asia/Singapore. Hence, the
+    # features should aggregate the values from "2001-01-03" to "2001-01-09" inclusive.
     expected["value_col_sum_7d"] = [0.35]
     expected["value_col_latest_7d"] = [0.08]
     fb_assert_frame_equal(df_features, expected)
