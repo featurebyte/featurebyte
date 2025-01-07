@@ -14,7 +14,7 @@ from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
 )
-from featurebyte.query_graph.model.window import FeatureWindow
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
@@ -39,8 +39,8 @@ from featurebyte.query_graph.sql.specifications.time_series_window_aggregate imp
     TimeSeriesWindowAggregateSpec,
 )
 
-WindowType = FeatureWindow
-OffsetType = Optional[FeatureWindow]
+WindowType = CalendarWindow
+OffsetType = Optional[CalendarWindow]
 FeatureJobSettingsType = CronFeatureJobSetting
 EntityIDsType = Tuple[str, ...]
 RequestTableKeyType = Tuple[WindowType, OffsetType, FeatureJobSettingsType, EntityIDsType]

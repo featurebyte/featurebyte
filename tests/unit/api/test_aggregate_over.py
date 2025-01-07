@@ -14,7 +14,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
 )
-from featurebyte.query_graph.model.window import FeatureWindow
+from featurebyte.query_graph.model.window import CalendarWindow
 from tests.util.helper import get_node
 
 
@@ -216,7 +216,7 @@ def test_time_series_view_aggregate_over(snowflake_time_series_view_with_entity)
     feature = view.groupby("store_id").aggregate_over(
         value_column="col_float",
         method="sum",
-        windows=[FeatureWindow(unit="MONTH", size=3)],
+        windows=[CalendarWindow(unit="MONTH", size=3)],
         feature_names=["col_float_sum_3month"],
         feature_job_setting=CronFeatureJobSetting(
             crontab="0 8 1 * *",
@@ -273,7 +273,7 @@ def test_time_series_view_aggregate_over__only_cron_feature_job_setting(
         _ = view.groupby("store_id").aggregate_over(
             value_column="col_float",
             method="sum",
-            windows=[FeatureWindow(unit="MONTH", size=3)],
+            windows=[CalendarWindow(unit="MONTH", size=3)],
             feature_names=["col_float_sum_3month"],
             feature_job_setting=FeatureJobSetting(blind_spot="0", period="1d", offset="1h"),
         )
@@ -291,7 +291,7 @@ def test_time_series_view_aggregate_over__only_feature_window(
     Test validation of windows and offset for time series view aggregate_over
     """
     view = snowflake_time_series_view_with_entity
-    valid_window = FeatureWindow(unit="MONTH", size=3)
+    valid_window = CalendarWindow(unit="MONTH", size=3)
     invalid_window = "3d"
     args: dict[str, Any] = dict(
         value_column="col_float",
@@ -306,10 +306,10 @@ def test_time_series_view_aggregate_over__only_feature_window(
     # Invalidate either offset or windows
     if is_offset:
         args["offset"] = invalid_window
-        expected = "Please specify offset as FeatureWindow for TimeSeriesView"
+        expected = "Please specify offset as CalendarWindow for TimeSeriesView"
     else:
         args["windows"] = [invalid_window]
-        expected = "Please specify windows as a list of FeatureWindow for TimeSeriesView"
+        expected = "Please specify windows as a list of CalendarWindow for TimeSeriesView"
     with pytest.raises(ValueError) as exc_info:
         _ = view.groupby("store_id").aggregate_over(**args)
     assert str(exc_info.value) == expected
@@ -324,7 +324,7 @@ def test_non_time_series_view_aggregate_over__only_str_window(
     """
     view = snowflake_event_view_with_entity
     valid_window = "3d"
-    invalid_window = FeatureWindow(unit="MONTH", size=3)
+    invalid_window = CalendarWindow(unit="MONTH", size=3)
     args: dict[str, Any] = dict(
         value_column="col_int",
         method="count_distinct",
@@ -338,7 +338,7 @@ def test_non_time_series_view_aggregate_over__only_str_window(
         args["offset"] = invalid_window
     else:
         args["windows"] = [invalid_window]
-    expected = "FeatureWindow is only supported for TimeSeriesView"
+    expected = "CalendarWindow is only supported for TimeSeriesView"
     with pytest.raises(ValueError) as exc_info:
         _ = view.groupby("cust_id").aggregate_over(**args)
     assert str(exc_info.value) == expected

@@ -6,9 +6,9 @@ from featurebyte.enum import TimeIntervalUnit
 from featurebyte.models.base import FeatureByteBaseModel
 
 
-class FeatureWindow(FeatureByteBaseModel):
+class CalendarWindow(FeatureByteBaseModel):
     """
-    Window for feature derivation
+    Calendar window for feature derivation
     """
 
     unit: TimeIntervalUnit
@@ -62,6 +62,6 @@ class FeatureWindow(FeatureByteBaseModel):
         return hash(f"{self.size}_{self.unit}")
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, FeatureWindow):
+        if not isinstance(other, CalendarWindow):
             return False
         return self.size == other.size and self.unit == other.unit

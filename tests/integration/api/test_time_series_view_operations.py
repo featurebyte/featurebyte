@@ -4,7 +4,7 @@ Integration tests for TimeSeriesView operations
 
 import pandas as pd
 
-from featurebyte import CronFeatureJobSetting, FeatureList, FeatureWindow
+from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList
 from tests.util.helper import fb_assert_frame_equal
 
 
@@ -43,7 +43,7 @@ def test_aggregate_over(time_series_table):
     feature = view.groupby("series_id_col").aggregate_over(
         value_column="value_col",
         method="sum",
-        windows=[FeatureWindow(unit="DAY", size=7)],
+        windows=[CalendarWindow(unit="DAY", size=7)],
         feature_names=["value_col_sum_7d"],
         feature_job_setting=CronFeatureJobSetting(
             crontab="0 8 * * *",
@@ -74,8 +74,8 @@ def test_aggregate_over_offset(time_series_table):
     feature = view.groupby("series_id_col").aggregate_over(
         value_column="value_col",
         method="sum",
-        windows=[FeatureWindow(unit="DAY", size=7)],
-        offset=FeatureWindow(unit="DAY", size=1),
+        windows=[CalendarWindow(unit="DAY", size=7)],
+        offset=CalendarWindow(unit="DAY", size=1),
         feature_names=["value_col_sum_7d_offset_1d"],
         feature_job_setting=CronFeatureJobSetting(
             crontab="0 8 * * *",
@@ -107,7 +107,7 @@ def test_aggregate_over_month(time_series_table):
     feature = view.groupby("series_id_col").aggregate_over(
         value_column="value_col",
         method="sum",
-        windows=[FeatureWindow(unit="MONTH", size=1)],
+        windows=[CalendarWindow(unit="MONTH", size=1)],
         feature_names=["value_col_sum_1month"],
         feature_job_setting=CronFeatureJobSetting(
             crontab="0 8 * * *",

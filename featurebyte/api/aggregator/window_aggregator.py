@@ -21,7 +21,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
 )
-from featurebyte.query_graph.model.window import FeatureWindow
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.query_graph.transform.reconstruction import (
@@ -52,13 +52,13 @@ class WindowAggregator(BaseAggregator):
         self,
         value_column: Optional[str],
         method: str,
-        windows: List[Optional[str] | FeatureWindow],
+        windows: List[Optional[str] | CalendarWindow],
         feature_names: List[str],
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
-        offset: Optional[str | FeatureWindow] = None,
+        offset: Optional[str | CalendarWindow] = None,
     ) -> FeatureGroup:
         """
         Aggregate given value_column for each group specified in keys over a list of time windows
@@ -142,12 +142,12 @@ class WindowAggregator(BaseAggregator):
         self,
         value_column: Optional[str],
         method: str,
-        windows: list[Optional[str] | FeatureWindow],
+        windows: list[Optional[str] | CalendarWindow],
         feature_names: list[str],
         feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting],
         fill_value: OptionalScalar,
         skip_fill_na: bool,
-        offset: Optional[str | FeatureWindow],
+        offset: Optional[str | CalendarWindow],
     ) -> None:
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
@@ -175,13 +175,13 @@ class WindowAggregator(BaseAggregator):
                 raise ValueError("Unbounded window is not supported for time series aggregation")
             for window in windows:
                 assert window is not None  # due to the above check
-                if not isinstance(window, FeatureWindow):
+                if not isinstance(window, CalendarWindow):
                     raise ValueError(
-                        "Please specify windows as a list of FeatureWindow for TimeSeriesView"
+                        "Please specify windows as a list of CalendarWindow for TimeSeriesView"
                     )
             if offset is not None:
-                if not isinstance(offset, FeatureWindow):
-                    raise ValueError("Please specify offset as FeatureWindow for TimeSeriesView")
+                if not isinstance(offset, CalendarWindow):
+                    raise ValueError("Please specify offset as CalendarWindow for TimeSeriesView")
             if feature_job_setting is not None and not isinstance(
                 feature_job_setting, CronFeatureJobSetting
             ):
@@ -211,13 +211,13 @@ class WindowAggregator(BaseAggregator):
             if windows is not None:
                 for window in windows:
                     if window is not None:
-                        if isinstance(window, FeatureWindow):
-                            raise ValueError("FeatureWindow is only supported for TimeSeriesView")
+                        if isinstance(window, CalendarWindow):
+                            raise ValueError("CalendarWindow is only supported for TimeSeriesView")
                         validate_window(window, parsed_feature_job_setting.period)
 
             if offset is not None:
-                if isinstance(offset, FeatureWindow):
-                    raise ValueError("FeatureWindow is only supported for TimeSeriesView")
+                if isinstance(offset, CalendarWindow):
+                    raise ValueError("CalendarWindow is only supported for TimeSeriesView")
                 validate_window(offset, parsed_feature_job_setting.period)
 
     def _get_job_setting_params(
@@ -239,8 +239,8 @@ class WindowAggregator(BaseAggregator):
         self,
         value_column: Optional[str],
         method: str,
-        windows: list[Optional[str] | FeatureWindow],
-        offset: Optional[str | FeatureWindow],
+        windows: list[Optional[str] | CalendarWindow],
+        offset: Optional[str | CalendarWindow],
         feature_names: Optional[list[str]],
         timestamp_column: Optional[str] = None,
         value_by_column: Optional[str] = None,

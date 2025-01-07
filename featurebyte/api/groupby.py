@@ -29,7 +29,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
 )
-from featurebyte.query_graph.model.window import FeatureWindow
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.typing import OptionalScalar
 
 
@@ -135,13 +135,13 @@ class GroupBy:
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
-        windows: List[Optional[str] | FeatureWindow],
+        windows: List[Optional[str] | CalendarWindow],
         feature_names: List[str],
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
-        offset: Optional[str | FeatureWindow] = None,
+        offset: Optional[str | CalendarWindow] = None,
     ) -> FeatureGroup:
         """
         The aggregate_over method of a GroupBy instance returns a FeatureGroup containing Aggregate Over a Window
