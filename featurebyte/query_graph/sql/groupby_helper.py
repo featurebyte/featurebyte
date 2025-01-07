@@ -371,6 +371,7 @@ def get_groupby_expr(
     groupby_columns: list[GroupbyColumn],
     value_by: Optional[GroupbyKey],
     adapter: BaseAdapter,
+    window_order_by: Optional[GroupbyKey] = None,
 ) -> Select:
     """
     Construct a GROUP BY statement using the provided expression as input.
@@ -409,13 +410,16 @@ def get_groupby_expr(
         select_keys.append(value_by.get_alias())
         keys.append(value_by.expr)
 
-    groupby_expr = adapter.group_by(
-        input_expr,
-        select_keys,
-        agg_exprs,
-        keys,
-        snowflake_vector_agg_cols,
-    )
+    if window_order_by is None:
+        groupby_expr = adapter.group_by(
+            input_expr,
+            select_keys,
+            agg_exprs,
+            keys,
+            snowflake_vector_agg_cols,
+        )
+    else:
+        raise
 
     if value_by is not None:
         groupby_expr = adapter.construct_key_value_aggregation_sql(
