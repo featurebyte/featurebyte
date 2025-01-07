@@ -42,7 +42,6 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.offline_store_ingest_query import (
     OfflineStoreEntityInfo,
     OfflineStoreIngestQueryGraph,
-    get_time_aggregate_ttl_in_secs,
 )
 from featurebyte.models.online_store import OnlineStoreModel
 from featurebyte.models.parent_serving import EntityLookupStep
@@ -51,7 +50,7 @@ from featurebyte.models.precomputed_lookup_feature_table import (
     get_precomputed_lookup_feature_table,
 )
 from featurebyte.query_graph.model.entity_relationship_info import EntityAncestorDescendantMapper
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSettingUnion
 from featurebyte.query_graph.sql.entity import get_combined_serving_names
 
 DEFAULT_REGISTRY_PROJECT_NAME = "featurebyte_project"
@@ -124,7 +123,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
     """
 
     table_name: str
-    feature_job_setting: Optional[FeatureJobSetting] = PydanticField(default=None)
+    feature_job_setting: Optional[FeatureJobSettingUnion] = PydanticField(default=None)
     has_ttl: bool
     output_column_names: List[str]
     output_dtypes: List[DBVarType]
@@ -257,9 +256,7 @@ class OfflineStoreTable(FeatureByteBaseModel):
         schema = []
         if self.has_ttl:
             assert self.feature_job_setting is not None
-            time_to_live = timedelta(
-                seconds=get_time_aggregate_ttl_in_secs(self.feature_job_setting)
-            )
+            time_to_live = timedelta(seconds=self.feature_job_setting.extract_ttl_seconds())
             schema.append(
                 FeastField(
                     name=InternalName.FEATURE_TIMESTAMP_COLUMN,

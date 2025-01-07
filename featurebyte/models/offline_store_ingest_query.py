@@ -13,12 +13,10 @@ from pydantic import Field, field_validator
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.validator import construct_sort_validator
 from featurebyte.enum import DBVarType
-from featurebyte.exception import CronNotImplementedError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.mixin import QueryGraphMixin
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import (
-    FeatureJobSetting,
     FeatureJobSettingUnion,
 )
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -45,23 +43,6 @@ from featurebyte.query_graph.transform.on_demand_function import (
 from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 from featurebyte.typing import Scalar
-
-
-def get_time_aggregate_ttl_in_secs(feature_job_setting: FeatureJobSetting) -> int:
-    """
-    Get time-to-live (TTL) in seconds for the time aggregate operation
-
-    Parameters
-    ----------
-    feature_job_setting: FeatureJobSetting
-        FeatureJobSetting
-
-    Returns
-    -------
-    int
-        Time-to-live (TTL) in seconds
-    """
-    return 2 * feature_job_setting.period_seconds
 
 
 class OfflineStoreInfoMetadata(OfflineStoreMetadata):
@@ -341,25 +322,13 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             Whether the feature has time-to-live (TTL) component
         null_filling_value: Optional[Scalar]
             Null filling value
-
-        Raises
-        ------
-        CronNotImplementedError
-            If CronFeatureJobSetting is found
         """
-        interval_feature_job_settings = []
-        for feature_job_setting in feature_job_settings:
-            if isinstance(feature_job_setting, FeatureJobSetting):
-                interval_feature_job_settings.append(feature_job_setting)
-            else:
-                raise CronNotImplementedError("CronFeatureJobSetting is not supported")
-
         self.time_to_live_in_secs = None
         self.null_filling_value = null_filling_value
         if has_ttl and feature_job_settings:
             self.time_to_live_in_secs = min(
-                get_time_aggregate_ttl_in_secs(feature_job_setting)
-                for feature_job_setting in interval_feature_job_settings
+                feature_job_setting.extract_ttl_seconds()
+                for feature_job_setting in feature_job_settings
             )
 
         unique_func_name = f"{sanitize_identifier(feature_versioned_name)}_{feature_id}"
