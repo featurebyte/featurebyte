@@ -373,6 +373,10 @@ def update_aggregation_expression_for_columns(
     ----------
     groupby_columns: list[GroupbyColumn]
         List of groupby columns
+    keys: list[GroupbyKey]
+        List of groupby keys
+    window_order_by: Optional[Expression]
+        Window order by expression for order dependent aggregation
     adapter: BaseAdapter
         Adapter
 
@@ -412,7 +416,9 @@ def get_groupby_expr(
     window_order_by: Optional[Expression] = None,
 ) -> Select:
     """
-    Construct a GROUP BY statement using the provided expression as input.
+    Construct a GROUP BY statement using the provided expression as input. If window_order_by is
+    provided, the aggregation will be done in a windowed manner (window function partitioned by the
+    groupby keys and ordered by window_order_by).
 
     Parameters
     ----------
@@ -427,6 +433,8 @@ def get_groupby_expr(
         Optional category parameter
     adapter: BaseAdapter
         Adapter for generating engine specific expressions
+    window_order_by: Optional[Expression]
+        Window order by expression for order dependent aggregation
 
     Returns
     -------
@@ -454,7 +462,7 @@ def get_groupby_expr(
         keys.append(value_by.expr)
 
     if window_order_by is None:
-        groupby_expr = adapter.group_by(
+        aggregated_expr = adapter.group_by(
             input_expr,
             select_keys,
             agg_exprs,
@@ -475,7 +483,7 @@ def get_groupby_expr(
             *select_keys,
             *agg_exprs,
         )
-        groupby_expr = (
+        aggregated_expr = (
             select(
                 *[quoted_identifier(k.name) for k in groupby_keys]
                 + ([quoted_identifier(value_by.name)] if value_by is not None else [])
@@ -488,13 +496,13 @@ def get_groupby_expr(
         )
 
     if value_by is not None:
-        groupby_expr = adapter.construct_key_value_aggregation_sql(
+        aggregated_expr = adapter.construct_key_value_aggregation_sql(
             point_in_time_column=None,
             serving_names=[k.name for k in groupby_keys],
             value_by=value_by.name,
             agg_result_names=[col.result_name for col in updated_groupby_columns],
             inner_agg_result_names=[col.result_name + "_inner" for col in updated_groupby_columns],
-            inner_agg_expr=groupby_expr,
+            inner_agg_expr=aggregated_expr,
         )
 
-    return groupby_expr
+    return aggregated_expr
