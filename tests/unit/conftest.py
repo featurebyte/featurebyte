@@ -27,9 +27,9 @@ from snowflake.connector import ProgrammingError
 from snowflake.connector.constants import QueryStatus
 
 from featurebyte import (
+    CalendarWindow,
     CronFeatureJobSetting,
     FeatureJobSetting,
-    FeatureWindow,
     MissingValueImputation,
     SnowflakeDetails,
     UsernamePasswordCredential,
@@ -2405,7 +2405,7 @@ def ts_window_aggregate_feature_fixture(snowflake_time_series_view_with_entity):
     feature = snowflake_time_series_view_with_entity.groupby("store_id").aggregate_over(
         value_column="col_float",
         method="sum",
-        windows=[FeatureWindow(unit="MONTH", size=3)],
+        windows=[CalendarWindow(unit="MONTH", size=3)],
         feature_names=["col_float_sum_3month"],
         feature_job_setting=CronFeatureJobSetting(
             crontab="0 8 1 * *",

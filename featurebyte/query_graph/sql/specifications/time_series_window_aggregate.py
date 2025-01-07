@@ -11,7 +11,7 @@ from bson import ObjectId
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.model.window import FeatureWindow
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
     TimeSeriesWindowAggregateNode,
@@ -32,8 +32,8 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
 
     parameters: TimeSeriesWindowAggregateParameters
     parent_dtype: Optional[DBVarType]
-    window: FeatureWindow
-    offset: Optional[FeatureWindow]
+    window: CalendarWindow
+    offset: Optional[CalendarWindow]
 
     @property
     def aggregation_type(self) -> AggregationType:

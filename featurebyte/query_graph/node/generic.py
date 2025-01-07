@@ -18,7 +18,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 )
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
-from featurebyte.query_graph.model.window import FeatureWindow
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.base import (
     BaseNode,
     BasePrunableNode,
@@ -1968,13 +1968,13 @@ class NonTileWindowAggregateNode(BaseWindowAggregateNode):
 class TimeSeriesWindowAggregateParameters(BaseGroupbyParameters):
     """Parameters for AggregateAsAtNode"""
 
-    windows: List[FeatureWindow]
+    windows: List[CalendarWindow]
     reference_datetime_column: InColumnStr
     reference_datetime_schema: TimestampSchema
     time_interval: TimeInterval
     names: List[OutColumnStr]
     feature_job_setting: CronFeatureJobSetting
-    offset: Optional[FeatureWindow] = None
+    offset: Optional[CalendarWindow] = None
 
     @property
     def timestamp(self) -> str:
@@ -2062,14 +2062,14 @@ class TimeSeriesWindowAggregateNode(AggregationOpStructMixin):
             timezone=fjs.timezone,
         )
         windows = [
-            ClassEnum.FEATURE_WINDOW(
+            ClassEnum.CALENDAR_WINDOW(
                 unit=window.unit,
                 size=window.size,
             )
             for window in self.parameters.windows
         ]
         offset = (
-            ClassEnum.FEATURE_WINDOW(
+            ClassEnum.CALENDAR_WINDOW(
                 unit=self.parameters.offset.unit,
                 size=self.parameters.offset.size,
             )

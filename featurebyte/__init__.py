@@ -87,7 +87,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 )
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
-from featurebyte.query_graph.model.window import FeatureWindow
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.cleaning_operation import (
     ColumnCleaningOperation,
     DisguisedValueImputation,
@@ -554,7 +554,7 @@ __all__ = [
     "PeriodicTask",
     "TimestampSchema",
     "TimeInterval",
-    "FeatureWindow",
+    "CalendarWindow",
     # services
     "start",
     "stop",

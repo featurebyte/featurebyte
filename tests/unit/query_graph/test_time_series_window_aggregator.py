@@ -4,7 +4,7 @@ Tests for TimeSeriesWindowAggregator
 
 import pytest
 
-from featurebyte.query_graph.model.window import FeatureWindow
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.sql.aggregator.time_series_window import TimeSeriesWindowAggregator
 from featurebyte.query_graph.sql.specifications.time_series_window_aggregate import (
     TimeSeriesWindowAggregateSpec,
@@ -34,7 +34,7 @@ def day_window_agg_spec_fixture(base_agg_spec):
     """
     Fixture of TimeSeriesAggregateSpec with day based window
     """
-    base_agg_spec.window = FeatureWindow(unit="DAY", size=7)
+    base_agg_spec.window = CalendarWindow(unit="DAY", size=7)
     return base_agg_spec
 
 
@@ -43,7 +43,7 @@ def month_window_agg_spec_fixture(base_agg_spec):
     """
     Fixture of TimeSeriesAggregateSpec with month based window
     """
-    base_agg_spec.window = FeatureWindow(unit="MONTH", size=3)
+    base_agg_spec.window = CalendarWindow(unit="MONTH", size=3)
     return base_agg_spec
 
 
@@ -52,8 +52,8 @@ def day_with_offset_agg_spec(base_agg_spec):
     """
     Fixture of TimeSeriesAggregateSpec with day based window
     """
-    base_agg_spec.window = FeatureWindow(unit="DAY", size=7)
-    base_agg_spec.offset = FeatureWindow(unit="DAY", size=3)
+    base_agg_spec.window = CalendarWindow(unit="DAY", size=7)
+    base_agg_spec.offset = CalendarWindow(unit="DAY", size=3)
     return base_agg_spec
 
 
@@ -62,8 +62,8 @@ def month_with_offset_agg_spec(base_agg_spec):
     """
     Fixture of TimeSeriesAggregateSpec with month based window
     """
-    base_agg_spec.window = FeatureWindow(unit="MONTH", size=3)
-    base_agg_spec.offset = FeatureWindow(unit="MONTH", size=1)
+    base_agg_spec.window = CalendarWindow(unit="MONTH", size=3)
+    base_agg_spec.offset = CalendarWindow(unit="MONTH", size=1)
     return base_agg_spec
 
 

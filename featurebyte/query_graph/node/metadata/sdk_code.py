@@ -253,7 +253,7 @@ class ClassEnum(Enum):
     HAVERSINE = ("featurebyte", "haversine")
     TIMESTAMP_SCHEMA = ("featurebyte", "TimestampSchema")
     TIME_INTERVAL = ("featurebyte", "TimeInterval")
-    FEATURE_WINDOW = ("featurebyte", "FeatureWindow")
+    CALENDAR_WINDOW = ("featurebyte", "CalendarWindow")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
