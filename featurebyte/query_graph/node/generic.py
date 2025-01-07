@@ -595,6 +595,7 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
     window: Optional[str] = Field(default=None)
     offset: Optional[str] = Field(default=None)
     timestamp_col: InColumnStr
+    timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
@@ -697,6 +698,7 @@ class BaseWindowAggregateParameters(BaseGroupbyParameters):
     names: List[OutColumnStr]
     feature_job_setting: FeatureJobSetting
     offset: Optional[str] = Field(default=None)
+    timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class GroupByNodeParameters(BaseWindowAggregateParameters):
@@ -1019,12 +1021,15 @@ class SCDLookupParameters(SCDBaseParameters):
     """Parameters for SCD lookup"""
 
     offset: Optional[str] = Field(default=None)
+    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    end_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class EventLookupParameters(FeatureByteBaseModel):
     """Parameters for EventTable lookup"""
 
     event_timestamp_column: InColumnStr
+    event_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class LookupParameters(FeatureByteBaseModel):
@@ -1807,6 +1812,8 @@ class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
     offset: Optional[str] = Field(default=None)
     # Note: This is kept for backward compatibility and not used by SQL generation
     backward: Optional[bool] = Field(default=None)
+    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    end_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):

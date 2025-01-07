@@ -99,6 +99,7 @@ async def test_create_new_feature_version(
         "windows": ["30m"],
         "offset": None,
         "timestamp": "event_timestamp",
+        "timestamp_schema": None,
         "names": ["sum_30m"],
         "serving_names": ["cust_id"],
         "entity_ids": [ObjectId(api_object_to_id["entity"])],

@@ -12,7 +12,10 @@ from featurebyte.exception import GraphInconsistencyError
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.algorithm import dfs_traversal, topological_sort
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
-from featurebyte.query_graph.model.node_hash_util import exclude_default_timestamp_schema
+from featurebyte.query_graph.model.node_hash_util import (
+    exclude_aggregation_and_lookup_node_timestamp_schema,
+    exclude_default_timestamp_schema,
+)
 from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
 from featurebyte.query_graph.node.input import InputNode, ItemTableInputNodeParameters
@@ -252,6 +255,10 @@ class QueryGraphModel(FeatureByteBaseModel):
             # introduced.
             if node_parameters.get("offset") is None:
                 node_parameters.pop("offset", None)
+        if node.type in NodeType.aggregation_and_lookup_node_types():
+            exclude_aggregation_and_lookup_node_timestamp_schema(
+                node_type=node.type, node_parameters=node_parameters
+            )
         return dict(node_parameters)
 
     @classmethod
