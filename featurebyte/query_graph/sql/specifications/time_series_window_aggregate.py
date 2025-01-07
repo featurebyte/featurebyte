@@ -9,7 +9,7 @@ from typing import Any, List, Optional, cast
 
 from bson import ObjectId
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node import Node
@@ -64,6 +64,7 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
             "source_expr": self.source_expr.sql(),
             "window": self.window.model_dump(),
             "offset": self.offset.model_dump() if self.offset is not None else None,
+            "is_order_dependent": AggFunc(self.parameters.agg_func).is_order_dependent,
         }
 
         # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)

@@ -17,6 +17,8 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
 from featurebyte.query_graph.sql.vector_helper import should_use_element_wise_vector_aggregation
 
+ROW_NUMBER = "__FB_GROUPBY_HELPER_ROW_NUMBER"
+
 
 @dataclass
 class GroupbyColumn:
@@ -166,6 +168,7 @@ def get_aggregation_expression(
         AggFunc.MIN: "MIN",
         AggFunc.MAX: "MAX",
         AggFunc.STD: "STDDEV",
+        AggFunc.LATEST: "FIRST_VALUE",
     }
     if agg_func in agg_func_sql_mapping:
         sql_func = agg_func_sql_mapping[agg_func]
@@ -330,8 +333,37 @@ def _split_agg_and_snowflake_vector_aggregation_columns(
     return non_vector_agg_exprs, vector_agg_cols
 
 
+def make_window_expr(
+    agg_func_expr: Expression,
+    key_exprs: list[Expression],
+    window_order_by: Expression,
+) -> Expression:
+    """
+    Make a window expression for the given aggregation function expression.
+
+    Parameters
+    ----------
+    agg_func_expr : Expression
+        Aggregation function expression
+    key_exprs : list[Expression]
+        List of key expressions
+    window_order_by: Expression
+        Window order by expression
+
+    Returns
+    -------
+    Expression
+    """
+    order = expressions.Order(expressions=[expressions.Ordered(this=window_order_by, desc=True)])
+    window_expr = expressions.Window(this=agg_func_expr, partition_by=key_exprs, order=order)
+    return window_expr
+
+
 def update_aggregation_expression_for_columns(
-    groupby_columns: list[GroupbyColumn], adapter: BaseAdapter
+    groupby_columns: list[GroupbyColumn],
+    keys: list[GroupbyKey],
+    window_order_by: Optional[Expression],
+    adapter: BaseAdapter,
 ) -> list[GroupbyColumn]:
     """
     Helper function to update the aggregation expression for the groupby columns. This will update the parent_expr
@@ -360,6 +392,12 @@ def update_aggregation_expression_for_columns(
                 parent_dtype=column.parent_dtype,
                 adapter=adapter,
             )
+            if window_order_by is not None:
+                aggregation_expression = make_window_expr(
+                    agg_func_expr=aggregation_expression,
+                    key_exprs=[key.expr for key in keys],
+                    window_order_by=window_order_by,
+                )
             column.parent_expr = aggregation_expression
         output.append(column)
     return output
@@ -371,7 +409,7 @@ def get_groupby_expr(
     groupby_columns: list[GroupbyColumn],
     value_by: Optional[GroupbyKey],
     adapter: BaseAdapter,
-    window_order_by: Optional[GroupbyKey] = None,
+    window_order_by: Optional[Expression] = None,
 ) -> Select:
     """
     Construct a GROUP BY statement using the provided expression as input.
@@ -394,7 +432,12 @@ def get_groupby_expr(
     -------
     Select
     """
-    updated_groupby_columns = update_aggregation_expression_for_columns(groupby_columns, adapter)
+    updated_groupby_columns = update_aggregation_expression_for_columns(
+        groupby_columns,
+        groupby_keys + ([] if value_by is None else [value_by]),
+        window_order_by,
+        adapter,
+    )
     agg_exprs, snowflake_vector_agg_cols = _split_agg_and_snowflake_vector_aggregation_columns(
         input_expr,
         groupby_keys,
@@ -419,7 +462,30 @@ def get_groupby_expr(
             snowflake_vector_agg_cols,
         )
     else:
-        raise
+        select_with_row_number = input_expr.select(
+            alias_(
+                make_window_expr(
+                    expressions.Anonymous(this="ROW_NUMBER"),
+                    key_exprs=keys,
+                    window_order_by=window_order_by,
+                ),
+                alias=ROW_NUMBER,
+                quoted=True,
+            ),
+            *select_keys,
+            *agg_exprs,
+        )
+        groupby_expr = (
+            select(
+                *[quoted_identifier(k.name) for k in groupby_keys]
+                + ([quoted_identifier(value_by.name)] if value_by is not None else [])
+                + [quoted_identifier(col.result_name) for col in groupby_columns],
+            )
+            .from_(select_with_row_number.subquery())
+            .where(
+                expressions.EQ(this=quoted_identifier(ROW_NUMBER), expression=make_literal_value(1))
+            )
+        )
 
     if value_by is not None:
         groupby_expr = adapter.construct_key_value_aggregation_sql(
