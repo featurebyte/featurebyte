@@ -339,7 +339,7 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
             alias="VIEW",
             join_keys=spec.parameters.keys[:],
             range_column=InternalName.VIEW_TIMESTAMP_EPOCH,
-            columns=list(right_columns),
+            columns=sorted(right_columns),
         )
         if spec.window.is_fixed_size():
             window_size = spec.window.to_seconds()
