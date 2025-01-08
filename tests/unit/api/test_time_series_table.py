@@ -1057,6 +1057,11 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
         "col_text": "time_zone",
     }
 
+    # check reference column map & conditionally expand columns logic
+    view = time_series_table.get_view()
+    assert view._reference_column_map == {"date": ["col_text"]}
+    assert view._conditionally_expand_columns(["date"]) == ["date", "col_text"]
+
 
 def test_timezone_offset__invalid_column(snowflake_database_time_series_table, catalog):
     """Test specifying a timezone offset using a column"""

@@ -6,6 +6,7 @@ import copy
 from typing import List, Optional, Set
 
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 
 
 def apply_modifiers_to_column_name(
@@ -55,12 +56,23 @@ def apply_column_name_modifiers_columns_info(
     if rsuffix is None and rprefix is None:
         return column_infos
     updated_column_info = []
+    column_map = {}
     for col_info in column_infos:
         new_col_info = col_info.model_copy()
         new_col_info.name = apply_modifiers_to_column_name(
             col_info.name, rsuffix=rsuffix, rprefix=rprefix
         )
+        column_map[col_info.name] = new_col_info.name
         updated_column_info.append(new_col_info)
+
+    for col_info in updated_column_info:
+        if col_info.dtype_metadata:
+            dtype_metadata = (
+                DBVarTypeInfo(dtype=col_info.dtype, metadata=col_info.dtype_metadata)
+                .remap_column_name(column_map)
+                .metadata
+            )
+            col_info.dtype_metadata = dtype_metadata
     return updated_column_info
 
 

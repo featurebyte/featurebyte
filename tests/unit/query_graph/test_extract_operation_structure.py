@@ -4,7 +4,11 @@ Unit tests for query graph operation structure extraction
 
 import pytest
 
+from featurebyte import TimestampSchema
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
+from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 from tests.unit.query_graph.util import to_dict
 from tests.util.helper import compare_pydantic_obj
@@ -585,6 +589,57 @@ def test_extract_operation__join_double_aggregations(
     assert grp_op_struct.post_aggregation is None
     assert grp_op_struct.row_index_lineage == ("groupby_1",)
     assert op_struct.is_time_based is True
+
+
+def test_extract_operation__scd_join(
+    global_graph, event_table_input_node, scd_table_input_node_with_tz
+):
+    """Test extract_operation_structure: join with SCD table"""
+    node_params = {
+        "left_on": "cust_id",
+        "right_on": "cust_id",
+        "left_input_columns": ["ts", "cust_id"],
+        "left_output_columns": ["ts", "cust_id"],
+        "right_input_columns": ["membership_status", "effective_ts", "timezone"],
+        "right_output_columns": [
+            "latest_membership_status",
+            "latest_effective_ts",
+            "latest_timezone",
+        ],
+        "join_type": "left",
+        "scd_parameters": {
+            "left_timestamp_column": "ts",
+            "effective_timestamp_column": "effective_ts",
+        },
+    }
+    join_node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_table_input_node, scd_table_input_node_with_tz],
+    )
+    op_struct = global_graph.extract_operation_structure(
+        node=join_node, keep_all_source_columns=True
+    )
+    # check output column names
+    assert [col.name for col in op_struct.columns] == [
+        "ts",
+        "cust_id",
+        "latest_membership_status",
+        "latest_effective_ts",
+        "latest_timezone",
+    ]
+    latest_eff_ts_col = next(col for col in op_struct.columns if col.name == "latest_effective_ts")
+    assert latest_eff_ts_col.dtype_info == DBVarTypeInfo(
+        dtype=DBVarType.TIMESTAMP,
+        metadata=DBVarTypeMetadata(
+            timestamp_schema=TimestampSchema(
+                format_string=None,
+                is_utc_time=None,
+                timezone=TimeZoneColumn(type="timezone", column_name="latest_timezone"),
+            )
+        ),
+    )
 
 
 @pytest.mark.parametrize("keep_all_source_columns", [True, False])
