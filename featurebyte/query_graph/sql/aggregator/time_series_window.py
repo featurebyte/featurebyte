@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, Tuple, cast
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
 
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import AggFunc, InternalName, SpecialColumnName
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
 )
@@ -333,12 +333,13 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         )
         if spec.parameters.value_by is not None:
             right_columns.add(spec.parameters.value_by)
+        right_columns.add(InternalName.VIEW_TIMESTAMP_EPOCH.value)
         right_table = RightTable(
             name=quoted_identifier(source_view_table_name),
             alias="VIEW",
             join_keys=spec.parameters.keys[:],
             range_column=InternalName.VIEW_TIMESTAMP_EPOCH,
-            columns=list(right_columns),
+            columns=sorted(right_columns),
         )
         if spec.window.is_fixed_size():
             window_size = spec.window.to_seconds()
@@ -390,6 +391,11 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
             groupby_keys=groupby_keys,
             groupby_columns=groupby_columns,
             value_by=value_by,
+            window_order_by=(
+                quoted_identifier(InternalName.VIEW_TIMESTAMP_EPOCH)
+                if AggFunc(spec.parameters.agg_func).is_order_dependent
+                else None
+            ),
             adapter=self.adapter,
         )
 

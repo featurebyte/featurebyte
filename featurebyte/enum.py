@@ -336,6 +336,17 @@ class AggFunc(StrEnum):
         """
         return [c.value for c in cls]
 
+    @property
+    def is_order_dependent(self) -> bool:
+        """
+        Check if aggregation function is order dependent
+
+        Returns
+        -------
+        bool
+        """
+        return self.value in {self.LATEST}
+
 
 class SourceType(StrEnum):
     """

@@ -2,6 +2,8 @@
 Tests for TimeSeriesWindowAggregator
 """
 
+import copy
+
 import pytest
 
 from featurebyte.query_graph.model.window import CalendarWindow
@@ -67,7 +69,43 @@ def month_with_offset_agg_spec(base_agg_spec):
     return base_agg_spec
 
 
-@pytest.mark.parametrize("test_case_name", ["day", "month", "day_with_offset", "month_with_offset"])
+@pytest.fixture(name="latest_agg_spec")
+def latest_agg_spec_fixture(base_agg_spec):
+    """
+    Fixture of TimeSeriesAggregateSpec with latest method
+    """
+    base_agg_spec.window = CalendarWindow(unit="DAY", size=7)
+    base_agg_spec.parameters.agg_func = "latest"
+    return base_agg_spec
+
+
+@pytest.fixture(name="mixed_order_dependency_agg_specs")
+def mixed_order_dependency_specs_fixture(base_agg_spec):
+    """
+    Fixture of TimeSeriesAggregateSpec with mixed order dependent and order independent aggregation
+    """
+    agg_spec_1 = copy.deepcopy(base_agg_spec)
+    agg_spec_1.parameters.agg_func = "latest"
+    agg_spec_1.parameters.names = ["feature_latest"]
+
+    agg_spec_2 = copy.deepcopy(base_agg_spec)
+    agg_spec_2.parameters.agg_func = "sum"
+    agg_spec_2.parameters.names = ["feature_sum"]
+
+    return [agg_spec_1, agg_spec_2]
+
+
+@pytest.mark.parametrize(
+    "test_case_name",
+    [
+        "day",
+        "month",
+        "day_with_offset",
+        "month_with_offset",
+        "latest",
+        "mixed_order_dependency",
+    ],
+)
 def test_aggregator(request, test_case_name, update_fixtures, source_info):
     """
     Test time series window aggregator for a daily window
@@ -77,12 +115,19 @@ def test_aggregator(request, test_case_name, update_fixtures, source_info):
         "month": "month_window_agg_spec",
         "day_with_offset": "day_with_offset_agg_spec",
         "month_with_offset": "month_with_offset_agg_spec",
+        "latest": "latest_agg_spec",
+        "mixed_order_dependency": "mixed_order_dependency_agg_specs",
     }
     fixture_name = test_case_mapping[test_case_name]
-    agg_spec = request.getfixturevalue(fixture_name)
+    fixture_obj = request.getfixturevalue(fixture_name)
+    if isinstance(fixture_obj, list):
+        agg_specs = fixture_obj
+    else:
+        agg_specs = [fixture_obj]
 
     aggregator = TimeSeriesWindowAggregator(source_info=source_info)
-    aggregator.update(agg_spec)
+    for agg_spec in agg_specs:
+        aggregator.update(agg_spec)
     result_expr = get_combined_aggregation_expr_from_aggregator(aggregator)
     assert_equal_with_expected_fixture(
         result_expr.sql(pretty=True),

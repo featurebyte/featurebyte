@@ -354,12 +354,15 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         )
         i += 1
         groupby_columns.append(groupby_column)
-    groupby_columns = update_aggregation_expression_for_columns(groupby_columns, adapter)
+    groupby_keys = [groupby_key, groupby_key_point_in_time]
+    groupby_columns = update_aggregation_expression_for_columns(
+        groupby_columns, groupby_keys, None, adapter
+    )
     if not use_value_by:
         value_by = None
     groupby_expr = get_groupby_expr(
         input_expr=select_expr,
-        groupby_keys=[groupby_key, groupby_key_point_in_time],
+        groupby_keys=groupby_keys,
         groupby_columns=groupby_columns,
         value_by=value_by,
         adapter=adapter,
