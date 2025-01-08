@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import functools
 from collections import defaultdict
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -14,7 +15,6 @@ from bson import ObjectId
 from pydantic import (
     BaseModel,
     Field,
-    PrivateAttr,
     RootModel,
     StrictStr,
     field_serializer,
@@ -343,7 +343,6 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     # internal_* is used to store the raw data from persistence, _* is used as a cache
     feature_clusters_path: Optional[str] = Field(default=None)
     internal_feature_clusters: Optional[List[Any]] = Field(alias="feature_clusters", default=None)
-    _feature_clusters: Optional[List[FeatureCluster]] = PrivateAttr(default=None)
 
     # list of IDs attached to this feature list
     feature_ids: List[PydanticObjectId]
@@ -550,7 +549,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         """
         return f"{self.name}_{self.version.to_str()}"
 
-    @property
+    @cached_property
     def feature_clusters(self) -> Optional[List[FeatureCluster]]:
         """
         List of combined graphs for features from the same feature store
@@ -559,14 +558,9 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
         -------
         Optional[List[FeatureCluster]]
         """
-        # TODO: make this a cached_property for pydantic v2
         if self.internal_feature_clusters is None:
             return None
-        if self._feature_clusters is None:
-            self._feature_clusters = [
-                FeatureCluster(**cluster) for cluster in self.internal_feature_clusters
-            ]
-        return self._feature_clusters
+        return [FeatureCluster(**cluster) for cluster in self.internal_feature_clusters]
 
     @classmethod
     def _get_remote_attribute_paths(cls, document_dict: Dict[str, Any]) -> List[Path]:

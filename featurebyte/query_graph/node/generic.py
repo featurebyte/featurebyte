@@ -1383,13 +1383,17 @@ class JoinNode(BasePrunableNode):
     ) -> OperationStructure:
         params = self.parameters
         # construct input column name to output column name mapping for left & right columns
-        left_col_map = dict(zip(params.left_input_columns, params.left_output_columns))
-        right_col_map = dict(zip(params.right_input_columns, params.right_output_columns))
+        left_col_map: dict[str, str] = dict(
+            zip(params.left_input_columns, params.left_output_columns)
+        )
+        right_col_map: dict[str, str] = dict(
+            zip(params.right_input_columns, params.right_output_columns)
+        )
 
         # construct input column name to output column mapping for left & right columns
         left_columns = {
             col.name: col.clone(
-                name=left_col_map[col.name],  # type: ignore
+                name=left_col_map[col.name],
                 # if the join type is left, current node is not a compulsory node for the column
                 node_names=(
                     col.node_names.union([self.name])
@@ -1397,6 +1401,7 @@ class JoinNode(BasePrunableNode):
                     else col.node_names
                 ),
                 node_name=self.name,
+                dtype_info=col.dtype_info.remap_column_name(left_col_map),
             )
             for col in inputs[0].columns
             if col.name in left_col_map
@@ -1413,14 +1418,14 @@ class JoinNode(BasePrunableNode):
                     # when keep_all_source_columns is True, we should include the right_on column in the join
                     # so that any changes on the right_on column can be tracked.
                     right_columns[col.name] = DerivedDataColumn.create(
-                        name=right_col_map[col.name],  # type: ignore
+                        name=right_col_map[col.name],
                         # the main source column must be on the right most side
                         # this is used to decide the timestamp column source table in
                         # `iterate_group_by_node_and_table_id_pairs`
                         columns=[left_on_col, right_on_col, col],
                         transform=transform_info,
                         node_name=self.name,
-                        dtype_info=col.dtype_info,
+                        dtype_info=col.dtype_info.remap_column_name(right_col_map),
                         other_node_names=col.node_names,
                     )
                 else:
@@ -1428,6 +1433,7 @@ class JoinNode(BasePrunableNode):
                         name=right_col_map[col.name],  # type: ignore
                         node_names=col.node_names.union([self.name]),
                         node_name=self.name,
+                        dtype_info=col.dtype_info.remap_column_name(right_col_map),
                     )
 
         is_event_item_join = (
