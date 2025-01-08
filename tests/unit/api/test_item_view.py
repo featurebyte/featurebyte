@@ -202,8 +202,6 @@ def test_get_view__auto_join_columns(
                                 "columns": ["event_timestamp", "cust_id"],
                                 "event_suffix": "_event_table",
                             },
-                            "left_on_timestamp_schema": None,
-                            "right_on_timestamp_schema": None,
                         },
                         "type": "join",
                     },
@@ -389,8 +387,6 @@ def test_join_event_table_attributes__more_columns(
                 "columns": ["col_float"],
                 "event_suffix": None,
             },
-            "left_on_timestamp_schema": None,
-            "right_on_timestamp_schema": None,
         },
     }
 
@@ -589,8 +585,6 @@ def test_item_view__item_table_same_event_id_column_as_event_table(
                                 "event_suffix": None,
                                 "columns": ["event_timestamp", "cust_id"],
                             },
-                            "left_on_timestamp_schema": None,
-                            "right_on_timestamp_schema": None,
                         },
                     },
                 ],

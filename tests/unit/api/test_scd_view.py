@@ -141,8 +141,6 @@ def test_event_view_join_scd_view(
             "left_timestamp_schema": None,
         },
         "metadata": {"type": "join", "rsuffix": "_scd", "rprefix": ""},
-        "left_on_timestamp_schema": None,
-        "right_on_timestamp_schema": None,
     }
 
     # check SDK code generation

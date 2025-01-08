@@ -268,7 +268,6 @@
                                         "event_timestamp"
                                     ],
                                     "left_on": "event_id_col",
-                                    "left_on_timestamp_schema": null,
                                     "left_output_columns": [
                                         "event_id_col",
                                         "item_id_col",
@@ -291,7 +290,6 @@
                                         "cust_id"
                                     ],
                                     "right_on": "col_int",
-                                    "right_on_timestamp_schema": null,
                                     "right_output_columns": [
                                         "event_timestamp_event_table",
                                         "cust_id_event_table"

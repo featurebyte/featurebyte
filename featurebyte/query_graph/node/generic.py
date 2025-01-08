@@ -1273,8 +1273,6 @@ class JoinNodeParameters(FeatureByteBaseModel):
     metadata: Optional[Union[JoinMetadata, JoinEventTableAttributesMetadata]] = Field(
         default=None
     )  # DEV-556: should be compulsory
-    left_on_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
-    right_on_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
     @field_validator(
         "left_input_columns",

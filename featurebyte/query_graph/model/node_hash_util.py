@@ -97,11 +97,6 @@ def exclude_non_aggregation_with_timestamp_node_timestamp_schema(
     Dict[str, Any]
     """
     if node_type == NodeType.JOIN:
-        on_parameters = ["left_on_timestamp_schema", "right_on_timestamp_schema"]
-        for param in on_parameters:
-            if node_parameters.get(param) is None:
-                node_parameters.pop(param, None)
-
         if node_parameters.get("scd_parameters"):
             _exclude_timestamp_schema_from_scd_base_parameters(
                 node_parameters["scd_parameters"],
