@@ -66,7 +66,7 @@ def apply_column_name_modifiers_columns_info(
         updated_column_info.append(new_col_info)
 
     for col_info in updated_column_info:
-        if col_info.dtype_metadata and col_info.dtype_metadata:
+        if col_info.dtype_metadata:
             dtype_metadata = (
                 DBVarTypeInfo(dtype=col_info.dtype, metadata=col_info.dtype_metadata)
                 .remap_column_name(column_map)
