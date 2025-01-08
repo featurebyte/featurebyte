@@ -209,6 +209,41 @@ def scd_table_input_node_fixture(global_graph, scd_table_input_details):
     return node_input
 
 
+@pytest.fixture(name="scd_table_input_node_with_tz")
+def scd_table_input_node_with_tz_fixture(global_graph, scd_table_input_details):
+    """Fixture of an SCDView input node"""
+    node_params = {
+        "type": "scd_table",
+        "columns": [
+            {
+                "name": "effective_ts",
+                "dtype": DBVarType.TIMESTAMP,
+                "dtype_metadata": {
+                    "timestamp_schema": {
+                        "format_string": None,
+                        "is_utc_time": None,
+                        "timezone": {"column_name": "timezone", "type": "timezone"},
+                    }
+                },
+            },
+            {"name": "cust_id", "dtype": DBVarType.INT},
+            {"name": "timezone", "dtype": DBVarType.VARCHAR},
+            {"name": "membership_status", "dtype": DBVarType.VARCHAR},
+        ],
+        "effective_timestamp_column": "effective_ts",
+        "current_flag_column": "is_record_current",
+        "id": ObjectId("66c372f39da9ad8e66c1eec6"),
+    }
+    node_params.update(scd_table_input_details)
+    node_input = global_graph.add_operation(
+        node_type=NodeType.INPUT,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[],
+    )
+    return node_input
+
+
 @pytest.fixture(name="dimension_table_input_details")
 def dimension_table_input_details_fixture(input_details):
     """Similar to input_details but for a Dimension table"""

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+from functools import cached_property
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -59,6 +60,7 @@ from featurebyte.models.observation_table import ViewObservationInput
 from featurebyte.models.static_source_table import ViewStaticSourceInput
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import (
     CleaningOperation,
@@ -945,7 +947,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         """
         return ["entity_columns"]
 
-    @property
+    @cached_property
     def inherited_columns(self) -> set[str]:
         """
         Special columns set which will be automatically added to the object of same class
@@ -961,6 +963,24 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             return additional_columns
         return {join_col}.union(self._get_additional_inherited_columns())
 
+    @cached_property
+    def _reference_column_map(self) -> dict[str, list[str]]:
+        """
+        Contains the mapping of one column that references another column(s) in the view.
+
+        Returns
+        -------
+        dict[str, list[str]]
+        """
+        output = {}
+        for col_info in self.columns_info:
+            dtype_metadata = col_info.dtype_metadata
+            timestamp_schema = dtype_metadata.timestamp_schema if dtype_metadata else None
+            timezone = timestamp_schema.timezone if timestamp_schema else None
+            if isinstance(timezone, TimeZoneColumn):
+                output[col_info.name] = [timezone.column_name]
+        return output
+
     def _get_additional_inherited_columns(self) -> set[str]:
         """
         Additional columns set to be added to inherited_columns. To be overridden by subclasses of
@@ -972,12 +992,33 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         """
         return set()
 
+    def _conditionally_expand_columns(self, columns: list[str]) -> list[str]:
+        """
+        Conditionally expand columns based on the item provided. If the column of the selected columns is
+        referring other columns, the expanded columns will include the referred columns as well.
+
+        Parameters
+        ----------
+        columns: list[str]
+            List of columns
+
+        Returns
+        -------
+        list[str]
+            Expanded list of columns
+        """
+        additional_cols = set()
+        for col in columns:
+            if col in self._reference_column_map:
+                additional_cols.update(self._reference_column_map[col])
+        return columns + list(additional_cols)
+
     @typechecked
     def __getitem__(
         self, item: Union[str, List[str], FrozenSeries]
     ) -> Union[FrozenSeries, FrozenFrame]:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
-            item = sorted(self.inherited_columns.union(item))
+            item = sorted(self.inherited_columns.union(self._conditionally_expand_columns(item)))
         output = super().__getitem__(item)
         return output
 
