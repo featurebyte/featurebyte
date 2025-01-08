@@ -165,4 +165,4 @@ jobs:
               - type: section
                 text:
                   type: mrkdwn
-                  text: "```publish: [${{ env.PUBLISH_RESULT }} - ${{ needs.publish.outputs.DEV_VERSION }}]```"
+                  text: "```publish: [${{ needs.publish.result }} - ${{ needs.publish.outputs.DEV_VERSION }}]```"
