@@ -138,6 +138,7 @@ def test_prepare_node_parameters(forward_aggregator):
         "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
         "timestamp_col": "timestamp_col",
+        "timestamp_schema": None,
         "offset": "1d",
     }
 

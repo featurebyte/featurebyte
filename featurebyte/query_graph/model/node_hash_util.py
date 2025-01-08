@@ -39,6 +39,14 @@ def _exclude_timestamp_schema_from_scd_base_parameters(
     return node_parameters
 
 
+def _exclude_timestamp_schema_from_event_parameters(
+    node_parameters: Dict[str, Any],
+) -> Dict[str, Any]:
+    if node_parameters.get("event_timestamp_schema") is None:
+        node_parameters.pop("event_timestamp_schema", None)
+    return node_parameters
+
+
 def exclude_aggregation_and_lookup_node_timestamp_schema(
     node_type: NodeType, node_parameters: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -68,11 +76,8 @@ def exclude_aggregation_and_lookup_node_timestamp_schema(
         if node_parameters.get("scd_parameters"):
             _exclude_timestamp_schema_from_scd_base_parameters(node_parameters["scd_parameters"])
 
-        if (
-            node_parameters.get("event_parameters")
-            and node_parameters["event_parameters"].get("event_timestamp_schema") is None
-        ):
-            node_parameters["event_parameters"].pop("event_timestamp_schema", None)
+        if node_parameters.get("event_parameters"):
+            _exclude_timestamp_schema_from_event_parameters(node_parameters["event_parameters"])
 
     if node_type in {NodeType.AGGREGATE_AS_AT, NodeType.FORWARD_AGGREGATE_AS_AT}:
         _exclude_timestamp_schema_from_scd_base_parameters(node_parameters)
@@ -102,6 +107,8 @@ def exclude_non_aggregation_with_timestamp_node_timestamp_schema(
                 node_parameters["scd_parameters"],
                 additional_params=["left_timestamp_schema"],
             )
+        if node_parameters.get("event_parameters"):
+            _exclude_timestamp_schema_from_event_parameters(node_parameters["event_parameters"])
 
     if node_type == NodeType.TRACK_CHANGES:
         if node_parameters.get("effective_timestamp_schema") is None:

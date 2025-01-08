@@ -150,6 +150,7 @@ class ForwardAggregator(BaseAggregator):
             "value_by": self.category,
             "entity_ids": self.entity_ids,
             "timestamp_col": timestamp_col,
+            "timestamp_schema": self.view.operation_structure.get_timestamp_schema(timestamp_col),
             "offset": offset,
         }
 
