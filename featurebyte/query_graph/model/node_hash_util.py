@@ -58,12 +58,12 @@ def exclude_aggregation_and_lookup_node_timestamp_schema(
     if node_type in {NodeType.LOOKUP, NodeType.LOOKUP_TARGET}:
         if node_parameters.get("scd_parameters"):
             for scd_parameter in scd_parameters:
-                if node_parameters.get("scd_parameters").get(scd_parameter, None) is None:
+                if node_parameters["scd_parameters"].get(scd_parameter) is None:
                     node_parameters["scd_parameters"].pop(scd_parameter, None)
 
         if (
             node_parameters.get("event_parameters")
-            and node_parameters.get("event_parameters").get("event_timestamp_schema", None) is None
+            and node_parameters["event_parameters"].get("event_timestamp_schema") is None
         ):
             node_parameters["event_parameters"].pop("event_timestamp_schema", None)
 
