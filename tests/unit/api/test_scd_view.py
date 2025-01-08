@@ -136,8 +136,13 @@ def test_event_view_join_scd_view(
             "current_flag_column": "is_active",
             "end_timestamp_column": "end_timestamp",
             "left_timestamp_column": "event_timestamp",
+            "effective_timestamp_schema": None,
+            "end_timestamp_schema": None,
+            "left_timestamp_schema": None,
         },
         "metadata": {"type": "join", "rsuffix": "_scd", "rprefix": ""},
+        "left_on_timestamp_schema": None,
+        "right_on_timestamp_schema": None,
     }
 
     # check SDK code generation

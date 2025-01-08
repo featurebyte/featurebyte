@@ -998,6 +998,8 @@ class SCDBaseParameters(FeatureByteBaseModel):
     natural_key_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: should be compulsory
     current_flag_column: Optional[InColumnStr] = Field(default=None)
     end_timestamp_column: Optional[InColumnStr] = Field(default=None)
+    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    end_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod
@@ -1015,14 +1017,13 @@ class SCDJoinParameters(SCDBaseParameters):
     """Parameters for SCD join"""
 
     left_timestamp_column: InColumnStr
+    left_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class SCDLookupParameters(SCDBaseParameters):
     """Parameters for SCD lookup"""
 
     offset: Optional[str] = Field(default=None)
-    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
-    end_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class EventLookupParameters(FeatureByteBaseModel):
@@ -1272,6 +1273,8 @@ class JoinNodeParameters(FeatureByteBaseModel):
     metadata: Optional[Union[JoinMetadata, JoinEventTableAttributesMetadata]] = Field(
         default=None
     )  # DEV-556: should be compulsory
+    left_on_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    right_on_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
     @field_validator(
         "left_input_columns",
@@ -1694,6 +1697,7 @@ class TrackChangesNodeParameters(FeatureByteBaseModel):
     new_tracked_column_name: OutColumnStr
     previous_valid_from_column_name: OutColumnStr
     new_valid_from_column_name: OutColumnStr
+    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class TrackChangesNode(BaseNode):
@@ -1812,8 +1816,6 @@ class AggregateAsAtParameters(BaseGroupbyParameters, SCDBaseParameters):
     offset: Optional[str] = Field(default=None)
     # Note: This is kept for backward compatibility and not used by SQL generation
     backward: Optional[bool] = Field(default=None)
-    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
-    end_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):

@@ -270,6 +270,7 @@ def test_timezone_offset__manually_specified_constant(timestamp_series):
     assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": "+08:00",
+        "timestamp_schema": None,
     }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 1
@@ -284,6 +285,7 @@ def test_timezone_offset__manually_specified_column(timestamp_series, varchar_se
     assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": None,
+        "timestamp_schema": None,
     }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2

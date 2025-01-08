@@ -400,6 +400,8 @@ def test_join__left_join(generic_input_node_params, join_type_param):
             "right_output_columns": ["_colDsuffix", "_colEsuffix"],
             "scd_parameters": None,
             "metadata": {"type": "join", "rsuffix": "suffix", "rprefix": "_"},
+            "left_on_timestamp_schema": None,
+            "right_on_timestamp_schema": None,
         },
         "type": "join",
     }

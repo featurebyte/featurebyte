@@ -281,7 +281,10 @@
             {
                 "name": "date_diff_1",
                 "output_type": "series",
-                "parameters": {},
+                "parameters": {
+                    "left_timestamp_schema": null,
+                    "right_timestamp_schema": null
+                },
                 "type": "date_diff"
             },
             {

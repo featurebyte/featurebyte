@@ -15,6 +15,7 @@ from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.node_hash_util import (
     exclude_aggregation_and_lookup_node_timestamp_schema,
     exclude_default_timestamp_schema,
+    exclude_non_aggregation_with_timestamp_node_timestamp_schema,
 )
 from featurebyte.query_graph.node import Node, construct_node
 from featurebyte.query_graph.node.generic import AliasNode, ProjectNode
@@ -257,6 +258,10 @@ class QueryGraphModel(FeatureByteBaseModel):
                 node_parameters.pop("offset", None)
         if node.type in NodeType.aggregation_and_lookup_node_types():
             exclude_aggregation_and_lookup_node_timestamp_schema(
+                node_type=node.type, node_parameters=node_parameters
+            )
+        if node.type in NodeType.non_aggregation_with_timestamp_node_types():
+            exclude_non_aggregation_with_timestamp_node_timestamp_schema(
                 node_type=node.type, node_parameters=node_parameters
             )
         return dict(node_parameters)

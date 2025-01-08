@@ -142,6 +142,26 @@ class NodeType(StrEnum):
             cls.LOOKUP_TARGET,
         }
 
+    @classmethod
+    def non_aggregation_with_timestamp_node_types(cls) -> Set["NodeType"]:
+        """
+        Returns all the non aggregation with timestamp node types. This is used to exclude timestamp_schema from
+        non-aggregation nodes for handling hashing backward compatibility.
+
+        Returns
+        -------
+        Set[NodeType]
+        """
+        return {
+            # generic.py
+            cls.JOIN,
+            cls.TRACK_CHANGES,
+            # date.py
+            cls.DT_EXTRACT,
+            cls.DATE_DIFF,
+            cls.DATE_ADD,
+        }
+
 
 class NodeOutputType(StrEnum):
     """
