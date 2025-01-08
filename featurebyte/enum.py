@@ -114,20 +114,20 @@ class StrEnum(str, Enum):
         return str(self.value)
 
 
-class TimeIntervalUnit(StrEnum):
+class TimeIntervalUnit(OrderedStrEnum):
     """
     The TimeIntervalUnit enum class specifies supported time interval units
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TimeIntervalUnit")
 
-    MINUTE = "MINUTE", "minute"
-    HOUR = "HOUR", "hour"
-    DAY = "DAY", "day"
-    WEEK = "WEEK", "week"
-    MONTH = "MONTH", "month"
-    QUARTER = "QUARTER", "quarter"
-    YEAR = "YEAR", "year"
+    MINUTE = "MINUTE"
+    HOUR = "HOUR"
+    DAY = "DAY"
+    WEEK = "WEEK"
+    MONTH = "MONTH"
+    QUARTER = "QUARTER"
+    YEAR = "YEAR"
 
 
 class DBVarType(StrEnum):

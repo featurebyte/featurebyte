@@ -5,7 +5,7 @@ This module contains window aggregator related class
 from __future__ import annotations
 
 import os
-from typing import Any, List, Optional, Type, cast
+from typing import Any, List, Literal, Optional, Type, cast
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.change_view import ChangeView
@@ -15,7 +15,7 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
-from featurebyte.enum import AggFunc
+from featurebyte.enum import AggFunc, TimeIntervalUnit
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
@@ -175,13 +175,9 @@ class WindowAggregator(BaseAggregator):
                 raise ValueError("Unbounded window is not supported for time series aggregation")
             for window in windows:
                 assert window is not None  # due to the above check
-                if not isinstance(window, CalendarWindow):
-                    raise ValueError(
-                        "Please specify windows as a list of CalendarWindow for TimeSeriesView"
-                    )
+                self._validate_time_series_window("windows", window)
             if offset is not None:
-                if not isinstance(offset, CalendarWindow):
-                    raise ValueError("Please specify offset as CalendarWindow for TimeSeriesView")
+                self._validate_time_series_window("offset", offset)
             if feature_job_setting is not None and not isinstance(
                 feature_job_setting, CronFeatureJobSetting
             ):
@@ -219,6 +215,25 @@ class WindowAggregator(BaseAggregator):
                 if isinstance(offset, CalendarWindow):
                     raise ValueError("CalendarWindow is only supported for TimeSeriesView")
                 validate_window(offset, parsed_feature_job_setting.period)
+
+    def _validate_time_series_window(
+        self, param_type: Literal["windows", "offset"], window: str | CalendarWindow
+    ) -> None:
+        if not isinstance(window, CalendarWindow):
+            if param_type == "windows":
+                raise ValueError(
+                    f"Please specify {param_type} as a list of CalendarWindow for TimeSeriesView"
+                )
+            else:
+                raise ValueError(
+                    f"Please specify {param_type} as CalendarWindow for TimeSeriesView"
+                )
+        view = self.view
+        assert isinstance(view, TimeSeriesView)
+        if TimeIntervalUnit(window.unit) < TimeIntervalUnit(view.time_interval.unit):
+            raise ValueError(
+                f"Window unit {window.unit} cannot be smaller than the table's time interval unit {view.time_interval.unit}"
+            )
 
     def _get_job_setting_params(
         self, feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting]

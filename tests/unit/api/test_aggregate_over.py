@@ -315,6 +315,29 @@ def test_time_series_view_aggregate_over__only_feature_window(
     assert str(exc_info.value) == expected
 
 
+def test_time_series_view_aggregate_over__invalid_window_unit(
+    snowflake_time_series_view_with_entity,
+):
+    """
+    Test aggregate_over for time series view only accepts CronFeatureJobSetting
+    """
+    view = snowflake_time_series_view_with_entity
+    with pytest.raises(ValueError) as exc_info:
+        _ = view.groupby("store_id").aggregate_over(
+            value_column="col_float",
+            method="sum",
+            windows=[CalendarWindow(unit="HOUR", size=3)],
+            feature_names=["col_float_sum_3hour"],
+            feature_job_setting=CronFeatureJobSetting(
+                crontab="0 8 1 * *",
+            ),
+        )
+    assert (
+        str(exc_info.value)
+        == "Window unit HOUR cannot be smaller than the table's time interval unit DAY"
+    )
+
+
 @pytest.mark.parametrize("is_offset", [True, False])
 def test_non_time_series_view_aggregate_over__only_str_window(
     snowflake_event_view_with_entity, is_offset
