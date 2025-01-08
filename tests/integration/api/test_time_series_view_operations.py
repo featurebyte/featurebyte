@@ -125,3 +125,44 @@ def test_aggregate_over_month(time_series_table):
     expected = preview_params.copy()
     expected["value_col_sum_1month"] = [4.65]
     fb_assert_frame_equal(df_features, expected)
+
+
+def test_aggregate_over_latest(time_series_table):
+    """
+    Test TimeSeriesView aggregate_over using the latest method
+    """
+    view = time_series_table.get_view()
+    common_params = dict(
+        value_column="value_col",
+        windows=[CalendarWindow(unit="DAY", size=7)],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        ),
+    )
+
+    feature_1 = view.groupby("series_id_col").aggregate_over(
+        method="sum",
+        **common_params,
+        feature_names=["value_col_sum_7d"],
+    )["value_col_sum_7d"]
+
+    feature_2 = view.groupby("series_id_col").aggregate_over(
+        method="latest", feature_names=["value_col_latest_7d"], **common_params
+    )["value_col_latest_7d"]
+
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-10 10:00:00"),
+            "series_id": "S0",
+        }
+    ])
+    feature_list = FeatureList([feature_1, feature_2], "test_feature_list")
+    df_features = feature_list.compute_historical_features(preview_params)
+    expected = preview_params.copy()
+    # Point in time of "2001-01-10 10:00:00" UTC is "2001-01-10 18:00:00" Asia/Singapore, at
+    # which point the last feature job is at "2001-01-10 10:00:00" Asia/Singapore. Hence, the
+    # features should aggregate the values from "2001-01-03" to "2001-01-09" inclusive.
+    expected["value_col_sum_7d"] = [0.35]
+    expected["value_col_latest_7d"] = [0.08]
+    fb_assert_frame_equal(df_features, expected)
