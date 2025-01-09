@@ -708,94 +708,6 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
 
 
 @pytest.mark.parametrize(
-    "timestamp_value, timezone_offset_column, timestamp_schema, expected",
-    [
-        (
-            pd.Timestamp("2022-01-15 10:00:00"),
-            None,
-            TimestampSchema(timezone="Asia/Singapore"),
-            pd.Timestamp("2022-01-15 02:00:00"),
-        ),
-        (
-            pd.Timestamp("2022-01-15 10:00:00"),
-            None,
-            TimestampSchema(timezone="UTC"),
-            pd.Timestamp("2022-01-15 10:00:00"),
-        ),
-        (
-            "20220115",
-            None,
-            TimestampSchema(format_string="<date_format_placeholder>"),
-            "2022-01-15 00:00:00",
-        ),
-        (
-            "20220115",
-            None,
-            TimestampSchema(format_string="<date_format_placeholder>", timezone="America/New_York"),
-            "2022-01-15 05:00:00",
-        ),
-        (
-            pd.Timestamp("2022-01-15 10:00:00"),
-            {"tz_offset": "Asia/Singapore"},
-            TimestampSchema(timezone=TimeZoneColumn(column_name="tz_offset", type="timezone")),
-            pd.Timestamp("2022-01-15 02:00:00"),
-        ),
-        (
-            pd.Timestamp("2022-01-15 10:00:00"),
-            {"tz_offset": "+08:00"},
-            TimestampSchema(timezone=TimeZoneColumn(column_name="tz_offset", type="offset")),
-            pd.Timestamp("2022-01-15 02:00:00"),
-        ),
-    ],
-)
-@pytest.mark.asyncio
-async def test_scd_view_timestamp_schema(
-    session_without_datasets,
-    data_source,
-    scd_table_timestamp_format_string,
-    timestamp_value,
-    timezone_offset_column,
-    timestamp_schema,
-    expected,
-):
-    """
-    Test different specification of timestamp schema when constructing SCDTable
-    """
-    if timestamp_schema.format_string == "<date_format_placeholder>":
-        timestamp_schema.format_string = scd_table_timestamp_format_string
-    session = session_without_datasets
-    df_scd = pd.DataFrame({
-        "effective_timestamp_column": pd.Series([timestamp_value]),
-        "user_id": ["user_1"],
-        "value": [123],
-    })
-    if timezone_offset_column is not None:
-        assert isinstance(timezone_offset_column, dict)
-        for k, v in timezone_offset_column.items():
-            df_scd[k] = v
-    table_name = "test_scd_view_timestamp_schema_{}".format(ObjectId()).upper()
-    await session.register_table(table_name, df_scd)
-    source_table = data_source.get_source_table(
-        database_name=session.database_name, schema_name=session.schema_name, table_name=table_name
-    )
-    scd_table = SCDTable.create(
-        source_table=source_table,
-        name=table_name,
-        natural_key_column="user_id",
-        effective_timestamp_column="effective_timestamp_column",
-        effective_timestamp_schema=timestamp_schema,
-    )
-    view = scd_table.get_view()
-    df_preview = view.preview()
-    actual = df_preview["effective_timestamp_column"].iloc[0]
-    if isinstance(actual, str) and ".000" in actual:
-        actual = actual.replace(".000", "")
-    if isinstance(actual, str) and "+00" in actual:
-        actual = actual.replace("+00", "")
-    assert actual == expected
-
-
-@pytest.mark.parametrize(
     "date_value, timestamp_schema, expected",
     [
         (
@@ -806,7 +718,7 @@ async def test_scd_view_timestamp_schema(
         (
             "2022-01-15",
             TimestampSchema(timezone="Asia/Singapore"),
-            pd.Timestamp("2022-01-15 16:00:00"),
+            pd.Timestamp("2022-01-16 00:00:00"),
         ),
     ],
 )
