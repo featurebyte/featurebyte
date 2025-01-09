@@ -24,10 +24,9 @@ from featurebyte.logging import get_logger
 
 logger = get_logger(__name__)
 
-
-class ExecutionContext:
+class ExceptionMiddleware(BaseHTTPMiddleware):
     """
-    ExecutionContext to handle exception and http status code globally
+    Middleware used by FastAPI to process each request
     """
 
     exception_handlers: List[Tuple[
@@ -87,126 +86,6 @@ class ExecutionContext:
         """
         cls.exception_handlers.pop(except_class)
 
-    def __init__(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]):
-        self.request = request
-        self.call_next = call_next
-
-    async def execute(self) -> Response:
-        """
-        Actual executor of request/response. When catching exception, it will iterate through the exception handlers
-        and return the http status code and message accordingly
-
-        Raises
-        -------
-        Exception
-            original un-handled exception
-
-        Returns
-        -------
-        Response
-            http response
-        """
-        try:
-            return await self.call_next(self.request)
-        except Exception as exc:
-            for except_class, handle_status_code, handle_message in self.exception_handlers:
-                if isinstance(exc, except_class):
-                    if isinstance(handle_status_code, int):
-                        status_code = handle_status_code
-                    else:
-                        status_code = handle_status_code(self.request, exc)
-
-                    if handle_message is not None:
-                        if isinstance(handle_message, str):
-                            message = handle_message
-                        else:
-                            message = handle_message(self.request, exc)
-                    else:
-                        message = str(exc)
-
-                    return JSONResponse(content={"detail": message}, status_code=status_code)
-
-            # Default exception handling
-            return JSONResponse(content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
-
-    async def __aenter__(self) -> Any:
-        """
-        Signature method for async context manager
-
-        Returns
-        -------
-            self
-        """
-        return self
-
-    async def __aexit__(self, *exc: Dict[str, Any]) -> bool:
-        """
-        Signature method for async context manager
-
-        Parameters
-        ----------
-        exc: Dict[str, Any]
-            parameters
-
-        Returns
-        -------
-            bool
-        """
-        return False
-
-
-# UNPROCESSABLE_ENTITY errors
-ExecutionContext.register(
-    DocumentNotFoundError,
-    handle_status_code=lambda req, exc: (
-        HTTPStatus.UNPROCESSABLE_ENTITY if req.method == "POST" else HTTPStatus.NOT_FOUND
-    ),
-)
-
-ExecutionContext.register(
-    ColumnNotFoundError,
-    handle_status_code=lambda req, exc: (
-        HTTPStatus.UNPROCESSABLE_ENTITY if req.method == "POST" else HTTPStatus.NOT_FOUND
-    ),
-)
-
-ExecutionContext.register(ValidationError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
-
-ExecutionContext.register(
-    BaseUnprocessableEntityError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
-)
-
-
-# CONFLICT errors
-ExecutionContext.register(BaseConflictError, handle_status_code=HTTPStatus.CONFLICT)
-
-
-# NOT_IMPLEMENTED errors
-ExecutionContext.register(
-    QueryNotSupportedError,
-    handle_status_code=HTTPStatus.NOT_IMPLEMENTED,
-    handle_message="Query not supported.",
-)
-
-
-# FAILED_DEPENDENCY errors
-ExecutionContext.register(
-    BaseFailedDependencyError,
-    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
-)
-
-
-# TimeoutError errors
-ExecutionContext.register(
-    TimeOutError,
-    handle_status_code=HTTPStatus.REQUEST_TIMEOUT,
-)
-
-
-class ExceptionMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware used by FastAPI to process each request
-    """
 
     def __init__(self, app: FastAPI):
         super().__init__(app)
@@ -228,5 +107,66 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         -------
         Response
         """
-        async with ExecutionContext(request, call_next) as executor:
-            return await executor.execute()
+        try:
+            return await call_next(request)
+        except Exception as exc:
+            for except_class, handle_status_code, handle_message in self.exception_handlers:
+                # Found a matching exception
+                if isinstance(exc, except_class):
+                    status_code = handle_status_code if isinstance(handle_status_code, int) else handle_status_code(request, exc)
+                    message = str(exc)
+                    if handle_message is not None:
+                        message = handle_message if isinstance(handle_message, str) else handle_message(request, exc)
+
+                    return JSONResponse(content={"detail": message}, status_code=status_code)
+
+            # Default exception handling
+            return JSONResponse(content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+
+# UNPROCESSABLE_ENTITY errors
+ExceptionMiddleware.register(
+    DocumentNotFoundError,
+    handle_status_code=lambda req, exc: (
+        HTTPStatus.UNPROCESSABLE_ENTITY if req.method == "POST" else HTTPStatus.NOT_FOUND
+    ),
+)
+
+ExceptionMiddleware.register(
+    ColumnNotFoundError,
+    handle_status_code=lambda req, exc: (
+        HTTPStatus.UNPROCESSABLE_ENTITY if req.method == "POST" else HTTPStatus.NOT_FOUND
+    ),
+)
+
+ExceptionMiddleware.register(ValidationError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
+
+ExceptionMiddleware.register(
+    BaseUnprocessableEntityError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+)
+
+
+# CONFLICT errors
+ExceptionMiddleware.register(BaseConflictError, handle_status_code=HTTPStatus.CONFLICT)
+
+
+# NOT_IMPLEMENTED errors
+ExceptionMiddleware.register(
+    QueryNotSupportedError,
+    handle_status_code=HTTPStatus.NOT_IMPLEMENTED,
+    handle_message="Query not supported.",
+)
+
+
+# FAILED_DEPENDENCY errors
+ExceptionMiddleware.register(
+    BaseFailedDependencyError,
+    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
+)
+
+
+# TimeoutError errors
+ExceptionMiddleware.register(
+    TimeOutError,
+    handle_status_code=HTTPStatus.REQUEST_TIMEOUT,
+)
+
