@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, cast
 
 from bson import ObjectId
 from pydantic import Field, StrictStr, model_validator
+from pydantic_extra_types.timezone_name import TimeZoneName
 from typeguard import typechecked
 from typing_extensions import Literal
 
@@ -70,6 +71,7 @@ class TimeSeriesTable(TableApiObject):
     )
     internal_reference_datetime_column: StrictStr = Field(alias="reference_datetime_column")
     internal_reference_datetime_schema: TimestampSchema = Field(alias="reference_datetime_schema")
+    internal_reference_timezone: Optional[TimeZoneName] = Field(alias="reference_timezone", default=None)
     internal_time_interval: TimeInterval = Field(alias="time_interval")
     internal_series_id_column: Optional[StrictStr] = Field(alias="series_id_column", default=None)
 
@@ -257,6 +259,20 @@ class TimeSeriesTable(TableApiObject):
             return self.cached_model.reference_datetime_schema
         except RecordRetrievalException:
             return self.internal_reference_datetime_schema
+
+    @property
+    def reference_timezone(self) -> Optional[str]:
+        """
+        Reference timezone of the TimeSeriesTable
+
+        Returns
+        -------
+        Optional[str]
+        """
+        try:
+            return self.cached_model.reference_timezone
+        except RecordRetrievalException:
+            return self.internal_reference_timezone
 
     @property
     def time_interval(self) -> TimeInterval:

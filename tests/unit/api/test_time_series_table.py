@@ -146,6 +146,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
         "series_id_column": "col_int",
         "reference_datetime_column": "date",
         "reference_datetime_schema": ts_schema,
+        "reference_timezone": "Asia/Singapore",
         "time_interval": {"unit": "DAY", "value": 1},
         "record_creation_timestamp_column": "created_at",
         "default_feature_job_setting": None,
@@ -171,10 +172,12 @@ def test_create_time_series_table(
         reference_datetime_schema=TimestampSchema(
             format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
         ),
+        reference_timezone="Asia/Singapore",
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         description="Some description",
     )
+    assert time_series_table.reference_timezone == "Asia/Singapore"
 
     # check that node parameter is set properly
     node_params = time_series_table.frame.node.parameters

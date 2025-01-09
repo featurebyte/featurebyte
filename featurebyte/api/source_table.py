@@ -802,7 +802,7 @@ class SourceTable(AbstractTableData):
         reference_datetime_schema: TimestampSchema,
         time_interval: TimeInterval,
         series_id_column: Optional[str],
-        reference_timezone: Optional[TimeZoneName] = None,
+        reference_timezone: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
