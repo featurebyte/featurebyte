@@ -38,11 +38,11 @@ def conditional_set_skip_fill_na(skip_fill_na: Optional[bool], fill_value: Optio
     return skip_fill_na
 
 
-def validate_value_to_be_aggregated(
+def validate_value_with_timestamp_schema(
     operation_structure: OperationStructure, value_column: Optional[str]
 ) -> None:
     """
-    Validate value column to be aggregated
+    Validate value column with timestamp schema
 
     Parameters
     ----------
@@ -63,5 +63,6 @@ def validate_value_to_be_aggregated(
     timestamp_schema = column.dtype_info.timestamp_schema
     if timestamp_schema and timestamp_schema.has_timezone_offset_column:
         raise OperationNotSupportedError(
-            f"Aggregation of column '{value_column}' is not supported because it has a timezone offset column"
+            f"Aggregation of column '{value_column}' is not supported because "
+            f"it references a timezone offset column."
         )

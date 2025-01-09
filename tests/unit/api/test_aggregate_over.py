@@ -414,7 +414,7 @@ def test_time_series_view_aggregate_over_timestamp_with_offset_column(
     snowflake_time_series_table_with_tz_offset_column,
 ):
     """
-    Test aggregate_over for time series view
+    Test aggregate_over over time series column with timezone offset column
     """
     view = snowflake_time_series_table_with_tz_offset_column.get_view()
     with pytest.raises(OperationNotSupportedError) as exc_info:
@@ -428,7 +428,5 @@ def test_time_series_view_aggregate_over_timestamp_with_offset_column(
             ),
         )["col_float_sum_3month"]
 
-    expected_msg = (
-        "Aggregation of column 'date' is not supported because it has a timezone offset column"
-    )
+    expected_msg = "Aggregation of column 'date' is not supported because it references a timezone offset column."
     assert str(exc_info.value) == expected_msg
