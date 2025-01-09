@@ -522,10 +522,14 @@ def augment_scd_table_with_end_timestamp(
 
     Parameters
     ----------
+    adapter: BaseAdapter
+        SQL adapter
     table_expr: Select
         Select statement representing the SCD table
     effective_timestamp_column: str
         Effective timestamp column name
+    effective_timestamp_schema: Optional[TimestampSchema]
+        Effective timestamp schema
     natural_key_column: str
         Natural key column name
 

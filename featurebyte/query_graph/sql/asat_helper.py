@@ -29,8 +29,12 @@ def ensure_end_timestamp_column(
 
     Parameters
     ----------
+    adapter: BaseAdapter
+        Sql adapter
     effective_timestamp_column: str
         Effective timestamp column
+    effective_timestamp_schema: Optional[TimestampSchema]
+        Effective timestamp schema
     natural_key_column: str
         Natural key column
     end_timestamp_column: Optional[str]
@@ -75,8 +79,12 @@ def get_record_validity_condition(
         Sql adapter
     effective_timestamp_column: str
         Effective timestamp column
+    effective_timestamp_schema: Optional[TimestampSchema]
+        Effective timestamp schema
     end_timestamp_column: str
         End timestamp column
+    end_timestamp_schema: Optional[TimestampSchema]
+        End timestamp schema
     point_in_time_expr: Expression
         Point in time expression
 
