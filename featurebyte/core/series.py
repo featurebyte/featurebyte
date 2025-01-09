@@ -21,6 +21,8 @@ from featurebyte.core.mixin import OpsMixin, ParentMixin
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
+from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 from featurebyte.typing import Scalar, ScalarSequence, Timestamp, is_scalar_nan
 
 FrozenSeriesT = TypeVar("FrozenSeriesT", bound="FrozenSeries")
@@ -149,6 +151,31 @@ class FrozenSeries(
             name=self.name,
             dtype=self.dtype,
         )
+
+    @property
+    def node_output_category(self) -> NodeOutputCategory:
+        """
+        Get the output category of the series
+
+        Returns
+        -------
+        NodeOutputCategory
+        """
+        return self.operation_structure.output_category
+
+    @property
+    def dtype_info(self) -> DBVarTypeInfo:
+        """
+        Get the DBVarTypeInfo of the series
+
+        Returns
+        -------
+        DBVarTypeInfo
+        """
+        operation_structure = self.operation_structure
+        if self.node_output_category == NodeOutputCategory.VIEW:
+            return operation_structure.columns[0].dtype_info
+        return operation_structure.aggregations[0].dtype_info
 
     @property
     def binary_op_output_class_priority(self) -> int:
@@ -446,7 +473,10 @@ class FrozenSeries(
             node_type=NodeType.DATE_DIFF,
             output_var_type=DBVarType.TIMEDELTA,
             right_op=right_op,
-            additional_node_params={},
+            additional_node_params={
+                "left_timestamp_schema": self.dtype_info and self.dtype_info.timestamp_schema,
+                "right_timestamp_schema": other.dtype_info and other.dtype_info.timestamp_schema,
+            },
         )
 
     @typechecked
@@ -476,7 +506,9 @@ class FrozenSeries(
             node_type=NodeType.DATE_ADD,
             output_var_type=DBVarType.TIMESTAMP,
             right_op=right_op,
-            additional_node_params={},
+            additional_node_params={
+                "left_timestamp_schema": self.dtype_info and self.dtype_info.timestamp_schema,
+            },
         )
 
     @typechecked

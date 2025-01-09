@@ -283,8 +283,12 @@ class WindowAggregator(BaseAggregator):
             })
         else:
             tile_id_version = int(os.environ.get("FEATUREBYTE_TILE_ID_VERSION", "2"))
+            timestamp_column = timestamp_column or self.view.timestamp_column
             params.update({
-                "timestamp": timestamp_column or self.view.timestamp_column,
+                "timestamp": timestamp_column,
+                "timestamp_schema": self.view.operation_structure.get_timestamp_schema(
+                    timestamp_column
+                ),
                 "tile_id_version": tile_id_version,
             })
         return params

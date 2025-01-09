@@ -200,6 +200,7 @@ def test_count_distinct_agg_func(snowflake_event_view_with_entity, cust_id_entit
         "parent": "col_int",
         "serving_names": ["cust_id"],
         "timestamp": "event_timestamp",
+        "timestamp_schema": None,
         "value_by": None,
         "windows": ["7d"],
     }

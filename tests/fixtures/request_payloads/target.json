@@ -160,6 +160,7 @@
                         "cust_id"
                     ],
                     "timestamp_col": "event_timestamp",
+                    "timestamp_schema": null,
                     "value_by": null,
                     "window": "1d"
                 },

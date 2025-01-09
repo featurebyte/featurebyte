@@ -100,6 +100,7 @@ def test_forward_aggregate(forward_aggregator, offset):
         "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
         "timestamp_col": "event_timestamp",
+        "timestamp_schema": None,
     }
 
     # Assert Target's current node is the project node
@@ -137,6 +138,7 @@ def test_prepare_node_parameters(forward_aggregator):
         "value_by": None,
         "entity_ids": forward_aggregator.entity_ids,
         "timestamp_col": "timestamp_col",
+        "timestamp_schema": None,
         "offset": "1d",
     }
 

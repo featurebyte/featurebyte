@@ -12,6 +12,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithSingleOperandNode,
@@ -44,6 +45,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
 
         property: DatetimeSupportedPropertyType
         timezone_offset: Optional[str] = Field(default=None)
+        timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
     type: Literal[NodeType.DT_EXTRACT] = NodeType.DT_EXTRACT
     parameters: Parameters
@@ -217,7 +219,14 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
 class DateDifferenceNode(BaseSeriesOutputNode):
     """DateDifferenceNode class"""
 
+    class Parameters(FeatureByteBaseModel):
+        """Parameters"""
+
+        left_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+        right_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+
     type: Literal[NodeType.DATE_DIFF] = NodeType.DATE_DIFF
+    parameters: Parameters
 
     @property
     def max_input_count(self) -> int:
@@ -385,6 +394,7 @@ class DateAddNode(BaseSeriesOutputNode):
         """Parameters"""
 
         value: Optional[int] = Field(default=None)
+        left_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
     type: Literal[NodeType.DATE_ADD] = NodeType.DATE_ADD
     parameters: Parameters

@@ -117,6 +117,51 @@ class NodeType(StrEnum):
     # generic function node
     GENERIC_FUNCTION = "generic_function"
 
+    @classmethod
+    def aggregation_and_lookup_node_types(cls) -> Set["NodeType"]:
+        """
+        Returns all the aggregation and lookup node types
+
+        Returns
+        -------
+        Set[NodeType]
+        """
+        return {
+            # aggregation nodes
+            cls.GROUPBY,
+            cls.NON_TILE_WINDOW_AGGREGATE,
+            cls.TIME_SERIES_WINDOW_AGGREGATE,
+            cls.FORWARD_AGGREGATE,
+            # item groupby
+            cls.ITEM_GROUPBY,
+            # aggregation as at
+            cls.AGGREGATE_AS_AT,
+            cls.FORWARD_AGGREGATE_AS_AT,
+            # lookup nodes
+            cls.LOOKUP,
+            cls.LOOKUP_TARGET,
+        }
+
+    @classmethod
+    def non_aggregation_with_timestamp_node_types(cls) -> Set["NodeType"]:
+        """
+        Returns all the non aggregation with timestamp node types. This is used to exclude timestamp_schema from
+        non-aggregation nodes for handling hashing backward compatibility.
+
+        Returns
+        -------
+        Set[NodeType]
+        """
+        return {
+            # generic.py
+            cls.JOIN,
+            cls.TRACK_CHANGES,
+            # date.py
+            cls.DT_EXTRACT,
+            cls.DATE_DIFF,
+            cls.DATE_ADD,
+        }
+
 
 class NodeOutputType(StrEnum):
     """

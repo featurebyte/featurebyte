@@ -595,6 +595,7 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
     window: Optional[str] = Field(default=None)
     offset: Optional[str] = Field(default=None)
     timestamp_col: InColumnStr
+    timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
@@ -697,6 +698,7 @@ class BaseWindowAggregateParameters(BaseGroupbyParameters):
     names: List[OutColumnStr]
     feature_job_setting: FeatureJobSetting
     offset: Optional[str] = Field(default=None)
+    timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class GroupByNodeParameters(BaseWindowAggregateParameters):
@@ -996,6 +998,8 @@ class SCDBaseParameters(FeatureByteBaseModel):
     natural_key_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: should be compulsory
     current_flag_column: Optional[InColumnStr] = Field(default=None)
     end_timestamp_column: Optional[InColumnStr] = Field(default=None)
+    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    end_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod
@@ -1013,6 +1017,7 @@ class SCDJoinParameters(SCDBaseParameters):
     """Parameters for SCD join"""
 
     left_timestamp_column: InColumnStr
+    left_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class SCDLookupParameters(SCDBaseParameters):
@@ -1025,6 +1030,7 @@ class EventLookupParameters(FeatureByteBaseModel):
     """Parameters for EventTable lookup"""
 
     event_timestamp_column: InColumnStr
+    event_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class LookupParameters(FeatureByteBaseModel):
@@ -1695,6 +1701,7 @@ class TrackChangesNodeParameters(FeatureByteBaseModel):
     new_tracked_column_name: OutColumnStr
     previous_valid_from_column_name: OutColumnStr
     new_valid_from_column_name: OutColumnStr
+    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
 
 class TrackChangesNode(BaseNode):

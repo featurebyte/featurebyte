@@ -28,6 +28,19 @@ class DBVarTypeInfo(FeatureByteBaseModel):
     def __hash__(self) -> int:
         return hash((self.dtype, self.metadata))
 
+    @property
+    def timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Timestamp schema from the DBVarTypeInfo
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.metadata is None:
+            return None
+        return self.metadata.timestamp_schema
+
     def remap_column_name(self, column_name_map: dict[str, str]) -> "DBVarTypeInfo":
         """
         Remap column name in the DBVarTypeInfo

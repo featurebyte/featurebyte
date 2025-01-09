@@ -28,6 +28,7 @@ from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 
 
 class NodeOutputCategory(StrEnum):
@@ -663,6 +664,27 @@ class OperationStructure:
             row_index_lineage=self.row_index_lineage,
             is_time_based=self.is_time_based,
         )
+
+    def get_timestamp_schema(self, column_name: Optional[str]) -> Optional[TimestampSchema]:
+        """
+        Retrieve the timestamp schema for the given column name
+
+        Parameters
+        ----------
+        column_name: str
+            Column name
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if column_name is None:
+            return None
+
+        for column in self.columns:
+            if column.name == column_name:
+                return column.dtype_info.timestamp_schema
+        return None
 
 
 class OperationStructureInfo:
