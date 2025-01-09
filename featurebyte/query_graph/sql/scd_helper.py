@@ -10,6 +10,7 @@ from typing import Literal, Optional, cast
 from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, Identifier, Select, alias_, select
 
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
@@ -17,6 +18,7 @@ from featurebyte.query_graph.sql.common import get_qualified_column_identifier, 
 # Internally used identifiers when constructing SQL
 from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
 from featurebyte.query_graph.sql.offset import OffsetDirection, add_offset_to_timestamp
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 TS_COL = "__FB_TS_COL"
 EFFECTIVE_TS_COL = "__FB_EFFECTIVE_TS_COL"
@@ -39,6 +41,7 @@ class Table:
 
     expr: str | Expression
     timestamp_column: str | Expression
+    timestamp_schema: Optional[TimestampSchema]
     join_keys: list[str]
     input_columns: list[str]
     output_columns: list[str]
@@ -206,6 +209,7 @@ def get_scd_join_expr(
         right_table = Table(
             expr=deduplicated_expr,
             timestamp_column=right_table.timestamp_column,
+            timestamp_schema=right_table.timestamp_schema,
             join_keys=right_table.join_keys,
             input_columns=right_table.input_columns,
             output_columns=right_table.output_columns,
@@ -230,7 +234,9 @@ def get_scd_join_expr(
 
 
 def _convert_to_utc_ntz(
-    col_expr: expressions.Expression, adapter: BaseAdapter
+    col_expr: expressions.Expression,
+    timestamp_schema: Optional[TimestampSchema],
+    adapter: BaseAdapter,
 ) -> expressions.Expression:
     """
     Convert timestamp expression to UTC values and NTZ timestamps
@@ -239,6 +245,8 @@ def _convert_to_utc_ntz(
     ----------
     col_expr: expressions.Expression
         Timestamp expression to convert
+    timestamp_schema: TimestampSchema
+        Timestamp schema
     adapter: BaseAdapter
         Instance of BaseAdapter for engine specific sql generation
 
@@ -246,8 +254,14 @@ def _convert_to_utc_ntz(
     -------
     expressions.Expression
     """
-    utc_ts_expr = adapter.convert_to_utc_timestamp(col_expr)
-    return expressions.Cast(this=utc_ts_expr, to=parse_one("TIMESTAMP"))
+    if timestamp_schema is None:
+        utc_ts_expr = adapter.convert_to_utc_timestamp(col_expr)
+        return expressions.Cast(this=utc_ts_expr, to=parse_one("TIMESTAMP"))
+    return convert_timestamp_to_utc(
+        column_expr=col_expr,
+        timestamp_schema=timestamp_schema,
+        adapter=adapter,
+    )
 
 
 def augment_table_with_effective_timestamp(
@@ -332,8 +346,8 @@ def augment_table_with_effective_timestamp(
         left_ts_col = left_table.timestamp_column_expr
     right_ts_col = right_table.timestamp_column_expr
     if convert_timestamps_to_utc:
-        left_ts_col = _convert_to_utc_ntz(left_ts_col, adapter)
-        right_ts_col = _convert_to_utc_ntz(right_ts_col, adapter)
+        left_ts_col = _convert_to_utc_ntz(left_ts_col, left_table.timestamp_schema, adapter)
+        right_ts_col = _convert_to_utc_ntz(right_ts_col, right_table.timestamp_schema, adapter)
 
     # Left table. Set up special columns: TS_COL, KEY_COL, EFFECTIVE_TS_COL and TS_TIE_BREAKER_COL
     left_view_with_ts_and_key = select(
@@ -496,8 +510,10 @@ def _key_cols_equality_conditions(right_table_join_keys: list[str]) -> list[expr
 
 
 def augment_scd_table_with_end_timestamp(
+    adapter: BaseAdapter,
     table_expr: Select,
     effective_timestamp_column: str,
+    effective_timestamp_schema: Optional[TimestampSchema],
     natural_key_column: str,
 ) -> Select:
     """
@@ -517,16 +533,20 @@ def augment_scd_table_with_end_timestamp(
     -------
     Select
     """
-
+    effective_timestamp_expr = quoted_identifier(effective_timestamp_column)
+    if effective_timestamp_schema is not None:
+        effective_timestamp_expr = convert_timestamp_to_utc(
+            column_expr=effective_timestamp_expr,
+            timestamp_schema=effective_timestamp_schema,
+            adapter=adapter,
+        )
     order = expressions.Order(
         expressions=[
-            expressions.Ordered(this=quoted_identifier(effective_timestamp_column)),
+            expressions.Ordered(this=effective_timestamp_expr),
         ]
     )
     end_timestamp_expr = expressions.Window(
-        this=expressions.Anonymous(
-            this="LEAD", expressions=[quoted_identifier(effective_timestamp_column)]
-        ),
+        this=expressions.Anonymous(this="LEAD", expressions=[effective_timestamp_expr]),
         partition_by=[quoted_identifier(natural_key_column)],
         order=order,
     )

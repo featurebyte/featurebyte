@@ -5,9 +5,8 @@ Module for input data sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any
 
-from pydantic_extra_types.timezone_name import TimeZoneName
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
@@ -15,8 +14,6 @@ from featurebyte.enum import DBVarType, InternalName, TableDataType
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
-    TimeZoneColumn,
-    TimeZoneUnion,
 )
 from featurebyte.query_graph.node.input import SampleParameters
 from featurebyte.query_graph.node.schema import ColumnSpec
@@ -25,40 +22,6 @@ from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
-
-
-def convert_timezone_to_utc(
-    timezone_obj: TimeZoneUnion, adapter: BaseAdapter, column_expr: Expression
-) -> Expression:
-    """
-    Convert timestamp column to UTC
-
-    Parameters
-    ----------
-    timezone_obj: TimeZoneUnion
-        Timezone information
-    adapter: BaseAdapter
-        SQL adapter
-    column_expr: Expression
-        Column expression
-
-
-    Returns
-    -------
-    Expression
-    """
-    timezone_type: Literal["offset", "name"]
-    if isinstance(timezone_obj, TimeZoneName):
-        timezone = make_literal_value(timezone_obj)
-        timezone_type = "name"
-    else:
-        assert isinstance(timezone_obj, TimeZoneColumn)
-        timezone = quoted_identifier(timezone_obj.column_name)
-        if timezone_obj.type == "offset":
-            timezone_type = "offset"
-        else:
-            timezone_type = "name"
-    return adapter.convert_timezone_to_utc(column_expr, timezone, timezone_type)
 
 
 @dataclass
@@ -243,28 +206,42 @@ class InputNode(TableNode):
         -------
         Expression
         """
+        # # Original datetime column (could be a timestamp, date or string)
+        # column_expr: Expression = expressions.Identifier(this=column_spec.name, quoted=True)
+        #
+        # # Convert to timestamp in local time
+        # if column_spec.dtype == DBVarType.VARCHAR:
+        #     assert timestamp_schema.format_string is not None
+        #     column_expr = adapter.to_timestamp_from_string(
+        #         column_expr, timestamp_schema.format_string
+        #     )
+        # elif column_spec.dtype == DBVarType.DATE:
+        #     # Treat date type columns as end of day in the local timezone
+        #     column_expr = adapter.dateadd_second(make_literal_value(86400), column_expr)
+        #
+        # if timestamp_schema.is_utc_time:
+        #     # Already in UTC, nothing to do
+        #     return column_expr
+        #
+        # # Convert to timestamp in UTC
+        # if timestamp_schema.timezone is not None:
+        #     column_expr = convert_timezone_to_utc(
+        #         timezone_obj=timestamp_schema.timezone,
+        #         adapter=adapter,
+        #         column_expr=column_expr,
+        #     )
+        # return column_expr
+
         # Original datetime column (could be a timestamp, date or string)
         column_expr: Expression = expressions.Identifier(this=column_spec.name, quoted=True)
 
-        # Convert to timestamp in local time
-        if column_spec.dtype == DBVarType.VARCHAR:
-            assert timestamp_schema.format_string is not None
-            column_expr = adapter.to_timestamp_from_string(
-                column_expr, timestamp_schema.format_string
-            )
-        elif column_spec.dtype == DBVarType.DATE:
+        if column_spec.dtype == DBVarType.DATE:
             # Treat date type columns as end of day in the local timezone
             column_expr = adapter.dateadd_second(make_literal_value(86400), column_expr)
 
-        if timestamp_schema.is_utc_time:
-            # Already in UTC, nothing to do
-            return column_expr
-
-        # Convert to timestamp in UTC
-        if timestamp_schema.timezone is not None:
-            column_expr = convert_timezone_to_utc(
-                timezone_obj=timestamp_schema.timezone,
-                adapter=adapter,
-                column_expr=column_expr,
-            )
+        # return convert_timestamp_to_utc(
+        #     column_expr=column_expr,
+        #     timestamp_schema=timestamp_schema,
+        #     adapter=adapter,
+        # )
         return column_expr

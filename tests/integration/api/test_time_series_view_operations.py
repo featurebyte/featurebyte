@@ -169,22 +169,37 @@ def test_aggregate_over_latest(time_series_table):
     fb_assert_frame_equal(df_features, expected)
 
 
-def test_join_scd_view(time_series_table, scd_table):
+def test_join_scd_view(time_series_table, scd_table_custom_date_format):
     """
     Test joining time series view with SCD view
     """
     view = time_series_table.get_view()
-    scd_view = scd_table.get_view()
+    scd_view = scd_table_custom_date_format.get_view()
     view = view.join(scd_view)
-    df = view.preview()
+
+    # Check can preview
+    df = view[view["user_id_col"] == 7].preview()
+    assert df.iloc[0]["User Status"] == "STÀTUS_CODE_26"
+
     feature = view.groupby("series_id_col").aggregate_over(
-        value_column="value_col",
-        method="sum",
+        value_column="User Status",
+        method="count_distinct",
         windows=[CalendarWindow(unit="DAY", size=7)],
-        feature_names=["value_col_sum_7d"],
+        feature_names=["num_unique_user_status_7d"],
         feature_job_setting=CronFeatureJobSetting(
             crontab="0 8 * * *",
             timezone="Asia/Singapore",
         ),
-    )["value_col_sum_7d"]
-    raise
+    )["num_unique_user_status_7d"]
+
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-10 10:00:00"),
+            "series_id": "S0",
+        }
+    ])
+    feature_list = FeatureList([feature], "test_feature_list")
+    df_features = feature_list.compute_historical_features(preview_params)
+    expected = preview_params.copy()
+    expected["num_unique_user_status_7d"] = [5]
+    fb_assert_frame_equal(df_features, expected)

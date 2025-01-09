@@ -756,7 +756,11 @@ def scd_dataframe_custom_date_format_fixture(scd_dataframe):
     DataFrame fixture with slowly changing dimension with custom date format
     """
     data = scd_dataframe.copy()
-    data["Effective Timestamp"] = data["Effective Timestamp"].dt.strftime("%Y|%m|%d")
+    # Adjust effective timestamp to make it more friendly for testing (e.g. not producing all null
+    # values when joining with time series table)
+    data["Effective Timestamp"] = (data["Effective Timestamp"].min() - pd.Timedelta("7d")).strftime(
+        "%Y|%m|%d"
+    )
     data = (
         data.drop_duplicates(["User ID", "Effective Timestamp"])
         .sort_values(["User ID", "Effective Timestamp"])

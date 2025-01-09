@@ -686,20 +686,20 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
     feature_list = FeatureList([feature], name="test_scd_view_custom_date_format")
     observations_set = pd.DataFrame({
         "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
-        "user_status_2": ["STÀTUS_CODE_47"] * 10,
+        "user_status_2": ["STÀTUS_CODE_37"] * 10,
     })
     expected = observations_set.copy()
     expected["Current Number of Users With This Status"] = [
         1,
         1,
-        2,
         1,
         1,
         1,
-        np.nan,
-        np.nan,
-        np.nan,
-        np.nan,
+        1,
+        1,
+        1,
+        1,
+        1,
     ]
     df = feature_list.compute_historical_features(observations_set)
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
