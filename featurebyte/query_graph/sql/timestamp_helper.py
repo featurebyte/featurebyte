@@ -64,7 +64,7 @@ def convert_timestamp_to_utc(
     Parameters
     ----------
     column_expr: Expression
-        Column expression
+        Original datetime column (could be a timestamp, date or string)
     timestamp_schema: TimestampSchema
         Timestamp schema
     adapter: BaseAdapter
