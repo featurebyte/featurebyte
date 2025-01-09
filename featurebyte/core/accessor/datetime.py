@@ -482,7 +482,7 @@ class DatetimeAccessor:
         if isinstance(timezone_offset, str):
             node_params["timezone_offset"] = timezone_offset
 
-        if self._node_type == NodeType.DT_EXTRACT and self._obj.parent is not None:
+        if self._node_type == NodeType.DT_EXTRACT:
             dtype_info = self._obj.dtype_info
             if dtype_info and dtype_info.timestamp_schema:
                 node_params["timestamp_schema"] = dtype_info.timestamp_schema

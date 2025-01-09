@@ -153,19 +153,29 @@ class FrozenSeries(
         )
 
     @property
-    def dtype_info(self) -> Optional[DBVarTypeInfo]:
+    def node_output_category(self) -> NodeOutputCategory:
+        """
+        Get the output category of the series
+
+        Returns
+        -------
+        NodeOutputCategory
+        """
+        return self.operation_structure.output_category
+
+    @property
+    def dtype_info(self) -> DBVarTypeInfo:
         """
         Get the DBVarTypeInfo of the series
 
         Returns
         -------
-        Optional[DBVarTypeInfo]
+        DBVarTypeInfo
         """
         operation_structure = self.operation_structure
-        if operation_structure.output_category == NodeOutputCategory.VIEW:
+        if self.node_output_category == NodeOutputCategory.VIEW:
             return operation_structure.columns[0].dtype_info
-        # TODO: Add dtype_info for aggregations in operation_structure
-        return None
+        return operation_structure.aggregations[0].dtype_info
 
     @property
     def binary_op_output_class_priority(self) -> int:
