@@ -37,14 +37,16 @@ async def test_register_exception_handler(mock_exception_middleware_fixture):
     """
 
     mock_exception_middleware_fixture.register(
-        DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT
+        DocumentConflictError, status_code=HTTPStatus.CONFLICT
     )
     mock_exception_middleware_fixture.register(
-        DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+        DocumentError, status_code=HTTPStatus.UNPROCESSABLE_ENTITY
     )
 
     assert len(mock_exception_middleware_fixture.exception_handlers) == 2
-    assert list(map(lambda x: x[0], mock_exception_middleware_fixture.exception_handlers)) == [
+    assert list(
+        map(lambda x: x.exception_class, mock_exception_middleware_fixture.exception_handlers)
+    ) == [
         DocumentConflictError,
         DocumentError,
     ]
@@ -59,17 +61,17 @@ async def test_order_exception_handler(mock_exception_middleware_fixture):
     """
 
     mock_exception_middleware_fixture.register(
-        FeatureByteException, handle_status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+        FeatureByteException, status_code=HTTPStatus.INTERNAL_SERVER_ERROR
     )
     mock_exception_middleware_fixture.register(
-        DocumentConflictError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+        DocumentConflictError, status_code=HTTPStatus.UNPROCESSABLE_ENTITY
     )
-    mock_exception_middleware_fixture.register(
-        BaseConflictError, handle_status_code=HTTPStatus.CONFLICT
-    )
+    mock_exception_middleware_fixture.register(BaseConflictError, status_code=HTTPStatus.CONFLICT)
 
     assert len(mock_exception_middleware_fixture.exception_handlers) == 3
-    assert list(map(lambda x: x[0], mock_exception_middleware_fixture.exception_handlers)) == [
+    assert list(
+        map(lambda x: x.exception_class, mock_exception_middleware_fixture.exception_handlers)
+    ) == [
         DocumentConflictError,
         BaseConflictError,
         FeatureByteException,
@@ -82,11 +84,11 @@ async def test_duplicated_exception_handler(mock_exception_middleware_fixture):
     Test registering exception handler
     """
     mock_exception_middleware_fixture.register(
-        DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT
+        DocumentConflictError, status_code=HTTPStatus.CONFLICT
     )
     with pytest.raises(ValueError) as excinfo:
         mock_exception_middleware_fixture.register(
-            DocumentConflictError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+            DocumentConflictError, status_code=HTTPStatus.UNPROCESSABLE_ENTITY
         )
 
     assert (
@@ -103,7 +105,8 @@ async def test_register_exception_handler_register_non_exception(mock_exception_
 
     with pytest.raises(ValueError) as excinfo:
         mock_exception_middleware_fixture.register(
-            HTTPStatus, handle_status_code=HTTPStatus.CONFLICT
+            HTTPStatus,
+            status_code=HTTPStatus.CONFLICT,  # type: ignore
         )
 
     assert str(excinfo.value) == "<enum 'HTTPStatus'> must be a subtype of Exception"

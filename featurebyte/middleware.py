@@ -3,7 +3,7 @@ Handles API requests middleware
 """
 
 from http import HTTPStatus
-from typing import Any, Awaitable, Callable, List, Optional, Tuple, Type, Union
+from typing import Any, Awaitable, Callable, List, Optional, Type, Union
 
 from fastapi import FastAPI, Request, Response
 from pydantic import ValidationError
@@ -24,37 +24,119 @@ from featurebyte.logging import get_logger
 logger = get_logger(__name__)
 
 
-class ExceptionMiddleware(BaseHTTPMiddleware):
+class ApiExceptionProcessor:
     """
-    Middleware used by FastAPI to process each request
+    Exception processor class
+
+    All registered exception handlers processed by api will be processed by this class
     """
 
-    exception_handlers: List[
-        Tuple[
-            Type[BaseException],
-            Union[int, Callable[[Request, BaseException], int]],
-            Optional[Union[str, Callable[[Request, BaseException], str]]],
-        ]
-    ] = []
+    @staticmethod
+    def default_response(_: BaseException, status_code: int, message: str) -> Response:
+        """
+        Default response for exception
+
+        Parameters
+        ----------
+        _: BaseException
+            Exception object
+        status_code: int
+            HTTP status code
+        message: str
+            Exception message
+
+        Returns
+        -------
+        Response
+        """
+        return JSONResponse(content={"detail": message}, status_code=status_code)
+
+    @staticmethod
+    def default_message(_: Request, exc: BaseException) -> str:
+        """
+        Default exception message
+
+        Parameters
+        ----------
+        _: Request
+            Request object
+        exc: BaseException
+            Exception object
+
+        Returns
+        -------
+        str
+        """
+        return str(exc)
+
+    def __init__(
+        self,
+        exception_class: Type[BaseException],
+        status_code: Union[int, Callable[[Request, BaseException], int]],
+        message: Union[str, Callable[[Request, BaseException], str]],
+        response: Callable[[BaseException, int, str], Response],
+    ):
+        self.exception_class = exception_class
+        self.status_code = status_code
+        self.response = response
+        self.message = message
+
+    def handle(self, request: Request, exc: BaseException) -> Response:
+        """
+        Handle exception returning a response
+
+        Parameters
+        ----------
+        request: Request
+            Request object
+        exc: BaseException
+            Exception object
+
+        Returns
+        -------
+        Response
+        """
+        status_code = (
+            self.status_code
+            if isinstance(self.status_code, int)
+            else self.status_code(request, exc)
+        )
+        message = self.message if isinstance(self.message, str) else self.message(request, exc)
+        return self.response(exc, status_code, message)
+
+
+class ExceptionMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware used by FastAPI to handle and manage exceptions
+
+    This middleware will handle exceptions and return a response to the client
+    No other middleware should be mutating the response after this middleware
+    """
+
+    exception_handlers: List[ApiExceptionProcessor] = []
 
     @classmethod
     def register(
         cls,
-        except_class: Any,
-        handle_status_code: Union[int, Callable[[Request, BaseException], int]],
-        handle_message: Optional[Union[str, Callable[[Request, BaseException], str]]] = None,
+        exception_class: Type[BaseException],
+        status_code: Union[int, Callable[[Request, BaseException], int]],
+        message: Optional[Union[str, Callable[[Request, BaseException], str]]] = None,
+        response: Optional[Callable[[BaseException, int, str], Response]] = None,
     ) -> None:
         """
         Register handlers for exception
 
         Parameters
         ----------
-        except_class: Any
+        exception_class: Any
             exception class to be handled
-        handle_status_code: Union[int, Callable[[Request, BaseException], int]]
+        status_code: Union[int, Callable[[Request, BaseException], int]]
             http status code or a lambda function for customize status code
-        handle_message: Optional[Union[str, Callable[[Request, BaseException], str]]]
+        message: Optional[Union[str, Callable[[Request, BaseException], str]]]
             exception message or a lambda function for customize exception message
+            defaults to ApiExceptionProcessor.default_message
+        response: Optional[Callable[[BaseException, int, str], Response]]
+            function to generate response, defaults to ApiExceptionProcessor.default_response
 
         Raises
         ----------
@@ -62,24 +144,26 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
             when except_class has already been registered
             or when except_class is not a subtype of Exception
         """
-        if not issubclass(except_class, BaseException):
-            raise ValueError(f"{except_class} must be a subtype of Exception")
+        if not issubclass(exception_class, BaseException):
+            raise ValueError(f"{exception_class} must be a subtype of Exception")
 
+        new_api_exception_processor = ApiExceptionProcessor(
+            exception_class,
+            status_code,
+            message if message else ApiExceptionProcessor.default_message,
+            response if response else ApiExceptionProcessor.default_response,
+        )
         inserted = False
         for i in range(len(cls.exception_handlers)):
-            if except_class == cls.exception_handlers[i][0]:
-                raise ValueError(f"Exception {except_class} has already registered")
-            if issubclass(except_class, cls.exception_handlers[i][0]):
+            if exception_class == cls.exception_handlers[i].exception_class:
+                raise ValueError(f"Exception {exception_class} has already registered")
+            if issubclass(exception_class, cls.exception_handlers[i].exception_class):
                 inserted = True
-                cls.exception_handlers = (
-                    cls.exception_handlers[:i]
-                    + [(except_class, handle_status_code, handle_message)]
-                    + cls.exception_handlers[i:]
-                )
+                cls.exception_handlers.insert(i, new_api_exception_processor)
                 break
 
         if not inserted:
-            cls.exception_handlers.append((except_class, handle_status_code, handle_message))
+            cls.exception_handlers.append(new_api_exception_processor)
 
     @classmethod
     def unregister(cls, except_class: Any) -> None:
@@ -91,9 +175,9 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         except_class: Any
             exception class to be un-register
         """
-        for i in range(len(cls.exception_handlers)):
-            if except_class == cls.exception_handlers[i][0]:
-                cls.exception_handlers.pop(i)
+        for handler in cls.exception_handlers:
+            if except_class == handler.exception_class:
+                cls.exception_handlers.remove(handler)
                 break
 
     def __init__(self, app: FastAPI):
@@ -119,23 +203,10 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         try:
             return await call_next(request)
         except Exception as exc:
-            for except_class, handle_status_code, handle_message in self.exception_handlers:
+            for exception_handler in self.exception_handlers:
                 # Found a matching exception
-                if isinstance(exc, except_class):
-                    status_code = (
-                        handle_status_code
-                        if isinstance(handle_status_code, int)
-                        else handle_status_code(request, exc)
-                    )
-                    message = str(exc)
-                    if handle_message is not None:
-                        message = (
-                            handle_message
-                            if isinstance(handle_message, str)
-                            else handle_message(request, exc)
-                        )
-
-                    return JSONResponse(content={"detail": message}, status_code=status_code)
+                if isinstance(exc, exception_handler.exception_class):
+                    return exception_handler.handle(request, exc)
 
             # Default exception handling
             return JSONResponse(
@@ -146,46 +217,46 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
 # UNPROCESSABLE_ENTITY errors
 ExceptionMiddleware.register(
     DocumentNotFoundError,
-    handle_status_code=lambda req, exc: (
+    status_code=lambda req, exc: (
         HTTPStatus.UNPROCESSABLE_ENTITY if req.method == "POST" else HTTPStatus.NOT_FOUND
     ),
 )
 
 ExceptionMiddleware.register(
     ColumnNotFoundError,
-    handle_status_code=lambda req, exc: (
+    status_code=lambda req, exc: (
         HTTPStatus.UNPROCESSABLE_ENTITY if req.method == "POST" else HTTPStatus.NOT_FOUND
     ),
 )
 
-ExceptionMiddleware.register(ValidationError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
+ExceptionMiddleware.register(ValidationError, status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
 
 ExceptionMiddleware.register(
-    BaseUnprocessableEntityError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+    BaseUnprocessableEntityError, status_code=HTTPStatus.UNPROCESSABLE_ENTITY
 )
 
 
 # CONFLICT errors
-ExceptionMiddleware.register(BaseConflictError, handle_status_code=HTTPStatus.CONFLICT)
+ExceptionMiddleware.register(BaseConflictError, status_code=HTTPStatus.CONFLICT)
 
 
 # NOT_IMPLEMENTED errors
 ExceptionMiddleware.register(
     QueryNotSupportedError,
-    handle_status_code=HTTPStatus.NOT_IMPLEMENTED,
-    handle_message="Query not supported.",
+    status_code=HTTPStatus.NOT_IMPLEMENTED,
+    message="Query not supported.",
 )
 
 
 # FAILED_DEPENDENCY errors
 ExceptionMiddleware.register(
     BaseFailedDependencyError,
-    handle_status_code=HTTPStatus.FAILED_DEPENDENCY,
+    status_code=HTTPStatus.FAILED_DEPENDENCY,
 )
 
 
 # TimeoutError errors
 ExceptionMiddleware.register(
     TimeOutError,
-    handle_status_code=HTTPStatus.REQUEST_TIMEOUT,
+    status_code=HTTPStatus.REQUEST_TIMEOUT,
 )
