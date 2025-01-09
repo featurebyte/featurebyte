@@ -84,7 +84,10 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         except_class: Any
             exception class to be un-register
         """
-        cls.exception_handlers.pop(except_class)
+        for i in range(len(cls.exception_handlers)):
+            if except_class == cls.exception_handlers[i][0]:
+                cls.exception_handlers.pop(i)
+                break
 
 
     def __init__(self, app: FastAPI):
