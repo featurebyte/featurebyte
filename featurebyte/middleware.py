@@ -5,7 +5,7 @@ Handles API requests middleware
 from http import HTTPStatus
 from typing import Awaitable, Callable, List, Optional, Type, Union
 
-from fastapi import FastAPI, Request, Response
+from fastapi import Request, Response
 from pydantic import ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
@@ -173,15 +173,12 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         Parameters
         ----------
         except_class: Type[BaseException]
-            exception class to be un-register
+            exception class to be unregistered
         """
         for handler in cls.exception_handlers:
             if except_class == handler.exception_class:
                 cls.exception_handlers.remove(handler)
                 break
-
-    def __init__(self, app: FastAPI):
-        super().__init__(app)
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
