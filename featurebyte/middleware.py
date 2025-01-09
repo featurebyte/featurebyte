@@ -3,7 +3,7 @@ Handles API requests middleware
 """
 
 from http import HTTPStatus
-from typing import Any, Awaitable, Callable, List, Optional, Type, Union
+from typing import Awaitable, Callable, List, Optional, Type, Union
 
 from fastapi import FastAPI, Request, Response
 from pydantic import ValidationError
@@ -166,13 +166,13 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
             cls.exception_handlers.append(new_api_exception_processor)
 
     @classmethod
-    def unregister(cls, except_class: Any) -> None:
+    def unregister(cls, except_class: Type[BaseException]) -> None:
         """
         Un-Register handlers for exception
 
         Parameters
         ----------
-        except_class: Any
+        except_class: Type[BaseException]
             exception class to be un-register
         """
         for handler in cls.exception_handlers:
@@ -202,7 +202,7 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         """
         try:
             return await call_next(request)
-        except Exception as exc:
+        except BaseException as exc:
             for exception_handler in self.exception_handlers:
                 # Found a matching exception
                 if isinstance(exc, exception_handler.exception_class):
