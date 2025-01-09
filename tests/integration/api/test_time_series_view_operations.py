@@ -14,6 +14,7 @@ def test_times_series_view(time_series_table):
     """
     view = time_series_table.get_view()
     view = view[view["series_id_col"] == "S0"]
+    view = view[["reference_datetime_col", "series_id_col", "value_col"]]
     df_preview = view.preview()
     actual = df_preview.to_dict(orient="list")
     expected = {
@@ -166,3 +167,24 @@ def test_aggregate_over_latest(time_series_table):
     expected["value_col_sum_7d"] = [0.35]
     expected["value_col_latest_7d"] = [0.08]
     fb_assert_frame_equal(df_features, expected)
+
+
+def test_join_scd_view(time_series_table, scd_table):
+    """
+    Test joining time series view with SCD view
+    """
+    view = time_series_table.get_view()
+    scd_view = scd_table.get_view()
+    view = view.join(scd_view)
+    df = view.preview()
+    feature = view.groupby("series_id_col").aggregate_over(
+        value_column="value_col",
+        method="sum",
+        windows=[CalendarWindow(unit="DAY", size=7)],
+        feature_names=["value_col_sum_7d"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        ),
+    )["value_col_sum_7d"]
+    raise
