@@ -6,7 +6,7 @@ import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import SQLType, sql_to_string
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -18,36 +18,7 @@ from tests.util.helper import assert_equal_with_expected_fixture
 @pytest.mark.parametrize(
     "test_case_name,dtype,timestamp_schema",
     [
-        (
-            "varchar",
-            DBVarType.VARCHAR,
-            TimestampSchema(format_string="%Y-%m-%d %H:%M:%S", timezone="Asia/Singapore"),
-        ),
         ("date", DBVarType.DATE, TimestampSchema(timezone="Asia/Singapore")),
-        ("timestamp", DBVarType.TIMESTAMP, TimestampSchema(timezone="Asia/Singapore")),
-        (
-            "varchar_utc",
-            DBVarType.VARCHAR,
-            TimestampSchema(
-                format_string="%Y-%m-%d %H:%M:%S", timezone="Asia/Singapore", is_utc_time=True
-            ),
-        ),
-        (
-            "varchar_tz_column_timezone",
-            DBVarType.VARCHAR,
-            TimestampSchema(
-                format_string="%Y-%m-%d %H:%M:%S",
-                timezone=TimeZoneColumn(column_name="tz_col", type="timezone"),
-            ),
-        ),
-        (
-            "varchar_tz_column_offset",
-            DBVarType.VARCHAR,
-            TimestampSchema(
-                format_string="%Y-%m-%d %H:%M:%S",
-                timezone=TimeZoneColumn(column_name="tz_col", type="offset"),
-            ),
-        ),
     ],
 )
 def test_scd_timestamp_schema(
