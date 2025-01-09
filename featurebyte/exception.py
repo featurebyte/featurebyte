@@ -177,6 +177,7 @@ class ObjectHasBeenSavedError(FeatureByteException):
     Raise when the object has been saved before
     """
 
+
 class CredentialsError(BaseUnprocessableEntityError):
     """
     Raise when the credentials used to access the resource is missing or invalid

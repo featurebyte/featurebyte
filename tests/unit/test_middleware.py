@@ -7,8 +7,12 @@ from http import HTTPStatus
 
 import pytest
 
-from featurebyte.exception import DocumentConflictError, DocumentCreationError, DocumentError, FeatureByteException, \
-    BaseConflictError
+from featurebyte.exception import (
+    BaseConflictError,
+    DocumentConflictError,
+    DocumentError,
+    FeatureByteException,
+)
 from featurebyte.middleware import ExceptionMiddleware
 
 
@@ -32,11 +36,19 @@ async def test_register_exception_handler(mock_exception_middleware_fixture):
     Test registering exception handler
     """
 
-    mock_exception_middleware_fixture.register(DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT)
-    mock_exception_middleware_fixture.register(DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
+    mock_exception_middleware_fixture.register(
+        DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT
+    )
+    mock_exception_middleware_fixture.register(
+        DocumentError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+    )
 
     assert len(mock_exception_middleware_fixture.exception_handlers) == 2
-    assert list(map(lambda x: x[0], mock_exception_middleware_fixture.exception_handlers)) == [DocumentConflictError, DocumentError]
+    assert list(map(lambda x: x[0], mock_exception_middleware_fixture.exception_handlers)) == [
+        DocumentConflictError,
+        DocumentError,
+    ]
+
 
 @pytest.mark.asyncio
 async def test_order_exception_handler(mock_exception_middleware_fixture):
@@ -46,22 +58,36 @@ async def test_order_exception_handler(mock_exception_middleware_fixture):
     FeaturebyteException -> BaseConflictError -> DocumentConflictError
     """
 
-    mock_exception_middleware_fixture.register(FeatureByteException, handle_status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
-    mock_exception_middleware_fixture.register(DocumentConflictError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
-    mock_exception_middleware_fixture.register(BaseConflictError, handle_status_code=HTTPStatus.CONFLICT)
-
+    mock_exception_middleware_fixture.register(
+        FeatureByteException, handle_status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+    )
+    mock_exception_middleware_fixture.register(
+        DocumentConflictError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+    )
+    mock_exception_middleware_fixture.register(
+        BaseConflictError, handle_status_code=HTTPStatus.CONFLICT
+    )
 
     assert len(mock_exception_middleware_fixture.exception_handlers) == 3
-    assert list(map(lambda x: x[0], mock_exception_middleware_fixture.exception_handlers)) == [DocumentConflictError, BaseConflictError, FeatureByteException]
+    assert list(map(lambda x: x[0], mock_exception_middleware_fixture.exception_handlers)) == [
+        DocumentConflictError,
+        BaseConflictError,
+        FeatureByteException,
+    ]
+
 
 @pytest.mark.asyncio
 async def test_duplicated_exception_handler(mock_exception_middleware_fixture):
     """
     Test registering exception handler
     """
-    mock_exception_middleware_fixture.register(DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT)
+    mock_exception_middleware_fixture.register(
+        DocumentConflictError, handle_status_code=HTTPStatus.CONFLICT
+    )
     with pytest.raises(ValueError) as excinfo:
-        mock_exception_middleware_fixture.register(DocumentConflictError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY)
+        mock_exception_middleware_fixture.register(
+            DocumentConflictError, handle_status_code=HTTPStatus.UNPROCESSABLE_ENTITY
+        )
 
     assert (
         str(excinfo.value)
@@ -76,9 +102,8 @@ async def test_register_exception_handler_register_non_exception(mock_exception_
     """
 
     with pytest.raises(ValueError) as excinfo:
-        mock_exception_middleware_fixture.register(HTTPStatus, handle_status_code=HTTPStatus.CONFLICT)
+        mock_exception_middleware_fixture.register(
+            HTTPStatus, handle_status_code=HTTPStatus.CONFLICT
+        )
 
-    assert (
-        str(excinfo.value)
-        == "<enum 'HTTPStatus'> must be a subtype of Exception"
-    )
+    assert str(excinfo.value) == "<enum 'HTTPStatus'> must be a subtype of Exception"
