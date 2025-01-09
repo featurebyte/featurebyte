@@ -71,7 +71,9 @@ class TimeSeriesTable(TableApiObject):
     )
     internal_reference_datetime_column: StrictStr = Field(alias="reference_datetime_column")
     internal_reference_datetime_schema: TimestampSchema = Field(alias="reference_datetime_schema")
-    internal_reference_timezone: Optional[TimeZoneName] = Field(alias="reference_timezone", default=None)
+    internal_reference_timezone: Optional[TimeZoneName] = Field(
+        alias="reference_timezone", default=None
+    )
     internal_time_interval: TimeInterval = Field(alias="time_interval")
     internal_series_id_column: Optional[StrictStr] = Field(alias="series_id_column", default=None)
 

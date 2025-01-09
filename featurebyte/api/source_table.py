@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple, Type, Ty
 import pandas as pd
 from bson import ObjectId
 from pydantic import Field
-from pydantic_extra_types.timezone_name import TimeZoneName
 from typeguard import typechecked
 
 from featurebyte.api.entity import Entity
