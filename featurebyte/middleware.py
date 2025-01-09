@@ -4,7 +4,7 @@ Handles API requests middleware
 
 import inspect
 from http import HTTPStatus
-from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union
+from typing import Any, Awaitable, Callable, Dict, Optional, Type, Union, Tuple, List
 
 from fastapi import FastAPI, Request, Response
 from pydantic import ValidationError
@@ -30,14 +30,17 @@ class ExecutionContext:
     ExecutionContext to handle exception and http status code globally
     """
 
-    exception_handlers: Dict[Type[Exception], Any] = {}
+    exception_handlers: List[Tuple[
+        Type[BaseException],
+        Union[int, Callable[[Request, BaseException], int]],
+        Optional[Union[str, Callable[[Request, BaseException], str]]]]] = []
 
     @classmethod
     def register(
         cls,
         except_class: Any,
-        handle_status_code: Union[int, Callable[[Request, Exception], int]],
-        handle_message: Optional[Union[str, Callable[[Request, Exception], str]]] = None,
+        handle_status_code: Union[int, Callable[[Request, BaseException], int]],
+        handle_message: Optional[Union[str, Callable[[Request, BaseException], str]]] = None,
     ) -> None:
         """
         Register handlers for exception
@@ -54,19 +57,23 @@ class ExecutionContext:
         Raises
         ----------
         ValueError
-            when except_class is not a subclass of Exception
+            when except_class has already been registered
+            or when except_class is not a subtype of Exception
         """
-        if not issubclass(except_class, Exception):
-            raise ValueError(f"registered key Type {except_class} must be a subtype of Exception")
+        if not issubclass(except_class, BaseException):
+            raise ValueError(f"{except_class} must be a subtype of Exception")
 
-        super_classes = inspect.getmro(except_class)[1:-3]
-        for super_clazz in super_classes:
-            if super_clazz in cls.exception_handlers:
-                raise ValueError(
-                    f"{except_class} must be registered before its super class {super_clazz}"
-                )
+        inserted = False
+        for i in range(len(cls.exception_handlers)):
+            if except_class == cls.exception_handlers[i][0]:
+                raise ValueError(f"Exception {except_class} has already registered")
+            if issubclass(except_class, cls.exception_handlers[i][0]):
+                inserted = True
+                cls.exception_handlers = cls.exception_handlers[:i] + [(except_class, handle_status_code, handle_message)] + cls.exception_handlers[i:]
+                break
 
-        cls.exception_handlers[except_class] = (handle_status_code, handle_message)
+        if not inserted:
+            cls.exception_handlers.append((except_class, handle_status_code, handle_message))
 
     @classmethod
     def unregister(cls, except_class: Any) -> None:
@@ -84,7 +91,7 @@ class ExecutionContext:
         self.request = request
         self.call_next = call_next
 
-    async def execute(self) -> Optional[Response]:
+    async def execute(self) -> Response:
         """
         Actual executor of request/response. When catching exception, it will iterate through the exception handlers
         and return the http status code and message accordingly
@@ -102,10 +109,7 @@ class ExecutionContext:
         try:
             return await self.call_next(self.request)
         except Exception as exc:
-            for except_class, (
-                handle_status_code,
-                handle_message,
-            ) in self.exception_handlers.items():
+            for except_class, handle_status_code, handle_message in self.exception_handlers:
                 if isinstance(exc, except_class):
                     if isinstance(handle_status_code, int):
                         status_code = handle_status_code
@@ -122,7 +126,8 @@ class ExecutionContext:
 
                     return JSONResponse(content={"detail": message}, status_code=status_code)
 
-            raise exc
+            # Default exception handling
+            return JSONResponse(content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
 
     async def __aenter__(self) -> Any:
         """
@@ -223,12 +228,5 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         -------
         Response
         """
-        try:
-            async with ExecutionContext(request, call_next) as executor:
-                response: Response = await executor.execute()
-        except Exception as exc:
-            logger.exception(str(exc))
-            return JSONResponse(
-                content={"detail": str(exc)}, status_code=HTTPStatus.INTERNAL_SERVER_ERROR
-            )
-        return response
+        async with ExecutionContext(request, call_next) as executor:
+            return await executor.execute()
