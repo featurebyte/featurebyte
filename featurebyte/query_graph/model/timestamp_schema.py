@@ -53,3 +53,16 @@ class TimestampSchema(FeatureByteBaseModel):
         if self.is_utc_time is False and self.timezone is None:
             raise ValueError("Timezone must be provided for local time")
         return self
+
+    @property
+    def has_timezone_offset_column(self) -> bool:
+        """
+        Whether the timestamp schema has a timezone offset column
+
+        Returns
+        -------
+        bool
+        """
+        if self.timezone and isinstance(self.timezone, TimeZoneColumn):
+            return True
+        return False

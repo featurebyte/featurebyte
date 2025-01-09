@@ -7,6 +7,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Optional, Type, Union
 
+from featurebyte.api.aggregator.util import validate_value_with_timestamp_schema
 from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.feature import Feature
 from featurebyte.api.target import Target
@@ -101,6 +102,7 @@ class BaseAggregator(ABC):
                 f"{method} aggregation method is not supported for {self.aggregation_method_name}"
             )
 
+        validate_value_with_timestamp_schema(self.view.operation_structure, value_column)
         validate_vector_aggregate_parameters(self.view.columns_info, value_column, method)
 
     @staticmethod

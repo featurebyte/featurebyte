@@ -22,7 +22,6 @@ from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo
-from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 from featurebyte.typing import Scalar, ScalarSequence, Timestamp, is_scalar_nan
 
 FrozenSeriesT = TypeVar("FrozenSeriesT", bound="FrozenSeries")
@@ -153,17 +152,6 @@ class FrozenSeries(
         )
 
     @property
-    def node_output_category(self) -> NodeOutputCategory:
-        """
-        Get the output category of the series
-
-        Returns
-        -------
-        NodeOutputCategory
-        """
-        return self.operation_structure.output_category
-
-    @property
     def dtype_info(self) -> DBVarTypeInfo:
         """
         Get the DBVarTypeInfo of the series
@@ -172,10 +160,7 @@ class FrozenSeries(
         -------
         DBVarTypeInfo
         """
-        operation_structure = self.operation_structure
-        if self.node_output_category == NodeOutputCategory.VIEW:
-            return operation_structure.columns[0].dtype_info
-        return operation_structure.aggregations[0].dtype_info
+        return self.operation_structure.series_output_dtype_info
 
     @property
     def binary_op_output_class_priority(self) -> int:
