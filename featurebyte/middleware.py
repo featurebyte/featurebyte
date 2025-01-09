@@ -200,6 +200,9 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         try:
             return await call_next(request)
         except BaseException as exc:
+            # Setting exception info in request state
+            # This will be used by logging middleware to print execption info
+            request.state.exc_info = exc
             for exception_handler in self.exception_handlers:
                 # Found a matching exception
                 if isinstance(exc, exception_handler.exception_class):
