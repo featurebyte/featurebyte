@@ -84,6 +84,12 @@ class QueryNotSupportedError(NotImplementedError):
     """
 
 
+class OperationNotSupportedError(NotImplementedError):
+    """
+    Raise when the operation is not supported
+    """
+
+
 class BaseUnprocessableEntityError(FeatureByteException):
     """
     Base exception class for 422 Unprocessable Entity responses
