@@ -906,6 +906,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
         "reference_datetime_schema.is_utc_time",
         "reference_datetime_schema.format_string",
         "reference_datetime_schema.timezone",
+        "reference_timezone",
         "time_interval.unit",
         "time_interval.value",
     }

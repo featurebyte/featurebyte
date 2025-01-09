@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from bson import ObjectId
 from pydantic import Field, StrictStr
+from pydantic_extra_types.timezone_name import TimeZoneName
 from typing_extensions import Annotated, Literal
 
 from featurebyte.common.join_utils import (
@@ -644,6 +645,7 @@ class TimeSeriesTableData(BaseTableData):
     series_id_column: Optional[StrictStr]
     reference_datetime_column: StrictStr
     reference_datetime_schema: TimestampSchema
+    reference_timezone: Optional[TimeZoneName] = Field(default=None)
     time_interval: TimeInterval
 
     @property
