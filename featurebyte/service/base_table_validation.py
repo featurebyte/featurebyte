@@ -16,12 +16,12 @@ from featurebyte.exception import TableValidationError
 from featurebyte.models.entity_universe import columns_not_null
 from featurebyte.models.feature_store import TableModel, TableValidation, TableValidationStatus
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.sql.ast.input import convert_timezone_to_utc
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
     sql_to_string,
 )
+from featurebyte.query_graph.sql.timestamp_helper import convert_timezone_to_utc
 from featurebyte.service.base_table_document import (
     BaseTableDocumentService,
     DocumentCreate,

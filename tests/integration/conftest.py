@@ -756,7 +756,11 @@ def scd_dataframe_custom_date_format_fixture(scd_dataframe):
     DataFrame fixture with slowly changing dimension with custom date format
     """
     data = scd_dataframe.copy()
-    data["Effective Timestamp"] = data["Effective Timestamp"].dt.strftime("%Y%m%d")
+    # Adjust effective timestamp to make it more friendly for testing (e.g. not producing all null
+    # values when joining with time series table)
+    data["Effective Timestamp"] = (data["Effective Timestamp"].min() - pd.Timedelta("7d")).strftime(
+        "%Y|%m|%d"
+    )
     data = (
         data.drop_duplicates(["User ID", "Effective Timestamp"])
         .sort_values(["User ID", "Effective Timestamp"])
@@ -777,7 +781,7 @@ def scd_dataframe_custom_date_with_tz_format_fixture(scd_dataframe):
     timestamps = pd.to_datetime(data["Effective Timestamp"])
     data["timezone_offset"] = timestamps.dt.strftime("%z")
     data["invalid_timezone_offset"] = "xyz" + data["timezone_offset"]
-    data["effective_timestamp"] = timestamps.dt.strftime("%Y%m%d")
+    data["effective_timestamp"] = timestamps.dt.strftime("%Y|%m|%d")
     data = (
         data.drop_duplicates(["User ID", "effective_timestamp"])
         .sort_values(["User ID", "Effective Timestamp"])
@@ -791,17 +795,19 @@ def time_series_dataframe_fixture(scd_dataframe):
     """
     DataFrame fixture for time series data
     """
+    rng = np.random.RandomState(0)
     start_date = scd_dataframe["Effective Timestamp"].dt.floor("d").min()
     num_rows = 100
     dfs = []
     series_ids = ["S{}".format(i) for i in range(10)]
     reference_dates = (
-        pd.date_range(start_date, freq="1d", periods=num_rows).to_series().dt.strftime("%Y%m%d")
+        pd.date_range(start_date, freq="1d", periods=num_rows).to_series().dt.strftime("%Y|%m|%d")
     )
     for i, series_id in enumerate(series_ids):
         df = pd.DataFrame({
             "reference_datetime_col": reference_dates,
             "series_id_col": [series_id] * num_rows,
+            "user_id_col": rng.choice(scd_dataframe["User ID"].unique(), num_rows),
             "value_col": np.arange(0, num_rows) / num_rows + i,
         })
         dfs.append(df)
@@ -1666,10 +1672,10 @@ def scd_table_timestamp_format_string_fixture(source_type):
     Fixture for custom date format string that is platform specific
     """
     if source_type == SourceType.SNOWFLAKE:
-        return "YYYYMMDD"
+        return "YYYY|MM|DD"
     if source_type == SourceType.BIGQUERY:
-        return "%Y%m%d"
-    return "yyyyMMdd"
+        return "%Y|%m|%d"
+    return "yyyy|MM|dd"
 
 
 @pytest.fixture(name="scd_table_timestamp_with_tz_format_string", scope="session")
@@ -1719,6 +1725,7 @@ def time_series_table_fixture(
     time_series_table_name,
     scd_table_timestamp_format_string,
     series_entity,
+    user_entity,
     catalog,
 ):
     """
@@ -1733,6 +1740,7 @@ def time_series_table_fixture(
         series_id_column="series_id_col",
     )
     time_series_table["series_id_col"].as_entity(series_entity.name)
+    time_series_table["user_id_col"].as_entity(user_entity.name)
     return time_series_table
 
 

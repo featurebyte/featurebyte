@@ -75,6 +75,7 @@ class LatestAggregator(TileBasedAggregator):
             left_table = Table(
                 expr=table_expr,
                 timestamp_column=last_tile_index_expr,
+                timestamp_schema=None,
                 join_keys=specs[0].serving_names,
                 input_columns=current_columns,
                 output_columns=current_columns,
@@ -90,6 +91,7 @@ class LatestAggregator(TileBasedAggregator):
             right_table = Table(
                 expr=specs[0].tile_table_id,
                 timestamp_column="INDEX",
+                timestamp_schema=None,
                 join_keys=specs[0].keys,
                 input_columns=tile_value_columns,
                 output_columns=agg_result_names,

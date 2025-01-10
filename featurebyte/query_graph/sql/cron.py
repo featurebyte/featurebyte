@@ -114,6 +114,7 @@ def get_request_table_joined_job_schedule_expr(
     left_table = Table(
         expr=quoted_identifier(request_table_name),
         timestamp_column=SpecialColumnName.POINT_IN_TIME,
+        timestamp_schema=None,
         join_keys=[],
         input_columns=request_table_columns,
         output_columns=request_table_columns,
@@ -121,6 +122,7 @@ def get_request_table_joined_job_schedule_expr(
     right_table = Table(
         expr=quoted_identifier(job_schedule_table_name),
         timestamp_column=InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC,
+        timestamp_schema=None,
         join_keys=[],
         input_columns=[InternalName.CRON_JOB_SCHEDULE_DATETIME],
         output_columns=[InternalName.CRON_JOB_SCHEDULE_DATETIME],

@@ -92,7 +92,9 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
         """
         spec = specs[0]
         end_timestamp_column, scd_expr = ensure_end_timestamp_column(
+            adapter=self.adapter,
             effective_timestamp_column=spec.parameters.effective_timestamp_column,
+            effective_timestamp_schema=spec.parameters.effective_timestamp_schema,
             natural_key_column=cast(str, spec.parameters.natural_key_column),
             end_timestamp_column=spec.parameters.end_timestamp_column,
             source_expr=spec.source_expr,
@@ -129,7 +131,9 @@ class BaseAsAtAggregator(NonTileBasedAggregator[AsAtSpecT]):
         record_validity_condition = get_record_validity_condition(
             adapter=self.adapter,
             effective_timestamp_column=spec.parameters.effective_timestamp_column,
+            effective_timestamp_schema=spec.parameters.effective_timestamp_schema,
             end_timestamp_column=end_timestamp_column,
+            end_timestamp_schema=spec.parameters.end_timestamp_schema,
             point_in_time_expr=point_in_time_expr,
         )
         join_condition = expressions.and_(join_key_condition, record_validity_condition)

@@ -14,20 +14,22 @@ def test_times_series_view(time_series_table):
     """
     view = time_series_table.get_view()
     view = view[view["series_id_col"] == "S0"]
-    df_preview = view.preview()
-    actual = df_preview.to_dict(orient="list")
+    view = view[["reference_datetime_col", "series_id_col", "value_col"]]
+    df_preview = view.preview(limit=10000)
+    df_preview.sort_values("reference_datetime_col", inplace=True)
+    actual = df_preview.iloc[:10].to_dict(orient="list")
     expected = {
         "reference_datetime_col": [
-            "20010101",
-            "20010102",
-            "20010103",
-            "20010104",
-            "20010105",
-            "20010106",
-            "20010107",
-            "20010108",
-            "20010109",
-            "20010110",
+            "2001|01|01",
+            "2001|01|02",
+            "2001|01|03",
+            "2001|01|04",
+            "2001|01|05",
+            "2001|01|06",
+            "2001|01|07",
+            "2001|01|08",
+            "2001|01|09",
+            "2001|01|10",
         ],
         "series_id_col": ["S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0"],
         "value_col": [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09],
@@ -165,4 +167,40 @@ def test_aggregate_over_latest(time_series_table):
     # features should aggregate the values from "2001-01-03" to "2001-01-09" inclusive.
     expected["value_col_sum_7d"] = [0.35]
     expected["value_col_latest_7d"] = [0.08]
+    fb_assert_frame_equal(df_features, expected)
+
+
+def test_join_scd_view(time_series_table, scd_table_custom_date_format):
+    """
+    Test joining time series view with SCD view
+    """
+    view = time_series_table.get_view()
+    scd_view = scd_table_custom_date_format.get_view()
+    view = view.join(scd_view)
+
+    # Check can preview
+    df = view[view["user_id_col"] == 7].preview()
+    assert df.iloc[0]["User Status"] == "STÀTUS_CODE_26"
+
+    feature = view.groupby("series_id_col").aggregate_over(
+        value_column="User Status",
+        method="count_distinct",
+        windows=[CalendarWindow(unit="DAY", size=7)],
+        feature_names=["num_unique_user_status_7d"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        ),
+    )["num_unique_user_status_7d"]
+
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-10 10:00:00"),
+            "series_id": "S0",
+        }
+    ])
+    feature_list = FeatureList([feature], "test_feature_list")
+    df_features = feature_list.compute_historical_features(preview_params)
+    expected = preview_params.copy()
+    expected["num_unique_user_status_7d"] = [5]
     fb_assert_frame_equal(df_features, expected)
