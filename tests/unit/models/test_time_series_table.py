@@ -105,7 +105,6 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             "timezone": "Etc/UTC",
             "is_utc_time": None,
         },
-        "reference_timezone": None,
         "time_interval": {"value": 1, "unit": "DAY"},
         "id": time_series_table.id,
         "name": "my_time_series_table",

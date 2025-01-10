@@ -801,7 +801,6 @@ class SourceTable(AbstractTableData):
         reference_datetime_schema: TimestampSchema,
         time_interval: TimeInterval,
         series_id_column: Optional[str],
-        reference_timezone: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
         _id: Optional[ObjectId] = None,
@@ -829,9 +828,6 @@ class SourceTable(AbstractTableData):
             The time interval of the time series.
         series_id_column: Optional[str]
             The column that represents the unique identifier for each time series.
-        reference_timezone: Optional[TimeZoneName]
-            The timezone used to determine the calendar date for defining calendar aggregation periods,
-            such as daily, weekly, or monthly.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
         description: Optional[str]
@@ -860,7 +856,6 @@ class SourceTable(AbstractTableData):
         ...     reference_datetime_schema=TimestampSchema(timezone="Etc/UTC"),
         ...     time_interval=TimeInterval(value=1, unit="DAY"),
         ...     series_id_column="StoreGuid",
-        ...     reference_timezone="Asia/Singapore",
         ...     record_creation_timestamp_column="record_available_at",
         ... )
         """
@@ -873,7 +868,6 @@ class SourceTable(AbstractTableData):
             record_creation_timestamp_column=record_creation_timestamp_column,
             reference_datetime_column=reference_datetime_column,
             reference_datetime_schema=reference_datetime_schema,
-            reference_timezone=reference_timezone,
             time_interval=time_interval,
             series_id_column=series_id_column,
             description=description,

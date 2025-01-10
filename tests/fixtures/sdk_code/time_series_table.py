@@ -49,7 +49,6 @@ time_series_table = TimeSeriesTable(
         is_utc_time=None,
         timezone="Etc/UTC",
     ),
-    reference_timezone=None,
     time_interval=TimeInterval(value=1, unit="DAY"),
     _id=ObjectId("{table_id}"),
 )

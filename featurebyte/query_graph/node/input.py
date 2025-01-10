@@ -8,7 +8,6 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
 
 from bson import ObjectId
 from pydantic import BaseModel, Field, model_validator
-from pydantic_extra_types.timezone_name import TimeZoneName
 from typing_extensions import Annotated, Literal
 
 from featurebyte.enum import DBVarType, SourceType, TableDataType
@@ -384,7 +383,6 @@ class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
     id_column: Optional[InColumnStr] = Field(default=None)
     reference_datetime_column: InColumnStr
     reference_datetime_schema: TimestampSchema
-    reference_timezone: Optional[TimeZoneName] = Field(default=None)
     time_interval: TimeInterval
 
     @property
@@ -401,7 +399,6 @@ class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
                 is_utc_time=self.reference_datetime_schema.is_utc_time,
                 timezone=self.reference_datetime_schema.timezone,
             ),
-            "reference_timezone": self.reference_timezone,
             "time_interval": ClassEnum.TIME_INTERVAL(
                 value=self.time_interval.value,
                 unit=self.time_interval.unit,
