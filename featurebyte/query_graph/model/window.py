@@ -2,6 +2,9 @@
 Models for feature derivation window
 """
 
+from typing import ClassVar
+
+from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TimeIntervalUnit
 from featurebyte.models.base import FeatureByteBaseModel
 
@@ -9,7 +12,16 @@ from featurebyte.models.base import FeatureByteBaseModel
 class CalendarWindow(FeatureByteBaseModel):
     """
     Calendar window for feature derivation
+
+    See Also
+    --------
+    - [TimeIntervalUnit](/reference/featurebyte.enum.TimeIntervalUnit/):
+        Enumeration of time interval units
+    - [aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/):
+        Window aggregation specification
     """
+
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.CalendarWindow")
 
     unit: TimeIntervalUnit
     size: int

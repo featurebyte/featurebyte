@@ -133,6 +133,12 @@ def _get_table_layout() -> List[DocLayoutItem]:
         ]),
         DocLayoutItem([TABLE, SET_FEATURE_JOB, "EventTable.list_feature_job_setting_analysis"]),
         DocLayoutItem([TABLE, SET_FEATURE_JOB, "EventTable.update_default_feature_job_setting"]),
+        DocLayoutItem([TABLE, SET_FEATURE_JOB, "SCDTable.update_default_feature_job_setting"]),
+        DocLayoutItem([
+            TABLE,
+            SET_FEATURE_JOB,
+            "TimeSeriesTable.update_default_feature_job_setting",
+        ]),
         DocLayoutItem(
             [TABLE, EXPLORE, "Table.describe"],
             doc_path_override="api.base_table.TableApiObject.describe.md",
@@ -875,7 +881,9 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimestampSchema"]),
+        DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeZoneColumn"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeInterval"]),
+        DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "CalendarWindow"]),
         DocLayoutItem([UTILITY_CLASSES, REQUEST_COLUMN, "RequestColumn.point_in_time"]),
         DocLayoutItem([UTILITY_CLASSES, USER_DEFINED_FUNCTION, "FunctionParameter"]),
         DocLayoutItem([UTILITY_CLASSES, ONLINE_STORE_DETAILS, "RedisOnlineStoreDetails"]),

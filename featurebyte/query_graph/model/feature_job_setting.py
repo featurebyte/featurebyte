@@ -75,6 +75,13 @@ class FeatureJobSetting(BaseFeatureJobSetting):
     ...  period="60m"
     ...  offset="135s"
     ... )
+
+    See Also
+    --------
+    - [EventTable.update_feature_job_setting](/reference/featurebyte.api.event_table.EventTable.update_default_feature_job_setting/):
+        Update feature job setting for the event table.
+    - [SCDTable.update_feature_job_setting](/reference/featurebyte.api.scd_table.SCDTable.update_default_feature_job_setting/):
+        Update feature job setting for the slowly changing dimension table.
     """
 
     # class variables
@@ -253,23 +260,82 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
     """
     CronFeatureJobSetting class is used to declare a cron-based Feature Job Setting.
 
-    The setting comprises two parameters:
-
-    - The crontab parameter specifies the cron schedule for the feature job.
-    - The timezone parameter defines the timezone for the cron schedule. It is used to determine the time at which the feature job should run.
+    Parameters
+    ----------
+    crontab : Union[str, Crontab]
+        The cron schedule for the feature job. It can be provided either as a string in cron format (e.g., `"10 * * * *"`)
+        or as a `Crontab` object with detailed scheduling parameters.
+        **Cron String Format:**
+        A standard cron string consists of five fields separated by spaces, representing different units of time. The format is as follows:
+        ~~~
+        ┌───────────── minute (0 - 59)
+        │ ┌───────────── hour (0 - 23)
+        │ │ ┌───────────── day of the month (1 - 31)
+        │ │ │ ┌───────────── month (1 - 12)
+        │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday)
+        │ │ │ │ │
+        │ │ │ │ │
+        \* \* \* \* \*
+        ~~~
+        **Field Descriptions:**
+        - **Minute (`0-59`)**: Specifies the exact minute when the job should run.
+            - Example: `10` means the job runs at the 10th minute of the hour.
+            - Special Characters:
+                - `\*` : Every minute.
+                - `\*/5` : Every 5 minutes.
+                - `10,20,30` : At minutes 10, 20, and 30.
+        - **Hour (`0-23`)**: Specifies the exact hour when the job should run.
+            - Example: `\*` means the job runs every hour.
+            - Special Characters:
+                - `\*` : Every hour.
+                - `\*/2` : Every 2 hours.
+                - `0,12` : At midnight and noon.
+        - **Day of Month (`1-31`)**: Specifies the exact day of the month when the job should run.
+            - Example: `\*` means the job runs every day of the month.
+            - Special Characters:
+                - `\*` : Every day.
+                - `1-15` : From the 1st to the 15th day of the month.
+                - `10,20,30` : On the 10th, 20th, and 30th day.
+        - **Month (`1-12`)**: Specifies the exact month when the job should run.
+            - Example: `\*` means the job runs every month.
+            - Special Characters:
+                - `\*` : Every month.
+                - `1,6,12` : In January, June, and December.
+        - **Day of Week (`0-6`)**: Specifies the exact day of the week when the job should run. (0 represents Sunday)
+            - Example: `\*` means the job runs every day of the week.
+            - Special Characters:
+                - `\*` : Every day.
+                - `1-5` : From Monday to Friday.
+                - `0,6` : On Sunday and Saturday.
+        **Examples of Valid Cron Strings:**
+        - `"10 \* \* \* \*"`: Runs at the 10th minute of every hour.
+        - `"0 0 \* \* \*"`: Runs daily at midnight.
+        - `"30 14 1 \* \*"`: Runs at 2:30 PM on the first day of every month.
+        - `"15 10 \* \* 1-5"`: Runs at 10:15 AM every weekday (Monday to Friday).
+        - `"\*/5 \* \* \* \*"`: Runs every 5 minutes.
+    timezone : TimeZoneName, default="Etc/UTC"
+        The timezone for the cron schedule. It determines the local time at which the feature job should execute.
+        The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones) (commonly known as the IANA Time Zone Database or tz database).
 
     Examples
     --------
     Consider a case study where a data warehouse refreshes each hour.
     The data refresh starts 10 seconds after the hour based on the UTC timezone.
 
-    - crontab: "10 * * * *"
-    - timezone: "Etc/UTC"
-
     >>> feature_job_setting = fb.CronFeatureJobSetting(  # doctest: +SKIP
     ...     crontab="10 * * * *",
     ...     timezone="Etc/UTC",
     ... )
+
+
+    See Also
+    --------
+    - [Crontab](/reference/featurebyte.models.periodic_task.Crontab/):
+        Crontab class for specifying cron schedule.
+    - [TimeSeriesTable.update_feature_job_setting](/reference/featurebyte.api.time_series_table.TimeSeriesTable.update_default_feature_job_setting/):
+        Update feature job setting for the time series table.
+    - [aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/):
+        Window aggregation specification
     """
 
     # class variables

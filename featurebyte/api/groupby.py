@@ -240,10 +240,30 @@ class GroupBy:
         ...     windows=["28d"],
         ... )
 
+        Time series aggregation over the past 3 months
+
+        >>> # Time series view
+        >>> ts_view = catalog.get_view("TS_VIEW")  # doctest: +SKIP
+        >>> feature = ts_view.groupby("entity_id").aggregate_over(  # doctest: +SKIP
+        ...     value_column="value",
+        ...     method=fb.AggFunc.SUM,
+        ...     windows=[fb.CalendarWindow(size=3, unit=fb.TimeIntervalUnit.MONTH)],
+        ...     feature_names=["sum_value_3m"],
+        ...     feature_job_setting=fb.CronFeatureJobSetting(
+        ...         crontab="0 0 * * *", timezone="Asia/Singapore"
+        ...     ),
+        ... )["sum_value_3m"]
+
         See Also
         --------
-        - [FeatureGroup](/reference/featurebyte.api.feature_group.FeatureGroup/): FeatureGroup object
-        - [Feature](/reference/featurebyte.api.feature.Feature/): Feature object
+        - [CalendarWindow](/reference/featurebyte.query_graph.model.window.CalendarWindow/):
+            Calendar window for feature derivation
+        - [CronFeatureJobSetting](/reference/featurebyte.query_graph.model.feature_job_setting.CronFeatureJobSetting/):
+            Class for specifying the cron job settings.
+        - [FeatureGroup](/reference/featurebyte.api.feature_group.FeatureGroup/):
+            FeatureGroup object
+        - [Feature](/reference/featurebyte.api.feature.Feature/):
+            Feature object
         """
         return WindowAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
