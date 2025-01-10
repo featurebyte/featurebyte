@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Literal, Optional, Sequence
 
 from pydantic import Field, StrictStr, field_validator
-from pydantic_extra_types.timezone_name import TimeZoneName
 
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -28,7 +27,6 @@ class TimeSeriesTableCreate(TableCreate):
     series_id_column: Optional[StrictStr]
     reference_datetime_column: StrictStr
     reference_datetime_schema: TimestampSchema
-    reference_timezone: Optional[TimeZoneName] = Field(default=None)
     time_interval: TimeInterval
     default_feature_job_setting: Optional[CronFeatureJobSetting] = Field(default=None)
 
