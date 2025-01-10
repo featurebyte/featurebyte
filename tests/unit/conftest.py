@@ -624,6 +624,11 @@ def snowflake_query_map_fixture():
                 "data_type": json.dumps({"type": "FIXED", "scale": 0}),
                 "comment": None,
             },
+            {
+                "column_name": "another_timestamp_col",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
+            },
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_state_map"': [
             {

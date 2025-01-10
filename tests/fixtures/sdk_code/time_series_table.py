@@ -40,6 +40,7 @@ time_series_table = TimeSeriesTable(
         ColumnInfo(name="date", dtype="VARCHAR"),
         ColumnInfo(name="created_at", dtype="TIMESTAMP_TZ"),
         ColumnInfo(name="store_id", dtype="INT"),
+        ColumnInfo(name="another_timestamp_col", dtype="TIMESTAMP_TZ"),
     ],
     record_creation_timestamp_column=None,
     series_id_column="col_int",

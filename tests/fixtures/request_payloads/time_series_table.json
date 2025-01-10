@@ -65,6 +65,12 @@
             "dtype": "INT",
             "dtype_metadata": null,
             "name": "store_id"
+        },
+        {
+            "description": null,
+            "dtype": "TIMESTAMP_TZ",
+            "dtype_metadata": null,
+            "name": "another_timestamp_col"
         }
     ],
     "default_feature_job_setting": null,

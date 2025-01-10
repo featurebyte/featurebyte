@@ -596,7 +596,10 @@ class FrozenSeries(
         >>> print(view["Amount"].is_datetime)
         False
         """
-        return self.dtype in (DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ, DBVarType.DATE)
+        return (
+            self.dtype in (DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ, DBVarType.DATE)
+            or self.dtype_info.timestamp_schema is not None
+        )
 
     @property
     def is_numeric(self) -> bool:
