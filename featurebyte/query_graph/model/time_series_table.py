@@ -15,7 +15,10 @@ class TimeInterval(FeatureByteBaseModel):
 
     See Also
     --------
-    - [create_time_series_table](/reference/featurebyte.api.source_table.SourceTable.create_time_series_table/): create time series table from source table
+    - [TimeIntervalUnit](/reference/featurebyte.enum.TimeIntervalUnit/):
+        Enumeration of time interval units
+    - [create_time_series_table](/reference/featurebyte.api.source_table.SourceTable.create_time_series_table/):
+        Create time series table from source table
     """
 
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TimeInterval")

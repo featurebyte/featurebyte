@@ -774,6 +774,11 @@ class SourceTable(AbstractTableData):
         ...     current_flag_column="CurrentRecord",
         ...     record_creation_timestamp_column="record_available_at",
         ... )
+
+        See Also
+        --------
+        - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
+            Schema for a timestamp column that can include timezone information.
         """
 
         from featurebyte.api.scd_table import SCDTable
@@ -858,6 +863,13 @@ class SourceTable(AbstractTableData):
         ...     series_id_column="StoreGuid",
         ...     record_creation_timestamp_column="record_available_at",
         ... )
+
+        See Also
+        --------
+        - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
+            Schema for a timestamp column that can include timezone information.
+        - [TimeIntervalUnit](/reference/featurebyte.enum.TimeIntervalUnit/):
+            Time interval unit for the time series.
         """
 
         from featurebyte.api.time_series_table import TimeSeriesTable

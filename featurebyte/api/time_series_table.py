@@ -338,6 +338,11 @@ class TimeSeriesTable(TableApiObject):
         >>> time_series_table.update_default_feature_job_setting(
         ...     new_feature_job_setting
         ... )  # doctest: +SKIP
+
+        See Also
+        --------
+        - [CronFeatureJobSetting](/reference/featurebyte.query_graph.model.feature_job_setting.CronFeatureJobSetting/):
+            Class for specifying the cron job settings.
         """
         self.update(
             update_payload={"default_feature_job_setting": feature_job_setting.model_dump()},

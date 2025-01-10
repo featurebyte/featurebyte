@@ -13,11 +13,29 @@ from featurebyte.models.base import FeatureByteBaseModel
 
 class TimeZoneColumn(FeatureByteBaseModel):
     """
-    Represents a column that contains the timezone information
+    This class is used to specify how timezone data is stored within a dataset,
+    either as a timezone offset or as a timezone name.
 
-    column_name: str
-        Column name that contains the timezone offset
+    Parameters
+    ----------
+    column_name : str
+        The name of the column that contains the timezone information.
+    type : Literal["offset", "timezone"]
+        The type of timezone information stored in the column.
+        - `"offset"`:
+            Represents timezone as an offset from UTC (e.g., `+05:30`).
+        - `"timezone"`:
+            Represents timezone as a timezone name (e.g., `"America/New_York"`).
+            The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones)
+            (commonly known as the IANA Time Zone Database or tz database).
+
+    See Also
+    --------
+    - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
+        Schema for a timestamp column that can include timezone information.
     """
+
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TimeZoneColumn")
 
     column_name: str
     type: Literal["offset", "timezone"]
@@ -30,16 +48,69 @@ class TimestampSchema(FeatureByteBaseModel):
     """
     Schema for a timestamp column. To be embedded within a ColumnSpec
 
+    Parameters
+    ----------
     is_utc_time: bool
         Whether the timestamp values are in UTC (True) or local time (False)
     format_string: Optional[str]
-        Format string for the timestamp column represented as a string
+        Format string for the timestamp column represented as a string. This format is specific to the underlying
+        database and is used to parse the timestamp values.
+
+        - **Databricks (Spark SQL):** (example: "yyyy-MM-dd HH:mm:ss")
+            [Spark SQL Date and Timestamp Functions](https://spark.apache.org/docs/latest/sql-ref-datetime-pattern.html)
+
+        - **Snowflake:** (example: "YYYY-MM-DD HH24:MI:SS")
+            [Snowflake Date and Time Formats](https://docs.snowflake.com/en/sql-reference/functions-conversion.html#date-and-time-formats)
+
+        - **BigQuery:** (example: "%Y-%m-%d %H:%M:%S")
+            [BigQuery Date and Time Functions](https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time)
+
     timezone: Union[TimezoneName, TimezoneOffsetColumn]
-        Timezone information for the timestamp column. The default value is "Etc/UTC"
+        The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones)
+        (commonly known as the IANA Time Zone Database or tz database). The default value is "Etc/UTC".
+
+
+    Examples
+    --------
+    **Example 1: Basic UTC Timestamp (BigQuery)**
+
+    ```python
+    utc_timestamp = fb.TimestampSchema(
+        is_utc_time=True, format_string="%Y-%m-%dT%H:%M:%SZ", timezone="Etc/UTC"
+    )
+    ```
+    **Example 2: Local Time with Specific Timezone (Databricks)**
+
+    ```python
+    local_timestamp = fb.TimestampSchema(
+        is_utc_time=False, format_string="yyyy-MM-dd HH:mm:ss", timezone="America/New_York"
+    )
+    ```
+
+    **Example 3: Local Time with Timezone Offset Column (Snowflake)**
+
+    ```python
+    offset_timestamp = fb.TimestampSchema(
+        is_utc_time=False,
+        format_string="YYYY-MM-DD HH24:MI:SS",
+        timezone=fb.TimeZoneColumn(column_name="timezone_offset", type="offset"),
+    )
+    ```
+
+    **Example 4: UTC Year-Month Timestamp (BigQuery)**
+
+    ```python
+    year_month_timestamp = fb.TimestampSchema(
+        is_utc_time=True, format_string="%Y-%m", timezone="Etc/UTC"
+    )
+    ```
 
     See Also
     --------
-    - [create_time_series_table](/reference/featurebyte.api.source_table.SourceTable.create_time_series_table/): create time series table from source table
+    - [create_scd_table](/reference/featurebyte.api.source_table.SourceTable.create_scd_table/):
+        Create slowly changing dimension table from source table
+    - [create_time_series_table](/reference/featurebyte.api.source_table.SourceTable.create_time_series_table/):
+        Create time series table from source table
     """
 
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TimestampSchema")
