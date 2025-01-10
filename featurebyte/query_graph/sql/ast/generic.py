@@ -45,6 +45,8 @@ class ParsedExpressionNode(ExpressionNode):
         ----------
         node : ExpressionNode
             The existing ExpressionNode
+        expr : Expression
+            The expression to use
 
         Returns
         -------

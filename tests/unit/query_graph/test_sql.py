@@ -12,6 +12,7 @@ from sqlglot import parse_one
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.scalar import TimestampValue
 from featurebyte.query_graph.sql.ast.binary import BinaryOp
 from featurebyte.query_graph.sql.ast.count_dict import (
@@ -505,6 +506,28 @@ def test_date_difference(input_node):
     node = DateDiffNode.build(context)
     assert node.sql.sql() == (
         "(DATEDIFF(microsecond, b, a) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))"
+    )
+
+
+def test_date_difference_timestamp_schema(input_node):
+    """Test DateDiff node handling of timestamp_schema"""
+    column1 = make_str_expression_node(table_node=input_node, expr="a")
+    column2 = make_str_expression_node(table_node=input_node, expr="b")
+    input_nodes = [column1, column2]
+    context = make_context(
+        parameters={
+            "left_timestamp_schema": TimestampSchema(
+                format_string="%Y-%m-%d",
+            ).model_dump(),
+            "right_timestamp_schema": TimestampSchema(
+                format_string="%Y|%m|%d",
+            ).model_dump(),
+        },
+        input_sql_nodes=input_nodes,
+    )
+    node = DateDiffNode.build(context)
+    assert node.sql.sql() == (
+        "(DATEDIFF(microsecond, TO_TIMESTAMP(b, '%Y|%m|%d'), TO_TIMESTAMP(a, '%Y-%m-%d')) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))"
     )
 
 
