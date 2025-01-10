@@ -28,7 +28,14 @@ class TimeZoneColumn(FeatureByteBaseModel):
             Represents timezone as a timezone name (e.g., `"America/New_York"`).
             The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones)
             (commonly known as the IANA Time Zone Database or tz database).
+
+    See Also
+    --------
+    - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
+        Schema for a timestamp column that can include timezone information.
     """
+
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.TimeZoneColumn")
 
     column_name: str
     type: Literal["offset", "timezone"]
