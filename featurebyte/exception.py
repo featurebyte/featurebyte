@@ -178,33 +178,9 @@ class InvalidSettingsError(FeatureByteException):
     """
 
 
-class DuplicatedRegistryError(FeatureByteException):
-    """
-    Raised when the feature registry record already exists at the feature store
-    """
-
-
-class MissingFeatureRegistryError(FeatureByteException):
-    """
-    Raised when the feature registry record does not exist
-    """
-
-
-class InvalidFeatureRegistryOperationError(FeatureByteException):
-    """
-    Raised when the operation on the registry is invalid
-    """
-
-
 class ObjectHasBeenSavedError(FeatureByteException):
     """
     Raise when the object has been saved before
-    """
-
-
-class TableSchemaHasBeenChangedError(FeatureByteException):
-    """
-    Raise when the table schema has been changed (different from the time EventTable object is saved)
     """
 
 
@@ -306,17 +282,6 @@ class FeatureStoreSchemaCollisionError(BaseConflictError):
 
     def __str__(self) -> str:
         return "Feature Store ID is already in use."
-
-
-class NoFeatureStorePresentError(BaseFailedDependencyError):
-    """
-    Raise when we cannot find a feature store, when we expect one to be there.
-    """
-
-    def __str__(self) -> str:
-        return (
-            "No feature store found. Please create one before trying to access this functionality."
-        )
 
 
 class FeatureListNotOnlineEnabledError(FeatureByteException):
