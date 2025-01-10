@@ -53,6 +53,8 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
         Reference datetime column name
     reference_datetime_schema: TimestampSchema
         Reference datetime schema
+    reference_datetime_timezone: Optional[TimeZoneName]
+        Reference datetime timezone
     time_interval: TimeInterval
         Time interval between consecutive records in each series
     default_feature_job_setting : Optional[FeatureJobSetting]
