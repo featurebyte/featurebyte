@@ -30,7 +30,72 @@ class Interval(FeatureByteBaseModel):
 
 class Crontab(FeatureByteBaseModel):
     """
-    Data class for a Crontab schedule
+    The `Crontab` class encapsulates the components of a cron schedule, allowing for structured and validated
+    scheduling of tasks. Each field corresponds to a segment of a standard cron expression, enabling precise
+    control over the timing of scheduled jobs.
+
+    Parameters
+    ----------
+    minute : Union[str, int]
+        Specifies the exact minute when the job should run. Accepts either an integer (`0-59`) or a string
+        with special characters.
+
+        **Valid Values:**
+
+        - `0-59`: Exact minute.
+        - `*`: Every minute.
+        - `*/5`: Every 5 minutes.
+        - `10,20,30`: At minutes 10, 20, and 30.
+        - `10-15`: Every minute from 10 to 15.
+
+    hour : Union[str, int]
+        Specifies the exact hour when the job should run. Accepts either an integer (`0-23`) or a string
+        with special characters.
+
+        **Valid Values:**
+
+        - `0-23`: Exact hour.
+        - `*`: Every hour.
+        - `*/2`: Every 2 hours.
+        - `0,12`: At midnight and noon.
+        - `9-17`: Every hour from 9 AM to 5 PM.
+
+    day_of_month : Union[str, int]
+        Specifies the exact day of the month when the job should run. Accepts either an integer (`1-31`)
+        or a string with special characters.
+
+        **Valid Values:**
+
+        - `1-31`: Exact day of the month.
+        - `*`: Every day of the month.
+        - `1-15`: Every day from the 1st to the 15th.
+        - `10,20,30`: On the 10th, 20th, and 30th day of the month.
+
+    month_of_year : Union[str, int]
+        Specifies the exact month when the job should run. Accepts either an integer (`1-12`) or a string
+        with special characters.
+
+        **Valid Values:**
+
+        - `1-12`: Exact month.
+        - `*`: Every month.
+        - `1,6,12`: In January, June, and December.
+
+    day_of_week : Union[str, int]
+        Specifies the exact day of the week when the job should run. Accepts either an integer (`0-6`, where `0`
+        represents Sunday) or a string with special characters.
+
+        **Valid Values:**
+
+        - `0-6`: Exact day of the week.
+        - `*`: Every day of the week.
+        - `1-5`: From Monday to Friday.
+        - `0,6`: On Sunday and Saturday.
+
+    See Also
+    --------
+    - [CronFeatureJobSetting](/reference/featurebyte.query_graph.model.feature_job_setting.CronFeatureJobSetting/):
+        Class for specifying the cron job settings.
     """
 
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Crontab")

@@ -567,6 +567,11 @@ class SCDTable(TableApiObject):
 
         >>> scd_table = catalog.get_table("GROCERYCUSTOMER")
         >>> scd_table.update_default_feature_job_setting(new_feature_job_setting)  # doctest: +SKIP
+
+        See Also
+        --------
+        - [FeatureJobSetting](/reference/featurebyte.query_graph.model.feature_job_setting.FeatureJobSetting/):
+            Class for specifying the scheduling of feature jobs.
         """
         self.update(
             update_payload={"default_feature_job_setting": feature_job_setting.model_dump()},

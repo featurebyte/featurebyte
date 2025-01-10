@@ -824,14 +824,17 @@ class SourceTable(AbstractTableData):
         reference_datetime_column: str
             The column that contains the reference datetime of the associated time series.
         reference_datetime_schema: TimestampSchema
-            The schema of the reference datetime column.
+            The schema of the reference datetime column of the time series table.
         time_interval: TimeInterval
             The time interval of the time series.
         series_id_column: Optional[str]
             The column that represents the unique identifier for each time series.
-        reference_timezone: Optional[TimeZoneName]
+        reference_timezone: Optional[str]
             The timezone used to determine the calendar date for defining calendar aggregation periods,
-            such as daily, weekly, or monthly.
+            such as daily, weekly, or monthly. The timezone should be a string that is recognized
+            by the IANA Time Zone Database (TZDB). To get a list of valid timezones, you can use the
+            `pydantic_extra_types.timezone_name` function. If `None`, the timezone specified in the
+            default feature job settings will be used.
         record_creation_timestamp_column: str
             The optional column for the timestamp when a record was created.
         description: Optional[str]
@@ -863,6 +866,13 @@ class SourceTable(AbstractTableData):
         ...     reference_timezone="Asia/Singapore",
         ...     record_creation_timestamp_column="record_available_at",
         ... )
+
+        See Also
+        --------
+        - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
+            Schema for a timestamp column that can include timezone information.
+        - [get_timezones](https://docs.pydantic.dev/2.10/api/pydantic_extra_types_timezone_name/#pydantic_extra_types.timezone_name.get_timezones)
+            (External link to Pydantic documentation) Get a list of valid timezones recognized by the IANA Time Zone Database (TZDB).
         """
 
         from featurebyte.api.time_series_table import TimeSeriesTable
