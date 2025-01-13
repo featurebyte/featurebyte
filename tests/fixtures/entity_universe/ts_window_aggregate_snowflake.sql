@@ -13,8 +13,8 @@ FROM (
     "another_timestamp_col" AS "another_timestamp_col"
   FROM "sf_database"."sf_schema"."time_series_table"
   WHERE
-    TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') >= DATEADD(month, -3, DATEADD(month, -3, DATE_TRUNC('month', "__fb_current_feature_timestamp")))
-    AND TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') < DATEADD(month, -3, DATE_TRUNC('month', "__fb_current_feature_timestamp"))
+    TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') >= DATEADD(MONTH, -3, DATEADD(MONTH, -3, DATE_TRUNC('MONTH', "__fb_current_feature_timestamp")))
+    AND TO_TIMESTAMP("date", 'YYYY-MM-DD HH24:MI:SS') < DATEADD(MONTH, -3, DATE_TRUNC('MONTH', "__fb_current_feature_timestamp"))
 )
 WHERE
-  "store_id" IS NOT NULL
+  NOT "store_id" IS NULL

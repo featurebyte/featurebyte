@@ -626,7 +626,7 @@ def test_entity_universe_model_get_entity_universe_expr(
     constructor = get_entity_universe_constructor(graph, node, source_info)
     query_template = constructor.get_entity_universe_template()[0]
     entity_universe_model = EntityUniverseModel(
-        query_template=SqlglotExpressionModel.create(query_template)
+        query_template=SqlglotExpressionModel.create(query_template, source_info.source_type)
     )
     expected = textwrap.dedent(
         """
@@ -660,7 +660,7 @@ def test_entity_universe_model_get_entity_universe_expr(
     assert actual == expected
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "databricks", "bigquery"])
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks", "bigquery"])
 def test_time_series_window_aggregate_universe(
     catalog, ts_window_aggregate_graph_and_node, source_type, update_fixtures
 ):
@@ -674,22 +674,21 @@ def test_time_series_window_aggregate_universe(
         schema_name="my_schema",
         source_type=source_type,
     )
-    universe = sql_to_string(
-        get_combined_universe(
-            [
-                EntityUniverseParams(
-                    graph=ts_window_aggregate_graph_and_node[0],
-                    node=ts_window_aggregate_graph_and_node[1],
-                    join_steps=None,
-                ),
-            ],
-            source_info,
-        ),
-        source_type,
+    universe = get_combined_universe(
+        [
+            EntityUniverseParams(
+                graph=ts_window_aggregate_graph_and_node[0],
+                node=ts_window_aggregate_graph_and_node[1],
+                join_steps=None,
+            ),
+        ],
+        source_info,
     )
+    model = EntityUniverseModel(query_template=SqlglotExpressionModel.create(universe, source_type))
+    actual = sql_to_string(model.query_template.expr, source_type)
     fixture_filename = f"tests/fixtures/entity_universe/ts_window_aggregate_{source_type}.sql"
     assert_equal_with_expected_fixture(
-        universe,
+        actual,
         fixture_filename,
         update_fixtures,
     )

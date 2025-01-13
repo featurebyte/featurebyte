@@ -287,16 +287,17 @@ class FeatureMaterializeService:
         )
         feature_timestamp = datetime.utcnow()
 
+        select_expr = feature_table_model.entity_universe.get_entity_universe_expr(
+            current_feature_timestamp=feature_timestamp,
+            last_materialized_timestamp=(
+                feature_table_model.last_materialized_at
+                if use_last_materialized_timestamp
+                else None
+            ),
+        )
         await session.create_table_as(
             table_details=batch_request_table.table_details,
-            select_expr=feature_table_model.entity_universe.get_entity_universe_expr(
-                current_feature_timestamp=feature_timestamp,
-                last_materialized_timestamp=(
-                    feature_table_model.last_materialized_at
-                    if use_last_materialized_timestamp
-                    else None
-                ),
-            ),
+            select_expr=select_expr,
         )
         await BaseMaterializedTableService.add_row_index_column(
             session, batch_request_table.table_details

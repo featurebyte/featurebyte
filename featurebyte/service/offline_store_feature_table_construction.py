@@ -294,7 +294,9 @@ class OfflineStoreFeatureTableConstructionService:
                 f"Failed to create entity universe for offline store feature table {feature_table_name}"
             )
 
-        return EntityUniverseModel(query_template=SqlglotExpressionModel.create(universe_expr))
+        return EntityUniverseModel(
+            query_template=SqlglotExpressionModel.create(universe_expr, source_info.source_type)
+        )
 
     @staticmethod
     def _get_non_primary_entity_ids(

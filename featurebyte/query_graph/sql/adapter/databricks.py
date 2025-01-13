@@ -325,13 +325,13 @@ class DatabricksAdapter(BaseAdapter):
     @classmethod
     def subtract_seconds(cls, timestamp_expr: Expression, num_units: int) -> Expression:
         return expressions.Anonymous(
-            this="dateadd",
+            this="timestampadd",
             expressions=["second", make_literal_value(-num_units), timestamp_expr],
         )
 
     @classmethod
     def subtract_months(cls, timestamp_expr: Expression, num_units: int) -> Expression:
         return expressions.Anonymous(
-            this="dateadd",
+            this="timestampadd",
             expressions=["month", make_literal_value(-num_units), timestamp_expr],
         )
