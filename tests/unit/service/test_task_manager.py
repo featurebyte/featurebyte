@@ -150,6 +150,16 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
         assert [item.id for item in ascending_list] == task_ids
         assert [item.id for item in descending_list] == list(reversed(task_ids))
 
+    # check list with filter
+    selected_task_ids = [str(task_id) for task_id in task_ids[:2]]
+    items, total = await task_manager.list_tasks(
+        page=1,
+        page_size=10,
+        query_filter={"_id": {"$in": selected_task_ids}},
+    )
+    assert total == 2
+    assert {str(item.id) for item in items} == set(selected_task_ids)
+
 
 @pytest.mark.asyncio
 async def test_task_manager__schedule_interval_task(task_manager, user_id, catalog):
