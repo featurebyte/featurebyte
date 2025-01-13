@@ -7,10 +7,8 @@ from typing import Any
 
 import pytz
 from celery import schedules
-from celerybeatmongo.models import PeriodicTask as BasePeriodicTask
 from celerybeatmongo.schedulers import MongoScheduleEntry as BaseMongoScheduleEntry
 from celerybeatmongo.schedulers import MongoScheduler as BaseMongoScheduler
-from mongoengine import StringField
 
 
 class MongoScheduleEntry(BaseMongoScheduleEntry):
@@ -21,8 +19,10 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
     epoch_time: datetime.datetime = datetime.datetime(1970, 1, 1)
 
     def _default_now(self) -> Any:
-        if self._task.timezone:
-            return datetime.datetime.now(pytz.timezone(self._task.timezone))
+        if hasattr(self._task, "timezone"):
+            timezone = getattr(self._task, "timezone")
+            if timezone:
+                return datetime.datetime.now(pytz.timezone(timezone))
         return super()._default_now()
 
     def default_now(self) -> Any:
@@ -85,19 +85,9 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
         return super().is_due()
 
 
-class PeriodicTask(BasePeriodicTask):
-    """
-    Customized PeriodicTask model
-    """
-
-    timezone = StringField(default="Etc/UTC")
-
-
 class MongoScheduler(BaseMongoScheduler):
     """
     Customized MongoDB Scheduler
     """
 
     Entry = MongoScheduleEntry
-
-    Model = PeriodicTask

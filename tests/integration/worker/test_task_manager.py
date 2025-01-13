@@ -127,9 +127,9 @@ async def test_schedule_interval_task(task_manager, payload):
 
 
 @pytest.mark.parametrize("worker_type", ["cpu"], indirect=True)
-@pytest.mark.parametrize("timezone", [None, "Asia/Singapore"])
+@pytest.mark.parametrize("timezone", ["Asia/Singapore", None])
 @pytest.mark.asyncio
-async def test_schedule_cron_task(task_manager, payload, timezone):
+async def test_schedule_cron_task(task_manager, payload, timezone, persistent):
     """Test task manager service"""
     sg_time = datetime.datetime.now(pytz.timezone("Asia/Singapore"))
     periodic_task_id = await task_manager.schedule_cron_task(
@@ -139,7 +139,7 @@ async def test_schedule_cron_task(task_manager, payload, timezone):
             minute="*",
             # specify 2 hours to run the task to ensure it runs at least once in the test
             # even if the test is run at the end of the hour
-            hour=f"{sg_time.hour}, {sg_time.hour + 1}",
+            hour=f"{sg_time.hour},{sg_time.hour + 1}",
             day_of_week="*",
             day_of_month="*",
             month_of_year="*",
