@@ -119,7 +119,14 @@ def test_period_task_backward_compatibility():
         interval=Interval(every=1, period="hours"),
     )
     task_dict = periodic_task.model_dump()
+
+    # check when timezone is not set
     task_dict.pop("timezone", None)
     assert "timezone" not in task_dict
     task = PeriodicTaskDoc(**task_dict)
     assert task.timezone == "Etc/UTC"
+
+    # check when timezone is set
+    task_dict["timezone"] = "America/New_York"
+    task = PeriodicTaskDoc(**task_dict)
+    assert task.timezone == "America/New_York"
