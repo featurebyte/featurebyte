@@ -47,10 +47,12 @@ class CronHelper:
         ----------
         session: BaseSession
             Session object
-        request_table_name: str
-            Request table name
         cron_feature_job_settings: list[CronFeatureJobSetting]
             List of cron feature job settings
+        request_table_name: Optional[str]
+            Request table name
+        request_timestamp: Optional[datetime]
+            Request timestamp. To be provided when used when computing online features.
 
         Returns
         -------

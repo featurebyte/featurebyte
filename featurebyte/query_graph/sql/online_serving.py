@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -49,7 +49,10 @@ from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.online_serving_util import get_version_placeholder
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
-from featurebyte.service.cron_helper import CronHelper
+
+if TYPE_CHECKING:
+    from featurebyte.service.cron_helper import CronHelper
+
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.session_helper import SessionHandler, execute_feature_query_set
 
@@ -205,6 +208,9 @@ def get_online_store_retrieval_expr(
         Location of the request table in the data warehouse
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    job_schedule_table_set: Optional[JobScheduleTableSet]
+        Job schedule table set if available. These will be used to compute features that are using
+        a cron-based feature job setting.
 
     Returns
     -------
@@ -361,6 +367,9 @@ def get_online_features_query_set(
         The timestamp value to use as the point-in-time
     parent_serving_preparation: Optional[ParentServingPreparation]
         Preparation required for serving parent features
+    job_schedule_table_set: Optional[JobScheduleTableSet]
+        Job schedule table set if available. These will be used to compute features that are using
+        a cron-based feature job setting.
     concatenate_serving_names: Optional[list[str]]
         List of serving names to concatenate as a new column, if specified
 
@@ -491,6 +500,8 @@ async def get_online_features(
     ----------
     session_handler: SessionHandler
         SessionHandler to use for executing the query
+    cron_helper: CronHelper
+        Cron helper for simulating feature job schedules
     graph: QueryGraph
         Query graph
     nodes: list[Node]

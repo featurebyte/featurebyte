@@ -113,11 +113,6 @@ class OfflineStoreFeatureTableCommentService:
         Returns
         -------
         TableComment
-
-        Raises
-        ------
-        CronNotImplementedError
-            If feature job setting type is not supported
         """
         primary_entities = await self.entity_service.get_entities(
             set(feature_table_model.primary_entity_ids)

@@ -69,6 +69,10 @@ def convert_timestamp_to_local(
         Timestamp schema
     adapter: BaseAdapter
         SQL adapter
+
+    Returns
+    -------
+    Expression
     """
     # Convert to timestamp in local time if string
     if timestamp_schema.format_string is not None:

@@ -47,11 +47,6 @@ class FeatureMaterializeSchedulerService:
         ----------
         offline_store_feature_table: OfflineStoreFeatureTableModel
             Offline store feature table
-
-        Raises
-        ------
-        CronNotImplementedError
-            If the feature job setting type is not supported
         """
         await self._stop_deprecated_job(offline_store_feature_table.id)
         payload = FeatureMaterializeSyncTaskPayload(
