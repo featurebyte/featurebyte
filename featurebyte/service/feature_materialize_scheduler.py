@@ -9,7 +9,7 @@ from bson import ObjectId
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
-from featurebyte.models.periodic_task import Interval, PeriodicTask
+from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.schema.worker.task.feature_materialize_sync import (
@@ -79,10 +79,12 @@ class FeatureMaterializeSchedulerService:
                         time_modulo_frequency_second=offline_store_feature_table.feature_job_setting.offset_seconds,
                     )
                 else:
+                    crontab = offline_store_feature_table.feature_job_setting.crontab
+                    assert isinstance(crontab, Crontab)
                     await self.task_manager.schedule_cron_task(
                         name=self._get_job_id(offline_store_feature_table.id),
                         payload=payload,
-                        crontab=offline_store_feature_table.feature_job_setting.crontab,
+                        crontab=crontab,
                         timezone=offline_store_feature_table.feature_job_setting.timezone,
                     )
             except DuplicateDocumentError:

@@ -559,7 +559,7 @@ class TimeSeriesWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseC
             else:
                 max_windows[key] = max(max_windows[key], window)
 
-        universe_exprs = []
+        universe_exprs: List[Expression] = []
         for window in max_windows.values():
             job_datetime_rounded_to_window_unit = self.adapter.timestamp_truncate(
                 quoted_identifier(CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
@@ -583,7 +583,7 @@ class TimeSeriesWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseC
             else:
                 window_end_expr = self.adapter.subtract_months(
                     job_datetime_rounded_to_window_unit,
-                    window.offset.to_months(),
+                    window.to_months(),
                 )
                 if node.parameters.offset is not None:
                     assert not node.parameters.offset.is_fixed_size()
