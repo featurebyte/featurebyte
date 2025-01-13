@@ -16,6 +16,7 @@ from redis import Redis
 from featurebyte.exception import TaskNotFound, TaskNotRerunnableError, TaskNotRevocableError
 from featurebyte.logging import get_logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
+from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
@@ -207,6 +208,7 @@ class TaskManager:
         page: int = 1,
         page_size: int = DEFAULT_PAGE_SIZE,
         ascending: bool = True,
+        query_filter: Optional[QueryFilter] = None,
     ) -> tuple[list[Task], int]:
         """
         List tasks.
@@ -219,6 +221,8 @@ class TaskManager:
             Page size
         ascending: bool
             Sort direction
+        query_filter: Optional[QueryFilter]
+            Query filter
 
         Returns
         -------
@@ -227,7 +231,7 @@ class TaskManager:
         # Perform the query
         results, total = await self.persistent.find(
             collection_name=TaskModel.collection_name(),
-            query_filter={},
+            query_filter=query_filter or {},
             page=page,
             page_size=page_size,
             sort_by=[("date_done", "asc" if ascending else "desc")],
