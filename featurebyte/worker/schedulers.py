@@ -19,8 +19,10 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
     epoch_time: datetime.datetime = datetime.datetime(1970, 1, 1)
 
     def _default_now(self) -> Any:
-        if self._task.timezone:
-            return datetime.datetime.now(pytz.timezone(self._task.timezone))
+        if hasattr(self._task, "timezone"):
+            timezone = getattr(self._task, "timezone")
+            if timezone:
+                return datetime.datetime.now(pytz.timezone(timezone))
         return super()._default_now()
 
     def default_now(self) -> Any:
