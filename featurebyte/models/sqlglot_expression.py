@@ -11,6 +11,7 @@ from sqlglot.expressions import Expression
 
 from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel
+from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 
 
 class SqlglotExpressionModel(FeatureByteBaseModel):
@@ -44,7 +45,8 @@ class SqlglotExpressionModel(FeatureByteBaseModel):
         -------
         SqlglotExpressionModel
         """
-        formatted_expression = expr.sql(dialect=str(source_type), pretty=True)
+        dialect = get_dialect_from_source_type(source_type)
+        formatted_expression = expr.sql(dialect=dialect, pretty=True)
         return cls(formatted_expression=formatted_expression, source_type=source_type)
 
     @property
@@ -56,5 +58,9 @@ class SqlglotExpressionModel(FeatureByteBaseModel):
         -------
         Expression
         """
-        dialect = str(self.source_type) if self.source_type else self._DIALECT_FORMAT
+        dialect = (
+            get_dialect_from_source_type(self.source_type)
+            if self.source_type
+            else self._DIALECT_FORMAT
+        )
         return sqlglot.parse_one(self.formatted_expression, read=dialect)

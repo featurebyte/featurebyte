@@ -660,7 +660,7 @@ def test_entity_universe_model_get_entity_universe_expr(
     assert actual == expected
 
 
-@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks", "bigquery"])
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks_unity", "bigquery"])
 def test_time_series_window_aggregate_universe(
     catalog, ts_window_aggregate_graph_and_node, source_type, update_fixtures
 ):
