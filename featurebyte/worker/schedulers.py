@@ -7,8 +7,10 @@ from typing import Any
 
 import pytz
 from celery import schedules
+from celerybeatmongo.models import PeriodicTask as BasePeriodicTask
 from celerybeatmongo.schedulers import MongoScheduleEntry as BaseMongoScheduleEntry
 from celerybeatmongo.schedulers import MongoScheduler as BaseMongoScheduler
+from mongoengine import StringField
 
 
 class MongoScheduleEntry(BaseMongoScheduleEntry):
@@ -83,9 +85,19 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
         return super().is_due()
 
 
+class PeriodicTask(BasePeriodicTask):
+    """
+    Customized PeriodicTask model
+    """
+
+    timezone = StringField(default="Etc/UTC")
+
+
 class MongoScheduler(BaseMongoScheduler):
     """
     Customized MongoDB Scheduler
     """
 
     Entry = MongoScheduleEntry
+
+    Model = PeriodicTask

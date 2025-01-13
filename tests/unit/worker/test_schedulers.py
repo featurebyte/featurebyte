@@ -8,11 +8,11 @@ import pandas as pd
 import pytest
 import pytz
 from celery import schedules
-from celerybeatmongo.models import PeriodicTask as PeriodicTaskDoc
 from freezegun import freeze_time
 
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.worker.schedulers import MongoScheduleEntry
+from featurebyte.worker.schedulers import PeriodicTask as PeriodicTaskDoc
 
 
 @pytest.mark.parametrize(
@@ -105,3 +105,21 @@ def test_mongo_schedule_entry_with_timezone(schedule_params, timezone):
     now_value = schedule_entry.default_now()
     expected_now_val = datetime.datetime.now(pytz.timezone(timezone or "UTC"))
     assert expected_now_val - now_value < datetime.timedelta(seconds=1)
+
+
+def test_period_task_backward_compatibility():
+    """Test PeriodicTask backward compatibility"""
+    periodic_task = PeriodicTask(
+        name="task",
+        task="featurebyte.worker.task_executor.execute_io_task",
+        args=[],
+        kwargs={},
+        last_run_at=pd.to_datetime("2023-01-03 01:00:00"),
+        queue="io_task",
+        interval=Interval(every=1, period="hours"),
+    )
+    task_dict = periodic_task.model_dump()
+    task_dict.pop("timezone", None)
+    assert "timezone" not in task_dict
+    task = PeriodicTaskDoc(**task_dict)
+    assert task.timezone == "Etc/UTC"
