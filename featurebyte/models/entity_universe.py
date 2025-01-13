@@ -48,7 +48,9 @@ from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import AggregationType, TileBasedAggregationSpec
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
-from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
+from featurebyte.query_graph.sql.timestamp_helper import (
+    convert_timestamp_to_local,
+)
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
@@ -597,7 +599,7 @@ class TimeSeriesWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseC
                 )
 
             timestamp_expr = self.adapter.normalize_timestamp_before_comparison(
-                convert_timestamp_to_utc(
+                convert_timestamp_to_local(
                     quoted_identifier(node.parameters.reference_datetime_column),
                     node.parameters.reference_datetime_schema,
                     self.adapter,
