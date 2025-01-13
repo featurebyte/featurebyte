@@ -380,7 +380,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 "table_name": "time_series_table",
             },
             "entities": [],
-            "column_count": 9,
+            "column_count": 10,
             "series_id_column": "col_int",
             "reference_datetime_column": "date",
             "reference_datetime_schema": {
@@ -481,6 +481,14 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 "semantic": None,
                 "critical_data_info": None,
                 "description": None,
+            },
+            {
+                "critical_data_info": None,
+                "description": None,
+                "dtype": "TIMESTAMP_TZ",
+                "entity": None,
+                "name": "another_timestamp_col",
+                "semantic": None,
             },
         ]
 

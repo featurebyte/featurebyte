@@ -89,7 +89,8 @@ def expected_time_series_table_preview_query() -> str:
           "col_boolean" AS "col_boolean",
           CAST("date" AS VARCHAR) AS "date",
           CAST("created_at" AS VARCHAR) AS "created_at",
-          "store_id" AS "store_id"
+          "store_id" AS "store_id",
+          CAST("another_timestamp_col" AS VARCHAR) AS "another_timestamp_col"
         FROM "sf_database"."sf_schema"."time_series_table"
         LIMIT 10
         """

@@ -36,6 +36,28 @@ class ParsedExpressionNode(ExpressionNode):
     def sql(self) -> Expression:
         return self.expr
 
+    @classmethod
+    def from_expression_node(cls, node: ExpressionNode, expr: Expression) -> ParsedExpressionNode:
+        """
+        Create a ParsedExpressionNode from an existing ExpressionNode
+
+        Parameters
+        ----------
+        node : ExpressionNode
+            The existing ExpressionNode
+        expr : Expression
+            The expression to use
+
+        Returns
+        -------
+        ParsedExpressionNode
+        """
+        return ParsedExpressionNode(
+            context=node.context,
+            table_node=node.table_node,
+            expr=expr,
+        )
+
 
 @dataclass
 class Project(ExpressionNode):

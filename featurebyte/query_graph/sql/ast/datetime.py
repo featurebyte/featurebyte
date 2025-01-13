@@ -12,10 +12,12 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.node.date import DateDifferenceParameters
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode, resolve_project_node
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.util import prepare_binary_op_input_nodes
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 
 
@@ -112,6 +114,21 @@ class DateDiffNode(ExpressionNode):
     @classmethod
     def build(cls, context: SQLNodeContext) -> DateDiffNode:
         table_node, left_node, right_node = prepare_binary_op_input_nodes(context)
+        parameters = DateDifferenceParameters(**context.parameters)
+        if parameters.left_timestamp_schema:
+            left_node = ParsedExpressionNode.from_expression_node(
+                left_node,
+                convert_timestamp_to_utc(
+                    left_node.sql, parameters.left_timestamp_schema, context.adapter
+                ),
+            )
+        if parameters.right_timestamp_schema:
+            right_node = ParsedExpressionNode.from_expression_node(
+                right_node,
+                convert_timestamp_to_utc(
+                    right_node.sql, parameters.right_timestamp_schema, context.adapter
+                ),
+            )
         node = cls(
             context=context,
             table_node=table_node,

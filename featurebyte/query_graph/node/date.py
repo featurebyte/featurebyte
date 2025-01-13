@@ -216,17 +216,18 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
         return f"pd.to_timedelta({operand}).total_seconds() // {self.unit_to_seconds[self.parameters.property]}"
 
 
+class DateDifferenceParameters(FeatureByteBaseModel):
+    """Parameters for DateDifferenceNode"""
+
+    left_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    right_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+
+
 class DateDifferenceNode(BaseSeriesOutputNode):
     """DateDifferenceNode class"""
 
-    class Parameters(FeatureByteBaseModel):
-        """Parameters"""
-
-        left_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
-        right_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
-
     type: Literal[NodeType.DATE_DIFF] = NodeType.DATE_DIFF
-    parameters: Parameters
+    parameters: DateDifferenceParameters
 
     @property
     def max_input_count(self) -> int:

@@ -142,6 +142,15 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "description": None,
                 "dtype_metadata": None,
             },
+            {
+                "critical_data_info": None,
+                "description": None,
+                "dtype": "TIMESTAMP_TZ",
+                "dtype_metadata": None,
+                "entity_id": None,
+                "name": "another_timestamp_col",
+                "semantic_id": None,
+            },
         ],
         "series_id_column": "col_int",
         "reference_datetime_column": "date",
@@ -304,6 +313,7 @@ class TestTimeSeriesTableTestSuite(BaseTableTestSuite):
         "col_binary",
         "col_int",
         "store_id",
+        "another_timestamp_col",
     }
     expected_table_sql = """
     SELECT
@@ -315,7 +325,8 @@ class TestTimeSeriesTableTestSuite(BaseTableTestSuite):
       "col_boolean" AS "col_boolean",
       CAST("date" AS VARCHAR) AS "date",
       CAST("created_at" AS VARCHAR) AS "created_at",
-      "store_id" AS "store_id"
+      "store_id" AS "store_id",
+      CAST("another_timestamp_col" AS VARCHAR) AS "another_timestamp_col"
     FROM "sf_database"."sf_schema"."time_series_table"
     LIMIT 10
     """
@@ -337,7 +348,8 @@ class TestTimeSeriesTableTestSuite(BaseTableTestSuite):
       "col_boolean" AS "col_boolean",
       CAST("date" AS VARCHAR) AS "date",
       CAST("created_at" AS VARCHAR) AS "created_at",
-      "store_id" AS "store_id"
+      "store_id" AS "store_id",
+      CAST("another_timestamp_col" AS VARCHAR) AS "another_timestamp_col"
     FROM "sf_database"."sf_schema"."time_series_table"
     LIMIT 10
     """
@@ -387,7 +399,7 @@ def test_info(saved_time_series_table, cust_id_entity):
         "default_feature_job_setting": None,
         "status": "PUBLIC_DRAFT",
         "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}],
-        "column_count": 9,
+        "column_count": 10,
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
@@ -486,6 +498,14 @@ def test_info(saved_time_series_table, cust_id_entity):
             "semantic": None,
             "critical_data_info": None,
             "description": None,
+        },
+        {
+            "critical_data_info": None,
+            "description": None,
+            "dtype": "TIMESTAMP_TZ",
+            "entity": None,
+            "name": "another_timestamp_col",
+            "semantic": None,
         },
     ]
 
@@ -1123,7 +1143,7 @@ def test_shape(snowflake_time_series_table, snowflake_query_map):
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
     ) as mock_execute_query:
         mock_execute_query.side_effect = side_effect
-        assert snowflake_time_series_table.shape() == (1000, 9)
+        assert snowflake_time_series_table.shape() == (1000, 10)
         # Check that the correct query was executed
         assert (
             mock_execute_query.call_args[0][0]
@@ -1139,7 +1159,8 @@ def test_shape(snowflake_time_series_table, snowflake_query_map):
                     "col_boolean" AS "col_boolean",
                     "date" AS "date",
                     "created_at" AS "created_at",
-                    "store_id" AS "store_id"
+                    "store_id" AS "store_id",
+                    "another_timestamp_col" AS "another_timestamp_col"
                   FROM "sf_database"."sf_schema"."time_series_table"
                 )
                 SELECT
