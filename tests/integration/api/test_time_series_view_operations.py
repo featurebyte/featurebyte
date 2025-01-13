@@ -2,6 +2,9 @@
 Integration tests for TimeSeriesView operations
 """
 
+from datetime import datetime
+from unittest.mock import patch
+
 import pandas as pd
 import pytest
 
@@ -225,7 +228,9 @@ def test_deployment(config, time_series_window_aggregate_feature):
     feature_list = FeatureList([feature], "time_series_feature_production_ready")
     feature_list.save()
     deployment = feature_list.deploy(make_production_ready=True)
-    deployment.enable()
+    with patch("featurebyte.service.feature_materialize.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 10, 12)
+        deployment.enable()
     entity_serving_names = [
         {
             "series_id": "S0",
@@ -237,4 +242,7 @@ def test_deployment(config, time_series_window_aggregate_feature):
         f"/deployment/{deployment.id}/online_features",
         json=data.json_dict(),
     )
-    raise
+    assert res.status_code == 200
+    df_feat = pd.DataFrame(res.json()["features"])
+    df_expected = pd.DataFrame([{"series_id": "S0", "value_col_sum_7d": 0.35}])
+    fb_assert_frame_equal(df_feat, df_expected)
