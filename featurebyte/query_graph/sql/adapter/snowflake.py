@@ -545,3 +545,17 @@ class SnowflakeAdapter(BaseAdapter):
             this="DATE_TRUNC",
             expressions=[make_literal_value(mapped_unit), timestamp_expr],
         )
+
+    @classmethod
+    def subtract_seconds(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        return cls.dateadd_second(
+            quantity_expr=make_literal_value(-num_units),
+            timestamp_expr=timestamp_expr,
+        )
+
+    @classmethod
+    def subtract_months(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        return expressions.Anonymous(
+            this="DATEADD",
+            expressions=["month", make_literal_value(-num_units), timestamp_expr],
+        )

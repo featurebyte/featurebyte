@@ -53,6 +53,29 @@ def convert_timezone_to_utc(
     return adapter.convert_timezone_to_utc(column_expr, timezone, timezone_type)
 
 
+def convert_timestamp_to_local(
+    column_expr: Expression,
+    timestamp_schema: TimestampSchema,
+    adapter: BaseAdapter,
+) -> Expression:
+    """
+    Convert timestamp column in its original form with a specified TimestampSchema to local time
+
+    Parameters
+    ----------
+    column_expr: Expression
+        Original datetime column (could be a timestamp, date or string)
+    timestamp_schema: TimestampSchema
+        Timestamp schema
+    adapter: BaseAdapter
+        SQL adapter
+    """
+    # Convert to timestamp in local time if string
+    if timestamp_schema.format_string is not None:
+        column_expr = adapter.to_timestamp_from_string(column_expr, timestamp_schema.format_string)
+    return column_expr
+
+
 def convert_timestamp_to_utc(
     column_expr: Expression,
     timestamp_schema: TimestampSchema,

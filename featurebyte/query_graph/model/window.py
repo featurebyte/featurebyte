@@ -2,6 +2,7 @@
 Models for feature derivation window
 """
 
+from functools import total_ordering
 from typing import ClassVar
 
 from featurebyte.common.doc_util import FBAutoDoc
@@ -9,6 +10,7 @@ from featurebyte.enum import TimeIntervalUnit
 from featurebyte.models.base import FeatureByteBaseModel
 
 
+@total_ordering
 class CalendarWindow(FeatureByteBaseModel):
     """
     Calendar window for feature derivation
@@ -76,4 +78,15 @@ class CalendarWindow(FeatureByteBaseModel):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CalendarWindow):
             return False
-        return self.size == other.size and self.unit == other.unit
+        if self.is_fixed_size() and other.is_fixed_size():
+            return self.to_seconds() == other.to_seconds()
+        elif not self.is_fixed_size() and not other.is_fixed_size():
+            return self.to_months() == other.to_months()
+        return False
+
+    def __lt__(self, other: "CalendarWindow") -> bool:
+        if self.is_fixed_size() != other.is_fixed_size():
+            raise ValueError("Cannot compare a fixed size window with a non-fixed size window")
+        if self.is_fixed_size():
+            return self.to_seconds() < other.to_seconds()
+        return self.to_months() < other.to_months()
