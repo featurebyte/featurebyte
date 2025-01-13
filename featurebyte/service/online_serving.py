@@ -45,6 +45,7 @@ from featurebyte.query_graph.sql.entity import (
 from featurebyte.query_graph.sql.online_serving import get_online_features
 from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.schema.info import DeploymentRequestCodeTemplate
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.entity_validation import EntityValidationService
@@ -89,6 +90,7 @@ class OnlineServingService:
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         entity_serving_names_service: EntityServingNamesService,
         feature_list_service: FeatureListService,
+        cron_helper: CronHelper,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -101,6 +103,7 @@ class OnlineServingService:
         self.offline_store_feature_table_service = offline_store_feature_table_service
         self.entity_serving_names_service = entity_serving_names_service
         self.feature_list_service = feature_list_service
+        self.cron_helper = cron_helper
 
     async def get_online_features_from_feature_list(
         self,
@@ -167,6 +170,7 @@ class OnlineServingService:
                 redis=self.online_store_table_version_service.redis,
                 feature_store=feature_store,
             ),
+            cron_helper=self.cron_helper,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
             request_data=request_input,

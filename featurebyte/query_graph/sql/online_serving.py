@@ -37,6 +37,7 @@ from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     get_qualified_column_identifier,
 )
+from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.entity import (
     DUMMY_ENTITY_COLUMN_NAME,
@@ -48,6 +49,7 @@ from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.online_serving_util import get_version_placeholder
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.session.session_helper import SessionHandler, execute_feature_query_set
 
@@ -180,6 +182,7 @@ def get_online_store_retrieval_expr(
     request_table_expr: Optional[expressions.Select] = None,
     request_table_details: Optional[TableDetails] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
+    job_schedule_table_set: Optional[JobScheduleTableSet] = None,
 ) -> Tuple[expressions.Select, list[str]]:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
@@ -212,6 +215,7 @@ def get_online_store_retrieval_expr(
         source_info=source_info,
         is_online_serving=True,
         parent_serving_preparation=parent_serving_preparation,
+        job_schedule_table_set=job_schedule_table_set,
     )
     plan = planner.generate_plan(nodes)
 
@@ -326,6 +330,7 @@ def get_online_features_query_set(
     output_table_details: Optional[TableDetails] = None,
     output_include_row_index: bool = False,
     concatenate_serving_names: Optional[list[str]] = None,
+    job_schedule_table_set: Optional[JobScheduleTableSet] = None,
 ) -> FeatureQuerySet:
     """
     Construct a FeatureQuerySet object to compute the online features
@@ -378,6 +383,7 @@ def get_online_features_query_set(
             request_table_details=request_table_details,
             source_info=source_info,
             parent_serving_preparation=parent_serving_preparation,
+            job_schedule_table_set=job_schedule_table_set,
         )
         sql_expr = add_concatenated_serving_names(
             sql_expr, concatenate_serving_names, source_info.source_type
@@ -411,6 +417,7 @@ def get_online_features_query_set(
             request_table_details=request_table_details,
             source_info=source_info,
             parent_serving_preparation=parent_serving_preparation,
+            job_schedule_table_set=job_schedule_table_set,
         )
         feature_set_table_name = f"{feature_set_table_name_prefix}_{i}"
         feature_queries.append(
@@ -466,6 +473,7 @@ class TemporaryBatchRequestTable(FeatureByteBaseModel):
 
 async def get_online_features(
     session_handler: SessionHandler,
+    cron_helper: CronHelper,
     graph: QueryGraph,
     nodes: list[Node],
     request_data: Union[pd.DataFrame, BatchRequestTableModel, TemporaryBatchRequestTable],
@@ -539,6 +547,14 @@ async def get_online_features(
     else:
         request_table_name = None
 
+    # Register job schedule tables if necessary
+    cron_feature_job_settings = get_cron_feature_job_settings(graph, nodes)
+    job_schedule_table_set = await cron_helper.register_job_schedule_tables(
+        session=session,
+        request_timestamp=request_timestamp or datetime.utcnow(),
+        cron_feature_job_settings=cron_feature_job_settings,
+    )
+
     try:
         aggregation_result_names = get_aggregation_result_names(graph, nodes, source_info)
         versions = await online_store_table_version_service.get_versions(aggregation_result_names)
@@ -556,6 +572,7 @@ async def get_online_features(
             output_table_details=output_table_details,
             output_include_row_index=request_table_details is None,
             concatenate_serving_names=concatenate_serving_names,
+            job_schedule_table_set=job_schedule_table_set,
         )
         fill_version_placeholders_for_query_set(query_set, versions)
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
@@ -569,6 +586,13 @@ async def get_online_features(
                 schema_name=session.schema_name,
                 database_name=session.database_name,
             )
+        if job_schedule_table_set:
+            for job_schedule_table in job_schedule_table_set.tables:
+                await session.drop_table(
+                    table_name=job_schedule_table.table_name,
+                    schema_name=session.schema_name,
+                    database_name=session.database_name,
+                )
 
     if output_table_details is None:
         assert df_features is not None

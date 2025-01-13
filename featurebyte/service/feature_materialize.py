@@ -218,6 +218,7 @@ class FeatureMaterializeService:
         entity_validation_service: EntityValidationService,
         deployment_service: DeploymentService,
         feature_materialize_run_service: FeatureMaterializeRunService,
+        cron_helper: CronHelper,
         system_metrics_service: SystemMetricsService,
         redis: Redis[Any],
     ):
@@ -231,6 +232,7 @@ class FeatureMaterializeService:
         self.entity_validation_service = entity_validation_service
         self.deployment_service = deployment_service
         self.feature_materialize_run_service = feature_materialize_run_service
+        self.cron_helper = cron_helper
         self.system_metrics_service = system_metrics_service
         self.redis = redis
 
@@ -333,6 +335,7 @@ class FeatureMaterializeService:
                 session_handler=SessionHandler(
                     session=session, redis=self.redis, feature_store=feature_store
                 ),
+                cron_helper=self.cron_helper,
                 graph=feature_table_model.feature_cluster.graph,
                 nodes=nodes,
                 request_data=batch_request_table,
