@@ -2,10 +2,34 @@
 Integration tests for TimeSeriesView operations
 """
 
+from datetime import datetime
+from unittest.mock import patch
+
 import pandas as pd
+import pytest
 
 from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import fb_assert_frame_equal
+
+
+@pytest.fixture(name="time_series_window_aggregate_feature")
+def time_series_window_aggregate_feature_fixture(time_series_table):
+    """
+    Fixture for a feature derived from TimeSeriewView
+    """
+    view = time_series_table.get_view()
+    feature = view.groupby("series_id_col").aggregate_over(
+        value_column="value_col",
+        method="sum",
+        windows=[CalendarWindow(unit="DAY", size=7)],
+        feature_names=["value_col_sum_7d"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        ),
+    )["value_col_sum_7d"]
+    return feature
 
 
 def test_times_series_view(time_series_table):
@@ -37,21 +61,11 @@ def test_times_series_view(time_series_table):
     assert actual == expected
 
 
-def test_aggregate_over(time_series_table):
+def test_aggregate_over(time_series_window_aggregate_feature):
     """
     Test TimeSeriesView
     """
-    view = time_series_table.get_view()
-    feature = view.groupby("series_id_col").aggregate_over(
-        value_column="value_col",
-        method="sum",
-        windows=[CalendarWindow(unit="DAY", size=7)],
-        feature_names=["value_col_sum_7d"],
-        feature_job_setting=CronFeatureJobSetting(
-            crontab="0 8 * * *",
-            timezone="Asia/Singapore",
-        ),
-    )["value_col_sum_7d"]
+    feature = time_series_window_aggregate_feature
     # Point in time of "2001-01-10 10:00:00" UTC is "2001-01-10 18:00:00" Asia/Singapore, at
     # which point the last feature job is at "2001-01-10 10:00:00" Asia/Singapore. Hence, this
     # feature should sum the values from "2001-01-03" to "2001-01-09" inclusive.
@@ -204,3 +218,31 @@ def test_join_scd_view(time_series_table, scd_table_custom_date_format):
     expected = preview_params.copy()
     expected["num_unique_user_status_7d"] = [5]
     fb_assert_frame_equal(df_features, expected)
+
+
+def test_deployment(config, time_series_window_aggregate_feature):
+    """
+    Test TimeSeriesView
+    """
+    feature = time_series_window_aggregate_feature
+    feature_list = FeatureList([feature], "time_series_feature_production_ready")
+    feature_list.save()
+    deployment = feature_list.deploy(make_production_ready=True)
+    with patch("featurebyte.service.feature_materialize.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 10, 12)
+        deployment.enable()
+    entity_serving_names = [
+        {
+            "series_id": "S0",
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+    client = config.get_client()
+    res = client.post(
+        f"/deployment/{deployment.id}/online_features",
+        json=data.json_dict(),
+    )
+    assert res.status_code == 200
+    df_feat = pd.DataFrame(res.json()["features"])
+    df_expected = pd.DataFrame([{"series_id": "S0", "value_col_sum_7d": 0.35}])
+    fb_assert_frame_equal(df_feat, df_expected)

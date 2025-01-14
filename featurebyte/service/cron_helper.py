@@ -5,6 +5,7 @@ Helpers to simulate job schedules for historical features
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 import pytz
@@ -34,8 +35,9 @@ class CronHelper:
     async def register_job_schedule_tables(
         cls,
         session: BaseSession,
-        request_table_name: str,
         cron_feature_job_settings: list[CronFeatureJobSetting],
+        request_table_name: Optional[str] = None,
+        request_timestamp: Optional[datetime] = None,
     ) -> JobScheduleTableSet:
         """
         Register job schedule tables for the given cron feature job settings. Caller is responsible
@@ -45,37 +47,46 @@ class CronHelper:
         ----------
         session: BaseSession
             Session object
-        request_table_name: str
-            Request table name
         cron_feature_job_settings: list[CronFeatureJobSetting]
             List of cron feature job settings
+        request_table_name: Optional[str]
+            Request table name
+        request_timestamp: Optional[datetime]
+            Request timestamp. To be provided when used when computing online features.
 
         Returns
         -------
         JobScheduleTableSet
         """
-        point_in_time_min_max_query = expressions.select(
-            expressions.alias_(
-                expressions.Min(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME)),
-                alias="min",
-                quoted=True,
-            ),
-            expressions.alias_(
-                expressions.Max(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME)),
-                alias="max",
-                quoted=True,
-            ),
-        ).from_(
-            quoted_identifier(request_table_name),
-        )
-        point_in_time_stats = await session.execute_query_long_running(
-            sql_to_string(point_in_time_min_max_query, session.source_type)
-        )
         job_schedule_table_set = JobScheduleTableSet(tables=[])
-        if point_in_time_stats is None:
-            return job_schedule_table_set
-        min_point_in_time = point_in_time_stats["min"].iloc[0]
-        max_point_in_time = point_in_time_stats["max"].iloc[0]
+
+        if request_table_name is not None:
+            point_in_time_min_max_query = expressions.select(
+                expressions.alias_(
+                    expressions.Min(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME)),
+                    alias="min",
+                    quoted=True,
+                ),
+                expressions.alias_(
+                    expressions.Max(this=quoted_identifier(SpecialColumnName.POINT_IN_TIME)),
+                    alias="max",
+                    quoted=True,
+                ),
+            ).from_(
+                quoted_identifier(request_table_name),
+            )
+            point_in_time_stats = await session.execute_query_long_running(
+                sql_to_string(point_in_time_min_max_query, session.source_type)
+            )
+            if point_in_time_stats is None:
+                return job_schedule_table_set
+            min_point_in_time = point_in_time_stats["min"].iloc[0]
+            max_point_in_time = point_in_time_stats["max"].iloc[0]
+        else:
+            assert request_timestamp is not None
+            min_point_in_time = request_timestamp
+            max_point_in_time = request_timestamp
+
         for cron_feature_job_setting in cron_feature_job_settings:
             job_schedule_table_name = f"__temp_cron_job_schedule_{ObjectId()}"
             await cls.register_cron_job_schedule(

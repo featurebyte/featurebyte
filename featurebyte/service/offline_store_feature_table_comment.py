@@ -7,7 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, Dict, List, Optional, Sequence, Tuple, Union
 
-from featurebyte.exception import CronNotImplementedError
 from featurebyte.logging import get_logger
 from featurebyte.models.entity import EntityModel
 from featurebyte.models.feature import FeatureModel
@@ -114,11 +113,6 @@ class OfflineStoreFeatureTableCommentService:
         Returns
         -------
         TableComment
-
-        Raises
-        ------
-        CronNotImplementedError
-            If feature job setting type is not supported
         """
         primary_entities = await self.entity_service.get_entities(
             set(feature_table_model.primary_entity_ids)
@@ -137,15 +131,17 @@ class OfflineStoreFeatureTableCommentService:
         if feature_table_model.feature_job_setting:
             job_setting = feature_table_model.feature_job_setting
             if not isinstance(job_setting, FeatureJobSetting):
-                raise CronNotImplementedError(
-                    f"Feature job setting type {type(job_setting)} is not supported"
+                sentences.append(
+                    f"It is updated according to a cron schedule:"
+                    f" '{job_setting.get_cron_expression()}' aligned to the "
+                    f" '{job_setting.timezone}' time zone"
                 )
-
-            sentences.append(
-                f"It is updated every {job_setting.period_seconds} second(s), with a blind spot"
-                f" of {job_setting.blind_spot_seconds} second(s) and a time modulo frequency of"
-                f" {job_setting.offset_seconds} second(s)"
-            )
+            else:
+                sentences.append(
+                    f"It is updated every {job_setting.period_seconds} second(s), with a blind spot"
+                    f" of {job_setting.blind_spot_seconds} second(s) and a time modulo frequency of"
+                    f" {job_setting.offset_seconds} second(s)"
+                )
         comment = ". ".join(sentences) + "."
         return TableComment(table_name=feature_table_model.name, comment=comment)
 

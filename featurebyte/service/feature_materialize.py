@@ -49,6 +49,7 @@ from featurebyte.query_graph.sql.online_serving import (
     TemporaryBatchRequestTable,
     get_online_features,
 )
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
@@ -218,6 +219,7 @@ class FeatureMaterializeService:
         entity_validation_service: EntityValidationService,
         deployment_service: DeploymentService,
         feature_materialize_run_service: FeatureMaterializeRunService,
+        cron_helper: CronHelper,
         system_metrics_service: SystemMetricsService,
         redis: Redis[Any],
     ):
@@ -231,6 +233,7 @@ class FeatureMaterializeService:
         self.entity_validation_service = entity_validation_service
         self.deployment_service = deployment_service
         self.feature_materialize_run_service = feature_materialize_run_service
+        self.cron_helper = cron_helper
         self.system_metrics_service = system_metrics_service
         self.redis = redis
 
@@ -284,16 +287,17 @@ class FeatureMaterializeService:
         )
         feature_timestamp = datetime.utcnow()
 
+        select_expr = feature_table_model.entity_universe.get_entity_universe_expr(
+            current_feature_timestamp=feature_timestamp,
+            last_materialized_timestamp=(
+                feature_table_model.last_materialized_at
+                if use_last_materialized_timestamp
+                else None
+            ),
+        )
         await session.create_table_as(
             table_details=batch_request_table.table_details,
-            select_expr=feature_table_model.entity_universe.get_entity_universe_expr(
-                current_feature_timestamp=feature_timestamp,
-                last_materialized_timestamp=(
-                    feature_table_model.last_materialized_at
-                    if use_last_materialized_timestamp
-                    else None
-                ),
-            ),
+            select_expr=select_expr,
         )
         await BaseMaterializedTableService.add_row_index_column(
             session, batch_request_table.table_details
@@ -333,6 +337,7 @@ class FeatureMaterializeService:
                 session_handler=SessionHandler(
                     session=session, redis=self.redis, feature_store=feature_store
                 ),
+                cron_helper=self.cron_helper,
                 graph=feature_table_model.feature_cluster.graph,
                 nodes=nodes,
                 request_data=batch_request_table,

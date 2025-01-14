@@ -36,6 +36,7 @@ from pytest_split import plugin as pytest_split_plugin
 from featurebyte import (
     Catalog,
     Configurations,
+    CronFeatureJobSetting,
     DatabricksDetails,
     FeatureGroup,
     FeatureJobSetting,
@@ -1738,6 +1739,12 @@ def time_series_table_fixture(
         reference_datetime_schema=TimestampSchema(format_string=scd_table_timestamp_format_string),
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
         series_id_column="series_id_col",
+    )
+    time_series_table.update_default_feature_job_setting(
+        CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        )
     )
     time_series_table["series_id_col"].as_entity(series_entity.name)
     time_series_table["user_id_col"].as_entity(user_entity.name)

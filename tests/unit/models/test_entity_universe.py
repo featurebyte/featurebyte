@@ -8,6 +8,7 @@ from datetime import datetime
 import pytest
 from bson import ObjectId
 
+from featurebyte.enum import SourceType
 from featurebyte.models.entity_universe import (
     EntityUniverseModel,
     EntityUniverseParams,
@@ -17,6 +18,9 @@ from featurebyte.models.entity_universe import (
 from featurebyte.models.parent_serving import EntityLookupInfo, EntityLookupStep
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.source_info import SourceInfo
+from tests.util.helper import assert_equal_with_expected_fixture
 
 
 def get_nodes_from_feature(feature, node_type):
@@ -117,6 +121,18 @@ def window_aggregate_multiple_windows(float_feature_multiple_windows):
     graph = float_feature_multiple_windows.graph
     groupby_nodes = get_nodes_from_feature(float_feature_multiple_windows, NodeType.GROUPBY)
     return graph, groupby_nodes
+
+
+@pytest.fixture
+def ts_window_aggregate_graph_and_node(ts_window_aggregate_feature):
+    """
+    Fixture for a time series window aggregate node
+    """
+    graph = ts_window_aggregate_feature.graph
+    ts_window_aggregate_node = get_node_from_feature(
+        ts_window_aggregate_feature, NodeType.TIME_SERIES_WINDOW_AGGREGATE
+    )
+    return graph, ts_window_aggregate_node
 
 
 @pytest.fixture
@@ -610,7 +626,7 @@ def test_entity_universe_model_get_entity_universe_expr(
     constructor = get_entity_universe_constructor(graph, node, source_info)
     query_template = constructor.get_entity_universe_template()[0]
     entity_universe_model = EntityUniverseModel(
-        query_template=SqlglotExpressionModel.create(query_template)
+        query_template=SqlglotExpressionModel.create(query_template, source_info.source_type)
     )
     expected = textwrap.dedent(
         """
@@ -642,3 +658,37 @@ def test_entity_universe_model_get_entity_universe_expr(
         last_materialized_timestamp=datetime(2022, 10, 15, 9, 0, 0),
     ).sql(pretty=True)
     assert actual == expected
+
+
+@pytest.mark.parametrize("source_type", ["snowflake", "spark", "databricks_unity", "bigquery"])
+def test_time_series_window_aggregate_universe(
+    catalog, ts_window_aggregate_graph_and_node, source_type, update_fixtures
+):
+    """
+    Test constructing universe for a time series window aggregate
+    """
+    _ = catalog
+    source_type = SourceType(source_type)
+    source_info = SourceInfo(
+        database_name="my_db",
+        schema_name="my_schema",
+        source_type=source_type,
+    )
+    universe = get_combined_universe(
+        [
+            EntityUniverseParams(
+                graph=ts_window_aggregate_graph_and_node[0],
+                node=ts_window_aggregate_graph_and_node[1],
+                join_steps=None,
+            ),
+        ],
+        source_info,
+    )
+    model = EntityUniverseModel(query_template=SqlglotExpressionModel.create(universe, source_type))
+    actual = sql_to_string(model.query_template.expr, source_type)
+    fixture_filename = f"tests/fixtures/entity_universe/ts_window_aggregate_{source_type}.sql"
+    assert_equal_with_expected_fixture(
+        actual,
+        fixture_filename,
+        update_fixtures,
+    )

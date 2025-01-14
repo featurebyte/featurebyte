@@ -734,7 +734,8 @@ async def test_feature_table_one_feature_deployed(
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
                       AND "cust_id" IS NOT NULL
                     """
-                ).strip()
+                ).strip(),
+                "source_type": "snowflake",
             }
         },
         "feature_ids": [deployed_float_feature.id],
@@ -881,7 +882,8 @@ async def test_feature_table_two_features_deployed(
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
                       AND "cust_id" IS NOT NULL
                     """
-                ).strip()
+                ).strip(),
+                "source_type": "snowflake",
             }
         },
         "feature_ids": [deployed_float_feature.id, deployed_float_feature_post_processed.id],
@@ -984,7 +986,8 @@ async def test_feature_table_undeploy(
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
                       AND "cust_id" IS NOT NULL
                     """
-                ).strip()
+                ).strip(),
+                "source_type": "snowflake",
             }
         },
         "feature_ids": [deployed_float_feature_post_processed.id],
@@ -1124,7 +1127,8 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
                       AND "cust_id" IS NOT NULL
                     """
-                ).strip()
+                ).strip(),
+                "source_type": "snowflake",
             }
         },
         "feature_ids": [deployed_float_feature.id],
@@ -1177,7 +1181,8 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
                       AND "cust_id" IS NOT NULL
                     """
-                ).strip()
+                ).strip(),
+                "source_type": "snowflake",
             }
         },
         "feature_ids": [deployed_float_feature_different_job_setting.id],
@@ -1246,7 +1251,10 @@ async def test_feature_table_without_entity(
         "catalog_id": ObjectId("646f6c1c0ed28a5271fb02db"),
         "description": None,
         "entity_universe": {
-            "query_template": {"formatted_expression": "SELECT\n" "  1 AS " '"dummy_entity"'}
+            "query_template": {
+                "formatted_expression": "SELECT\n" "  1 AS " '"dummy_entity"',
+                "source_type": "snowflake",
+            }
         },
         "feature_ids": [deployed_feature_without_entity.id],
         "feature_job_setting": {
@@ -1874,7 +1882,8 @@ async def test_item_view_window_aggregate(
                       "AGGREGATION_RESULT_NAME" = '_fb_internal_item_type_window_w86400_sum_2e4057b32df81d547bde013cd755a1189af7e615'
                       AND "item_type" IS NOT NULL
                     """
-                ).strip()
+                ).strip(),
+                "source_type": "snowflake",
             }
         },
         "feature_cluster_path": feature_table_dict["feature_cluster_path"],
