@@ -22,6 +22,7 @@ from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo
+from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 from featurebyte.typing import Scalar, ScalarSequence, Timestamp, is_scalar_nan
 
 FrozenSeriesT = TypeVar("FrozenSeriesT", bound="FrozenSeries")
@@ -161,6 +162,20 @@ class FrozenSeries(
         DBVarTypeInfo
         """
         return self.operation_structure.series_output_dtype_info
+
+    @property
+    def associated_timezone_column_name(self) -> Optional[str]:
+        """
+        Get the associated timezone column name
+
+        Returns
+        -------
+        Optional[str]
+        """
+        if self.dtype_info and self.dtype_info.timestamp_schema:
+            if isinstance(self.dtype_info.timestamp_schema.timezone, TimeZoneColumn):
+                return self.dtype_info.timestamp_schema.timezone.column_name
+        return None
 
     @property
     def binary_op_output_class_priority(self) -> int:

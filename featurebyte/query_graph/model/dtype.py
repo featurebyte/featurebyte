@@ -2,7 +2,7 @@
 Models related to dtype
 """
 
-from typing import Optional
+from typing import List, Optional
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
@@ -14,6 +14,7 @@ class DBVarTypeMetadata(FeatureByteBaseModel):
     Metadata for DBVarType
     """
 
+    tuple_dtypes: Optional[List[DBVarType]] = None
     timestamp_schema: Optional[TimestampSchema] = None
 
 

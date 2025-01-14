@@ -17,7 +17,7 @@ from typeguard import TypeCheckError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.time_series_table import TimeSeriesTable
-from featurebyte.enum import TableDataType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -27,6 +27,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.time_series_table import TimeSeriesTableModel
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
 )
@@ -122,7 +123,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": "Date column",
-                "dtype_metadata": {"timestamp_schema": ts_schema},
+                "dtype_metadata": {"timestamp_schema": ts_schema, "tuple_dtypes": None},
             },
             {
                 "entity_id": None,
@@ -1081,6 +1082,21 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
     view = time_series_table.get_view()
     assert view._reference_column_map == {"date": ["col_text"]}
     assert view._conditionally_expand_columns(["date"]) == ["date", "col_text"]
+
+    # create zip timestamp with timezone offset column
+    ts_tz_col = view.date.zip_timestamp_timezone_tuple()
+    assert ts_tz_col.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
+    assert ts_tz_col.dtype_info == DBVarTypeInfo(
+        dtype=DBVarType.TIMESTAMP_TZ_TUPLE,
+        metadata=DBVarTypeMetadata(
+            tuple_dtypes=[DBVarType.VARCHAR, DBVarType.VARCHAR],
+            timestamp_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS",
+                is_utc_time=None,
+                timezone=TimeZoneColumn(column_name="col_text", type="offset"),
+            ),
+        ),
+    )
 
 
 def test_timezone_offset__invalid_column(snowflake_database_time_series_table, catalog):

@@ -8,18 +8,22 @@ from typing import ClassVar, List, Sequence, Tuple
 from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model.dtype import DBVarTypeInfo
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.node.base import (
+    BaseNode,
     BaseSeriesOutputWithAScalarParamNode,
     BinaryArithmeticOpNode,
     BinaryOpWithBoolOutputNode,
+    SeriesOutputNodeOpStructMixin,
 )
 from featurebyte.query_graph.node.metadata.config import (
     OnDemandFunctionCodeGenConfig,
     OnDemandViewCodeGenConfig,
 )
-from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    OperationStructure,
+)
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ExpressionStr,
     StatementT,
@@ -253,3 +257,41 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
             f"False if pd.isna({left_op}) or not isinstance({right_op}, list) else {left_op} in {right_op}"
         )
         return [], expr
+
+
+class ZipTimestampTZTupleNode(SeriesOutputNodeOpStructMixin, BaseNode):
+    """ZipTimestampTZTupleNode class"""
+
+    type: Literal[NodeType.ZIP_TIMESTAMP_TZ_TUPLE] = NodeType.ZIP_TIMESTAMP_TZ_TUPLE
+    output_type: NodeOutputType = NodeOutputType.SERIES
+
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        _ = input_index, available_column_names
+        return self._assert_empty_required_input_columns()
+
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        dtype_metadata = inputs[0].columns[0].dtype_info.metadata
+        tuple_dtypes = [inp.columns[0].dtype_info.dtype for inp in inputs]
+        if dtype_metadata:
+            dtype_metadata.tuple_dtypes = tuple_dtypes
+        else:
+            dtype_metadata = DBVarTypeMetadata(tuple_dtypes=tuple_dtypes)
+        return DBVarTypeInfo(
+            dtype=DBVarType.TIMESTAMP_TZ_TUPLE,
+            metadata=dtype_metadata,
+        )
+
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
+        _ = self
+        return f"{left_operand}.zip_timestamp_with_timezone({right_operand})"
+
+    def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
+        raise NotImplementedError(
+            "generate_udf_expression is not implemented for ZipTimestampTZTupleNode"
+        )

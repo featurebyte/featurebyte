@@ -89,6 +89,7 @@ class NodeType(StrEnum):
     DATE_DIFF = "date_diff"
     TIMEDELTA = "timedelta"
     DATE_ADD = "date_add"
+    ZIP_TIMESTAMP_TZ_TUPLE = "zip_timestamp_tz_tuple"
 
     # count dict related operations
     COUNT_DICT_TRANSFORM = "count_dict_transform"

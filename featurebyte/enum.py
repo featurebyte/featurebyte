@@ -157,6 +157,9 @@ class DBVarType(StrEnum):
     EMBEDDING = "EMBEDDING", "Embedding column"
     FLAT_DICT = "FLAT_DICT", "Flat dictionary column"
 
+    # specialized composite type
+    TIMESTAMP_TZ_TUPLE = "TIMESTAMP_TZ_TUPLE", "Tuple of (timestamp, timezone offset)"
+
     # unknown type
     UNKNOWN = "UNKNOWN", "Unknown column type"
 
