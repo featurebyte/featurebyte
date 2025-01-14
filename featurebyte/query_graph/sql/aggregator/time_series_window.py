@@ -30,6 +30,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     CteStatement,
     CteStatements,
+    get_qualified_column_identifier,
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.cron import get_request_table_with_job_schedule_name
@@ -53,6 +54,16 @@ class ProcessedRequestTable:
     """
 
     name: str
+
+
+@dataclass
+class ProcessedRequestTablePair:
+    """
+    Processed request table pair
+    """
+
+    distinct_by_point_in_time: ProcessedRequestTable
+    distinct_by_scheduled_job_time: ProcessedRequestTable
     aggregation_spec: TimeSeriesWindowAggregateSpec
 
 
@@ -62,7 +73,7 @@ class TimeSeriesRequestTablePlan:
     """
 
     def __init__(self, source_info: SourceInfo) -> None:
-        self.processed_request_tables: Dict[RequestTableKeyType, ProcessedRequestTable] = {}
+        self.processed_request_tables: Dict[RequestTableKeyType, ProcessedRequestTablePair] = {}
         self.adapter = get_sql_adapter(source_info)
 
     def add_aggregation_spec(self, aggregation_spec: TimeSeriesWindowAggregateSpec) -> None:
@@ -81,14 +92,19 @@ class TimeSeriesRequestTablePlan:
                 window_spec += f"_O{aggregation_spec.offset.to_string()}"
             feature_job_setting = aggregation_spec.parameters.feature_job_setting
             job_settings_str = feature_job_setting.get_cron_expression_with_timezone()
-            table_name = (
-                f"REQUEST_TABLE_TIME_SERIES"
-                f"_{window_spec}"
-                f"_{job_settings_str}"
-                f"_{'_'.join(aggregation_spec.parameters.serving_names)}"
-            )
-            self.processed_request_tables[key] = ProcessedRequestTable(
-                name=table_name,
+            table_name = "_".join([
+                "REQUEST_TABLE_TIME_SERIES",
+                window_spec,
+                job_settings_str,
+                "_".join(aggregation_spec.parameters.serving_names),
+            ])
+            self.processed_request_tables[key] = ProcessedRequestTablePair(
+                distinct_by_point_in_time=ProcessedRequestTable(
+                    name=table_name + "_DISTINCT_BY_POINT_IN_TIME"
+                ),
+                distinct_by_scheduled_job_time=ProcessedRequestTable(
+                    name=table_name + "_DISTINCT_BY_SCHEDULED_JOB_TIME"
+                ),
                 aggregation_spec=aggregation_spec,
             )
 
@@ -105,9 +121,9 @@ class TimeSeriesRequestTablePlan:
         )
         return key
 
-    def get_processed_request_table(
+    def get_processed_request_tables(
         self, aggregation_spec: TimeSeriesWindowAggregateSpec
-    ) -> ProcessedRequestTable:
+    ) -> ProcessedRequestTablePair:
         """
         Get the process request table corresponding to an aggregation spec
 
@@ -118,7 +134,7 @@ class TimeSeriesRequestTablePlan:
 
         Returns
         -------
-        ProcessedRequestTable
+        ProcessedRequestTablePair
         """
         key = self._get_request_table_key(aggregation_spec)
         return self.processed_request_tables[key]
@@ -137,22 +153,19 @@ class TimeSeriesRequestTablePlan:
         CteStatements
         """
         request_table_ctes = []
-        for processed_request_table in self.processed_request_tables.values():
-            processed_table_sql = self._construct_processed_request_table_sql(
+        for processed_request_table_pair in self.processed_request_tables.values():
+            processed_tables = self._construct_processed_request_table_sql(
                 request_table_name=request_table_name,
-                aggregation_spec=processed_request_table.aggregation_spec,
+                processed_request_table_pair=processed_request_table_pair,
             )
-            request_table_ctes.append((
-                quoted_identifier(processed_request_table.name),
-                processed_table_sql,
-            ))
+            request_table_ctes.extend(processed_tables)
         return cast(CteStatements, request_table_ctes)
 
     def _construct_processed_request_table_sql(
         self,
         request_table_name: str,
-        aggregation_spec: TimeSeriesWindowAggregateSpec,
-    ) -> Select:
+        processed_request_table_pair: ProcessedRequestTablePair,
+    ) -> list[CteStatement]:
         """
         Get a Select statement that applies necessary transformations to the request table to
         prepare for the aggregation.
@@ -161,13 +174,15 @@ class TimeSeriesRequestTablePlan:
         ----------
         request_table_name: str
             Request table name
-        aggregation_spec: TimeSeriesWindowAggregateSpec
-            Aggregation spec
+        processed_request_table_pair: ProcessedRequestTablePair
+            Processed request table pair
 
         Returns
         -------
         Select
         """
+        aggregation_spec = processed_request_table_pair.aggregation_spec
+
         window_unit = aggregation_spec.window.unit
         job_datetime_rounded_to_window_unit = self.adapter.timestamp_truncate(
             quoted_identifier(InternalName.CRON_JOB_SCHEDULE_DATETIME),
@@ -209,19 +224,40 @@ class TimeSeriesRequestTablePlan:
             *aggregation_spec.serving_names,
             InternalName.CRON_JOB_SCHEDULE_DATETIME,
         ]
-        select_distinct_expr = (
+        point_in_time_distinct_expr = (
             select(*[quoted_identifier(col) for col in request_column_names])
             .distinct()
             .from_(quoted_identifier(request_table_name))
         )
-        processed_request_table = (
-            select(*[quoted_identifier(col) for col in request_column_names]).select(
+
+        # Select distinct feature job times and entities
+        column_names_without_point_in_time = [
+            col for col in request_column_names if col != SpecialColumnName.POINT_IN_TIME
+        ]
+        scheduled_job_time_distinct_expr = (
+            select(
+                *[quoted_identifier(col) for col in column_names_without_point_in_time],
+            )
+            .distinct()
+            .from_(quoted_identifier(request_table_name))
+        )
+        scheduled_job_time_distinct_expr = (
+            select(*[quoted_identifier(col) for col in column_names_without_point_in_time]).select(
                 alias_(range_start_expr, InternalName.WINDOW_START_EPOCH, quoted=True),
                 alias_(range_end_expr, InternalName.WINDOW_END_EPOCH, quoted=True),
             )
-        ).from_(select_distinct_expr.subquery())
+        ).from_(scheduled_job_time_distinct_expr.subquery())
 
-        return processed_request_table
+        return [
+            (
+                quoted_identifier(processed_request_table_pair.distinct_by_point_in_time.name),
+                point_in_time_distinct_expr,
+            ),
+            (
+                quoted_identifier(processed_request_table_pair.distinct_by_scheduled_job_time.name),
+                scheduled_job_time_distinct_expr,
+            ),
+        ]
 
 
 class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregateSpec]):
@@ -314,14 +350,14 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         spec = specs[0]
 
         # Left table: processed request table
-        processed_request_table = self.request_table_plan.get_processed_request_table(spec)
+        processed_request_tables = self.request_table_plan.get_processed_request_tables(spec)
         left_table = LeftTable(
-            name=quoted_identifier(processed_request_table.name),
+            name=quoted_identifier(processed_request_tables.distinct_by_scheduled_job_time.name),
             alias="REQ",
             join_keys=spec.serving_names,
             range_start=InternalName.WINDOW_START_EPOCH,
             range_end=InternalName.WINDOW_END_EPOCH,
-            columns=[SpecialColumnName.POINT_IN_TIME] + (spec.serving_names or []),
+            columns=[InternalName.CRON_JOB_SCHEDULE_DATETIME] + (spec.serving_names or []),
         )
 
         # Right table: source view
@@ -354,8 +390,8 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         # Aggregation
         groupby_keys = [
             GroupbyKey(
-                expr=quoted_identifier(SpecialColumnName.POINT_IN_TIME),
-                name=SpecialColumnName.POINT_IN_TIME,
+                expr=quoted_identifier(InternalName.CRON_JOB_SCHEDULE_DATETIME),
+                name=InternalName.CRON_JOB_SCHEDULE_DATETIME,
             )
         ] + [
             GroupbyKey(
@@ -404,6 +440,45 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         for _spec in specs:
             if _spec.agg_result_name not in existing_columns:
                 column_names.add(_spec.agg_result_name)
+
+        # Aggregated result is now distinct by scheduled feature job time and serving names. Join
+        # with the distinct by point in time request table to get the final result
+        join_condition = expressions.and_(*[
+            expressions.EQ(
+                this=get_qualified_column_identifier(column_name, "AGGREGATED"),
+                expression=get_qualified_column_identifier(column_name, "DISTINCT_POINT_IN_TIME"),
+            )
+            for column_name in [InternalName.CRON_JOB_SCHEDULE_DATETIME.value] + spec.serving_names
+        ])
+        aggregated_expr = (
+            select(
+                *[
+                    get_qualified_column_identifier(
+                        column_name,
+                        "DISTINCT_POINT_IN_TIME",
+                    )
+                    for column_name in [SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names
+                ],
+                *[
+                    get_qualified_column_identifier(
+                        column_name,
+                        "AGGREGATED",
+                    )
+                    for column_name in column_names
+                ],
+            )
+            .from_(
+                expressions.Table(
+                    this=quoted_identifier(processed_request_tables.distinct_by_point_in_time.name),
+                    alias="DISTINCT_POINT_IN_TIME",
+                )
+            )
+            .join(
+                expressions.Table(this=aggregated_expr.subquery(), alias="AGGREGATED"),
+                join_type="left",
+                on=join_condition,
+            )
+        )
 
         return LeftJoinableSubquery(
             expr=aggregated_expr,
