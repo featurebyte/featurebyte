@@ -1084,7 +1084,7 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
     assert view._conditionally_expand_columns(["date"]) == ["date", "col_text"]
 
     # create zip timestamp with timezone offset column
-    ts_tz_col = view.date.zip_timestamp_timezone_tuple()
+    ts_tz_col = view.date.zip_timestamp_timezone_columns()
     assert ts_tz_col.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
     assert ts_tz_col.dtype_info == DBVarTypeInfo(
         dtype=DBVarType.TIMESTAMP_TZ_TUPLE,

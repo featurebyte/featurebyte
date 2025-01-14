@@ -535,7 +535,7 @@ class ViewColumn(Series, SampleMixin):
         """
         return super().isin(other=other)
 
-    def zip_timestamp_timezone_tuple(self) -> ViewColumn:
+    def zip_timestamp_timezone_columns(self) -> ViewColumn:
         """
         Zips the timestamp and timezone columns into a single timestamp with timezone tuple.
 
