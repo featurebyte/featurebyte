@@ -8,7 +8,11 @@ from featurebyte import TimestampSchema
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
-from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+from featurebyte.query_graph.model.timestamp_schema import (
+    TimestampTupleSchema,
+    TimeZoneColumn,
+    TimezoneOffsetSchema,
+)
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 from tests.unit.query_graph.util import to_dict
 from tests.util.helper import compare_pydantic_obj
@@ -1390,13 +1394,13 @@ def test_zip_timestamp_timezone_tuple_operation_structure(
     proj_eff_ts = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["effective_ts"]},
-        node_output_type=NodeOutputType.FRAME,
+        node_output_type=NodeOutputType.SERIES,
         input_nodes=[scd_table_input_node_with_tz],
     )
     proj_tz = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["timezone"]},
-        node_output_type=NodeOutputType.FRAME,
+        node_output_type=NodeOutputType.SERIES,
         input_nodes=[scd_table_input_node_with_tz],
     )
     zip_ts_tz_tuple = global_graph.add_operation(
@@ -1453,11 +1457,14 @@ def test_zip_timestamp_timezone_tuple_operation_structure(
     assert op_struct.series_output_dtype_info == DBVarTypeInfo(
         dtype=DBVarType.TIMESTAMP_TZ_TUPLE,
         metadata=DBVarTypeMetadata(
-            tuple_dtypes=[DBVarType.TIMESTAMP, DBVarType.VARCHAR],
-            timestamp_schema=TimestampSchema(
-                format_string=None,
-                is_utc_time=None,
-                timezone=TimeZoneColumn(type="timezone", column_name="timezone"),
+            timestamp_schema=None,
+            timestamp_tuple_schema=TimestampTupleSchema(
+                timestamp_schema=TimestampSchema(
+                    format_string=None,
+                    is_utc_time=None,
+                    timezone=TimeZoneColumn(type="timezone", column_name="timezone"),
+                ),
+                timezone_offset_schema=TimezoneOffsetSchema(dtype=DBVarType.VARCHAR),
             ),
         ),
     )

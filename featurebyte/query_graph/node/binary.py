@@ -10,6 +10,10 @@ from typing_extensions import Literal
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
+from featurebyte.query_graph.model.timestamp_schema import (
+    TimestampTupleSchema,
+    TimezoneOffsetSchema,
+)
 from featurebyte.query_graph.node.base import (
     BaseNode,
     BaseSeriesOutputWithAScalarParamNode,
@@ -277,14 +281,18 @@ class ZipTimestampTZTupleNode(SeriesOutputNodeOpStructMixin, BaseNode):
 
     def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         dtype_metadata = inputs[0].columns[0].dtype_info.metadata
-        tuple_dtypes = [inp.columns[0].dtype_info.dtype for inp in inputs]
-        if dtype_metadata:
-            dtype_metadata.tuple_dtypes = tuple_dtypes
-        else:
-            dtype_metadata = DBVarTypeMetadata(tuple_dtypes=tuple_dtypes)
+        assert dtype_metadata is not None
+        assert dtype_metadata.timestamp_schema is not None
         return DBVarTypeInfo(
             dtype=DBVarType.TIMESTAMP_TZ_TUPLE,
-            metadata=dtype_metadata,
+            metadata=DBVarTypeMetadata(
+                timestamp_tuple_schema=TimestampTupleSchema(
+                    timestamp_schema=dtype_metadata.timestamp_schema,
+                    timezone_offset_schema=TimezoneOffsetSchema(
+                        dtype=inputs[1].series_output_dtype_info.dtype
+                    ),
+                )
+            ),
         )
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:

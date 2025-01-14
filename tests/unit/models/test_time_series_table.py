@@ -43,7 +43,10 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "dtype_metadata": {"timestamp_schema": ts_schema.model_dump(), "tuple_dtypes": None},
+            "dtype_metadata": {
+                "timestamp_schema": ts_schema.model_dump(),
+                "timestamp_tuple_schema": None,
+            },
         },
         {
             "name": "series_id",

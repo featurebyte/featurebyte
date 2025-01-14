@@ -8,6 +8,7 @@ from pydantic import model_validator
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from featurebyte.common.doc_util import FBAutoDoc
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 
 
@@ -65,7 +66,7 @@ class TimestampSchema(FeatureByteBaseModel):
         - **BigQuery:** (example: "%Y-%m-%d %H:%M:%S")
             [BigQuery Date and Time Functions](https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time)
 
-    timezone: Union[TimezoneName, TimezoneOffsetColumn]
+    timezone: Union[TimezoneName, TimezoneOffsetSchema]
         The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones)
         (commonly known as the IANA Time Zone Database or tz database). The default value is "Etc/UTC".
 
@@ -137,3 +138,16 @@ class TimestampSchema(FeatureByteBaseModel):
         if self.timezone and isinstance(self.timezone, TimeZoneColumn):
             return True
         return False
+
+
+class TimezoneOffsetSchema(FeatureByteBaseModel):
+    """Timezone offset column schema"""
+
+    dtype: DBVarType
+
+
+class TimestampTupleSchema(FeatureByteBaseModel):
+    """Schema for a tuple of timestamp columns. To be embedded within a ColumnSpec"""
+
+    timestamp_schema: TimestampSchema
+    timezone_offset_schema: TimezoneOffsetSchema

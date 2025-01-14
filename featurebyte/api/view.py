@@ -543,6 +543,11 @@ class ViewColumn(Series, SampleMixin):
         -------
         ViewColumn
             A new column with the zipped timestamp and timezone columns.
+
+        Raises
+        ------
+        ValueError
+            If the column does not have an associated timezone column.
         """
         timezone_column_name = self.associated_timezone_column_name
         if timezone_column_name is None:
@@ -552,7 +557,7 @@ class ViewColumn(Series, SampleMixin):
 
         return series_binary_operation(
             input_series=self,
-            other=self._parent[timezone_column_name],
+            other=self._parent[timezone_column_name],  # type: ignore
             node_type=NodeType.ZIP_TIMESTAMP_TZ_TUPLE,
             output_var_type=DBVarType.TIMESTAMP_TZ_TUPLE,
         )
