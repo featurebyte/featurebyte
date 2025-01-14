@@ -96,7 +96,7 @@ class TimeSeriesRequestTablePlan:
                 "REQUEST_TABLE_TIME_SERIES",
                 window_spec,
                 job_settings_str,
-                "_".join(aggregation_spec.parameters.serving_names),
+                *aggregation_spec.serving_names,
             ])
             self.processed_request_tables[key] = ProcessedRequestTablePair(
                 distinct_by_point_in_time=ProcessedRequestTable(
