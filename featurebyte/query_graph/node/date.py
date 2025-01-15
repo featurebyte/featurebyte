@@ -47,7 +47,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         timezone_offset: Optional[str] = Field(default=None)
         timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
 
-        @property
+        @property  # type: ignore
         def timestamp_schema(self) -> Optional[TimestampSchema]:
             """
             Timestamp schema

@@ -2093,6 +2093,7 @@ class TimeSeriesWindowAggregateParameters(BaseGroupbyParameters):
         -------
         TimestampSchema
         """
+        assert self.reference_datetime_metadata.timestamp_schema is not None
         return self.reference_datetime_metadata.timestamp_schema
 
     @model_validator(mode="before")
