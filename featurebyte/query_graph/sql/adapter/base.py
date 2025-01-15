@@ -1224,3 +1224,39 @@ class BaseAdapter(ABC):
         -------
         Expression
         """
+
+    @classmethod
+    @abstractmethod
+    def subtract_seconds(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        """
+        Subtract seconds from a timestamp
+
+        Parameters
+        ----------
+        timestamp_expr: Expression
+            Timestamp expression
+        num_units: int
+            Number of seconds to subtract
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
+    def subtract_months(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        """
+        Subtract months from a timestamp
+
+        Parameters
+        ----------
+        timestamp_expr: Expression
+            Timestamp expression
+        num_units: int
+            Number of months to subtract
+
+        Returns
+        -------
+        Expression
+        """

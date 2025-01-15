@@ -365,3 +365,19 @@ class BigQueryAdapter(BaseAdapter):
             this="TIMESTAMP_TRUNC",
             expressions=[timestamp_expr, expressions.Var(this=mapping[unit])],
         )
+
+    @classmethod
+    def subtract_seconds(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        return expressions.DatetimeSub(
+            this=cls._ensure_datetime(timestamp_expr),
+            expression=make_literal_value(num_units),
+            unit=expressions.Var(this="SECOND"),
+        )
+
+    @classmethod
+    def subtract_months(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        return expressions.DatetimeSub(
+            this=cls._ensure_datetime(timestamp_expr),
+            expression=make_literal_value(num_units),
+            unit=expressions.Var(this="MONTH"),
+        )

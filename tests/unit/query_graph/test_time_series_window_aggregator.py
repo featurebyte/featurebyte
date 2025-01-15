@@ -131,6 +131,6 @@ def test_aggregator(request, test_case_name, update_fixtures, source_info):
     result_expr = get_combined_aggregation_expr_from_aggregator(aggregator)
     assert_equal_with_expected_fixture(
         result_expr.sql(pretty=True),
-        f"tests/fixtures/aggregator/expected_non_tile_window_aggregator_{test_case_name}.sql",
+        f"tests/fixtures/aggregator/expected_time_series_window_aggregator_{test_case_name}.sql",
         update_fixture=update_fixtures,
     )
