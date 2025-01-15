@@ -47,7 +47,7 @@ def test__getitem__str_not_found(dataframe):
     """
     with pytest.raises(KeyError) as exc:
         _ = dataframe["random"]
-    assert "Column random not found!" in str(exc.value)
+    assert 'Column "random" not found!' in str(exc.value)
 
 
 def test__getitem__list_of_str_key(dataframe):
@@ -94,7 +94,7 @@ def test__getitem__list_of_str_not_found(dataframe):
     """
     with pytest.raises(KeyError) as exc:
         _ = dataframe[["CUST_ID", "random"]]
-    assert "Columns ['random'] not found!" in str(exc.value)
+    assert 'Columns ["random"] not found!' in str(exc.value)
 
 
 def test__getitem__series_key(dataframe, bool_series):

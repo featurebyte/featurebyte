@@ -256,6 +256,7 @@ def snowflake_time_series_table_fixture(
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         description="test time series table",
+        _id=ObjectId("63f9506dd478b941271ed957"),
     )
     time_series_table.store_id.as_entity(cust_id_entity.name)
     time_series_table.col_int.as_entity(transaction_entity.name)

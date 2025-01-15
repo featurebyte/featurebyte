@@ -15,11 +15,9 @@ from featurebyte.query_graph.model.timestamp_schema import (
     TimezoneOffsetSchema,
 )
 from featurebyte.query_graph.node.base import (
-    BaseNode,
     BaseSeriesOutputWithAScalarParamNode,
     BinaryArithmeticOpNode,
     BinaryOpWithBoolOutputNode,
-    SeriesOutputNodeOpStructMixin,
 )
 from featurebyte.query_graph.node.metadata.config import (
     OnDemandFunctionCodeGenConfig,
@@ -263,7 +261,7 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
         return [], expr
 
 
-class ZipTimestampTZTupleNode(SeriesOutputNodeOpStructMixin, BaseNode):
+class ZipTimestampTZTupleNode(BaseSeriesOutputWithAScalarParamNode):
     """ZipTimestampTZTupleNode class"""
 
     type: Literal[NodeType.ZIP_TIMESTAMP_TZ_TUPLE] = NodeType.ZIP_TIMESTAMP_TZ_TUPLE
@@ -296,8 +294,8 @@ class ZipTimestampTZTupleNode(SeriesOutputNodeOpStructMixin, BaseNode):
         )
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
-        _ = self
-        return f"{left_operand}.zip_timestamp_with_timezone({right_operand})"
+        _ = self, right_operand
+        return f"{left_operand}.zip_timestamp_timezone_columns()"
 
     def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
         raise NotImplementedError(

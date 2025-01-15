@@ -28,6 +28,7 @@ from featurebyte.query_graph.model.common_table import (
     SPECIFIC_DATA_TABLES,
     BaseTableData,
 )
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node import Node
@@ -526,7 +527,7 @@ class SCDTableData(BaseTableData):
         track_changes_column: str,
         proxy_input_nodes: List[Node],
         column_names: ChangeViewColumnNames,
-        effective_timestamp_schema: Optional[TimestampSchema],
+        effective_timestamp_metadata: Optional[DBVarTypeMetadata],
     ) -> GraphNode:
         frame_node = proxy_input_nodes[0]
         view_graph_node.add_operation(
@@ -539,7 +540,7 @@ class SCDTableData(BaseTableData):
                 "new_tracked_column_name": column_names.new_tracked_column_name,
                 "previous_valid_from_column_name": column_names.previous_valid_from_column_name,
                 "new_valid_from_column_name": column_names.new_valid_from_column_name,
-                "effective_timestamp_schema": effective_timestamp_schema,
+                "effective_timestamp_metadata": effective_timestamp_metadata,
             },
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[frame_node],
@@ -619,16 +620,16 @@ class SCDTableData(BaseTableData):
             timestamp_column=self.effective_timestamp_column,
             prefixes=prefixes,
         )
-        effective_timestamp_schema = None
+        effective_timestamp_metadata = None
         for col in self.columns_info:
             if col.name == self.effective_timestamp_column and col.dtype_metadata:
-                effective_timestamp_schema = col.dtype_metadata.timestamp_schema
+                effective_timestamp_metadata = col.dtype_metadata
         view_graph_node = self._add_change_view_operations(
             view_graph_node=view_graph_node,
             track_changes_column=track_changes_column,
             proxy_input_nodes=proxy_input_nodes,
             column_names=column_names,
-            effective_timestamp_schema=effective_timestamp_schema,
+            effective_timestamp_metadata=effective_timestamp_metadata,
         )
         columns_info = self._prepare_change_view_columns_info(
             column_names=column_names, track_changes_column=track_changes_column
