@@ -105,7 +105,7 @@ orjson = "^3.9.15"
 pandas = ">=1"
 pdfkit = { version = "^1.0.0", optional = true }
 pillow = "^10.3.0"
-pyarrow = "^14.0.1"
+pyarrow = "^17.0.0"
 pydantic = "^2.8.2"
 pydantic-settings = "^2.3.1"
 pyhive = { version = "^0.7.0", extras = ["hive_pure_sasl"], optional = true }
