@@ -140,10 +140,10 @@ class SCDView(View, GroupByMixin, RawMixin):
             natural_key_column=self.natural_key_column,
             current_flag_column=self.current_flag_column,
             end_timestamp_column=self.end_timestamp_column,
-            effective_timestamp_schema=self.operation_structure.get_dtype_metadata(
+            effective_timestamp_metadata=self.operation_structure.get_dtype_metadata(
                 column_name=self.effective_timestamp_column
             ),
-            end_timestamp_schema=self.operation_structure.get_dtype_metadata(
+            end_timestamp_metadata=self.operation_structure.get_dtype_metadata(
                 column_name=self.end_timestamp_column
             ),
         )
@@ -160,7 +160,7 @@ class SCDView(View, GroupByMixin, RawMixin):
         return {
             "scd_parameters": {
                 "left_timestamp_column": left_timestamp_column,
-                "left_timestamp_schema": calling_view.operation_structure.get_dtype_metadata(
+                "left_timestamp_metadata": calling_view.operation_structure.get_dtype_metadata(
                     column_name=left_timestamp_column
                 ),
                 **self.get_common_scd_parameters().model_dump(),
