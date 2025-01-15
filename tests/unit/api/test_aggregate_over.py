@@ -15,6 +15,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
 )
+from featurebyte.query_graph.model.timestamp_schema import TimezoneOffsetSchema
 from featurebyte.query_graph.model.window import CalendarWindow
 from tests.util.helper import get_node
 
@@ -445,3 +446,14 @@ def test_time_series_view_aggregate_over_timestamp_with_offset_column(
         )
     """).strip()
     assert partial_definition in feature.definition
+
+    dtype_info = feature.operation_structure.series_output_dtype_info
+    assert dtype_info.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
+    assert (
+        dtype_info.metadata.timestamp_tuple_schema.timestamp_schema
+        == view["date"].dtype_info.metadata.timestamp_schema
+    )
+    assert (
+        dtype_info.metadata.timestamp_tuple_schema.timezone_offset_schema
+        == TimezoneOffsetSchema(dtype=DBVarType.VARCHAR)
+    )
