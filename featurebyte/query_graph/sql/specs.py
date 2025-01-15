@@ -670,8 +670,8 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
             parameters_dict["entity_ids"] = [
                 str(entity_id) for entity_id in parameters_dict["entity_ids"]
             ]
-        if parameters_dict.get("timestamp_schema") is None:
-            parameters_dict.pop("timestamp_schema", None)
+        if parameters_dict.get("timestamp_metadata") is None:
+            parameters_dict.pop("timestamp_metadata", None)
         params["parameters"] = parameters_dict
         return params
 

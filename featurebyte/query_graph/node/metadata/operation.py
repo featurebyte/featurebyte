@@ -27,8 +27,7 @@ from typing_extensions import Annotated
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.dtype import DBVarTypeInfo
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 
 
 class NodeOutputCategory(StrEnum):
@@ -665,7 +664,7 @@ class OperationStructure:
             is_time_based=self.is_time_based,
         )
 
-    def get_timestamp_schema(self, column_name: Optional[str]) -> Optional[TimestampSchema]:
+    def get_dtype_metadata(self, column_name: Optional[str]) -> Optional[DBVarTypeMetadata]:
         """
         Retrieve the timestamp schema for the given column name
 
@@ -683,7 +682,7 @@ class OperationStructure:
 
         for column in self.columns:
             if column.name == column_name:
-                return column.dtype_info.timestamp_schema
+                return column.dtype_info.metadata
         return None
 
 

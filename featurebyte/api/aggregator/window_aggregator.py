@@ -286,7 +286,7 @@ class WindowAggregator(BaseAggregator):
             timestamp_column = timestamp_column or self.view.timestamp_column
             params.update({
                 "timestamp": timestamp_column,
-                "timestamp_schema": self.view.operation_structure.get_timestamp_schema(
+                "timestamp_schema": self.view.operation_structure.get_dtype_metadata(
                     timestamp_column
                 ),
                 "tile_id_version": tile_id_version,

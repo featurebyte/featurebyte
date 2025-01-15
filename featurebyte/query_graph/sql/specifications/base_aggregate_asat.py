@@ -57,10 +57,10 @@ class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
             parameters_dict["entity_ids"] = [
                 str(entity_id) for entity_id in parameters_dict["entity_ids"]
             ]
-        if parameters_dict.get("effective_timestamp_schema") is None:
-            parameters_dict.pop("effective_timestamp_schema", None)
-        if parameters_dict.get("end_timestamp_schema") is None:
-            parameters_dict.pop("end_timestamp_schema", None)
+        if parameters_dict.get("effective_timestamp_metadata") is None:
+            parameters_dict.pop("effective_timestamp_metadata", None)
+        if parameters_dict.get("end_timestamp_metadata") is None:
+            parameters_dict.pop("end_timestamp_metadata", None)
         params["parameters"] = parameters_dict
 
         return params

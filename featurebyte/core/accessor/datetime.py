@@ -485,7 +485,7 @@ class DatetimeAccessor:
         if self._node_type == NodeType.DT_EXTRACT:
             dtype_info = self._obj.dtype_info
             if dtype_info and dtype_info.timestamp_schema:
-                node_params["timestamp_schema"] = dtype_info.timestamp_schema
+                node_params["timestamp_metadata"] = dtype_info.metadata
 
         return series_unary_operation(
             input_series=self._obj,

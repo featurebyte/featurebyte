@@ -1651,9 +1651,11 @@ def time_series_window_aggregate_feature_node_fixture(global_graph, time_series_
         "windows": [{"unit": "DAY", "size": 7}],
         "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
         "reference_datetime_column": "snapshot_date",
-        "reference_datetime_schema": {
-            "format_string": "YYYYMMDD",
-            "timezone": "Asia/Singapore",
+        "reference_datetime_metadata": {
+            "timestamp_schema": {
+                "format_string": "YYYYMMDD",
+                "timezone": "Asia/Singapore",
+            },
         },
         "time_interval": {"unit": "DAY", "value": 1},
     }

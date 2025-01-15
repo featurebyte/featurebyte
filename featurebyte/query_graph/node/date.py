@@ -11,7 +11,7 @@ from typing_extensions import Literal
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.dtype import DBVarTypeInfo
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
@@ -45,7 +45,21 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
 
         property: DatetimeSupportedPropertyType
         timezone_offset: Optional[str] = Field(default=None)
-        timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+        timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+        @property
+        def timestamp_schema(self) -> Optional[TimestampSchema]:
+            """
+            Timestamp schema
+
+            Returns
+            -------
+            Optional[TimestampSchema]
+                Timestamp schema
+            """
+            if self.timestamp_metadata:
+                return self.timestamp_metadata.timestamp_schema
+            return None
 
     type: Literal[NodeType.DT_EXTRACT] = NodeType.DT_EXTRACT
     parameters: Parameters
@@ -219,8 +233,36 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
 class DateDifferenceParameters(FeatureByteBaseModel):
     """Parameters for DateDifferenceNode"""
 
-    left_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
-    right_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    left_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+    right_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def left_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Left timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+            Left timestamp schema
+        """
+        if self.left_timestamp_metadata:
+            return self.left_timestamp_metadata.timestamp_schema
+        return None
+
+    @property
+    def right_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Right timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+            Right timestamp schema
+        """
+        if self.right_timestamp_metadata:
+            return self.right_timestamp_metadata.timestamp_schema
+        return None
 
 
 class DateDifferenceNode(BaseSeriesOutputNode):
@@ -395,7 +437,21 @@ class DateAddNode(BaseSeriesOutputNode):
         """Parameters"""
 
         value: Optional[int] = Field(default=None)
-        left_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+        left_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+        @property
+        def left_timestamp_schema(self) -> Optional[TimestampSchema]:
+            """
+            Left timestamp schema
+
+            Returns
+            -------
+            Optional[TimestampSchema]
+                Left timestamp schema
+            """
+            if self.left_timestamp_metadata:
+                return self.left_timestamp_metadata.timestamp_schema
+            return None
 
     type: Literal[NodeType.DATE_ADD] = NodeType.DATE_ADD
     parameters: Parameters

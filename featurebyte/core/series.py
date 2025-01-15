@@ -474,8 +474,8 @@ class FrozenSeries(
             output_var_type=DBVarType.TIMEDELTA,
             right_op=right_op,
             additional_node_params={
-                "left_timestamp_schema": self.dtype_info and self.dtype_info.timestamp_schema,
-                "right_timestamp_schema": other.dtype_info and other.dtype_info.timestamp_schema,
+                "left_timestamp_metadata": self.dtype_info and self.dtype_info.metadata,
+                "right_timestamp_metadata": other.dtype_info and other.dtype_info.metadata,
             },
         )
 
@@ -507,7 +507,7 @@ class FrozenSeries(
             output_var_type=DBVarType.TIMESTAMP,
             right_op=right_op,
             additional_node_params={
-                "left_timestamp_schema": self.dtype_info and self.dtype_info.timestamp_schema,
+                "left_timestamp_metadata": self.dtype_info and self.dtype_info.metadata,
             },
         )
 

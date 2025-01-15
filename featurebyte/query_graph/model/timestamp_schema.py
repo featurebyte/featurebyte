@@ -66,7 +66,7 @@ class TimestampSchema(FeatureByteBaseModel):
         - **BigQuery:** (example: "%Y-%m-%d %H:%M:%S")
             [BigQuery Date and Time Functions](https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time)
 
-    timezone: Union[TimezoneName, TimezoneOffsetSchema]
+    timezone: Union[TimezoneName, TimezoneOffsetColumn]
         The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones)
         (commonly known as the IANA Time Zone Database or tz database). The default value is "Etc/UTC".
 

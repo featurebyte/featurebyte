@@ -201,7 +201,7 @@ def test_count_distinct_agg_func(snowflake_event_view_with_entity, cust_id_entit
         "parent": "col_int",
         "serving_names": ["cust_id"],
         "timestamp": "event_timestamp",
-        "timestamp_schema": None,
+        "timestamp_metadata": None,
         "value_by": None,
         "windows": ["7d"],
     }
@@ -239,10 +239,13 @@ def test_time_series_view_aggregate_over(snowflake_time_series_view_with_entity)
             "entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
             "windows": [{"unit": "MONTH", "size": 3}],
             "reference_datetime_column": "date",
-            "reference_datetime_schema": {
-                "format_string": "YYYY-MM-DD HH24:MI:SS",
-                "is_utc_time": None,
-                "timezone": "Etc/UTC",
+            "reference_datetime_metadata": {
+                "timestamp_schema": {
+                    "format_string": "YYYY-MM-DD HH24:MI:SS",
+                    "is_utc_time": None,
+                    "timezone": "Etc/UTC",
+                },
+                "timestamp_tuple_schema": None,
             },
             "time_interval": {"unit": "DAY", "value": 1},
             "names": ["col_float_sum_3month"],
