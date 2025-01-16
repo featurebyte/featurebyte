@@ -30,9 +30,7 @@ def test_event_table_no_timezone_offset(global_graph, input_details, source_type
     node_params = {
         "type": "event_table",
         "columns": [
-            {
-                **{"name": "ts", "dtype": DBVarType.TIMESTAMP},
-            },
+            {"name": "ts", "dtype": DBVarType.TIMESTAMP},
             {"name": "cust_id", "dtype": DBVarType.INT},
             {"name": "a", "dtype": DBVarType.FLOAT},
         ],
@@ -88,9 +86,7 @@ def test_event_table_timezone_offset_literal(
     node_params = {
         "type": "event_table",
         "columns": [
-            {
-                **{"name": "ts", "dtype": DBVarType.TIMESTAMP},
-            },
+            {"name": "ts", "dtype": DBVarType.TIMESTAMP},
             {"name": "cust_id", "dtype": DBVarType.INT},
             {"name": "a", "dtype": DBVarType.FLOAT},
         ],
@@ -147,9 +143,7 @@ def test_event_table_timezone_offset_column(
     node_params = {
         "type": "event_table",
         "columns": [
-            {
-                **{"name": "ts", "dtype": DBVarType.TIMESTAMP},
-            },
+            {"name": "ts", "dtype": DBVarType.TIMESTAMP},
             {"name": "tz_offset", "dtype": DBVarType.VARCHAR},
             {"name": "cust_id", "dtype": DBVarType.INT},
             {"name": "a", "dtype": DBVarType.FLOAT},
@@ -218,9 +212,7 @@ def test_time_series_table_timezone_offset_literal(
     node_params = {
         "type": "time_series_table",
         "columns": [
-            {
-                **{"name": "ts", "dtype": DBVarType.VARCHAR},
-            },
+            {"name": "ts", "dtype": DBVarType.VARCHAR},
             {"name": "cust_id", "dtype": DBVarType.INT},
             {"name": "a", "dtype": DBVarType.FLOAT},
         ],
