@@ -530,6 +530,21 @@ class SnowflakeAdapter(BaseAdapter):
         )
 
     @classmethod
+    def convert_utc_to_timezone(
+        cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
+    ) -> Expression:
+        if timezone_type == "name":
+            return expressions.Anonymous(
+                this="CONVERT_TIMEZONE",
+                expressions=[make_literal_value("UTC"), make_literal_value(timezone), expr],
+            )
+        timezone_offset_seconds = expressions.Anonymous(
+            this="F_TIMEZONE_OFFSET_TO_SECOND",
+            expressions=[timezone],
+        )
+        return cls.dateadd_second(timezone_offset_seconds, expr)
+
+    @classmethod
     def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
         mapping = {
             TimeIntervalUnit.YEAR: "year",

@@ -1209,6 +1209,29 @@ class BaseAdapter(ABC):
 
     @classmethod
     @abstractmethod
+    def convert_utc_to_timezone(
+        cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
+    ) -> Expression:
+        """
+        Convert a UTC timestamp to a local timezone
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the timestamp in local timezone
+        timezone: Expression
+            Timezone expression
+        timezone_type: Literal["name", "offset"]
+            Type of timezone expression. "name" for timezone names such as "America/New_York", and
+            "offset" for timezone offsets such as "-08:00"
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
     def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
         """
         Truncate a timestamp to the specified unit

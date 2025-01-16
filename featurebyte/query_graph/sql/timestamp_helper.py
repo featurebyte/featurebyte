@@ -19,21 +19,25 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier
 
 
-def convert_timezone_to_utc(
-    timezone_obj: TimeZoneUnion, adapter: BaseAdapter, column_expr: Expression
+def convert_timezone(
+    target_tz: Literal["utc", "local"],
+    timezone_obj: TimeZoneUnion,
+    adapter: BaseAdapter,
+    column_expr: Expression,
 ) -> Expression:
     """
     Convert timestamp column to UTC
 
     Parameters
     ----------
+    target_tz: Literal["utc", "local"]
+        Target timezone
     timezone_obj: TimeZoneUnion
         Timezone information
     adapter: BaseAdapter
         SQL adapter
     column_expr: Expression
         Column expression
-
 
     Returns
     -------
@@ -50,7 +54,9 @@ def convert_timezone_to_utc(
             timezone_type = "offset"
         else:
             timezone_type = "name"
-    return adapter.convert_timezone_to_utc(column_expr, timezone, timezone_type)
+    if target_tz == "utc":
+        return adapter.convert_timezone_to_utc(column_expr, timezone, timezone_type)
+    return adapter.convert_utc_to_timezone(column_expr, timezone, timezone_type)
 
 
 def convert_timestamp_to_local(
@@ -77,6 +83,16 @@ def convert_timestamp_to_local(
     # Convert to timestamp in local time if string
     if timestamp_schema.format_string is not None:
         column_expr = adapter.to_timestamp_from_string(column_expr, timestamp_schema.format_string)
+
+    if timestamp_schema.is_utc_time and timestamp_schema.timezone is not None:
+        # Convert to local time
+        column_expr = convert_timezone(
+            target_tz="local",
+            timezone_obj=timestamp_schema.timezone,
+            adapter=adapter,
+            column_expr=column_expr,
+        )
+
     return column_expr
 
 
@@ -111,7 +127,8 @@ def convert_timestamp_to_utc(
 
     # Convert to timestamp in UTC
     if timestamp_schema.timezone is not None:
-        column_expr = convert_timezone_to_utc(
+        column_expr = convert_timezone(
+            target_tz="utc",
             timezone_obj=timestamp_schema.timezone,
             adapter=adapter,
             column_expr=column_expr,
