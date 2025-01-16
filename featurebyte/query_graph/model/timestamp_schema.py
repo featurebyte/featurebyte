@@ -140,6 +140,12 @@ class TimestampSchema(FeatureByteBaseModel):
         return False
 
 
+class ExtendedTimestampSchema(TimestampSchema):
+    """Extended timestamp schema with additional properties"""
+
+    dtype: DBVarType
+
+
 class TimezoneOffsetSchema(FeatureByteBaseModel):
     """Timezone offset column schema"""
 
@@ -149,6 +155,5 @@ class TimezoneOffsetSchema(FeatureByteBaseModel):
 class TimestampTupleSchema(FeatureByteBaseModel):
     """Schema for a tuple of timestamp columns. To be embedded within a ColumnSpec"""
 
-    timestamp_dtype: DBVarType
-    timestamp_schema: TimestampSchema
+    timestamp_schema: ExtendedTimestampSchema
     timezone_offset_schema: TimezoneOffsetSchema
