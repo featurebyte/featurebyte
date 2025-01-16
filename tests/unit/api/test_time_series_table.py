@@ -597,6 +597,7 @@ def test_update_default_job_setting__saved_time_series_table(
             "month_of_year": "*",
         },
         "timezone": "Etc/UTC",
+        "reference_timezone": None,
     }
 
 
@@ -715,6 +716,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "month_of_year": "*",
             },
             "timezone": "Etc/UTC",
+            "reference_timezone": None,
         }
     }
     assert len(history) == 2
@@ -731,6 +733,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 month_of_year="*",
             ),
             timezone="Etc/UTC",
+            reference_timezone=None,
         )
     )
     t3 = datetime.utcnow()
@@ -746,6 +749,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "month_of_year": "*",
             },
             "timezone": "Etc/UTC",
+            "reference_timezone": None,
         }
     }
     assert len(history) == 3

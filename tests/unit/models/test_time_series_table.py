@@ -99,6 +99,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
                 "day_of_week": "*",
             },
             "timezone": "Etc/UTC",
+            "reference_timezone": None,
         },
         "columns_info": columns_info,
         "series_id_column": "series_id",

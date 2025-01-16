@@ -262,6 +262,7 @@ def test_time_series_view_aggregate_over(snowflake_time_series_view_with_entity)
                     "day_of_week": "*",
                 },
                 "timezone": "Etc/UTC",
+                "reference_timezone": None,
             },
             "offset": None,
         },

@@ -3,7 +3,7 @@ Feature Job Setting Model
 """
 
 from abc import abstractmethod
-from typing import Any, ClassVar, Dict, Union
+from typing import Any, ClassVar, Dict, Optional, Union
 
 from croniter import croniter
 from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
@@ -346,6 +346,13 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
     timezone: TimeZoneName = Field(
         default="Etc/UTC",
         description="Timezone for the cron schedule. It is used to determine the time at which the feature job should run.",
+    )
+    reference_timezone: Optional[TimeZoneName] = Field(
+        default=None,
+        description=(
+            "Time zone used to define calendar-based aggregation periods (e.g., daily, weekly, or monthly). "
+            "This reference time zone ensures consistency when calculating calendar periods across different data time zones."
+        ),
     )
 
     def get_cron_expression(self) -> str:
