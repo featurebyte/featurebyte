@@ -149,5 +149,6 @@ class TimezoneOffsetSchema(FeatureByteBaseModel):
 class TimestampTupleSchema(FeatureByteBaseModel):
     """Schema for a tuple of timestamp columns. To be embedded within a ColumnSpec"""
 
+    timestamp_dtype: DBVarType
     timestamp_schema: TimestampSchema
     timezone_offset_schema: TimezoneOffsetSchema

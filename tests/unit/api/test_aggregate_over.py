@@ -449,6 +449,8 @@ def test_time_series_view_aggregate_over_timestamp_with_offset_column(
 
     dtype_info = feature.operation_structure.series_output_dtype_info
     assert dtype_info.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
+    assert dtype_info.timestamp_schema is None
+    assert dtype_info.metadata.timestamp_tuple_schema.timestamp_dtype == DBVarType.VARCHAR
     assert (
         dtype_info.metadata.timestamp_tuple_schema.timestamp_schema
         == view["date"].dtype_info.metadata.timestamp_schema

@@ -1459,6 +1459,7 @@ def test_zip_timestamp_timezone_tuple_operation_structure(
         metadata=DBVarTypeMetadata(
             timestamp_schema=None,
             timestamp_tuple_schema=TimestampTupleSchema(
+                timestamp_dtype=DBVarType.TIMESTAMP,
                 timestamp_schema=TimestampSchema(
                     format_string=None,
                     is_utc_time=None,

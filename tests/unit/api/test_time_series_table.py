@@ -1096,6 +1096,7 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
         metadata=DBVarTypeMetadata(
             timestamp_schema=None,
             timestamp_tuple_schema=TimestampTupleSchema(
+                timestamp_dtype=view.date.dtype,
                 timezone_offset_schema=TimezoneOffsetSchema(dtype=DBVarType.VARCHAR),
                 timestamp_schema=TimestampSchema(
                     format_string="YYYY-MM-DD HH24:MI:SS",
