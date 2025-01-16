@@ -5,19 +5,26 @@ Module for datetime operations related sql generation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union, cast
+from typing import Optional, Union, cast
 
 import pandas as pd
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.node.date import DateDifferenceParameters
+from featurebyte.query_graph.node.date import (
+    DateDifferenceParameters,
+    DatetimeExtractNodeParameters,
+)
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, SQLNodeContext
 from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode, resolve_project_node
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.util import prepare_binary_op_input_nodes
-from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
+from featurebyte.query_graph.sql.timestamp_helper import (
+    convert_timestamp_to_local,
+    convert_timestamp_to_utc,
+)
 from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 
 
@@ -49,27 +56,23 @@ class DatetimeExtractNode(ExpressionNode):
     def build(cls, context: SQLNodeContext) -> DatetimeExtractNode:
         input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
         table_node = input_expr_node.table_node
+        parameters = DatetimeExtractNodeParameters(**context.parameters)
 
         # Extract timezone offset expression (can be a fixed value or a column)
-        if context.parameters.get("timezone_offset") is not None:
-            timezone_offset_expr = make_literal_value(context.parameters["timezone_offset"])
-        elif len(context.input_sql_nodes) > 1:
-            timezone_offset_expr = context.input_sql_nodes[1].sql
+        if parameters.timezone_offset is not None or len(context.input_sql_nodes) > 1:
+            if len(context.input_sql_nodes) > 1:
+                offset_expr_node = cast(ExpressionNode, context.input_sql_nodes[1])
+            else:
+                offset_expr_node = None
+            timestamp_expr = cls._get_local_timestamp_expr_event_table(
+                parameters, input_expr_node, offset_expr_node, context.adapter
+            )
+        elif parameters.timestamp_schema is not None:
+            timestamp_expr = convert_timestamp_to_local(
+                input_expr_node.sql, parameters.timestamp_schema, context.adapter
+            )
         else:
-            timezone_offset_expr = None
-
-        if timezone_offset_expr is None:
             timestamp_expr = input_expr_node.sql
-        else:
-            # If timezone offset is provided, apply that to the input timestamp (in UTC) to obtain
-            # the local time before extracting date properties
-            timezone_offset_seconds = context.adapter.call_udf(
-                "F_TIMEZONE_OFFSET_TO_SECOND",
-                [timezone_offset_expr],
-            )
-            timestamp_expr = context.adapter.dateadd_second(
-                timezone_offset_seconds, input_expr_node.sql
-            )
 
         sql_node = DatetimeExtractNode(
             context=context,
@@ -78,6 +81,31 @@ class DatetimeExtractNode(ExpressionNode):
             dt_property=context.parameters["property"],
         )
         return sql_node
+
+    @classmethod
+    def _get_local_timestamp_expr_event_table(
+        cls,
+        parameters: DatetimeExtractNodeParameters,
+        input_expr_node: ExpressionNode,
+        offset_expr_node: Optional[ExpressionNode],
+        adapter: BaseAdapter,
+    ) -> Expression:
+        # Extract timezone offset expression (can be a fixed value or a column)
+        if parameters.timezone_offset is not None:
+            timezone_offset_expr = make_literal_value(parameters.timezone_offset)
+        else:
+            assert offset_expr_node is not None
+            timezone_offset_expr = offset_expr_node.sql
+
+        # If timezone offset is provided, apply that to the input timestamp (in UTC) to obtain
+        # the local time before extracting date properties
+        timezone_offset_seconds = adapter.call_udf(
+            "F_TIMEZONE_OFFSET_TO_SECOND",
+            [timezone_offset_expr],
+        )
+        timestamp_expr = adapter.dateadd_second(timezone_offset_seconds, input_expr_node.sql)
+
+        return timestamp_expr
 
 
 @dataclass

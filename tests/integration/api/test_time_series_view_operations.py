@@ -39,6 +39,7 @@ def test_times_series_view(time_series_table):
     view = time_series_table.get_view()
     view = view[view["series_id_col"] == "S0"]
     view = view[["reference_datetime_col", "series_id_col", "value_col"]]
+    view["hour"] = view["reference_datetime_col"].dt.hour
     df_preview = view.preview(limit=10000)
     df_preview.sort_values("reference_datetime_col", inplace=True)
     actual = df_preview.iloc[:10].to_dict(orient="list")
@@ -57,6 +58,7 @@ def test_times_series_view(time_series_table):
         ],
         "series_id_col": ["S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0", "S0"],
         "value_col": [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09],
+        "hour": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     }
     assert actual == expected
 
