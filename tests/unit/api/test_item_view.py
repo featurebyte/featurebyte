@@ -1007,7 +1007,7 @@ def test_as_feature__from_view_column(
             "scd_parameters": None,
             "event_parameters": {
                 "event_timestamp_column": "event_timestamp_event_table",
-                "event_timestamp_schema": None,
+                "event_timestamp_metadata": None,
             },
         },
     }

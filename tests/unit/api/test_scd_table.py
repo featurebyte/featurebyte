@@ -585,7 +585,8 @@ def test_timestamp_schema__effective_timestamp_column(snowflake_database_table_s
                     "format_string": "%Y-%m-%d",
                     "is_utc_time": None,
                     "timezone": "Etc/UTC",
-                }
+                },
+                "timestamp_tuple_schema": None,
             }
         else:
             assert column_info_dict["dtype_metadata"] is None
@@ -623,7 +624,8 @@ def test_timestamp_schema__end_timestamp_column(snowflake_database_table_scd_tab
                     "format_string": "%Y-%m-%d",
                     "is_utc_time": None,
                     "timezone": "Etc/UTC",
-                }
+                },
+                "timestamp_tuple_schema": None,
             }
         else:
             assert column_info_dict["dtype_metadata"] is None

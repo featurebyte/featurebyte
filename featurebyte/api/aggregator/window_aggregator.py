@@ -93,6 +93,12 @@ class WindowAggregator(BaseAggregator):
         if skip_fill_na is None:
             skip_fill_na = fill_value is None
 
+        if value_column and self.view[value_column].associated_timezone_column_name:
+            # If the value column has an associated timezone column
+            new_value_column = f"__{value_column}_zip_timezone"
+            self.view[new_value_column] = self.view[value_column].zip_timestamp_timezone_columns()  # type: ignore
+            value_column = new_value_column
+
         self._validate_parameters(
             value_column=value_column,
             method=method,
@@ -278,7 +284,9 @@ class WindowAggregator(BaseAggregator):
             assert isinstance(self.view, TimeSeriesView)
             params.update({
                 "reference_datetime_column": self.view.reference_datetime_column,
-                "reference_datetime_schema": self.view.reference_datetime_schema.model_dump(),
+                "reference_datetime_metadata": self.view.operation_structure.get_dtype_metadata(
+                    self.view.reference_datetime_column
+                ),
                 "time_interval": self.view.time_interval.model_dump(),
             })
         else:
@@ -286,7 +294,7 @@ class WindowAggregator(BaseAggregator):
             timestamp_column = timestamp_column or self.view.timestamp_column
             params.update({
                 "timestamp": timestamp_column,
-                "timestamp_schema": self.view.operation_structure.get_timestamp_schema(
+                "timestamp_metadata": self.view.operation_structure.get_dtype_metadata(
                     timestamp_column
                 ),
                 "tile_id_version": tile_id_version,

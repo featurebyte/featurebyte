@@ -6,7 +6,11 @@ from typing import Optional
 
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
+from featurebyte.query_graph.model.timestamp_schema import (
+    TimestampSchema,
+    TimestampTupleSchema,
+    TimeZoneColumn,
+)
 
 
 class DBVarTypeMetadata(FeatureByteBaseModel):
@@ -15,6 +19,7 @@ class DBVarTypeMetadata(FeatureByteBaseModel):
     """
 
     timestamp_schema: Optional[TimestampSchema] = None
+    timestamp_tuple_schema: Optional[TimestampTupleSchema] = None
 
 
 class DBVarTypeInfo(FeatureByteBaseModel):

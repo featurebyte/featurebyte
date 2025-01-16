@@ -49,6 +49,7 @@ from featurebyte.common.utils import validate_datetime_input
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
+from featurebyte.core.util import series_binary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.exception import (
     NoJoinKeyFoundError,
@@ -533,6 +534,33 @@ class ViewColumn(Series, SampleMixin):
         4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
         """
         return super().isin(other=other)
+
+    def zip_timestamp_timezone_columns(self) -> ViewColumn:
+        """
+        Zips the timestamp and timezone columns into a single timestamp with timezone tuple.
+
+        Returns
+        -------
+        ViewColumn
+            A new column with the zipped timestamp and timezone columns.
+
+        Raises
+        ------
+        ValueError
+            If the column does not have an associated timezone column.
+        """
+        timezone_column_name = self.associated_timezone_column_name
+        if timezone_column_name is None:
+            raise ValueError(
+                "Column must have a timezone column associated with it to zip the columns."
+            )
+
+        return series_binary_operation(
+            input_series=self,
+            other=self._parent[timezone_column_name],  # type: ignore
+            node_type=NodeType.ZIP_TIMESTAMP_TZ_TUPLE,
+            output_var_type=DBVarType.TIMESTAMP_TZ_TUPLE,
+        )
 
 
 class GroupByMixin:

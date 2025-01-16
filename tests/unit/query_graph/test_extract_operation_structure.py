@@ -8,7 +8,11 @@ from featurebyte import TimestampSchema
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
-from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+from featurebyte.query_graph.model.timestamp_schema import (
+    TimestampTupleSchema,
+    TimeZoneColumn,
+    TimezoneOffsetSchema,
+)
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 from tests.unit.query_graph.util import to_dict
 from tests.util.helper import compare_pydantic_obj
@@ -1381,3 +1385,86 @@ def test_request_column_operation_structure(
     assert to_dict(op_struct.columns) == expected_columns
     assert op_struct.output_type == NodeOutputType.SERIES
     assert op_struct.output_category == NodeOutputCategory.FEATURE
+
+
+def test_zip_timestamp_timezone_tuple_operation_structure(
+    global_graph, scd_table_input_node_with_tz
+):
+    """Test zip timestamp timezone tuple operation structure"""
+    proj_eff_ts = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["effective_ts"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[scd_table_input_node_with_tz],
+    )
+    proj_tz = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["timezone"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[scd_table_input_node_with_tz],
+    )
+    zip_ts_tz_tuple = global_graph.add_operation(
+        node_type=NodeType.ZIP_TIMESTAMP_TZ_TUPLE,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_eff_ts, proj_tz],
+    )
+
+    # check output operation structure
+    op_struct = global_graph.extract_operation_structure(
+        node=zip_ts_tz_tuple, keep_all_source_columns=True
+    )
+    assert op_struct.output_type == NodeOutputType.SERIES
+    assert op_struct.output_category == NodeOutputCategory.VIEW
+    assert op_struct.row_index_lineage == ("input_1",)
+    assert op_struct.aggregations == []
+    expected_columns = [
+        {
+            "columns": [
+                {
+                    "dtype": "TIMESTAMP",
+                    "filter": False,
+                    "name": "effective_ts",
+                    "node_name": "input_1",
+                    "node_names": {"input_1", "project_1"},
+                    "table_id": scd_table_input_node_with_tz.parameters.id,
+                    "table_type": "scd_table",
+                    "type": "source",
+                },
+                {
+                    "dtype": "VARCHAR",
+                    "filter": False,
+                    "name": "timezone",
+                    "node_name": "input_1",
+                    "node_names": {"project_2", "input_1"},
+                    "table_id": scd_table_input_node_with_tz.parameters.id,
+                    "table_type": "scd_table",
+                    "type": "source",
+                },
+            ],
+            "dtype": "TIMESTAMP_TZ_TUPLE",
+            "filter": False,
+            "name": None,
+            "node_name": "zip_timestamp_tz_tuple_1",
+            "node_names": {"input_1", "project_1", "project_2", "zip_timestamp_tz_tuple_1"},
+            "transforms": ["zip_timestamp_tz_tuple"],
+            "type": "derived",
+        }
+    ]
+    assert to_dict(op_struct.columns) == expected_columns
+
+    # check dtype metadata
+    assert op_struct.series_output_dtype_info == DBVarTypeInfo(
+        dtype=DBVarType.TIMESTAMP_TZ_TUPLE,
+        metadata=DBVarTypeMetadata(
+            timestamp_schema=None,
+            timestamp_tuple_schema=TimestampTupleSchema(
+                timestamp_schema=TimestampSchema(
+                    format_string=None,
+                    is_utc_time=None,
+                    timezone=TimeZoneColumn(type="timezone", column_name="timezone"),
+                ),
+                timezone_offset_schema=TimezoneOffsetSchema(dtype=DBVarType.VARCHAR),
+            ),
+        ),
+    )

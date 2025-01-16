@@ -70,8 +70,8 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
         parameters_dict = self.parameters.model_dump(
             exclude={"parent", "agg_func", "name", "windows", "offset"}
         )
-        if parameters_dict.get("timestamp_schema", None) is None:
-            parameters_dict.pop("timestamp_schema", None)
+        if parameters_dict.get("timestamp_metadata", None) is None:
+            parameters_dict.pop("timestamp_metadata", None)
         if parameters_dict.get("entity_ids") is not None:
             parameters_dict["entity_ids"] = [
                 str(entity_id) for entity_id in parameters_dict["entity_ids"]

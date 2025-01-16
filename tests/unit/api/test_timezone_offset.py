@@ -50,7 +50,7 @@ def test_datetime_property_extraction__event_timestamp(
     assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": "-05:30",
-        "timestamp_schema": None,
+        "timestamp_metadata": None,
     }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 1
@@ -93,7 +93,7 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
     assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": None,
-        "timestamp_schema": None,
+        "timestamp_metadata": None,
     }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2
@@ -165,7 +165,7 @@ def test_datetime_property_extraction__manually_specified_timezone_offset(
     assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": "+08:00",
-        "timestamp_schema": None,
+        "timestamp_metadata": None,
     }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 1
@@ -193,7 +193,7 @@ def test_datetime_property_extraction__manually_specified_timezone_offset_column
     assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": None,
-        "timestamp_schema": None,
+        "timestamp_metadata": None,
     }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2
@@ -225,7 +225,7 @@ def test_datetime_property_extraction__event_timestamp_in_item_view(
     assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": None,
-        "timestamp_schema": None,
+        "timestamp_metadata": None,
     }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2

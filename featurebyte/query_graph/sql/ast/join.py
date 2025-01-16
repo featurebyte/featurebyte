@@ -161,16 +161,18 @@ class SCDJoin(TableNode):
         ):
             columns_map[output_col] = get_qualified_column_identifier(input_col, "R")
 
-        left_timestamp_schema_dict = parameters["scd_parameters"].get("left_timestamp_schema")
-        right_timestamp_schema_dict = parameters["scd_parameters"].get("effective_timestamp_schema")
+        left_timestamp_metadata_dict = parameters["scd_parameters"].get("left_timestamp_metadata")
+        right_timestamp_metadata_dict = parameters["scd_parameters"].get(
+            "effective_timestamp_metadata"
+        )
         left_timestamp_schema = (
-            TimestampSchema(**left_timestamp_schema_dict)
-            if left_timestamp_schema_dict is not None
+            TimestampSchema(**left_timestamp_metadata_dict["timestamp_schema"])
+            if left_timestamp_metadata_dict is not None
             else None
         )
         right_timestamp_schema = (
-            TimestampSchema(**right_timestamp_schema_dict)
-            if right_timestamp_schema_dict is not None
+            TimestampSchema(**right_timestamp_metadata_dict["timestamp_schema"])
+            if right_timestamp_metadata_dict is not None
             else None
         )
         node = SCDJoin(

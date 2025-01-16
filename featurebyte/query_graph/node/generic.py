@@ -11,7 +11,7 @@ from typing_extensions import Literal
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.dtype import DBVarTypeInfo
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
@@ -595,7 +595,13 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
     window: Optional[str] = Field(default=None)
     offset: Optional[str] = Field(default=None)
     timestamp_col: InColumnStr
-    timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def timestamp_schema(self) -> Optional[TimestampSchema]:
+        if self.timestamp_metadata:
+            return self.timestamp_metadata.timestamp_schema
+        return None
 
 
 class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
@@ -698,7 +704,20 @@ class BaseWindowAggregateParameters(BaseGroupbyParameters):
     names: List[OutColumnStr]
     feature_job_setting: FeatureJobSetting
     offset: Optional[str] = Field(default=None)
-    timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.timestamp_metadata:
+            return self.timestamp_metadata.timestamp_schema
+        return None
 
 
 class GroupByNodeParameters(BaseWindowAggregateParameters):
@@ -998,8 +1017,34 @@ class SCDBaseParameters(FeatureByteBaseModel):
     natural_key_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: should be compulsory
     current_flag_column: Optional[InColumnStr] = Field(default=None)
     end_timestamp_column: Optional[InColumnStr] = Field(default=None)
-    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
-    end_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    effective_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+    end_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def effective_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get effective timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.effective_timestamp_metadata:
+            return self.effective_timestamp_metadata.timestamp_schema
+        return None
+
+    @property
+    def end_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get end timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.end_timestamp_metadata:
+            return self.end_timestamp_metadata.timestamp_schema
+        return None
 
     @model_validator(mode="before")
     @classmethod
@@ -1017,7 +1062,20 @@ class SCDJoinParameters(SCDBaseParameters):
     """Parameters for SCD join"""
 
     left_timestamp_column: InColumnStr
-    left_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    left_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def left_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get left timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.left_timestamp_metadata:
+            return self.left_timestamp_metadata.timestamp_schema
+        return None
 
 
 class SCDLookupParameters(SCDBaseParameters):
@@ -1030,7 +1088,20 @@ class EventLookupParameters(FeatureByteBaseModel):
     """Parameters for EventTable lookup"""
 
     event_timestamp_column: InColumnStr
-    event_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    event_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def event_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get event timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.event_timestamp_metadata:
+            return self.event_timestamp_metadata.timestamp_schema
+        return None
 
 
 class LookupParameters(FeatureByteBaseModel):
@@ -1701,7 +1772,20 @@ class TrackChangesNodeParameters(FeatureByteBaseModel):
     new_tracked_column_name: OutColumnStr
     previous_valid_from_column_name: OutColumnStr
     new_valid_from_column_name: OutColumnStr
-    effective_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
+    effective_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def effective_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get effective timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.effective_timestamp_metadata:
+            return self.effective_timestamp_metadata.timestamp_schema
+        return None
 
 
 class TrackChangesNode(BaseNode):
@@ -1983,7 +2067,7 @@ class TimeSeriesWindowAggregateParameters(BaseGroupbyParameters):
 
     windows: List[CalendarWindow]
     reference_datetime_column: InColumnStr
-    reference_datetime_schema: TimestampSchema
+    reference_datetime_metadata: DBVarTypeMetadata
     time_interval: TimeInterval
     names: List[OutColumnStr]
     feature_job_setting: CronFeatureJobSetting
@@ -1999,6 +2083,27 @@ class TimeSeriesWindowAggregateParameters(BaseGroupbyParameters):
         str
         """
         return self.reference_datetime_column
+
+    @property
+    def reference_datetime_schema(self) -> TimestampSchema:
+        """
+        Get reference datetime schema
+
+        Returns
+        -------
+        TimestampSchema
+        """
+        assert self.reference_datetime_metadata.timestamp_schema is not None
+        return self.reference_datetime_metadata.timestamp_schema
+
+    @model_validator(mode="before")
+    @classmethod
+    def _handle_backwards_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if "reference_datetime_schema" in values:
+            values["reference_datetime_metadata"] = {
+                "timestamp_schema": values["reference_datetime_schema"]
+            }
+        return values
 
 
 class TimeSeriesWindowAggregateNode(AggregationOpStructMixin):

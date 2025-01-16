@@ -12,6 +12,7 @@ from sqlglot import parse_one
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.scalar import TimestampValue
 from featurebyte.query_graph.sql.ast.binary import BinaryOp
@@ -516,11 +517,11 @@ def test_date_difference_timestamp_schema(input_node):
     input_nodes = [column1, column2]
     context = make_context(
         parameters={
-            "left_timestamp_schema": TimestampSchema(
-                format_string="%Y-%m-%d",
+            "left_timestamp_metadata": DBVarTypeMetadata(
+                timestamp_schema=TimestampSchema(format_string="%Y-%m-%d")
             ).model_dump(),
-            "right_timestamp_schema": TimestampSchema(
-                format_string="%Y|%m|%d",
+            "right_timestamp_metadata": DBVarTypeMetadata(
+                timestamp_schema=TimestampSchema(format_string="%Y|%m|%d")
             ).model_dump(),
         },
         input_sql_nodes=input_nodes,

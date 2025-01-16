@@ -2,19 +2,20 @@
 Unit tests for aggregate_over
 """
 
+import textwrap
 from typing import Any
 
 import pytest
 from bson import ObjectId
 
 from featurebyte.enum import DBVarType
-from featurebyte.exception import OperationNotSupportedError
 from featurebyte.models import FeatureModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
 )
+from featurebyte.query_graph.model.timestamp_schema import TimezoneOffsetSchema
 from featurebyte.query_graph.model.window import CalendarWindow
 from tests.util.helper import get_node
 
@@ -201,7 +202,7 @@ def test_count_distinct_agg_func(snowflake_event_view_with_entity, cust_id_entit
         "parent": "col_int",
         "serving_names": ["cust_id"],
         "timestamp": "event_timestamp",
-        "timestamp_schema": None,
+        "timestamp_metadata": None,
         "value_by": None,
         "windows": ["7d"],
     }
@@ -239,10 +240,13 @@ def test_time_series_view_aggregate_over(snowflake_time_series_view_with_entity)
             "entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
             "windows": [{"unit": "MONTH", "size": 3}],
             "reference_datetime_column": "date",
-            "reference_datetime_schema": {
-                "format_string": "YYYY-MM-DD HH24:MI:SS",
-                "is_utc_time": None,
-                "timezone": "Etc/UTC",
+            "reference_datetime_metadata": {
+                "timestamp_schema": {
+                    "format_string": "YYYY-MM-DD HH24:MI:SS",
+                    "is_utc_time": None,
+                    "timezone": "Etc/UTC",
+                },
+                "timestamp_tuple_schema": None,
             },
             "time_interval": {"unit": "DAY", "value": 1},
             "names": ["col_float_sum_3month"],
@@ -417,16 +421,39 @@ def test_time_series_view_aggregate_over_timestamp_with_offset_column(
     Test aggregate_over over time series column with timezone offset column
     """
     view = snowflake_time_series_table_with_tz_offset_column.get_view()
-    with pytest.raises(OperationNotSupportedError) as exc_info:
-        view.groupby("store_id").aggregate_over(
-            value_column="date",
+    feature = view.groupby("store_id").aggregate_over(
+        value_column="date",
+        method="latest",
+        windows=[CalendarWindow(unit="MONTH", size=3)],
+        feature_names=["col_float_sum_3month"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 1 * *",
+        ),
+    )["col_float_sum_3month"]
+    feature.save()
+    partial_definition = textwrap.dedent("""
+        view["__date_zip_timezone"] = col_1.zip_timestamp_timezone_columns()
+        grouped = view.groupby(by_keys=["store_id"], category=None).aggregate_over(
+            value_column="__date_zip_timezone",
             method="latest",
             windows=[CalendarWindow(unit="MONTH", size=3)],
             feature_names=["col_float_sum_3month"],
             feature_job_setting=CronFeatureJobSetting(
-                crontab="0 8 1 * *",
+                crontab="0 8 1 * *", timezone="Etc/UTC"
             ),
-        )["col_float_sum_3month"]
+            skip_fill_na=True,
+            offset=None,
+        )
+    """).strip()
+    assert partial_definition in feature.definition
 
-    expected_msg = "Aggregation of column 'date' is not supported because it references a timezone offset column."
-    assert str(exc_info.value) == expected_msg
+    dtype_info = feature.operation_structure.series_output_dtype_info
+    assert dtype_info.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
+    assert (
+        dtype_info.metadata.timestamp_tuple_schema.timestamp_schema
+        == view["date"].dtype_info.metadata.timestamp_schema
+    )
+    assert (
+        dtype_info.metadata.timestamp_tuple_schema.timezone_offset_schema
+        == TimezoneOffsetSchema(dtype=DBVarType.VARCHAR)
+    )

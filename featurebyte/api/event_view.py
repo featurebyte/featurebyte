@@ -164,7 +164,7 @@ class EventView(View, GroupByMixin, RawMixin):
         return {
             "event_parameters": {
                 "event_timestamp_column": self.timestamp_column,
-                "event_timestamp_schema": self.operation_structure.get_timestamp_schema(
+                "event_timestamp_metadata": self.operation_structure.get_dtype_metadata(
                     column_name=self.timestamp_column
                 ),
             }
