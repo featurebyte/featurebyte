@@ -11,6 +11,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import (
+    ExtendedTimestampSchema,
     TimestampTupleSchema,
     TimezoneOffsetSchema,
 )
@@ -278,14 +279,18 @@ class ZipTimestampTZTupleNode(BaseSeriesOutputWithAScalarParamNode):
         return self._assert_empty_required_input_columns()
 
     def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
-        dtype_metadata = inputs[0].columns[0].dtype_info.metadata
+        dtype_info = inputs[0].series_output_dtype_info
+        dtype_metadata = dtype_info.metadata
         assert dtype_metadata is not None
         assert dtype_metadata.timestamp_schema is not None
         return DBVarTypeInfo(
             dtype=DBVarType.TIMESTAMP_TZ_TUPLE,
             metadata=DBVarTypeMetadata(
                 timestamp_tuple_schema=TimestampTupleSchema(
-                    timestamp_schema=dtype_metadata.timestamp_schema,
+                    timestamp_schema=ExtendedTimestampSchema(
+                        dtype=dtype_info.dtype,
+                        **dtype_metadata.timestamp_schema.model_dump(),
+                    ),
                     timezone_offset_schema=TimezoneOffsetSchema(
                         dtype=inputs[1].series_output_dtype_info.dtype
                     ),

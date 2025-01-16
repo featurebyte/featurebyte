@@ -9,6 +9,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import (
+    ExtendedTimestampSchema,
     TimestampTupleSchema,
     TimeZoneColumn,
     TimezoneOffsetSchema,
@@ -1459,7 +1460,8 @@ def test_zip_timestamp_timezone_tuple_operation_structure(
         metadata=DBVarTypeMetadata(
             timestamp_schema=None,
             timestamp_tuple_schema=TimestampTupleSchema(
-                timestamp_schema=TimestampSchema(
+                timestamp_schema=ExtendedTimestampSchema(
+                    dtype=DBVarType.TIMESTAMP,
                     format_string=None,
                     is_utc_time=None,
                     timezone=TimeZoneColumn(type="timezone", column_name="timezone"),

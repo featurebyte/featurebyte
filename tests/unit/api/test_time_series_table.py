@@ -33,6 +33,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 )
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import (
+    ExtendedTimestampSchema,
     TimestampSchema,
     TimestampTupleSchema,
     TimeZoneColumn,
@@ -1097,7 +1098,8 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
             timestamp_schema=None,
             timestamp_tuple_schema=TimestampTupleSchema(
                 timezone_offset_schema=TimezoneOffsetSchema(dtype=DBVarType.VARCHAR),
-                timestamp_schema=TimestampSchema(
+                timestamp_schema=ExtendedTimestampSchema(
+                    dtype=view.date.dtype,
                     format_string="YYYY-MM-DD HH24:MI:SS",
                     timezone=TimeZoneColumn(
                         column_name="col_text",
