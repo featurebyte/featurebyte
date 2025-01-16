@@ -171,6 +171,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                     "month_of_year": "*",
                 },
                 "timezone": "Etc/UTC",
+                "reference_timezone": None,
             },
             "record_creation_timestamp_column": "created_at",
         }
@@ -233,6 +234,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                     "month_of_year": "*",
                 },
                 "timezone": "Etc/UTC",
+                "reference_timezone": None,
             },
             None,
             None,
@@ -255,6 +257,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                     "month_of_year": "*",
                 },
                 "timezone": "Etc/UTC",
+                "reference_timezone": None,
             },
             {
                 "crontab": {
@@ -265,6 +268,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                     "month_of_year": "*",
                 },
                 "timezone": "Etc/UTC",
+                "reference_timezone": None,
             },
         ]
 
