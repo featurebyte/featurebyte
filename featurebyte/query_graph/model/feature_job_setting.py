@@ -352,6 +352,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         description=(
             "Time zone used to define calendar-based aggregation periods (e.g., daily, weekly, or monthly). "
             "This reference time zone ensures consistency when calculating calendar periods across different data time zones."
+            "If not provided, the timezone parameter is used as the reference timezone."
         ),
     )
 

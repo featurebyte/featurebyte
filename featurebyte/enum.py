@@ -297,6 +297,17 @@ class DBVarType(StrEnum):
         """
         return {cls.TIMESTAMP, cls.DATE, cls.VARCHAR}
 
+    @classmethod
+    def not_supported_feature_save_types(cls) -> set[DBVarType]:
+        """
+        Types that are not supported for feature saving
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.TIMESTAMP_TZ_TUPLE}
+
 
 class AggFunc(StrEnum):
     """

@@ -497,10 +497,25 @@ class FrozenSeries(
         -------
         FrozenSeriesT
             output of the date difference operation
+
+        Raises
+        ------
+        NotImplementedError
+            If the input series has TIMESTAMP_TZ_TUPLE data type
         """
         bin_op_other = other
         if isinstance(other, pd.Timedelta):
             bin_op_other = other.total_seconds()
+
+        has_timezone_tz_tuple = self.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
+        if isinstance(other, FrozenSeries):
+            has_timezone_tz_tuple |= other.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
+
+        if has_timezone_tz_tuple:
+            raise NotImplementedError(
+                "Date add operation is not supported for TIMESTAMP_TZ_TUPLE data type."
+            )
+
         return self._binary_op(
             other=bin_op_other,
             node_type=NodeType.DATE_ADD,
@@ -612,7 +627,13 @@ class FrozenSeries(
         False
         """
         return (
-            self.dtype in (DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ, DBVarType.DATE)
+            self.dtype
+            in (
+                DBVarType.TIMESTAMP,
+                DBVarType.TIMESTAMP_TZ,
+                DBVarType.DATE,
+                DBVarType.TIMESTAMP_TZ_TUPLE,
+            )
             or self.dtype_info.timestamp_schema is not None
         )
 
