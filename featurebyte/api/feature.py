@@ -666,6 +666,8 @@ class Feature(
         ------
         RecordCreationException
             When the feature object cannot be saved using feature definition.
+        NotImplementedError
+            When the feature data type is not supported for saving.
 
         Examples
         --------

@@ -497,6 +497,11 @@ class FrozenSeries(
         -------
         FrozenSeriesT
             output of the date difference operation
+
+        Raises
+        ------
+        NotImplementedError
+            If the input series has TIMESTAMP_TZ_TUPLE data type
         """
         bin_op_other = other
         if isinstance(other, pd.Timedelta):
