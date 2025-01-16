@@ -37,32 +37,33 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 
 
+class DatetimeExtractNodeParameters(FeatureByteBaseModel):
+    """Parameters"""
+
+    property: DatetimeSupportedPropertyType
+    timezone_offset: Optional[str] = Field(default=None)
+    timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property  # type: ignore
+    def timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+            Timestamp schema
+        """
+        if self.timestamp_metadata:
+            return self.timestamp_metadata.timestamp_schema
+        return None
+
+
 class DatetimeExtractNode(BaseSeriesOutputNode):
     """DatetimeExtractNode class"""
 
-    class Parameters(FeatureByteBaseModel):
-        """Parameters"""
-
-        property: DatetimeSupportedPropertyType
-        timezone_offset: Optional[str] = Field(default=None)
-        timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
-
-        @property  # type: ignore
-        def timestamp_schema(self) -> Optional[TimestampSchema]:
-            """
-            Timestamp schema
-
-            Returns
-            -------
-            Optional[TimestampSchema]
-                Timestamp schema
-            """
-            if self.timestamp_metadata:
-                return self.timestamp_metadata.timestamp_schema
-            return None
-
     type: Literal[NodeType.DT_EXTRACT] = NodeType.DT_EXTRACT
-    parameters: Parameters
+    parameters: DatetimeExtractNodeParameters
 
     def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return DBVarTypeInfo(dtype=DBVarType.INT)
