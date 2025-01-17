@@ -307,6 +307,13 @@ class DatabricksAdapter(BaseAdapter):
         return expressions.Anonymous(this="to_utc_timestamp", expressions=[expr, timezone])
 
     @classmethod
+    def convert_utc_to_timezone(
+        cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
+    ) -> Expression:
+        _ = timezone_type
+        return expressions.Anonymous(this="from_utc_timestamp", expressions=[expr, timezone])
+
+    @classmethod
     def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
         mapping = {
             TimeIntervalUnit.YEAR: "YEAR",

@@ -351,6 +351,16 @@ class BigQueryAdapter(BaseAdapter):
         )
 
     @classmethod
+    def convert_utc_to_timezone(
+        cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
+    ) -> Expression:
+        _ = timezone_type
+        return expressions.Anonymous(
+            this="DATETIME",
+            expressions=[cls._ensure_timestamp_tz(expr), timezone],
+        )
+
+    @classmethod
     def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
         mapping = {
             TimeIntervalUnit.YEAR: "YEAR",

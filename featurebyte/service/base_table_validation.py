@@ -21,7 +21,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
     sql_to_string,
 )
-from featurebyte.query_graph.sql.timestamp_helper import convert_timezone_to_utc
+from featurebyte.query_graph.sql.timestamp_helper import convert_timezone
 from featurebyte.service.base_table_document import (
     BaseTableDocumentService,
     DocumentCreate,
@@ -149,7 +149,8 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
 
         if timestamp_schema.timezone is not None:
             # Convert to timestamp in UTC using the provided timezone information
-            column_expr = convert_timezone_to_utc(
+            column_expr = convert_timezone(
+                target_tz="utc",
                 timezone_obj=timestamp_schema.timezone,
                 adapter=adapter,
                 column_expr=adapter.to_timestamp_from_string(
