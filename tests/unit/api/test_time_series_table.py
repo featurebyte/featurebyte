@@ -1085,7 +1085,11 @@ def test_timezone__invalid(snowflake_database_time_series_table, catalog):
             ),
             time_interval=TimeInterval(value=2, unit="DAY"),
         )
-    assert "Time interval size value only supports 1" in str(exc.value)
+
+    expected_msg = (
+        "Only intervals defined with a single time unit (e.g., 1 hour, 1 day) are supported."
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_timezone_offset__valid_column(snowflake_database_time_series_table, catalog):

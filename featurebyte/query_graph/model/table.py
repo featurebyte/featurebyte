@@ -656,7 +656,9 @@ class TimeSeriesTableData(BaseTableData):
     @field_validator("time_interval")
     def validate_time_interval(cls, value: TimeInterval) -> TimeInterval:
         if value.value != 1:
-            raise ValueError("Time interval size value only supports 1")
+            raise ValueError(
+                "Only intervals defined with a single time unit (e.g., 1 hour, 1 day) are supported."
+            )
         return value
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
