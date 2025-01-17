@@ -620,6 +620,27 @@ def test_update_default_job_setting__record_update_exception(snowflake_time_seri
                 )
             )
 
+    with pytest.raises(RecordUpdateException) as exc:
+        snowflake_time_series_table.update_default_feature_job_setting(
+            feature_job_setting=CronFeatureJobSetting(
+                crontab=Crontab(
+                    minute=0,
+                    hour=1,
+                    day_of_week="*",
+                    day_of_month="*",
+                    month_of_year="*",
+                ),
+                timezone="Etc/UTC",
+                reference_timezone="Asia/Singapore",
+            )
+        )
+
+    expected_msg = (
+        "Cannot update default feature job setting reference timezone to Asia/Singapore as it is different "
+        "from the timezone of the reference datetime column (Etc/UTC)."
+    )
+    assert expected_msg in str(exc.value)
+
 
 def test_update_record_creation_timestamp_column__unsaved_object(
     snowflake_database_time_series_table, catalog
@@ -1054,6 +1075,18 @@ def test_timezone__invalid(snowflake_database_time_series_table, catalog):
         )
     assert "Invalid timezone name." in str(exc.value)
 
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_database_time_series_table.create_time_series_table(
+            name="sf_time_series_table",
+            series_id_column="col_int",
+            reference_datetime_column="date",
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Asia/Singapore"
+            ),
+            time_interval=TimeInterval(value=2, unit="DAY"),
+        )
+    assert "Time interval size value only supports 1" in str(exc.value)
+
 
 def test_timezone_offset__valid_column(snowflake_database_time_series_table, catalog):
     """Test specifying a timezone offset using a column"""
@@ -1113,6 +1146,22 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
             ),
         ),
     )
+
+    # test update default feature job setting
+    cron_feature_job_setting = CronFeatureJobSetting(
+        crontab=Crontab(
+            minute=0,
+            hour=1,
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        ),
+        timezone="Etc/UTC",
+    )
+    time_series_table.update_default_feature_job_setting(
+        feature_job_setting=cron_feature_job_setting
+    )
+    assert time_series_table.default_feature_job_setting == cron_feature_job_setting
 
 
 def test_timezone_offset__invalid_column(snowflake_database_time_series_table, catalog):

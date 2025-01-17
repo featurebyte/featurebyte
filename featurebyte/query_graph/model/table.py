@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, field_validator
 from typing_extensions import Annotated, Literal
 
 from featurebyte.common.join_utils import (
@@ -652,6 +652,12 @@ class TimeSeriesTableData(BaseTableData):
         if self.series_id_column:
             return [self.series_id_column]
         return []
+
+    @field_validator("time_interval")
+    def validate_time_interval(cls, value: TimeInterval) -> TimeInterval:
+        if value.value != 1:
+            raise ValueError("Time interval size value only supports 1")
+        return value
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(
