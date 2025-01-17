@@ -3,7 +3,6 @@ Tests for the featurebyte.query_graph.sql module
 """
 
 import textwrap
-from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
@@ -12,8 +11,6 @@ from sqlglot import parse_one
 
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.scalar import TimestampValue
 from featurebyte.query_graph.sql.ast.binary import BinaryOp
 from featurebyte.query_graph.sql.ast.count_dict import (
@@ -41,47 +38,9 @@ from featurebyte.query_graph.sql.ast.is_in import IsInNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.string import IsStringNode
 from featurebyte.query_graph.sql.ast.unary import CastNode, LagNode
-from featurebyte.query_graph.sql.builder import SQLNodeContext
 from featurebyte.query_graph.sql.common import SQLType, sql_to_string
-from featurebyte.query_graph.sql.source_info import SourceInfo
+from tests.unit.query_graph.util import make_context, make_str_expression_node
 from tests.util.helper import assert_sql_equal
-
-
-def make_context(
-    node_type=None, parameters=None, input_sql_nodes=None, sql_type=None, source_type=None
-):
-    """
-    Helper function to create a SQLNodeContext with only arguments that matter in tests
-    """
-    if parameters is None:
-        parameters = {}
-    if sql_type is None:
-        sql_type = SQLType.MATERIALIZE
-    if source_type is None:
-        source_type = SourceType.SNOWFLAKE
-    source_info = SourceInfo(source_type=source_type, database_name="db", schema_name="public")
-    mock_query_node = Mock(type=node_type)
-    mock_query_node.parameters.model_dump.return_value = parameters
-    mock_graph = Mock()
-    context = SQLNodeContext(
-        graph=mock_graph,
-        query_node=mock_query_node,
-        input_sql_nodes=input_sql_nodes,
-        sql_type=sql_type,
-        source_info=source_info,
-        to_filter_scd_by_current_flag=False,
-        event_table_timestamp_filter=None,
-        aggregation_specs=None,
-        on_demand_entity_filters=None,
-    )
-    return context
-
-
-def make_str_expression_node(table_node, expr):
-    """
-    Helper function to create a StrExpressionNode used only in tests
-    """
-    return StrExpressionNode(make_context(), table_node=table_node, expr=expr)
 
 
 @pytest.fixture(name="input_node")
@@ -496,40 +455,6 @@ def test_lag(input_node):
         )
     )
     assert node.sql.sql() == "LAG(val, 1) OVER (PARTITION BY cust_id ORDER BY ts NULLS LAST)"
-
-
-def test_date_difference(input_node):
-    """Test DateDiff node"""
-    column1 = make_str_expression_node(table_node=input_node, expr="a")
-    column2 = make_str_expression_node(table_node=input_node, expr="b")
-    input_nodes = [column1, column2]
-    context = make_context(parameters={}, input_sql_nodes=input_nodes)
-    node = DateDiffNode.build(context)
-    assert node.sql.sql() == (
-        "(DATEDIFF(microsecond, b, a) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))"
-    )
-
-
-def test_date_difference_timestamp_schema(input_node):
-    """Test DateDiff node handling of timestamp_schema"""
-    column1 = make_str_expression_node(table_node=input_node, expr="a")
-    column2 = make_str_expression_node(table_node=input_node, expr="b")
-    input_nodes = [column1, column2]
-    context = make_context(
-        parameters={
-            "left_timestamp_metadata": DBVarTypeMetadata(
-                timestamp_schema=TimestampSchema(format_string="%Y-%m-%d")
-            ).model_dump(),
-            "right_timestamp_metadata": DBVarTypeMetadata(
-                timestamp_schema=TimestampSchema(format_string="%Y|%m|%d")
-            ).model_dump(),
-        },
-        input_sql_nodes=input_nodes,
-    )
-    node = DateDiffNode.build(context)
-    assert node.sql.sql() == (
-        "(DATEDIFF(microsecond, TO_TIMESTAMP(b, '%Y|%m|%d'), TO_TIMESTAMP(a, '%Y-%m-%d')) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))"
-    )
 
 
 def test_timedelta(input_node):
