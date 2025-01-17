@@ -72,15 +72,15 @@ class TimeSeriesTableService(
                 and reference_datetime_col_info.timestamp_schema.timezone
             )
             update_to_timezone = data.default_feature_job_setting.reference_timezone
-            if (
-                isinstance(timezone, TimeZoneName)
-                and update_to_timezone
-                and update_to_timezone != timezone
-            ):
-                raise DocumentUpdateError(
-                    f"Cannot update default feature job setting reference timezone to {update_to_timezone} "
-                    f"as it is different from the timezone of the reference datetime column ({timezone})."
-                )
+            if isinstance(timezone, TimeZoneName):
+                if update_to_timezone and update_to_timezone != timezone:
+                    raise DocumentUpdateError(
+                        f"Cannot update default feature job setting reference timezone to {update_to_timezone} "
+                        f"as it is different from the timezone of the reference datetime column ({timezone})."
+                    )
+                else:
+                    # update the timezone to the timezone of the reference datetime column if not provided
+                    data.default_feature_job_setting.reference_timezone = timezone
 
         return await super().update_document(
             document_id=document_id,

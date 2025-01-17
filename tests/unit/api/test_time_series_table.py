@@ -597,7 +597,7 @@ def test_update_default_job_setting__saved_time_series_table(
             "month_of_year": "*",
         },
         "timezone": "Etc/UTC",
-        "reference_timezone": None,
+        "reference_timezone": "Etc/UTC",
     }
 
 
@@ -737,7 +737,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "month_of_year": "*",
             },
             "timezone": "Etc/UTC",
-            "reference_timezone": None,
+            "reference_timezone": "Etc/UTC",
         }
     }
     assert len(history) == 2
@@ -770,7 +770,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "month_of_year": "*",
             },
             "timezone": "Etc/UTC",
-            "reference_timezone": None,
+            "reference_timezone": "Etc/UTC",
         }
     }
     assert len(history) == 3
@@ -855,6 +855,13 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "Etc/UTC",
                 "Etc/UTC",
             ),
+            (
+                "UPDATE",
+                'update: "sf_time_series_table"',
+                "default_feature_job_setting.reference_timezone",
+                "Etc/UTC",
+                "Etc/UTC",
+            ),
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
@@ -910,6 +917,13 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "default_feature_job_setting.crontab.month_of_year",
                 np.nan,
                 "*",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_time_series_table"',
+                "default_feature_job_setting.reference_timezone",
+                np.nan,
+                "Etc/UTC",
             ),
             (
                 "UPDATE",
@@ -1057,6 +1071,26 @@ def test_timezone__valid(snowflake_database_time_series_table, catalog):
 
     input_node_params = time_series_table.frame.node.parameters
     assert input_node_params.reference_datetime_schema.timezone == "Asia/Singapore"
+
+    # check update default feature job setting without providing reference timezone
+    cron_feature_job_setting = CronFeatureJobSetting(
+        crontab=Crontab(
+            minute=0,
+            hour=1,
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        ),
+        timezone="US/Pacific",
+        reference_timezone=None,
+    )
+    time_series_table.update_default_feature_job_setting(
+        feature_job_setting=cron_feature_job_setting
+    )
+    default_feature_job_setting = time_series_table.default_feature_job_setting
+    assert default_feature_job_setting.crontab == cron_feature_job_setting.crontab
+    assert default_feature_job_setting.timezone == cron_feature_job_setting.timezone
+    assert default_feature_job_setting.reference_timezone == "Asia/Singapore"
 
 
 def test_timezone__invalid(snowflake_database_time_series_table, catalog):
