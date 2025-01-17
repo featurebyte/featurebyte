@@ -11,6 +11,7 @@ from sqlglot import Expression
 
 from featurebyte.query_graph.model.timestamp_schema import (
     TimestampSchema,
+    TimestampTupleSchema,
     TimeZoneColumn,
     TimeZoneUnion,
 )
@@ -134,3 +135,41 @@ def convert_timestamp_to_utc(
             column_expr=column_expr,
         )
     return column_expr
+
+
+def convert_timestamp_timezone_tuple(
+    zipped_expr: Expression,
+    target_tz: Literal["utc", "local"],
+    timestamp_tuple_schema: TimestampTupleSchema,
+    adapter: BaseAdapter,
+) -> Expression:
+    """
+    Extract the timestamp from a zipped timestamp and timezone offset tuple and convert it to the
+    target timezone.
+
+    Parameters
+    ----------
+    zipped_expr: Expression
+        Zipped timestamp and timezone offset tuple
+    target_tz: Literal["utc", "local"]
+        Target timezone
+    timestamp_tuple_schema: TimestampTupleSchema
+        Timestamp tuple schema
+    adapter: BaseAdapter
+        SQL adapter
+
+    Returns
+    -------
+    Expression
+    """
+    timestamp_utc_expr, timezone_offset_expr = adapter.unzip_timestamp_and_timezone(zipped_expr)
+    if target_tz == "utc":
+        return timestamp_utc_expr
+    timezone_obj = timestamp_tuple_schema.timestamp_schema.timezone
+    assert isinstance(timezone_obj, TimeZoneColumn)
+    timezone_type: Literal["offset", "name"]
+    if timezone_obj.type == "offset":
+        timezone_type = "offset"
+    else:
+        timezone_type = "name"
+    return adapter.convert_timezone_to_utc(timestamp_utc_expr, timezone_offset_expr, timezone_type)

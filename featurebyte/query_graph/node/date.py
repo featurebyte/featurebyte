@@ -12,7 +12,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimestampTupleSchema
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithSingleOperandNode,
@@ -263,6 +263,34 @@ class DateDifferenceParameters(FeatureByteBaseModel):
         """
         if self.right_timestamp_metadata:
             return self.right_timestamp_metadata.timestamp_schema
+        return None
+
+    @property
+    def left_timestamp_tuple_schema(self) -> Optional[TimestampTupleSchema]:
+        """
+        Left timestamp tuple schema
+
+        Returns
+        -------
+        Optional[TimestampTupleSchema]
+            Left timestamp tuple schema
+        """
+        if self.left_timestamp_metadata:
+            return self.left_timestamp_metadata.timestamp_tuple_schema
+        return None
+
+    @property
+    def right_timestamp_tuple_schema(self) -> Optional[TimestampTupleSchema]:
+        """
+        Right timestamp tuple schema
+
+        Returns
+        -------
+        Optional[TimestampTupleSchema]
+            Right timestamp tuple schema
+        """
+        if self.right_timestamp_metadata:
+            return self.right_timestamp_metadata.timestamp_tuple_schema
         return None
 
 
