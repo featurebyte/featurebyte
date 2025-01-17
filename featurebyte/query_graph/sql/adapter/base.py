@@ -1306,15 +1306,15 @@ class BaseAdapter(ABC):
 
     @classmethod
     def zip_timestamp_and_timezone(
-        cls, timestamp_expr: Expression, timezone_expr: Expression
+        cls, timestamp_utc_expr: Expression, timezone_expr: Expression
     ) -> Expression:
         """
         Zip a timestamp and a timezone together
 
         Parameters
         ----------
-        timestamp_expr: Expression
-            Timestamp expression
+        timestamp_utc_expr: Expression
+            Timestamp expression converted to UTC
         timezone_expr: Expression
             Timezone expression
 
@@ -1322,7 +1322,7 @@ class BaseAdapter(ABC):
         -------
         Expression
         """
-        timestamp_str_expr = cls.to_string_from_timestamp(timestamp_expr)
+        timestamp_str_expr = cls.to_string_from_timestamp(timestamp_utc_expr)
         return cls.zip_timestamp_string_and_timezone(timestamp_str_expr, timezone_expr)
 
     @classmethod

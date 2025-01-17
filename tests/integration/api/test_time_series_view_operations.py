@@ -212,7 +212,7 @@ def test_aggregate_over_post_aggregate_with_tz_column(time_series_table_tz_colum
     preview_params = pd.DataFrame([
         {
             "POINT_IN_TIME": pd.Timestamp("2001-01-10 10:00:00"),
-            "series2_id": "S0",
+            "series_id_2": "S0",
         }
     ])
     feature_list = FeatureList([feature_1, feature_2], "test_feature_list")
@@ -224,7 +224,8 @@ def test_aggregate_over_post_aggregate_with_tz_column(time_series_table_tz_colum
     # datetime during that period is "2001-01-09 00:00:00" Asia/Singapore, converted to UTC is
     # "2001-01-08 16:00:00". The difference with the point in time "2001-01-10 10:00:00" UTC is
     # 8 + 24 + 10 = 42 hours.
-    expected["hour_since_latest_reference_datetime"] = [0.35]
+    expected["hour_since_latest_reference_datetime"] = [42]
+    expected["hour_since_latest_reference_datetime_reversed"] = [-42]
     fb_assert_frame_equal(df_features, expected)
 
 

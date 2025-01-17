@@ -606,10 +606,17 @@ class SnowflakeAdapter(BaseAdapter):
     def unzip_timestamp_string_and_timezone(
         cls, zipped_expr: Expression
     ) -> Tuple[Expression, Expression]:
-        timestamp_str_expr = expressions.Anonymous(
-            this="GET", expressions=[zipped_expr, make_literal_value(cls.ZIPPED_TIMESTAMP_FIELD)]
+        timestamp_str_expr = cls.cast_to_string(
+            expressions.Anonymous(
+                this="GET",
+                expressions=[zipped_expr, make_literal_value(cls.ZIPPED_TIMESTAMP_FIELD)],
+            ),
+            None,
         )
-        timezone_expr = expressions.Anonymous(
-            this="GET", expressions=[zipped_expr, make_literal_value(cls.ZIPPED_TIMEZONE_FIELD)]
+        timezone_expr = cls.cast_to_string(
+            expressions.Anonymous(
+                this="GET", expressions=[zipped_expr, make_literal_value(cls.ZIPPED_TIMEZONE_FIELD)]
+            ),
+            None,
         )
         return timestamp_str_expr, timezone_expr
