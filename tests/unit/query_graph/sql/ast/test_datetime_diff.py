@@ -88,6 +88,7 @@ def test_date_difference_timestamp_tuple_schema(input_node, source_type, update_
             ).model_dump(),
         },
         input_sql_nodes=input_nodes,
+        source_type=source_type,
     )
     node = DateDiffNode.build(context)
     actual = sql_to_string(node.sql, source_type)

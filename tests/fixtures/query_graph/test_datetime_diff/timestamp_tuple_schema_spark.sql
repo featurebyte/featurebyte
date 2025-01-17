@@ -1,7 +1,5 @@
 (
-  DATEDIFF(
-    microsecond,
-    TO_TIMESTAMP(CAST(GET(zipped_column_2, 'timestamp') AS STRING), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-    TO_TIMESTAMP(CAST(GET(zipped_column_1, 'timestamp') AS STRING), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+  (
+    CAST(CAST(TO_TIMESTAMP(zipped_column_1.timestamp, 'yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') AS TIMESTAMP) AS DOUBLE) * 1000000.0 - CAST(CAST(TO_TIMESTAMP(zipped_column_2.timestamp, 'yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') AS TIMESTAMP) AS DOUBLE) * 1000000.0
   ) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT)
 )

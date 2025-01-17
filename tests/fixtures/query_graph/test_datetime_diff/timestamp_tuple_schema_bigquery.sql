@@ -1,7 +1,7 @@
 (
-  DATEDIFF(
-    microsecond,
-    TO_TIMESTAMP(CAST(GET(zipped_column_2, 'timestamp') AS STRING), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-    TO_TIMESTAMP(CAST(GET(zipped_column_1, 'timestamp') AS STRING), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+  TIMESTAMP_DIFF(
+    CAST(CAST(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', zipped_column_1.`timestamp`) AS DATETIME) AS DATETIME),
+    CAST(CAST(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', zipped_column_2.`timestamp`) AS DATETIME) AS DATETIME),
+    MICROSECOND
   ) * CAST(1 AS INT64) / CAST(1000000 AS INT64)
 )
