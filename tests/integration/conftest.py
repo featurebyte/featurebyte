@@ -60,7 +60,7 @@ from featurebyte.models.credential import (
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.schema import (
     BigQueryDetails,
     DatabricksUnityDetails,
@@ -815,6 +815,16 @@ def time_series_dataframe_fixture(scd_dataframe):
     return pd.concat(dfs, ignore_index=True)
 
 
+@pytest.fixture(name="time_series_tz_column_dataframe", scope="session")
+def time_series_dataframe_tz_column_fixture(time_series_dataframe):
+    """
+    DataFrame fixture for time series data with timezone column
+    """
+    df = time_series_dataframe.copy()
+    df["tz_offset"] = "Asia/Singapore"
+    return df
+
+
 @pytest.fixture(name="observation_table_dataframe", scope="session")
 def observation_table_dataframe_fixture(scd_dataframe):
     """
@@ -945,6 +955,7 @@ async def datasets_registration_helper_fixture(
     scd_data_table_name_custom_date_format,
     scd_data_table_name_custom_date_with_tz_format,
     time_series_dataframe,
+    time_series_tz_column_dataframe,
     observation_table_dataframe,
 ):
     """
@@ -1015,6 +1026,7 @@ async def datasets_registration_helper_fixture(
 
     # Time series table
     helper.add_table("TIME_SERIES_TABLE", time_series_dataframe)
+    helper.add_table("TIME_SERIES_TABLE_TZ_COLUMN", time_series_tz_column_dataframe)
 
     # Observation table
     helper.add_table("ORIGINAL_OBSERVATION_TABLE", observation_table_dataframe)
@@ -1337,6 +1349,20 @@ def series_entity_fixture(catalog):
     return entity
 
 
+@pytest.fixture(name="series2_entity", scope="session")
+def series2_entity_fixture(catalog):
+    """
+    Fixture for an Entity "Series" (used in time_series_table_tz_column to avoid relationships
+    validation error)
+    """
+    _ = catalog
+    entity = Entity(
+        _id=ObjectId("678a14b858c05007c3e20c82"), name="Series2", serving_names=["series_id_2"]
+    )
+    entity.save()
+    return entity
+
+
 def tag_entities_for_event_table(event_table):
     """
     Helper function to tag entities for the event table fixture
@@ -1590,7 +1616,6 @@ def scd_data_tabular_source_custom_date_with_tz_format_fixture(
 def time_series_data_tabular_source_custom_date_format_fixture(
     session,
     data_source,
-    scd_data_table_name_custom_date_format,
 ):
     """
     Fixture for scd table tabular source
@@ -1599,6 +1624,22 @@ def time_series_data_tabular_source_custom_date_format_fixture(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="TIME_SERIES_TABLE",
+    )
+    return database_table
+
+
+@pytest.fixture(name="time_series_data_tz_column_tabular_source", scope="session")
+def time_series_data_tabular_source_tz_column_tabular_source(
+    session,
+    data_source,
+):
+    """
+    Fixture for scd table tabular source
+    """
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name="TIME_SERIES_TABLE_TZ_COLUMN",
     )
     return database_table
 
@@ -1633,6 +1674,14 @@ def time_series_table_name_fixture(source_type):
     Fixture for the TimeSeriesTable name
     """
     return f"{source_type}_time_series_table"
+
+
+@pytest.fixture(name="time_series_table_tz_column_name", scope="session")
+def time_series_table_tz_column_name_fixture(source_type):
+    """
+    Fixture for the TimeSeriesTable name (with timezone offset column)
+    """
+    return f"{source_type}_time_series_table_tz_column"
 
 
 def tag_entities_for_scd_table(scd_table):
@@ -1747,6 +1796,40 @@ def time_series_table_fixture(
         )
     )
     time_series_table["series_id_col"].as_entity(series_entity.name)
+    time_series_table["user_id_col"].as_entity(user_entity.name)
+    return time_series_table
+
+
+@pytest.fixture(name="time_series_table_tz_column", scope="session")
+def time_series_table_tz_column_fixture(
+    time_series_data_tz_column_tabular_source,
+    time_series_table_tz_column_name,
+    scd_table_timestamp_format_string,
+    series2_entity,
+    user_entity,
+    catalog,
+):
+    """
+    Fixture for a SCDTable in integration tests
+    """
+    _ = catalog
+    time_series_table = time_series_data_tz_column_tabular_source.create_time_series_table(
+        name=time_series_table_tz_column_name,
+        reference_datetime_column="reference_datetime_col",
+        reference_datetime_schema=TimestampSchema(
+            format_string=scd_table_timestamp_format_string,
+            timezone=TimeZoneColumn(column_name="tz_offset", type="timezone"),
+        ),
+        time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
+        series_id_column="series_id_col",
+    )
+    time_series_table.update_default_feature_job_setting(
+        CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        )
+    )
+    time_series_table["series_id_col"].as_entity(series2_entity.name)
     time_series_table["user_id_col"].as_entity(user_entity.name)
     return time_series_table
 
