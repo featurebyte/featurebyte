@@ -830,7 +830,8 @@ class SourceTable(AbstractTableData):
         reference_datetime_schema: TimestampSchema
             The schema of the reference datetime column.
         time_interval: TimeInterval
-            The time interval of the time series.
+            Specifies the time interval for the time series. Note that only intervals defined with a single time unit
+            (e.g., 1 hour, 1 day) are supported.
         series_id_column: Optional[str]
             The column that represents the unique identifier for each time series.
         record_creation_timestamp_column: str

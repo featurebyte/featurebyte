@@ -597,7 +597,7 @@ def test_update_default_job_setting__saved_time_series_table(
             "month_of_year": "*",
         },
         "timezone": "Etc/UTC",
-        "reference_timezone": None,
+        "reference_timezone": "Etc/UTC",
     }
 
 
@@ -619,6 +619,27 @@ def test_update_default_job_setting__record_update_exception(snowflake_time_seri
                     timezone="Etc/UTC",
                 )
             )
+
+    with pytest.raises(RecordUpdateException) as exc:
+        snowflake_time_series_table.update_default_feature_job_setting(
+            feature_job_setting=CronFeatureJobSetting(
+                crontab=Crontab(
+                    minute=0,
+                    hour=1,
+                    day_of_week="*",
+                    day_of_month="*",
+                    month_of_year="*",
+                ),
+                timezone="Etc/UTC",
+                reference_timezone="Asia/Singapore",
+            )
+        )
+
+    expected_msg = (
+        "Cannot update default feature job setting reference timezone to Asia/Singapore as it is different "
+        "from the timezone of the reference datetime column (Etc/UTC)."
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_update_record_creation_timestamp_column__unsaved_object(
@@ -716,7 +737,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "month_of_year": "*",
             },
             "timezone": "Etc/UTC",
-            "reference_timezone": None,
+            "reference_timezone": "Etc/UTC",
         }
     }
     assert len(history) == 2
@@ -749,7 +770,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "month_of_year": "*",
             },
             "timezone": "Etc/UTC",
-            "reference_timezone": None,
+            "reference_timezone": "Etc/UTC",
         }
     }
     assert len(history) == 3
@@ -834,6 +855,13 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "Etc/UTC",
                 "Etc/UTC",
             ),
+            (
+                "UPDATE",
+                'update: "sf_time_series_table"',
+                "default_feature_job_setting.reference_timezone",
+                "Etc/UTC",
+                "Etc/UTC",
+            ),
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
@@ -889,6 +917,13 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "default_feature_job_setting.crontab.month_of_year",
                 np.nan,
                 "*",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_time_series_table"',
+                "default_feature_job_setting.reference_timezone",
+                np.nan,
+                "Etc/UTC",
             ),
             (
                 "UPDATE",
@@ -1037,6 +1072,26 @@ def test_timezone__valid(snowflake_database_time_series_table, catalog):
     input_node_params = time_series_table.frame.node.parameters
     assert input_node_params.reference_datetime_schema.timezone == "Asia/Singapore"
 
+    # check update default feature job setting without providing reference timezone
+    cron_feature_job_setting = CronFeatureJobSetting(
+        crontab=Crontab(
+            minute=0,
+            hour=1,
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        ),
+        timezone="US/Pacific",
+        reference_timezone=None,
+    )
+    time_series_table.update_default_feature_job_setting(
+        feature_job_setting=cron_feature_job_setting
+    )
+    default_feature_job_setting = time_series_table.default_feature_job_setting
+    assert default_feature_job_setting.crontab == cron_feature_job_setting.crontab
+    assert default_feature_job_setting.timezone == cron_feature_job_setting.timezone
+    assert default_feature_job_setting.reference_timezone == "Asia/Singapore"
+
 
 def test_timezone__invalid(snowflake_database_time_series_table, catalog):
     """Test specifying an invalid timezone"""
@@ -1053,6 +1108,22 @@ def test_timezone__invalid(snowflake_database_time_series_table, catalog):
             time_interval=TimeInterval(value=1, unit="DAY"),
         )
     assert "Invalid timezone name." in str(exc.value)
+
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_database_time_series_table.create_time_series_table(
+            name="sf_time_series_table",
+            series_id_column="col_int",
+            reference_datetime_column="date",
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Asia/Singapore"
+            ),
+            time_interval=TimeInterval(value=2, unit="DAY"),
+        )
+
+    expected_msg = (
+        "Only intervals defined with a single time unit (e.g., 1 hour, 1 day) are supported."
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_timezone_offset__valid_column(snowflake_database_time_series_table, catalog):
@@ -1113,6 +1184,22 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
             ),
         ),
     )
+
+    # test update default feature job setting
+    cron_feature_job_setting = CronFeatureJobSetting(
+        crontab=Crontab(
+            minute=0,
+            hour=1,
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        ),
+        timezone="Etc/UTC",
+    )
+    time_series_table.update_default_feature_job_setting(
+        feature_job_setting=cron_feature_job_setting
+    )
+    assert time_series_table.default_feature_job_setting == cron_feature_job_setting
 
 
 def test_timezone_offset__invalid_column(snowflake_database_time_series_table, catalog):
