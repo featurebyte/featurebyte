@@ -225,38 +225,26 @@ class FeatureTableCacheService:
 
         # Join necessary feature cache tables based on the definition hashes
         select_expr = expressions.select()
-        non_feature_exprs = [
-            get_qualified_column_identifier(InternalName.TABLE_ROW_INDEX, "T0")
-        ] + [get_qualified_column_identifier(col, "T0") for col in additional_columns]
+        non_feature_columns = [InternalName.TABLE_ROW_INDEX] + additional_columns
 
         table_name_to_alias = {}
         for i, table_name in enumerate(sorted(required_cache_tables)):
             table_alias = f"T{i}"
             table_name_to_alias[table_name] = table_alias
             if i == 0:
-                select_expr = select_expr.from_(
-                    expressions.Table(
-                        this=quoted_identifier(table_name),
-                        alias=expressions.TableAlias(this=expressions.Identifier(this=table_alias)),
-                    ),
-                )
-
                 # Add random sampling if sample_size is specified
                 if sample_size is not None:
                     feature_exprs = []
                     for output_feature_name, definition_hash in zip(output_column_names, hashes):
                         _table_name, column_name = cached_definition_hash_mapping[definition_hash]
                         if _table_name == table_name:
-                            feature_exprs.append(
-                                expressions.alias_(
-                                    get_qualified_column_identifier(column_name, table_alias),
-                                    alias=output_feature_name,
-                                    quoted=True,
-                                )
-                            )
+                            feature_exprs.append(quoted_identifier(column_name))
 
+                    select_expr = select_expr.from_(
+                        expressions.Table(this=quoted_identifier(table_name))
+                    )
                     select_expr = select_expr.select(
-                        *non_feature_exprs,
+                        *[quoted_identifier(column_name) for column_name in non_feature_columns],
                         *feature_exprs,
                     )
                     select_expr = db_session.adapter.random_sample(
@@ -266,7 +254,22 @@ class FeatureTableCacheService:
                         seed=seed,
                     )
                     select_expr = select_expr.limit(sample_size)
-                    select_expr = expressions.select().from_(select_expr.subquery())
+                    select_expr = expressions.select().from_(
+                        select_expr.subquery(
+                            alias=expressions.TableAlias(
+                                this=expressions.Identifier(this=table_alias)
+                            ),
+                        )
+                    )
+                else:
+                    select_expr = select_expr.from_(
+                        expressions.Table(
+                            this=quoted_identifier(table_name),
+                            alias=expressions.TableAlias(
+                                this=expressions.Identifier(this=table_alias)
+                            ),
+                        ),
+                    )
             else:
                 select_expr = select_expr.join(
                     expressions.Table(
@@ -295,7 +298,10 @@ class FeatureTableCacheService:
                 )
             )
         select_expr = select_expr.select(
-            *non_feature_exprs,
+            *[
+                get_qualified_column_identifier(column_name, "T0")
+                for column_name in non_feature_columns
+            ],
             *feature_exprs,
         )
         return select_expr
