@@ -1406,7 +1406,12 @@ def test_zip_timestamp_timezone_tuple_operation_structure(
     )
     zip_ts_tz_tuple = global_graph.add_operation(
         node_type=NodeType.ZIP_TIMESTAMP_TZ_TUPLE,
-        node_params={},
+        node_params={
+            "timestamp_schema": TimestampSchema(
+                format_string="%Y-%m-%d %H:%M:%S",
+                timezone=TimeZoneColumn(column_name="timezone", type="offset"),
+            )
+        },
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[proj_eff_ts, proj_tz],
     )
@@ -1448,7 +1453,9 @@ def test_zip_timestamp_timezone_tuple_operation_structure(
             "name": None,
             "node_name": "zip_timestamp_tz_tuple_1",
             "node_names": {"input_1", "project_1", "project_2", "zip_timestamp_tz_tuple_1"},
-            "transforms": ["zip_timestamp_tz_tuple"],
+            "transforms": [
+                "zip_timestamp_tz_tuple(timestamp_schema={'format_string': '%Y-%m-%d %H:%M:%S', 'is_utc_time': None, 'timezone': {'column_name': 'timezone', 'type': 'offset'}})"
+            ],
             "type": "derived",
         }
     ]

@@ -22,6 +22,7 @@ from featurebyte.query_graph.sql.ast.generic import ParsedExpressionNode, resolv
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.ast.util import prepare_binary_op_input_nodes
 from featurebyte.query_graph.sql.timestamp_helper import (
+    convert_timestamp_timezone_tuple,
     convert_timestamp_to_local,
     convert_timestamp_to_utc,
 )
@@ -150,11 +151,31 @@ class DateDiffNode(ExpressionNode):
                     left_node.sql, parameters.left_timestamp_schema, context.adapter
                 ),
             )
+        elif parameters.left_timestamp_tuple_schema:
+            left_node = ParsedExpressionNode.from_expression_node(
+                left_node,
+                convert_timestamp_timezone_tuple(
+                    zipped_expr=left_node.sql,
+                    target_tz="utc",
+                    timestamp_tuple_schema=parameters.left_timestamp_tuple_schema,
+                    adapter=context.adapter,
+                ),
+            )
         if parameters.right_timestamp_schema:
             right_node = ParsedExpressionNode.from_expression_node(
                 right_node,
                 convert_timestamp_to_utc(
                     right_node.sql, parameters.right_timestamp_schema, context.adapter
+                ),
+            )
+        elif parameters.right_timestamp_tuple_schema:
+            right_node = ParsedExpressionNode.from_expression_node(
+                right_node,
+                convert_timestamp_timezone_tuple(
+                    zipped_expr=right_node.sql,
+                    target_tz="utc",
+                    timestamp_tuple_schema=parameters.right_timestamp_tuple_schema,
+                    adapter=context.adapter,
                 ),
             )
         node = cls(

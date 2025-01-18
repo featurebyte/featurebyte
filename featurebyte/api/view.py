@@ -555,11 +555,16 @@ class ViewColumn(Series, SampleMixin):
                 "Column must have a timezone column associated with it to zip the columns."
             )
 
+        # Must have a timestamp schema because the column has an associated timezone column
+        timestamp_schema = self.dtype_info.timestamp_schema
+        assert timestamp_schema is not None
+
         return series_binary_operation(
             input_series=self,
             other=self._parent[timezone_column_name],  # type: ignore
             node_type=NodeType.ZIP_TIMESTAMP_TZ_TUPLE,
             output_var_type=DBVarType.TIMESTAMP_TZ_TUPLE,
+            additional_node_params={"timestamp_schema": timestamp_schema},
         )
 
 

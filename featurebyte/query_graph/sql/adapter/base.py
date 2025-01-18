@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from numpy import format_float_positional
 from sqlglot import expressions
@@ -46,6 +46,10 @@ class BaseAdapter(ABC):
 
     TABLESAMPLE_SUPPORTS_VIEW = True
     TIMEZONE_DATE_FORMAT_EXPRESSIONS: List[str] = []
+
+    ISO_FORMAT_STRING = ""
+    ZIPPED_TIMESTAMP_FIELD = "timestamp"
+    ZIPPED_TIMEZONE_FIELD = "timezone"
 
     def __init__(self, source_info: SourceInfo):
         self.source_info = source_info
@@ -1186,6 +1190,22 @@ class BaseAdapter(ABC):
 
     @classmethod
     @abstractmethod
+    def to_string_from_timestamp(cls, expr: Expression) -> Expression:
+        """
+        Convert a timestamp to a string
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the timestamp
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
     def convert_timezone_to_utc(
         cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
     ) -> Expression:
@@ -1282,4 +1302,85 @@ class BaseAdapter(ABC):
         Returns
         -------
         Expression
+        """
+
+    @classmethod
+    def zip_timestamp_and_timezone(
+        cls, timestamp_utc_expr: Expression, timezone_expr: Expression
+    ) -> Expression:
+        """
+        Zip a timestamp and a timezone together
+
+        Parameters
+        ----------
+        timestamp_utc_expr: Expression
+            Timestamp expression converted to UTC
+        timezone_expr: Expression
+            Timezone expression
+
+        Returns
+        -------
+        Expression
+        """
+        timestamp_str_expr = cls.to_string_from_timestamp(timestamp_utc_expr)
+        return cls.zip_timestamp_string_and_timezone(timestamp_str_expr, timezone_expr)
+
+    @classmethod
+    def unzip_timestamp_and_timezone(cls, zipped_expr: Expression) -> Tuple[Expression, Expression]:
+        """
+        Unzip a zipped timestamp and timezone column into two expressions, one for timestamp and one
+        for timezone.
+
+        Parameters
+        ----------
+        zipped_expr: Expression
+            Zipped expression
+
+        Returns
+        -------
+        Tuple[Expression, Expression]
+        """
+        timestamp_str_expr, timezone_offset_expr = cls.unzip_timestamp_string_and_timezone(
+            zipped_expr
+        )
+        timestamp_utc_expr = cls.to_timestamp_from_string(timestamp_str_expr, cls.ISO_FORMAT_STRING)
+        return timestamp_utc_expr, timezone_offset_expr
+
+    @classmethod
+    @abstractmethod
+    def zip_timestamp_string_and_timezone(
+        cls, timestamp_str_expr: Expression, timezone_expr: Expression
+    ) -> Expression:
+        """
+        Zip a timestamp encoded as ISO formatted string and a timezone together
+
+        Parameters
+        ----------
+        timestamp_str_expr: Expression
+            Timestamp stsring expression
+        timezone_expr: Expression
+            Timezone expression
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
+    def unzip_timestamp_string_and_timezone(
+        cls, zipped_expr: Expression
+    ) -> Tuple[Expression, Expression]:
+        """
+        Unzip a zipped timestamp and timezone column into two expressions, one for timestamp and one
+        for timezone. The unzipped timestamp remains encoded as string in UTC.
+
+        Parameters
+        ----------
+        zipped_expr: Expression
+            Zipped expression
+
+        Returns
+        -------
+        Tuple[Expression, Expression]
         """

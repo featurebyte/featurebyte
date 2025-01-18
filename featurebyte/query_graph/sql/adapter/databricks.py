@@ -5,7 +5,7 @@ DatabricksAdapter class for generating Databricks specific SQL expressions
 from __future__ import annotations
 
 import re
-from typing import Optional
+from typing import Optional, Tuple
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
@@ -28,6 +28,7 @@ class DatabricksAdapter(BaseAdapter):
     # https://spark.apache.org/docs/latest/sql-ref-datetime-pattern.html
     # https://docs.databricks.com/en/sql/language-manual/sql-ref-datetime-pattern.html
     TIMEZONE_DATE_FORMAT_EXPRESSIONS = ["V", "z", "Z", "O", "X", "x"]
+    ISO_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss'Z'"
 
     class DataType(StrEnum):
         """
@@ -342,3 +343,36 @@ class DatabricksAdapter(BaseAdapter):
             this="timestampadd",
             expressions=["month", make_literal_value(-num_units), timestamp_expr],
         )
+
+    @classmethod
+    def to_string_from_timestamp(cls, expr: Expression) -> Expression:
+        return expressions.Anonymous(
+            this="date_format",
+            expressions=[expr, make_literal_value(cls.ISO_FORMAT_STRING)],
+        )
+
+    @classmethod
+    def zip_timestamp_string_and_timezone(
+        cls, timestamp_str_expr: Expression, timezone_expr: Expression
+    ) -> Expression:
+        return expressions.Anonymous(
+            this="named_struct",
+            expressions=[
+                make_literal_value(cls.ZIPPED_TIMESTAMP_FIELD),
+                timestamp_str_expr,
+                make_literal_value(cls.ZIPPED_TIMEZONE_FIELD),
+                timezone_expr,
+            ],
+        )
+
+    @classmethod
+    def unzip_timestamp_string_and_timezone(
+        cls, zipped_expr: Expression
+    ) -> Tuple[Expression, Expression]:
+        timestamp_str_expr = expressions.Dot(
+            this=zipped_expr, expression=expressions.Identifier(this=cls.ZIPPED_TIMESTAMP_FIELD)
+        )
+        timezone_expr = expressions.Dot(
+            this=zipped_expr, expression=expressions.Identifier(this=cls.ZIPPED_TIMEZONE_FIELD)
+        )
+        return timestamp_str_expr, timezone_expr

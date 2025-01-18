@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 import string
-from typing import List, Optional, cast
+from typing import List, Optional, Tuple, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Identifier, Select, alias_, select
@@ -32,6 +32,8 @@ class SnowflakeAdapter(BaseAdapter):
 
     # https://docs.snowflake.com/en/sql-reference/data-types-datetime
     TIMEZONE_DATE_FORMAT_EXPRESSIONS = ["TZH", "TZM"]
+
+    ISO_FORMAT_STRING = 'YYYY-MM-DD"T"HH24:MI:SS"Z"'
 
     class SnowflakeDataType(StrEnum):
         """
@@ -574,3 +576,47 @@ class SnowflakeAdapter(BaseAdapter):
             this="DATEADD",
             expressions=["month", make_literal_value(-num_units), timestamp_expr],
         )
+
+    @classmethod
+    def to_string_from_timestamp(cls, expr: Expression) -> Expression:
+        assert cls.ISO_FORMAT_STRING
+        return expressions.Anonymous(
+            this="TO_CHAR",
+            expressions=[
+                expr,
+                make_literal_value(cls.ISO_FORMAT_STRING),
+            ],
+        )
+
+    @classmethod
+    def zip_timestamp_string_and_timezone(
+        cls, timestamp_str_expr: Expression, timezone_expr: Expression
+    ) -> Expression:
+        return expressions.Anonymous(
+            this="OBJECT_CONSTRUCT",
+            expressions=[
+                make_literal_value(cls.ZIPPED_TIMESTAMP_FIELD),
+                timestamp_str_expr,
+                make_literal_value(cls.ZIPPED_TIMEZONE_FIELD),
+                timezone_expr,
+            ],
+        )
+
+    @classmethod
+    def unzip_timestamp_string_and_timezone(
+        cls, zipped_expr: Expression
+    ) -> Tuple[Expression, Expression]:
+        timestamp_str_expr = cls.cast_to_string(
+            expressions.Anonymous(
+                this="GET",
+                expressions=[zipped_expr, make_literal_value(cls.ZIPPED_TIMESTAMP_FIELD)],
+            ),
+            None,
+        )
+        timezone_expr = cls.cast_to_string(
+            expressions.Anonymous(
+                this="GET", expressions=[zipped_expr, make_literal_value(cls.ZIPPED_TIMEZONE_FIELD)]
+            ),
+            None,
+        )
+        return timestamp_str_expr, timezone_expr

@@ -3,7 +3,7 @@ Test generic function node
 """
 
 from featurebyte.query_graph.sql.ast.function import GenericFunctionNode
-from tests.unit.query_graph.test_sql import make_context, make_str_expression_node
+from tests.unit.query_graph.util import make_context, make_str_expression_node
 
 
 def test_generic_function(input_node):

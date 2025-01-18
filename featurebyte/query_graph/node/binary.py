@@ -12,6 +12,7 @@ from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import (
     ExtendedTimestampSchema,
+    TimestampSchema,
     TimestampTupleSchema,
     TimezoneOffsetSchema,
 )
@@ -19,6 +20,7 @@ from featurebyte.query_graph.node.base import (
     BaseSeriesOutputWithAScalarParamNode,
     BinaryArithmeticOpNode,
     BinaryOpWithBoolOutputNode,
+    SingleValueNodeParameters,
 )
 from featurebyte.query_graph.node.metadata.config import (
     OnDemandFunctionCodeGenConfig,
@@ -262,11 +264,18 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
         return [], expr
 
 
+class ZipTimestampTZTupleNodeParameters(SingleValueNodeParameters):
+    """ZipTimestampTZTupleNodeParameters class"""
+
+    timestamp_schema: TimestampSchema
+
+
 class ZipTimestampTZTupleNode(BaseSeriesOutputWithAScalarParamNode):
     """ZipTimestampTZTupleNode class"""
 
     type: Literal[NodeType.ZIP_TIMESTAMP_TZ_TUPLE] = NodeType.ZIP_TIMESTAMP_TZ_TUPLE
     output_type: NodeOutputType = NodeOutputType.SERIES
+    parameters: ZipTimestampTZTupleNodeParameters
 
     @property
     def max_input_count(self) -> int:

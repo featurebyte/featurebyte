@@ -1,10 +1,12 @@
 from dataclasses import asdict
+from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
 import scipy as sp
 from sqlglot import expressions
 
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
@@ -13,7 +15,10 @@ from featurebyte.query_graph.node.metadata.operation import (
     SourceDataColumn,
 )
 from featurebyte.query_graph.sql.aggregator.base import Aggregator
-from featurebyte.query_graph.sql.common import construct_cte_sql
+from featurebyte.query_graph.sql.ast.base import SQLNodeContext
+from featurebyte.query_graph.sql.ast.generic import StrExpressionNode
+from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
 def to_dict(obj, exclude=None, include=None):
@@ -140,3 +145,40 @@ def get_combined_aggregation_expr_from_aggregator(
     select_with_ctes = construct_cte_sql(aggregator.get_common_table_expressions("REQUEST_TABLE"))
     result_expr.args["with"] = select_with_ctes.args["with"]
     return result_expr
+
+
+def make_context(
+    node_type=None, parameters=None, input_sql_nodes=None, sql_type=None, source_type=None
+):
+    """
+    Helper function to create a SQLNodeContext with only arguments that matter in tests
+    """
+    if parameters is None:
+        parameters = {}
+    if sql_type is None:
+        sql_type = SQLType.MATERIALIZE
+    if source_type is None:
+        source_type = SourceType.SNOWFLAKE
+    source_info = SourceInfo(source_type=source_type, database_name="db", schema_name="public")
+    mock_query_node = Mock(type=node_type)
+    mock_query_node.parameters.model_dump.return_value = parameters
+    mock_graph = Mock()
+    context = SQLNodeContext(
+        graph=mock_graph,
+        query_node=mock_query_node,
+        input_sql_nodes=input_sql_nodes,
+        sql_type=sql_type,
+        source_info=source_info,
+        to_filter_scd_by_current_flag=False,
+        event_table_timestamp_filter=None,
+        aggregation_specs=None,
+        on_demand_entity_filters=None,
+    )
+    return context
+
+
+def make_str_expression_node(table_node, expr):
+    """
+    Helper function to create a StrExpressionNode used only in tests
+    """
+    return StrExpressionNode(make_context(), table_node=table_node, expr=expr)

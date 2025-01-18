@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pandas as pd
 import pytest
 
-from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList
+from featurebyte import CalendarWindow, CronFeatureJobSetting, FeatureList, RequestColumn
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import fb_assert_frame_equal
 
@@ -183,6 +183,49 @@ def test_aggregate_over_latest(time_series_table):
     # features should aggregate the values from "2001-01-03" to "2001-01-09" inclusive.
     expected["value_col_sum_7d"] = [0.35]
     expected["value_col_latest_7d"] = [0.08]
+    fb_assert_frame_equal(df_features, expected)
+
+
+def test_aggregate_over_post_aggregate_with_tz_column(time_series_table_tz_column):
+    """
+    Test TimeSeriesView aggregate_over using the latest method for reference_datetime_column with a
+    timezone offset column
+    """
+    view = time_series_table_tz_column.get_view()
+    latest_reference_datetime = view.groupby("series_id_col").aggregate_over(
+        value_column="reference_datetime_col",
+        method="latest",
+        windows=[CalendarWindow(unit="DAY", size=7)],
+        feature_names=["my_feature"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        ),
+    )["my_feature"]
+
+    feature_1 = (RequestColumn.point_in_time() - latest_reference_datetime).dt.hour
+    feature_1.name = "hour_since_latest_reference_datetime"
+
+    feature_2 = (latest_reference_datetime - RequestColumn.point_in_time()).dt.hour
+    feature_2.name = "hour_since_latest_reference_datetime_reversed"
+
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-01-10 10:00:00"),
+            "series_id_2": "S0",
+        }
+    ])
+    feature_list = FeatureList([feature_1, feature_2], "test_feature_list")
+    df_features = feature_list.compute_historical_features(preview_params)
+    expected = preview_params.copy()
+    # Point in time of "2001-01-10 10:00:00" UTC is "2001-01-10 18:00:00" Asia/Singapore, at which
+    # point the last feature job is at "2001-01-10 10:00:00" Asia/Singapore. Hence, the features
+    # should aggregate the values from "2001-01-03" to "2001-01-09" inclusive. Latest reference
+    # datetime during that period is "2001-01-09 00:00:00" Asia/Singapore, converted to UTC is
+    # "2001-01-08 16:00:00". The difference with the point in time "2001-01-10 10:00:00" UTC is
+    # 8 + 24 + 10 = 42 hours.
+    expected["hour_since_latest_reference_datetime"] = [42]
+    expected["hour_since_latest_reference_datetime_reversed"] = [-42]
     fb_assert_frame_equal(df_features, expected)
 
 
