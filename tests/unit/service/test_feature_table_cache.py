@@ -806,6 +806,7 @@ async def test_get_feature_query(
     feature_store,
     feature_table_cache_service,
     feature_table_cache_metadata_service,
+    mock_snowflake_session,
     observation_table,
     update_fixtures,
 ):
@@ -868,7 +869,8 @@ async def test_get_feature_query(
 
     # Check query to retrieve a subset of hashes. Should only join 3 of the tables
     feature_query = await feature_table_cache_service.get_feature_query(
-        observation_table_id=observation_table.id,
+        db_session=mock_snowflake_session,
+        observation_table=observation_table,
         hashes=["hash_1", "hash_4", "hash_7", "hash_8"],
         output_column_names=["featureA", "featureB", "featureC", "featureD"],
         additional_columns=["cust_id"],
@@ -879,5 +881,23 @@ async def test_get_feature_query(
     assert_equal_with_expected_fixture(
         feature_query_cleaned,
         "tests/fixtures/feature_table_cache/feature_query.sql",
+        update_fixtures,
+    )
+
+    # Check query with sampling
+    feature_query = await feature_table_cache_service.get_feature_query(
+        db_session=mock_snowflake_session,
+        observation_table=observation_table,
+        hashes=["hash_1", "hash_4", "hash_7", "hash_8"],
+        output_column_names=["featureA", "featureB", "featureC", "featureD"],
+        additional_columns=["cust_id"],
+        sample_size=2,
+    )
+    feature_query_cleaned = feature_query.sql(pretty=True).replace(
+        str(observation_table.id), "0" * 24
+    )
+    assert_equal_with_expected_fixture(
+        feature_query_cleaned,
+        "tests/fixtures/feature_table_cache/feature_query_sampled.sql",
         update_fixtures,
     )
