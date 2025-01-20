@@ -17,6 +17,7 @@ from featurebyte.models.credential import (
     GCSStorageCredential,
     GoogleCredential,
     KerberosKeytabCredential,
+    PrivateKeyCredential,
     S3StorageCredential,
     StorageCredentialType,
     UsernamePasswordCredential,
@@ -80,6 +81,11 @@ def database_credential_fixture(request):
                 "type": "service_account",
                 "private_key": "private_key",
             }
+        )
+    elif request.param == DatabaseCredentialType.PRIVATE_KEY:
+        credential = PrivateKeyCredential.from_file(
+            username="test",
+            key_filepath="tests/fixtures/rsa_key_no_passphrase.p8",
         )
     else:
         raise ValueError("Invalid credential type")
@@ -167,3 +173,52 @@ def test_gcs_storage_credential_service_account_info():
         "type": "service_account",
         "private_key": "private_key",
     }
+
+
+def test_private_key_credential_from_file():
+    """
+    Test PrivateKeyCredential.from_file
+    """
+    credential = PrivateKeyCredential.from_file(
+        username="test",
+        key_filepath="tests/fixtures/rsa_key.p8",
+        passphrase="password",
+    )
+    assert credential.type == DatabaseCredentialType.PRIVATE_KEY
+
+    # check that the passphrase is validated
+    with pytest.raises(ValueError) as exc:
+        PrivateKeyCredential.from_file(
+            username="test",
+            key_filepath="tests/fixtures/rsa_key.p8",
+        )
+    assert "Password was not given but private key is encrypted." in str(exc.value)
+
+    with pytest.raises(ValueError) as exc:
+        PrivateKeyCredential.from_file(
+            username="test",
+            key_filepath="tests/fixtures/rsa_key.p8",
+            passphrase="wrong_password",
+        )
+    assert "Passphrase provided is incorrect for the private key." in str(exc.value)
+
+    assert credential.username == "test"
+    assert credential.passphrase == "password"
+    with open("tests/fixtures/rsa_key.p8", "r") as file_obj:
+        assert credential.private_key == file_obj.read()
+
+
+def test_private_key_credential_from_file_without_passphrase():
+    """
+    Test PrivateKeyCredential.from_file without passphrase
+    """
+    credential = PrivateKeyCredential.from_file(
+        username="test",
+        key_filepath="tests/fixtures/rsa_key_no_passphrase.p8",
+    )
+    assert credential.type == DatabaseCredentialType.PRIVATE_KEY
+
+    assert credential.username == "test"
+    assert credential.passphrase is None
+    with open("tests/fixtures/rsa_key_no_passphrase.p8", "r") as file_obj:
+        assert credential.private_key == file_obj.read()
