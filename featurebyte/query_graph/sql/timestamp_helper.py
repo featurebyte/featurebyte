@@ -172,4 +172,4 @@ def convert_timestamp_timezone_tuple(
         timezone_type = "offset"
     else:
         timezone_type = "name"
-    return adapter.convert_timezone_to_utc(timestamp_utc_expr, timezone_offset_expr, timezone_type)
+    return adapter.convert_utc_to_timezone(timestamp_utc_expr, timezone_offset_expr, timezone_type)

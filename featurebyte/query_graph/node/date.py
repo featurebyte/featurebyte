@@ -58,6 +58,20 @@ class DatetimeExtractNodeParameters(FeatureByteBaseModel):
             return self.timestamp_metadata.timestamp_schema
         return None
 
+    @property  # type: ignore
+    def timestamp_tuple_schema(self) -> Optional[TimestampTupleSchema]:
+        """
+        Timestamp tuple schema
+
+        Returns
+        -------
+        Optional[TimestampTupleSchema]
+            Timestamp tuple schema
+        """
+        if self.timestamp_metadata:
+            return self.timestamp_metadata.timestamp_tuple_schema
+        return None
+
 
 class DatetimeExtractNode(BaseSeriesOutputNode):
     """DatetimeExtractNode class"""

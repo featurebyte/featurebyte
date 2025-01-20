@@ -209,13 +209,16 @@ def test_aggregate_over_post_aggregate_with_tz_column(time_series_table_tz_colum
     feature_2 = (latest_reference_datetime - RequestColumn.point_in_time()).dt.hour
     feature_2.name = "hour_since_latest_reference_datetime_reversed"
 
+    feature_3 = latest_reference_datetime.dt.hour
+    feature_3.name = "hour_of_latest_reference_datetime"
+
     preview_params = pd.DataFrame([
         {
             "POINT_IN_TIME": pd.Timestamp("2001-01-10 10:00:00"),
             "series_id_2": "S0",
         }
     ])
-    feature_list = FeatureList([feature_1, feature_2], "test_feature_list")
+    feature_list = FeatureList([feature_1, feature_2, feature_3], "test_feature_list")
     df_features = feature_list.compute_historical_features(preview_params)
     expected = preview_params.copy()
     # Point in time of "2001-01-10 10:00:00" UTC is "2001-01-10 18:00:00" Asia/Singapore, at which
@@ -223,9 +226,11 @@ def test_aggregate_over_post_aggregate_with_tz_column(time_series_table_tz_colum
     # should aggregate the values from "2001-01-03" to "2001-01-09" inclusive. Latest reference
     # datetime during that period is "2001-01-09 00:00:00" Asia/Singapore, converted to UTC is
     # "2001-01-08 16:00:00". The difference with the point in time "2001-01-10 10:00:00" UTC is
-    # 8 + 24 + 10 = 42 hours.
+    # 8 + 24 + 10 = 42 hours. Hour of the latest reference datetime should be in local time, which
+    # is 0.
     expected["hour_since_latest_reference_datetime"] = [42]
     expected["hour_since_latest_reference_datetime_reversed"] = [-42]
+    expected["hour_of_latest_reference_datetime"] = [0]
     fb_assert_frame_equal(df_features, expected)
 
 

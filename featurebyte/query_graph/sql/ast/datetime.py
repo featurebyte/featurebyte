@@ -72,6 +72,13 @@ class DatetimeExtractNode(ExpressionNode):
             timestamp_expr = convert_timestamp_to_local(
                 input_expr_node.sql, parameters.timestamp_schema, context.adapter
             )
+        elif parameters.timestamp_tuple_schema is not None:
+            timestamp_expr = convert_timestamp_timezone_tuple(
+                zipped_expr=input_expr_node.sql,
+                target_tz="local",
+                timestamp_tuple_schema=parameters.timestamp_tuple_schema,
+                adapter=context.adapter,
+            )
         else:
             timestamp_expr = input_expr_node.sql
 
