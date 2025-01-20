@@ -9,10 +9,13 @@ import pytest
 
 from featurebyte import CalendarWindow, CronFeatureJobSetting, RequestColumn, to_timedelta
 from featurebyte.enum import DBVarType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import (
     ExtendedTimestampSchema,
+    TimestampTupleSchema,
     TimezoneOffsetSchema,
 )
+from featurebyte.query_graph.node.date import DatetimeExtractNodeParameters
 
 
 @pytest.fixture(name="feat_timestamp_tz_tuple")
@@ -56,12 +59,30 @@ def test_save_feature(feat_timestamp_tz_tuple):
     assert str(exc_info.value) == expected_msg
 
 
-def test_dt_accessor(feat_timestamp_tz_tuple):
+def test_dt_accessor(feat_timestamp_tz_tuple, snowflake_time_series_table_with_tz_offset_column):
     """Test aggregate_over over time series column with timezone offset column"""
     # add post-processing to save the feature
+    view = snowflake_time_series_table_with_tz_offset_column.get_view()
     feat_day = feat_timestamp_tz_tuple.dt.day
     feat_day.name = "feat_day"
     feat_day.save()
+
+    graph = feat_day.cached_model.graph
+    dt_extract_node = graph.get_node_by_name("dt_extract_1")
+    assert dt_extract_node.parameters == DatetimeExtractNodeParameters(
+        property="day",
+        timezone_offset=None,
+        timestamp_metadata=DBVarTypeMetadata(
+            timestamp_schema=None,
+            timestamp_tuple_schema=TimestampTupleSchema(
+                timestamp_schema=ExtendedTimestampSchema(
+                    dtype="VARCHAR",
+                    **view["date"].dtype_info.metadata.timestamp_schema.model_dump(),
+                ),
+                timezone_offset_schema=TimezoneOffsetSchema(dtype="VARCHAR"),
+            ),
+        ),
+    )
 
     partial_definition = textwrap.dedent("""
         view["__date_zip_timezone"] = col_1.zip_timestamp_timezone_columns()
