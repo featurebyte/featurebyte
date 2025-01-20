@@ -30,6 +30,8 @@ from featurebyte.models.time_series_table import TimeSeriesTableModel
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
+    TableFeatureJobSetting,
+    TableIdFeatureJobSetting,
 )
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import (
@@ -1344,3 +1346,48 @@ def test_create_time_series_table_without_series_id_column(
 
     # expect subset to work
     _ = event_view[["col_text", "col_int"]]
+
+
+def test_create_new_version(snowflake_time_series_table, ts_window_aggregate_feature):
+    """Test creating a new version of a feature created from a time series table"""
+    table_id_fjs = ts_window_aggregate_feature.table_id_feature_job_settings
+    assert table_id_fjs == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_time_series_table.id,
+            feature_job_setting=CronFeatureJobSetting(
+                crontab=Crontab(
+                    minute=0,
+                    hour=8,
+                    day_of_month=1,
+                    day_of_week="*",
+                    month_of_year="*",
+                ),
+                timezone="Etc/UTC",
+            ),
+        )
+    ]
+    ts_window_aggregate_feature.save()
+
+    new_fjs = CronFeatureJobSetting(
+        crontab=Crontab(
+            minute=0,
+            hour=4,
+            day_of_month=1,
+            day_of_week="*",
+            month_of_year="*",
+        ),
+        timezone="Asia/Singapore",
+    )
+    new_feature = ts_window_aggregate_feature.create_new_version(
+        table_feature_job_settings=[
+            TableFeatureJobSetting(
+                table_name=snowflake_time_series_table.name, feature_job_setting=new_fjs
+            )
+        ]
+    )
+    assert new_feature.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_time_series_table.id,
+            feature_job_setting=new_fjs,
+        )
+    ]
