@@ -8,10 +8,8 @@ from typing import Any, Optional
 
 from bson import ObjectId
 
-from featurebyte import CronFeatureJobSetting
 from featurebyte.enum import TableDataType
 from featurebyte.exception import (
-    CronNotImplementedError,
     DocumentError,
     NoChangesInFeatureVersionError,
     NoFeatureJobSettingInSourceError,
@@ -21,7 +19,7 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
-    FeatureJobSetting,
+    FeatureJobSettingUnion,
     TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node import Node
@@ -85,19 +83,12 @@ class VersionService:
         ------
         NoFeatureJobSettingInSourceError
             If the source table does not have a default feature job setting
-        CronNotImplementedError
-            If the provided feature job setting is a cron job setting
         """
         node_name_to_replacement_node: dict[str, Node] = {}
         table_feature_job_settings = table_feature_job_settings or []
         if table_feature_job_settings or use_source_settings:
-            table_name_to_feature_job_setting: dict[str, FeatureJobSetting] = {}
+            table_name_to_feature_job_setting: dict[str, FeatureJobSettingUnion] = {}
             for table_feature_job_setting in table_feature_job_settings:
-                if isinstance(table_feature_job_setting.feature_job_setting, CronFeatureJobSetting):
-                    raise CronNotImplementedError(
-                        "Cron feature job setting is not supported for creating new feature version."
-                    )
-
                 table_name_to_feature_job_setting[table_feature_job_setting.table_name] = (
                     table_feature_job_setting.feature_job_setting
                 )
@@ -115,7 +106,7 @@ class VersionService:
                 # prepare feature job setting
                 assert table_id is not None, "Table ID should not be None."
                 table = table_id_to_table[table_id]
-                feature_job_setting: Optional[FeatureJobSetting] = None
+                feature_job_setting: Optional[FeatureJobSettingUnion] = None
                 if use_source_settings:
                     # use the event table source's default feature job setting if table is event table
                     # otherwise, do not create a replacement node for the group by node
