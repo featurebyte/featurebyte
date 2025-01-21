@@ -3,7 +3,7 @@ On demand feature view (for Feast) related classes and functions.
 """
 
 import textwrap
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import Field
 
@@ -99,6 +99,7 @@ class OnDemandFeatureViewExtractor(
         output_df_name: str,
         ttl_seconds: int,
         var_name_generator: VariableNameGenerator,
+        cron_expression: Optional[str] = None,
         comment: str = "",
     ) -> StatementStr:
         """
@@ -116,6 +117,8 @@ class OnDemandFeatureViewExtractor(
             Time-to-live (TTL) in seconds
         var_name_generator: VariableNameGenerator
             Variable name generator
+        cron_expression: Optional[str]
+            Cron expression
         comment: str
             Comment
 
@@ -124,6 +127,9 @@ class OnDemandFeatureViewExtractor(
         StatementStr
             Generated code
         """
+        # TODO: Implement cron_expression handling
+        _ = cron_expression
+
         # feast.online_response.TIMESTAMP_POSTFIX = "__ts" (from feast/online_response.py)
         # hardcoding the timestamp postfix as we don't want to import feast module here
         ttl_ts_column = f"{feature_name_version}{FEAST_TIMESTAMP_POSTFIX}"
