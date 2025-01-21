@@ -394,6 +394,7 @@ async def test_scheduled_materialize_features(
         feature_view = kwargs.pop("feature_view")
         assert feature_view.name == "cat1_cust_id_30m"
         assert kwargs == {
+            "session": mock_snowflake_session,
             "columns": [f"sum_30m_{get_version()}"],
             "start_date": None,
             "end_date": datetime(2022, 1, 1, 0, 0),
@@ -431,6 +432,7 @@ async def test_scheduled_materialize_features(
 async def test_scheduled_materialize_features_if_materialized_before(
     app_container,
     feature_materialize_service,
+    mock_snowflake_session,
     offline_store_feature_table,
     online_store,
     mock_materialize_partial,
@@ -459,6 +461,7 @@ async def test_scheduled_materialize_features_if_materialized_before(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "cat1_cust_id_30m"
     assert kwargs == {
+        "session": mock_snowflake_session,
         "columns": [f"sum_30m_{get_version()}"],
         "start_date": datetime(2022, 1, 1, 0, 0),
         "end_date": datetime(2022, 1, 2, 0, 0),
@@ -535,6 +538,7 @@ async def test_scheduled_materialize_features_batch_columns(
         _ = kwargs.pop("feature_store")
         kwargs.pop("feature_view")
         assert kwargs == {
+            "session": mock_snowflake_session,
             "columns": columns,
             "start_date": datetime(2022, 1, 1, 0, 0),
             "end_date": datetime(2022, 1, 2, 0, 0),
@@ -593,6 +597,7 @@ async def test_initialize_new_columns__table_does_not_exist(
         feature_view = kwargs.pop("feature_view")
         assert feature_view.name == "cat1_cust_id_30m"
         assert kwargs == {
+            "session": mock_snowflake_session,
             "columns": [f"sum_30m_{get_version()}"],
             "start_date": None,
             "end_date": datetime(2022, 1, 1, 0, 0),
@@ -643,6 +648,7 @@ async def test_initialize_new_columns__table_exists(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "cat1_cust_id_30m"
     assert kwargs == {
+        "session": mock_snowflake_session,
         "columns": [f"sum_30m_{get_version()}"],
         "end_date": datetime(2022, 10, 15, 10, 0, 0),
         "start_date": None,
@@ -689,6 +695,7 @@ async def test_initialize_new_columns__table_exists_but_empty(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "cat1_cust_id_30m"
     assert kwargs == {
+        "session": mock_snowflake_session,
         "columns": [f"sum_30m_{get_version()}"],
         "end_date": datetime(2022, 1, 1, 0, 0, 0),
         "start_date": None,
@@ -935,6 +942,7 @@ async def test_update_online_store__never_materialized_before(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "cat1_cust_id_30m"
     assert kwargs == {
+        "session": mock_snowflake_session,
         "columns": [f"sum_30m_{get_version()}"],
         "end_date": offline_last_materialized_at,
         "start_date": None,
@@ -995,6 +1003,7 @@ async def test_update_online_store__materialized_before(
     feature_view = kwargs.pop("feature_view")
     assert feature_view.name == "cat1_cust_id_30m"
     assert kwargs == {
+        "session": mock_snowflake_session,
         "columns": [f"sum_30m_{get_version()}"],
         "end_date": offline_last_materialized_at,
         "start_date": online_last_materialized_at,

@@ -700,6 +700,7 @@ class FeatureMaterializeService:
                         )
                     )
                     await self._materialize_online(
+                        session=session,
                         feature_store=feature_store,
                         feature_table=current_feature_table,
                         columns=feature_table_model.output_column_names,
@@ -933,6 +934,7 @@ class FeatureMaterializeService:
                     current_feature_table, materialized_features.feature_timestamp
                 )
             await self._initialize_new_columns_online(
+                session=session,
                 feature_table=current_feature_table,
                 column_names=column_names,
                 end_date=materialize_end_date,
@@ -994,6 +996,7 @@ class FeatureMaterializeService:
 
     async def _initialize_new_columns_online(
         self,
+        session: BaseSession,
         feature_table: OfflineStoreFeatureTableModel,
         column_names: List[str],
         end_date: datetime,
@@ -1010,6 +1013,7 @@ class FeatureMaterializeService:
             if feature_store is not None and feature_store.config.online_store is not None:
                 assert feature_store.online_store_id is not None
                 await self._materialize_online(
+                    session=session,
                     feature_store=feature_store,
                     feature_table=feature_table,
                     columns=column_names,
@@ -1049,6 +1053,7 @@ class FeatureMaterializeService:
                 feature_store.online_store_id
             )
             await self._materialize_online(
+                session=session,
                 feature_store=feature_store,
                 feature_table=current_feature_table,
                 columns=feature_table_model.output_column_names,
@@ -1107,6 +1112,7 @@ class FeatureMaterializeService:
 
     async def _materialize_online(
         self,
+        session: BaseSession,
         feature_store: FeastFeatureStore,
         feature_table: OfflineStoreFeatureTableModel,
         columns: List[str],
@@ -1125,6 +1131,7 @@ class FeatureMaterializeService:
             for i in range(0, len(columns), NUM_COLUMNS_PER_MATERIALIZE):
                 columns_batch = columns[i : i + NUM_COLUMNS_PER_MATERIALIZE]
                 await materialize_partial(
+                    session=session,
                     feature_store=feature_store,
                     feature_view=feature_store.get_feature_view(feature_table.name),
                     columns=columns_batch,
