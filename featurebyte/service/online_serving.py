@@ -250,8 +250,8 @@ class OnlineServingService:
             feature_name_map[f"{feature_name}_{feature_version}"] = feature_name
             feature_id_to_versioned_name[feature_doc["_id"]] = f"{feature_name}_{feature_version}"
 
-        # Include point in time column if it is required
         if feast_store.list_on_demand_feature_views():
+            # if the feast store contains on-demand feature views, point in time is always required
             point_in_time_value = datetime.utcnow().isoformat()
         else:
             point_in_time_value = None
