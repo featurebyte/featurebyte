@@ -586,6 +586,7 @@ def test_update_default_job_setting__saved_time_series_table(
             month_of_year="*",
         ),
         timezone="Etc/UTC",
+        reference_timezone="Etc/UTC",
     )
     client = config.get_client()
     response = client.get(url=f"/time_series_table/{saved_time_series_table.id}")
@@ -1052,8 +1053,12 @@ def test_accessing_saved_time_series_table_attributes(saved_time_series_table):
     saved_time_series_table.update_default_feature_job_setting(
         feature_job_setting=feature_job_setting
     )
-    assert saved_time_series_table.default_feature_job_setting == feature_job_setting
-    assert cloned.default_feature_job_setting == feature_job_setting
+    effective_feature_job_setting = CronFeatureJobSetting(
+        **feature_job_setting.model_dump(exclude={"reference_timezone"}),
+        reference_timezone="Etc/UTC",
+    )
+    assert saved_time_series_table.default_feature_job_setting == effective_feature_job_setting
+    assert cloned.default_feature_job_setting == effective_feature_job_setting
 
 
 def test_timezone__valid(snowflake_database_time_series_table, catalog):

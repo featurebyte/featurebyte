@@ -758,7 +758,9 @@ async def test_create_new_feature_version_using_source_settings_ts_window_agg_fe
     assert new_version.table_id_feature_job_settings == [
         TableIdFeatureJobSetting(
             table_id=snowflake_time_series_table_with_entity.id,
-            feature_job_setting=CronFeatureJobSetting(crontab="0 8 2 * *"),
+            feature_job_setting=CronFeatureJobSetting(
+                crontab="0 8 2 * *", reference_timezone="Etc/UTC"
+            ),
         )
     ]
 
