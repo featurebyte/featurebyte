@@ -24,6 +24,8 @@ class FeatureListCreateWithBatchFeatureCreationTaskPayload(
     # class variables
     command: ClassVar[WorkerCommand] = WorkerCommand.FEATURE_LIST_CREATE_WITH_BATCH_FEATURE_CREATE
     output_collection_name: ClassVar[str] = FeatureListModel.collection_name()
+    is_revocable: ClassVar[bool] = True
+    is_rerunnable: ClassVar[bool] = True
 
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
