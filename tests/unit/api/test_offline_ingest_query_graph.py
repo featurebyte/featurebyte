@@ -6,6 +6,7 @@ import os
 import textwrap
 
 import freezegun
+import pandas as pd
 import pytest
 from bson import json_util
 
@@ -507,17 +508,6 @@ def test_feature__composite_count_dict(
     check_on_demand_feature_code_generation(feature_model=feature_model)
 
 
-def test_time_window_aggregate_feature(ts_window_aggregate_feature, caplog):
-    """Test that a feature with time window aggregate feature."""
-    ts_window_aggregate_feature.save()
-
-    deploy_features_through_api([ts_window_aggregate_feature])
-
-    offline_store_info = ts_window_aggregate_feature.cached_model.offline_store_info
-    assert offline_store_info.is_decomposed is False
-    assert offline_store_info.odfv_info is None
-
-
 def test_feature__input_has_ingest_query_graph_node(test_dir):
     """
     Test a complex feature when there exist a node fulfills the split condition except all the input nodes
@@ -806,3 +796,29 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         return df
     """
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
+
+
+def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feature):
+    """Test offline ingest query graph for time series feature."""
+    # save features first
+    ts_window_aggregate_feature.save()
+    request_and_ttl_component = (
+        RequestColumn.point_in_time()
+        + (RequestColumn.point_in_time() - RequestColumn.point_in_time())
+    ).dt.day
+    complex_feature = ts_window_aggregate_feature + request_and_ttl_component
+    complex_feature.name = "feature"
+    complex_feature.save()
+
+    # deploy features
+    deploy_features_through_api([ts_window_aggregate_feature, complex_feature])
+
+    # check offline ingest query graph (time series window aggregate feature)
+    offline_store_info = ts_window_aggregate_feature.cached_model.offline_store_info
+    assert offline_store_info.is_decomposed is False
+    assert pd.Timedelta(days=28) <= offline_store_info.time_to_live_delta <= pd.Timedelta(days=31)
+
+    # check composite feature
+    offline_store_info = complex_feature.cached_model.offline_store_info
+    assert offline_store_info.is_decomposed is True
+    assert pd.Timedelta(days=28) <= offline_store_info.time_to_live_delta <= pd.Timedelta(days=31)

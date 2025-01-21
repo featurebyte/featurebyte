@@ -2,10 +2,12 @@
 Feature Job Setting Model
 """
 
+import datetime
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Union
 
-from croniter import croniter
+import pytz
+from croniter import croniter, croniter_range
 from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 from pydantic_extra_types.timezone_name import TimeZoneName
 from typing_extensions import Annotated, Literal
@@ -16,7 +18,6 @@ from featurebyte.common.model_util import (
     parse_duration_string,
     validate_job_setting_parameters,
 )
-from featurebyte.exception import CronNotImplementedError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.periodic_task import Crontab
 
@@ -467,7 +468,21 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         return "daily"[:max_length]
 
     def extract_ttl_seconds(self) -> int:
-        raise CronNotImplementedError("Cron feature job setting is not supported")
+        max_ttl_in_days = 60
+        now = datetime.datetime.now()
+        to_time = now + datetime.timedelta(days=max_ttl_in_days)
+        start = pytz.utc.localize(now)
+        end = pytz.utc.localize(to_time)
+        tz = pytz.timezone(self.timezone)
+        start_local = start.astimezone(tz)
+        end_local = end.astimezone(tz)
+        schedules = list(croniter_range(start_local, end_local, self.get_cron_expression()))
+        ttl_seconds = []
+        for first, second in zip(schedules, schedules[1:]):
+            ttl_seconds.append((second - first).total_seconds())
+        if ttl_seconds:
+            return int(sum(ttl_seconds) / len(ttl_seconds))
+        return max_ttl_in_days * 24 * 60 * 60
 
     def __hash__(self) -> int:
         return hash((self.crontab, self.timezone))
