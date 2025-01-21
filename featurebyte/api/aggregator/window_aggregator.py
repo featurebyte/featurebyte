@@ -179,11 +179,13 @@ class WindowAggregator(BaseAggregator):
         if self.is_time_series_aggregation:
             if number_of_unbounded_windows > 0:
                 raise ValueError("Unbounded window is not supported for time series aggregation")
+            if offset is not None:
+                offset_unit = self._validate_time_series_window("offset", offset)
+            else:
+                offset_unit = None
             for window in windows:
                 assert window is not None  # due to the above check
-                self._validate_time_series_window("windows", window)
-            if offset is not None:
-                self._validate_time_series_window("offset", offset)
+                self._validate_time_series_window("windows", window, compatible_unit=offset_unit)
             if feature_job_setting is not None and not isinstance(
                 feature_job_setting, CronFeatureJobSetting
             ):
@@ -223,8 +225,11 @@ class WindowAggregator(BaseAggregator):
                 validate_window(offset, parsed_feature_job_setting.period)
 
     def _validate_time_series_window(
-        self, param_type: Literal["windows", "offset"], window: str | CalendarWindow
-    ) -> None:
+        self,
+        param_type: Literal["windows", "offset"],
+        window: str | CalendarWindow,
+        compatible_unit: Optional[TimeIntervalUnit] = None,
+    ) -> TimeIntervalUnit:
         if not isinstance(window, CalendarWindow):
             if param_type == "windows":
                 raise ValueError(
@@ -236,10 +241,16 @@ class WindowAggregator(BaseAggregator):
                 )
         view = self.view
         assert isinstance(view, TimeSeriesView)
-        if TimeIntervalUnit(window.unit) < TimeIntervalUnit(view.time_interval.unit):
+        unit = TimeIntervalUnit(window.unit)
+        if compatible_unit is not None and unit != compatible_unit:
             raise ValueError(
-                f"Window unit {window.unit} cannot be smaller than the table's time interval unit {view.time_interval.unit}"
+                f"Window unit ({window.unit}) must be the same as the offset unit ({compatible_unit})"
             )
+        if unit < TimeIntervalUnit(view.time_interval.unit):
+            raise ValueError(
+                f"Window unit ({window.unit}) cannot be smaller than the table's time interval unit ({view.time_interval.unit})"
+            )
+        return unit
 
     def _get_job_setting_params(
         self, feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting]

@@ -356,10 +356,32 @@ def test_time_series_view_aggregate_over__validate_window_unit(
             do_aggregate_over()
         assert (
             str(exc_info.value)
-            == f"Window unit {window_unit} cannot be smaller than the table's time interval unit DAY"
+            == f"Window unit ({window_unit}) cannot be smaller than the table's time interval unit (DAY)"
         )
     else:
         do_aggregate_over()
+
+
+def test_time_series_view_aggregate_over__same_unit_windows_and_offset(
+    snowflake_time_series_view_with_entity,
+):
+    """
+    Test validation of windows and offset for time series view aggregate_over
+    """
+    view = snowflake_time_series_view_with_entity
+    args: dict[str, Any] = dict(
+        value_column="col_float",
+        method="sum",
+        windows=[CalendarWindow(unit="MONTH", size=3)],
+        offset=CalendarWindow(unit="DAY", size=7),
+        feature_names=["col_float_sum_3month"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 1 * *",
+        ),
+    )
+    with pytest.raises(ValueError) as exc_info:
+        _ = view.groupby("store_id").aggregate_over(**args)
+    assert str(exc_info.value) == "Window unit (MONTH) must be the same as the offset unit (DAY)"
 
 
 @pytest.mark.parametrize("is_offset", [True, False])
