@@ -6,7 +6,6 @@ import os
 import textwrap
 
 import freezegun
-import pandas as pd
 import pytest
 from bson import json_util
 
@@ -816,9 +815,89 @@ def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feat
     # check offline ingest query graph (time series window aggregate feature)
     offline_store_info = ts_window_aggregate_feature.cached_model.offline_store_info
     assert offline_store_info.is_decomposed is False
-    assert pd.Timedelta(days=28) <= offline_store_info.time_to_live_delta <= pd.Timedelta(days=31)
+    version_name = ts_window_aggregate_feature.cached_model.versioned_name
+
+    expected = f"""
+    import datetime
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+    import croniter
+    import pytz
+    from zoneinfo import ZoneInfo
+
+
+    def odfv_{version_name.lower()}_{str(ts_window_aggregate_feature.id).lower()}(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
+        df = pd.DataFrame()
+
+        cron = croniter.croniter("0 8 1 * *")
+        prev_time = cron.timestamp_to_datetime(cron.get_prev())
+        prev_time = (
+            prev_time.replace(tzinfo=ZoneInfo("Etc/UTC"))
+            .astimezone(pytz.utc)
+            .replace(tzinfo=None)
+        )
+        feature_timestamp = pd.to_datetime(
+            inputs["{version_name}__ts"], unit="s", utc=True
+        )
+        mask = feature_timestamp <= prev_time
+        inputs.loc[~mask, "{version_name}"] = np.nan
+        df["{version_name}"] = inputs["{version_name}"]
+        df.fillna(np.nan, inplace=True)
+
+        return df
+    """
+    assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
     # check composite feature
     offline_store_info = complex_feature.cached_model.offline_store_info
     assert offline_store_info.is_decomposed is True
-    assert pd.Timedelta(days=28) <= offline_store_info.time_to_live_delta <= pd.Timedelta(days=31)
+    version_name = complex_feature.cached_model.versioned_name
+
+    expected = f"""
+    import datetime
+    import json
+    import numpy as np
+    import pandas as pd
+    import scipy as sp
+    import croniter
+    import pytz
+    from zoneinfo import ZoneInfo
+
+
+    def odfv_{version_name.lower()}_{str(complex_feature.id).lower()}(
+        inputs: pd.DataFrame,
+    ) -> pd.DataFrame:
+        df = pd.DataFrame()
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        feat = pd.to_datetime(request_col) - pd.to_datetime(request_col)
+        feat_1 = pd.to_datetime(request_col) + pd.to_timedelta(feat)
+        cron = croniter.croniter("0 8 1 * *")
+        prev_time = cron.timestamp_to_datetime(cron.get_prev())
+        prev_time = (
+            prev_time.replace(tzinfo=ZoneInfo("Etc/UTC"))
+            .astimezone(pytz.utc)
+            .replace(tzinfo=None)
+        )
+        feat_ts = pd.to_datetime(
+            inputs["__{version_name}__part0__ts"], utc=True, unit="s"
+        )
+        mask = feat_ts <= prev_time
+        inputs.loc[~mask, "__{version_name}__part0"] = np.nan
+        feat_2 = pd.Series(
+            np.where(
+                pd.isna(inputs["__{version_name}__part0"])
+                | pd.isna((pd.to_datetime(feat_1).dt.day)),
+                np.nan,
+                inputs["__{version_name}__part0"]
+                + (pd.to_datetime(feat_1).dt.day),
+            ),
+            index=inputs["__{version_name}__part0"].index,
+        )
+        df["{version_name}"] = feat_2
+        return df
+    """
+    assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
