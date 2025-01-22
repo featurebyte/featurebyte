@@ -2,12 +2,10 @@
 Feature Job Setting Model
 """
 
-import datetime
 from abc import abstractmethod
 from typing import Any, ClassVar, Dict, Optional, Union
 
-import pytz
-from croniter import croniter, croniter_range
+from croniter import croniter
 from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 from pydantic_extra_types.timezone_name import TimeZoneName
 from typing_extensions import Annotated, Literal
@@ -470,21 +468,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
     def extract_ttl_seconds(self) -> int:
         # note: this is only used to populate feast feature view ttl parameters.
         # the actual ttl handling is done in the on demand feature view
-        max_ttl_in_days = 60
-        now = datetime.datetime.now()
-        to_time = now + datetime.timedelta(days=max_ttl_in_days)
-        start = pytz.utc.localize(now)
-        end = pytz.utc.localize(to_time)
-        tz = pytz.timezone(self.timezone)
-        start_local = start.astimezone(tz)
-        end_local = end.astimezone(tz)
-        schedules = list(croniter_range(start_local, end_local, self.get_cron_expression()))
-        ttl_seconds = []
-        for first, second in zip(schedules, schedules[1:]):
-            ttl_seconds.append((second - first).total_seconds())
-        if ttl_seconds:
-            return int(sum(ttl_seconds) / len(ttl_seconds))
-        return max_ttl_in_days * 24 * 60 * 60
+        return 30 * 24 * 60 * 60  # 30 days
 
     def __hash__(self) -> int:
         return hash((self.crontab, self.timezone))
