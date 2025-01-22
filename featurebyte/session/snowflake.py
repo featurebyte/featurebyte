@@ -8,10 +8,11 @@ import collections
 import datetime
 import json
 import logging
-from typing import Any, AsyncGenerator, OrderedDict
+from typing import Annotated, Any, AsyncGenerator, OrderedDict, Union
 
 import pandas as pd
 import pyarrow as pa
+from pydantic import Field
 from snowflake import connector
 from snowflake.connector.constants import FIELD_TYPES
 from snowflake.connector.errors import Error as SnowflakeError
@@ -22,7 +23,7 @@ from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CursorSchemaError, DataWarehouseConnectionError
 from featurebyte.logging import get_logger
-from featurebyte.models.credential import UsernamePasswordCredential
+from featurebyte.models.credential import PrivateKeyCredential, UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -54,6 +55,14 @@ db_vartype_mapping = {
     SnowflakeDataType.OBJECT: DBVarType.DICT,
 }
 
+SnowflakeCredential = Annotated[
+    Union[
+        UsernamePasswordCredential,
+        PrivateKeyCredential,
+    ],
+    Field(discriminator="type"),
+]
+
 
 class SnowflakeSession(BaseSession):
     """
@@ -74,21 +83,29 @@ class SnowflakeSession(BaseSession):
     schema_name: str
     role_name: str
     source_type: SourceType = SourceType.SNOWFLAKE
-    database_credential: UsernamePasswordCredential
+    database_credential: SnowflakeCredential
 
     def _initialize_connection(self) -> None:
         try:
-            self._connection = connector.connect(
-                user=self.database_credential.username,
-                password=self.database_credential.password,
-                account=self.account,
-                warehouse=self.warehouse,
-                database=self.database_name,
-                schema=self.schema_name,
-                role_name=self.role_name,
-                application=APPLICATION_NAME,
-                client_session_keep_alive=True,
-            )
+            connection_params = {
+                "account": self.account,
+                "warehouse": self.warehouse,
+                "database": self.database_name,
+                "schema": self.schema_name,
+                "role_name": self.role_name,
+                "application": APPLICATION_NAME,
+                "client_session_keep_alive": True,
+            }
+
+            if isinstance(self.database_credential, PrivateKeyCredential):
+                connection_params["user"] = self.database_credential.username
+                connection_params["private_key"] = self.database_credential.pem_private_key
+            else:
+                assert isinstance(self.database_credential, UsernamePasswordCredential)
+                connection_params["user"] = self.database_credential.username
+                connection_params["password"] = self.database_credential.password
+
+            self._connection = connector.connect(**connection_params)
         except SnowflakeError as exc:
             raise DataWarehouseConnectionError(exc.msg) from exc
 

@@ -2178,6 +2178,7 @@ class TimeSeriesWindowAggregateNode(AggregationOpStructMixin):
         feature_job_setting: ObjectClass = ClassEnum.CRON_FEATURE_JOB_SETTING(
             crontab=fjs.get_cron_expression(),
             timezone=fjs.timezone,
+            reference_timezone=fjs.reference_timezone,
         )
         windows = [
             ClassEnum.CALENDAR_WINDOW(

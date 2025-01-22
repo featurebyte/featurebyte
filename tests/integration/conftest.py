@@ -55,6 +55,7 @@ from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
     GoogleCredential,
+    PrivateKeyCredential,
     UsernamePasswordCredential,
 )
 from featurebyte.models.task import Task as TaskModel
@@ -193,19 +194,20 @@ def credentials_mapping():
     """
     Credentials for integration testing
     """
-    username_password = CredentialModel(
+    username_private_key = CredentialModel(
         name="snowflake_featurestore",
         feature_store_id=ObjectId(),
-        database_credential=UsernamePasswordCredential(
+        database_credential=PrivateKeyCredential(
             username=os.getenv("SNOWFLAKE_USER"),
-            password=os.getenv("SNOWFLAKE_PASSWORD"),
+            private_key=os.getenv("SNOWFLAKE_PRIVATE_KEY"),
+            passphrase=os.getenv("SNOWFLAKE_PASSWORD"),
         ),
     )
     return {
-        "snowflake_featurestore": username_password,
-        "snowflake_featurestore_invalid_because_same_schema_a": username_password,
-        "snowflake_featurestore_invalid_because_same_schema_b": username_password,
-        "snowflake_featurestore_unreachable": username_password,
+        "snowflake_featurestore": username_private_key,
+        "snowflake_featurestore_invalid_because_same_schema_a": username_private_key,
+        "snowflake_featurestore_invalid_because_same_schema_b": username_private_key,
+        "snowflake_featurestore_unreachable": username_private_key,
         "snowflake_featurestore_wrong_creds": CredentialModel(
             name="snowflake_featurestore",
             feature_store_id=ObjectId(),
