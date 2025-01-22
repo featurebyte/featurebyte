@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from bson import ObjectId
 
+from featurebyte import Crontab
 from featurebyte.enum import DBVarType
 from featurebyte.models import FeatureModel
 from featurebyte.query_graph.enum import NodeType
@@ -209,19 +210,28 @@ def test_count_distinct_agg_func(snowflake_event_view_with_entity, cust_id_entit
     feature.save()
 
 
-def test_time_series_view_aggregate_over(snowflake_time_series_view_with_entity):
+def test_time_series_view_aggregate_over(snowflake_time_series_table_with_entity):
     """
     Test aggregate_over for time series view
     """
-    view = snowflake_time_series_view_with_entity
+    snowflake_time_series_table_with_entity.update_default_feature_job_setting(
+        feature_job_setting=CronFeatureJobSetting(
+            crontab=Crontab(
+                minute=0,
+                hour=1,
+                day_of_week="*",
+                day_of_month="*",
+                month_of_year="*",
+            ),
+            timezone="Etc/UTC",
+        )
+    )
+    view = snowflake_time_series_table_with_entity.get_view()
     feature = view.groupby("store_id").aggregate_over(
         value_column="col_float",
         method="sum",
         windows=[CalendarWindow(unit="MONTH", size=3)],
         feature_names=["col_float_sum_3month"],
-        feature_job_setting=CronFeatureJobSetting(
-            crontab="0 8 1 * *",
-        ),
     )["col_float_sum_3month"]
     feature_dict = feature.model_dump()
     node = get_node(feature_dict["graph"], "time_series_window_aggregate_1")
@@ -251,13 +261,13 @@ def test_time_series_view_aggregate_over(snowflake_time_series_view_with_entity)
             "feature_job_setting": {
                 "crontab": {
                     "minute": 0,
-                    "hour": 8,
-                    "day_of_month": 1,
+                    "hour": 1,
+                    "day_of_month": "*",
                     "month_of_year": "*",
                     "day_of_week": "*",
                 },
                 "timezone": "Etc/UTC",
-                "reference_timezone": None,
+                "reference_timezone": "Etc/UTC",
             },
             "offset": None,
         },

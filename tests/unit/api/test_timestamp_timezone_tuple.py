@@ -92,7 +92,7 @@ def test_dt_accessor(feat_timestamp_tz_tuple, snowflake_time_series_table_with_t
             windows=[CalendarWindow(unit="MONTH", size=3)],
             feature_names=["col_float_sum_3month"],
             feature_job_setting=CronFeatureJobSetting(
-                crontab="0 8 1 * *", timezone="Etc/UTC"
+                crontab="0 8 1 * *", timezone="Etc/UTC", reference_timezone=None
             ),
             skip_fill_na=True,
             offset=None,
