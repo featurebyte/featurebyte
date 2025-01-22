@@ -165,9 +165,16 @@ class CronHelper:
             min_point_in_time, max_point_in_time, cron_feature_job_setting
         )
         cron_job_schedule_utc = [dt.astimezone(pytz.utc) for dt in cron_job_schedule]
+        if cron_feature_job_setting.reference_timezone is not None:
+            reference_timezone_job_schedule = [
+                dt.astimezone(pytz.timezone(cron_feature_job_setting.reference_timezone))
+                for dt in cron_job_schedule
+            ]
+        else:
+            reference_timezone_job_schedule = cron_job_schedule
         df_cron_job_schedule = pd.DataFrame({
             InternalName.CRON_JOB_SCHEDULE_DATETIME: [
-                dt.replace(tzinfo=None) for dt in cron_job_schedule
+                dt.replace(tzinfo=None) for dt in reference_timezone_job_schedule
             ],
             InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC: [
                 dt.replace(tzinfo=None) for dt in cron_job_schedule_utc
