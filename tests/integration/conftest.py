@@ -31,6 +31,7 @@ from bson import ObjectId
 from databricks import sql as databricks_sql
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
+from pydantic import ValidationError
 from pytest_split import plugin as pytest_split_plugin
 
 from featurebyte import (
@@ -194,15 +195,35 @@ def credentials_mapping():
     """
     Credentials for integration testing
     """
-    username_private_key = CredentialModel(
-        name="snowflake_featurestore",
-        feature_store_id=ObjectId(),
-        database_credential=PrivateKeyCredential(
-            username=os.getenv("SNOWFLAKE_USER"),
-            private_key=os.getenv("SNOWFLAKE_PRIVATE_KEY"),
-            passphrase=os.getenv("SNOWFLAKE_PASSWORD"),
-        ),
-    )
+    try:
+        username_private_key = CredentialModel(
+            name="snowflake_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=PrivateKeyCredential(
+                username=os.getenv("SNOWFLAKE_USER"),
+                private_key=os.getenv("SNOWFLAKE_PRIVATE_KEY"),
+                passphrase=os.getenv("SNOWFLAKE_PASSWORD"),
+            ),
+        )
+    except ValidationError:
+        message = textwrap.dedent(
+            """
+            🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+            😠 SNOWFLAKE PRIVATE KEY NOT SET UP CORRECTLY!
+            😠 USING LEGACY USERNAME/PASSWORD CREDENTIALS!
+            😠 TESTS WILL BREAK FOR YOU SOON!
+            🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+            """
+        )
+        logger.warning(message)
+        username_private_key = CredentialModel(
+            name="snowflake_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=UsernamePasswordCredential(
+                username=os.getenv("SNOWFLAKE_USER"),
+                password=os.getenv("SNOWFLAKE_PASSWORD"),
+            ),
+        )
     return {
         "snowflake_featurestore": username_private_key,
         "snowflake_featurestore_invalid_because_same_schema_a": username_private_key,
