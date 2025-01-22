@@ -459,6 +459,7 @@ class FeastAssetCreator:
                         ],
                     )
 
+        # always add point in time as a request source for on-demand feature views
         if SpecialColumnName.POINT_IN_TIME.value not in name_to_feast_request_source:
             name_to_feast_request_source[SpecialColumnName.POINT_IN_TIME.value] = (
                 FeastRequestSource(
