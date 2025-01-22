@@ -1646,6 +1646,7 @@ def time_series_window_aggregate_feature_node_fixture(global_graph, time_series_
         "feature_job_setting": {
             "crontab": "0 0 * * *",  # daily at midnight
             "timezone": "Etc/UTC",
+            "reference_timezone": "Asia/Singapore",
         },
         "names": ["a_7d_sum"],
         "windows": [{"unit": "DAY", "size": 7}],

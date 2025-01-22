@@ -376,7 +376,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         -------
         str
         """
-        return f"{self.get_cron_expression()}_{self.timezone}"
+        return f"{self.get_cron_expression()}_{self.timezone}_{self.reference_timezone}"
 
     @model_validator(mode="after")
     def _validate_cron_expression(self) -> "CronFeatureJobSetting":
@@ -470,12 +470,16 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         raise CronNotImplementedError("Cron feature job setting is not supported")
 
     def __hash__(self) -> int:
-        return hash((self.crontab, self.timezone))
+        return hash((self.crontab, self.timezone, self.reference_timezone))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CronFeatureJobSetting):
             return False
-        return self.crontab == other.crontab and self.timezone == other.timezone
+        return (
+            self.crontab == other.crontab
+            and self.timezone == other.timezone
+            and self.reference_timezone == other.reference_timezone
+        )
 
 
 def feature_job_setting_discriminator(value: Any) -> Literal["interval", "cron"]:
@@ -575,9 +579,7 @@ class TableIdFeatureJobSetting(FeatureByteBaseModel):
     def __hash__(self) -> int:
         if isinstance(self.feature_job_setting, FeatureJobSetting):
             return hash(f"{self.table_id}_{self.feature_job_setting.to_seconds()}")
-        return hash(
-            f"{self.table_id}_{self.feature_job_setting.crontab}_{self.feature_job_setting.timezone}"
-        )
+        return hash((self.table_id, self.feature_job_setting))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, (TableIdFeatureJobSetting, dict)):

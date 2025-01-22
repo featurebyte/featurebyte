@@ -109,6 +109,7 @@ def test_from_time_series_table(snowflake_time_series_table, mock_api_object_cac
             month_of_year="*",
         ),
         timezone="Etc/UTC",
+        reference_timezone="Etc/UTC",
     )
 
 

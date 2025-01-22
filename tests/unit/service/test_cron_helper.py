@@ -110,9 +110,10 @@ async def test_register_job_schedule_tables(cron_helper, mock_snowflake_session)
     )
 
 
+@pytest.mark.parametrize("reference_timezone", [None, "Asia/Singapore"])
 @pytest.mark.asyncio
 async def test_register_request_table_with_job_schedule(
-    cron_helper, mock_snowflake_session, update_fixtures
+    reference_timezone, cron_helper, mock_snowflake_session, update_fixtures
 ):
     """
     Test register_request_table_with_job_schedule
@@ -129,6 +130,7 @@ async def test_register_request_table_with_job_schedule(
         cron_feature_job_setting=CronFeatureJobSetting(
             crontab="0 10 * * 1",
             timezone="Asia/Tokyo",
+            reference_timezone=reference_timezone,
         ),
     )
 
@@ -163,17 +165,32 @@ async def test_register_request_table_with_job_schedule(
         InternalName.CRON_JOB_SCHEDULE_DATETIME,
         InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC,
     ]
-    assert df_schedule[InternalName.CRON_JOB_SCHEDULE_DATETIME].to_list() == [
-        Timestamp("2023-12-18 10:00:00"),
-        Timestamp("2023-12-25 10:00:00"),
-        Timestamp("2024-01-01 10:00:00"),
-        Timestamp("2024-01-08 10:00:00"),
-        Timestamp("2024-01-15 10:00:00"),
-        Timestamp("2024-01-22 10:00:00"),
-        Timestamp("2024-01-29 10:00:00"),
-        Timestamp("2024-02-05 10:00:00"),
-        Timestamp("2024-02-12 10:00:00"),
-    ]
+    if reference_timezone is None:
+        expected_schedules = [
+            Timestamp("2023-12-18 10:00:00"),
+            Timestamp("2023-12-25 10:00:00"),
+            Timestamp("2024-01-01 10:00:00"),
+            Timestamp("2024-01-08 10:00:00"),
+            Timestamp("2024-01-15 10:00:00"),
+            Timestamp("2024-01-22 10:00:00"),
+            Timestamp("2024-01-29 10:00:00"),
+            Timestamp("2024-02-05 10:00:00"),
+            Timestamp("2024-02-12 10:00:00"),
+        ]
+    else:
+        assert reference_timezone == "Asia/Singapore"
+        expected_schedules = [
+            Timestamp("2023-12-18 09:00:00"),
+            Timestamp("2023-12-25 09:00:00"),
+            Timestamp("2024-01-01 09:00:00"),
+            Timestamp("2024-01-08 09:00:00"),
+            Timestamp("2024-01-15 09:00:00"),
+            Timestamp("2024-01-22 09:00:00"),
+            Timestamp("2024-01-29 09:00:00"),
+            Timestamp("2024-02-05 09:00:00"),
+            Timestamp("2024-02-12 09:00:00"),
+        ]
+    assert df_schedule[InternalName.CRON_JOB_SCHEDULE_DATETIME].to_list() == expected_schedules
     assert df_schedule[InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC].to_list() == [
         Timestamp("2023-12-18 01:00:00"),
         Timestamp("2023-12-25 01:00:00"),
