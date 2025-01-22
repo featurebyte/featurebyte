@@ -376,7 +376,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         -------
         str
         """
-        return f"{self.get_cron_expression()}_{self.timezone}"
+        return f"{self.get_cron_expression()}_{self.timezone}_{self.reference_timezone}"
 
     @model_validator(mode="after")
     def _validate_cron_expression(self) -> "CronFeatureJobSetting":

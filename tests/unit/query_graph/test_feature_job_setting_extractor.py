@@ -16,4 +16,5 @@ def test_extract_feature_job_settings(
     assert fjs == CronFeatureJobSetting(
         crontab=Crontab(minute=0, hour=0, day_of_month="*", month_of_year="*", day_of_week="*"),
         timezone="Etc/UTC",
+        reference_timezone="Asia/Singapore",
     )
