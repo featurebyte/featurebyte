@@ -196,13 +196,16 @@ def credentials_mapping():
     Credentials for integration testing
     """
     try:
+        passphrase = os.getenv("SNOWFLAKE_PRIVATE_KEY_PASSPHRASE", os.getenv("SNOWFLAKE_PASSWORD"))
+        if not passphrase:
+            passphrase = None
         username_private_key = CredentialModel(
             name="snowflake_featurestore",
             feature_store_id=ObjectId(),
             database_credential=PrivateKeyCredential(
                 username=os.getenv("SNOWFLAKE_USER"),
                 private_key=os.getenv("SNOWFLAKE_PRIVATE_KEY"),
-                passphrase=os.getenv("SNOWFLAKE_PASSWORD"),
+                passphrase=passphrase,
             ),
         )
     except ValidationError:
