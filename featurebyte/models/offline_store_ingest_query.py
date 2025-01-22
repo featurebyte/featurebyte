@@ -476,6 +476,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                     var_name_generator=VariableNameGenerator(),
                     cron_expression=self.cron_expression,
                     cron_timezone=self.cron_timezone,
+                    comment="# Time-to-live (TTL) handling to clean up expired data",
                 )
                 code_generator.add_statements(statements=[statements])
 

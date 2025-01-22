@@ -50,6 +50,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
+    CommentStr,
     ExpressionStr,
     ObjectClass,
     StatementStr,
@@ -686,19 +687,23 @@ class BaseGraphNode(BasePrunableNode):
                 variable_name_prefix=var_name, node_name=None
             )
 
-        # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
-        statements.append((
-            var_name_map["request_time"],
-            self._to_datetime_expr(
-                ExpressionStr(
-                    subset_frame_column_expr(
-                        VariableNameStr(input_df_name),
-                        SpecialColumnName.POINT_IN_TIME.value,
-                    )
+        # add comments
+        statements.append(CommentStr(f"TTL handling for {ttl_handling_column} column"))
+
+        statements.append(  # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
+            (
+                var_name_map["request_time"],
+                self._to_datetime_expr(
+                    ExpressionStr(
+                        subset_frame_column_expr(
+                            VariableNameStr(input_df_name),
+                            SpecialColumnName.POINT_IN_TIME.value,
+                        )
+                    ),
+                    to_handle_none=is_databricks_udf,
                 ),
-                to_handle_none=is_databricks_udf,
-            ),
-        ))
+            )
+        )
         statements.append(  # cutoff = request_time - pd.Timedelta(seconds=ttl_seconds)
             (
                 var_name_map["cutoff"],
@@ -742,7 +747,6 @@ class BaseGraphNode(BasePrunableNode):
         var_name_generator: VariableNameGenerator,
         feat_ts_col: str,
         ttl_handling_column: str,
-        is_databricks_udf: bool,
         cron_expression: str,
         cron_timezone: str,
     ) -> List[StatementT]:
@@ -752,6 +756,11 @@ class BaseGraphNode(BasePrunableNode):
                 variable_name_prefix=var_name, node_name=None
             )
 
+        statements.append(  # add comments
+            CommentStr(
+                f"TTL handling for {ttl_handling_column} column with cron expression {cron_expression}"
+            )
+        )
         statements.append(  # cron = croniter.croniter(cron_expression)
             (
                 var_name_map["cron"],
@@ -766,11 +775,11 @@ class BaseGraphNode(BasePrunableNode):
                 ),
             )
         )
-        statements.append(  # prev_time = prev_time.replace(tzinfo=ZoneInfo(cron_timezone)).astimezone(pytz.utc).replace(tzinfo=None)
+        statements.append(  # prev_time = prev_time.replace(tzinfo=ZoneInfo(cron_timezone)).astimezone(pytz.utc)
             (
                 var_name_map["prev_time"],
                 ExpressionStr(
-                    f"{var_name_map['prev_time']}.replace(tzinfo=ZoneInfo({json.dumps(cron_timezone)})).astimezone(pytz.utc).replace(tzinfo=None)"
+                    f"{var_name_map['prev_time']}.replace(tzinfo=ZoneInfo({json.dumps(cron_timezone)})).astimezone(pytz.utc)"
                 ),
             )
         )
@@ -792,9 +801,9 @@ class BaseGraphNode(BasePrunableNode):
                 ExpressionStr(f"{var_name_map['feat_ts']} <= {var_name_map['prev_time']}"),
             )
         )
-        statements.append(  # inputs.loc["feat"][~mask] = np.nan
+        statements.append(  # inputs.loc[mask, "feat"] = np.nan
             StatementStr(
-                f"{input_df_name}.loc[~{var_name_map['mask']}, {repr(ttl_handling_column)}] = np.nan"
+                f"{input_df_name}.loc[{var_name_map['mask']}, {repr(ttl_handling_column)}] = np.nan"
             )
         )
         return statements
@@ -829,7 +838,7 @@ class BaseGraphNode(BasePrunableNode):
             assert ttl_seconds is not None
             input_df_name = config_for_ttl.input_df_name
             feat_ts_col = f"{ttl_handling_column}{FEAST_TIMESTAMP_POSTFIX}"
-            if isinstance(self.parameters.feature_job_setting, FeatureJobSetting):
+            if isinstance(node_params.feature_job_setting, FeatureJobSetting):
                 statements = self._add_ttl_handling_statements_for_feature_job_setting(
                     input_df_name=input_df_name,
                     statements=statements,
@@ -840,16 +849,15 @@ class BaseGraphNode(BasePrunableNode):
                     is_databricks_udf=is_databricks_udf,
                 )
 
-            if isinstance(self.parameters.feature_job_setting, CronFeatureJobSetting):
+            if isinstance(node_params.feature_job_setting, CronFeatureJobSetting):
                 statements = self._add_ttl_handling_statements_for_cron_feature_job_setting(
                     input_df_name=input_df_name,
                     statements=statements,
                     var_name_generator=var_name_generator,
                     feat_ts_col=feat_ts_col,
                     ttl_handling_column=ttl_handling_column,
-                    is_databricks_udf=is_databricks_udf,
-                    cron_expression=self.parameters.feature_job_setting.get_cron_expression(),
-                    cron_timezone=self.parameters.feature_job_setting.timezone,
+                    cron_expression=node_params.feature_job_setting.get_cron_expression(),
+                    cron_timezone=node_params.feature_job_setting.timezone,
                 )
 
         if node_params.output_dtype in DBVarType.supported_timestamp_types():

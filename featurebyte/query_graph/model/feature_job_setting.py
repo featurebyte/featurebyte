@@ -468,6 +468,8 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         return "daily"[:max_length]
 
     def extract_ttl_seconds(self) -> int:
+        # note: this is only used to populate feast feature view ttl parameters.
+        # the actual ttl handling is done in the on demand feature view
         max_ttl_in_days = 60
         now = datetime.datetime.now()
         to_time = now + datetime.timedelta(days=max_ttl_in_days)

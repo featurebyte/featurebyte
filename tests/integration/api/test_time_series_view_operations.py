@@ -291,10 +291,12 @@ def test_deployment(config, time_series_window_aggregate_feature):
     client = config.get_client()
     with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
         mock_datetime.utcnow.return_value = datetime(2001, 1, 10, 12)
-        res = client.post(
-            f"/deployment/{deployment.id}/online_features",
-            json=data.json_dict(),
-        )
+        with patch("croniter.croniter.timestamp_to_datetime") as mock_croniter:
+            mock_croniter.return_value = datetime(2001, 1, 10, 10)
+            res = client.post(
+                f"/deployment/{deployment.id}/online_features",
+                json=data.json_dict(),
+            )
 
     assert res.status_code == 200
     df_feat = pd.DataFrame(res.json()["features"])

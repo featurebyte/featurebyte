@@ -207,6 +207,8 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
+
+        # TTL handling for __feature_V231227__part0 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
@@ -309,6 +311,8 @@ def test_feature__ttl_item_aggregate_request_column(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
+
+        # TTL handling for __composite_feature_V231227__part0 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
@@ -322,6 +326,8 @@ def test_feature__ttl_item_aggregate_request_column(
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat_1 = pd.to_datetime(request_col) - pd.to_datetime(feat)
         feat_2 = pd.to_timedelta(feat_1).dt.total_seconds() // 86400
+
+        # TTL handling for __composite_feature_V231227__part1 column
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
         feat_ts_1 = pd.to_datetime(
@@ -402,6 +408,8 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
+
+        # TTL handling for __feature_zscore_V231227__part1 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
@@ -419,6 +427,8 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
             ),
             index=inputs["__feature_zscore_V231227__part0"].index,
         )
+
+        # TTL handling for __feature_zscore_V231227__part2 column
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff_1 = request_time_1 - pd.Timedelta(seconds=3600)
         feat_ts_1 = pd.to_datetime(
@@ -458,6 +468,8 @@ def test_feature__input_has_mixed_ingest_graph_node_flags(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
+
+        # TTL handling for __feature_V231227__part1 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feat_ts = pd.to_datetime(
@@ -541,6 +553,7 @@ def test_feature__with_ttl_handling(float_feature):
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
+        # Time-to-live (TTL) handling to clean up expired data
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feature_timestamp = pd.to_datetime(
@@ -716,6 +729,8 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
+
+        # TTL handling for __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=172800)
         feat_ts = pd.to_datetime(
@@ -758,6 +773,8 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         )
         mask_1 = feat_1.isnull()
         feat_1[mask_1] = 0
+
+        # TTL handling for __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2 column
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff_1 = request_time_1 - pd.Timedelta(seconds=172800)
         feat_ts_1 = pd.to_datetime(
@@ -833,18 +850,17 @@ def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feat
     ) -> pd.DataFrame:
         df = pd.DataFrame()
 
+        # Time-to-live (TTL) handling to clean up expired data
         cron = croniter.croniter("0 8 1 * *")
         prev_time = cron.timestamp_to_datetime(cron.get_prev())
-        prev_time = (
-            prev_time.replace(tzinfo=ZoneInfo("Etc/UTC"))
-            .astimezone(pytz.utc)
-            .replace(tzinfo=None)
+        prev_time = prev_time.replace(tzinfo=ZoneInfo("Etc/UTC")).astimezone(
+            pytz.utc
         )
         feature_timestamp = pd.to_datetime(
             inputs["{version_name}__ts"], unit="s", utc=True
         )
         mask = feature_timestamp <= prev_time
-        inputs.loc[~mask, "{version_name}"] = np.nan
+        inputs.loc[mask, "{version_name}"] = np.nan
         df["{version_name}"] = inputs["{version_name}"]
         df.fillna(np.nan, inplace=True)
 
@@ -875,18 +891,18 @@ def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feat
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat = pd.to_datetime(request_col) - pd.to_datetime(request_col)
         feat_1 = pd.to_datetime(request_col) + pd.to_timedelta(feat)
+
+        # TTL handling for __feature_V250122__part0 column with cron expression 0 8 1 * *
         cron = croniter.croniter("0 8 1 * *")
         prev_time = cron.timestamp_to_datetime(cron.get_prev())
-        prev_time = (
-            prev_time.replace(tzinfo=ZoneInfo("Etc/UTC"))
-            .astimezone(pytz.utc)
-            .replace(tzinfo=None)
+        prev_time = prev_time.replace(tzinfo=ZoneInfo("Etc/UTC")).astimezone(
+            pytz.utc
         )
         feat_ts = pd.to_datetime(
             inputs["__{version_name}__part0__ts"], utc=True, unit="s"
         )
         mask = feat_ts <= prev_time
-        inputs.loc[~mask, "__{version_name}__part0"] = np.nan
+        inputs.loc[mask, "__{version_name}__part0"] = np.nan
         feat_2 = pd.Series(
             np.where(
                 pd.isna(inputs["__{version_name}__part0"])

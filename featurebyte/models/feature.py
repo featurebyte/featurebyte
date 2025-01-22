@@ -40,7 +40,6 @@ from featurebyte.query_graph.node.cleaning_operation import (
     TableCleaningOperation,
     TableIdCleaningOperation,
 )
-from featurebyte.query_graph.node.generic import BaseWindowAggregateParameters
 from featurebyte.query_graph.node.metadata.operation import GroupOperationStructure
 from featurebyte.query_graph.node.nested import AggregationNodeInfo
 from featurebyte.query_graph.node.request import RequestColumnNode
@@ -55,6 +54,7 @@ from featurebyte.query_graph.transform.definition import (
 )
 from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_from_graph
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
+from featurebyte.query_graph.ttl_handling_util import is_ttl_handling_required
 
 
 class TableIdColumnNames(FeatureByteBaseModel):
@@ -648,7 +648,7 @@ class FeatureModel(BaseFeatureModel):
         return self.graph.has_node_type(target_node=self.node, node_type=NodeType.GENERIC_FUNCTION)
 
     @property
-    def has_window_aggregated_node(self) -> bool:
+    def has_bounded_window_aggregated_node(self) -> bool:
         """
         Returns whether the Feature object has any bounded window aggregation node in the computation.
         If True, it requires TTL handling to remove the outdated data during the online store computation.
@@ -658,15 +658,7 @@ class FeatureModel(BaseFeatureModel):
         bool
         """
         for node in self.graph.iterate_nodes(target_node=self.node, node_type=None):
-            if node.type in {NodeType.GROUPBY, NodeType.NON_TILE_WINDOW_AGGREGATE}:
-                assert isinstance(node.parameters, BaseWindowAggregateParameters)
-                if any(node.parameters.windows):
-                    # if the window has any value that is not None, it requires TTL handling
-                    # None value means the window is not limited (thus no TTL handling is required)
-                    return True
-
-            if node.type in {NodeType.TIME_SERIES_WINDOW_AGGREGATE}:
-                # time series window aggregate requires TTL handling as it has a window
+            if is_ttl_handling_required(node):
                 return True
         return False
 

@@ -155,15 +155,17 @@ class OnDemandFeatureViewExtractor(
             return StatementStr(
                 textwrap.dedent(
                     f"""
+
                     {comment}
                     {cron_var_name} = croniter.croniter({json.dumps(cron_expression)})
                     {prev_time_var_name} = {cron_var_name}.timestamp_to_datetime({cron_var_name}.get_prev())
-                    {prev_time_var_name} = {prev_time_var_name}.replace(tzinfo=ZoneInfo({json.dumps(cron_timezone)})).astimezone(pytz.utc).replace(tzinfo=None)
+                    {prev_time_var_name} = {prev_time_var_name}.replace(tzinfo=ZoneInfo({json.dumps(cron_timezone)})).astimezone(pytz.utc)
                     {feat_time_name} = pd.to_datetime({subset_feat_time_col_expr}, unit="s", utc=True)
                     {mask_var_name} = {feat_time_name} <= {prev_time_var_name}
-                    {input_df_name}.loc[~{mask_var_name}, {repr(feature_name_version)}] = np.nan
+                    {input_df_name}.loc[{mask_var_name}, {repr(feature_name_version)}] = np.nan
                     {subset_output_column_expr} = {input_column_expr}
                     {output_df_name}.fillna(np.nan, inplace=True)
+
                 """
                 )
             )
@@ -183,6 +185,7 @@ class OnDemandFeatureViewExtractor(
             return StatementStr(
                 textwrap.dedent(
                     f"""
+
                 {comment}
                 {req_time_var_name} = pd.to_datetime({subset_pit_expr}, utc=True)
                 {cutoff_var_name} = {req_time_var_name} - pd.Timedelta(seconds={ttl_seconds})
@@ -191,6 +194,7 @@ class OnDemandFeatureViewExtractor(
                 {input_df_name}.loc[~{mask_var_name}, {repr(feature_name_version)}] = np.nan
                 {subset_output_column_expr} = {input_column_expr}
                 {output_df_name}.fillna(np.nan, inplace=True)
+
                 """
                 ).strip()
             )

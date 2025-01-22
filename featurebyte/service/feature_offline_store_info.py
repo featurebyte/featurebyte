@@ -248,7 +248,7 @@ class OfflineStoreInfoInitializationService:
                 NullFillingValueExtractor(graph=feature.graph).extract(node=feature.node).fill_value
             )
 
-        has_ttl = feature.has_window_aggregated_node
+        has_ttl = feature.has_bounded_window_aggregated_node
         if result.is_decomposed:
             decomposed_graph, output_node_name = await self.reconstruct_decomposed_graph(
                 graph=result.graph,

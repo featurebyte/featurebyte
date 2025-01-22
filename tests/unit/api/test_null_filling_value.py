@@ -90,6 +90,7 @@ def test_feature_with_null_filling_value_has_odfv(float_feature, non_time_based_
         ) -> pd.DataFrame:
             df = pd.DataFrame()
             df["sum_1d_V240201"] = inputs["sum_1d_V240201"].fillna(0)
+            # Time-to-live (TTL) handling to clean up expired data
             request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
             cutoff = request_time - pd.Timedelta(seconds=3600)
             feature_timestamp = pd.to_datetime(
@@ -145,6 +146,8 @@ def test_feature_with_null_filling_value_has_odfv(float_feature, non_time_based_
         ) -> pd.DataFrame:
             df = pd.DataFrame()
             feat = inputs["__complex_feature_V240201__part0"].fillna(0)
+
+            # TTL handling for __complex_feature_V240201__part0 column
             request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
             cutoff = request_time - pd.Timedelta(seconds=3600)
             feat_ts = pd.to_datetime(

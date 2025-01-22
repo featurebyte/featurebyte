@@ -30,6 +30,7 @@ from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGro
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
+from featurebyte.query_graph.ttl_handling_util import is_ttl_handling_required
 
 
 @dataclass
@@ -289,10 +290,7 @@ class DecomposePointState:
 
         if node.name in self.aggregation_node_names:
             aggregation_info.agg_node_types = [node.type]
-            if isinstance(node, (GroupByNode, NonTileWindowAggregateNode)):
-                aggregation_info.has_ttl_agg_type = any(node.parameters.windows)
-            elif isinstance(node, TimeSeriesWindowAggregateNode):
-                aggregation_info.has_ttl_agg_type = True
+            aggregation_info.has_ttl_agg_type = is_ttl_handling_required(node=node)
 
         if isinstance(node.parameters, BaseGroupbyParameters):
             groupby_keys = node.parameters.keys
