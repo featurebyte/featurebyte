@@ -95,6 +95,15 @@ def mixed_order_dependency_specs_fixture(base_agg_spec):
     return [agg_spec_1, agg_spec_2]
 
 
+@pytest.fixture(name="reference_datetime_is_utc_time_agg_spec")
+def reference_datetime_is_utc_agg_spec_fixture(base_agg_spec):
+    """
+    Fixture of TimeSeriesAggregateSpec with reference datetime is UTC
+    """
+    base_agg_spec.parameters.reference_datetime_schema.is_utc_time = True
+    return base_agg_spec
+
+
 @pytest.mark.parametrize(
     "test_case_name",
     [
@@ -104,6 +113,7 @@ def mixed_order_dependency_specs_fixture(base_agg_spec):
         "month_with_offset",
         "latest",
         "mixed_order_dependency",
+        "is_utc_time",
     ],
 )
 def test_aggregator(request, test_case_name, update_fixtures, source_info):
@@ -117,6 +127,7 @@ def test_aggregator(request, test_case_name, update_fixtures, source_info):
         "month_with_offset": "month_with_offset_agg_spec",
         "latest": "latest_agg_spec",
         "mixed_order_dependency": "mixed_order_dependency_agg_specs",
+        "is_utc_time": "reference_datetime_is_utc_time_agg_spec",
     }
     fixture_name = test_case_mapping[test_case_name]
     fixture_obj = request.getfixturevalue(fixture_name)
