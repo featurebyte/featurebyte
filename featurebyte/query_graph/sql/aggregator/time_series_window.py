@@ -39,6 +39,7 @@ from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specifications.time_series_window_aggregate import (
     TimeSeriesWindowAggregateSpec,
 )
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_local
 
 WindowType = CalendarWindow
 OffsetType = Optional[CalendarWindow]
@@ -309,14 +310,11 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         -------
         Select
         """
-        reference_datetime_expr = quoted_identifier(
-            aggregation_spec.parameters.reference_datetime_column
+        reference_datetime_expr = convert_timestamp_to_local(
+            quoted_identifier(aggregation_spec.parameters.reference_datetime_column),
+            aggregation_spec.parameters.reference_datetime_schema,
+            self.adapter,
         )
-        timestamp_schema = aggregation_spec.parameters.reference_datetime_schema
-        if timestamp_schema.format_string is not None:
-            reference_datetime_expr = self.adapter.to_timestamp_from_string(
-                reference_datetime_expr, timestamp_schema.format_string
-            )
         if aggregation_spec.window.is_fixed_size():
             bucket_expr = self.adapter.to_epoch_seconds(reference_datetime_expr)
         else:
