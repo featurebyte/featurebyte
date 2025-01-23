@@ -96,7 +96,9 @@ class TaskManager:
         kwargs["task_output_path"] = payload.task_output_path
         if mark_as_scheduled_task:
             kwargs["is_scheduled_task"] = True
-        task = self.celery.send_task(payload.task, kwargs=kwargs, parent_id=parent_task_id)
+        task = self.celery.send_task(
+            payload.task, kwargs=kwargs, queue=payload.queue, parent_id=parent_task_id
+        )
 
         if parent_task_id:
             await self._add_child_task_id(str(parent_task_id), str(task.id))
@@ -513,5 +515,5 @@ class TaskManager:
             raise TaskNotRerunnableError(f'Task (id: "{task_id}") does not support rerun.')
 
         payload = BaseTaskPayload(**task.kwargs)
-        task = self.celery.send_task(payload.task, kwargs=task.kwargs)
+        task = self.celery.send_task(payload.task, kwargs=task.kwargs, queue=task.queue)
         return str(task.id)

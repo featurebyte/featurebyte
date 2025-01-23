@@ -68,6 +68,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
                 "is_revocable": True,
                 "is_rerunnable": True,
             },
+            queue="io_task:2",
             parent_id=None,
         )
 
@@ -83,7 +84,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
             kwargs=celery.send_task.call_args.kwargs["kwargs"],
             worker="worker",
             retries=0,
-            queue="default",
+            queue="cpu_task:2",
         )
         document = task.model_dump(by_alias=True)
         document["_id"] = str(document["_id"])
@@ -121,7 +122,7 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
             kwargs=celery.send_task.call_args.kwargs["kwargs"],
             worker="worker",
             retries=0,
-            queue="default",
+            queue="cpu_task:2",
         )
         document = task.model_dump(by_alias=True)
         document["_id"] = str(document["_id"])
@@ -229,7 +230,7 @@ async def test_task_manager__revoke_tasks(task_manager, celery, user_id, persist
         kwargs=celery.send_task.call_args.kwargs["kwargs"],
         worker="worker",
         retries=0,
-        queue="default",
+        queue="cpu_task:2",
     )
     document = task.model_dump(by_alias=True)
     document["_id"] = str(document["_id"])
@@ -273,6 +274,7 @@ async def test_task_manager__submit_mark_as_scheduled_task(task_manager, celery,
             "is_revocable": True,
             "is_rerunnable": True,
         },
+        queue="io_task:2",
         parent_id=None,
     )
 
@@ -298,7 +300,7 @@ async def test_task_manager__rerun_task(task_manager, celery, user_id, persisten
         kwargs=celery.send_task.call_args.kwargs["kwargs"],
         worker="worker",
         retries=0,
-        queue="default",
+        queue="cpu_task:2",
     )
     document = task.model_dump(by_alias=True)
     document["_id"] = str(document["_id"])
@@ -320,6 +322,7 @@ async def test_task_manager__rerun_task(task_manager, celery, user_id, persisten
             "is_rerunnable": True,
             "is_scheduled_task": False,
         },
+        queue="cpu_task:2",
     )
 
     assert new_task_id != task_id
