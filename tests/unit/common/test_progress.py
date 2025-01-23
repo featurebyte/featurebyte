@@ -6,7 +6,10 @@ from unittest.mock import AsyncMock, call
 
 import pytest
 
-from featurebyte.common.progress import get_ranged_progress_callback
+from featurebyte.common.progress import (
+    get_ranged_progress_callback,
+    ranged_progress_callback_iterator,
+)
 
 
 @pytest.fixture(name="progress_callback")
@@ -65,4 +68,26 @@ async def test_get_ranged_progress_callback_nested(progress_callback):
         call(15, "Doing a smaller subtask"),
         call(17, "Doing a smaller subtask"),
         call(20, "Doing a smaller subtask"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_ranged_progress_callback_iterator(progress_callback):
+    """Test that ranged_progress_callback_iterator works as expected"""
+    # check that when there are more than 100 items, things are still working
+    items = list(range(200))
+    for item, ranged_callback in ranged_progress_callback_iterator(items, progress_callback):
+        await ranged_callback(100, "Processing item")
+
+    assert progress_callback.call_args_list[:10] == [
+        call(1, "Processing item"),
+        call(1, "Processing item"),
+        call(2, "Processing item"),
+        call(2, "Processing item"),
+        call(3, "Processing item"),
+        call(3, "Processing item"),
+        call(4, "Processing item"),
+        call(4, "Processing item"),
+        call(5, "Processing item"),
+        call(5, "Processing item"),
     ]
