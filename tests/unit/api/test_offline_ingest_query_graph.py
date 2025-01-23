@@ -892,7 +892,7 @@ def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feat
         feat = pd.to_datetime(request_col) - pd.to_datetime(request_col)
         feat_1 = pd.to_datetime(request_col) + pd.to_timedelta(feat)
 
-        # TTL handling for __feature_V250122__part0 column with cron expression 0 8 1 * *
+        # TTL handling for __{version_name}__part0 column with cron expression 0 8 1 * *
         cron = croniter.croniter("0 8 1 * *")
         prev_time = cron.timestamp_to_datetime(cron.get_prev())
         prev_time = prev_time.replace(tzinfo=ZoneInfo("Etc/UTC")).astimezone(
