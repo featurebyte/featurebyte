@@ -16,7 +16,11 @@ from pydantic import ValidationError
 
 import featurebyte.models
 from featurebyte.common.env_util import is_development_mode
-from featurebyte.common.progress import ProgressCallbackType, get_ranged_progress_callback
+from featurebyte.common.progress import (
+    ProgressCallbackType,
+    get_ranged_progress_callback,
+    ranged_progress_callback_iterator,
+)
 from featurebyte.exception import DataWarehouseOperationError
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel, User
@@ -335,12 +339,10 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                     use_raw_query_filter=True,
                 )
             ]
-            for i, catalog in enumerate(catalogs_to_cleanup):
-                catalog_progress_callback = get_ranged_progress_callback(
-                    progress_callback=self.task_progress_updater.update_progress,
-                    from_percent=int(100 * i / len(catalogs_to_cleanup)),
-                    to_percent=int(100 * (i + 1) / len(catalogs_to_cleanup)),
-                )
+            for catalog, catalog_progress_callback in ranged_progress_callback_iterator(
+                items=catalogs_to_cleanup,
+                progress_callback=self.task_progress_updater.update_progress,
+            ):
                 await catalog_progress_callback(
                     percent=0,
                     message=f'Cleaning up catalog "{catalog.name}"',
