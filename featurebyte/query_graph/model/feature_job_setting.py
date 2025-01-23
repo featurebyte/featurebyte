@@ -16,7 +16,6 @@ from featurebyte.common.model_util import (
     parse_duration_string,
     validate_job_setting_parameters,
 )
-from featurebyte.exception import CronNotImplementedError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.periodic_task import Crontab
 
@@ -467,7 +466,9 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         return "daily"[:max_length]
 
     def extract_ttl_seconds(self) -> int:
-        raise CronNotImplementedError("Cron feature job setting is not supported")
+        # note: this is only used to populate feast feature view ttl parameters.
+        # the actual ttl handling is done in the on demand feature view
+        return 30 * 24 * 60 * 60  # 30 days
 
     def __hash__(self) -> int:
         return hash((self.crontab, self.timezone, self.reference_timezone))

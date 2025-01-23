@@ -2,8 +2,9 @@
 On demand feature view (for Feast) related classes and functions.
 """
 
+import json
 import textwrap
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import Field
 
@@ -99,6 +100,8 @@ class OnDemandFeatureViewExtractor(
         output_df_name: str,
         ttl_seconds: int,
         var_name_generator: VariableNameGenerator,
+        cron_expression: Optional[str] = None,
+        cron_timezone: Optional[str] = None,
         comment: str = "",
     ) -> StatementStr:
         """
@@ -116,6 +119,10 @@ class OnDemandFeatureViewExtractor(
             Time-to-live (TTL) in seconds
         var_name_generator: VariableNameGenerator
             Variable name generator
+        cron_expression: Optional[str]
+            Cron expression
+        cron_timezone: Optional[str]
+            Cron timezone
         comment: str
             Comment
 
@@ -127,42 +134,70 @@ class OnDemandFeatureViewExtractor(
         # feast.online_response.TIMESTAMP_POSTFIX = "__ts" (from feast/online_response.py)
         # hardcoding the timestamp postfix as we don't want to import feast module here
         ttl_ts_column = f"{feature_name_version}{FEAST_TIMESTAMP_POSTFIX}"
-
-        # expressions
-        subset_pit_expr = subset_frame_column_expr(
-            input_df_name, SpecialColumnName.POINT_IN_TIME.value
-        )
         subset_feat_time_col_expr = subset_frame_column_expr(input_df_name, ttl_ts_column)
-        subset_output_column_expr = subset_frame_column_expr(output_df_name, feature_name_version)
-
-        # variable names
-        req_time_var_name = var_name_generator.convert_to_variable_name(
-            variable_name_prefix="request_time", node_name=None
-        )
-        cutoff_var_name = var_name_generator.convert_to_variable_name(
-            variable_name_prefix="cutoff", node_name=None
-        )
         feat_time_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="feature_timestamp", node_name=None
         )
         mask_var_name = var_name_generator.convert_to_variable_name(
             variable_name_prefix="mask", node_name=None
         )
+        subset_output_column_expr = subset_frame_column_expr(output_df_name, feature_name_version)
         input_column_expr = subset_frame_column_expr(input_df_name, feature_name_version)
-        return StatementStr(
-            textwrap.dedent(
-                f"""
-            {comment}
-            {req_time_var_name} = pd.to_datetime({subset_pit_expr}, utc=True)
-            {cutoff_var_name} = {req_time_var_name} - pd.Timedelta(seconds={ttl_seconds})
-            {feat_time_name} = pd.to_datetime({subset_feat_time_col_expr}, unit="s", utc=True)
-            {mask_var_name} = ({feat_time_name} >= {cutoff_var_name}) & ({feat_time_name} <= {req_time_var_name})
-            {input_df_name}.loc[~{mask_var_name}, {repr(feature_name_version)}] = np.nan
-            {subset_output_column_expr} = {input_column_expr}
-            {output_df_name}.fillna(np.nan, inplace=True)
-            """
-            ).strip()
-        )
+
+        if cron_expression:
+            assert cron_timezone is not None, "cron_timezone must be provided"
+            cron_var_name = var_name_generator.convert_to_variable_name(
+                variable_name_prefix="cron", node_name=None
+            )
+            prev_time_var_name = var_name_generator.convert_to_variable_name(
+                variable_name_prefix="prev_time", node_name=None
+            )
+            return StatementStr(
+                textwrap.dedent(
+                    f"""
+
+                    {comment}
+                    {cron_var_name} = croniter.croniter({json.dumps(cron_expression)})
+                    {prev_time_var_name} = {cron_var_name}.timestamp_to_datetime({cron_var_name}.get_prev())
+                    {prev_time_var_name} = {prev_time_var_name}.replace(tzinfo=ZoneInfo({json.dumps(cron_timezone)})).astimezone(pytz.utc)
+                    {feat_time_name} = pd.to_datetime({subset_feat_time_col_expr}, unit="s", utc=True)
+                    {mask_var_name} = {feat_time_name} <= {prev_time_var_name}
+                    {input_df_name}.loc[{mask_var_name}, {repr(feature_name_version)}] = np.nan
+                    {subset_output_column_expr} = {input_column_expr}
+                    {output_df_name}.fillna(np.nan, inplace=True)
+
+                """
+                )
+            )
+        else:
+            # expressions
+            subset_pit_expr = subset_frame_column_expr(
+                input_df_name, SpecialColumnName.POINT_IN_TIME.value
+            )
+
+            # variable names
+            req_time_var_name = var_name_generator.convert_to_variable_name(
+                variable_name_prefix="request_time", node_name=None
+            )
+            cutoff_var_name = var_name_generator.convert_to_variable_name(
+                variable_name_prefix="cutoff", node_name=None
+            )
+            return StatementStr(
+                textwrap.dedent(
+                    f"""
+
+                {comment}
+                {req_time_var_name} = pd.to_datetime({subset_pit_expr}, utc=True)
+                {cutoff_var_name} = {req_time_var_name} - pd.Timedelta(seconds={ttl_seconds})
+                {feat_time_name} = pd.to_datetime({subset_feat_time_col_expr}, unit="s", utc=True)
+                {mask_var_name} = ({feat_time_name} >= {cutoff_var_name}) & ({feat_time_name} <= {req_time_var_name})
+                {input_df_name}.loc[~{mask_var_name}, {repr(feature_name_version)}] = np.nan
+                {subset_output_column_expr} = {input_column_expr}
+                {output_df_name}.fillna(np.nan, inplace=True)
+
+                """
+                ).strip()
+            )
 
     @staticmethod
     def generate_null_filling_statements(

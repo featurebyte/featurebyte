@@ -103,7 +103,6 @@ async def test_update_feast_registry(
     registry_proto = updated_doc.registry_proto()
     assert registry_proto.feature_services == []
     assert registry_proto.feature_views == []
-    assert registry_proto.data_sources == []
 
     registry_dict = MessageToDict(registry_proto)
     assert registry_dict["entities"] == [
@@ -112,6 +111,10 @@ async def test_update_feast_registry(
             "spec": {"joinKey": "__dummy_id", "name": "__dummy", "project": feast_registry.name},
         }
     ]
+    assert len(registry_dict["dataSources"]) == 1
+    assert registry_dict["dataSources"][0]["requestDataOptions"] == {
+        "schema": [{"name": "POINT_IN_TIME", "valueType": "UNIX_TIMESTAMP"}]
+    }
 
     feature_list_model = feature_list.cached_model
     updated_doc = await feast_registry_service.update_document(

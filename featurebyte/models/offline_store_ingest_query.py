@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple
 
 from bson import ObjectId
 from pydantic import Field, field_validator
+from pydantic_extra_types.timezone_name import TimeZoneName
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.validator import construct_sort_validator
@@ -17,6 +18,7 @@ from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.mixin import QueryGraphMixin
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
     FeatureJobSettingUnion,
 )
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -278,6 +280,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     # list of on demand feature codes that are used by the feature or target when the feature is online-enabled
     serving_names_info: List[ServingNameInfo] = Field(default_factory=list)
     time_to_live_in_secs: Optional[int] = Field(default=None)
+    cron_expression: Optional[str] = Field(default=None)
+    cron_timezone: Optional[TimeZoneName] = Field(default=None)
     null_filling_value: Optional[Scalar] = Field(default=None)
     odfv_info: Optional[OnDemandFeatureViewInfo] = Field(default=None)
     udf_info: Optional[UserDefinedFunctionInfo] = Field(default=None)
@@ -330,6 +334,10 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                 feature_job_setting.extract_ttl_seconds()
                 for feature_job_setting in feature_job_settings
             )
+
+            if isinstance(feature_job_settings[0], CronFeatureJobSetting):
+                self.cron_expression = feature_job_settings[0].get_cron_expression()
+                self.cron_timezone = feature_job_settings[0].timezone
 
         unique_func_name = f"{sanitize_identifier(feature_versioned_name)}_{feature_id}"
         if self.is_decomposed or self.time_to_live_in_secs or self.null_filling_value is not None:
@@ -466,6 +474,9 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                     output_df_name=output_df_name,
                     ttl_seconds=ttl_seconds,
                     var_name_generator=VariableNameGenerator(),
+                    cron_expression=self.cron_expression,
+                    cron_timezone=self.cron_timezone,
+                    comment="# Time-to-live (TTL) handling to clean up expired data",
                 )
                 code_generator.add_statements(statements=[statements])
 

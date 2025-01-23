@@ -34,9 +34,7 @@ from featurebyte.models.base import PydanticObjectId, VersionIdentifier
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.entity_validation import EntityInfo
-from featurebyte.models.feature_list import FeatureCluster, FeatureListModel
-from featurebyte.query_graph.node.generic import GroupByNode
-from featurebyte.query_graph.node.request import RequestColumnNode
+from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.entity import (
     get_combined_serving_names,
@@ -214,7 +212,6 @@ class OnlineServingService:
             If required entities for serving are not provided
         """
         assert feature_list.feature_clusters is not None
-        feature_cluster = feature_list.feature_clusters[0]
 
         # Original request data to be concatenated with features retrieved from feast
         df_features = [pd.DataFrame(request_data)]
@@ -253,8 +250,8 @@ class OnlineServingService:
             feature_name_map[f"{feature_name}_{feature_version}"] = feature_name
             feature_id_to_versioned_name[feature_doc["_id"]] = f"{feature_name}_{feature_version}"
 
-        # Include point in time column if it is required
-        if self._require_point_in_time_request_column(feature_cluster):
+        if feast_store.list_on_demand_feature_views():
+            # if the feast store contains on-demand feature views, point in time is always required
             point_in_time_value = datetime.utcnow().isoformat()
         else:
             point_in_time_value = None
@@ -384,19 +381,6 @@ class OnlineServingService:
                         updated_request_data,
                     ).to_df()[versioned_feature_names]
                     return df_feast_online_features
-
-    @staticmethod
-    def _require_point_in_time_request_column(feature_cluster: FeatureCluster) -> bool:
-        for node in feature_cluster.nodes:
-            for node in feature_cluster.graph.iterate_nodes(node, node_type=None):
-                if isinstance(node, RequestColumnNode):
-                    if node.parameters.column_name == SpecialColumnName.POINT_IN_TIME:
-                        return True
-
-                if isinstance(node, GroupByNode):
-                    # TTL handling requires point in time column
-                    return True
-        return False
 
     async def get_request_code_template(
         self,

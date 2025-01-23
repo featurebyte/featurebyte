@@ -459,18 +459,19 @@ class FeastAssetCreator:
                         ],
                     )
 
-            if SpecialColumnName.POINT_IN_TIME.value not in name_to_feast_request_source:
-                name_to_feast_request_source[SpecialColumnName.POINT_IN_TIME.value] = (
-                    FeastRequestSource(
-                        name=SpecialColumnName.POINT_IN_TIME.value,
-                        schema=[
-                            FeastField(
-                                name=SpecialColumnName.POINT_IN_TIME.value,
-                                dtype=to_feast_primitive_type(DBVarType.TIMESTAMP),
-                            )
-                        ],
-                    )
+        # always add point in time as a request source for on-demand feature views
+        if SpecialColumnName.POINT_IN_TIME.value not in name_to_feast_request_source:
+            name_to_feast_request_source[SpecialColumnName.POINT_IN_TIME.value] = (
+                FeastRequestSource(
+                    name=SpecialColumnName.POINT_IN_TIME.value,
+                    schema=[
+                        FeastField(
+                            name=SpecialColumnName.POINT_IN_TIME.value,
+                            dtype=to_feast_primitive_type(DBVarType.TIMESTAMP),
+                        )
+                    ],
                 )
+            )
 
         return name_to_feast_request_source
 
