@@ -21,6 +21,9 @@ from featurebyte.query_graph.sql.aggregator.base import (
     LeftJoinableSubquery,
     NonTileBasedAggregator,
 )
+from featurebyte.query_graph.sql.aggregator.helper import (
+    join_aggregated_expr_with_distinct_point_in_time,
+)
 from featurebyte.query_graph.sql.aggregator.range_join import (
     LeftTable,
     RightTable,
@@ -30,7 +33,6 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     CteStatement,
     CteStatements,
-    get_qualified_column_identifier,
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.cron import get_request_table_with_job_schedule_name
@@ -441,46 +443,18 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
 
         # Aggregated result is now distinct by scheduled feature job time and serving names. Join
         # with the distinct by point in time request table to get the final result
-        join_condition = expressions.and_(*[
-            expressions.EQ(
-                this=get_qualified_column_identifier(column_name, "AGGREGATED"),
-                expression=get_qualified_column_identifier(column_name, "DISTINCT_POINT_IN_TIME"),
-            )
-            for column_name in [InternalName.CRON_JOB_SCHEDULE_DATETIME.value] + spec.serving_names
-        ])
-        aggregated_expr = (
-            select(
-                *[
-                    get_qualified_column_identifier(
-                        column_name,
-                        "DISTINCT_POINT_IN_TIME",
-                    )
-                    for column_name in [SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names
-                ],
-                *[
-                    get_qualified_column_identifier(
-                        column_name,
-                        "AGGREGATED",
-                    )
-                    for column_name in column_names
-                ],
-            )
-            .from_(
-                expressions.Table(
-                    this=quoted_identifier(processed_request_tables.distinct_by_point_in_time.name),
-                    alias="DISTINCT_POINT_IN_TIME",
-                )
-            )
-            .join(
-                expressions.Table(this=aggregated_expr.subquery(), alias="AGGREGATED"),
-                join_type="left",
-                on=join_condition,
-            )
+        aggregated_column_names = sorted(column_names)
+        aggregated_expr = join_aggregated_expr_with_distinct_point_in_time(
+            aggregated_expr=aggregated_expr,
+            distinct_key=InternalName.CRON_JOB_SCHEDULE_DATETIME.value,
+            serving_names=spec.serving_names,
+            aggregated_column_names=aggregated_column_names,
+            distinct_by_point_in_time_table_name=processed_request_tables.distinct_by_point_in_time.name,
         )
 
         return LeftJoinableSubquery(
             expr=aggregated_expr,
-            column_names=list(column_names),
+            column_names=aggregated_column_names,
             join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
         )
 
