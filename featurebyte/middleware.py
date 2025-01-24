@@ -200,6 +200,9 @@ class ExceptionMiddleware(BaseHTTPMiddleware):
         try:
             return await call_next(request)
         except BaseException as exc:
+            # Log exception
+            logger.exception(str(exc))
+
             # Setting exception info in request state
             # This will be used by logging middleware to print execption info
             request.state.exc_info = exc
