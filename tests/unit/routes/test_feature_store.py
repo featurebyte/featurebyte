@@ -945,11 +945,24 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         catalog_payload = self.load_payload("tests/fixtures/request_payloads/catalog.json")
         response = test_api_client.post("/catalog", json=catalog_payload)
         assert response.status_code == HTTPStatus.CREATED, response.json()
+        catalog_id = response.json()["_id"]
 
         # attempt to delete the feature store
         response = test_api_client.delete(f"{self.base_route}/{feature_store_id}")
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
         assert response.json()["detail"] == "FeatureStore is referenced by Catalog: grocery"
+
+        # soft delete the catalog
+        response = test_api_client.delete(f"/catalog/{catalog_id}")
+        assert response.status_code == HTTPStatus.OK, response.json()
+
+        # attempt to delete the feature store again
+        response = test_api_client.delete(f"{self.base_route}/{feature_store_id}")
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert response.json()["detail"] == (
+            "FeatureStore is referenced by Catalog: grocery (soft deleted). "
+            "Please try again after the Catalog is permanently deleted."
+        )
 
     def test_update_database_details_200(
         self, test_api_client_persistent, create_success_response, user_id

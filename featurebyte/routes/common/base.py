@@ -210,11 +210,17 @@ class BaseDocumentController(Generic[Document, DocumentServiceT, PaginatedDocume
         )
         for service, query_filter in service_query_filter_pairs:
             async for doc in service.list_documents_as_dict_iterator(
-                query_filter=query_filter, projection={"name": 1}
+                query_filter=query_filter,
+                projection={"name": 1, "is_deleted": 1},
+                include_soft_deleted=True,
             ):
-                raise exception_class(
+                error_msg = (
                     f"{asset_class_name} is referenced by {service.class_name}: {doc['name']}"
                 )
+
+                if doc.get("is_deleted"):
+                    error_msg += f" (soft deleted). Please try again after the {service.class_name} is permanently deleted."
+                raise exception_class(error_msg)
 
     async def delete(self, document_id: ObjectId) -> None:
         """
