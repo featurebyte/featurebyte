@@ -605,7 +605,9 @@ class BaseDocumentService(
                 raise NotImplementedError(RAW_QUERY_FILTER_WARNING)
             return output
 
-        output["is_deleted"] = {"$ne": True}  # exclude soft-deleted documents
+        include_soft_deleted = kwargs.get("include_soft_deleted", False)
+        if not include_soft_deleted:
+            output["is_deleted"] = {"$ne": True}  # exclude soft-deleted documents
         if kwargs.get("name"):
             output["name"] = kwargs["name"]
         if kwargs.get("version"):
