@@ -213,6 +213,10 @@ class PrivateKeyCredential(BaseDatabaseCredential):
     def _format_private_key(self, values: Any) -> Any:
         # replace newline ascii characters with actual newline characters
         values["private_key"] = values["private_key"].replace("\\n", "\n")
+        # replace space before / after header / footer with newline characters
+        values["private_key"] = (
+            values["private_key"].replace(" -----", "\n-----").replace("----- ", "-----\n")
+        )
         return values
 
     @model_validator(mode="after")
