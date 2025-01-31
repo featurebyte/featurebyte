@@ -814,6 +814,7 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
     assert offline_store_info.odfv_info.codes.strip() == textwrap.dedent(expected).strip()
 
 
+@freezegun.freeze_time("2025-01-30")
 def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feature):
     """Test offline ingest query graph for time series feature."""
     # save features first
