@@ -155,22 +155,23 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
     async def _cleanup_warehouse_tables(
         self, catalog: CatalogModel, warehouse_tables: set[TableDetails]
     ) -> None:
-        feature_store = await self.feature_store_service.get_document(
-            catalog.default_feature_store_ids[0]
-        )
-        session = await self.session_manager_service.get_feature_store_session(
-            feature_store, user_override=User(id=feature_store.user_id)
-        )
-        fs_source_info = feature_store.get_source_info()
-        for warehouse_table in warehouse_tables:
-            try:
-                await session.drop_table(
-                    table_name=warehouse_table.table_name,
-                    schema_name=warehouse_table.schema_name or fs_source_info.schema_name,
-                    database_name=warehouse_table.database_name or fs_source_info.database_name,
-                )
-            except DataWarehouseOperationError as exc:
-                logger.exception(f"Error dropping warehouse table ({warehouse_table}): {exc}")
+        if catalog.default_feature_store_ids:
+            feature_store = await self.feature_store_service.get_document(
+                catalog.default_feature_store_ids[0]
+            )
+            session = await self.session_manager_service.get_feature_store_session(
+                feature_store, user_override=User(id=feature_store.user_id)
+            )
+            fs_source_info = feature_store.get_source_info()
+            for warehouse_table in warehouse_tables:
+                try:
+                    await session.drop_table(
+                        table_name=warehouse_table.table_name,
+                        schema_name=warehouse_table.schema_name or fs_source_info.schema_name,
+                        database_name=warehouse_table.database_name or fs_source_info.database_name,
+                    )
+                except DataWarehouseOperationError as exc:
+                    logger.exception(f"Error dropping warehouse table ({warehouse_table}): {exc}")
 
     async def _cleanup_store_files(self, remote_file_paths: set[Path]) -> None:
         for remote_file_path in remote_file_paths:
