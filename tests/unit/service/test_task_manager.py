@@ -9,6 +9,7 @@ from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
+from celerybeatmongo.models import PeriodicTask as PeriodicTaskDoc
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import User
@@ -192,7 +193,7 @@ async def test_task_manager__schedule_cron_task(task_manager, user_id, catalog):
     """
     Test task manager service -- schedule interval task
     """
-    crontab = Crontab(minute="*/1", hour="*", day_of_week="*", day_of_month="*", month_of_year="*")
+    crontab = Crontab(minute="*/1", hour=0, day_of_week="*", day_of_month="*", month_of_year="*")
     payload = LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
     periodic_task_id = await task_manager.schedule_cron_task(
         name="test_cron_task",
@@ -204,7 +205,11 @@ async def test_task_manager__schedule_cron_task(task_manager, user_id, catalog):
     )
     assert periodic_task.name == "test_cron_task"
     assert periodic_task.kwargs == {**payload.json_dict(), "is_scheduled_task": True}
-    assert periodic_task.crontab == crontab
+    assert periodic_task.crontab == Crontab(**{**crontab.model_dump(), "hour": "0"})
+
+    # check that celerybeatmongo PeriodicTaskDoc model is created without any error
+    periodic_task_doc = PeriodicTaskDoc(**periodic_task.model_dump())
+    assert periodic_task_doc.crontab.hour == "0"
 
     await task_manager.delete_periodic_task(periodic_task_id)
     with pytest.raises(DocumentNotFoundError):

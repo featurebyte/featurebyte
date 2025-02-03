@@ -368,7 +368,8 @@ class TaskManager:
         periodic_task = PeriodicTask(
             name=name,
             task=payload.task,
-            crontab=crontab,
+            # need to convert crontab to string so that celerybeatmongo.models.PeriodicTask can be deserialized
+            crontab=crontab.to_string_crontab(),
             args=[],
             kwargs=self._get_kwargs_from_task_payload(payload),
             start_after=start_after,
