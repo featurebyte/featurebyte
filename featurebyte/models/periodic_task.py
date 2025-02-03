@@ -116,6 +116,22 @@ class Crontab(FeatureByteBaseModel):
             and self.day_of_week == other.day_of_week
         )
 
+    def to_string_crontab(self) -> "Crontab":
+        """
+        Convert Crontab to a crontab with all fields as strings
+
+        Returns
+        -------
+        Crontab
+        """
+        return Crontab(
+            minute=str(self.minute),
+            hour=str(self.hour),
+            day_of_month=str(self.day_of_month),
+            month_of_year=str(self.month_of_year),
+            day_of_week=str(self.day_of_week),
+        )
+
 
 class PeriodicTask(FeatureByteCatalogBaseDocumentModel):
     """

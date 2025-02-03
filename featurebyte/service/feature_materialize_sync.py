@@ -9,9 +9,9 @@ from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
+from pydantic import TypeAdapter
 
 from featurebyte.common.date_util import get_current_job_datetime
-from featurebyte.exception import CronNotImplementedError
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_materialize_prerequisite import (
     FeatureMaterializePrerequisite,
@@ -27,6 +27,7 @@ from featurebyte.query_graph.model.feature_job_setting import (
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.feature_materialize_prerequisite import (
     FeatureMaterializePrerequisiteService,
 )
@@ -162,11 +163,6 @@ class FeatureMaterializeSyncService:
         ----------
         offline_store_feature_table_id: ObjectId
             Offline store feature table id
-
-        Raises
-        ------
-        CronNotImplementedError
-            If the feature job setting type is not supported
         """
         feature_table = await self.offline_store_feature_table_service.get_document(
             offline_store_feature_table_id
@@ -192,11 +188,7 @@ class FeatureMaterializeSyncService:
 
         feature_job_setting = feature_table.feature_job_setting
         assert feature_job_setting is not None
-
-        if not isinstance(feature_job_setting, FeatureJobSetting):
-            raise CronNotImplementedError(
-                f"Feature job setting type {type(feature_job_setting)} is not supported"
-            )
+        assert isinstance(feature_job_setting, FeatureJobSetting)
 
         tic = prerequisite.scheduled_job_ts.timestamp()
         prerequisite_met = False
@@ -304,7 +296,9 @@ class FeatureMaterializeSyncService:
             return None
         current_job_datetime = self._get_scheduled_job_ts_from_datetime(
             input_dt=datetime.utcnow(),
-            feature_job_setting=FeatureJobSetting(**feature_table_dict["feature_job_setting"]),
+            feature_job_setting=TypeAdapter(FeatureJobSettingUnion).validate_python(
+                feature_table_dict["feature_job_setting"]
+            ),
         )
         return current_job_datetime
 
@@ -321,6 +315,7 @@ class FeatureMaterializeSyncService:
                 time_modulo_frequency_seconds=feature_job_setting.offset_seconds,
             )
 
-        raise CronNotImplementedError(
-            f"Feature job setting type {type(feature_job_setting)} is not supported"
+        return CronHelper.get_next_scheduled_job_ts(
+            cron_feature_job_setting=feature_job_setting,
+            current_ts=input_dt,
         )

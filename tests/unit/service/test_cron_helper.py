@@ -202,3 +202,31 @@ async def test_register_request_table_with_job_schedule(
         Timestamp("2024-02-05 01:00:00"),
         Timestamp("2024-02-12 01:00:00"),
     ]
+
+
+@pytest.mark.parametrize(
+    "cron_expr, timezone, current_time, expected_next_time",
+    [
+        (
+            "0 10 * * 1",
+            "Etc/UTC",
+            datetime(2024, 1, 15, 9, 0, 0),
+            datetime(2024, 1, 15, 10, 0, 0),
+        ),
+        (
+            "0 10 * * *",
+            "Asia/Singapore",
+            datetime(2024, 1, 15, 9, 0, 0),
+            datetime(2024, 1, 16, 2, 0, 0),
+        ),
+    ],
+)
+def test_get_next_scheduled_job_ts(
+    cron_helper, cron_expr, timezone, current_time, expected_next_time
+):
+    """Test get_next_scheduled_job_ts"""
+    feature_job_setting = CronFeatureJobSetting(crontab=cron_expr, timezone=timezone)
+    next_time = cron_helper.get_next_scheduled_job_ts(
+        cron_feature_job_setting=feature_job_setting, current_ts=current_time
+    )
+    assert next_time == expected_next_time
