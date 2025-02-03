@@ -5,12 +5,12 @@ Helpers to simulate job schedules for historical features
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, cast
 
 import pandas as pd
 import pytz
 from bson import ObjectId
-from croniter import croniter_range
+from croniter import croniter, croniter_range
 from dateutil.relativedelta import relativedelta
 from sqlglot import expressions
 
@@ -135,6 +135,33 @@ class CronHelper:
         return list(
             croniter_range(start_local, end_local, cron_feature_job_setting.get_cron_expression())
         )
+
+    @classmethod
+    def get_next_scheduled_job_ts(
+        cls, cron_feature_job_setting: CronFeatureJobSetting, current_ts: datetime
+    ) -> datetime:
+        """
+        Get the next scheduled job timestamp
+
+        Parameters
+        ----------
+        cron_feature_job_setting: CronFeatureJobSetting
+            Cron feature job setting to simulate
+        current_ts: datetime
+            Current timestamp
+
+        Returns
+        -------
+        datetime
+        """
+        tz = pytz.timezone(cron_feature_job_setting.timezone)
+        local_time = pytz.utc.localize(current_ts).astimezone(tz)
+        cron = croniter(
+            expr_format=cron_feature_job_setting.get_cron_expression(), start_time=local_time
+        )
+        next_time = cron.get_next(datetime)
+        next_utc_time = next_time.astimezone(pytz.utc).replace(tzinfo=None)
+        return cast(datetime, next_utc_time)
 
     @classmethod
     async def register_cron_job_schedule(
