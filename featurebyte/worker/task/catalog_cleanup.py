@@ -156,12 +156,24 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
         self, catalog: CatalogModel, warehouse_tables: set[TableDetails]
     ) -> None:
         if catalog.default_feature_store_ids:
-            feature_store = await self.feature_store_service.get_document(
-                catalog.default_feature_store_ids[0]
-            )
-            session = await self.session_manager_service.get_feature_store_session(
-                feature_store, user_override=User(id=feature_store.user_id)
-            )
+            feature_store_id = catalog.default_feature_store_ids[0]
+            try:
+                feature_store = await self.feature_store_service.get_document(
+                    document_id=feature_store_id
+                )
+                session = await self.session_manager_service.get_feature_store_session(
+                    feature_store, user_override=User(id=feature_store.user_id)
+                )
+            except Exception as exc:
+                # failed to get session, skip dropping tables
+                # this may happens if
+                # * the feature store is deleted
+                # * the credentials of the feature store is invalid or deleted
+                logger.exception(
+                    f"Error getting session for feature store ({feature_store_id}): {exc}"
+                )
+                return
+
             fs_source_info = feature_store.get_source_info()
             for warehouse_table in warehouse_tables:
                 try:
