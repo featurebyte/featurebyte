@@ -3,13 +3,15 @@ Helpers for SQL generation related to cron feature jobs
 """
 
 from dataclasses import dataclass
+from typing import Optional
 
+from pandas import DataFrame
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
+from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import TimeSeriesWindowAggregateNode
 from featurebyte.query_graph.sql.adapter import BaseAdapter
@@ -25,6 +27,7 @@ class JobScheduleTable:
 
     table_name: str
     cron_feature_job_setting: CronFeatureJobSetting
+    job_schedule_dataframe: Optional[DataFrame] = None
 
 
 @dataclass
@@ -37,14 +40,14 @@ class JobScheduleTableSet:
 
 
 def get_cron_feature_job_settings(
-    graph: QueryGraph, nodes: list[Node]
+    graph: QueryGraphModel, nodes: list[Node]
 ) -> list[CronFeatureJobSetting]:
     """
     Get the unique cron feature job settings from the time series window aggregate nodes
 
     Parameters
     ----------
-    graph: QueryGraph
+    graph: QueryGraphModel
         Query graph
     nodes: list[Node]
         List of nodes

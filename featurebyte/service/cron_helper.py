@@ -105,6 +105,49 @@ class CronHelper:
         return job_schedule_table_set
 
     @classmethod
+    def get_cron_job_schedule_table_set_for_preview(
+        cls,
+        min_point_in_time: datetime,
+        max_point_in_time: datetime,
+        cron_feature_job_settings: list[CronFeatureJobSetting],
+    ) -> JobScheduleTableSet:
+        """
+        Get the job schedule table set for feature / feature_list preview.
+
+        Similar to register_job_schedule_tables, except this is called when generating the query for
+        previewing features, and the job schedule tables are returned as DataFrame instead of being
+        registered in the session.
+
+        Parameters
+        ----------
+        min_point_in_time: datetime
+            Minimum point in time used to determine the range of cron job schedule
+        max_point_in_time: datetime
+            Maximum point in time used to determine the range of cron job schedule
+        cron_feature_job_settings: list[CronFeatureJobSetting]
+            List of cron feature job settings
+
+        Returns
+        -------
+        JobScheduleTableSet
+        """
+        job_schedule_table_set = JobScheduleTableSet(tables=[])
+        for cron_feature_job_setting in cron_feature_job_settings:
+            job_schedule_table_name = f"__temp_cron_job_schedule_{ObjectId()}"
+            job_schedule_dataframe = cls.get_cron_job_schedule_dataframe(
+                min_point_in_time=min_point_in_time,
+                max_point_in_time=max_point_in_time,
+                cron_feature_job_setting=cron_feature_job_setting,
+            )
+            job_schedule_table = JobScheduleTable(
+                table_name=job_schedule_table_name,
+                cron_feature_job_setting=cron_feature_job_setting,
+                job_schedule_dataframe=job_schedule_dataframe,
+            )
+            job_schedule_table_set.tables.append(job_schedule_table)
+        return job_schedule_table_set
+
+    @classmethod
     def get_cron_job_schedule(
         cls,
         min_point_in_time: datetime,
@@ -135,6 +178,50 @@ class CronHelper:
         return list(
             croniter_range(start_local, end_local, cron_feature_job_setting.get_cron_expression())
         )
+
+    @classmethod
+    def get_cron_job_schedule_dataframe(
+        cls,
+        min_point_in_time: datetime,
+        max_point_in_time: datetime,
+        cron_feature_job_setting: CronFeatureJobSetting,
+    ) -> pd.DataFrame:
+        """
+        Get a DataFrame that contains the cron job schedule based on min and max point in time
+
+        Parameters
+        ----------
+        min_point_in_time: datetime
+            Minimum point in time used to determine the range of cron job schedule
+        max_point_in_time: datetime
+            Maximum point in time used to determine the range of cron job schedule
+        cron_feature_job_setting: CronFeatureJobSetting
+            Cron feature job setting to simulate
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        cron_job_schedule = cls.get_cron_job_schedule(
+            min_point_in_time, max_point_in_time, cron_feature_job_setting
+        )
+        cron_job_schedule_utc = [dt.astimezone(pytz.utc) for dt in cron_job_schedule]
+        if cron_feature_job_setting.reference_timezone is not None:
+            reference_timezone_job_schedule = [
+                dt.astimezone(pytz.timezone(cron_feature_job_setting.reference_timezone))
+                for dt in cron_job_schedule
+            ]
+        else:
+            reference_timezone_job_schedule = cron_job_schedule
+        df_cron_job_schedule = pd.DataFrame({
+            InternalName.CRON_JOB_SCHEDULE_DATETIME: [
+                dt.replace(tzinfo=None) for dt in reference_timezone_job_schedule
+            ],
+            InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC: [
+                dt.replace(tzinfo=None) for dt in cron_job_schedule_utc
+            ],
+        })
+        return df_cron_job_schedule
 
     @classmethod
     def get_next_scheduled_job_ts(
@@ -188,23 +275,7 @@ class CronHelper:
         cron_feature_job_setting: CronFeatureJobSetting
             Cron feature job setting to simulate
         """
-        cron_job_schedule = cls.get_cron_job_schedule(
+        df_cron_job_schedule = cls.get_cron_job_schedule_dataframe(
             min_point_in_time, max_point_in_time, cron_feature_job_setting
         )
-        cron_job_schedule_utc = [dt.astimezone(pytz.utc) for dt in cron_job_schedule]
-        if cron_feature_job_setting.reference_timezone is not None:
-            reference_timezone_job_schedule = [
-                dt.astimezone(pytz.timezone(cron_feature_job_setting.reference_timezone))
-                for dt in cron_job_schedule
-            ]
-        else:
-            reference_timezone_job_schedule = cron_job_schedule
-        df_cron_job_schedule = pd.DataFrame({
-            InternalName.CRON_JOB_SCHEDULE_DATETIME: [
-                dt.replace(tzinfo=None) for dt in reference_timezone_job_schedule
-            ],
-            InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC: [
-                dt.replace(tzinfo=None) for dt in cron_job_schedule_utc
-            ],
-        })
         await session.register_table(job_schedule_table_name, df_cron_job_schedule)

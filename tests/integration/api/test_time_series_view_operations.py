@@ -64,6 +64,17 @@ def test_times_series_view(time_series_table):
     assert actual == expected
 
 
+def check_preview_and_compute_historical_features(feature_list, preview_params, expected):
+    """
+    Helper function to check preview and compute historical features
+    """
+    df_features = feature_list.preview(preview_params)
+    fb_assert_frame_equal(df_features, expected)
+
+    df_features = feature_list.compute_historical_features(preview_params)
+    fb_assert_frame_equal(df_features, expected)
+
+
 def test_aggregate_over(time_series_window_aggregate_feature):
     """
     Test TimeSeriesView
@@ -79,10 +90,9 @@ def test_aggregate_over(time_series_window_aggregate_feature):
         }
     ])
     feature_list = FeatureList([feature], "test_feature_list")
-    df_features = feature_list.compute_historical_features(preview_params)
     expected = preview_params.copy()
     expected["value_col_sum_7d"] = [0.35]
-    fb_assert_frame_equal(df_features, expected)
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
 
 
 def test_aggregate_over_offset(time_series_table):
@@ -112,10 +122,9 @@ def test_aggregate_over_offset(time_series_table):
         }
     ])
     feature_list = FeatureList([feature], "test_feature_list")
-    df_features = feature_list.compute_historical_features(preview_params)
     expected = preview_params.copy()
     expected["value_col_sum_7d_offset_1d"] = [0.28]
-    fb_assert_frame_equal(df_features, expected)
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
 
 
 def test_aggregate_over_month(time_series_table):
@@ -140,10 +149,9 @@ def test_aggregate_over_month(time_series_table):
         }
     ])
     feature_list = FeatureList([feature], "test_feature_list")
-    df_features = feature_list.compute_historical_features(preview_params)
     expected = preview_params.copy()
     expected["value_col_sum_1month"] = [4.65]
-    fb_assert_frame_equal(df_features, expected)
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
 
 
 def test_aggregate_over_latest(time_series_table):
@@ -177,14 +185,13 @@ def test_aggregate_over_latest(time_series_table):
         }
     ])
     feature_list = FeatureList([feature_1, feature_2], "test_feature_list")
-    df_features = feature_list.compute_historical_features(preview_params)
     expected = preview_params.copy()
     # Point in time of "2001-01-10 10:00:00" UTC is "2001-01-10 18:00:00" Asia/Singapore, at
     # which point the last feature job is at "2001-01-10 10:00:00" Asia/Singapore. Hence, the
     # features should aggregate the values from "2001-01-03" to "2001-01-09" inclusive.
     expected["value_col_sum_7d"] = [0.35]
     expected["value_col_latest_7d"] = [0.08]
-    fb_assert_frame_equal(df_features, expected)
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
 
 
 def test_aggregate_over_post_aggregate_with_tz_column(time_series_table_tz_column):
@@ -232,7 +239,7 @@ def test_aggregate_over_post_aggregate_with_tz_column(time_series_table_tz_colum
     expected["hour_since_latest_reference_datetime"] = [42]
     expected["hour_since_latest_reference_datetime_reversed"] = [-42]
     expected["hour_of_latest_reference_datetime"] = [0]
-    fb_assert_frame_equal(df_features, expected)
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
 
 
 def test_join_scd_view(time_series_table, scd_table_custom_date_format):
@@ -265,10 +272,9 @@ def test_join_scd_view(time_series_table, scd_table_custom_date_format):
         }
     ])
     feature_list = FeatureList([feature], "test_feature_list")
-    df_features = feature_list.compute_historical_features(preview_params)
     expected = preview_params.copy()
     expected["num_unique_user_status_7d"] = [5]
-    fb_assert_frame_equal(df_features, expected)
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
 
 
 def test_deployment(config, time_series_window_aggregate_feature):
