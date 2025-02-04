@@ -23,7 +23,7 @@ from featurebyte.common.progress import (
 )
 from featurebyte.exception import DataWarehouseOperationError
 from featurebyte.logging import get_logger
-from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel, User
+from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.models.task import Task
@@ -32,8 +32,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.worker.task.catalog_cleanup import CatalogCleanupTaskPayload
 from featurebyte.service.catalog import AllCatalogService
-from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.session_helper import SessionHelper
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
@@ -85,20 +84,18 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
     def __init__(
         self,
         task_manager: TaskManager,
-        feature_store_service: FeatureStoreService,
         all_catalog_service: AllCatalogService,
         persistent: Persistent,
         storage: Storage,
-        session_manager_service: SessionManagerService,
+        session_helper: SessionHelper,
         task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__(task_manager=task_manager)
         self.task_progress_updater = task_progress_updater
-        self.feature_store_service = feature_store_service
         self.all_catalog_service = all_catalog_service
         self.persistent = persistent
         self.storage = storage
-        self.session_manager_service = session_manager_service
+        self.session_helper = session_helper
 
     @property
     def model_packages(self) -> list[Any]:
@@ -156,12 +153,13 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
         self, catalog: CatalogModel, warehouse_tables: set[TableDetails]
     ) -> None:
         if catalog.default_feature_store_ids:
-            feature_store = await self.feature_store_service.get_document(
-                catalog.default_feature_store_ids[0]
+            fs_and_session = await self.session_helper.try_to_get_feature_store_and_session(
+                feature_store_id=catalog.default_feature_store_ids[0]
             )
-            session = await self.session_manager_service.get_feature_store_session(
-                feature_store, user_override=User(id=feature_store.user_id)
-            )
+            if not fs_and_session:
+                return
+
+            feature_store, session = fs_and_session
             fs_source_info = feature_store.get_source_info()
             for warehouse_table in warehouse_tables:
                 try:
