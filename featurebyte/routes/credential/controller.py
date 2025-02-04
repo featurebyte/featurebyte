@@ -7,6 +7,7 @@ from __future__ import annotations
 from bson import ObjectId
 from fastapi import Request
 
+from featurebyte.exception import DocumentDeletionError
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.credential import CredentialModel
 from featurebyte.routes.common.base import BaseDocumentController
@@ -131,6 +132,38 @@ class CredentialController(
         )
         assert document is not None
         return CredentialRead(**document.model_dump(by_alias=True))
+
+    async def delete_credential(self, credential_id: PyObjectId) -> None:
+        """
+        Delete credential
+
+        Parameters
+        ----------
+        credential_id: PyObjectId
+            Credential ID
+
+        Raises
+        ------
+        DocumentDeletionError
+            If the last credential for a feature store is being deleted
+        """
+        document_id = ObjectId(credential_id)
+        credential = await self.service.get_document(document_id=document_id)
+        feature_store_id = credential.feature_store_id
+        other_credentials = await self.service.list_documents_as_dict(
+            query_filter={
+                "feature_store_id": feature_store_id,
+                "_id": {"$ne": credential.id},
+            },
+            page_size=1,
+        )
+        if other_credentials["data"]:
+            await self.delete(document_id=document_id)
+        else:
+            raise DocumentDeletionError(
+                f"Cannot delete the last credential for feature store (ID: {feature_store_id}). "
+                "Please create a new credential before deleting this one to ensure continued access."
+            )
 
     async def get_info(
         self,

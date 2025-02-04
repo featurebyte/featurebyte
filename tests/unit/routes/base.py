@@ -283,6 +283,10 @@ class BaseApiTestSuite:
         _ = api_client
         return []
 
+    def create_multiple_success_responses_post_processing(self, api_client):
+        """Post multiple success responses"""
+        _ = api_client
+
     @pytest_asyncio.fixture()
     async def create_multiple_success_responses(self, test_api_client_persistent):
         """Post multiple success responses"""
@@ -298,6 +302,9 @@ class BaseApiTestSuite:
             else:
                 assert response.json()["_id"] == payload["_id"]
             output.append(response)
+
+        # post-processing after all the responses are created
+        self.create_multiple_success_responses_post_processing(test_api_client)
         return output
 
     def test_create_201__without_specifying_id_field(self, test_api_client_persistent):
