@@ -53,14 +53,6 @@ class TestCredentialApi(BaseApiTestSuite):
             response = api_client.post(f"/{api_object}", json=payload)
             assert response.status_code == HTTPStatus.CREATED
 
-        # # delete credential stored for feature store
-        # response = api_client.get(f"{self.base_route}")
-        # assert response.status_code == HTTPStatus.OK
-        # results = response.json()
-        # credential_id = results["data"][0]["_id"]
-        # response = api_client.delete(f"{self.base_route}/{credential_id}")
-        # assert response.status_code == HTTPStatus.OK
-
     def multiple_success_payload_generator(self, api_client):
         """Create multiple payload for setting up create_multiple_success_responses fixture"""
         _ = api_client
