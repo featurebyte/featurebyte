@@ -24,7 +24,13 @@ from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTarget
 from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
 from featurebyte.schema.feature_list import SampleEntityServingNames
 from featurebyte.schema.preview import TargetPreview
-from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
+from featurebyte.schema.target import (
+    TargetCreate,
+    TargetInfo,
+    TargetList,
+    TargetServiceUpdate,
+    TargetUpdate,
+)
 from featurebyte.schema.target_namespace import TargetNamespaceServiceUpdate
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_preview import FeaturePreviewService
@@ -123,6 +129,35 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             sort_by=sort_by,
             **params,
         )
+
+    async def update_target(
+        self,
+        target_id: ObjectId,
+        data: TargetUpdate,
+    ) -> TargetModel:
+        """
+        Update Target at persistent
+
+        Parameters
+        ----------
+        target_id: ObjectId
+            Target ID
+        data: TargetUpdate
+            Target update payload
+
+        Returns
+        -------
+        TargetModel
+            Updated Target object
+        """
+        if data.target_type:
+            await self.service.update_document(
+                document_id=target_id,
+                data=TargetServiceUpdate(**data.model_dump()),
+                return_document=False,
+            )
+
+        return await self.service.get_document(document_id=target_id)
 
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId

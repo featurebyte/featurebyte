@@ -309,6 +309,16 @@ class DBVarType(StrEnum):
         return {cls.TIMESTAMP_TZ_TUPLE}
 
 
+class TargetType(StrEnum):
+    """
+    The TargetType enum class provides a way to represent different types of modeling.
+    """
+
+    REGRESSION = "regression"
+    CLASSIFICATION = "classification"
+    MULTI_CLASSIFICATION = "multi_classification"
+
+
 class AggFunc(StrEnum):
     """
     The AggFunc enum class provides a way to represent various aggregation methods in your code. It helps reduce
