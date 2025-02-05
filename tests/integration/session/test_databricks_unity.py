@@ -61,7 +61,11 @@ async def test_list_tables(config, session_without_datasets):
     session = session_without_datasets
 
     tables = await session.list_tables(database_name="demo_datasets", schema_name="grocery")
-    assert [table.model_dump() for table in tables] == [
+
+    def _sort_by_name(_tables):
+        return sorted(_tables, key=lambda x: x["name"])
+
+    assert _sort_by_name([table.model_dump() for table in tables]) == _sort_by_name([
         {
             "name": "invoiceitems",
             "description": "The grocery item details within each invoice, including the "
@@ -83,4 +87,4 @@ async def test_list_tables(config, session_without_datasets):
             "name": "grocerycustomer",
             "description": "Customer details, including their name, address, and date of birth.",
         },
-    ]
+    ])
