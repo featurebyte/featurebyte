@@ -16,7 +16,7 @@ component: target
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Introduced a target_type attribute to the target object, allowing explicit specification and updates of target prediction types.
+note: "Introduce a target_type attribute to the target object, allowing explicit specification and updates of target prediction types."
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
