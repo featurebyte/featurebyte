@@ -240,6 +240,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             metadata=target_metadata,
             namespace_description=namespace.description,
             description=target_doc.description,
+            target_type=target_doc.target_type,
         )
 
     async def preview(self, target_preview: TargetPreview) -> dict[str, Any]:
