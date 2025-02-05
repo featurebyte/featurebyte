@@ -174,8 +174,7 @@ class CronHelper:
         end_local = end.astimezone(tz)
         cron_expr = cron_feature_job_setting.get_cron_expression()
 
-        # Get job schedules before start_local (cover two cycles in case start_local is on the
-        # schedule).
+        # Get job schedules before start_local
         cron = croniter(expr_format=cron_expr, start_time=start_local)
         job_schedule = [cron.get_prev(datetime), cron.get_prev(datetime)]
 
