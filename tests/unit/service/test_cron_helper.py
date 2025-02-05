@@ -46,8 +46,6 @@ def test_get_cron_schedule(cron_helper):
     )
     tzinfo = pytz.timezone("Etc/UTC")
     assert datetimes == [
-        datetime(2023, 12, 18, 10, 0, tzinfo=tzinfo),
-        datetime(2023, 12, 25, 10, 0, tzinfo=tzinfo),
         datetime(2024, 1, 1, 10, 0, tzinfo=tzinfo),
         datetime(2024, 1, 8, 10, 0, tzinfo=tzinfo),
         datetime(2024, 1, 15, 10, 0, tzinfo=tzinfo),
@@ -167,9 +165,6 @@ async def test_register_request_table_with_job_schedule(
     ]
     if reference_timezone is None:
         expected_schedules = [
-            Timestamp("2023-12-18 10:00:00"),
-            Timestamp("2023-12-25 10:00:00"),
-            Timestamp("2024-01-01 10:00:00"),
             Timestamp("2024-01-08 10:00:00"),
             Timestamp("2024-01-15 10:00:00"),
             Timestamp("2024-01-22 10:00:00"),
@@ -180,9 +175,6 @@ async def test_register_request_table_with_job_schedule(
     else:
         assert reference_timezone == "Asia/Singapore"
         expected_schedules = [
-            Timestamp("2023-12-18 09:00:00"),
-            Timestamp("2023-12-25 09:00:00"),
-            Timestamp("2024-01-01 09:00:00"),
             Timestamp("2024-01-08 09:00:00"),
             Timestamp("2024-01-15 09:00:00"),
             Timestamp("2024-01-22 09:00:00"),
@@ -192,9 +184,6 @@ async def test_register_request_table_with_job_schedule(
         ]
     assert df_schedule[InternalName.CRON_JOB_SCHEDULE_DATETIME].to_list() == expected_schedules
     assert df_schedule[InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC].to_list() == [
-        Timestamp("2023-12-18 01:00:00"),
-        Timestamp("2023-12-25 01:00:00"),
-        Timestamp("2024-01-01 01:00:00"),
         Timestamp("2024-01-08 01:00:00"),
         Timestamp("2024-01-15 01:00:00"),
         Timestamp("2024-01-22 01:00:00"),
