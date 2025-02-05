@@ -29,7 +29,7 @@ from featurebyte.routes.target.controller import TargetController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.feature_list import SampleEntityServingNames
 from featurebyte.schema.preview import TargetPreview
-from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
+from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList, TargetUpdate
 
 router = APIRouter(prefix="/target")
 
@@ -84,6 +84,19 @@ async def get_target(request: Request, target_id: PyObjectId) -> TargetModel:
     """
     controller: TargetController = request.state.app_container.target_controller
     return await controller.get(document_id=ObjectId(target_id))
+
+
+@router.patch("/{target_id}", response_model=TargetModel)
+async def update_target(request: Request, target_id: PyObjectId, data: TargetUpdate) -> TargetModel:
+    """
+    Update Target
+    """
+    controller = request.state.app_container.target_controller
+    target: TargetModel = await controller.update_target(
+        target_id=target_id,
+        data=data,
+    )
+    return target
 
 
 @router.get("/{target_id}/info", response_model=TargetInfo)

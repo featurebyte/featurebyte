@@ -309,6 +309,19 @@ class DBVarType(StrEnum):
         return {cls.TIMESTAMP_TZ_TUPLE}
 
 
+class TargetType(StrEnum):
+    """
+    The TargetType enum class provides a way to represent different types of modeling. It can be used to specify the
+    purpose of the target object.
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TargetType")
+
+    REGRESSION = "regression", "Regression modeling"
+    CLASSIFICATION = "classification", "Binary classification modeling"
+    MULTI_CLASSIFICATION = "multi_classification", "Multi-class classification modeling"
+
+
 class AggFunc(StrEnum):
     """
     The AggFunc enum class provides a way to represent various aggregation methods in your code. It helps reduce

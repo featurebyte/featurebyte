@@ -147,3 +147,18 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
 
         # check namespace is not deleted
         assert namespace.saved
+
+    def test_update_target_type(self, float_target):
+        """
+        Test update target type
+        """
+        assert float_target.target_type is None
+
+        # save the target & check
+        float_target.save()
+        assert float_target.info()["target_type"] is None
+
+        assert float_target.target_type is None
+        float_target.update_target_type(target_type="classification")
+        assert float_target.target_type == "classification"
+        assert float_target.info()["target_type"] == "classification"

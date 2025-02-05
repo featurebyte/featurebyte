@@ -267,6 +267,19 @@ class TestTargetApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
 
+    def test_update_target_type(self, test_api_client_persistent, create_success_response):
+        """Test update target type"""
+        test_api_client, _ = test_api_client_persistent
+        target = create_success_response.json()
+        assert target["target_type"] is None
+
+        # save the target & check
+        response = test_api_client.patch(
+            f"{self.base_route}/{target['_id']}", json={"target_type": "regression"}
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["target_type"] == "regression"
+
     def test_delete_entity(self, test_api_client_persistent, create_success_response):
         """Test delete entity"""
         test_api_client, _ = test_api_client_persistent
