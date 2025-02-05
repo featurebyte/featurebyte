@@ -11,7 +11,6 @@ import pandas as pd
 import pytz
 from bson import ObjectId
 from croniter import croniter, croniter_range
-from dateutil.relativedelta import relativedelta
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName, SpecialColumnName
@@ -22,8 +21,6 @@ from featurebyte.query_graph.sql.cron import (
     JobScheduleTableSet,
 )
 from featurebyte.session.base import BaseSession
-
-MAX_INTERVAL = relativedelta(months=1)
 
 
 class CronHelper:
@@ -170,14 +167,22 @@ class CronHelper:
         -------
         list[datetime]
         """
-        start = pytz.utc.localize(min_point_in_time - MAX_INTERVAL)
+        start = pytz.utc.localize(min_point_in_time)
         end = pytz.utc.localize(max_point_in_time)
         tz = pytz.timezone(cron_feature_job_setting.timezone)
         start_local = start.astimezone(tz)
         end_local = end.astimezone(tz)
-        return list(
-            croniter_range(start_local, end_local, cron_feature_job_setting.get_cron_expression())
-        )
+        cron_expr = cron_feature_job_setting.get_cron_expression()
+
+        # Get job schedules before start_local (cover two cycles in case start_local is on the
+        # schedule).
+        cron = croniter(expr_format=cron_expr, start_time=start_local)
+        job_schedule = [cron.get_prev(datetime), cron.get_prev(datetime)]
+
+        # Get all job schedules between start_local and end_local
+        job_schedule.extend(croniter_range(start_local, end_local, cron_expr))
+        job_schedule = sorted(set(job_schedule))
+        return job_schedule
 
     @classmethod
     def get_cron_job_schedule_dataframe(
