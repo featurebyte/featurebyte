@@ -311,12 +311,15 @@ class DBVarType(StrEnum):
 
 class TargetType(StrEnum):
     """
-    The TargetType enum class provides a way to represent different types of modeling.
+    The TargetType enum class provides a way to represent different types of modeling. It can be used to specify the
+    purpose of the target object.
     """
 
-    REGRESSION = "regression"
-    CLASSIFICATION = "classification"
-    MULTI_CLASSIFICATION = "multi_classification"
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TargetType")
+
+    REGRESSION = "regression", "Regression modeling"
+    CLASSIFICATION = "classification", "Binary classification modeling"
+    MULTI_CLASSIFICATION = "multi_classification", "Multi-class classification modeling"
 
 
 class AggFunc(StrEnum):

@@ -60,7 +60,7 @@ from featurebyte.docker.manager import ApplicationName
 from featurebyte.docker.manager import start_app as _start_app
 from featurebyte.docker.manager import start_playground as _start_playground
 from featurebyte.docker.manager import stop_app as _stop_app
-from featurebyte.enum import AggFunc, SourceType, StorageType, TimeIntervalUnit
+from featurebyte.enum import AggFunc, SourceType, StorageType, TargetType, TimeIntervalUnit
 from featurebyte.exception import FeatureByteException, InvalidSettingsError
 from featurebyte.list_utility import list_deployments, list_unsaved_features
 from featurebyte.logging import get_logger
@@ -537,6 +537,7 @@ __all__ = [
     "SourceType",
     "StorageType",
     "TableStatus",
+    "TargetType",
     "TimeIntervalUnit",
     # imputation related classes
     "MissingValueImputation",

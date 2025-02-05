@@ -835,6 +835,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "ColumnCleaningOperation"]),
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "TableCleaningOperation"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TargetType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "DefaultVersionMode"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "enum.DBVarType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "FeatureListStatus"]),
@@ -1139,6 +1140,7 @@ def _get_target_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TARGET, SERVE, "Target.compute_targets"]),
         DocLayoutItem([TARGET, SERVE, "Target.compute_target_table"]),
         DocLayoutItem([TARGET, CREATE, "TargetNamespace.create"]),
+        DocLayoutItem([TARGET, MANAGE, "Target.update_target_type"]),
     ]
 
 
