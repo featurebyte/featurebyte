@@ -280,6 +280,12 @@ class TestTargetApi(BaseCatalogApiTestSuite):
         assert response.status_code == HTTPStatus.OK, response.json()
         assert response.json()["target_type"] == "regression"
 
+        # attempt to update target type again
+        response = test_api_client.patch(
+            f"{self.base_route}/{target['_id']}", json={"target_type": "classification"}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+
     def test_delete_entity(self, test_api_client_persistent, create_success_response):
         """Test delete entity"""
         test_api_client, _ = test_api_client_persistent
