@@ -21,28 +21,47 @@ LEFT JOIN (
     ) AS "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1"
   FROM (
     SELECT
-      REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-      REQ."serving_cust_id" AS "serving_cust_id",
-      REQ."other_serving_key" AS "other_serving_key",
-      SOURCE_TABLE."col_float" AS "col_float",
-      SUM(SOURCE_TABLE."value") AS "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
-    FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id_other_serving_key" AS REQ
-    INNER JOIN (
+      "POINT_IN_TIME",
+      "serving_cust_id",
+      "other_serving_key",
+      "col_float",
+      "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
+    FROM (
       SELECT
-        *
-      FROM tab
-    ) AS SOURCE_TABLE
-      ON (
-        DATE_PART(EPOCH_SECOND, SOURCE_TABLE."timestamp_col") > DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 86400
-        AND DATE_PART(EPOCH_SECOND, SOURCE_TABLE."timestamp_col") <= DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 604800 + 86400
+        "POINT_IN_TIME",
+        "serving_cust_id",
+        "other_serving_key",
+        "col_float",
+        "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1_inner",
+        ROW_NUMBER() OVER (PARTITION BY "POINT_IN_TIME", "serving_cust_id", "other_serving_key" ORDER BY "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1_inner" DESC) AS "__fb_object_agg_row_number"
+      FROM (
+        SELECT
+          REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+          REQ."serving_cust_id" AS "serving_cust_id",
+          REQ."other_serving_key" AS "other_serving_key",
+          SOURCE_TABLE."col_float" AS "col_float",
+          SUM(SOURCE_TABLE."value") AS "_fb_internal_serving_cust_id_other_serving_key_forward_sum_value_cust_id_other_key_col_float_input_1_inner"
+        FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id_other_serving_key" AS REQ
+        INNER JOIN (
+          SELECT
+            *
+          FROM tab
+        ) AS SOURCE_TABLE
+          ON (
+            DATE_PART(EPOCH_SECOND, SOURCE_TABLE."timestamp_col") > DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 86400
+            AND DATE_PART(EPOCH_SECOND, SOURCE_TABLE."timestamp_col") <= DATE_PART(EPOCH_SECOND, REQ."POINT_IN_TIME") + 604800 + 86400
+          )
+          AND REQ."serving_cust_id" = SOURCE_TABLE."cust_id"
+          AND REQ."other_serving_key" = SOURCE_TABLE."other_key"
+        GROUP BY
+          REQ."POINT_IN_TIME",
+          REQ."serving_cust_id",
+          REQ."other_serving_key",
+          SOURCE_TABLE."col_float"
       )
-      AND REQ."serving_cust_id" = SOURCE_TABLE."cust_id"
-      AND REQ."other_serving_key" = SOURCE_TABLE."other_key"
-    GROUP BY
-      REQ."POINT_IN_TIME",
-      REQ."serving_cust_id",
-      REQ."other_serving_key",
-      SOURCE_TABLE."col_float"
+    )
+    WHERE
+      "__fb_object_agg_row_number" <= 50000
   ) AS INNER_
   GROUP BY
     INNER_."POINT_IN_TIME",
