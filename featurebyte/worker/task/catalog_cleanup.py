@@ -12,8 +12,6 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Type
 
-from pydantic import ValidationError
-
 import featurebyte.models
 from featurebyte.common.env_util import is_development_mode
 from featurebyte.common.progress import (
@@ -275,7 +273,7 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                     assert isinstance(obj, FeatureByteCatalogBaseDocumentModel)
                     warehouse_tables.update(obj.warehouse_tables)
                     remote_file_paths.update(obj.remote_storage_paths)
-                except ValidationError as exc:
+                except Exception as exc:
                     if is_development_mode():
                         raise
 
@@ -286,7 +284,6 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                         doc_dict["_id"],
                         exc,
                     )
-                    pass
 
             # cleanup the warehouse tables & remote files
             await mongo_progress_callback(

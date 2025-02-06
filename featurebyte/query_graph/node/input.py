@@ -83,6 +83,12 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
             values["columns"] = [{"name": col, "dtype": DBVarType.UNKNOWN} for col in columns]
         return values
 
+    @model_validator(mode="after")
+    def _validate_parameters(self) -> "BaseInputNodeParameters":
+        if not self.columns:
+            raise ValueError("columns should not be empty")
+        return self
+
     def extract_feature_store_object(
         self,
         feature_store_name: str,
