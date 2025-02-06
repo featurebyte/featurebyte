@@ -24,7 +24,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import get_version, is_server_mode
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
-from featurebyte.models.base import get_active_catalog_id
+from featurebyte.models.base import activate_catalog, get_active_catalog_id
 
 # http request settings
 HTTP_REQUEST_TIMEOUT: int = 180
@@ -510,6 +510,7 @@ class Configurations:
 
         >>> fb.Configurations().use_profile("local")
         """
+        activate_catalog(None)
         new_profile: Optional[Profile] = None
         for prof in self.profiles:
             if prof.name == profile_name:

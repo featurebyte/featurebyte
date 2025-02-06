@@ -742,3 +742,11 @@ def test_update_description(catalog):
     catalog.update_description(None)
     assert catalog.description is None
     assert catalog.info()["description"] is None
+
+
+def test_activate_catalog(catalog):
+    """Test activate catalog"""
+    assert get_active_catalog_id() == catalog.id
+    with pytest.raises(RecordRetrievalException):
+        Catalog.activate("Non-existent catalog")
+    assert get_active_catalog_id() == catalog.id
