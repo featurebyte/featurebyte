@@ -274,6 +274,7 @@ class BaseAdapter(ABC):
         agg_result_names: list[str],
         inner_agg_result_names: list[str],
         inner_agg_expr: expressions.Select,
+        max_num_categories: Optional[int] = None,
     ) -> expressions.Select:
         """
         Aggregate per category values into key value pairs
@@ -318,19 +319,71 @@ class BaseAdapter(ABC):
             is to be used as the values in the aggregated key-value pairs)
         inner_agg_expr : expressions.Query:
             Query that produces the intermediate aggregation result
+        max_num_categories : Optional[int]
+            Maximum number of categories to keep in the output. If None, a default value of 50000
+            will be used.
 
         Returns
         -------
         str
         """
+
+        # Limit number of categories to max_num_categories, ordering by the inner aggregated result
+        # (the dict values)
+        if max_num_categories is None:
+            max_num_categories = 50000
+        ordering_column_name = "__fb_object_agg_row_number"
+        ordering_expr = expressions.Window(
+            this=expressions.RowNumber(),
+            partition_by=([quoted_identifier(point_in_time_column)] if point_in_time_column else [])
+            + [quoted_identifier(col) for col in serving_names],
+            order=expressions.Order(
+                expressions=[
+                    expressions.Ordered(
+                        this=quoted_identifier(inner_agg_result_names[0]), desc=True
+                    )
+                ]
+            ),
+        )
+        inner_agg_columns = (
+            ([quoted_identifier(point_in_time_column)] if point_in_time_column else [])
+            + [quoted_identifier(col) for col in serving_names]
+            + [quoted_identifier(value_by)]
+            + [quoted_identifier(col) for col in inner_agg_result_names]
+        )
+        inner_agg_expr = (
+            select(*inner_agg_columns)
+            .from_(
+                select(
+                    *inner_agg_columns,
+                    alias_(
+                        ordering_expr,
+                        alias=ordering_column_name,
+                        quoted=True,
+                    ),
+                )
+                .from_(inner_agg_expr.subquery())
+                .subquery()
+            )
+            .where(
+                expressions.LTE(
+                    this=quoted_identifier(ordering_column_name),
+                    expression=make_literal_value(max_num_categories),
+                )
+            )
+        )
+
+        # Construct the outer aggregation query forming the key-value pairs
         inner_alias = "INNER_"
 
         if point_in_time_column:
-            outer_group_by_keys = [f"{inner_alias}.{quoted_identifier(point_in_time_column).sql()}"]
+            outer_group_by_keys = [
+                get_qualified_column_identifier(point_in_time_column, inner_alias)
+            ]
         else:
             outer_group_by_keys = []
         for serving_name in serving_names:
-            outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
+            outer_group_by_keys.append(get_qualified_column_identifier(serving_name, inner_alias))
 
         category_col = get_qualified_column_identifier(value_by, inner_alias)
 

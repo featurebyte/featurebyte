@@ -88,20 +88,35 @@ def test_item_groupby_sql_node(
               ) AS "feature_name"
             FROM (
               SELECT
-                "order_id" AS "order_id",
-                "item_type" AS "item_type",
-                {expected_expr} AS "feature_name_inner"
+                "order_id",
+                "item_type",
+                "feature_name_inner"
               FROM (
                 SELECT
-                  "order_id" AS "order_id",
-                  "item_id" AS "item_id",
-                  "item_name" AS "item_name",
-                  "item_type" AS "item_type"
-                FROM "db"."public"."item_table"
+                  "order_id",
+                  "item_type",
+                  "feature_name_inner",
+                  ROW_NUMBER() OVER (PARTITION BY "order_id" ORDER BY "feature_name_inner" DESC) AS "__fb_object_agg_row_number"
+                FROM (
+                  SELECT
+                    "order_id" AS "order_id",
+                    "item_type" AS "item_type",
+                    {expected_expr} AS "feature_name_inner"
+                  FROM (
+                    SELECT
+                      "order_id" AS "order_id",
+                      "item_id" AS "item_id",
+                      "item_name" AS "item_name",
+                      "item_type" AS "item_type"
+                    FROM "db"."public"."item_table"
+                  )
+                  GROUP BY
+                    "order_id",
+                    "item_type"
+                )
               )
-              GROUP BY
-                "order_id",
-                "item_type"
+              WHERE
+                "__fb_object_agg_row_number" <= 50000
             ) AS INNER_
             GROUP BY
               INNER_."order_id"

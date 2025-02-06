@@ -156,19 +156,34 @@ def test_item_aggregation(aggregation_specs, source_info):
             ) AS "_fb_internal_new_serving_order_id_item_max_price_order_id_item_type_input_1"
           FROM (
             SELECT
-              REQ."new_serving_order_id" AS "new_serving_order_id",
-              ITEM."item_type" AS "item_type",
-              MAX(ITEM."price") AS "_fb_internal_new_serving_order_id_item_max_price_order_id_item_type_input_1_inner"
-            FROM "REQUEST_TABLE_new_serving_order_id" AS REQ
-            INNER JOIN (
+              "new_serving_order_id",
+              "item_type",
+              "_fb_internal_new_serving_order_id_item_max_price_order_id_item_type_input_1_inner"
+            FROM (
               SELECT
-                *
-              FROM ITEM_TABLE
-            ) AS ITEM
-              ON REQ."new_serving_order_id" = ITEM."order_id"
-            GROUP BY
-              REQ."new_serving_order_id",
-              ITEM."item_type"
+                "new_serving_order_id",
+                "item_type",
+                "_fb_internal_new_serving_order_id_item_max_price_order_id_item_type_input_1_inner",
+                ROW_NUMBER() OVER (PARTITION BY "new_serving_order_id" ORDER BY "_fb_internal_new_serving_order_id_item_max_price_order_id_item_type_input_1_inner" DESC) AS "__fb_object_agg_row_number"
+              FROM (
+                SELECT
+                  REQ."new_serving_order_id" AS "new_serving_order_id",
+                  ITEM."item_type" AS "item_type",
+                  MAX(ITEM."price") AS "_fb_internal_new_serving_order_id_item_max_price_order_id_item_type_input_1_inner"
+                FROM "REQUEST_TABLE_new_serving_order_id" AS REQ
+                INNER JOIN (
+                  SELECT
+                    *
+                  FROM ITEM_TABLE
+                ) AS ITEM
+                  ON REQ."new_serving_order_id" = ITEM."order_id"
+                GROUP BY
+                  REQ."new_serving_order_id",
+                  ITEM."item_type"
+              )
+            )
+            WHERE
+              "__fb_object_agg_row_number" <= 50000
           ) AS INNER_
           GROUP BY
             INNER_."new_serving_order_id"
