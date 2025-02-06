@@ -12,6 +12,7 @@ from fastapi import HTTPException
 
 from featurebyte.exception import (
     DocumentDeletionError,
+    DocumentUpdateError,
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
 )
@@ -149,8 +150,17 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
         -------
         TargetModel
             Updated Target object
+
+        Raises
+        ------
+        DocumentUpdateError
+            If updating target type after setting it is not supported
         """
         if data.target_type:
+            target = await self.service.get_document(document_id=target_id)
+            if target.target_type is not None and target.target_type != data.target_type:
+                raise DocumentUpdateError("Updating target type after setting it is not supported.")
+
             await self.service.update_document(
                 document_id=target_id,
                 data=TargetServiceUpdate(**data.model_dump()),

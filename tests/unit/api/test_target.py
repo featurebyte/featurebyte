@@ -9,6 +9,7 @@ import featurebyte
 from featurebyte.api.target import Target
 from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.enum import DBVarType
+from featurebyte.exception import RecordUpdateException
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
 from tests.util.helper import fb_assert_frame_equal
 
@@ -162,3 +163,9 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         float_target.update_target_type(target_type="classification")
         assert float_target.target_type == "classification"
         assert float_target.info()["target_type"] == "classification"
+
+        # check changing target type to other type
+        with pytest.raises(RecordUpdateException) as exc:
+            float_target.update_target_type(target_type="regression")
+        expected = "Updating target type after setting it is not supported."
+        assert expected in str(exc)
