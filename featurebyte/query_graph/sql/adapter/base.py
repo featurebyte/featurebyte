@@ -274,6 +274,7 @@ class BaseAdapter(ABC):
         agg_result_names: list[str],
         inner_agg_result_names: list[str],
         inner_agg_expr: expressions.Select,
+        max_num_categories: Optional[int] = None,
     ) -> expressions.Select:
         """
         Aggregate per category values into key value pairs
@@ -318,12 +319,19 @@ class BaseAdapter(ABC):
             is to be used as the values in the aggregated key-value pairs)
         inner_agg_expr : expressions.Query:
             Query that produces the intermediate aggregation result
+        max_num_categories : Optional[int]
+            Maximum number of categories to keep in the output. If None, a default value of 50000
+            will be used.
 
         Returns
         -------
         str
         """
 
+        # Limit number of categories to max_num_categories, ordering by the inner aggregated result
+        # (the dict values)
+        if max_num_categories is None:
+            max_num_categories = 50000
         ordering_column_name = "__fb_object_agg_row_number"
         ordering_expr = expressions.Window(
             this=expressions.RowNumber(),
@@ -360,11 +368,12 @@ class BaseAdapter(ABC):
             .where(
                 expressions.LTE(
                     this=quoted_identifier(ordering_column_name),
-                    expression=make_literal_value(50000),
+                    expression=make_literal_value(max_num_categories),
                 )
             )
         )
 
+        # Construct the outer aggregation query forming the key-value pairs
         inner_alias = "INNER_"
 
         if point_in_time_column:
