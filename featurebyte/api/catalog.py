@@ -180,6 +180,11 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         -------
         Catalog
 
+        Raises
+        ------
+        RecordRetrievalException
+            If the catalog with the provided name does not exist.
+
         Examples
         --------
         >>> catalog = Catalog.activate("grocery")
