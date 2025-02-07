@@ -88,6 +88,32 @@ def feature_many_tiles_fixture(snowflake_event_view_with_entity, feature_group_f
     return final_feature
 
 
+@pytest.fixture(name="cross_aggregate_features")
+def cross_aggregate_features_fixture(
+    snowflake_event_view_with_entity, feature_group_feature_job_setting
+):
+    """
+    Fixture for cross aggregate features
+    """
+    view = snowflake_event_view_with_entity
+    feature_job_setting = feature_group_feature_job_setting
+    cross_aggregate_feature_1 = view.groupby("cust_id", category="col_int").aggregate_over(
+        value_column="col_float",
+        method="min",
+        windows=["30m"],
+        feature_job_setting=feature_job_setting,
+        feature_names=["cross_aggregate_feature_1"],
+    )["cross_aggregation_feature_1"]
+    cross_aggregate_feature_2 = view.groupby("cust_id", category="col_int").aggregate_over(
+        value_column="col_float",
+        method="max",
+        windows=["30m"],
+        feature_job_setting=feature_job_setting,
+        feature_names=["cross_aggregate_feature_2"],
+    )["cross_aggregation_feature_2"]
+    return [cross_aggregate_feature_1, cross_aggregate_feature_2]
+
+
 def get_tile_infos(feature, source_info) -> list[TileGenSql]:
     """
     Helper function to get tile info from a feature
@@ -248,3 +274,7 @@ def test_tile_compute_combine_output_num_columns_limit(
             f"tests/fixtures/query_graph/expected_combined_tile_query_complex_{i}.sql",
             update_fixtures,
         )
+
+
+def test_cross_aggregate_featurse_should_not_combine():
+    """ """
