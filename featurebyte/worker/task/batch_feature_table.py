@@ -8,17 +8,20 @@ from typing import Any
 
 from featurebyte.logging import get_logger
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
+from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.schema.worker.task.batch_feature_table import BatchFeatureTableTaskPayload
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.deployment import DeploymentService
+from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_serving import OnlineServingService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.session.base import BaseSession
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -42,6 +45,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
         deployment_service: DeploymentService,
         feature_list_service: FeatureListService,
         online_serving_service: OnlineServingService,
+        entity_validation_service: EntityValidationService,
     ):
         super().__init__(task_manager=task_manager)
         self.feature_store_service = feature_store_service
@@ -51,9 +55,54 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
         self.deployment_service = deployment_service
         self.feature_list_service = feature_list_service
         self.online_serving_service = online_serving_service
+        self.entity_validation_service = entity_validation_service
 
     async def get_task_description(self, payload: BatchFeatureTableTaskPayload) -> str:
         return f'Save batch feature table "{payload.name}"'
+
+    async def create_temporary_request_table(
+        self, db_session: BaseSession, payload: BatchFeatureTableTaskPayload
+    ) -> BatchRequestTableModel:
+        """
+        Create temporary batch request table
+
+        Parameters
+        ----------
+        db_session : BaseSession
+            Database session
+        payload : BatchFeatureTableTaskPayload
+            Task payload
+
+        Returns
+        -------
+        BatchRequestTableModel
+            Batch request table model
+        """
+        service = self.batch_request_table_service
+        location = await service.generate_materialized_table_location(payload.feature_store_id)
+        assert payload.request_input is not None
+        await payload.request_input.materialize(
+            session=db_session,
+            destination=location.table_details,
+            sample_rows=None,
+        )
+        await service.add_row_index_column(db_session, location.table_details)
+        async with self.drop_table_on_error(db_session, location.table_details, payload):
+            columns_info, num_rows = await service.get_columns_info_and_num_rows(
+                db_session, location.table_details
+            )
+            logger.debug(
+                "Creating a new BatchRequestTable", extra=location.table_details.model_dump()
+            )
+            batch_request_table = BatchRequestTableModel(
+                user_id=payload.user_id,
+                name=payload.name,
+                location=location,
+                request_input=payload.request_input,
+                columns_info=columns_info,
+                num_rows=num_rows,
+            )
+            return batch_request_table
 
     async def execute(self, payload: BatchFeatureTableTaskPayload) -> Any:
         feature_store = await self.feature_store_service.get_document(
@@ -61,9 +110,14 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
         )
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
-        batch_request_table_model = await self.batch_request_table_service.get_document(
-            payload.batch_request_table_id
-        )
+        if payload.batch_request_table_id:
+            batch_request_table_model = await self.batch_request_table_service.get_document(
+                payload.batch_request_table_id
+            )
+        else:
+            batch_request_table_model = await self.create_temporary_request_table(
+                db_session, payload
+            )
 
         location = await self.batch_feature_table_service.generate_materialized_table_location(
             payload.feature_store_id
@@ -77,31 +131,53 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
             document_id=deployment.feature_list_id
         )
 
-        async with self.drop_table_on_error(
-            db_session=db_session, table_details=location.table_details, payload=payload
-        ):
-            await self.online_serving_service.get_online_features_from_feature_list(
-                feature_list=feature_list,
-                request_data=batch_request_table_model,
-                output_table_details=location.table_details,
-            )
-            (
-                columns_info,
-                num_rows,
-            ) = await self.batch_request_table_service.get_columns_info_and_num_rows(
-                db_session, location.table_details
-            )
-            logger.debug(
-                "Creating a new BatchFeatureTable", extra=location.table_details.model_dump()
-            )
-            batch_feature_table_model = BatchFeatureTableModel(
-                _id=payload.output_document_id,
-                user_id=payload.user_id,
-                name=payload.name,
-                location=location,
-                batch_request_table_id=payload.batch_request_table_id,
-                deployment_id=payload.deployment_id,
-                columns_info=columns_info,
-                num_rows=num_rows,
-            )
-            await self.batch_feature_table_service.create_document(batch_feature_table_model)
+        try:
+            if payload.batch_request_table_id is None:
+                # Validate entities of the temporary batch request table
+                await (
+                    self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                        feature_list_model=feature_list,
+                        request_column_names={
+                            col.name for col in batch_request_table_model.columns_info
+                        },
+                        feature_store=feature_store,
+                    )
+                )
+
+            async with self.drop_table_on_error(
+                db_session=db_session, table_details=location.table_details, payload=payload
+            ):
+                await self.online_serving_service.get_online_features_from_feature_list(
+                    feature_list=feature_list,
+                    request_data=batch_request_table_model,
+                    output_table_details=location.table_details,
+                )
+                (
+                    columns_info,
+                    num_rows,
+                ) = await self.batch_request_table_service.get_columns_info_and_num_rows(
+                    db_session, location.table_details
+                )
+                logger.debug(
+                    "Creating a new BatchFeatureTable", extra=location.table_details.model_dump()
+                )
+                batch_feature_table_model = BatchFeatureTableModel(
+                    _id=payload.output_document_id,
+                    user_id=payload.user_id,
+                    name=payload.name,
+                    location=location,
+                    batch_request_table_id=payload.batch_request_table_id,
+                    request_input=batch_request_table_model.request_input,
+                    deployment_id=payload.deployment_id,
+                    columns_info=columns_info,
+                    num_rows=num_rows,
+                )
+                await self.batch_feature_table_service.create_document(batch_feature_table_model)
+        finally:
+            if payload.batch_request_table_id is None:
+                # clean up temporary batch request table
+                await db_session.drop_table(
+                    table_name=batch_request_table_model.location.table_details.table_name,
+                    schema_name=batch_request_table_model.location.table_details.schema_name,  # type: ignore
+                    database_name=batch_request_table_model.location.table_details.database_name,  # type: ignore
+                )

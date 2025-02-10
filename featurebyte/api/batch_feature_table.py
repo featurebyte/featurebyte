@@ -41,6 +41,35 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         ForeignKeyMapping("batch_request_table_id", BatchRequestTable, "batch_request_table_name"),
     ]
 
+    def to_pandas(self) -> pd.DataFrame:
+        """
+        Converts the batch feature table to a pandas dataframe.
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Examples
+        --------
+        >>> batch_feature_table = catalog.get_batch_feature_table(
+        ...     "batch_feature_table"
+        ... )  # doctest: +SKIP
+        >>> batch_feature_table.to_pandas()  # doctest: +SKIP
+        """
+        return super().to_pandas()
+
+    def to_spark_df(self) -> Any:
+        """
+        Get a spark dataframe from the batch feature table.
+
+        Returns
+        -------
+        Any
+            Spark DataFrame
+        """
+
+        return super().to_spark_df()
+
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """
         Returns a DataFrame that contains a selection of rows of the batch feature table.

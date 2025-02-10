@@ -71,10 +71,15 @@ class BatchFeatureTableController(
         -------
         Task
         """
-        # Validate the batch_request_table_id & deployment_id
-        batch_request_table = await self.batch_request_table_service.get_document(
-            document_id=data.batch_request_table_id
-        )
+        if data.batch_request_table_id:
+            # Validate the batch_request_table_id
+            batch_request_table = await self.batch_request_table_service.get_document(
+                document_id=data.batch_request_table_id
+            )
+        else:
+            batch_request_table = None
+
+        # Validate the deployment_id
         deployment = await self.deployment_service.get_document(document_id=data.deployment_id)
         feature_list = await self.feature_list_service.get_document(
             document_id=deployment.feature_list_id
@@ -82,11 +87,13 @@ class BatchFeatureTableController(
         feature_store = await self.feature_store_service.get_document(
             document_id=data.feature_store_id
         )
-        await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
-            feature_list_model=feature_list,
-            request_column_names={col.name for col in batch_request_table.columns_info},
-            feature_store=feature_store,
-        )
+        if batch_request_table:
+            # Validate entities
+            await self.entity_validation_service.validate_entities_or_prepare_for_parent_serving(
+                feature_list_model=feature_list,
+                request_column_names={col.name for col in batch_request_table.columns_info},
+                feature_store=feature_store,
+            )
 
         # prepare task payload and submit task
         payload = await self.service.get_batch_feature_table_task_payload(data=data)
@@ -110,16 +117,22 @@ class BatchFeatureTableController(
         """
         _ = verbose
         batch_feature_table = await self.service.get_document(document_id=document_id)
-        batch_request_table = await self.batch_request_table_service.get_document(
-            document_id=batch_feature_table.batch_request_table_id
-        )
+        if batch_feature_table.batch_request_table_id:
+            batch_request_table = await self.batch_request_table_service.get_document(
+                document_id=batch_feature_table.batch_request_table_id
+            )
+            batch_request_table_name = batch_request_table.name
+        else:
+            assert batch_feature_table.request_input is not None
+            batch_request_table_name = None
+
         deployment = await self.deployment_service.get_document(
             document_id=batch_feature_table.deployment_id
         )
         return BatchFeatureTableInfo(
             name=batch_feature_table.name,
             deployment_name=deployment.name,
-            batch_request_table_name=batch_request_table.name,
+            batch_request_table_name=batch_request_table_name,
             table_details=batch_feature_table.location.table_details,
             created_at=batch_feature_table.created_at,
             updated_at=batch_feature_table.updated_at,

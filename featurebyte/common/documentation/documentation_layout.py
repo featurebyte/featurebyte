@@ -1018,6 +1018,9 @@ def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
         *_get_materialized_table_layout(BATCH_FEATURE_TABLE),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.batch_request_table_id"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.deployment_id"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, MANAGE, "BatchFeatureTable.to_pandas"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, MANAGE, "BatchFeatureTable.to_spark_df"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, MANAGE, "BatchFeatureTable.update_description"]),
     ]
 
 
@@ -1038,6 +1041,7 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.primary_entity_ids"]),
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.primary_entity"]),
         DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.to_pandas"]),
+        DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.to_spark_df"]),
         DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.update_description"]),
         DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.update_purpose"]),
         DocLayoutItem([OBSERVATION_TABLE, CREATE, "ObservationTable.upload"]),
@@ -1057,6 +1061,8 @@ def _get_batch_request_table_layout() -> List[DocLayoutItem]:
         *_get_materialized_table_layout(BATCH_REQUEST_TABLE),
         DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.context_id"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, MANAGE, "BatchRequestTable.to_pandas"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, MANAGE, "BatchRequestTable.to_spark_df"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, MANAGE, "BatchRequestTable.update_description"]),
     ]
 
 
@@ -1082,6 +1088,8 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
             LINEAGE,
             "HistoricalFeatureTable.observation_table_id",
         ]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, MANAGE, "HistoricalFeatureTable.to_pandas"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, MANAGE, "HistoricalFeatureTable.to_spark_df"]),
         DocLayoutItem([
             HISTORICAL_FEATURE_TABLE,
             MANAGE,
