@@ -62,6 +62,29 @@ def test_get_feature_preview_sql__category_groupby(
     )
 
 
+def test_get_feature_preview_sql__category_groupby_multiple(
+    query_graph_with_category_groupby_multiple, source_info, update_fixtures
+):
+    """Test generated preview SQL with category groupby is as expected"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    graph, node = query_graph_with_category_groupby_multiple
+    preview_sql = get_feature_or_target_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=graph,
+        nodes=[node],
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
+        source_info=source_info,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_category_multiple.sql",
+        update_fixture=update_fixtures,
+    )
+
+
 def test_get_feature_preview_sql__multiple_nodes(
     query_graph_with_similar_groupby_nodes, source_info, update_fixtures
 ):

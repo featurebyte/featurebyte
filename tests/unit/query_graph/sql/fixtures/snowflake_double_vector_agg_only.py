@@ -27,44 +27,63 @@ SNOWFLAKE_DOUBLE_VECTOR_AGG_ONLY_QUERY = textwrap.dedent(
           ) AS "result_1"
         FROM (
           SELECT
-            VECTOR_T0."serving_name" AS "serving_name",
-            VECTOR_T0."POINT_IN_TIME" AS "POINT_IN_TIME",
-            VECTOR_T0."value_by" AS "value_by",
-            VECTOR_T0."result_0" AS "result_0",
-            VECTOR_T1."result_1" AS "result_1"
+            "serving_name",
+            "POINT_IN_TIME",
+            "value_by",
+            "result_0_inner",
+            "result_1_inner"
           FROM (
             SELECT
-              INITIAL_DATA."serving_name" AS "serving_name",
-              INITIAL_DATA."POINT_IN_TIME" AS "POINT_IN_TIME",
-              AGG_0."VECTOR_AGG_RESULT" AS "result_0"
+              "serving_name",
+              "POINT_IN_TIME",
+              "value_by",
+              "result_0_inner",
+              "result_1_inner",
+              ROW_NUMBER() OVER (PARTITION BY "serving_name", "POINT_IN_TIME" ORDER BY "result_0_inner" DESC) AS "__fb_object_agg_row_number"
             FROM (
               SELECT
-                REQ."serving_name" AS "serving_name",
-                REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-                TABLE."parent" AS parent
-              FROM REQ
-            ) AS INITIAL_DATA, TABLE(
-              VECTOR_AGGREGATE_MAX(parent) OVER (PARTITION BY INITIAL_DATA."serving_name", INITIAL_DATA."POINT_IN_TIME")
-            ) AS "AGG_0"
-          ) AS VECTOR_T0
-          INNER JOIN (
-            SELECT
-              INITIAL_DATA."serving_name" AS "serving_name",
-              INITIAL_DATA."POINT_IN_TIME" AS "POINT_IN_TIME",
-              AGG_1."VECTOR_AGG_RESULT" AS "result_1"
-            FROM (
-              SELECT
-                REQ."serving_name" AS "serving_name",
-                REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-                TABLE."parent" AS parent
-              FROM REQ
-            ) AS INITIAL_DATA, TABLE(
-              VECTOR_AGGREGATE_MAX(parent) OVER (PARTITION BY INITIAL_DATA."serving_name", INITIAL_DATA."POINT_IN_TIME")
-            ) AS "AGG_1"
-          ) AS VECTOR_T1
-            ON VECTOR_T0."serving_name" = VECTOR_T1."serving_name"
-            AND VECTOR_T0."POINT_IN_TIME" = VECTOR_T1."POINT_IN_TIME"
-            AND VECTOR_T0."value_by" = VECTOR_T1."value_by"
+                VECTOR_T0."serving_name" AS "serving_name",
+                VECTOR_T0."POINT_IN_TIME" AS "POINT_IN_TIME",
+                VECTOR_T0."value_by" AS "value_by",
+                VECTOR_T0."result_0" AS "result_0",
+                VECTOR_T1."result_1" AS "result_1"
+              FROM (
+                SELECT
+                  INITIAL_DATA."serving_name" AS "serving_name",
+                  INITIAL_DATA."POINT_IN_TIME" AS "POINT_IN_TIME",
+                  AGG_0."VECTOR_AGG_RESULT" AS "result_0"
+                FROM (
+                  SELECT
+                    REQ."serving_name" AS "serving_name",
+                    REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+                    TABLE."parent" AS parent
+                  FROM REQ
+                ) AS INITIAL_DATA, TABLE(
+                  VECTOR_AGGREGATE_MAX(parent) OVER (PARTITION BY INITIAL_DATA."serving_name", INITIAL_DATA."POINT_IN_TIME")
+                ) AS "AGG_0"
+              ) AS VECTOR_T0
+              INNER JOIN (
+                SELECT
+                  INITIAL_DATA."serving_name" AS "serving_name",
+                  INITIAL_DATA."POINT_IN_TIME" AS "POINT_IN_TIME",
+                  AGG_1."VECTOR_AGG_RESULT" AS "result_1"
+                FROM (
+                  SELECT
+                    REQ."serving_name" AS "serving_name",
+                    REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+                    TABLE."parent" AS parent
+                  FROM REQ
+                ) AS INITIAL_DATA, TABLE(
+                  VECTOR_AGGREGATE_MAX(parent) OVER (PARTITION BY INITIAL_DATA."serving_name", INITIAL_DATA."POINT_IN_TIME")
+                ) AS "AGG_1"
+              ) AS VECTOR_T1
+                ON VECTOR_T0."serving_name" = VECTOR_T1."serving_name"
+                AND VECTOR_T0."POINT_IN_TIME" = VECTOR_T1."POINT_IN_TIME"
+                AND VECTOR_T0."value_by" = VECTOR_T1."value_by"
+            )
+          )
+          WHERE
+            "__fb_object_agg_row_number" <= 50000
         ) AS INNER_
         GROUP BY
           INNER_."serving_name",

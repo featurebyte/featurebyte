@@ -593,6 +593,57 @@ def query_graph_with_category_groupby_fixture(query_graph_and_assign_node, group
     return graph
 
 
+@pytest.fixture(name="query_graph_with_category_groupby_multiple")
+def query_graph_with_category_groupby_multiple_fixture(
+    query_graph_and_assign_node, groupby_node_params
+):
+    """Fixture of a query graph with a groupby operation"""
+    graph, assign_node = query_graph_and_assign_node
+
+    def _add_feature(params):
+        node_params = copy.deepcopy(groupby_node_params)
+        node_params["value_by"] = "product_type"
+        node_params.update(params)
+        groupby_node = add_groupby_operation(graph, node_params, assign_node)
+        feature_proj = graph.add_operation(
+            node_type=NodeType.PROJECT,
+            node_params={"columns": [params["names"][0]]},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[groupby_node],
+        )
+        feature = graph.add_operation(
+            node_type=NodeType.COUNT_DICT_TRANSFORM,
+            node_params={"transform_type": "entropy"},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[feature_proj],
+        )
+        return feature
+
+    feature_node_1 = _add_feature({
+        "parent": "a",
+        "agg_func": "max",
+        "names": ["a_2h_max_by_product_type"],
+    })
+    feature_node_2 = _add_feature({
+        "parent": "a",
+        "agg_func": "min",
+        "names": ["a_2h_min_by_product_type"],
+    })
+    complex_feature_node = graph.add_operation(
+        node_type=NodeType.DIV,
+        node_params={},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[feature_node_1, feature_node_2],
+    )
+    complex_feature_node_alias = graph.add_operation(
+        node_type=NodeType.ALIAS,
+        node_params={"name": "complex_cross_aggregate"},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[complex_feature_node],
+    )
+    return graph, complex_feature_node_alias
+
+
 @pytest.fixture(name="query_graph_with_similar_groupby_nodes")
 def query_graph_with_similar_groupby_nodes(
     query_graph_and_assign_node,
