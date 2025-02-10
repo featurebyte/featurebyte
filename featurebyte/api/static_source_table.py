@@ -56,18 +56,6 @@ class StaticSourceTable(StaticSourceTableModel, ApiObject, MaterializedTableMixi
         """
         return super().to_pandas()
 
-    def to_spark_df(self) -> Any:
-        """
-        Get a spark dataframe from the static source table.
-
-        Returns
-        -------
-        Any
-            Spark DataFrame
-        """
-
-        return super().to_spark_df()
-
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """
         Returns a DataFrame that contains a selection of rows of the static source table.

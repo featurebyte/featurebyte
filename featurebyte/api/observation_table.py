@@ -252,6 +252,13 @@ class ObservationTable(PrimaryEntityMixin, MaterializedTableMixin):
         -------
         Any
             Spark DataFrame
+
+        Examples
+        --------
+        >>> observation_table = catalog.get_observation_table(
+        ...     "observation_table_name"
+        ... )  # doctest: +SKIP
+        >>> observation_table.to_spark_df()  # doctest: +SKIP
         """
 
         return super().to_spark_df()

@@ -157,6 +157,42 @@ class HistoricalFeatureTable(HistoricalFeatureTableModel, ApiObject, Materialize
 
         return Deployment.list(feature_list_id=self.cached_model.feature_list_id)
 
+    def to_pandas(self) -> pd.DataFrame:
+        """
+        Converts the historical feature table to a pandas dataframe.
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Examples
+        --------
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
+        >>> historical_feature_table.to_pandas()  # doctest: +SKIP
+        """
+        return super().to_pandas()
+
+    def to_spark_df(self) -> Any:
+        """
+        Get a spark dataframe from the historical feature table.
+
+        Returns
+        -------
+        Any
+            Spark DataFrame
+
+        Examples
+        --------
+        >>> historical_feature_table = catalog.get_historical_feature_table(
+        ...     "historical_feature_table_name"
+        ... )  # doctest: +SKIP
+        >>> historical_feature_table.to_spark_df()  # doctest: +SKIP
+        """
+
+        return super().to_spark_df()
+
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """
         Returns a DataFrame that contains a selection of rows of the historical feature table.
