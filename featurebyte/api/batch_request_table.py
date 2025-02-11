@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, ClassVar, List, Optional, Union
 
 import pandas as pd
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
@@ -64,6 +65,13 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
         -------
         Any
             Spark DataFrame
+
+        Examples
+        --------
+        >>> batch_request_table = catalog.get_batch_request_table(
+        ...     "my_batch_request_table"
+        ... )  # doctest: +SKIP
+        >>> batch_request_table.to_spark_df()  # doctest: +SKIP
         """
 
         return super().to_spark_df()
@@ -198,3 +206,22 @@ class BatchRequestTable(BatchRequestTableModel, ApiObject, MaterializedTableMixi
         # noqa: DAR402
         """
         super().delete()
+
+    @typechecked
+    def update_description(self, description: Optional[str]) -> None:
+        """
+        Update description for the batch request table.
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of the object
+
+        Examples
+        --------
+        >>> batch_request_table = catalog.get_batch_request_table(
+        ...     "batch_request_table_name"
+        ... )  # doctest: +SKIP
+        >>> batch_request_table.update_description(description)  # doctest: +SKIP
+        """
+        super().update_description(description)

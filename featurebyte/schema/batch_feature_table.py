@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
+from featurebyte.models.batch_request_table import BatchRequestInput
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.materialized_table import BaseMaterializedTableListRecord
 
@@ -23,8 +24,17 @@ class BatchFeatureTableCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     feature_store_id: PydanticObjectId
-    batch_request_table_id: PydanticObjectId
+    batch_request_table_id: Optional[PydanticObjectId] = Field(default=None)
+    request_input: Optional[BatchRequestInput] = Field(default=None)
     deployment_id: PydanticObjectId
+
+    @model_validator(mode="after")
+    def _validate_input(self) -> "BatchFeatureTableCreate":
+        if self.batch_request_table_id is None and self.request_input is None:
+            raise ValueError("Either batch_request_table_id or request_input must be provided")
+        if self.batch_request_table_id is not None and self.request_input is not None:
+            raise ValueError("Only one of batch_request_table_id or request_input must be provided")
+        return self
 
 
 class BatchFeatureTableList(PaginationMixin):

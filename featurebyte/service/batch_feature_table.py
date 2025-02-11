@@ -52,7 +52,7 @@ class BatchFeatureTableService(
         )
 
         return BatchFeatureTableTaskPayload(
-            **data.model_dump(),
+            **data.model_dump(by_alias=True),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,

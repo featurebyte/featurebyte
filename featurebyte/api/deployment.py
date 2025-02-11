@@ -19,7 +19,9 @@ from featurebyte.api.batch_request_table import BatchRequestTable
 from featurebyte.api.feature_job import FeatureJobStatusResult
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.savable_api_object import DeletableApiObject
+from featurebyte.api.source_table import SourceTable
 from featurebyte.api.use_case import UseCase
+from featurebyte.api.view import View
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.formatting_util import CodeStr
 from featurebyte.config import Configurations
@@ -197,8 +199,10 @@ class Deployment(DeletableApiObject):
     @typechecked
     def compute_batch_feature_table(
         self,
-        batch_request_table: BatchRequestTable,
+        batch_request_table: Union[BatchRequestTable, SourceTable, View],
         batch_feature_table_name: str,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
     ) -> BatchFeatureTable:
         """
         Get batch features asynchronously using a batch request table. The batch request features
@@ -206,10 +210,17 @@ class Deployment(DeletableApiObject):
 
         Parameters
         ----------
-        batch_request_table: BatchRequestTable
-            Batch request table contains required serving names columns
+        batch_request_table: Union[BatchRequestTable, SourceTable, View]
+            Batch request table object, source table object, or view object that contains required serving names columns
         batch_feature_table_name: str
             Name of the batch feature table to be created
+        columns: Optional[list[str]]
+            Include only these columns when creating the batch feature table. If None, all columns
+            are included. Not applicable when batch_request_table is a BatchRequestTable.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the source table using this mapping from old column names to new
+            column names when creating the batch feature table. If None, no columns are renamed.
+            Not applicable when batch_request_table is a BatchRequestTable.
 
         Returns
         -------
@@ -217,16 +228,39 @@ class Deployment(DeletableApiObject):
 
         Examples
         --------
-        >>. deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
+        Compute batch features using a batch request table.
+        >>> deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
         >>> batch_features = deployment.compute_batch_feature_table(  # doctest: +SKIP
-        ...   batch_request_table=batch_request_table,
-        ...   batch_feature_table_name = <batch_feature_table_name>
+        ...     batch_request_table=batch_request_table,
+        ...     batch_feature_table_name="<batch_feature_table_name>",
+        ... )
+
+        Compute batch features using a source table.
+        >>> deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
+        >>> batch_features = deployment.compute_batch_feature_table(  # doctest: +SKIP
+        ...     batch_request_table=source_table,
+        ...     batch_feature_table_name="<batch_feature_table_name>",
+        ...     columns=["cust_id"],
+        ...     columns_rename_mapping={"cust_id": "GROCERYCUSTOMERGUID"},
         ... )
         """
+
+        request_input = None
+        batch_request_table_id = None
+        if isinstance(batch_request_table, BatchRequestTable):
+            feature_store_id = batch_request_table.location.feature_store_id
+            batch_request_table_id = batch_request_table.id
+        else:
+            feature_store_id = batch_request_table.feature_store.id
+            request_input = batch_request_table.get_batch_request_input(
+                columns=columns, columns_rename_mapping=columns_rename_mapping
+            )
+
         payload = BatchFeatureTableCreate(
             name=batch_feature_table_name,
-            feature_store_id=batch_request_table.location.feature_store_id,
-            batch_request_table_id=batch_request_table.id,
+            feature_store_id=feature_store_id,
+            batch_request_table_id=batch_request_table_id,
+            request_input=request_input,
             deployment_id=self.id,
         )
         batch_feature_table_doc = self.post_async_task(
