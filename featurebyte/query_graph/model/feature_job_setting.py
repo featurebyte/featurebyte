@@ -264,8 +264,10 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
     crontab : Union[str, Crontab]
         The cron schedule for the feature job. It can be provided either as a string in cron format (e.g., `"10 * * * *"`)
         or as a `Crontab` object with detailed scheduling parameters.
+
         **Cron String Format:**
         A standard cron string consists of five fields separated by spaces, representing different units of time. The format is as follows:
+
         ~~~
         ┌───────────── minute (0 - 59)
         │ ┌───────────── hour (0 - 23)
@@ -276,6 +278,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         │ │ │ │ │
         \* \* \* \* \*
         ~~~
+
         **Field Descriptions:**
         - **Minute (`0-59`)**: Specifies the exact minute when the job should run.
             - Example: `10` means the job runs at the 10th minute of the hour.
@@ -312,14 +315,15 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         - `"30 14 1 \* \*"`: Runs at 2:30 PM on the first day of every month.
         - `"15 10 \* \* 1-5"`: Runs at 10:15 AM every weekday (Monday to Friday).
         - `"\*/5 \* \* \* \*"`: Runs every 5 minutes.
+
     timezone : TimeZoneName, default="Etc/UTC"
         The timezone for the cron schedule. It determines the local time at which the feature job should execute.
-        The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones)
-        (commonly known as the IANA Time Zone Database or tz database).
+        The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones) (commonly known as the IANA Time Zone Database or tz database).
+
     reference_timezone : Optional[TimeZoneName]
         Time zone used to define calendar-based aggregation periods (e.g., daily, weekly, or monthly).
         This reference time zone ensures consistency when calculating calendar periods across different data time zones.
-        If not provided, the timezone parameter is used as the reference timezone.
+        If not provided, the timezone parameter is used as the reference timezone. The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones) (commonly known as the IANA Time Zone Database or tz database).
 
     Examples
     --------
