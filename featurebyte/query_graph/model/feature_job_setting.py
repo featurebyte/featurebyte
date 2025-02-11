@@ -314,7 +314,12 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         - `"\*/5 \* \* \* \*"`: Runs every 5 minutes.
     timezone : TimeZoneName, default="Etc/UTC"
         The timezone for the cron schedule. It determines the local time at which the feature job should execute.
-        The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones) (commonly known as the IANA Time Zone Database or tz database).
+        The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones)
+        (commonly known as the IANA Time Zone Database or tz database).
+    reference_timezone : Optional[TimeZoneName]
+        Time zone used to define calendar-based aggregation periods (e.g., daily, weekly, or monthly).
+        This reference time zone ensures consistency when calculating calendar periods across different data time zones.
+        If not provided, the timezone parameter is used as the reference timezone.
 
     Examples
     --------

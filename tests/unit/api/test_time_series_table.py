@@ -46,7 +46,7 @@ from featurebyte.query_graph.node.cleaning_operation import (
     MissingValueImputation,
 )
 from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
-from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
+from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture(name="time_series_table_dict")
@@ -998,16 +998,7 @@ def test_time_series_table__entity_relation_auto_tagging(
     saved_time_series_table.store_id.as_entity("customer")
 
     updated_transaction_entity = Entity.get_by_id(id=transaction_entity.id)
-    compare_pydantic_obj(
-        updated_transaction_entity.parents,
-        expected=[
-            {
-                "id": customer.id,
-                "table_type": "time_series_table",
-                "table_id": saved_time_series_table.id,
-            }
-        ],
-    )
+    assert updated_transaction_entity.parents == []
     updated_customer_entity = Entity.get_by_id(id=customer.id)
     assert updated_customer_entity.parents == []
 

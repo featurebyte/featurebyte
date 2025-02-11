@@ -242,6 +242,17 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
         ]
 
     @property
+    def contribute_entity_relationship_used_for_serving(self) -> bool:
+        """
+        Whether the table contributes to entity relationship used for serving
+
+        Returns
+        -------
+        bool
+        """
+        return True
+
+    @property
     @abstractmethod
     def primary_key_columns(self) -> List[str]:
         """

@@ -327,13 +327,16 @@ class TableColumnsInfoService(OpsServiceMixin):
                     exclude_none=False,
                 )
 
-                # update entity table reference
-                await self.update_entity_table_references(document, columns_info)
+                if document.contribute_entity_relationship_used_for_serving:
+                    # update entity table reference
+                    await self.update_entity_table_references(document, columns_info)
 
-                # update entity dtype
-                await self.entity_dtype_initialization_and_validation_service.update_entity_dtype(
-                    table=document, target_columns_info=columns_info
-                )
+                    # update entity dtype
+                    await (
+                        self.entity_dtype_initialization_and_validation_service.update_entity_dtype(
+                            table=document, target_columns_info=columns_info
+                        )
+                    )
 
     async def _update_entity_table_reference(
         self,
