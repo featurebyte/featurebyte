@@ -86,8 +86,6 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
 
     @property
     def primary_key_columns(self) -> List[str]:
-        if self.series_id_column:
-            return [self.series_id_column]
         return []
 
     @property
@@ -98,18 +96,6 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
             self.record_creation_timestamp_column,
         ]
         return [col for col in cols if col]
-
-    @property
-    def contribute_entity_relationship_used_for_serving(self) -> bool:
-        """
-        Whether the table contributes to entity relationship used for serving
-
-        Returns
-        -------
-        bool
-        """
-        # time series table will not be used for parent child entity lookup in feature serving
-        return False
 
     def create_view_graph_node(
         self, input_node: InputNode, metadata: ViewMetadata, **kwargs: Any
