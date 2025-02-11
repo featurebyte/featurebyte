@@ -29,7 +29,11 @@ from featurebyte.schema.feature_store import (
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.query_cache_manager import QueryCacheManagerService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
+from featurebyte.session.base import (
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    BaseSession,
+)
 from featurebyte.session.session_helper import run_coroutines
 from featurebyte.warning import QueryNoLimitWarning
 
@@ -43,6 +47,8 @@ class PreviewService:
     """
     PreviewService class
     """
+
+    session_initialization_timeout = INTERACTIVE_SESSION_TIMEOUT_SECONDS
 
     def __init__(
         self,
@@ -95,7 +101,7 @@ class PreviewService:
             assert feature_store
 
         session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
+            feature_store=feature_store, timeout=self.session_initialization_timeout
         )
         return feature_store, session
 
@@ -615,3 +621,11 @@ class PreviewService:
             allow_long_running=allow_long_running,
         )
         return df_result.iloc[0]["count"]  # type: ignore
+
+
+class NonInteractivePreviewService(PreviewService):
+    """
+    PreviewService class for long-running queries
+    """
+
+    session_initialization_timeout = NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS

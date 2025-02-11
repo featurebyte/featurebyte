@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 from featurebyte.schema.worker.task.data_description import DataDescriptionTaskPayload
-from featurebyte.service.preview import PreviewService
+from featurebyte.service.preview import NonInteractivePreviewService
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
@@ -27,13 +27,13 @@ class DataDescriptionTask(BaseTask[DataDescriptionTaskPayload]):
         task_manager: TaskManager,
         storage: Storage,
         temp_storage: Storage,
-        preview_service: PreviewService,
+        non_interactive_preview_service: NonInteractivePreviewService,
         task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__(task_manager=task_manager)
         self.storage = storage
         self.temp_storage = temp_storage
-        self.preview_service = preview_service
+        self.preview_service = non_interactive_preview_service
         self.task_progress_updater = task_progress_updater
 
     async def get_task_description(self, payload: DataDescriptionTaskPayload) -> str:

@@ -14,7 +14,7 @@ from featurebyte import SourceType
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
-from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSchemaInitializer
+from featurebyte.session.base import INTERACTIVE_QUERY_TIMEOUT_SECONDS, BaseSchemaInitializer
 from featurebyte.session.base_spark import (
     BaseSparkMetadataSchemaInitializer,
     BaseSparkSchemaInitializer,
@@ -171,7 +171,7 @@ class DatabricksUnitySession(DatabricksSession):
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         try:
             tables = await self.execute_query_interactive(

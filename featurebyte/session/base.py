@@ -48,9 +48,10 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.source_info import SourceInfo
 
 INTERACTIVE_SESSION_TIMEOUT_SECONDS = 30
-NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS = 600
+NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS = 1200
 MINUTES_IN_SECONDS = 60
 HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
+INTERACTIVE_QUERY_TIMEOUT_SECONDS = 30
 DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 10 * MINUTES_IN_SECONDS
 LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
 APPLICATION_NAME = "FeatureByte"
@@ -339,7 +340,7 @@ class BaseSession(BaseModel):
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         """
         Execute SQL query to retrieve table names
@@ -364,7 +365,7 @@ class BaseSession(BaseModel):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
         """
         Execute SQL query to retrieve table schema of a given table name and convert the
@@ -680,7 +681,7 @@ class BaseSession(BaseModel):
             raise exc
 
     async def execute_query_interactive(
-        self, query: str, timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS
+        self, query: str, timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS
     ) -> pd.DataFrame | None:
         """
         Execute SQL query that is expected to run for a short time
