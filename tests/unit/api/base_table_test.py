@@ -235,7 +235,10 @@ class BaseTableTestSuite:
 
         # test when primary key entity is set
         primary_key_entity = Entity.create(name="id_col", serving_names=["id_col"])
-        primary_key_col = table_under_test.primary_key_columns[0]
-        table_under_test[primary_key_col].as_entity(primary_key_entity.name)
-        table_model = table_under_test.cached_model
-        assert table_model.table_primary_key_entity_ids == [primary_key_entity.id]
+        if table_model.primary_key_columns:
+            primary_key_col = table_under_test.primary_key_columns[0]
+            table_under_test[primary_key_col].as_entity(primary_key_entity.name)
+            table_model = table_under_test.cached_model
+            assert table_model.table_primary_key_entity_ids == [primary_key_entity.id]
+        else:
+            assert table_model.table_primary_key_entity_ids == []

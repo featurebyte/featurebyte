@@ -68,9 +68,10 @@ class TimestampSchema(FeatureByteBaseModel):
 
         If the timestamp column is not of type string, `format_string` is not required and should not be provided.
 
-    timezone: Union[TimezoneName, TimezoneOffsetColumn]
+    timezone: Union[TimeZoneName, TimeZoneColumn]
         The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones)
         (commonly known as the IANA Time Zone Database or tz database). The default value is "Etc/UTC".
+        TimeZoneColumn can be used to specify a column in the dataset that contains timezone information.
 
 
     Examples

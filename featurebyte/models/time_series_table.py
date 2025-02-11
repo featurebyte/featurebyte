@@ -86,8 +86,6 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
 
     @property
     def primary_key_columns(self) -> List[str]:
-        if self.series_id_column:
-            return [self.series_id_column]
         return []
 
     @property
