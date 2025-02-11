@@ -81,8 +81,8 @@ async def update_target_namespace(
     Update TargetNamespace
     """
     controller = request.state.app_container.target_namespace_controller
-    target_namespace: TargetNamespaceModel = (
-        await controller.target_namespace_service.update_document(target_namespace_id, data)
+    target_namespace: TargetNamespaceModel = await controller.update_target_namespace(
+        target_namespace_id, data
     )
     return target_namespace
 

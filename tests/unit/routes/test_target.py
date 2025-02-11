@@ -117,6 +117,7 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             "block_modification_by": [],
             "description": None,
             "is_deleted": False,
+            "target_type": None,
         }
 
     def test_create_target__entity_parent_id_in_the_list(
