@@ -453,7 +453,7 @@ class FeatureStoreWarehouseService:
         return db_session.get_async_query_stream(sql)
 
 
-class NonInteractiveFeatureStoreWarehouseService:
+class NonInteractiveFeatureStoreWarehouseService(FeatureStoreWarehouseService):
     """
     FeatureStoreWarehouseService for long-running queries
     """
