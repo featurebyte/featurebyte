@@ -10,11 +10,12 @@ from typing import Any, List, Optional
 from bson import ObjectId
 from pydantic import Field, StrictStr
 
-from featurebyte.enum import TargetType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     NameStr,
     PydanticObjectId,
+    UniqueConstraintResolutionSignature,
+    UniqueValuesConstraint,
 )
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.graph import QueryGraph
@@ -45,20 +46,6 @@ class TargetList(PaginationMixin):
     data: List[TargetModel]
 
 
-class TargetUpdate(FeatureByteBaseModel):
-    """
-    Target update schema
-    """
-
-    target_type: Optional[TargetType] = Field(default=None)
-
-
-class TargetServiceUpdate(BaseDocumentServiceUpdateSchema, TargetUpdate):
-    """
-    Target service update schema
-    """
-
-
 class TargetInfo(FeatureByteBaseModel):
     """
     Target info
@@ -75,7 +62,6 @@ class TargetInfo(FeatureByteBaseModel):
     metadata: Any
     namespace_description: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
-    target_type: Optional[TargetType] = Field(default=None)
 
 
 class ComputeTargetRequest(ComputeRequest):
@@ -98,3 +84,24 @@ class ComputeTargetRequest(ComputeRequest):
         List[Node]
         """
         return [self.graph.get_node_by_name(name) for name in self.node_names]
+
+
+class TargetServiceUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Target service update schema
+    """
+
+    name: Optional[NameStr] = Field(default=None)
+
+    class Settings(BaseDocumentServiceUpdateSchema.Settings):
+        """
+        Unique constraints checking
+        """
+
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+        ]

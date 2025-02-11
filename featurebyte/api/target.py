@@ -38,12 +38,10 @@ from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observati
 from featurebyte.core.accessor.target_datetime import TargetDtAccessorMixin
 from featurebyte.core.accessor.target_string import TargetStrAccessorMixin
 from featurebyte.core.series import Series
-from featurebyte.enum import TargetType
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.schema.target import TargetCreate, TargetUpdate
+from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_table import TargetTableCreate
 
 DOCSTRING_FORMAT_PARAMS = {"class_name": "Target"}
@@ -64,7 +62,6 @@ class Target(
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Target")
     _route = "/target"
-    _update_schema_class: ClassVar[Any] = TargetUpdate
     _list_schema = TargetModel
     _get_schema = TargetModel
     _list_fields = ["name", "entities"]
@@ -162,20 +159,6 @@ class Target(
     @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def table_ids(self) -> Sequence[ObjectId]:
         return self._get_table_ids()
-
-    @property
-    def target_type(self) -> Optional[TargetType]:
-        """
-        Target type of the target.
-
-        Returns
-        -------
-        Optional[TargetType]
-        """
-        try:
-            return self.cached_model.target_type
-        except RecordRetrievalException:
-            return None
 
     @substitute_docstring(
         doc_template=ISNULL_DOC,
@@ -458,35 +441,6 @@ class Target(
             Description of target version
         """
         super().update_description(description=description)
-
-    @typechecked
-    def update_target_type(self, target_type: Union[TargetType, str]) -> None:
-        """
-        Update target type of target.
-
-        A target type can be one of the following:
-
-        The target type determines the nature of the prediction task and must be one of the following:
-
-        1. **REGRESSION** - The target variable is continuous, predicting numerical values.
-        2. **CLASSIFICATION** - The target variable has two possible categorical outcomes (binary classification).
-        3. **MULTI_CLASSIFICATION** - The target variable has more than two possible categorical outcomes.
-
-        Parameters
-        ----------
-        target_type: Union[TargetType, str]
-            Target type
-
-        Examples
-        --------
-        >>> target = catalog.get_target("InvoiceCount_60days")  # doctest: +SKIP
-        >>> target.update_target_type("REGRESSION")  # doctest: +SKIP
-        """
-        target_type_value = TargetType(target_type).value
-        self.update(
-            update_payload={"target_type": target_type_value},
-            allow_update_local=False,
-        )
 
     def delete(self) -> None:
         """
