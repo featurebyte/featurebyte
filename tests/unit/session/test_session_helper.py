@@ -10,7 +10,8 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.exception import InvalidOutputRowIndexError
-from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
+from featurebyte.models.feature_query_set import FeatureQuerySet
+from featurebyte.query_graph.sql.batch_helper import FeatureQuery
 from featurebyte.session.session_helper import (
     SessionHandler,
     execute_feature_query_set,
