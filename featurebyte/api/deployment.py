@@ -228,10 +228,20 @@ class Deployment(DeletableApiObject):
 
         Examples
         --------
-        >>. deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
+        Compute batch features using a batch request table.
+        >>> deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
         >>> batch_features = deployment.compute_batch_feature_table(  # doctest: +SKIP
-        ...   batch_request_table=batch_request_table,
-        ...   batch_feature_table_name = <batch_feature_table_name>
+        ...     batch_request_table=batch_request_table,
+        ...     batch_feature_table_name="<batch_feature_table_name>",
+        ... )
+
+        Compute batch features using a source table.
+        >>> deployment = catalog.get_deployment(<deployment_name>)  # doctest: +SKIP
+        >>> batch_features = deployment.compute_batch_feature_table(  # doctest: +SKIP
+        ...     batch_request_table=source_table,
+        ...     batch_feature_table_name="<batch_feature_table_name>",
+        ...     columns=["cust_id"],
+        ...     columns_rename_mapping={"cust_id": "GROCERYCUSTOMERGUID"},
         ... )
         """
 

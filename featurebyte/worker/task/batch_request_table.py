@@ -13,6 +13,7 @@ from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.session.base import BaseSession
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -41,11 +42,29 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
     async def get_task_description(self, payload: BatchRequestTableTaskPayload) -> str:
         return f'Save batch request table "{payload.name}"'
 
-    async def execute(self, payload: BatchRequestTableTaskPayload) -> Any:
-        feature_store = await self.feature_store_service.get_document(
-            document_id=payload.feature_store_id
-        )
-        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
+    async def create_batch_request_table(
+        self,
+        db_session: BaseSession,
+        payload: BatchRequestTableTaskPayload,
+        create_document: bool = True,
+    ) -> BatchRequestTableModel:
+        """
+        Create batch request table
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        payload: BatchRequestTableTaskPayload
+            Task payload
+        create_document: bool
+            Create batch request table document, by default True
+
+        Returns
+        -------
+        BatchRequestTableModel
+            Batch request table model
+        """
         service = self.batch_request_table_service
         location = await service.generate_materialized_table_location(
             payload.feature_store_id,
@@ -74,4 +93,13 @@ class BatchRequestTableTask(DataWarehouseMixin, BaseTask[BatchRequestTableTaskPa
                 columns_info=columns_info,
                 num_rows=num_rows,
             )
-            await self.batch_request_table_service.create_document(batch_request_table)
+            if create_document:
+                await self.batch_request_table_service.create_document(batch_request_table)
+            return batch_request_table
+
+    async def execute(self, payload: BatchRequestTableTaskPayload) -> Any:
+        feature_store = await self.feature_store_service.get_document(
+            document_id=payload.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(feature_store)
+        await self.create_batch_request_table(db_session, payload)
