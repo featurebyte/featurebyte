@@ -118,7 +118,10 @@ from featurebyte.service.feature_offline_store_info import OfflineStoreInfoIniti
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+from featurebyte.service.feature_store_warehouse import (
+    FeatureStoreWarehouseService,
+    NonInteractiveFeatureStoreWarehouseService,
+)
 from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.feature_table_cache_metadata import FeatureTableCacheMetadataService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
@@ -150,7 +153,7 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.service.periodic_task import PeriodicTaskService
-from featurebyte.service.preview import PreviewService
+from featurebyte.service.preview import NonInteractivePreviewService, PreviewService
 from featurebyte.service.query_cache import QueryCacheDocumentService
 from featurebyte.service.query_cache_cleanup import QueryCacheCleanupService
 from featurebyte.service.query_cache_cleanup_scheduler import QueryCacheCleanupSchedulerService
@@ -329,6 +332,8 @@ app_container_config.register_class(HistoricalFeaturesValidationParametersServic
 app_container_config.register_class(ItemTableController)
 app_container_config.register_class(ItemTableService)
 app_container_config.register_class(NamespaceHandler)
+app_container_config.register_class(NonInteractivePreviewService)
+app_container_config.register_class(NonInteractiveFeatureStoreWarehouseService)
 app_container_config.register_class(ObservationSetHelper)
 app_container_config.register_class(ObservationTableController)
 app_container_config.register_class(ObservationTableDeleteValidator)
