@@ -38,6 +38,7 @@ from featurebyte.common.utils import dataframe_to_arrow_bytes, enforce_observati
 from featurebyte.core.accessor.target_datetime import TargetDtAccessorMixin
 from featurebyte.core.accessor.target_string import TargetStrAccessorMixin
 from featurebyte.core.series import Series
+from featurebyte.enum import TargetType
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
@@ -75,6 +76,8 @@ class Target(
         frozen=True,
         description="Provides information about the feature store that the target is connected to.",
     )
+    # this is used to store the target_type before the target is saved
+    internal_target_type: Optional[TargetType] = Field(default=None, alias="target_type")
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = TargetCreate(**self.model_dump(by_alias=True))
@@ -418,6 +421,20 @@ class Target(
         target_namespace_id = cast(TargetModel, self.cached_model).target_namespace_id
         return TargetNamespace.get_by_id(id=target_namespace_id)
 
+    @property
+    def target_type(self) -> Optional[TargetType]:
+        """
+        Target type
+
+        Returns
+        -------
+        Optional[str]
+            Target type
+        """
+        if self.saved:
+            return self.target_namespace.target_type
+        return self.internal_target_type
+
     @typechecked
     def update_description(self, description: Optional[str]) -> None:
         """
@@ -441,6 +458,21 @@ class Target(
             Description of target version
         """
         super().update_description(description=description)
+
+    @typechecked
+    def update_target_type(self, target_type: TargetType) -> None:
+        """
+        Update target type
+
+        Parameters
+        ----------
+        target_type: TargetType
+            Type of the Target used to indicate the modeling type of the target
+        """
+        if self.saved:
+            self.target_namespace.update_target_type(target_type=target_type)
+        else:
+            self.internal_target_type = target_type
 
     def delete(self) -> None:
         """

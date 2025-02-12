@@ -73,7 +73,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         window: Optional[str]
             Window of the TargetNamespace
         target_type: Optional[TargetType]
-            Type of the TargetNamespace
+            Type of the Target used to indicate the modeling type of the target
 
         Returns
         -------
@@ -128,7 +128,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
     @property
     def target_type(self) -> Optional[TargetType]:
         """
-        Type of the target namespace.
+        Type of the Target used to indicate the modeling type of the target
 
         Returns
         -------
@@ -178,7 +178,7 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         Parameters
         ----------
         target_type: TargetType
-            Type of the target namespace
+            Type of the Target used to indicate the modeling type of the target
         """
         self.update(
             update_payload={"target_type": target_type},

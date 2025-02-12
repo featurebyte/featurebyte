@@ -6,6 +6,7 @@ from typing import Any, List, Tuple, cast
 
 from bson import ObjectId
 
+from featurebyte.common.validator import validate_target_type
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.target_namespace import TargetNamespaceModel
@@ -93,6 +94,9 @@ class TargetNamespaceController(
             name=target_namespace.name,
             default_version_mode=target_namespace.default_version_mode,
             default_target_id=target_namespace.default_target_id,
+            target_type=target_namespace.target_type,
+            created_at=target_namespace.created_at,
+            updated_at=target_namespace.updated_at,
         )
 
     async def update_target_namespace(
@@ -125,6 +129,8 @@ class TargetNamespaceController(
             and data.target_type != target_namespace.target_type
         ):
             raise DocumentUpdateError("Updating target type after setting it is not supported.")
+
+        validate_target_type(target_type=target_namespace.target_type, dtype=target_namespace.dtype)
         updated_namespace = await self.service.update_document(
             document_id=target_namespace_id,
             data=TargetNamespaceServiceUpdate(**data.model_dump(by_alias=True)),

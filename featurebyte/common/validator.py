@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from typing import Any, List, Optional, Set, Tuple
 
 from featurebyte.common.model_util import convert_version_string_to_dict, parse_duration_string
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TargetType
+from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 
@@ -224,3 +225,39 @@ def duration_string_validator(cls: Any, value: Any) -> Any:
         # Try to parse using pandas#Timedelta. If it fails, a ValueError will be thrown.
         parse_duration_string(value)
     return value
+
+
+def validate_target_type(target_type: Optional[TargetType], dtype: Optional[DBVarType]) -> None:
+    """
+    Validate target type and dtype consistency
+
+    Parameters
+    ----------
+    target_type: Optional[TargetType]
+        Target type used to indicate the modeling type of the target
+    dtype: Optional[DBVarType]
+        Data type of the TargetNamespace
+
+    Raises
+    ------
+    DocumentInconsistencyError
+        If target type is not consistent with dtype
+    """
+    if not target_type or not dtype:
+        return
+
+    if target_type == TargetType.CLASSIFICATION and dtype in DBVarType.binary_class_target_types():
+        return
+
+    if target_type == TargetType.REGRESSION and dtype in DBVarType.regression_target_types():
+        return
+
+    if (
+        target_type == TargetType.MULTI_CLASSIFICATION
+        and dtype in DBVarType.multiclass_target_types()
+    ):
+        return
+
+    raise DocumentInconsistencyError(
+        f"Target type {target_type} is not consistent with dtype {dtype}"
+    )
