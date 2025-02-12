@@ -9,8 +9,13 @@ from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from redis import Redis
 
+from featurebyte import TargetType
 from featurebyte.common.model_util import parse_duration_string
-from featurebyte.exception import DocumentCreationError, DocumentNotFoundError
+from featurebyte.common.validator import validate_target_type
+from featurebyte.exception import (
+    DocumentCreationError,
+    DocumentInconsistencyError,
+)
 from featurebyte.models.feature_namespace import DefaultVersionMode
 from featurebyte.models.target import TargetModel
 from featurebyte.models.target_namespace import TargetNamespaceModel
@@ -152,6 +157,29 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
                 )
         return namespace.window
 
+    @classmethod
+    async def validate_version_and_namespace_consistency(
+        cls,
+        target_model: TargetModel,
+        target_namespace_model: TargetNamespaceModel,
+        attributes: List[str],
+        target_type: Optional[TargetType],
+    ) -> None:
+        if (
+            target_type
+            and target_namespace_model.target_type
+            and target_type != target_namespace_model.target_type
+        ):
+            raise DocumentInconsistencyError(
+                f"Target type {target_type} is not consistent with namespace's target type {target_namespace_model.target_type}"
+            )
+
+        await validate_version_and_namespace_consistency(
+            base_model=target_model,
+            base_namespace_model=target_namespace_model,
+            attributes=attributes,
+        )
+
     async def create_document(self, data: TargetCreate) -> TargetModel:
         """
         Create a new target document
@@ -164,25 +192,32 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
         Returns
         -------
         TargetModel
-
-        Raises
-        ------
-        DocumentCreationError
-            If Target entity ids include any parent entity id
         """
         document = await self.prepare_target_model(data=data, sanitize_for_definition=False)
+        validate_target_type(target_type=data.target_type, dtype=document.dtype)
+
+        # check any conflict with existing documents
+        await self._check_document_unique_constraints(document=document)
+
+        # prepare target definition
+        definition = await self.namespace_handler.prepare_definition(document=document)
+
+        # check existence of target namespace first
+        target_namespace = None
+        async for target_namespace in self.target_namespace_service.list_documents_iterator(
+            query_filter={"name": document.name}
+        ):
+            break
+
         async with self.persistent.start_transaction() as session:
-            # check any conflict with existing documents
-            await self._check_document_unique_constraints(document=document)
-
-            # prepare target definition
-            definition = await self.namespace_handler.prepare_definition(document=document)
-
             # insert the document
             insert_id = await session.insert_one(
                 collection_name=self.collection_name,
                 document={
                     **document.model_dump(by_alias=True),
+                    "target_namespace_id": target_namespace.id
+                    if target_namespace
+                    else document.target_namespace_id,
                     "definition": definition,
                     "raw_graph": data.graph.model_dump(),
                 },
@@ -190,38 +225,24 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
             )
             assert insert_id == document.id
 
-            try:
-                target_namespace = await self.target_namespace_service.get_document(
-                    document_id=document.target_namespace_id,
-                )
-                await validate_version_and_namespace_consistency(
-                    base_model=document,
-                    base_namespace_model=target_namespace,
-                    attributes=["name"],
+            if target_namespace:
+                await self.validate_version_and_namespace_consistency(
+                    target_model=document,
+                    target_namespace_model=target_namespace,
+                    attributes=["name", "dtype"],
+                    target_type=data.target_type,
                 )
                 await self.target_namespace_service.update_document(
-                    document_id=document.target_namespace_id,
+                    document_id=target_namespace.id,
                     data=TargetNamespaceServiceUpdate(
                         target_ids=self.include_object_id(target_namespace.target_ids, document.id),
                         window=self.derive_window(document=document, namespace=target_namespace),
+                        default_target_id=document.id,
+                        target_type=data.target_type,
                     ),
-                    return_document=True,
+                    return_document=False,
                 )
-            except DocumentNotFoundError as exc:
-                entity_ids = document.entity_ids or []
-
-                # validate that each entity id's parents must not be in the entity ids
-                all_parents_ids = []
-                for entity_id in entity_ids:
-                    entity = await self.entity_service.get_document(document_id=entity_id)
-                    for parent in entity.parents:
-                        all_parents_ids.append(parent.id)
-
-                if set(all_parents_ids).intersection(set(entity_ids)):
-                    raise DocumentCreationError(
-                        "Target entity ids must not include any parent entity ids"
-                    ) from exc
-
+            else:
                 await self.target_namespace_service.create_document(
                     data=TargetNamespaceCreate(
                         _id=document.target_namespace_id,
@@ -230,8 +251,9 @@ class TargetService(BaseFeatureService[TargetModel, TargetCreate]):
                         target_ids=[insert_id],
                         default_target_id=insert_id,
                         default_version_mode=DefaultVersionMode.AUTO,
-                        entity_ids=sorted(entity_ids),
+                        entity_ids=sorted(document.primary_entity_ids),
                         window=document.derive_window(),
+                        target_type=data.target_type,
                     ),
                 )
         return await self.get_document(document_id=insert_id)

@@ -39,11 +39,10 @@ from featurebyte.core.accessor.target_datetime import TargetDtAccessorMixin
 from featurebyte.core.accessor.target_string import TargetStrAccessorMixin
 from featurebyte.core.series import Series
 from featurebyte.enum import TargetType
-from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.model.common_table import TabularSource
-from featurebyte.schema.target import TargetCreate, TargetUpdate
+from featurebyte.schema.target import TargetCreate
 from featurebyte.schema.target_table import TargetTableCreate
 
 DOCSTRING_FORMAT_PARAMS = {"class_name": "Target"}
@@ -64,7 +63,6 @@ class Target(
     # class variables
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.Target")
     _route = "/target"
-    _update_schema_class: ClassVar[Any] = TargetUpdate
     _list_schema = TargetModel
     _get_schema = TargetModel
     _list_fields = ["name", "entities"]
@@ -78,6 +76,8 @@ class Target(
         frozen=True,
         description="Provides information about the feature store that the target is connected to.",
     )
+    # this is used to store the target_type before the target is saved
+    internal_target_type: Optional[TargetType] = Field(default=None, alias="target_type")
 
     def _get_create_payload(self) -> dict[str, Any]:
         data = TargetCreate(**self.model_dump(by_alias=True))
@@ -162,20 +162,6 @@ class Target(
     @substitute_docstring(doc_template=TABLE_IDS_DOC, format_kwargs=DOCSTRING_FORMAT_PARAMS)
     def table_ids(self) -> Sequence[ObjectId]:
         return self._get_table_ids()
-
-    @property
-    def target_type(self) -> Optional[TargetType]:
-        """
-        Target type of the target.
-
-        Returns
-        -------
-        Optional[TargetType]
-        """
-        try:
-            return self.cached_model.target_type
-        except RecordRetrievalException:
-            return None
 
     @substitute_docstring(
         doc_template=ISNULL_DOC,
@@ -435,6 +421,20 @@ class Target(
         target_namespace_id = cast(TargetModel, self.cached_model).target_namespace_id
         return TargetNamespace.get_by_id(id=target_namespace_id)
 
+    @property
+    def target_type(self) -> Optional[TargetType]:
+        """
+        Target type
+
+        Returns
+        -------
+        Optional[str]
+            Target type
+        """
+        if self.saved:
+            return self.target_namespace.target_type
+        return self.internal_target_type
+
     @typechecked
     def update_description(self, description: Optional[str]) -> None:
         """
@@ -475,18 +475,18 @@ class Target(
         Parameters
         ----------
         target_type: Union[TargetType, str]
-            Target type
+            Type of the Target used to indicate the modeling type of the target
 
         Examples
         --------
         >>> target = catalog.get_target("InvoiceCount_60days")  # doctest: +SKIP
         >>> target.update_target_type("REGRESSION")  # doctest: +SKIP
         """
-        target_type_value = TargetType(target_type).value
-        self.update(
-            update_payload={"target_type": target_type_value},
-            allow_update_local=False,
-        )
+        value = TargetType(target_type)
+        if self.saved:
+            self.target_namespace.update_target_type(target_type=value)
+        else:
+            self.internal_target_type = value
 
     def delete(self) -> None:
         """

@@ -1148,6 +1148,7 @@ def _get_target_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TARGET, SERVE, "Target.compute_targets"]),
         DocLayoutItem([TARGET, SERVE, "Target.compute_target_table"]),
         DocLayoutItem([TARGET, CREATE, "TargetNamespace.create"]),
+        DocLayoutItem([TARGET, MANAGE, "TargetNamespace.update_target_type"]),
         DocLayoutItem([TARGET, MANAGE, "Target.update_target_type"]),
     ]
 

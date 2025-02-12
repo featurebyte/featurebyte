@@ -46,11 +46,12 @@ from featurebyte.common.join_utils import (
     is_column_name_in_columns,
 )
 from featurebyte.common.utils import validate_datetime_input
+from featurebyte.common.validator import validate_target_type
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
 from featurebyte.core.util import series_binary_operation
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TargetType
 from featurebyte.exception import (
     NoJoinKeyFoundError,
     RepeatedColumnNamesError,
@@ -308,7 +309,12 @@ class ViewColumn(Series, SampleMixin):
         return cast(View, view[[input_column_name]]), input_column_name
 
     @typechecked
-    def as_target(self, target_name: str, offset: Optional[str] = None) -> Target:
+    def as_target(
+        self,
+        target_name: str,
+        offset: Optional[str] = None,
+        target_type: Optional[TargetType] = None,
+    ) -> Target:
         """
         Create a lookup target directly from the column in the View.
 
@@ -323,6 +329,8 @@ class ViewColumn(Series, SampleMixin):
             Name of the target to create.
         offset: str
             When specified, retrieve target value as of this offset after the point-in-time.
+        target_type: Optional[TargetType]
+            Type of the target
 
         Returns
         -------
@@ -361,11 +369,15 @@ class ViewColumn(Series, SampleMixin):
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[input_node],
         )
-        return view.project_target_from_node(
+        target = view.project_target_from_node(
             input_node=lookup_node,
             target_name=target_name,
             target_dtype=view.column_var_type_map[input_column_name],
         )
+        if target_type:
+            validate_target_type(target_type, target.dtype)
+            target.update_target_type(target_type)
+        return target
 
     @typechecked
     def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:

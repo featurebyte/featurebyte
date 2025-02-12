@@ -15,6 +15,8 @@ from featurebyte.models.base import (
     FeatureByteBaseModel,
     NameStr,
     PydanticObjectId,
+    UniqueConstraintResolutionSignature,
+    UniqueValuesConstraint,
 )
 from featurebyte.models.target import TargetModel
 from featurebyte.query_graph.graph import QueryGraph
@@ -35,6 +37,7 @@ class TargetCreate(FeatureByteBaseModel):
     graph: QueryGraph
     node_name: str
     tabular_source: TabularSource
+    target_type: Optional[TargetType] = Field(default=None)
 
 
 class TargetList(PaginationMixin):
@@ -43,20 +46,6 @@ class TargetList(PaginationMixin):
     """
 
     data: List[TargetModel]
-
-
-class TargetUpdate(FeatureByteBaseModel):
-    """
-    Target update schema
-    """
-
-    target_type: Optional[TargetType] = Field(default=None)
-
-
-class TargetServiceUpdate(BaseDocumentServiceUpdateSchema, TargetUpdate):
-    """
-    Target service update schema
-    """
 
 
 class TargetInfo(FeatureByteBaseModel):
@@ -98,3 +87,24 @@ class ComputeTargetRequest(ComputeRequest):
         List[Node]
         """
         return [self.graph.get_node_by_name(name) for name in self.node_names]
+
+
+class TargetServiceUpdate(BaseDocumentServiceUpdateSchema):
+    """
+    Target service update schema
+    """
+
+    name: Optional[NameStr] = Field(default=None)
+
+    class Settings(BaseDocumentServiceUpdateSchema.Settings):
+        """
+        Unique constraints checking
+        """
+
+        unique_constraints: List[UniqueValuesConstraint] = [
+            UniqueValuesConstraint(
+                fields=("name",),
+                conflict_fields_signature={"name": ["name"]},
+                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
+            ),
+        ]

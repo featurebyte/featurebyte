@@ -259,6 +259,39 @@ class DBVarType(StrEnum):
         """
         return cls.dictionary_types().union({cls.FLAT_DICT}).union(cls.array_types())
 
+    @classmethod
+    def binary_class_target_types(cls) -> set[DBVarType]:
+        """
+        Types for binary classification target
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return cls.multiclass_target_types().union({cls.BOOL})
+
+    @classmethod
+    def multiclass_target_types(cls) -> set[DBVarType]:
+        """
+        Types for classification target
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.CHAR, cls.INT, cls.VARCHAR}
+
+    @classmethod
+    def regression_target_types(cls) -> set[DBVarType]:
+        """
+        Types for regression target
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.FLOAT, cls.INT}
+
     def to_type_str(self) -> str | None:
         """
         Convert DBVarType to internal type string

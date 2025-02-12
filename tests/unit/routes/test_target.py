@@ -12,8 +12,6 @@ from bson import ObjectId
 from pandas._testing import assert_frame_equal
 
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.models import EntityModel
-from featurebyte.models.entity import ParentEntity
 from featurebyte.schema.target_table import TargetTableCreate
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
@@ -33,11 +31,6 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             f'Target (id: "{payload["_id"]}") already exists. '
             f'Get the existing object by `Target.get_by_id(id="{payload["_id"]}")`.',
         ),
-        (
-            {**payload, "_id": str(ObjectId())},
-            'TargetNamespace (name: "float_target") already exists. '
-            'Please rename object (name: "float_target") to something else.',
-        ),
     ]
     create_unprocessable_payload_expected_detail_pairs = [
         (
@@ -50,17 +43,14 @@ class TestTargetApi(BaseCatalogApiTestSuite):
                     "type": "string_type",
                 }
             ],
-        )
-    ]
-    create_parent_unprocessable_payload_expected_detail_pairs = [
+        ),
         (
             {
-                "id": str(unknown_id),
-                "table_type": "event_table",
-                "table_id": str(ObjectId()),
+                **payload,
+                "target_type": "classification",
             },
-            f'Target (id: "{unknown_id}") not found. Please save the Target object first.',
-        )
+            "Target type classification is not consistent with dtype FLOAT",
+        ),
     ]
 
     def setup_creation_route(self, api_client):
@@ -117,42 +107,8 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             "block_modification_by": [],
             "description": None,
             "is_deleted": False,
+            "target_type": None,
         }
-
-    def test_create_target__entity_parent_id_in_the_list(
-        self,
-        create_success_response,
-        test_api_client_persistent,
-    ):
-        """
-        Test context update (unprocessable)
-        """
-        test_api_client, _ = test_api_client_persistent
-        _ = create_success_response.json()
-        entity_payload = self.load_payload("tests/fixtures/request_payloads/entity.json")
-        entity_payload["serving_names"] = [entity_payload["serving_name"]]
-
-        payload = self.payload.copy()
-        payload["_id"] = str(ObjectId())
-        payload["name"] = f"{payload['name']}_1"
-
-        with mock.patch("featurebyte.service.entity.EntityService.get_document") as mock_get_doc:
-            mock_get_doc.return_value = EntityModel(
-                **entity_payload,
-                parents=[
-                    ParentEntity(
-                        id=ObjectId(entity_payload["_id"]),
-                        table_type="event_table",
-                        table_id=ObjectId(),
-                    )
-                ],
-            )
-            response = test_api_client.post(f"{self.base_route}", json=payload)
-            assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
-            assert (
-                "Target entity ids must not include any parent entity ids"
-                in response.json()["detail"]
-            )
 
     def test_request_sample_entity_serving_names(
         self,
@@ -266,25 +222,6 @@ class TestTargetApi(BaseCatalogApiTestSuite):
         response = test_api_client.post(f"{self.base_route}/preview", json=target_preview_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
-
-    def test_update_target_type(self, test_api_client_persistent, create_success_response):
-        """Test update target type"""
-        test_api_client, _ = test_api_client_persistent
-        target = create_success_response.json()
-        assert target["target_type"] is None
-
-        # save the target & check
-        response = test_api_client.patch(
-            f"{self.base_route}/{target['_id']}", json={"target_type": "regression"}
-        )
-        assert response.status_code == HTTPStatus.OK, response.json()
-        assert response.json()["target_type"] == "regression"
-
-        # attempt to update target type again
-        response = test_api_client.patch(
-            f"{self.base_route}/{target['_id']}", json={"target_type": "classification"}
-        )
-        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
 
     def test_delete_entity(self, test_api_client_persistent, create_success_response):
         """Test delete entity"""

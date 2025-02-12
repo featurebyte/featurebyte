@@ -12,7 +12,6 @@ from fastapi import HTTPException
 
 from featurebyte.exception import (
     DocumentDeletionError,
-    DocumentUpdateError,
     MissingPointInTimeColumnError,
     RequiredEntityNotProvidedError,
 )
@@ -29,8 +28,6 @@ from featurebyte.schema.target import (
     TargetCreate,
     TargetInfo,
     TargetList,
-    TargetServiceUpdate,
-    TargetUpdate,
 )
 from featurebyte.schema.target_namespace import TargetNamespaceServiceUpdate
 from featurebyte.service.entity import EntityService
@@ -131,44 +128,6 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             **params,
         )
 
-    async def update_target(
-        self,
-        target_id: ObjectId,
-        data: TargetUpdate,
-    ) -> TargetModel:
-        """
-        Update Target at persistent
-
-        Parameters
-        ----------
-        target_id: ObjectId
-            Target ID
-        data: TargetUpdate
-            Target update payload
-
-        Returns
-        -------
-        TargetModel
-            Updated Target object
-
-        Raises
-        ------
-        DocumentUpdateError
-            If updating target type after setting it is not supported
-        """
-        if data.target_type:
-            target = await self.service.get_document(document_id=target_id)
-            if target.target_type is not None and target.target_type != data.target_type:
-                raise DocumentUpdateError("Updating target type after setting it is not supported.")
-
-            await self.service.update_document(
-                document_id=target_id,
-                data=TargetServiceUpdate(**data.model_dump()),
-                return_document=False,
-            )
-
-        return await self.service.get_document(document_id=target_id)
-
     async def service_and_query_pairs_for_checking_reference(
         self, document_id: ObjectId
     ) -> List[Tuple[Any, QueryFilter]]:
@@ -250,7 +209,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             metadata=target_metadata,
             namespace_description=namespace.description,
             description=target_doc.description,
-            target_type=target_doc.target_type,
+            target_type=namespace.target_type,
         )
 
     async def preview(self, target_preview: TargetPreview) -> dict[str, Any]:

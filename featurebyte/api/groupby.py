@@ -24,7 +24,7 @@ from featurebyte.api.scd_view import SCDView
 from featurebyte.api.target import Target
 from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import AggFunc
+from featurebyte.enum import AggFunc, TargetType
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
@@ -471,6 +471,7 @@ class GroupBy:
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
         offset: Optional[str] = None,
+        target_type: Optional[TargetType] = None,
     ) -> Target:
         """
         The forward_aggregate method of a GroupBy class instance returns a Forward Aggregated Target object. This object
@@ -507,6 +508,8 @@ class GroupBy:
         offset: Optional[str]
             Offset duration to apply to the window, such as '1d'. If specified, the windows will be
             shifted forward by the offset duration
+        target_type: Optional[TargetType]
+            Type of the Target used to indicate the modeling type of the target
 
         Returns
         -------
@@ -535,6 +538,7 @@ class GroupBy:
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
             offset=offset,
+            target_type=target_type,
         )
 
     @typechecked
@@ -546,6 +550,7 @@ class GroupBy:
         offset: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
+        target_type: Optional[TargetType] = None,
     ) -> Target:
         """
         The forward_aggregate_asat method of a GroupBy instance returns an Aggregate ""as at""
@@ -602,6 +607,8 @@ class GroupBy:
         skip_fill_na: Optional[bool]
             Whether to skip filling NaN values, filling nan operation is skipped by default as it is
             expensive during feature serving
+        target_type: Optional[TargetType]
+            Type of the Target used to indicate the modeling type of the target
 
         Returns
         -------
@@ -640,4 +647,5 @@ class GroupBy:
             offset=offset,
             fill_value=fill_value,
             skip_fill_na=skip_fill_na,
+            target_type=target_type,
         )

@@ -9,7 +9,6 @@ from bson import ObjectId
 from pydantic import Field
 
 from featurebyte.common.model_util import parse_duration_string
-from featurebyte.enum import TargetType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import BaseFeatureModel
 from featurebyte.query_graph.enum import NodeType
@@ -52,7 +51,6 @@ class TargetModel(BaseFeatureModel):
 
     # ID related fields associated with this target
     target_namespace_id: PydanticObjectId = Field(frozen=True, default_factory=ObjectId)
-    target_type: Optional[TargetType] = Field(default=None)
 
     def derive_window(self) -> Optional[str]:
         """
