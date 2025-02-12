@@ -205,10 +205,8 @@ async def test_run_coroutines_return_exceptions(mock_redis):
         max_concurrency=10,
         return_exceptions=True,
     )
-    assert result == [
-        "OK 1",
-        ValueError("Error 2"),
-        ValueError("Error 3"),
-        ValueError("Error 4"),
-        "OK 5",
-    ]
+    assert result[0] == "OK 1"
+    assert isinstance(result[1], ValueError) and str(result[1]) == "Error 2"
+    assert isinstance(result[2], ValueError) and str(result[2]) == "Error 3"
+    assert isinstance(result[3], ValueError) and str(result[3]) == "Error 4"
+    assert result[4] == "OK 5"
