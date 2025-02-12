@@ -46,8 +46,6 @@ class TargetNamespaceUpdate(BaseDocumentServiceUpdateSchema):
     TargetNamespace update schema - exposed to client
     """
 
-    default_version_mode: Optional[DefaultVersionMode] = Field(default=None)
-    default_target_id: Optional[PydanticObjectId] = Field(default=None)
     window: Optional[str] = Field(default=None)
     target_type: Optional[TargetType] = Field(default=None)
 
@@ -57,7 +55,9 @@ class TargetNamespaceServiceUpdate(TargetNamespaceUpdate):
     TargetNamespaceService update schema - used by server side only, not exposed to client
     """
 
+    default_version_mode: Optional[DefaultVersionMode] = Field(default=None)
     target_ids: Optional[List[PydanticObjectId]] = Field(default=None)
+    default_target_id: Optional[PydanticObjectId] = Field(default=None)
 
 
 class TargetNamespaceList(PaginationMixin):
