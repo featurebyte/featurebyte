@@ -187,6 +187,16 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         ----------
         target_type: TargetType
             Type of the Target used to indicate the modeling type of the target
+
+        Examples
+        --------
+        >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
+        ...     name="amount_7d_target",
+        ...     window="7d",
+        ...     dtype=DBVarType.FLOAT,
+        ...     primary_entity=["customer"],
+        ... )
+        >>> target_namespace.update_target_type(fb.TargetType.REGRESSION)  # doctest: +SKIP
         """
         self.update(
             update_payload={"target_type": target_type},
