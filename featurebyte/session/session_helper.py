@@ -80,6 +80,7 @@ async def run_coroutines(
     redis: Redis[Any],
     concurrency_key: str,
     max_concurrency: Optional[int],
+    return_exceptions: bool = False,
 ) -> List[Any]:
     """
     Execute the provided list of coroutines
@@ -94,6 +95,9 @@ async def run_coroutines(
         Key for concurrency limit enforcement
     max_concurrency: Optional[int]
         Maximum number of coroutines to run concurrently or None to use the default
+    return_exceptions: bool
+        When True, exceptions are gathered in the result list instead of being raised immediately
+        and will not trigger cancellation of other tasks.
 
     Returns
     -------
@@ -106,6 +110,7 @@ async def run_coroutines(
         redis=redis,
         concurrency_key=concurrency_key,
         max_concurrency=max_concurrency,
+        return_exceptions=return_exceptions,
     )
     return await future
 
