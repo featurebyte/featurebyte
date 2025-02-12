@@ -37,7 +37,7 @@ class TargetCreate(FeatureByteBaseModel):
     graph: QueryGraph
     node_name: str
     tabular_source: TabularSource
-    target_type: Optional[TargetType]
+    target_type: Optional[TargetType] = Field(default=None)
 
 
 class TargetList(PaginationMixin):
