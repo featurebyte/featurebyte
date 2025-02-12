@@ -175,6 +175,14 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         """
         Update the target type of the target namespace.
 
+        A target type can be one of the following:
+
+        The target type determines the nature of the prediction task and must be one of the following:
+
+        1. **REGRESSION** - The target variable is continuous, predicting numerical values.
+        2. **CLASSIFICATION** - The target variable has two possible categorical outcomes (binary classification).
+        3. **MULTI_CLASSIFICATION** - The target variable has more than two possible categorical outcomes.
+
         Parameters
         ----------
         target_type: TargetType

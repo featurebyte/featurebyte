@@ -460,19 +460,33 @@ class Target(
         super().update_description(description=description)
 
     @typechecked
-    def update_target_type(self, target_type: TargetType) -> None:
+    def update_target_type(self, target_type: Union[TargetType, str]) -> None:
         """
-        Update target type
+        Update target type of target.
+
+        A target type can be one of the following:
+
+        The target type determines the nature of the prediction task and must be one of the following:
+
+        1. **REGRESSION** - The target variable is continuous, predicting numerical values.
+        2. **CLASSIFICATION** - The target variable has two possible categorical outcomes (binary classification).
+        3. **MULTI_CLASSIFICATION** - The target variable has more than two possible categorical outcomes.
 
         Parameters
         ----------
-        target_type: TargetType
+        target_type: Union[TargetType, str]
             Type of the Target used to indicate the modeling type of the target
+
+        Examples
+        --------
+        >>> target = catalog.get_target("InvoiceCount_60days")  # doctest: +SKIP
+        >>> target.update_target_type("REGRESSION")  # doctest: +SKIP
         """
+        value = TargetType(target_type)
         if self.saved:
-            self.target_namespace.update_target_type(target_type=target_type)
+            self.target_namespace.update_target_type(target_type=value)
         else:
-            self.internal_target_type = target_type
+            self.internal_target_type = value
 
     def delete(self) -> None:
         """
