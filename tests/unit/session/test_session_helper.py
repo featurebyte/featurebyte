@@ -14,6 +14,7 @@ from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
 from featurebyte.session.session_helper import (
     SessionHandler,
     execute_feature_query_set,
+    run_coroutines,
     validate_output_row_index,
 )
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
@@ -48,12 +49,20 @@ def mock_redis_fixture(is_output_row_index_valid):
     pipeline.incr.return_value = pipeline
     pipeline.zadd.return_value = pipeline
     pipeline.zrem.return_value = pipeline
-    pipeline.execute.side_effect = [
-        [1],  # return semaphone counter
-        [2],  # return semaphone zset score
-        [],
-    ]
+    pipeline.execute.return_value = [0]
     yield mock_redis
+
+
+@pytest.fixture(name="session_handler")
+def session_handler_fixture(mock_snowflake_session, mock_redis):
+    """
+    Fixture for a mock SessionHandler
+    """
+    return SessionHandler(
+        session=mock_snowflake_session,
+        redis=mock_redis,
+        feature_store=Mock(id=ObjectId(), max_query_concurrency=None),
+    )
 
 
 @pytest.mark.asyncio
@@ -87,7 +96,7 @@ async def test_validate_row_index__invalid(mock_snowflake_session):
 
 
 @pytest.mark.asyncio
-async def test_execute_feature_query_set(mock_snowflake_session, mock_redis, update_fixtures):
+async def test_execute_feature_query_set(session_handler, update_fixtures):
     """
     Test execute_feature_query_set
     """
@@ -108,16 +117,13 @@ async def test_execute_feature_query_set(mock_snowflake_session, mock_redis, upd
     progress_callback = AsyncMock(name="mock_progress_callback")
 
     await execute_feature_query_set(
-        session_handler=SessionHandler(
-            session=mock_snowflake_session,
-            redis=mock_redis,
-            feature_store=Mock(id=ObjectId(), max_query_concurrency=None),
-        ),
+        session_handler=session_handler,
         feature_query_set=feature_query_set,
         progress_callback=progress_callback,
     )
 
-    queries = extract_session_executed_queries(mock_snowflake_session)
+    session = session_handler.session
+    queries = extract_session_executed_queries(session)
 
     # Check executed queries
     assert_equal_with_expected_fixture(
@@ -127,7 +133,7 @@ async def test_execute_feature_query_set(mock_snowflake_session, mock_redis, upd
     )
 
     # Check intermediate tables are dropped
-    assert mock_snowflake_session.drop_table.call_args_list == [
+    assert session.drop_table.call_args_list == [
         call(database_name="sf_db", schema_name="sf_schema", table_name="my_table", if_exists=True),
     ]
 
@@ -140,10 +146,7 @@ async def test_execute_feature_query_set(mock_snowflake_session, mock_redis, upd
 
 @pytest.mark.parametrize("is_output_row_index_valid", [False])
 @pytest.mark.asyncio
-async def test_execute_feature_query_set__invalid_row_index(
-    mock_snowflake_session,
-    mock_redis,
-):
+async def test_execute_feature_query_set__invalid_row_index(session_handler):
     """
     Test execute_feature_query_set
     """
@@ -165,11 +168,7 @@ async def test_execute_feature_query_set__invalid_row_index(
 
     with pytest.raises(InvalidOutputRowIndexError) as exc_info:
         await execute_feature_query_set(
-            session_handler=SessionHandler(
-                session=mock_snowflake_session,
-                redis=mock_redis,
-                feature_store=Mock(id=ObjectId(), max_query_concurrency=None),
-            ),
+            session_handler=session_handler,
             feature_query_set=feature_query_set,
             progress_callback=progress_callback,
         )
@@ -178,3 +177,36 @@ async def test_execute_feature_query_set__invalid_row_index(
         str(exc_info.value)
         == "Row index column is invalid in the intermediate feature table: my_table. Feature names: a, b, c"
     )
+
+
+@pytest.mark.asyncio
+async def test_run_coroutines_return_exceptions(mock_redis):
+    """
+    Test run_coroutines with return_exceptions=True
+    """
+
+    async def _ok(i):
+        return f"OK {i}"
+
+    async def _error(i):
+        raise ValueError(f"Error {i}")
+
+    coroutines = [
+        _ok(1),
+        _error(2),
+        _error(3),
+        _error(4),
+        _ok(5),
+    ]
+    result = await run_coroutines(
+        coroutines=coroutines,
+        redis=mock_redis,
+        concurrency_key="my_key",
+        max_concurrency=10,
+        return_exceptions=True,
+    )
+    assert result[0] == "OK 1"
+    assert isinstance(result[1], ValueError) and str(result[1]) == "Error 2"
+    assert isinstance(result[2], ValueError) and str(result[2]) == "Error 3"
+    assert isinstance(result[3], ValueError) and str(result[3]) == "Error 4"
+    assert result[4] == "OK 5"

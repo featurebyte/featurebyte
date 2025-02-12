@@ -216,6 +216,7 @@ def asyncio_gather(
     redis: Redis[Any],
     concurrency_key: str,
     max_concurrency: int = 0,
+    return_exceptions: bool = False,
 ) -> Future[List[Any]]:
     """
     Run coroutines with a optional concurrency limit
@@ -230,6 +231,9 @@ def asyncio_gather(
         Key for concurrency limit enforcement
     max_concurrency: int
         Maximum number of coroutines to run concurrently
+    return_exceptions: bool
+        When True, exceptions are gathered in the result list instead of being raised immediately
+        and will not trigger cancellation of other tasks.
 
     Returns
     -------
@@ -237,7 +241,7 @@ def asyncio_gather(
     """
 
     if max_concurrency < 1:
-        return asyncio.gather(*coros)
+        return asyncio.gather(*coros, return_exceptions=return_exceptions)
 
     failed = False
     tasks_canceled = False
@@ -262,6 +266,10 @@ def asyncio_gather(
             try:
                 return await task
             except Exception:
+                if return_exceptions:
+                    # Do not cancel other tasks if return_exceptions is True since failures are
+                    # expected to be handled by the caller
+                    raise
                 failed = True
                 if not tasks_canceled:
                     # Cancel all tasks on failure
@@ -270,4 +278,4 @@ def asyncio_gather(
                     tasks_canceled = True
                 raise
 
-    return asyncio.gather(*(_coro(c) for c in coros))
+    return asyncio.gather(*(_coro(c) for c in coros), return_exceptions=return_exceptions)
