@@ -6,6 +6,10 @@ name: test
       - opened
       - synchronize
       - reopened
+    branches:
+      - main
+      - stable/*
+      - release/*
   push:
     branches:
       - main

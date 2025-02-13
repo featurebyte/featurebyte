@@ -6,6 +6,10 @@ name: test-notebooks
       - opened
       - synchronize
       - reopened
+    branches:
+      - main
+      - stable/*
+      - release/*
   push:
     branches:
       - main
