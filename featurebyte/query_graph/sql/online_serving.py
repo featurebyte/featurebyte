@@ -427,7 +427,7 @@ def get_online_features_query_set(
         List of output feature names
     output_include_row_index: bool
         Whether to include the TABLE_ROW_INDEX column in the output
-    request_table_name: Optional[str]
+    request_table_name: str
         Name of the registered request table
     request_table_expr: Optional[expressions.Select]
         Sql expression for the request table

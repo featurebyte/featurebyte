@@ -5,17 +5,16 @@ Session related helper functions
 from __future__ import annotations
 
 import os
-from typing import Any, Callable, Coroutine, List, Optional, Union
+from typing import Any, Callable, Coroutine, List, Optional
 
 import pandas as pd
 from bson import ObjectId
 from redis import Redis
 from sqlglot import expressions
-from sqlglot.expressions import Expression
 
 from featurebyte.common.progress import divide_progress_callback
 from featurebyte.common.utils import timer
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import InternalName
 from featurebyte.exception import InvalidOutputRowIndexError
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
@@ -32,14 +31,6 @@ logger = get_logger(__name__)
 
 
 MAX_QUERY_CONCURRENCY = int(os.getenv("MAX_QUERY_CONCURRENCY", "3"))
-
-
-def _to_query_str(query: Union[str, Expression], source_type: SourceType) -> str:
-    # TODO: still needed?
-    if isinstance(query, str):
-        return query
-    assert isinstance(query, Expression)
-    return sql_to_string(query, source_type)
 
 
 async def validate_output_row_index(session: BaseSession, output_table_name: str) -> None:
@@ -139,13 +130,17 @@ async def execute_feature_query(
     done_callback: Optional[Callable[[int], Coroutine[Any, Any, None]]]
         To be called when task is completed to update progress
 
+    Returns
+    -------
+    FeatureQuery
+
     Raises
     ------
     InvalidOutputRowIndexError
         If the row index column is not unique in the intermediate feature table
     """
     session = await session.clone_if_not_threadsafe()
-    await session.execute_query_long_running(_to_query_str(feature_query.sql, session.source_type))
+    await session.execute_query_long_running(feature_query.sql)
     try:
         await validate_output_row_index(session, feature_query.table_name)
     except InvalidOutputRowIndexError:

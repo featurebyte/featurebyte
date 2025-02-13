@@ -169,6 +169,15 @@ class FeatureQuerySet:
     def construct_output_query(self, source_info: SourceInfo) -> str:
         """
         Construct the output query that joins the completed feature queries
+
+        Parameters
+        ----------
+        source_info: SourceInfo
+            Source information
+
+        Returns
+        -------
+        str
         """
         output_expr = self.construct_join_feature_sets_query()
         if self.output_table_details is not None:
