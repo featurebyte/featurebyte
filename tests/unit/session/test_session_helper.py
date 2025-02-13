@@ -10,7 +10,8 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.exception import InvalidOutputRowIndexError
-from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
+from featurebyte.models.feature_query_set import FeatureQuerySet
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.session_helper import (
     SessionHandler,
     execute_feature_query_set,
@@ -65,6 +66,30 @@ def session_handler_fixture(mock_snowflake_session, mock_redis):
     )
 
 
+@pytest.fixture(name="progress_message")
+def progress_message_fixture():
+    """
+    Fixture for a progress message
+    """
+    return "My custom progress message"
+
+
+@pytest.fixture(name="feature_query_set")
+def feature_query_set_fixture(feature_query_generator, saved_feature_model, progress_message):
+    """
+    Fixture for a FeatureQuerySet
+    """
+    return FeatureQuerySet(
+        feature_query_generator=feature_query_generator,
+        request_table_name="request_table",
+        request_table_columns=["a", "b", "c"],
+        output_table_details=TableDetails(table_name="output_table"),
+        output_feature_names=[saved_feature_model.name],
+        output_include_row_index=True,
+        progress_message=progress_message,
+    )
+
+
 @pytest.mark.asyncio
 async def test_validate_row_index__valid(mock_snowflake_session):
     """
@@ -96,24 +121,15 @@ async def test_validate_row_index__invalid(mock_snowflake_session):
 
 
 @pytest.mark.asyncio
-async def test_execute_feature_query_set(session_handler, update_fixtures):
+async def test_execute_feature_query_set(
+    session_handler,
+    feature_query_set,
+    update_fixtures,
+    progress_message,
+):
     """
     Test execute_feature_query_set
     """
-    progress_message = "My custom progress message"
-    feature_query_set = FeatureQuerySet(
-        feature_queries=[
-            FeatureQuery(
-                sql="CREATE TABLE my_table AS SELECT * FROM another_table",
-                table_name="my_table",
-                feature_names=["a"],
-            ),
-        ],
-        output_query="CREATE TABLE output_table AS SELECT * FROM my_table",
-        output_table_name="output_table",
-        progress_message=progress_message,
-        validate_output_row_index=True,
-    )
     progress_callback = AsyncMock(name="mock_progress_callback")
 
     await execute_feature_query_set(
@@ -134,36 +150,29 @@ async def test_execute_feature_query_set(session_handler, update_fixtures):
 
     # Check intermediate tables are dropped
     assert session.drop_table.call_args_list == [
-        call(database_name="sf_db", schema_name="sf_schema", table_name="my_table", if_exists=True),
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_0",
+            if_exists=True,
+        ),
     ]
 
     # Check progress update calls
     assert progress_callback.call_args_list == [
-        call(50, progress_message),
+        call(90, progress_message),
         call(100, progress_message),
     ]
 
 
 @pytest.mark.parametrize("is_output_row_index_valid", [False])
 @pytest.mark.asyncio
-async def test_execute_feature_query_set__invalid_row_index(session_handler):
+async def test_execute_feature_query_set__invalid_row_index(
+    session_handler, feature_query_set, progress_message
+):
     """
     Test execute_feature_query_set
     """
-    progress_message = "My custom progress message"
-    feature_query_set = FeatureQuerySet(
-        feature_queries=[
-            FeatureQuery(
-                sql="CREATE TABLE my_table AS SELECT * FROM another_table",
-                table_name="my_table",
-                feature_names=["a", "b", "c"],
-            ),
-        ],
-        output_query="CREATE TABLE output_table AS SELECT * FROM my_table",
-        output_table_name="output_table",
-        progress_message=progress_message,
-        validate_output_row_index=True,
-    )
     progress_callback = AsyncMock(name="mock_progress_callback")
 
     with pytest.raises(InvalidOutputRowIndexError) as exc_info:
@@ -175,7 +184,7 @@ async def test_execute_feature_query_set__invalid_row_index(session_handler):
 
     assert (
         str(exc_info.value)
-        == "Row index column is invalid in the intermediate feature table: my_table. Feature names: a, b, c"
+        == "Row index column is invalid in the intermediate feature table: __TEMP_000000000000000000000000_0. Feature names: sum_1d"
     )
 
 

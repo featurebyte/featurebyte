@@ -21,7 +21,7 @@ from featurebyte.models.tile import OnDemandTileComputeResult
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.batch_helper import NUM_FEATURES_PER_QUERY, get_feature_names
+from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
 from featurebyte.query_graph.sql.cron import get_cron_feature_job_settings
 from featurebyte.query_graph.sql.feature_historical import (
@@ -198,9 +198,7 @@ async def get_historical_features(
     request_table_columns = observation_set.columns
 
     # Execute feature SQL code
-    await observation_set.register_as_request_table(
-        session, request_table_name, add_row_index=len(nodes) > NUM_FEATURES_PER_QUERY
-    )
+    await observation_set.register_as_request_table(session, request_table_name, add_row_index=True)
 
     # Register job schedule tables if necessary
     cron_feature_job_settings = get_cron_feature_job_settings(graph, nodes)
@@ -380,7 +378,7 @@ async def get_target(
     await observation_set.register_as_request_table(
         session,
         request_table_name,
-        add_row_index=len(nodes) > NUM_FEATURES_PER_QUERY,
+        add_row_index=True,
     )
 
     # Generate SQL code that computes the targets

@@ -3,23 +3,16 @@ Tests for featurebyte.query_graph.sql.online_serving
 """
 
 from typing import List
-from unittest.mock import patch
 
 import pandas as pd
-import pytest
-from bson import ObjectId
 from feast.online_response import TIMESTAMP_POSTFIX
 
-from featurebyte.enum import SourceType
-from featurebyte.models.feature_query_set import FeatureQuerySet
 from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
-from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.online_serving import (
-    fill_version_placeholders_for_query_set,
     get_aggregation_result_names,
     get_online_features_query_set,
     get_online_store_retrieval_expr,
@@ -29,37 +22,7 @@ from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
 )
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
-from tests.util.helper import assert_equal_with_expected_fixture
-
-
-def feature_query_set_to_string(feature_query_set: FeatureQuerySet) -> str:
-    """
-    Convert a feature query set to string for testing purpose
-    """
-
-    def _to_string(str_or_expr):
-        if isinstance(str_or_expr, str):
-            query_str = str_or_expr
-        else:
-            query_str = sql_to_string(str_or_expr, SourceType.SNOWFLAKE)
-        return query_str
-
-    all_queries = []
-    for feature_query in feature_query_set.feature_queries:
-        all_queries.append(_to_string(feature_query.sql))
-    all_queries.append(_to_string(feature_query_set.output_query))
-
-    return ";\n\n".join(all_queries)
-
-
-@pytest.fixture(name="mocked_unique_identifier_generator", autouse=True)
-def mocked_unique_identifier_generator_fixture():
-    """
-    Patch ObjectId to return a fixed value so that queries are deterministic
-    """
-    with patch("featurebyte.query_graph.sql.online_serving.ObjectId") as patched_object_id:
-        patched_object_id.return_value = ObjectId("000000000000000000000000")
-        yield patched_object_id
+from tests.util.helper import assert_equal_with_expected_fixture, feature_query_set_to_string
 
 
 def get_aggregation_specs(graph, groupby_node, adapter) -> List[TileBasedAggregationSpec]:
@@ -383,23 +346,23 @@ def test_online_store_feature_retrieval_sql__version_placeholders_filled(
     Test retrieval sql with version placeholders filled (single
     """
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    feature_query_set = get_online_features_query_set(
-        graph=graph,
-        node_groups=[nodes],
-        output_feature_names=get_feature_names(graph, nodes),
-        source_info=source_info,
-        request_table_columns=["CUSTOMER_ID", "order_id"],
-        request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
-        request_table_name=None,
-    )
     aggregation_result_names = get_aggregation_result_names(
         graph=graph,
         nodes=nodes,
         source_info=source_info,
     )
     versions_mapping = {k: i for (i, k) in enumerate(sorted(aggregation_result_names))}
-    fill_version_placeholders_for_query_set(feature_query_set, versions_mapping)
-    sql = sql_to_string(feature_query_set.output_query, SourceType.SNOWFLAKE)
+    feature_query_set = get_online_features_query_set(
+        graph=graph,
+        nodes=nodes,
+        output_feature_names=get_feature_names(graph, nodes),
+        source_info=source_info,
+        request_table_columns=["CUSTOMER_ID", "order_id"],
+        request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
+        request_table_name="MY_REQUEST_TABLE",
+        versions=versions_mapping,
+    )
+    sql = feature_query_set_to_string(feature_query_set, nodes, source_info)
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_filled_versions.sql",
@@ -414,23 +377,28 @@ def test_online_store_feature_retrieval_sql__multiple_groups(
     Test retrieval sql with version placeholders filled
     """
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    feature_query_set = get_online_features_query_set(
-        graph=graph,
-        node_groups=[nodes[:1], nodes[1:]],
-        output_feature_names=get_feature_names(graph, nodes),
-        source_info=source_info,
-        request_table_columns=["CUSTOMER_ID", "order_id"],
-        request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
-        request_table_name="REQUEST_TABLE_1234",
-    )
     aggregation_result_names = get_aggregation_result_names(
         graph=graph,
         nodes=nodes,
         source_info=source_info,
     )
     versions_mapping = {k: i for (i, k) in enumerate(sorted(aggregation_result_names))}
-    fill_version_placeholders_for_query_set(feature_query_set, versions_mapping)
-    sql = feature_query_set_to_string(feature_query_set)
+    feature_query_set = get_online_features_query_set(
+        graph=graph,
+        nodes=nodes,
+        output_feature_names=get_feature_names(graph, nodes),
+        source_info=source_info,
+        request_table_columns=["CUSTOMER_ID", "order_id"],
+        request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
+        request_table_name="REQUEST_TABLE_1234",
+        versions=versions_mapping,
+    )
+    sql = feature_query_set_to_string(
+        feature_query_set,
+        nodes,
+        source_info,
+        nodes_group_override=[nodes[:1], nodes[1:]],
+    )
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_online_feature_retrieval_filled_versions_multiple_groups.sql",

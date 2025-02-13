@@ -2,11 +2,8 @@
 Tests for featurebyte.query_graph.feature_historical.py
 """
 
-from unittest.mock import patch
-
 import pandas as pd
 import pytest
-from bson import ObjectId
 from pandas.testing import assert_frame_equal
 
 from featurebyte.models.tile import OnDemandTileTable
@@ -21,7 +18,7 @@ from featurebyte.query_graph.sql.feature_historical import (
     get_internal_observation_set,
     validate_historical_requests_point_in_time,
 )
-from tests.util.helper import assert_equal_with_expected_fixture
+from tests.util.helper import assert_equal_with_expected_fixture, feature_query_set_to_string
 
 
 def get_historical_features_sql(**kwargs):
@@ -35,17 +32,6 @@ def get_historical_features_sql(**kwargs):
 def output_table_details_fixture():
     """Fixture for a TableDetails for the output location"""
     return TableDetails(table_name="SOME_HISTORICAL_FEATURE_TABLE")
-
-
-@pytest.fixture(name="fixed_object_id")
-def fixed_object_id_fixture():
-    """Fixture to for a fixed ObjectId in featurebyte.query_graph.sql.feature_historical"""
-    oid = ObjectId("646f1b781d1e7970788b32ec")
-    with patch(
-        "featurebyte.query_graph.sql.feature_historical.ObjectId",
-        return_value=oid,
-    ) as mocked:
-        yield mocked
 
 
 def test_get_historical_feature_sql(float_feature, source_info, update_fixtures):
@@ -126,7 +112,7 @@ def test_get_historical_feature_sql__with_missing_value_imputation(
 
 
 def test_get_historical_feature_query_set__single_batch(
-    float_feature, output_table_details, fixed_object_id, source_info, update_fixtures
+    float_feature, output_table_details, source_info, update_fixtures
 ):
     """
     Test historical features are calculated in single batch when there are not many nodes
@@ -139,13 +125,13 @@ def test_get_historical_feature_query_set__single_batch(
         request_table_columns=request_table_columns,
         source_info=source_info,
         output_table_details=output_table_details,
-        output_feature_names=[float_feature.node.name],
+        output_feature_names=[float_feature.name],
         progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
     )
-    assert query_set.feature_queries == []
+    output_query = feature_query_set_to_string(query_set, [float_feature.node], source_info)
     assert query_set.progress_message == PROGRESS_MESSAGE_COMPUTING_FEATURES
     assert_equal_with_expected_fixture(
-        query_set.output_query,
+        output_query,
         "tests/fixtures/expected_historical_requests_single_batch_output_query.sql",
         update_fixture=update_fixtures,
     )
@@ -155,7 +141,6 @@ def test_get_historical_feature_query_set__multiple_batches(
     global_graph,
     feature_nodes_all_types,
     output_table_details,
-    fixed_object_id,
     source_info,
     update_fixtures,
 ):
@@ -163,31 +148,27 @@ def test_get_historical_feature_query_set__multiple_batches(
     Test historical features are executed in batches when there are many nodes
     """
     request_table_columns = ["POINT_IN_TIME", "CUSTOMER_ID"]
-    with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 2):
-        query_set = get_historical_features_query_set(
-            request_table_name=REQUEST_TABLE_NAME,
-            graph=global_graph,
-            nodes=feature_nodes_all_types,
-            request_table_columns=request_table_columns,
-            source_info=source_info,
-            output_table_details=output_table_details,
-            output_feature_names=get_feature_names(global_graph, feature_nodes_all_types),
-        )
-    for i, feature_query in enumerate(query_set.feature_queries):
-        assert_equal_with_expected_fixture(
-            feature_query.sql,
-            f"tests/fixtures/expected_historical_requests_multiple_batches_feature_set_{i}.sql",
-            update_fixture=update_fixtures,
-        )
+    query_set = get_historical_features_query_set(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=global_graph,
+        nodes=feature_nodes_all_types,
+        request_table_columns=request_table_columns,
+        source_info=source_info,
+        output_table_details=output_table_details,
+        output_feature_names=get_feature_names(global_graph, feature_nodes_all_types),
+    )
+    output_query = feature_query_set_to_string(
+        query_set, feature_nodes_all_types, source_info, num_features_per_query=2
+    )
     assert_equal_with_expected_fixture(
-        query_set.output_query,
+        output_query,
         "tests/fixtures/expected_historical_requests_multiple_batches_output_query.sql",
         update_fixture=update_fixtures,
     )
 
 
 def test_get_historical_feature_query_set__output_include_row_index(
-    float_feature, output_table_details, fixed_object_id, update_fixtures, source_info
+    float_feature, output_table_details, update_fixtures, source_info
 ):
     """
     Test historical features table include row index column if specified
@@ -200,21 +181,21 @@ def test_get_historical_feature_query_set__output_include_row_index(
         request_table_columns=request_table_columns,
         source_info=source_info,
         output_table_details=output_table_details,
-        output_feature_names=[float_feature.node.name],
+        output_feature_names=[float_feature.name],
         output_include_row_index=True,
         progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
     )
-    assert query_set.feature_queries == []
     assert query_set.progress_message == PROGRESS_MESSAGE_COMPUTING_FEATURES
+    output_query = feature_query_set_to_string(query_set, [float_feature.node], source_info)
     assert_equal_with_expected_fixture(
-        query_set.output_query,
+        output_query,
         "tests/fixtures/expected_historical_requests_output_row_index.sql",
         update_fixture=update_fixtures,
     )
 
 
 def test_get_historical_feature_query_set__on_demand_tile_tables(
-    float_feature, output_table_details, fixed_object_id, update_fixtures, source_info
+    float_feature, output_table_details, update_fixtures, source_info
 ):
     """
     Test historical features table when on demand tile tables are provided
@@ -236,16 +217,16 @@ def test_get_historical_feature_query_set__on_demand_tile_tables(
         request_table_columns=request_table_columns,
         source_info=source_info,
         output_table_details=output_table_details,
-        output_feature_names=[float_feature.node.name],
+        output_feature_names=[float_feature.name],
         output_include_row_index=True,
         on_demand_tile_tables=on_demand_tile_tables,
         progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
     )
-    assert query_set.feature_queries == []
     assert query_set.progress_message == PROGRESS_MESSAGE_COMPUTING_FEATURES
-    assert "__MY_TEMP_TILE_TABLE" in query_set.output_query
+    output_query = feature_query_set_to_string(query_set, [float_feature.node], source_info)
+    assert "__MY_TEMP_TILE_TABLE" in output_query
     assert_equal_with_expected_fixture(
-        query_set.output_query,
+        output_query,
         "tests/fixtures/expected_historical_requests_on_demand_tile_tables.sql",
         update_fixture=update_fixtures,
     )
