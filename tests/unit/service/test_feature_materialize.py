@@ -28,6 +28,15 @@ from tests.util.helper import (
 )
 
 
+@pytest.fixture(name="patched_validate_row_index", autouse=True)
+def patched_validate_row_index_fixture():
+    """
+    Patched validate_output_row_index to be a no-op
+    """
+    with patch("featurebyte.session.session_helper.validate_output_row_index") as patched:
+        yield patched
+
+
 @pytest.fixture(name="mock_get_feature_store_session")
 def mock_get_feature_store_session_fixture(mock_snowflake_session):
     """
@@ -270,9 +279,7 @@ def mocked_unique_identifier_generator_fixture():
     mocked_object_id = ObjectId("000000000000000000000000")
     with patch("featurebyte.service.feature_materialize.ObjectId") as patched_object_id:
         patched_object_id.return_value = mocked_object_id
-        with patch("featurebyte.query_graph.sql.online_serving.ObjectId") as patched_object_id_2:
-            patched_object_id_2.return_value = mocked_object_id
-            yield
+        yield
 
 
 @pytest.fixture(name="freeze_feature_timestamp", autouse=True)
@@ -313,7 +320,7 @@ async def test_materialize_features(
     ) as materialized_features_set:
         pass
 
-    assert len(mock_snowflake_session.execute_query_long_running.call_args_list) == 3
+    assert len(mock_snowflake_session.execute_query_long_running.call_args_list) == 4
 
     table_name = "cat1_cust_id_30m"
     assert list(materialized_features_set.all_materialized_features.keys()) == [table_name]
@@ -343,6 +350,12 @@ async def test_materialize_features(
 
     # Check that the temporary tables are dropped
     assert mock_snowflake_session.drop_table.call_args_list == [
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_0",
+            if_exists=True,
+        ),
         call(
             table_name="TEMP_REQUEST_TABLE_000000000000000000000000",
             schema_name="sf_schema",
@@ -843,9 +856,7 @@ async def test_materialize_features_composite_entity(
             "tests/fixtures/feature_materialize/materialize_features_queries_composite_entity.sql"
         )
 
-    with patch(
-        "featurebyte.query_graph.sql.online_serving.NUM_FEATURES_PER_QUERY", num_features_per_query
-    ):
+    with patch("featurebyte.session.session_helper.NUM_FEATURES_PER_QUERY", num_features_per_query):
         async with feature_materialize_service.materialize_features(
             feature_table_model=offline_store_feature_table_composite_entity,
         ) as materialized_features_set:

@@ -396,7 +396,7 @@ def get_online_features_query_set(
     source_info: SourceInfo,
     request_table_columns: list[str],
     output_feature_names: list[str],
-    request_table_name: Optional[str],
+    request_table_name: str,
     request_table_expr: Optional[expressions.Select] = None,
     request_table_details: Optional[TableDetails] = None,
     request_timestamp: Optional[datetime] = None,
@@ -461,7 +461,6 @@ def get_online_features_query_set(
         job_schedule_table_set=job_schedule_table_set,
         concatenate_serving_names=concatenate_serving_names,
     )
-    assert request_table_name is not None
     feature_query_set = OnlineFeatureQuerySet(
         feature_query_generator=feature_query_generator,
         request_table_name=request_table_name,

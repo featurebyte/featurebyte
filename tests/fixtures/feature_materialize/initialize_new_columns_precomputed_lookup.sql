@@ -31,9 +31,10 @@ SELECT
   *
 FROM "TEMP_REQUEST_TABLE_000000000000000000000000";
 
-CREATE TABLE "sf_db"."sf_schema"."TEMP_FEATURE_TABLE_000000000000000000000000" AS
+CREATE TABLE "__TEMP_000000000000000000000000_0" AS
 WITH ONLINE_REQUEST_TABLE AS (
   SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
     REQ."gender",
     CAST('2022-01-01 00:00:00' AS TIMESTAMP) AS POINT_IN_TIME
   FROM "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS REQ
@@ -44,6 +45,7 @@ WITH ONLINE_REQUEST_TABLE AS (
   FROM ONLINE_REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
     REQ."gender",
     REQ."POINT_IN_TIME",
     "T0"."_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" AS "_fb_internal_gender_as_at_count_None_col_boolean_None_project_1"
@@ -82,10 +84,20 @@ WITH ONLINE_REQUEST_TABLE AS (
     ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME" AND REQ."gender" = T0."gender"
 )
 SELECT
+  AGG."__FB_TABLE_ROW_INDEX",
   AGG."gender",
   CAST("_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" AS BIGINT) AS "__feature_requiring_parent_serving_V220101__part1",
   CAST("_fb_internal_gender_as_at_count_None_col_boolean_None_project_1" AS BIGINT) AS "__feature_requiring_parent_serving_plus_123_V220101__part1"
 FROM _FB_AGGREGATED AS AGG;
+
+CREATE TABLE "sf_db"."sf_schema"."TEMP_FEATURE_TABLE_000000000000000000000000" AS
+SELECT
+  REQ."gender",
+  T0."__feature_requiring_parent_serving_V220101__part1",
+  T0."__feature_requiring_parent_serving_plus_123_V220101__part1"
+FROM "TEMP_REQUEST_TABLE_000000000000000000000000" AS REQ
+LEFT JOIN "__TEMP_000000000000000000000000_0" AS T0
+  ON REQ."__FB_TABLE_ROW_INDEX" = T0."__FB_TABLE_ROW_INDEX";
 
 CREATE TABLE "sf_db"."sf_schema"."TEMP_LOOKUP_UNIVERSE_TABLE_000000000000000000000000" AS
 WITH ENTITY_UNIVERSE AS (

@@ -62,7 +62,9 @@ from featurebyte.models.tile import OnDemandTileComputeResult, TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.feature_historical import HistoricalFeatureQueryGenerator
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -255,6 +257,18 @@ def patched_cron_helper_unique_identifier():
     """
     with patch(
         "featurebyte.service.cron_helper.ObjectId",
+        side_effect=get_increasing_object_id_callable(),
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def patched_execute_feature_query_set_unique_identifier():
+    """
+    Fixture to mock ObjectId to a fixed value
+    """
+    with patch(
+        "featurebyte.session.session_helper.ObjectId",
         side_effect=get_increasing_object_id_callable(),
     ):
         yield
@@ -2985,3 +2999,30 @@ def adapter_fixture(source_info):
 @pytest.fixture(name="session_manager_service")
 def session_manager_service_fixture(app_container_no_catalog):
     return app_container_no_catalog.session_manager_service
+
+
+@pytest.fixture(name="saved_feature_model")
+def saved_feature_model_fixture(float_feature):
+    """
+    Fixture for a saved feature model
+    """
+    float_feature.save()
+    return float_feature.cached_model
+
+
+@pytest.fixture(name="feature_query_generator")
+def feature_query_generator_fixture(saved_feature_model, source_info):
+    """
+    Fixture for FeatureQueryGenerator
+    """
+    feature_model = saved_feature_model
+    generator = HistoricalFeatureQueryGenerator(
+        graph=feature_model.graph,
+        nodes=[feature_model.node],
+        request_table_name="my_request_table",
+        request_table_columns=["POINT_IN_TIME", "cust_id"],
+        source_info=source_info,
+        output_table_details=TableDetails(table_name="my_output_table"),
+        output_feature_names=[feature_model.name],
+    )
+    return generator

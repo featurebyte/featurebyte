@@ -13,6 +13,7 @@ from redis import Redis
 from sqlglot import expressions
 from sqlglot.expressions import Expression
 
+from featurebyte.common.progress import divide_progress_callback
 from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName, SourceType
 from featurebyte.exception import InvalidOutputRowIndexError
@@ -34,6 +35,7 @@ MAX_QUERY_CONCURRENCY = int(os.getenv("MAX_QUERY_CONCURRENCY", "3"))
 
 
 def _to_query_str(query: Union[str, Expression], source_type: SourceType) -> str:
+    # TODO: still needed?
     if isinstance(query, str):
         return query
     assert isinstance(query, Expression)
@@ -153,7 +155,7 @@ async def execute_feature_query(
             f" Feature names: {formatted_feature_names}"
         )
 
-    await done_callback(len(feature_query.feature_names))
+    await done_callback(len(feature_query.node_names))
     return feature_query
 
 
@@ -191,11 +193,19 @@ async def execute_feature_query_set(
     materialized_feature_table = []
     processed = 0
 
+    # Allocate 90% of the progress to feature queries and 10% to the final output query
+    if progress_callback is None:
+        feature_queries_progress_callback, output_query_progress_callback = None, None
+    else:
+        feature_queries_progress_callback, output_query_progress_callback = (
+            divide_progress_callback(progress_callback, 90)
+        )
+
     async def _progress_callback(num_nodes_completed: int) -> None:
         nonlocal processed
         processed += num_nodes_completed
-        if progress_callback:
-            await progress_callback(
+        if feature_queries_progress_callback:
+            await feature_queries_progress_callback(
                 int(100 * processed / total_num_nodes),
                 feature_query_set.progress_message,
             )
@@ -248,8 +258,8 @@ async def execute_feature_query_set(
             and feature_query_set.output_table_name is not None
         ):
             await validate_output_row_index(session, feature_query_set.output_table_name)
-        if progress_callback:
-            await progress_callback(100, feature_query_set.progress_message)
+        if output_query_progress_callback:
+            await output_query_progress_callback(100, feature_query_set.progress_message)
         return result
 
     finally:

@@ -7,9 +7,8 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Union
 
-from sqlglot import Expression, expressions
+from sqlglot import expressions
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.graph import QueryGraph
@@ -30,7 +29,7 @@ class FeatureQuery:
     FeatureQuery represents a sql query that materializes a temporary table for a set of features
     """
 
-    sql: Union[str, Expression]
+    sql: str
     table_name: str
     feature_names: list[str]
     node_names: list[str]
