@@ -140,6 +140,7 @@ class BatchFeatureTableTask(DataWarehouseMixin, BaseTask[BatchFeatureTableTaskPa
                     deployment_id=payload.deployment_id,
                     columns_info=columns_info,
                     num_rows=num_rows,
+                    parent_batch_feature_table_id=payload.parent_batch_feature_table_id,
                 )
                 await self.batch_feature_table_service.create_document(batch_feature_table_model)
         finally:
