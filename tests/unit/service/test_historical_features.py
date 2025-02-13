@@ -300,6 +300,12 @@ async def test_get_historical_features__intermediate_tables_dropped(
         )
     assert mock_snowflake_session.drop_table.call_args_list == [
         call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_0",
+            if_exists=True,
+        ),
+        call(
             table_name="REQUEST_TABLE_1",
             schema_name="sf_schema",
             database_name="sf_db",
@@ -390,6 +396,12 @@ async def test_get_historical_features__tile_tables_dropped(
         "historical_features_SOME_HISTORICAL_FEATURE_TABLE"
     )
     assert mock_snowflake_session.drop_table.call_args_list == [
+        call(
+            database_name="sf_db",
+            schema_name="sf_schema",
+            table_name="__TEMP_000000000000000000000000_0",
+            if_exists=True,
+        ),
         call(
             table_name="REQUEST_TABLE_1",
             schema_name="sf_schema",
