@@ -27,7 +27,6 @@ class BatchFeatureTableCreate(FeatureByteBaseModel):
     batch_request_table_id: Optional[PydanticObjectId] = Field(default=None)
     request_input: Optional[BatchRequestInput] = Field(default=None)
     deployment_id: PydanticObjectId
-    parent_batch_feature_table_id: Optional[PydanticObjectId] = Field(default=None)
 
     @model_validator(mode="after")
     def _validate_input(self) -> "BatchFeatureTableCreate":

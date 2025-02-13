@@ -5,6 +5,7 @@ BatchFeatureTable API route controller
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional
 
 from bson import ObjectId
 
@@ -64,6 +65,7 @@ class BatchFeatureTableController(
     async def create_batch_feature_table(
         self,
         data: BatchFeatureTableCreate,
+        parent_batch_feature_table_id: Optional[ObjectId] = None,
     ) -> Task:
         """
         Create BatchFeatureTable by submitting an async prediction request task
@@ -72,6 +74,8 @@ class BatchFeatureTableController(
         ----------
         data: BatchFeatureTableCreate
             BatchFeatureTable creation request parameters
+        parent_batch_feature_table_id: Optional[ObjectId]
+            Parent BatchFeatureTable ID
 
         Returns
         -------
@@ -102,7 +106,9 @@ class BatchFeatureTableController(
             )
 
         # prepare task payload and submit task
-        payload = await self.service.get_batch_feature_table_task_payload(data=data)
+        payload = await self.service.get_batch_feature_table_task_payload(
+            data=data, parent_batch_feature_table_id=parent_batch_feature_table_id
+        )
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
@@ -185,6 +191,7 @@ class BatchFeatureTableController(
             feature_store_id=catalog.default_feature_store_ids[0],
             request_input=batch_feature_table.request_input,
             deployment_id=batch_feature_table.deployment_id,
-            parent_batch_feature_table_id=batch_feature_table.id,
         )
-        return await self.create_batch_feature_table(data=data)
+        return await self.create_batch_feature_table(
+            data=data, parent_batch_feature_table_id=batch_feature_table.id
+        )
