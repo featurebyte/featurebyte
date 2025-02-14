@@ -62,7 +62,7 @@ def test_datetime_property_extraction__event_timestamp(
           "col_int" AS "col_int",
           "cust_id" AS "cust_id",
           CAST("tz_offset" AS VARCHAR) AS "tz_offset",
-          DATE_PART(hour, DATEADD(second, F_TIMEZONE_OFFSET_TO_SECOND('-05:30'), "event_timestamp")) AS "event_timestamp_hour"
+          DATE_PART(hour, DATEADD(SECOND, F_TIMEZONE_OFFSET_TO_SECOND('-05:30'), "event_timestamp")) AS "event_timestamp_hour"
         FROM "sf_database"."sf_schema"."sf_table_no_tz"
         LIMIT 10
         """
@@ -112,7 +112,7 @@ def test_datetime_property_extraction__event_timestamp_joined_view(
           CAST(R."col_text" AS VARCHAR) AS "col_text",
           DATE_PART(
             hour,
-            DATEADD(second, F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset"), L."event_timestamp")
+            DATEADD(SECOND, F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset"), L."event_timestamp")
           ) AS "event_timestamp_hour"
         FROM (
           SELECT
@@ -248,7 +248,7 @@ def test_datetime_property_extraction__event_timestamp_in_item_view(
           CAST(R."tz_offset" AS VARCHAR) AS "tz_offset_event_table",
           DATE_PART(
             hour,
-            DATEADD(second, F_TIMEZONE_OFFSET_TO_SECOND(R."tz_offset"), R."event_timestamp")
+            DATEADD(SECOND, F_TIMEZONE_OFFSET_TO_SECOND(R."tz_offset"), R."event_timestamp")
           ) AS "timestamp_hour"
         FROM (
           SELECT

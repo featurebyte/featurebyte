@@ -5,7 +5,7 @@ SELECT
     DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 300
   ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
   DATEADD(
-    microsecond,
+    MICROSECOND,
     (
       (
         300 - 600
@@ -64,7 +64,7 @@ SELECT
     DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 300
   ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
   DATEADD(
-    microsecond,
+    MICROSECOND,
     (
       (
         300 - 600

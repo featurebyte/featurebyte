@@ -240,13 +240,10 @@ class BaseAdapter(ABC):
         -------
         Expression
         """
-        return expressions.Anonymous(
-            this="DATEDIFF",
-            expressions=[
-                expressions.Identifier(this="microsecond"),
-                timestamp_expr_1,
-                timestamp_expr_2,
-            ],
+        return expressions.DateDiff(
+            this=timestamp_expr_2,
+            expression=timestamp_expr_1,
+            unit=expressions.Var(this="microsecond"),
         )
 
     @classmethod

@@ -474,13 +474,13 @@ def test_date_add__timedelta(input_node):
     date_column = make_str_expression_node(table_node=input_node, expr="date_col")
     context = make_context(parameters={}, input_sql_nodes=[date_column, timedelta_node])
     date_add_node = DateAddNode.build(context)
-    assert date_add_node.sql.sql() == (
-        "DATEADD(microsecond, (num_seconds * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
+    assert date_add_node.sql.sql(dialect="snowflake") == (
+        "DATEADD(MICROSECOND, (num_seconds * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
     )
     context = make_context(parameters={"value": 12}, input_sql_nodes=[date_column])
     date_add_node = DateAddNode.build(context)
-    assert date_add_node.sql.sql() == (
-        "DATEADD(microsecond, (12 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
+    assert date_add_node.sql.sql(dialect="snowflake") == (
+        "DATEADD(MICROSECOND, (12 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
     )
 
 
@@ -489,6 +489,7 @@ def test_date_add__datediff(input_node):
     # make a date diff node
     column1 = make_str_expression_node(table_node=input_node, expr="a")
     column2 = make_str_expression_node(table_node=input_node, expr="b")
+    # Should calculate a - b
     input_nodes = [column1, column2]
     context = make_context(node_type=None, parameters={}, input_sql_nodes=input_nodes)
     date_diff_node = DateDiffNode.build(context)
@@ -496,7 +497,11 @@ def test_date_add__datediff(input_node):
     date_column = make_str_expression_node(table_node=input_node, expr="date_col")
     context = make_context(input_sql_nodes=[date_column, date_diff_node])
     date_add_node = DateAddNode.build(context)
-    assert date_add_node.sql.sql() == "DATEADD(microsecond, DATEDIFF(microsecond, b, a), date_col)"
+    # DATEDIFF(MICROSECOND, b, a) calculates a - b in snowflake
+    assert (
+        date_add_node.sql.sql(dialect="snowflake")
+        == "DATEADD(MICROSECOND, DATEDIFF(MICROSECOND, b, a), date_col)"
+    )
 
 
 def test_date_add__constant(input_node):
@@ -506,8 +511,8 @@ def test_date_add__constant(input_node):
         node_type=None, parameters={"value": 3600}, input_sql_nodes=[date_column]
     )
     date_add_node = DateAddNode.build(context)
-    assert date_add_node.sql.sql() == (
-        "DATEADD(microsecond, (3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
+    assert date_add_node.sql.sql(dialect="snowflake") == (
+        "DATEADD(MICROSECOND, (3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)), date_col)"
     )
 
 
@@ -551,8 +556,8 @@ def test_datediff_resolves_correctly(dataframe):
           "TIMESTAMP_VALUE" AS "TIMESTAMP_VALUE",
           123 AS "diff",
           DATEADD(
-            microsecond,
-            DATEDIFF(microsecond, "TIMESTAMP_VALUE", "TIMESTAMP_VALUE"),
+            MICROSECOND,
+            DATEDIFF(MICROSECOND, "TIMESTAMP_VALUE", "TIMESTAMP_VALUE"),
             "TIMESTAMP_VALUE"
           ) AS "NEW_TIMESTAMP"
         FROM "db"."public"."transaction"
