@@ -22,6 +22,7 @@ class BatchFeatureTableModel(MaterializedTableModel):
     batch_request_table_id: Optional[PydanticObjectId]
     request_input: Optional[BatchRequestInput] = Field(default=None)
     deployment_id: PydanticObjectId
+    parent_batch_feature_table_id: Optional[PydanticObjectId] = Field(default=None)
 
     class Settings(MaterializedTableModel.Settings):
         """
