@@ -4,8 +4,12 @@ BatchFeatureTable API route controller
 
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Optional
+
 from bson import ObjectId
 
+from featurebyte.exception import FeatureTableRequestInputNotFoundError
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.routes.common.base_materialized_table import BaseMaterializedTableController
 from featurebyte.routes.task.controller import TaskController
@@ -14,6 +18,7 @@ from featurebyte.schema.info import BatchFeatureTableInfo
 from featurebyte.schema.task import Task
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
@@ -36,6 +41,7 @@ class BatchFeatureTableController(
     def __init__(
         self,
         batch_feature_table_service: BatchFeatureTableService,
+        catalog_service: CatalogService,
         feature_store_warehouse_service: FeatureStoreWarehouseService,
         feature_store_service: FeatureStoreService,
         feature_list_service: FeatureListService,
@@ -48,6 +54,7 @@ class BatchFeatureTableController(
             service=batch_feature_table_service,
             feature_store_warehouse_service=feature_store_warehouse_service,
         )
+        self.catalog_service = catalog_service
         self.feature_store_service = feature_store_service
         self.feature_list_service = feature_list_service
         self.batch_request_table_service = batch_request_table_service
@@ -58,6 +65,7 @@ class BatchFeatureTableController(
     async def create_batch_feature_table(
         self,
         data: BatchFeatureTableCreate,
+        parent_batch_feature_table_id: Optional[ObjectId] = None,
     ) -> Task:
         """
         Create BatchFeatureTable by submitting an async prediction request task
@@ -66,6 +74,8 @@ class BatchFeatureTableController(
         ----------
         data: BatchFeatureTableCreate
             BatchFeatureTable creation request parameters
+        parent_batch_feature_table_id: Optional[ObjectId]
+            Parent BatchFeatureTable ID
 
         Returns
         -------
@@ -96,7 +106,9 @@ class BatchFeatureTableController(
             )
 
         # prepare task payload and submit task
-        payload = await self.service.get_batch_feature_table_task_payload(data=data)
+        payload = await self.service.get_batch_feature_table_task_payload(
+            data=data, parent_batch_feature_table_id=parent_batch_feature_table_id
+        )
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
 
@@ -137,4 +149,49 @@ class BatchFeatureTableController(
             created_at=batch_feature_table.created_at,
             updated_at=batch_feature_table.updated_at,
             description=batch_feature_table.description,
+        )
+
+    async def recreate_batch_feature_table(
+        self,
+        batch_feature_table_id: ObjectId,
+    ) -> Task:
+        """
+        Recreate BatchFeatureTable by submitting an async prediction request task
+
+        Parameters
+        ----------
+        batch_feature_table_id : ObjectId
+            The id of the BatchFeatureTable to recreate
+
+        Raises
+        ------
+        FeatureTableRequestInputNotFoundError
+            If request input is not found for the batch feature table
+
+        Returns
+        -------
+        Task
+        """
+        batch_feature_table = await self.service.get_document(document_id=batch_feature_table_id)
+        if batch_feature_table.request_input is None:
+            # Request input not available in older batch feature tables
+            raise FeatureTableRequestInputNotFoundError(
+                "Request input not found for the batch feature table"
+            )
+
+        if batch_feature_table.parent_batch_feature_table_id:
+            batch_feature_table = await self.service.get_document(
+                document_id=batch_feature_table.parent_batch_feature_table_id
+            )
+
+        assert self.service.catalog_id is not None
+        catalog = await self.catalog_service.get_document(document_id=self.service.catalog_id)
+        data: BatchFeatureTableCreate = BatchFeatureTableCreate(
+            name=f"{batch_feature_table.name} [{datetime.utcnow().isoformat()}]",
+            feature_store_id=catalog.default_feature_store_ids[0],
+            request_input=batch_feature_table.request_input,
+            deployment_id=batch_feature_table.deployment_id,
+        )
+        return await self.create_batch_feature_table(
+            data=data, parent_batch_feature_table_id=batch_feature_table.id
         )
