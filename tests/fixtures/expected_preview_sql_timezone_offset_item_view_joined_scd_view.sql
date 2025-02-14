@@ -19,7 +19,7 @@ SELECT
       DATE_PART(
         month,
         DATEADD(
-          second,
+          SECOND,
           F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset_event_table"),
           L."event_timestamp_event_table"
         )
@@ -30,7 +30,7 @@ SELECT
         DATE_PART(
           year,
           DATEADD(
-            second,
+            SECOND,
             F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset_event_table"),
             L."event_timestamp_event_table"
           )
@@ -41,7 +41,7 @@ SELECT
       DATE_PART(
         year,
         DATEADD(
-          second,
+          SECOND,
           F_TIMEZONE_OFFSET_TO_SECOND(L."tz_offset_event_table"),
           L."event_timestamp_event_table"
         )

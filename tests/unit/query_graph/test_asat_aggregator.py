@@ -646,9 +646,9 @@ def test_aggregate_asat_with_offset(aggregation_spec_with_offset, source_info):
           ) AS SCD
             ON REQ."serving_cust_id" = SCD."cust_id"
             AND (
-              SCD."effective_ts" <= DATEADD(microsecond, -604800000000.0, REQ."POINT_IN_TIME")
+              SCD."effective_ts" <= DATE_ADD(REQ."POINT_IN_TIME", -604800000000.0, 'MICROSECOND')
               AND (
-                SCD."__FB_END_TS" > DATEADD(microsecond, -604800000000.0, REQ."POINT_IN_TIME")
+                SCD."__FB_END_TS" > DATE_ADD(REQ."POINT_IN_TIME", -604800000000.0, 'MICROSECOND')
                 OR SCD."__FB_END_TS" IS NULL
               )
             )
@@ -700,9 +700,9 @@ def test_forward_aggregate_asat_with_offset(forward_aggregation_spec_with_offset
           ) AS SCD
             ON REQ."serving_cust_id" = SCD."cust_id"
             AND (
-              SCD."effective_ts" <= DATEADD(microsecond, 604800000000.0, REQ."POINT_IN_TIME")
+              SCD."effective_ts" <= DATE_ADD(REQ."POINT_IN_TIME", 604800000000.0, 'MICROSECOND')
               AND (
-                SCD."__FB_END_TS" > DATEADD(microsecond, 604800000000.0, REQ."POINT_IN_TIME")
+                SCD."__FB_END_TS" > DATE_ADD(REQ."POINT_IN_TIME", 604800000000.0, 'MICROSECOND')
                 OR SCD."__FB_END_TS" IS NULL
               )
             )
