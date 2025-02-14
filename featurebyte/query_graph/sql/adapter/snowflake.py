@@ -87,8 +87,8 @@ class SnowflakeAdapter(BaseAdapter):
 
     @classmethod
     def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
-        output_expr = expressions.Anonymous(
-            this="DATEADD", expressions=["second", quantity_expr, timestamp_expr]
+        output_expr = expressions.DateAdd(
+            this=timestamp_expr, expression=quantity_expr, unit=expressions.Var(this="second")
         )
         return output_expr
 
@@ -96,8 +96,8 @@ class SnowflakeAdapter(BaseAdapter):
     def dateadd_microsecond(
         cls, quantity_expr: Expression, timestamp_expr: Expression
     ) -> Expression:
-        output_expr = expressions.Anonymous(
-            this="DATEADD", expressions=["microsecond", quantity_expr, timestamp_expr]
+        output_expr = expressions.DateAdd(
+            this=timestamp_expr, expression=quantity_expr, unit=expressions.Var(this="microsecond")
         )
         return output_expr
 
@@ -572,9 +572,10 @@ class SnowflakeAdapter(BaseAdapter):
 
     @classmethod
     def subtract_months(cls, timestamp_expr: Expression, num_units: int) -> Expression:
-        return expressions.Anonymous(
-            this="DATEADD",
-            expressions=["month", make_literal_value(-num_units), timestamp_expr],
+        return expressions.DateAdd(
+            this=timestamp_expr,
+            expression=make_literal_value(-num_units),
+            unit=expressions.Var(this="month"),
         )
 
     @classmethod
