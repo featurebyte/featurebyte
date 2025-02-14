@@ -187,7 +187,7 @@ class BatchFeatureTableController(
         assert self.service.catalog_id is not None
         catalog = await self.catalog_service.get_document(document_id=self.service.catalog_id)
         data: BatchFeatureTableCreate = BatchFeatureTableCreate(
-            name=f"{batch_feature_table.name} [{datetime.now().isoformat()}]",
+            name=f"{batch_feature_table.name} [{datetime.utcnow().isoformat()}]",
             feature_store_id=catalog.default_feature_store_ids[0],
             request_input=batch_feature_table.request_input,
             deployment_id=batch_feature_table.deployment_id,
