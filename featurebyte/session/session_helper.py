@@ -15,10 +15,11 @@ from sqlglot import expressions
 from featurebyte.common.progress import divide_progress_callback
 from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName
-from featurebyte.exception import InvalidOutputRowIndexError
+from featurebyte.exception import FeatureQueryExecutionError, InvalidOutputRowIndexError
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.feature_query_set import FeatureQuerySet
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.batch_helper import (
     NUM_FEATURES_PER_QUERY,
     FeatureQuery,
@@ -185,7 +186,7 @@ async def execute_feature_query_set(
     session = session_handler.session
     source_info = session.get_source_info()
     total_num_nodes = feature_query_set.get_num_nodes()
-    materialized_feature_table = []
+    materialized_feature_table: list[str] = []
     processed = 0
 
     # Allocate 90% of the progress to feature queries and 10% to the final output query
@@ -206,45 +207,33 @@ async def execute_feature_query_set(
             )
 
     generator = feature_query_set.feature_query_generator
-    all_node_names = generator.get_node_names()
-    node_groups = generator.split_nodes(all_node_names, NUM_FEATURES_PER_QUERY, source_info)
-    feature_set_table_name_prefix = f"__TEMP_{ObjectId()}"
+    num_features_per_query = NUM_FEATURES_PER_QUERY
+    table_name_suffix_counter = 0
     try:
-        coroutines = []
-        for i, nodes_group in enumerate(node_groups):
-            feature_set_table_name = f"{feature_set_table_name_prefix}_{i}"
-            feature_query = generator.generate_feature_query(
-                node_names=[node.name for node in nodes_group],
-                table_name=feature_set_table_name,
+        while num_features_per_query >= 1:
+            pending_node_names = feature_query_set.get_pending_node_names()
+            if not pending_node_names:
+                break
+            node_groups = generator.split_nodes(
+                pending_node_names, num_features_per_query, source_info
             )
-            coroutines.append(
-                execute_feature_query(
-                    session=session,
-                    feature_query=feature_query,
-                    done_callback=_progress_callback,
-                )
+            await execute_queries_for_node_groups(
+                feature_query_set=feature_query_set,
+                node_groups=node_groups,
+                session_handler=session_handler,
+                materialized_feature_table=materialized_feature_table,
+                table_name_suffix_counter=table_name_suffix_counter,
+                progress_callback=_progress_callback,
             )
-            materialized_feature_table.append(feature_query.table_name)
-        if coroutines:
-            with timer("Execute feature queries", logger=logger):
-                feature_query_results = await run_coroutines(
-                    coroutines,
-                    session_handler.redis,
-                    str(session_handler.feature_store.id),
-                    session_handler.feature_store.max_query_concurrency,
-                )
+            table_name_suffix_counter += len(node_groups)
+            num_features_per_query //= 2
 
-        for feature_query_result in feature_query_results:
-            if isinstance(feature_query_result, FeatureQuery):
-                feature_query_set.add_completed_feature_query(feature_query_result)
-
-        failed_node_names = list(
-            set(all_node_names) - set(feature_query_set.get_completed_node_names())
-        )
-        # Note: Later we will set return_exceptions=True in run_coroutines and handle failed nodes
-        # here. For now failed_node_names should always be empty, otherwise the error would be
-        # raised immediately by run_coroutines.
-        assert not failed_node_names, f"Failed to execute feature queries for {failed_node_names}"
+        failed_node_names = feature_query_set.get_pending_node_names()
+        if failed_node_names:
+            failed_feature_names = ", ".join(generator.get_feature_names(failed_node_names))
+            raise FeatureQueryExecutionError(
+                f"Failed to materialize {len(failed_feature_names)} features: {failed_feature_names}"
+            )
 
         output_query = feature_query_set.construct_output_query(session.get_source_info())
         result = await session.execute_query_long_running(output_query)
@@ -265,3 +254,75 @@ async def execute_feature_query_set(
                 table_name=table_name,
                 if_exists=True,
             )
+
+
+async def execute_queries_for_node_groups(
+    feature_query_set: FeatureQuerySet,
+    node_groups: List[List[Node]],
+    session_handler: SessionHandler,
+    materialized_feature_table: List[str],
+    table_name_suffix_counter: int,
+    progress_callback: Callable[[int], Coroutine[Any, Any, None]],
+) -> None:
+    """
+    Execute the feature queries for a list of node groups and update feature_query_set accordingly
+
+    Parameters
+    ----------
+    feature_query_set: FeatureQuerySet
+        FeatureQuerySet object
+    node_groups: List[List[Node]]
+        List of node groups
+    session_handler: SessionHandler
+        SessionHandler object
+    materialized_feature_table: List[str]
+        List of materialized feature tables
+    table_name_suffix_counter: int
+        Counter for table name suffix
+    progress_callback: Callable[[int], Coroutine[Any, Any, None]]
+        Progress callback function
+    """
+    generator = feature_query_set.feature_query_generator
+    feature_set_table_name_prefix = f"__TEMP_{ObjectId()}"
+
+    coroutines = []
+    all_node_names = []
+    for i, nodes_group in enumerate(node_groups):
+        suffix = i + table_name_suffix_counter
+        feature_set_table_name = f"{feature_set_table_name_prefix}_{suffix}"
+        feature_query = generator.generate_feature_query(
+            node_names=[node.name for node in nodes_group],
+            table_name=feature_set_table_name,
+        )
+        coroutines.append(
+            execute_feature_query(
+                session=session_handler.session,
+                feature_query=feature_query,
+                done_callback=progress_callback,
+            )
+        )
+        materialized_feature_table.append(feature_query.table_name)
+        all_node_names.extend([node.name for node in nodes_group])
+
+    if coroutines:
+        with timer("Execute feature queries", logger=logger):
+            feature_query_results = await run_coroutines(
+                coroutines,
+                session_handler.redis,
+                str(session_handler.feature_store.id),
+                session_handler.feature_store.max_query_concurrency,
+                return_exceptions=True,
+            )
+
+    completed_node_names = []
+    for feature_query_result in feature_query_results:
+        if isinstance(feature_query_result, FeatureQuery):
+            feature_query_set.add_completed_feature_query(feature_query_result)
+            completed_node_names.extend(feature_query_result.node_names)
+
+    failed_node_names = list(set(all_node_names) - set(completed_node_names))
+    if failed_node_names:
+        failed_feature_names = ", ".join(generator.get_feature_names(failed_node_names))
+        logger.warning(
+            f"Failed to materialize {len(failed_feature_names)} features: {failed_feature_names}"
+        )

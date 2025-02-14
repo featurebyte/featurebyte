@@ -539,3 +539,9 @@ class FeatureTableRequestInputNotFoundError(BaseUnprocessableEntityError):
     """
     Raise when request input is not found for the feature table
     """
+
+
+class FeatureQueryExecutionError(FeatureByteException):
+    """
+    Raise when there is an error with feature query execution
+    """
