@@ -207,9 +207,10 @@ async def execute_feature_query_set(
             )
 
     generator = feature_query_set.feature_query_generator
-    num_features_per_query = NUM_FEATURES_PER_QUERY
+    num_features_per_query = min(total_num_nodes, NUM_FEATURES_PER_QUERY)
     table_name_suffix_counter = 0
     feature_query_results = []
+    previous_node_groups: Optional[list[list[Node]]] = None
     try:
         while num_features_per_query >= 1:
             pending_node_names = feature_query_set.get_pending_node_names()
@@ -218,6 +219,10 @@ async def execute_feature_query_set(
             node_groups = generator.split_nodes(
                 pending_node_names, num_features_per_query, source_info
             )
+            if previous_node_groups is not None and previous_node_groups == node_groups:
+                # Exit early if the same node groups are being processed - it means that the feature
+                # queries cannot be split further
+                break
             feature_query_results = await execute_queries_for_node_groups(
                 feature_query_set=feature_query_set,
                 node_groups=node_groups,
@@ -228,6 +233,7 @@ async def execute_feature_query_set(
             )
             table_name_suffix_counter += len(node_groups)
             num_features_per_query //= 2
+            previous_node_groups = node_groups
 
         failed_node_names = feature_query_set.get_pending_node_names()
         if failed_node_names:
