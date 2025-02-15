@@ -20,6 +20,7 @@ import httpx
 import pandas as pd
 import pytest
 import pytest_asyncio
+import redis
 from bson import ObjectId
 from cachetools import TTLCache
 from fastapi.testclient import TestClient as BaseTestClient
@@ -74,7 +75,6 @@ from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.storage.local import LocalStorage
-from featurebyte.worker import get_redis
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.test_util.random_task import Command, LongRunningTask
 from tests.unit.conftest_config import (
@@ -2711,7 +2711,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     "persistent": persistent,
                     "temp_storage": temp_storage,
                     "celery": get_celery(),
-                    "redis": get_redis(),
+                    "redis": redis.from_url(TEST_REDIS_URI),
                     "storage": storage,
                     "catalog_id": payload.catalog_id,
                 }
