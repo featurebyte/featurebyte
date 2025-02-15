@@ -209,6 +209,7 @@ async def execute_feature_query_set(
     generator = feature_query_set.feature_query_generator
     num_features_per_query = NUM_FEATURES_PER_QUERY
     table_name_suffix_counter = 0
+    feature_query_results = []
     try:
         while num_features_per_query >= 1:
             pending_node_names = feature_query_set.get_pending_node_names()
@@ -217,7 +218,7 @@ async def execute_feature_query_set(
             node_groups = generator.split_nodes(
                 pending_node_names, num_features_per_query, source_info
             )
-            await execute_queries_for_node_groups(
+            feature_query_results = await execute_queries_for_node_groups(
                 feature_query_set=feature_query_set,
                 node_groups=node_groups,
                 session_handler=session_handler,
@@ -231,9 +232,14 @@ async def execute_feature_query_set(
         failed_node_names = feature_query_set.get_pending_node_names()
         if failed_node_names:
             failed_feature_names = ", ".join(generator.get_feature_names(failed_node_names))
+            exception_result = None
+            for feature_query_result in feature_query_results:
+                if isinstance(feature_query_result, Exception):
+                    exception_result = feature_query_result
+            assert exception_result is not None
             raise FeatureQueryExecutionError(
-                f"Failed to materialize {len(failed_feature_names)} features: {failed_feature_names}"
-            )
+                f"Failed to materialize {len(failed_node_names)} features: {failed_feature_names}"
+            ) from exception_result
 
         output_query = feature_query_set.construct_output_query(session.get_source_info())
         result = await session.execute_query_long_running(output_query)
@@ -263,7 +269,7 @@ async def execute_queries_for_node_groups(
     materialized_feature_table: List[str],
     table_name_suffix_counter: int,
     progress_callback: Callable[[int], Coroutine[Any, Any, None]],
-) -> None:
+) -> list[FeatureQuery | Exception]:
     """
     Execute the feature queries for a list of node groups and update feature_query_set accordingly
 
@@ -326,3 +332,5 @@ async def execute_queries_for_node_groups(
         logger.warning(
             f"Failed to materialize {len(failed_feature_names)} features: {failed_feature_names}"
         )
+
+    return feature_query_results
