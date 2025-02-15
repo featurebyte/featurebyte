@@ -182,6 +182,12 @@ async def execute_feature_query_set(
     Returns
     -------
     Optional[pd.DataFrame]
+
+    Raises
+    ------
+    FeatureQueryExecutionError
+        If any of the feature queries fail to materialize after attempts to retry with
+        simplification
     """
     session = session_handler.session
     source_info = session.get_source_info()
@@ -297,6 +303,11 @@ async def execute_queries_for_node_groups(
     Returns
     -------
     list[FeatureQuery | Exception]
+
+    Raises
+    ------
+    feature_query_result
+        The exception raised by execute_feature_query when a feature query fails to materialize
     """
     generator = feature_query_set.feature_query_generator
     feature_set_table_name_prefix = f"__TEMP_{ObjectId()}"
