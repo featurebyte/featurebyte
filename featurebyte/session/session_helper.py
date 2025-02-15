@@ -145,7 +145,7 @@ async def execute_feature_query(
     try:
         await validate_output_row_index(session, feature_query.table_name)
     except InvalidOutputRowIndexError:
-        formatted_feature_names = ", ".join(feature_query.feature_names)
+        formatted_feature_names = ", ".join(sorted(feature_query.feature_names))
         raise InvalidOutputRowIndexError(
             f"Row index column is invalid in the intermediate feature table: {feature_query.table_name}."
             f" Feature names: {formatted_feature_names}"
@@ -237,7 +237,7 @@ async def execute_feature_query_set(
 
         failed_node_names = feature_query_set.get_pending_node_names()
         if failed_node_names:
-            failed_feature_names = ", ".join(generator.get_feature_names(failed_node_names))
+            failed_feature_names = ", ".join(sorted(generator.get_feature_names(failed_node_names)))
             exception_result = None
             for feature_query_result in feature_query_results:
                 if isinstance(feature_query_result, Exception):
@@ -293,6 +293,10 @@ async def execute_queries_for_node_groups(
         Counter for table name suffix
     progress_callback: Callable[[int], Coroutine[Any, Any, None]]
         Progress callback function
+
+    Returns
+    -------
+    list[FeatureQuery | Exception]
     """
     generator = feature_query_set.feature_query_generator
     feature_set_table_name_prefix = f"__TEMP_{ObjectId()}"
@@ -331,6 +335,10 @@ async def execute_queries_for_node_groups(
         if isinstance(feature_query_result, FeatureQuery):
             feature_query_set.add_completed_feature_query(feature_query_result)
             completed_node_names.extend(feature_query_result.node_names)
+        elif isinstance(feature_query_result, InvalidOutputRowIndexError):
+            # Raise InvalidOutputRowIndexError immediately since that is likely a bug that cannot be
+            # recovered from retrying
+            raise feature_query_result
 
     failed_node_names = list(set(all_node_names) - set(completed_node_names))
     if failed_node_names:

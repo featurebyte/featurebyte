@@ -3001,28 +3001,37 @@ def session_manager_service_fixture(app_container_no_catalog):
     return app_container_no_catalog.session_manager_service
 
 
-@pytest.fixture(name="saved_feature_model")
-def saved_feature_model_fixture(float_feature):
+@pytest.fixture(name="saved_features_set")
+def saved_features_set_fixture(float_feature):
     """
     Fixture for a saved feature model
     """
     float_feature.save()
-    return float_feature.cached_model
+    another_feature = float_feature + 123
+    another_feature.name = "another_feature"
+    another_feature.save()
+    feature_list = FeatureList([float_feature, another_feature], name="my_feature_list")
+    feature_list.save()
+    feature_cluster = feature_list.cached_model.feature_clusters[0]
+    graph = feature_cluster.graph
+    node_names = feature_cluster.node_names
+    nodes = [graph.get_node_by_name(node_name) for node_name in node_names]
+    return graph, nodes, feature_list.feature_names
 
 
 @pytest.fixture(name="feature_query_generator")
-def feature_query_generator_fixture(saved_feature_model, source_info):
+def feature_query_generator_fixture(saved_features_set, source_info):
     """
     Fixture for FeatureQueryGenerator
     """
-    feature_model = saved_feature_model
+    graph, nodes, feature_names = saved_features_set
     generator = HistoricalFeatureQueryGenerator(
-        graph=feature_model.graph,
-        nodes=[feature_model.node],
+        graph=graph,
+        nodes=nodes,
         request_table_name="my_request_table",
         request_table_columns=["POINT_IN_TIME", "cust_id"],
         source_info=source_info,
         output_table_details=TableDetails(table_name="my_output_table"),
-        output_feature_names=[feature_model.name],
+        output_feature_names=feature_names,
     )
     return generator
