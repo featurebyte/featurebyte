@@ -218,10 +218,12 @@ class FeatureQuerySet:
         -------
         list[str]
         """
-        return list(
-            set(self.feature_query_generator.get_node_names())
-            - set(self.get_completed_node_names())
-        )
+        completed_node_names = set(self.get_completed_node_names())
+        pending_node_names = []
+        for node_name in self.feature_query_generator.get_node_names():
+            if node_name not in completed_node_names:
+                pending_node_names.append(node_name)
+        return pending_node_names
 
     @property
     def output_table_name(self) -> Optional[str]:
