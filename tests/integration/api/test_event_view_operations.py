@@ -607,9 +607,7 @@ def check_historical_features_system_metrics(config, historical_feature_table_id
 async def test_get_historical_features(
     session,
     data_source,
-    feature_group,
-    feature_group_per_category,
-    feature_group_timestamp_agg,
+    feature_list_with_combined_feature_groups,
     in_out_formats,
     user_entity,
     new_user_id_entity,
@@ -623,23 +621,7 @@ async def test_get_historical_features(
     assert input_format in {"dataframe", "table", "uploaded_table"}
     assert output_format in {"dataframe", "table"}
 
-    feature_group["COUNT_2h DIV COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
-    feature_list = FeatureList(
-        [
-            feature_group["COUNT_2h"],
-            feature_group["COUNT_24h"],
-            feature_group_per_category["COUNT_BY_ACTION_24h"],
-            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
-            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
-            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
-            feature_group["COUNT_2h DIV COUNT_24h"],
-            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
-            feature_group_timestamp_agg["TS_MIN_24h"],
-            feature_group_timestamp_agg["TS_MAX_24h"],
-        ],
-        name="My FeatureList",
-    )
-
+    feature_list = feature_list_with_combined_feature_groups
     df_training_events, df_historical_expected = get_training_events_and_expected_result()
 
     if "table" in input_format:

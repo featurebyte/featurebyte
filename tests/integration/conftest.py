@@ -41,6 +41,7 @@ from featurebyte import (
     DatabricksDetails,
     FeatureGroup,
     FeatureJobSetting,
+    FeatureList,
     OnlineStore,
     RedisOnlineStoreDetails,
     SnowflakeDetails,
@@ -2241,6 +2242,29 @@ def count_distinct_feature_group_fixture(item_table, dimension_table):
         item_type_count_distinct_by_cust_features,
         cust_consistency_of_item_type,
     ])
+
+
+@pytest.fixture(name="feature_list_with_combined_feature_groups")
+def feature_list_with_combined_feature_groups_fixture(
+    feature_group, feature_group_per_category, feature_group_timestamp_agg
+):
+    feature_group["COUNT_2h DIV COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    feature_list = FeatureList(
+        [
+            feature_group["COUNT_2h"],
+            feature_group["COUNT_24h"],
+            feature_group_per_category["COUNT_BY_ACTION_24h"],
+            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
+            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
+            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
+            feature_group["COUNT_2h DIV COUNT_24h"],
+            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
+            feature_group_timestamp_agg["TS_MIN_24h"],
+            feature_group_timestamp_agg["TS_MAX_24h"],
+        ],
+        name="My FeatureList",
+    )
+    return feature_list
 
 
 @pytest.fixture(name="mock_graph_clear_period", autouse=True)

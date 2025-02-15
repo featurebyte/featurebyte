@@ -62,7 +62,10 @@ SELECT
   AGG."__FB_TABLE_ROW_INDEX",
   AGG."POINT_IN_TIME",
   AGG."cust_id",
-  CAST("_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_1d"
+  CAST("_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS DOUBLE) AS "sum_1d",
+  CAST((
+    "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" + 123
+  ) AS DOUBLE) AS "another_feature"
 FROM _FB_AGGREGATED AS AGG;
 
 SELECT
@@ -75,7 +78,8 @@ SELECT
   REQ."a",
   REQ."b",
   REQ."c",
-  T0."sum_1d"
+  T0."sum_1d",
+  T0."another_feature"
 FROM "request_table" AS REQ
 LEFT JOIN "__TEMP_000000000000000000000000_0" AS T0
   ON REQ."__FB_TABLE_ROW_INDEX" = T0."__FB_TABLE_ROW_INDEX";
