@@ -18,6 +18,15 @@ from featurebyte.session.base import BaseSession
 from featurebyte.session.snowflake import SnowflakeSession
 
 
+@pytest.fixture(name="patched_validate_row_index", autouse=True)
+def patched_validate_row_index_fixture():
+    """
+    Patched validate_output_row_index to be a no-op
+    """
+    with patch("featurebyte.session.session_helper.validate_output_row_index") as patched:
+        yield patched
+
+
 @pytest.fixture()
 def api_client_persistent(persistent, user_id, temp_storage):
     """

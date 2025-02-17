@@ -354,6 +354,17 @@ class TargetType(StrEnum):
     CLASSIFICATION = "classification", "Binary classification modeling"
     MULTI_CLASSIFICATION = "multi_classification", "Multi-class classification modeling"
 
+    @classmethod
+    def classification_types(cls) -> set[TargetType]:
+        """
+        Classification target types
+
+        Returns
+        -------
+        set[TargetType]
+        """
+        return {cls.CLASSIFICATION, cls.MULTI_CLASSIFICATION}
+
 
 class AggFunc(StrEnum):
     """

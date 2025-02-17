@@ -1097,3 +1097,31 @@ def safe_freeze_time(frozen_datetime):
         for mod in mod_lists:
             stack.enter_context(safe_freeze_time_for_mod(mod, frozen_datetime))
         yield
+
+
+def feature_query_set_to_string(
+    feature_query_set,
+    nodes,
+    source_info,
+    num_features_per_query=20,
+    nodes_group_override=None,
+):
+    """
+    Helper function that given a FeatureQuerySet, return the full query string concatenating all the
+    feature queries and the final output query.
+    """
+    generator = feature_query_set.feature_query_generator
+    node_names = [node.name for node in nodes]
+    if nodes_group_override:
+        nodes_group = nodes_group_override
+    else:
+        nodes_group = generator.split_nodes(node_names, num_features_per_query, source_info)
+    queries = []
+    for i, nodes in enumerate(nodes_group):
+        feature_query = generator.generate_feature_query(
+            [node.name for node in nodes], f"__TEMP_{i}"
+        )
+        queries.append(feature_query.sql)
+        feature_query_set.add_completed_feature_query(feature_query)
+    queries.append(feature_query_set.construct_output_query(source_info))
+    return ";\n\n".join(queries)

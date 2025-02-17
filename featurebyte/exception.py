@@ -533,3 +533,9 @@ class InvalidOutputRowIndexError(FeatureByteException):
     """
     Raise when output row index is invalid
     """
+
+
+class FeatureTableRequestInputNotFoundError(BaseUnprocessableEntityError):
+    """
+    Raise when request input is not found for the feature table
+    """

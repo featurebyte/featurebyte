@@ -35,7 +35,7 @@ def test_date_difference(input_node):
     context = make_context(parameters={}, input_sql_nodes=input_nodes)
     node = DateDiffNode.build(context)
     assert node.sql.sql() == (
-        "(DATEDIFF(microsecond, b, a) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))"
+        "(DATEDIFF(a, b, MICROSECOND) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))"
     )
 
 
@@ -57,7 +57,7 @@ def test_date_difference_timestamp_schema(input_node):
     )
     node = DateDiffNode.build(context)
     assert node.sql.sql() == (
-        "(DATEDIFF(microsecond, TO_TIMESTAMP(b, '%Y|%m|%d'), TO_TIMESTAMP(a, '%Y-%m-%d')) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))"
+        "(DATEDIFF(TO_TIMESTAMP(a, '%Y-%m-%d'), TO_TIMESTAMP(b, '%Y|%m|%d'), MICROSECOND) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT))"
     )
 
 
