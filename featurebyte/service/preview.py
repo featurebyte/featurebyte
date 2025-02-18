@@ -431,8 +431,9 @@ class PreviewService:
         allow_long_running: bool,
     ) -> list[pd.DataFrame]:
         if columns_batch_size is None:
-            columns_batch_size = min(DEFAULT_COLUMNS_BATCH_SIZE, len(operation_structure.columns))
+            columns_batch_size = DEFAULT_COLUMNS_BATCH_SIZE
 
+        columns_batch_size = min(columns_batch_size, len(operation_structure.columns))
         pending_column_names = {column.name for column in operation_structure.columns}
         df_queries_all = []
         while columns_batch_size >= 1:
@@ -450,25 +451,19 @@ class PreviewService:
                 sample_sql_tree=sample_sql_tree,
                 stats_names=sample.stats_names,
             )
-            try:
-                df_queries = await self._run_describe_queries(
-                    describe_queries=describe_queries,
-                    input_table_name=input_table_name,
-                    session=session,
-                    sample=sample,
-                    allow_long_running=allow_long_running,
-                )
-            except:
-                df_queries = None
-                logger.exception("Error when running describe queries, attempting to retry")
-
-            if df_queries is not None:
-                for df_query in df_queries:
-                    df_queries_all.append(df_query)
-                    pending_column_names -= set(df_query.columns)
-                if not pending_column_names:
-                    break
-
+            df_queries = await self._run_describe_queries(
+                describe_queries=describe_queries,
+                input_table_name=input_table_name,
+                session=session,
+                sample=sample,
+                allow_long_running=allow_long_running,
+            )
+            for df_query in df_queries:
+                df_queries_all.append(df_query)
+                pending_column_names -= set(df_query.columns)
+            if not pending_column_names:
+                break
+            logger.info("Retrying describe queries with smaller batch size")
             # Reduce batch size and retry
             columns_batch_size //= 2
 
@@ -501,13 +496,21 @@ class PreviewService:
                 ),
             )
             logger.debug("Execute describe SQL", extra={"describe_sql": query})
-            result = await self._get_or_cache_dataframe(
-                session,
-                sample.feature_store_id,
-                sample.enable_query_cache,
-                query,
-                allow_long_running,
-            )
+            try:
+                result = await self._get_or_cache_dataframe(
+                    session,
+                    sample.feature_store_id,
+                    sample.enable_query_cache,
+                    query,
+                    allow_long_running,
+                )
+            except:
+                column_names = ", ".join(sorted([column.name for column in describe_query.columns]))
+                logger.exception(
+                    "Error when running describe query, attempting to retry (columns: %s)"
+                    % column_names
+                )
+                continue
             columns = describe_query.columns
             assert result is not None
             df_query = pd.DataFrame(
