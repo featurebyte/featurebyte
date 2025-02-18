@@ -64,9 +64,7 @@ class DescribeQueries:
     Collection of queries to describe all columns for a given node
     """
 
-    data: DataQuery
     queries: List[DescribeQuery]
-    type_conversions: dict[Optional[str], DBVarType]
 
 
 @dataclass
@@ -1172,16 +1170,10 @@ class PreviewMixin(BaseGraphInterpreter):
 
     def construct_describe_queries(  # pylint: disable=too-many-arguments
         self,
-        node_name: str,
-        num_rows: int = 10,
-        seed: int = 1234,
-        from_timestamp: Optional[datetime] = None,
-        to_timestamp: Optional[datetime] = None,
-        timestamp_column: Optional[str] = None,
+        operation_structure: OperationStructure,
+        sample_sql_tree: expressions.Select,
         stats_names: Optional[List[str]] = None,
         columns_batch_size: Optional[int] = None,
-        total_num_rows: Optional[int] = None,
-        sample_on_primary_table: bool = False,
     ) -> DescribeQueries:
         """Construct SQL to describe data from a given node
 
@@ -1214,20 +1206,6 @@ class PreviewMixin(BaseGraphInterpreter):
         DescribeQueries
             SQL code, type conversions to apply on result, row indices, columns
         """
-        operation_structure = self.extract_operation_structure_for_node(node_name)
-
-        sample_sql_tree, type_conversions = self._construct_sample_sql(
-            node_name=node_name,
-            num_rows=num_rows,
-            seed=seed,
-            from_timestamp=from_timestamp,
-            to_timestamp=to_timestamp,
-            timestamp_column=timestamp_column,
-            skip_conversion=True,
-            total_num_rows=total_num_rows,
-            sample_on_primary_table=sample_on_primary_table,
-        )
-
         if not columns_batch_size:
             columns_batch_size = len(operation_structure.columns)
 
@@ -1247,9 +1225,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 )
             )
         return DescribeQueries(
-            data=DataQuery(expr=sample_sql_tree),
             queries=queries,
-            type_conversions=type_conversions,
         )
 
     def construct_value_counts_sql(

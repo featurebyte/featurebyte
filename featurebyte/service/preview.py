@@ -366,24 +366,36 @@ class PreviewService:
             )
             total_num_rows = None
 
-        describe_queries = GraphInterpreter(
+        graph_interpreter = GraphInterpreter(
             sample.graph, source_info=feature_store.get_source_info()
-        ).construct_describe_queries(
+        )
+        operation_structure = graph_interpreter.extract_operation_structure_for_node(
+            sample.node_name
+        )
+        sample_sql_tree, type_conversions = graph_interpreter._construct_sample_sql(
             node_name=sample.node_name,
             num_rows=size,
             seed=seed,
             from_timestamp=sample.from_timestamp,
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
-            stats_names=sample.stats_names,
-            columns_batch_size=columns_batch_size,
+            skip_conversion=True,
             total_num_rows=total_num_rows,
             sample_on_primary_table=sample_on_primary_table,
+        )
+
+        describe_queries = GraphInterpreter(
+            sample.graph, source_info=feature_store.get_source_info()
+        ).construct_describe_queries(
+            operation_structure=operation_structure,
+            sample_sql_tree=sample_sql_tree,
+            stats_names=sample.stats_names,
+            columns_batch_size=columns_batch_size,
         )
         input_table_name, is_table_cached = await self._get_or_cache_table(
             session=session,
             params=sample,
-            table_expr=describe_queries.data.expr,
+            table_expr=sample_sql_tree,
         )
 
         try:
@@ -431,7 +443,7 @@ class PreviewService:
         if drop_all_null_stats:
             results = results.dropna(axis=0, how="all")
 
-        return dataframe_to_json(results, describe_queries.type_conversions, skip_prepare=True)
+        return dataframe_to_json(results, type_conversions, skip_prepare=True)
 
     async def value_counts(  # pylint: disable=too-many-locals
         self,
