@@ -20,6 +20,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.interpreter.preview import DescribeQueries
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
@@ -399,37 +400,13 @@ class PreviewService:
         )
 
         try:
-            df_queries = []
-            for describe_query in describe_queries.queries:
-                query = cast(
-                    str,
-                    SqlExpressionTemplate(
-                        describe_query.expr, source_type=session.source_type
-                    ).render(
-                        data={
-                            InternalName.INPUT_TABLE_SQL_PLACEHOLDER: quoted_identifier(
-                                input_table_name
-                            )
-                        },
-                        as_str=True,
-                    ),
-                )
-                logger.debug("Execute describe SQL", extra={"describe_sql": query})
-                result = await self._get_or_cache_dataframe(
-                    session,
-                    sample.feature_store_id,
-                    sample.enable_query_cache,
-                    query,
-                    allow_long_running,
-                )
-                columns = describe_query.columns
-                assert result is not None
-                df_query = pd.DataFrame(
-                    result.values.reshape(len(columns), -1).T,
-                    index=describe_query.row_names,
-                    columns=[str(column.name) for column in columns],
-                )
-                df_queries.append(df_query)
+            df_queries = await self._run_describe_queries(
+                describe_queries=describe_queries,
+                input_table_name=input_table_name,
+                session=session,
+                sample=sample,
+                allow_long_running=allow_long_running,
+            )
         finally:
             if not is_table_cached:
                 # Need to cleanup as the table is not managed by query cache
@@ -444,6 +421,45 @@ class PreviewService:
             results = results.dropna(axis=0, how="all")
 
         return dataframe_to_json(results, type_conversions, skip_prepare=True)
+
+    async def _run_describe_queries(
+        self,
+        describe_queries: DescribeQueries,
+        input_table_name: str,
+        session: BaseSession,
+        sample: FeatureStoreSample,
+        allow_long_running: bool,
+    ) -> list[pd.DataFrame]:
+        df_queries = []
+        for describe_query in describe_queries.queries:
+            query = cast(
+                str,
+                SqlExpressionTemplate(describe_query.expr, source_type=session.source_type).render(
+                    data={
+                        InternalName.INPUT_TABLE_SQL_PLACEHOLDER: quoted_identifier(
+                            input_table_name
+                        )
+                    },
+                    as_str=True,
+                ),
+            )
+            logger.debug("Execute describe SQL", extra={"describe_sql": query})
+            result = await self._get_or_cache_dataframe(
+                session,
+                sample.feature_store_id,
+                sample.enable_query_cache,
+                query,
+                allow_long_running,
+            )
+            columns = describe_query.columns
+            assert result is not None
+            df_query = pd.DataFrame(
+                result.values.reshape(len(columns), -1).T,
+                index=describe_query.row_names,
+                columns=[str(column.name) for column in columns],
+            )
+            df_queries.append(df_query)
+        return df_queries
 
     async def value_counts(  # pylint: disable=too-many-locals
         self,
