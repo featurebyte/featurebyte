@@ -15,6 +15,7 @@ from sqlglot.expressions import Select
 
 from featurebyte.common.utils import dataframe_to_json, timer
 from featurebyte.enum import DBVarType, InternalName
+from featurebyte.exception import DescribeQueryExecutionError
 from featurebyte.logging import get_logger, truncate_query
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
@@ -430,25 +431,53 @@ class PreviewService:
         allow_long_running: bool,
     ) -> list[pd.DataFrame]:
         if columns_batch_size is None:
-            columns_batch_size = DEFAULT_COLUMNS_BATCH_SIZE
+            columns_batch_size = min(DEFAULT_COLUMNS_BATCH_SIZE, len(operation_structure.columns))
 
-        column_groups = [
-            operation_structure.columns[i : i + columns_batch_size]
-            for i in range(0, len(operation_structure.columns), columns_batch_size)
-        ]
-        describe_queries = graph_interpreter.construct_describe_queries(
-            column_groups=column_groups,
-            sample_sql_tree=sample_sql_tree,
-            stats_names=sample.stats_names,
-        )
-        df_queries = await self._run_describe_queries(
-            describe_queries=describe_queries,
-            input_table_name=input_table_name,
-            session=session,
-            sample=sample,
-            allow_long_running=allow_long_running,
-        )
-        return df_queries
+        pending_column_names = {column.name for column in operation_structure.columns}
+        df_queries_all = []
+        while columns_batch_size >= 1:
+            pending_columns = [
+                column
+                for column in operation_structure.columns
+                if column.name in pending_column_names
+            ]
+            column_groups = [
+                pending_columns[i : i + columns_batch_size]
+                for i in range(0, len(pending_columns), columns_batch_size)
+            ]
+            describe_queries = graph_interpreter.construct_describe_queries(
+                column_groups=column_groups,
+                sample_sql_tree=sample_sql_tree,
+                stats_names=sample.stats_names,
+            )
+            try:
+                df_queries = await self._run_describe_queries(
+                    describe_queries=describe_queries,
+                    input_table_name=input_table_name,
+                    session=session,
+                    sample=sample,
+                    allow_long_running=allow_long_running,
+                )
+            except:
+                df_queries = None
+                logger.exception("Error when running describe queries, attempting to retry")
+
+            if df_queries is not None:
+                for df_query in df_queries:
+                    df_queries_all.append(df_query)
+                    pending_column_names -= set(df_query.columns)
+                if not pending_column_names:
+                    break
+
+            # Reduce batch size and retry
+            columns_batch_size //= 2
+
+        if pending_column_names:
+            raise DescribeQueryExecutionError(
+                "Failed to describe columns: %s" % pending_column_names
+            )
+
+        return df_queries_all
 
     async def _run_describe_queries(
         self,
