@@ -18,6 +18,7 @@ from featurebyte.enum import DBVarType, InternalName
 from featurebyte.logging import get_logger, truncate_query
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.interpreter.preview import DescribeQueries
@@ -385,14 +386,6 @@ class PreviewService:
             sample_on_primary_table=sample_on_primary_table,
         )
 
-        describe_queries = GraphInterpreter(
-            sample.graph, source_info=feature_store.get_source_info()
-        ).construct_describe_queries(
-            operation_structure=operation_structure,
-            sample_sql_tree=sample_sql_tree,
-            stats_names=sample.stats_names,
-            columns_batch_size=columns_batch_size,
-        )
         input_table_name, is_table_cached = await self._get_or_cache_table(
             session=session,
             params=sample,
@@ -400,11 +393,14 @@ class PreviewService:
         )
 
         try:
-            df_queries = await self._run_describe_queries(
-                describe_queries=describe_queries,
+            df_queries = await self._run_describe_queries_with_batching(
+                graph_interpreter=graph_interpreter,
+                operation_structure=operation_structure,
+                sample_sql_tree=sample_sql_tree,
+                sample=sample,
                 input_table_name=input_table_name,
                 session=session,
-                sample=sample,
+                columns_batch_size=columns_batch_size,
                 allow_long_running=allow_long_running,
             )
         finally:
@@ -421,6 +417,38 @@ class PreviewService:
             results = results.dropna(axis=0, how="all")
 
         return dataframe_to_json(results, type_conversions, skip_prepare=True)
+
+    async def _run_describe_queries_with_batching(
+        self,
+        graph_interpreter: GraphInterpreter,
+        operation_structure: OperationStructure,
+        sample_sql_tree: Select,
+        sample: FeatureStoreSample,
+        input_table_name: str,
+        session: BaseSession,
+        columns_batch_size: Optional[int],
+        allow_long_running: bool,
+    ) -> list[pd.DataFrame]:
+        if columns_batch_size is None:
+            columns_batch_size = DEFAULT_COLUMNS_BATCH_SIZE
+
+        column_groups = [
+            operation_structure.columns[i : i + columns_batch_size]
+            for i in range(0, len(operation_structure.columns), columns_batch_size)
+        ]
+        describe_queries = graph_interpreter.construct_describe_queries(
+            column_groups=column_groups,
+            sample_sql_tree=sample_sql_tree,
+            stats_names=sample.stats_names,
+        )
+        df_queries = await self._run_describe_queries(
+            describe_queries=describe_queries,
+            input_table_name=input_table_name,
+            session=session,
+            sample=sample,
+            allow_long_running=allow_long_running,
+        )
+        return df_queries
 
     async def _run_describe_queries(
         self,

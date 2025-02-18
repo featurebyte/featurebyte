@@ -1170,10 +1170,9 @@ class PreviewMixin(BaseGraphInterpreter):
 
     def construct_describe_queries(  # pylint: disable=too-many-arguments
         self,
-        operation_structure: OperationStructure,
+        column_groups: List[List[ViewDataColumn]],
         sample_sql_tree: expressions.Select,
         stats_names: Optional[List[str]] = None,
-        columns_batch_size: Optional[int] = None,
     ) -> DescribeQueries:
         """Construct SQL to describe data from a given node
 
@@ -1206,15 +1205,12 @@ class PreviewMixin(BaseGraphInterpreter):
         DescribeQueries
             SQL code, type conversions to apply on result, row indices, columns
         """
-        if not columns_batch_size:
-            columns_batch_size = len(operation_structure.columns)
-
         queries = []
-        for i in range(0, len(operation_structure.columns), columns_batch_size):
+        for columns in column_groups:
             sql_tree, row_indices, columns = self._construct_stats_sql(
                 input_table_name=InternalName.INPUT_TABLE_SQL_PLACEHOLDER,
                 sql_tree=sample_sql_tree,
-                columns=operation_structure.columns[i : i + columns_batch_size],
+                columns=columns,
                 stats_names=stats_names,
             )
             queries.append(
