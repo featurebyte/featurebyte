@@ -1178,27 +1178,13 @@ class PreviewMixin(BaseGraphInterpreter):
 
         Parameters
         ----------
-        node_name : str
-            Query graph node name
-        num_rows : int
-            Number of rows to include when calculating the statistics
-        seed: int
-            Random seed to use for sampling
-        from_timestamp: Optional[datetime]
-            Start of date range to filter on
-        to_timestamp: Optional[datetime]
-            End of date range to filter on
-        timestamp_column: Optional[str]
-            Column to apply date range filtering on
+        column_groups: List[List[ViewDataColumn]]
+            List of column groups to describe. The inner lists represent columns that should be
+            described together in a single query.
+        sample_sql_tree: expressions.Select
+            The SQL of the sampled data
         stats_names: Optional[List[str]]
             List of statistics to compute. If None, compute all supported statistics.
-        columns_batch_size: Optional[int]
-            Maximum number of columns to include in each query. If None, include all columns in a
-            single query.
-        total_num_rows: int
-            Total number of rows before sampling
-        sample_on_primary_table: bool
-            Whether to sample on primary table
 
         Returns
         -------

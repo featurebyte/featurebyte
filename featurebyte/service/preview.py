@@ -505,7 +505,11 @@ class PreviewService:
                     allow_long_running,
                 )
             except Exception:
-                column_names = ", ".join(sorted([column.name for column in describe_query.columns]))
+                column_names = ", ".join(
+                    sorted([
+                        column.name for column in describe_query.columns if column.name is not None
+                    ])
+                )
                 logger.exception(
                     "Error when running describe query, attempting to retry (columns: %s)"
                     % column_names
