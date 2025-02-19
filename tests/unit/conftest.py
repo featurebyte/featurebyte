@@ -274,6 +274,18 @@ def patched_execute_feature_query_set_unique_identifier():
         yield
 
 
+@pytest.fixture(autouse=True)
+def patched_preview_service_unique_identifier():
+    """
+    Fixture to mock ObjectId to a fixed value
+    """
+    with patch(
+        "featurebyte.service.preview.ObjectId",
+        side_effect=get_increasing_object_id_callable(),
+    ):
+        yield
+
+
 @pytest.fixture(name="storage")
 def storage_fixture():
     """

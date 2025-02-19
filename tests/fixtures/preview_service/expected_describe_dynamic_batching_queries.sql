@@ -1,4 +1,4 @@
-CREATE TABLE "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E" AS
+CREATE TABLE "__FB_TEMPORARY_TABLE_000000000000000000000000" AS
 SELECT
   "col_int" AS "col_int",
   "col_float" AS "col_float",
@@ -22,7 +22,7 @@ WITH "casted_data" AS (
     CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
     CAST("created_at" AS VARCHAR) AS "created_at",
     CAST("cust_id" AS VARCHAR) AS "cust_id"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__0 AS (
   SELECT
     F_COUNT_DICT_MOST_FREQUENT(count_dict."COUNT_DICT") AS "top__0",
@@ -298,7 +298,7 @@ WITH "casted_data" AS (
     NULL AS "max__8",
     NULL AS "min TZ offset__8",
     NULL AS "max TZ offset__8"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -467,7 +467,7 @@ WITH "casted_data" AS (
     CAST("col_float" AS VARCHAR) AS "col_float",
     CAST("col_char" AS VARCHAR) AS "col_char",
     CAST("col_text" AS VARCHAR) AS "col_text"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__0 AS (
   SELECT
     F_COUNT_DICT_MOST_FREQUENT(count_dict."COUNT_DICT") AS "top__0",
@@ -600,7 +600,7 @@ WITH "casted_data" AS (
     NULL AS "max__3",
     NULL AS "min TZ offset__3",
     NULL AS "max TZ offset__3"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -685,7 +685,7 @@ WITH "casted_data" AS (
     CAST("col_boolean" AS VARCHAR) AS "col_boolean",
     CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
     CAST("created_at" AS VARCHAR) AS "created_at"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__5 AS (
   SELECT
     F_COUNT_DICT_MOST_FREQUENT(count_dict."COUNT_DICT") AS "top__5",
@@ -794,7 +794,7 @@ WITH "casted_data" AS (
     ) AS "max__7",
     NULL AS "min TZ offset__7",
     NULL AS "max TZ offset__7"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -872,7 +872,7 @@ FROM joined_tables_0;
 WITH "casted_data" AS (
   SELECT
     CAST("cust_id" AS VARCHAR) AS "cust_id"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__8 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict."COUNT_DICT") AS "entropy__8",
@@ -912,7 +912,7 @@ WITH "casted_data" AS (
     NULL AS "max__8",
     NULL AS "min TZ offset__8",
     NULL AS "max TZ offset__8"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -943,7 +943,7 @@ WITH "casted_data" AS (
   SELECT
     CAST("col_int" AS VARCHAR) AS "col_int",
     CAST("col_float" AS VARCHAR) AS "col_float"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__0 AS (
   SELECT
     F_COUNT_DICT_MOST_FREQUENT(count_dict."COUNT_DICT") AS "top__0",
@@ -1002,7 +1002,7 @@ WITH "casted_data" AS (
     MAX("col_float") AS "max__1",
     NULL AS "min TZ offset__1",
     NULL AS "max TZ offset__1"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1049,7 +1049,7 @@ WITH "casted_data" AS (
   SELECT
     CAST("col_char" AS VARCHAR) AS "col_char",
     CAST("col_text" AS VARCHAR) AS "col_text"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__2 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict."COUNT_DICT") AS "entropy__2",
@@ -1126,7 +1126,7 @@ WITH "casted_data" AS (
     NULL AS "max__3",
     NULL AS "min TZ offset__3",
     NULL AS "max TZ offset__3"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1175,7 +1175,7 @@ WITH "casted_data" AS (
   SELECT
     CAST("col_binary" AS VARCHAR) AS "col_binary",
     CAST("col_boolean" AS VARCHAR) AS "col_boolean"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__5 AS (
   SELECT
     F_COUNT_DICT_MOST_FREQUENT(count_dict."COUNT_DICT") AS "top__5",
@@ -1228,7 +1228,7 @@ WITH "casted_data" AS (
     NULL AS "max__5",
     NULL AS "min TZ offset__5",
     NULL AS "max TZ offset__5"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1329,7 +1329,7 @@ WITH stats AS (
     ) AS "max__7",
     NULL AS "min TZ offset__7",
     NULL AS "max TZ offset__7"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1373,7 +1373,7 @@ FROM joined_tables_0;
 WITH "casted_data" AS (
   SELECT
     CAST("cust_id" AS VARCHAR) AS "cust_id"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__8 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict."COUNT_DICT") AS "entropy__8",
@@ -1413,7 +1413,7 @@ WITH "casted_data" AS (
     NULL AS "max__8",
     NULL AS "min TZ offset__8",
     NULL AS "max TZ offset__8"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1443,7 +1443,7 @@ FROM joined_tables_0;
 WITH "casted_data" AS (
   SELECT
     CAST("col_int" AS VARCHAR) AS "col_int"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__0 AS (
   SELECT
     F_COUNT_DICT_MOST_FREQUENT(count_dict."COUNT_DICT") AS "top__0",
@@ -1485,7 +1485,7 @@ WITH "casted_data" AS (
     MAX("col_int") AS "max__0",
     NULL AS "min TZ offset__0",
     NULL AS "max TZ offset__0"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1531,7 +1531,7 @@ WITH stats AS (
     MAX("col_float") AS "max__1",
     NULL AS "min TZ offset__1",
     NULL AS "max TZ offset__1"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1559,7 +1559,7 @@ FROM joined_tables_0;
 WITH "casted_data" AS (
   SELECT
     CAST("col_char" AS VARCHAR) AS "col_char"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__2 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict."COUNT_DICT") AS "entropy__2",
@@ -1599,7 +1599,7 @@ WITH "casted_data" AS (
     NULL AS "max__2",
     NULL AS "min TZ offset__2",
     NULL AS "max TZ offset__2"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1629,7 +1629,7 @@ FROM joined_tables_0;
 WITH "casted_data" AS (
   SELECT
     CAST("col_text" AS VARCHAR) AS "col_text"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__3 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict."COUNT_DICT") AS "entropy__3",
@@ -1669,7 +1669,7 @@ WITH "casted_data" AS (
     NULL AS "max__3",
     NULL AS "min TZ offset__3",
     NULL AS "max TZ offset__3"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1712,7 +1712,7 @@ WITH stats AS (
     NULL AS "max__4",
     NULL AS "min TZ offset__4",
     NULL AS "max TZ offset__4"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1740,7 +1740,7 @@ FROM joined_tables_0;
 WITH "casted_data" AS (
   SELECT
     CAST("col_boolean" AS VARCHAR) AS "col_boolean"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__5 AS (
   SELECT
     F_COUNT_DICT_MOST_FREQUENT(count_dict."COUNT_DICT") AS "top__5",
@@ -1779,7 +1779,7 @@ WITH "casted_data" AS (
     NULL AS "max__5",
     NULL AS "min TZ offset__5",
     NULL AS "max TZ offset__5"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1836,7 +1836,7 @@ WITH stats AS (
     ) AS "max__6",
     NULL AS "min TZ offset__6",
     NULL AS "max TZ offset__6"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1891,7 +1891,7 @@ WITH stats AS (
     ) AS "max__7",
     NULL AS "min TZ offset__7",
     NULL AS "max TZ offset__7"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
@@ -1919,7 +1919,7 @@ FROM joined_tables_0;
 WITH "casted_data" AS (
   SELECT
     CAST("cust_id" AS VARCHAR) AS "cust_id"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), counts__8 AS (
   SELECT
     F_COUNT_DICT_ENTROPY(count_dict."COUNT_DICT") AS "entropy__8",
@@ -1959,7 +1959,7 @@ WITH "casted_data" AS (
     NULL AS "max__8",
     NULL AS "min TZ offset__8",
     NULL AS "max TZ offset__8"
-  FROM "__FB_TEMPORARY_TABLE_67B58F2F36FD660909807F1E"
+  FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
 ), joined_tables_0 AS (
   SELECT
     *
