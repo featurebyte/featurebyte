@@ -5,6 +5,7 @@ TaskManager service is responsible to submit task message
 from __future__ import annotations
 
 import datetime
+import json
 from typing import Any, Optional
 from uuid import UUID
 
@@ -100,6 +101,26 @@ class TaskManager:
             payload.task, kwargs=kwargs, queue=payload.queue, parent_id=parent_task_id
         )
 
+        # create task document in persistent to track pending tasks
+        await self.persistent.insert_one(
+            collection_name=TaskModel.collection_name(),
+            document={
+                "_id": str(task.id),
+                "name": payload.task,
+                "created_at": datetime.datetime.utcnow(),
+                "description": f"[Queued] {payload.command}",
+                "status": TaskStatus.PENDING,
+                "children": [],
+                "start_time": datetime.datetime.utcnow(),
+                "args": [],
+                "kwargs": kwargs,
+                "queue": payload.queue,
+                "retries": 0,
+            },
+            user_id=self.user.id,
+            disable_audit=True,
+        )
+
         if parent_task_id:
             await self._add_child_task_id(str(parent_task_id), str(task.id))
         return str(task.id)
@@ -145,6 +166,7 @@ class TaskManager:
             progress=document.get("progress"),
             progress_history=document.get("progress_history"),
             child_task_ids=document.get("child_task_ids"),
+            queue=document.get("queue"),
         )
 
     async def update_task_result(self, task_id: str, result: Any) -> None:
@@ -476,6 +498,29 @@ class TaskManager:
             raise TaskNotRevocableError(f'Task (id: "{task_id}") does not support revoke.')
         if task.status in TaskStatus.non_terminal():
             self.celery.control.revoke(task_id, reply=True, terminate=True, signal="SIGTERM")
+
+            # remove task from redis queue
+            queue = task.queue or "celery"
+            tasks = self.redis.lrange(queue, 0, -1)
+            if tasks:
+                for task_json in tasks:
+                    task_dict = json.loads(task_json)
+                    try:
+                        if task_dict.get("headers").get("id") == task_id:
+                            self.redis.lrem(queue, 1, task_json)
+                            break
+                    except AttributeError:
+                        pass
+
+            # update status to REVOKED
+            await self.persistent.update_one(
+                collection_name=TaskModel.collection_name(),
+                query_filter={"_id": task_id},
+                update={"$set": {"status": TaskStatus.REVOKED}},
+                user_id=self.user.id,
+                disable_audit=True,
+            )
+
             # revoke all child tasks
             if task.child_task_ids:
                 for child_task_id in task.child_task_ids:
