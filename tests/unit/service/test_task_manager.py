@@ -89,7 +89,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
         )
         document = task.model_dump(by_alias=True)
         document["_id"] = str(document["_id"])
-        await persistent._db[Task.collection_name()].insert_one(document)
+        await persistent._db[Task.collection_name()].replace_one({"_id": task_id}, document)
 
         task = await task_manager.get_task(task_id=task_id)
         assert str(task.id) == task_id
@@ -127,7 +127,7 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
         )
         document = task.model_dump(by_alias=True)
         document["_id"] = str(document["_id"])
-        await persistent._db[Task.collection_name()].insert_one(document)
+        await persistent._db[Task.collection_name()].replace_one({"_id": task_id}, document)
         time.sleep(0.1)
 
     page_sizes = [1, 2, 5, 10, 20]
@@ -240,7 +240,9 @@ async def test_task_manager__revoke_tasks(task_manager, celery, user_id, persist
     document = task.model_dump(by_alias=True)
     document["_id"] = str(document["_id"])
     document["child_task_ids"] = [str(uuid4()), str(uuid4()), str(uuid4())]
-    await persistent._db[Task.collection_name()].insert_one(document)
+    await persistent._db[Task.collection_name()].replace_one({"_id": task_id}, document)
+
+    task_manager.redis.lrange.return_value = None
 
     # revoke task
     await task_manager.revoke_task(task_id)
@@ -309,7 +311,7 @@ async def test_task_manager__rerun_task(task_manager, celery, user_id, persisten
     )
     document = task.model_dump(by_alias=True)
     document["_id"] = str(document["_id"])
-    await persistent._db[Task.collection_name()].insert_one(document)
+    await persistent._db[Task.collection_name()].replace_one({"_id": task_id}, document)
 
     new_task_id = await task_manager.rerun_task(task_id)
     celery.send_task.assert_called_with(
