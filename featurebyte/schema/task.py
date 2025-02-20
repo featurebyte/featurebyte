@@ -82,6 +82,7 @@ class Task(FeatureByteBaseModel):
     progress: Optional[Dict[str, Any]] = Field(default=None)
     progress_history: Optional[ProgressHistory] = Field(default=None)
     child_task_ids: Optional[List[TaskId]] = Field(default=None)
+    queue: Optional[str] = Field(default=None)
 
 
 class TaskList(PaginationMixin):

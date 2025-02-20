@@ -9,10 +9,12 @@ import copy
 from asyncio import iscoroutine
 from collections import OrderedDict
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, cast
+from typing import Any, AsyncIterator, Dict, Iterable, List, Optional, Tuple, Union, cast
+from uuid import UUID
 
 import pymongo
 from bson import ObjectId
+from bson.errors import InvalidId
 from motor.core import AgnosticCursor
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.results import DeleteResult, InsertManyResult, InsertOneResult, UpdateResult
@@ -61,7 +63,7 @@ class MongoDB(Persistent):
         if hasattr(self._client, "get_io_loop"):
             self._client.get_io_loop = asyncio.get_running_loop
 
-    async def _insert_one(self, collection_name: str, document: Document) -> ObjectId:
+    async def _insert_one(self, collection_name: str, document: Document) -> Union[ObjectId, UUID]:
         """
         Insert record into collection
 
@@ -74,7 +76,7 @@ class MongoDB(Persistent):
 
         Returns
         -------
-        ObjectId
+        Union[ObjectId, UUID]
             Id of the inserted document
 
         Raises
@@ -86,13 +88,16 @@ class MongoDB(Persistent):
             result: InsertOneResult = await self._db[collection_name].insert_one(
                 document, session=self._session
             )
-            return ObjectId(result.inserted_id)
+            try:
+                return ObjectId(result.inserted_id)
+            except InvalidId:
+                return UUID(result.inserted_id)
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateDocumentError() from exc
 
     async def _insert_many(
         self, collection_name: str, documents: Iterable[Document]
-    ) -> list[ObjectId]:
+    ) -> list[Union[ObjectId, UUID]]:
         """
         Insert records into collection
 
@@ -105,7 +110,7 @@ class MongoDB(Persistent):
 
         Returns
         -------
-        list[ObjectId]
+        list[Union[ObjectId, UUID]]
             Ids of the inserted document
 
         Raises
