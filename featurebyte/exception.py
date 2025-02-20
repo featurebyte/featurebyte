@@ -545,3 +545,9 @@ class FeatureQueryExecutionError(FeatureByteException):
     """
     Raise when there is an error with feature query execution
     """
+
+
+class DescribeQueryExecutionError(FeatureByteException):
+    """
+    Raise when stats compute query fails to execute even after batching attempt
+    """
