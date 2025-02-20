@@ -19,7 +19,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.periodic_task import Crontab, Interval, PeriodicTask
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.models.task import Task as TaskModel
-from featurebyte.persistent import Persistent
+from featurebyte.persistent import DuplicateDocumentError, Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.task import Task, TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
@@ -102,24 +102,28 @@ class TaskManager:
         )
 
         # create task document in persistent to track pending tasks
-        await self.persistent.insert_one(
-            collection_name=TaskModel.collection_name(),
-            document={
-                "_id": str(task.id),
-                "name": payload.task,
-                "created_at": datetime.datetime.utcnow(),
-                "description": f"[Queued] {payload.command}",
-                "status": TaskStatus.PENDING,
-                "children": [],
-                "start_time": datetime.datetime.utcnow(),
-                "args": [],
-                "kwargs": kwargs,
-                "queue": payload.queue,
-                "retries": 0,
-            },
-            user_id=self.user.id,
-            disable_audit=True,
-        )
+        try:
+            await self.persistent.insert_one(
+                collection_name=TaskModel.collection_name(),
+                document={
+                    "_id": str(task.id),
+                    "name": payload.task,
+                    "created_at": datetime.datetime.utcnow(),
+                    "description": f"[Queued] {payload.command}",
+                    "status": TaskStatus.PENDING,
+                    "children": [],
+                    "start_time": datetime.datetime.utcnow(),
+                    "args": [],
+                    "kwargs": kwargs,
+                    "queue": payload.queue,
+                    "retries": 0,
+                },
+                user_id=self.user.id,
+                disable_audit=True,
+            )
+        except DuplicateDocumentError:
+            # task already exists in persistent
+            pass
 
         if parent_task_id:
             await self._add_child_task_id(str(parent_task_id), str(task.id))
