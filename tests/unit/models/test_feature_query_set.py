@@ -3,13 +3,12 @@ Tests for featurebyte/models/feature_query_set.py
 """
 
 
-def test_feature_query_generator(feature_query_generator, saved_feature_model):
+def test_feature_query_generator(feature_query_generator, saved_features_set):
     """
     Test FeatureQueryGenerator
     """
-    feature_model = saved_feature_model
-    assert feature_query_generator.get_nodes() == [feature_model.node]
-    assert feature_query_generator.get_node_names() == [feature_model.node.name]
-    assert feature_query_generator.get_feature_names([feature_model.node.name]) == [
-        feature_model.name
-    ]
+    graph, nodes, feature_names = saved_features_set
+    node_names = [node.name for node in nodes]
+    assert feature_query_generator.get_nodes() == nodes
+    assert feature_query_generator.get_node_names() == node_names
+    assert feature_query_generator.get_feature_names(node_names) == feature_names

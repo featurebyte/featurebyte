@@ -210,6 +210,21 @@ class FeatureQuerySet:
             node_names.extend(query.node_names)
         return node_names
 
+    def get_pending_node_names(self) -> list[str]:
+        """
+        Get the list of pending node names
+
+        Returns
+        -------
+        list[str]
+        """
+        completed_node_names = set(self.get_completed_node_names())
+        pending_node_names = []
+        for node_name in self.feature_query_generator.get_node_names():
+            if node_name not in completed_node_names:
+                pending_node_names.append(node_name)
+        return pending_node_names
+
     @property
     def output_table_name(self) -> Optional[str]:
         """

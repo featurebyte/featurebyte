@@ -3,13 +3,13 @@ Tests for featurebyte/session/session_helper.py
 """
 
 import textwrap
-from unittest.mock import AsyncMock, Mock, call
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte.exception import InvalidOutputRowIndexError
+from featurebyte.exception import FeatureQueryExecutionError, InvalidOutputRowIndexError
 from featurebyte.models.feature_query_set import FeatureQuerySet
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.session.session_helper import (
@@ -75,16 +75,17 @@ def progress_message_fixture():
 
 
 @pytest.fixture(name="feature_query_set")
-def feature_query_set_fixture(feature_query_generator, saved_feature_model, progress_message):
+def feature_query_set_fixture(feature_query_generator, saved_features_set, progress_message):
     """
     Fixture for a FeatureQuerySet
     """
+    _, _, feature_names = saved_features_set
     return FeatureQuerySet(
         feature_query_generator=feature_query_generator,
         request_table_name="request_table",
         request_table_columns=["a", "b", "c"],
         output_table_details=TableDetails(table_name="output_table"),
-        output_feature_names=[saved_feature_model.name],
+        output_feature_names=feature_names,
         output_include_row_index=True,
         progress_message=progress_message,
     )
@@ -184,8 +185,75 @@ async def test_execute_feature_query_set__invalid_row_index(
 
     assert (
         str(exc_info.value)
-        == "Row index column is invalid in the intermediate feature table: __TEMP_000000000000000000000000_0. Feature names: sum_1d"
+        == "Row index column is invalid in the intermediate feature table: __TEMP_000000000000000000000000_0. Feature names: another_feature, sum_1d"
     )
+
+
+@pytest.mark.asyncio
+async def test_dynamic_batching__success(session_handler, feature_query_set, update_fixtures):
+    """
+    Test dynamic batching (success)
+    """
+    from featurebyte.session.session_helper import execute_feature_query
+
+    progress_callback = AsyncMock(name="mock_progress_callback")
+    call_count = {"count": 0}
+
+    async def patched_func(session, feature_query, done_callback):
+        """
+        Patched function to simulate a successful query after a retry
+        """
+        should_error = call_count["count"] == 0
+        call_count["count"] += 1
+        result = await execute_feature_query(session, feature_query, done_callback)
+        if should_error:
+            raise ValueError("Fail query on purpose")
+        return result
+
+    with patch(
+        "featurebyte.session.session_helper.execute_feature_query", side_effect=patched_func
+    ):
+        await execute_feature_query_set(
+            session_handler=session_handler,
+            feature_query_set=feature_query_set,
+            progress_callback=progress_callback,
+        )
+
+    # Check executed queries
+    queries = extract_session_executed_queries(session_handler.session)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/expected_feature_query_set_dynamic_batching.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_dynamic_batching__failure(session_handler, feature_query_set, update_fixtures):
+    """
+    Test dynamic batching (failure)
+    """
+    progress_callback = AsyncMock(name="mock_progress_callback")
+
+    async def patched_func(*args, **kwargs):
+        """
+        Patched function to simulate feature query failure at all times
+        """
+        _ = args
+        _ = kwargs
+        raise ValueError("Fail query on purpose")
+
+    with patch(
+        "featurebyte.session.session_helper.execute_feature_query", side_effect=patched_func
+    ):
+        with pytest.raises(FeatureQueryExecutionError) as exc_info:
+            await execute_feature_query_set(
+                session_handler=session_handler,
+                feature_query_set=feature_query_set,
+                progress_callback=progress_callback,
+            )
+
+    assert str(exc_info.value) == "Failed to materialize 2 features: another_feature, sum_1d"
 
 
 @pytest.mark.asyncio
