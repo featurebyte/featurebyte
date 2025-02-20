@@ -64,9 +64,7 @@ class DescribeQueries:
     Collection of queries to describe all columns for a given node
     """
 
-    data: DataQuery
     queries: List[DescribeQuery]
-    type_conversions: dict[Optional[str], DBVarType]
 
 
 @dataclass
@@ -1172,71 +1170,33 @@ class PreviewMixin(BaseGraphInterpreter):
 
     def construct_describe_queries(  # pylint: disable=too-many-arguments
         self,
-        node_name: str,
-        num_rows: int = 10,
-        seed: int = 1234,
-        from_timestamp: Optional[datetime] = None,
-        to_timestamp: Optional[datetime] = None,
-        timestamp_column: Optional[str] = None,
+        column_groups: List[List[ViewDataColumn]],
+        sample_sql_tree: expressions.Select,
         stats_names: Optional[List[str]] = None,
-        columns_batch_size: Optional[int] = None,
-        total_num_rows: Optional[int] = None,
-        sample_on_primary_table: bool = False,
     ) -> DescribeQueries:
         """Construct SQL to describe data from a given node
 
         Parameters
         ----------
-        node_name : str
-            Query graph node name
-        num_rows : int
-            Number of rows to include when calculating the statistics
-        seed: int
-            Random seed to use for sampling
-        from_timestamp: Optional[datetime]
-            Start of date range to filter on
-        to_timestamp: Optional[datetime]
-            End of date range to filter on
-        timestamp_column: Optional[str]
-            Column to apply date range filtering on
+        column_groups: List[List[ViewDataColumn]]
+            List of column groups to describe. The inner lists represent columns that should be
+            described together in a single query.
+        sample_sql_tree: expressions.Select
+            The SQL of the sampled data
         stats_names: Optional[List[str]]
             List of statistics to compute. If None, compute all supported statistics.
-        columns_batch_size: Optional[int]
-            Maximum number of columns to include in each query. If None, include all columns in a
-            single query.
-        total_num_rows: int
-            Total number of rows before sampling
-        sample_on_primary_table: bool
-            Whether to sample on primary table
 
         Returns
         -------
         DescribeQueries
             SQL code, type conversions to apply on result, row indices, columns
         """
-        operation_structure = self.extract_operation_structure_for_node(node_name)
-
-        sample_sql_tree, type_conversions = self._construct_sample_sql(
-            node_name=node_name,
-            num_rows=num_rows,
-            seed=seed,
-            from_timestamp=from_timestamp,
-            to_timestamp=to_timestamp,
-            timestamp_column=timestamp_column,
-            skip_conversion=True,
-            total_num_rows=total_num_rows,
-            sample_on_primary_table=sample_on_primary_table,
-        )
-
-        if not columns_batch_size:
-            columns_batch_size = len(operation_structure.columns)
-
         queries = []
-        for i in range(0, len(operation_structure.columns), columns_batch_size):
+        for columns in column_groups:
             sql_tree, row_indices, columns = self._construct_stats_sql(
                 input_table_name=InternalName.INPUT_TABLE_SQL_PLACEHOLDER,
                 sql_tree=sample_sql_tree,
-                columns=operation_structure.columns[i : i + columns_batch_size],
+                columns=columns,
                 stats_names=stats_names,
             )
             queries.append(
@@ -1247,9 +1207,7 @@ class PreviewMixin(BaseGraphInterpreter):
                 )
             )
         return DescribeQueries(
-            data=DataQuery(expr=sample_sql_tree),
             queries=queries,
-            type_conversions=type_conversions,
         )
 
     def construct_value_counts_sql(

@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
+from sqlglot import expressions
 
+from featurebyte.query_graph.sql.interpreter import PreviewMixin
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 
 
@@ -363,3 +365,55 @@ async def test_databricks_varchar_with_max_length(session, feature_store, catalo
 
     result = source_table.sample()
     assert result.shape[0] > 0
+
+
+def test_dynamic_batching(event_table):
+    """
+    Test describe for EventView
+    """
+    original_construct_stats_sql = PreviewMixin._construct_stats_sql
+
+    num_patched_queries = {"count": 0}
+
+    def patched_construct_stats_sql(*args, **kwargs):
+        """
+        Patch construct_stats_sql to deliberately cause error when there are more than 5 columns
+        in the select statement. This is to test dynamic batching of describe queries
+        """
+        select_expr, *remaining = original_construct_stats_sql(*args, **kwargs)
+        columns = kwargs["columns"]
+        if len(columns) > 5:
+            select_expr = select_expr.select(
+                expressions.alias_(
+                    expressions.Anonymous(this="FAIL_NOW"), alias="_debug_col", quoted=True
+                )
+            )
+            num_patched_queries["count"] += 1
+        return select_expr, *remaining
+
+    event_view = event_table.get_view()
+
+    with patch.object(
+        PreviewMixin,
+        "_construct_stats_sql",
+        new=patched_construct_stats_sql,
+    ):
+        describe_df = event_view.describe()
+
+    assert num_patched_queries["count"] > 0
+    assert describe_df.columns.tolist() == [
+        "ËVENT_TIMESTAMP",
+        "CREATED_AT",
+        "CUST_ID",
+        "ÜSER ID",
+        "PRODUCT_ACTION",
+        "SESSION_ID",
+        "ÀMOUNT",
+        "TZ_OFFSET",
+        "TRANSACTION_ID",
+        "EMBEDDING_ARRAY",
+        "ARRAY",
+        "ARRAY_STRING",
+        "FLAT_DICT",
+        "NESTED_DICT",
+    ]

@@ -2,7 +2,6 @@
 Unit tests for describe query
 """
 
-from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -27,40 +26,74 @@ def patch_num_tables_per_join():
         yield
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
-def test_graph_interpreter_describe(simple_graph, source_type, update_fixtures):
-    """Test graph sample"""
+@pytest.fixture(name="source_type")
+def source_type_fixture():
+    """
+    Default value for the source_type fixture
+    """
+    return SourceType.SNOWFLAKE
+
+
+@pytest.fixture(name="sample_on_primary_table")
+def sample_on_primary_table_fixture():
+    """
+    Default value for the sample_on_primary_table fixture
+    """
+    return False
+
+
+@pytest.fixture(name="operation_structure_and_sample_sql")
+def operation_structure_and_sample_sql_fixture(
+    simple_graph, source_type, source_info, sample_on_primary_table
+):
+    """
+    Fixture for operation structure and sample sql
+    """
     graph, node = simple_graph
+    source_info = SourceInfo(
+        source_type=source_type, database_name="my_db", schema_name="my_schema"
+    )
+    graph_interpreter = GraphInterpreter(graph, source_info)
+    operation_structure = graph_interpreter.extract_operation_structure_for_node(node.name)
+    sample_sql_tree, _ = graph_interpreter._construct_sample_sql(
+        node_name=node.name,
+        num_rows=10,
+        seed=1234,
+        sample_on_primary_table=sample_on_primary_table,
+    )
+    return graph, operation_structure, sample_sql_tree
+
+
+@pytest.mark.parametrize("sample_on_primary_table", [False, True])
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY)
+def test_graph_interpreter_describe(
+    operation_structure_and_sample_sql, source_type, update_fixtures
+):
+    """Test graph sample"""
+    graph, operation_structure, sample_sql_tree = operation_structure_and_sample_sql
     interpreter = GraphInterpreter(
         graph, SourceInfo(source_type=source_type, database_name="my_db", schema_name="my_schema")
     )
 
     sql_code = sql_to_string(
-        interpreter.construct_describe_queries(node.name, num_rows=10, seed=1234).queries[0].expr,
+        interpreter.construct_describe_queries([operation_structure.columns], sample_sql_tree)
+        .queries[0]
+        .expr,
         source_type,
     )
     expected_filename = f"tests/fixtures/query_graph/expected_describe_{source_type.lower()}.sql"
     assert_equal_with_expected_fixture(sql_code, expected_filename, update_fixtures)
 
-    # test it again when sample_on_primary_table is true
-    sql_code = sql_to_string(
-        interpreter.construct_describe_queries(
-            node.name, num_rows=10, seed=1234, sample_on_primary_table=True
-        )
-        .queries[0]
-        .expr,
-        source_type,
-    )
-    assert_equal_with_expected_fixture(sql_code, expected_filename, False)
 
-
-def test_describe_specify_stats_names(simple_graph, update_fixtures, source_info):
+def test_describe_specify_stats_names(
+    operation_structure_and_sample_sql, update_fixtures, source_info
+):
     """Test describe sql with only required stats names"""
-    graph, node = simple_graph
+    graph, operation_structure, sample_sql_tree = operation_structure_and_sample_sql
     interpreter = GraphInterpreter(graph, source_info)
 
     describe_query = interpreter.construct_describe_queries(
-        node.name, num_rows=10, seed=1234, stats_names=["min", "max"]
+        [operation_structure.columns[:]], sample_sql_tree, stats_names=["min", "max"]
     ).queries[0]
     assert describe_query.row_names == ["dtype", "min", "max"]
     assert [column.name for column in describe_query.columns] == [
@@ -76,15 +109,17 @@ def test_describe_specify_stats_names(simple_graph, update_fixtures, source_info
     )
 
 
-def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures, source_info):
+def test_describe_specify_count_based_stats_only(
+    operation_structure_and_sample_sql, update_fixtures, source_info
+):
     """
     Test describe sql with only count based stats
     """
-    graph, node = simple_graph
+    graph, operation_structure, sample_sql_tree = operation_structure_and_sample_sql
     interpreter = GraphInterpreter(graph, source_info)
 
     describe_query = interpreter.construct_describe_queries(
-        node.name, num_rows=10, seed=1234, stats_names=["entropy"]
+        [operation_structure.columns[:]], sample_sql_tree, stats_names=["entropy"]
     ).queries[0]
     assert describe_query.row_names == ["dtype", "entropy"]
     assert [column.name for column in describe_query.columns] == [
@@ -100,15 +135,17 @@ def test_describe_specify_count_based_stats_only(simple_graph, update_fixtures, 
     )
 
 
-def test_describe_specify_empty_stats(simple_graph, update_fixtures, source_info):
+def test_describe_specify_empty_stats(
+    operation_structure_and_sample_sql, update_fixtures, source_info
+):
     """
     Test describe sql with empty stats edge case
     """
-    graph, node = simple_graph
+    graph, operation_structure, sample_sql_tree = operation_structure_and_sample_sql
     interpreter = GraphInterpreter(graph, source_info)
 
     describe_query = interpreter.construct_describe_queries(
-        node.name, num_rows=10, seed=1234, stats_names=[]
+        [operation_structure.columns[:]], sample_sql_tree, stats_names=[]
     ).queries[0]
     assert describe_query.row_names == ["dtype"]
     assert [column.name for column in describe_query.columns] == [
@@ -124,17 +161,19 @@ def test_describe_specify_empty_stats(simple_graph, update_fixtures, source_info
     )
 
 
-def test_describe_in_batches(simple_graph, update_fixtures, source_info):
+def test_describe_in_batches(operation_structure_and_sample_sql, update_fixtures, source_info):
     """Test describe sql in batches"""
-    graph, node = simple_graph
+    graph, operation_structure, sample_sql_tree = operation_structure_and_sample_sql
     interpreter = GraphInterpreter(graph, source_info)
 
+    column_groups = [
+        operation_structure.columns[i : i + 3]
+        for i in range(0, len(operation_structure.columns), 3)
+    ]
     describe_queries = interpreter.construct_describe_queries(
-        node.name,
-        num_rows=10,
-        seed=1234,
+        column_groups,
+        sample_sql_tree,
         stats_names=["min", "max"],
-        columns_batch_size=3,
     )
     assert len(describe_queries.queries) == 2
 
@@ -162,17 +201,15 @@ def test_describe_in_batches(simple_graph, update_fixtures, source_info):
     )
 
 
-def test_describe_no_batches(simple_graph, update_fixtures, source_info):
+def test_describe_no_batches(operation_structure_and_sample_sql, update_fixtures, source_info):
     """Test describe sql and disable batching by setting batch size to 0"""
-    graph, node = simple_graph
+    graph, operation_structure, sample_sql_tree = operation_structure_and_sample_sql
     interpreter = GraphInterpreter(graph, source_info)
 
     describe_queries = interpreter.construct_describe_queries(
-        node.name,
-        num_rows=10,
-        seed=1234,
+        [operation_structure.columns[:]],
+        sample_sql_tree,
         stats_names=["dtype", "entropy"],
-        columns_batch_size=0,
     )
     assert len(describe_queries.queries) == 1
     describe_query = describe_queries.queries[0]
@@ -190,18 +227,16 @@ def test_describe_no_batches(simple_graph, update_fixtures, source_info):
     )
 
 
-def test_describe_with_date_range_and_size(simple_graph, update_fixtures, source_info):
+def test_describe_with_date_range_and_size(
+    operation_structure_and_sample_sql, update_fixtures, source_info
+):
     """Test describe sql with only required stats names"""
-    graph, node = simple_graph
+    graph, operation_structure, sample_sql_tree = operation_structure_and_sample_sql
     interpreter = GraphInterpreter(graph, source_info)
 
     describe_query = interpreter.construct_describe_queries(
-        node.name,
-        num_rows=10,
-        total_num_rows=100,
-        from_timestamp=datetime(2024, 1, 1),
-        to_timestamp=datetime(2024, 2, 1),
-        seed=1234,
+        [operation_structure.columns[:]],
+        sample_sql_tree,
         stats_names=["min", "max"],
     ).queries[0]
     assert describe_query.row_names == ["dtype", "min", "max"]
@@ -406,13 +441,17 @@ def test_graph_interpreter_describe_event_join_scd_view(update_fixtures, source_
     )
 
     interpreter = GraphInterpreter(query_graph, source_info)
-    describe_query = interpreter.construct_describe_queries(
-        join_node.name, num_rows=10, seed=1234, total_num_rows=1000, sample_on_primary_table=True
+    sample_sql_tree, _ = interpreter._construct_sample_sql(
+        node_name=join_node.name,
+        num_rows=10,
+        seed=1234,
+        total_num_rows=1000,
+        sample_on_primary_table=True,
     )
 
     expected_filename = "tests/fixtures/query_graph/expected_primary_table_sampled_data.sql"
     assert_equal_with_expected_fixture(
-        describe_query.data.expr.sql(pretty=True), expected_filename, update_fixtures
+        sample_sql_tree.sql(pretty=True), expected_filename, update_fixtures
     )
 
 
@@ -424,17 +463,16 @@ def test_describe__with_primary_table_sampling_on_graph_containing_inner_join(
 ):
     """Test describe queries with primary table sampling on graph containing inner join or filter"""
     interpreter = GraphInterpreter(global_graph, source_info)
-    describe_query = interpreter.construct_describe_queries(
-        item_table_join_event_table_node.name,
+    sample_sql_tree, _ = interpreter._construct_sample_sql(
+        node_name=item_table_join_event_table_node.name,
         num_rows=10,
         seed=1234,
         total_num_rows=1000,
         sample_on_primary_table=True,
     )
-
     expected_filename = "tests/fixtures/query_graph/expected_item_table_join_event_table_primary_table_sampled_data.sql"
     assert_equal_with_expected_fixture(
-        describe_query.data.expr.sql(pretty=True), expected_filename, update_fixtures
+        sample_sql_tree.sql(pretty=True), expected_filename, update_fixtures
     )
 
 
@@ -459,14 +497,14 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
     interpreter = GraphInterpreter(global_graph, source_info)
 
     # sanity check on describe query without filter node & no inner join
-    describe_query = interpreter.construct_describe_queries(
-        node_join.name,
+    sample_sql_tree, _ = interpreter._construct_sample_sql(
+        node_name=node_join.name,
         num_rows=10,
         seed=1234,
         total_num_rows=1000,
         sample_on_primary_table=True,
     )
-    assert "LIMIT 10\n" in describe_query.data.expr.sql(pretty=True)  # no over sampling
+    assert "LIMIT 10\n" in sample_sql_tree.sql(pretty=True)  # no over sampling
 
     # add a filter operation
     node_proj_oder_id = global_graph.add_operation(
@@ -489,8 +527,9 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
     )
 
     # check describe query with query graph containing filter node & join operation
-    describe_query = GraphInterpreter(global_graph, source_info).construct_describe_queries(
-        filter_node.name,
+    interpreter = GraphInterpreter(global_graph, source_info)
+    sample_sql_tree, _ = interpreter._construct_sample_sql(
+        node_name=filter_node.name,
         num_rows=10,
         seed=1234,
         total_num_rows=1000,
@@ -501,7 +540,7 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
         "tests/fixtures/query_graph/expected_filtered_table_primary_table_sampled_data.sql"
     )
     assert_equal_with_expected_fixture(
-        describe_query.data.expr.sql(pretty=True), expected_filename, update_fixtures
+        sample_sql_tree.sql(pretty=True), expected_filename, update_fixtures
     )
 
 
