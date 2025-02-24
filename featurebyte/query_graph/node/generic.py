@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from typing_extensions import Literal
 
 from featurebyte.common.model_util import parse_duration_string
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
@@ -1832,6 +1833,9 @@ class TrackChangesNode(BaseNode):
         columns = [natural_key_source_column]
         track_dtype = tracked_source_column.dtype_info
         valid_dtype = effective_timestamp_source_column.dtype_info
+        if valid_dtype is not None and valid_dtype.timestamp_schema is not None:
+            # Timestamp columns have been converted within the TRACK_CHANGES node
+            valid_dtype = DBVarTypeInfo(dtype=DBVarType.TIMESTAMP)
         transform_info = self.transform_info
         for column_name, dtype_info in [
             (self.parameters.previous_tracked_column_name, track_dtype),
