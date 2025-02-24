@@ -235,12 +235,13 @@ class ClassEnum(Enum):
     SCD_VIEW = ("featurebyte", "SCDView")
     CHANGE_VIEW = ("featurebyte", "ChangeView")
 
-    # imputations
+    # cleaning operations
     MISSING_VALUE_IMPUTATION = ("featurebyte", "MissingValueImputation")
     DISGUISED_VALUE_IMPUTATION = ("featurebyte", "DisguisedValueImputation")
     UNEXPECTED_VALUE_IMPUTATION = ("featurebyte", "UnexpectedValueImputation")
     VALUE_BEYOND_ENDPOINT_IMPUTATION = ("featurebyte", "ValueBeyondEndpointImputation")
     STRING_VALUE_IMPUTATION = ("featurebyte", "StringValueImputation")
+    ADD_TIMESTAMP_SCHEMA = ("featurebyte", "AddTimestampSchemaCleaningOperation")
 
     # others
     COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")

@@ -167,3 +167,20 @@ class LagNode(ExpressionNode):
             offset=parameters["offset"],
         )
         return sql_node
+
+
+@dataclass
+class AddTimestampSchemaNode(ExpressionNode):
+    """Node for adding timestamp schema to the column"""
+
+    expr: ExpressionNode
+    query_node_type = NodeType.ADD_TIMESTAMP_SCHEMA
+
+    @property
+    def sql(self) -> Expression:
+        return self.expr.sql
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> AddTimestampSchemaNode:
+        table_node, expr_node, _ = prepare_unary_input_nodes(context)
+        return AddTimestampSchemaNode(context=context, table_node=table_node, expr=expr_node)

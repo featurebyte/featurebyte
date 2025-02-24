@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, model_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
+from featurebyte.query_graph.node.cleaning_operation import BaseImputationCleaningOperation
 from featurebyte.query_graph.node.schema import ColumnSpec
 
 
@@ -61,6 +62,8 @@ class ColumnInfo(ColumnSpecWithDescription):
                         f"Cleaning operation {cleaning_operation} does not support dtype {dtype}"
                     )
 
-                cleaning_operation.cast(dtype=dtype)
+                if isinstance(cleaning_operation, BaseImputationCleaningOperation):
+                    assert isinstance(cleaning_operation, BaseImputationCleaningOperation)
+                    cleaning_operation.cast(dtype=dtype)
             values["critical_data_info"] = cdi
         return values

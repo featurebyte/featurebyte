@@ -10,6 +10,7 @@ from featurebyte.enum import DBVarType, TargetType
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
+from featurebyte.query_graph.node.cleaning_operation import CleaningOperationType
 
 
 @dataclass
@@ -179,6 +180,38 @@ def columns_info_validator(
             if column_info.name in column_names:
                 raise ValueError(f'Column name "{column_info.name}" is duplicated.')
             column_names.add(column_info.name)
+
+        # check timestamp_schema timezone column name
+        for column_info in values:
+            if (
+                column_info.timestamp_schema
+                and column_info.timestamp_schema.has_timezone_offset_column
+            ):
+                assert column_info.timestamp_schema is not None
+                assert isinstance(column_info.timestamp_schema.timezone, TimeZoneColumn)
+                timezone_column_name = column_info.timestamp_schema.timezone.column_name
+                if timezone_column_name not in column_names:
+                    raise ValueError(
+                        f'Timezone column name "{timezone_column_name}" is not found in columns_info: {column_info}'
+                    )
+
+            if (
+                isinstance(column_info, ColumnInfo)
+                and column_info.critical_data_info
+                and column_info.critical_data_info.cleaning_operations
+            ):
+                for clean_op in column_info.critical_data_info.cleaning_operations:
+                    if clean_op.type == CleaningOperationType.ADD_TIMESTAMP_SCHEMA:
+                        assert hasattr(clean_op, "timestamp_schema")
+                        if (
+                            clean_op.timestamp_schema
+                            and clean_op.timestamp_schema.has_timezone_offset_column
+                        ):
+                            timezone_column_name = clean_op.timestamp_schema.timezone.column_name
+                            if timezone_column_name not in column_names:
+                                raise ValueError(
+                                    f'Timezone column name "{timezone_column_name}" is not found in columns_info: {clean_op}'
+                                )
     return values
 
 

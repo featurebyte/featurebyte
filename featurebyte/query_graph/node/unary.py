@@ -10,8 +10,11 @@ from typing_extensions import Literal
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeType
-from featurebyte.query_graph.model.dtype import DBVarTypeInfo
-from featurebyte.query_graph.node.base import BaseSeriesOutputWithSingleOperandNode
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.base import (
+    BaseSeriesOutputWithSingleOperandNode,
+)
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import ExpressionStr, VariableNameStr
 
@@ -311,6 +314,29 @@ class IsStringNode(BaseSeriesOutputWithSingleOperandNode):
 
     def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return DBVarTypeInfo(dtype=DBVarType.BOOL)
+
+    def generate_expression(self, operand: str) -> str:
+        raise RuntimeError("Not implemented")
+
+
+class AddTimestampSchemaNodeParameters(FeatureByteBaseModel):
+    """Parameters"""
+
+    timestamp_schema: TimestampSchema
+
+
+class AddTimestampSchemaNode(BaseSeriesOutputWithSingleOperandNode):
+    """AddTimestampSchemaNode class"""
+
+    type: Literal[NodeType.ADD_TIMESTAMP_SCHEMA] = NodeType.ADD_TIMESTAMP_SCHEMA
+    parameters: AddTimestampSchemaNodeParameters
+
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        input_dtype_info = inputs[0].series_output_dtype_info
+        return DBVarTypeInfo(
+            dtype=input_dtype_info.dtype,
+            metadata=DBVarTypeMetadata(timestamp_schema=self.parameters.timestamp_schema),
+        )
 
     def generate_expression(self, operand: str) -> str:
         raise RuntimeError("Not implemented")
