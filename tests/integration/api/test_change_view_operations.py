@@ -191,3 +191,29 @@ def test_change_view_custom_date_format(scd_table_custom_date_format, source_typ
     expected = preview_params.copy()
     expected["count_1w"] = np.nan
     fb_assert_frame_equal(df, expected)
+
+
+def test_change_view_custom_date_format_and_join(
+    scd_table_custom_date_format, scd_table, source_type
+):
+    """
+    Test change view operations with an SCDTable with custom date format
+    """
+    change_view = scd_table_custom_date_format.get_change_view("User Status")
+
+    view = scd_table.get_view()
+    joined_view = change_view.join(view)
+    feature = joined_view.groupby("User ID").aggregate_over(
+        value_column="User Status",
+        method=AggFunc.NA_COUNT,
+        windows=["8w"],
+        feature_names=["count_8w"],
+    )["count_8w"]
+    preview_params = pd.DataFrame([
+        {"POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"), "üser id": 1}
+    ])
+    df = feature.preview(preview_params)
+    tz_localize_if_needed(df, source_type)
+    expected = preview_params.copy()
+    expected["count_1w"] = np.nan
+    fb_assert_frame_equal(df, expected)
