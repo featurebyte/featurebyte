@@ -319,7 +319,7 @@ class BigQuerySession(BaseSession):
             return False
         return True
 
-    async def list_databases(self) -> list[str]:
+    async def _list_databases(self) -> list[str]:
         """
         Execute SQL query to retrieve database names
 
@@ -338,7 +338,7 @@ class BigQuerySession(BaseSession):
                 break
         return output
 
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
         """
         Execute SQL query to retrieve schema names
 
@@ -364,7 +364,7 @@ class BigQuerySession(BaseSession):
                 break
         return output
 
-    async def list_tables(
+    async def _list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
