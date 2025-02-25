@@ -1520,6 +1520,7 @@ def event_view_fixture(event_table):
         "ÀMOUNT",
         "TZ_OFFSET",
         "TRANSACTION_ID",
+        "TIMESTAMP_STRING",
         "EMBEDDING_ARRAY",
         "ARRAY",
         "ARRAY_STRING",
