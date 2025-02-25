@@ -11,6 +11,7 @@ from bson import ObjectId
 from pymongo.errors import OperationFailure
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
+from featurebyte.common.validator import columns_info_validator
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId, User
@@ -252,6 +253,9 @@ class TableColumnsInfoService(OpsServiceMixin):
     async def _validate_column_info(
         self, table: TableModel, columns_info: List[ColumnInfo]
     ) -> None:
+        # validate columns info based on column names & columns info
+        columns_info_validator(table, columns_info)
+
         entity_id_to_column_names = defaultdict(list)
         for col_info in columns_info:
             if col_info.entity_id:

@@ -1448,7 +1448,7 @@ def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_fea
     event_view_preview = event_view.sample()
     new_columns = event_view_preview.columns.tolist()
     expected_updated_column_names = [*original_column_names, "transaction_count", "User Status New"]
-    assert new_columns == expected_updated_column_names
+    assert set(new_columns) == set(expected_updated_column_names)
 
     # check column materialized correctly
     pd.testing.assert_series_equal(

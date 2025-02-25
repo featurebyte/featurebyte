@@ -35,6 +35,7 @@ from pydantic import ValidationError
 from pytest_split import plugin as pytest_split_plugin
 
 from featurebyte import (
+    AddTimestampSchema,
     Catalog,
     Configurations,
     CronFeatureJobSetting,
@@ -662,6 +663,7 @@ def transaction_dataframe(source_type):
     )
     data["tz_offset"] = formatted_offsets
     data["transaction_id"] = [f"T{i}" for i in range(data.shape[0])]
+    data["timestamp_string"] = timestamps.astype(str).values
 
     if source_type != "sqlite":
         data["embedding_array"] = [rng.random(10).tolist() for _ in range(row_number)]
@@ -1424,6 +1426,7 @@ def create_transactions_event_table_from_data_source(
         "ÀMOUNT": "FLOAT",
         "TZ_OFFSET": "VARCHAR",
         "TRANSACTION_ID": "VARCHAR",
+        "TIMESTAMP_STRING": "VARCHAR",
         "EMBEDDING_ARRAY": "ARRAY",
         "ARRAY": "ARRAY",
         "ARRAY_STRING": "ARRAY",
@@ -1441,6 +1444,28 @@ def create_transactions_event_table_from_data_source(
         feature_job_setting=FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
     )
     tag_entities_for_event_table(event_table)
+
+    if data_source.type == SourceType.SNOWFLAKE:
+        event_table.TIMESTAMP_STRING.update_critical_data_info(
+            cleaning_operations=[
+                AddTimestampSchema(
+                    timestamp_schema=TimestampSchema(
+                        format_string="YYYY-MM-DD HH24:MI:SS",
+                        is_utc_time=True,
+                        timezone=TimeZoneColumn(type="offset", column_name="TZ_OFFSET"),
+                    )
+                )
+            ]
+        )
+        # check the timestamp schema is used in dt.hour calculation
+        view = event_table.get_view()
+        preview_df = view.TIMESTAMP_STRING.dt.hour.preview()
+        pd.testing.assert_series_equal(
+            preview_df[preview_df.columns[0]],
+            pd.Series([10, 2, 2, 6, 9, 16, 18, 13, 18, 19]),
+            check_names=False,
+        )
+
     return event_table
 
 
@@ -1495,6 +1520,7 @@ def event_view_fixture(event_table):
         "ÀMOUNT",
         "TZ_OFFSET",
         "TRANSACTION_ID",
+        "TIMESTAMP_STRING",
         "EMBEDDING_ARRAY",
         "ARRAY",
         "ARRAY_STRING",
