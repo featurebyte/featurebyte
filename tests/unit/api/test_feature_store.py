@@ -98,15 +98,15 @@ def test_list_tables(
     data_source = snowflake_feature_store.get_data_source()
     output = data_source.list_source_tables(database_name="sf_database", schema_name="sf_schema")
     assert output == [
-        "sf_table",
-        "sf_table_no_tz",
+        "dimension_table",
+        "fixed_table",
         "items_table",
         "items_table_same_event_id",
-        "fixed_table",
         "non_scalar_table",
         "scd_table",
         "scd_table_state_map",
-        "dimension_table",
+        "sf_table",
+        "sf_table_no_tz",
         "sf_view",
     ]
 

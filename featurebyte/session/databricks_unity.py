@@ -154,7 +154,7 @@ class DatabricksUnitySession(DatabricksSession):
         # grant ownership of the table or view to the group
         await self.set_owner("TABLE", table_name)
 
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
         try:
             schemas = await self.execute_query_interactive(
                 f"SELECT SCHEMA_NAME FROM `{database_name}`.INFORMATION_SCHEMA.SCHEMATA"
@@ -167,7 +167,7 @@ class DatabricksUnitySession(DatabricksSession):
             output.extend(schemas["SCHEMA_NAME"].tolist())
         return output
 
-    async def list_tables(
+    async def _list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
