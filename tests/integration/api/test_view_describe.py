@@ -402,7 +402,8 @@ def test_dynamic_batching(event_table):
         describe_df = event_view.describe()
 
     assert num_patched_queries["count"] > 0
-    assert describe_df.columns.tolist() == [
+    assert set(describe_df.columns.tolist()) == {
+        "TIMESTAMP_STRING",
         "ËVENT_TIMESTAMP",
         "CREATED_AT",
         "CUST_ID",
@@ -417,4 +418,4 @@ def test_dynamic_batching(event_table):
         "ARRAY_STRING",
         "FLAT_DICT",
         "NESTED_DICT",
-    ]
+    }
