@@ -42,6 +42,7 @@ from featurebyte.query_graph.model.timestamp_schema import (
     TimezoneOffsetSchema,
 )
 from featurebyte.query_graph.node.cleaning_operation import (
+    AddTimestampSchema,
     DisguisedValueImputation,
     MissingValueImputation,
 )
@@ -1198,6 +1199,18 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
         feature_job_setting=cron_feature_job_setting
     )
     assert time_series_table.default_feature_job_setting == cron_feature_job_setting
+
+    # attempt to add timestamp schema to special column
+    with pytest.raises(RecordUpdateException) as exc:
+        time_series_table.date.update_critical_data_info(
+            cleaning_operations=[AddTimestampSchema(timestamp_schema=TimestampSchema())]
+        )
+
+    expected_msg = (
+        "Column date has AddTimestampSchema cleaning operation. Please remove the AddTimestampSchema cleaning "
+        "operation from the column and specify the reference_datetime_schema in the table model."
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_timezone_offset__invalid_column(snowflake_database_time_series_table, catalog):

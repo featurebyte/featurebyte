@@ -23,6 +23,27 @@ class ColumnToTimestampSchema:
     timestamp_schema_field_name: str
 
 
+def _column_info_has_add_timestamp_schema_cleaning_operation(column_info: dict[str, Any]) -> bool:
+    """
+    Check whether the column_info has AddTimestampSchema cleaning operation
+
+    Parameters
+    ----------
+    column_info: dict[str, Any]
+        Column info dictionary
+
+    Returns
+    -------
+    bool
+    """
+    col_info = ColumnInfo(**column_info)
+    if col_info.critical_data_info:
+        for clean_op in col_info.critical_data_info.cleaning_operations:
+            if clean_op.type == CleaningOperationType.ADD_TIMESTAMP_SCHEMA:
+                return True
+    return False
+
+
 def construct_data_model_validator(
     columns_info_key: str,
     expected_column_field_name_type_pairs: List[Tuple[str, Optional[Set[DBVarType]]]],
@@ -96,7 +117,10 @@ def construct_data_model_validator(
                 continue
             timestamp_schema = getattr(self, column_to_timestamp_schema.timestamp_schema_field_name)
             if timestamp_schema:
-                timestamp_schema_mapping[col_name] = timestamp_schema
+                timestamp_schema_mapping[col_name] = (
+                    timestamp_schema,
+                    column_to_timestamp_schema.timestamp_schema_field_name,
+                )
             col_dtype = col_info_map[col_name].get("dtype")
             if col_dtype in ambiguous_timestamp_types and not timestamp_schema:
                 raise ValueError(
@@ -105,9 +129,21 @@ def construct_data_model_validator(
 
         # Update columns_info with timestamp_schema
         if timestamp_schema_mapping:
-            for col_name, timestamp_schema in timestamp_schema_mapping.items():
+            for col_name, (
+                timestamp_schema,
+                ts_schema_field_name,
+            ) in timestamp_schema_mapping.items():
                 if col_name in col_info_map:
                     col_info = col_info_map[col_name]
+
+                    # check whether col_info has AddTimestampSchema cleaning operation
+                    if _column_info_has_add_timestamp_schema_cleaning_operation(col_info):
+                        raise ValueError(
+                            f"Column {col_name} has AddTimestampSchema cleaning operation. "
+                            "Please remove the AddTimestampSchema cleaning operation from the column and "
+                            f"specify the {ts_schema_field_name} in the table model."
+                        )
+
                     dtype_metadata = col_info.get("dtype_metadata")
                     if dtype_metadata is None:
                         dtype_metadata = {}

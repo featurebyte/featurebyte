@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field, model_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
-from featurebyte.query_graph.node.cleaning_operation import BaseImputationCleaningOperation
+from featurebyte.query_graph.node.cleaning_operation import (
+    BaseImputationCleaningOperation,
+)
 from featurebyte.query_graph.node.schema import ColumnSpec
 
 
