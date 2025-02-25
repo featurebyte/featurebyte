@@ -32,6 +32,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     StatementT,
     VariableNameGenerator,
     VarNameExpressionInfo,
+    derive_sdk_code_from_timestamp_schema,
 )
 from featurebyte.query_graph.node.schema import (
     ColumnSpec,
@@ -400,10 +401,8 @@ class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
             "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "series_id_column": self.id_column,
             "reference_datetime_column": self.reference_datetime_column,
-            "reference_datetime_schema": ClassEnum.TIMESTAMP_SCHEMA(
-                format_string=self.reference_datetime_schema.format_string,
-                is_utc_time=self.reference_datetime_schema.is_utc_time,
-                timezone=self.reference_datetime_schema.timezone,
+            "reference_datetime_schema": derive_sdk_code_from_timestamp_schema(
+                timestamp_schema=self.reference_datetime_schema
             ),
             "time_interval": ClassEnum.TIME_INTERVAL(
                 value=self.time_interval.value,
