@@ -19,6 +19,7 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import (
+    INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     INTERACTIVE_SESSION_TIMEOUT_SECONDS,
     BaseSchemaInitializer,
     BaseSession,
@@ -58,14 +59,17 @@ def base_session_test_fixture():
         def is_threadsafe(cls) -> bool:
             return True
 
-        async def list_databases(self) -> list[str]:
+        async def _list_databases(self) -> list[str]:
             return []
 
-        async def list_schemas(self, database_name: str | None = None) -> list[str]:
+        async def _list_schemas(self, database_name: str | None = None) -> list[str]:
             return []
 
-        async def list_tables(
-            self, database_name: str | None = None, schema_name: str | None = None
+        async def _list_tables(
+            self,
+            database_name: str | None = None,
+            schema_name: str | None = None,
+            timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
         ) -> list[TableSpec]:
             return []
 
