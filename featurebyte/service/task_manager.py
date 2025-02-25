@@ -103,21 +103,24 @@ class TaskManager:
 
         # create task document in persistent to track pending tasks
         try:
+            task_document = {
+                "_id": str(task.id),
+                "name": payload.task,
+                "created_at": datetime.datetime.utcnow(),
+                "description": f"[Queued] {payload.command}",
+                "status": TaskStatus.PENDING,
+                "children": [],
+                "start_time": datetime.datetime.utcnow(),
+                "args": [],
+                "kwargs": kwargs,
+                "queue": payload.queue,
+                "retries": 0,
+            }
+            if parent_task_id:
+                task_document["parent_id"] = parent_task_id
             await self.persistent.insert_one(
                 collection_name=TaskModel.collection_name(),
-                document={
-                    "_id": str(task.id),
-                    "name": payload.task,
-                    "created_at": datetime.datetime.utcnow(),
-                    "description": f"[Queued] {payload.command}",
-                    "status": TaskStatus.PENDING,
-                    "children": [],
-                    "start_time": datetime.datetime.utcnow(),
-                    "args": [],
-                    "kwargs": kwargs,
-                    "queue": payload.queue,
-                    "retries": 0,
-                },
+                document=task_document,
                 user_id=self.user.id,
                 disable_audit=True,
             )
