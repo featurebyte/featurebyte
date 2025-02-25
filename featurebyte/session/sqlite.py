@@ -47,13 +47,13 @@ class SQLiteSession(BaseSession):
         # no way to cancel query in sqlite
         return True
 
-    async def list_databases(self) -> list[str]:
+    async def _list_databases(self) -> list[str]:
         return []
 
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
         return []
 
-    async def list_tables(
+    async def _list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,

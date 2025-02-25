@@ -311,6 +311,22 @@ class BaseSession(BaseModel):
         return str(ObjectId()).upper()
 
     @abstractmethod
+    async def _list_databases(self) -> list[str]:
+        pass
+
+    @abstractmethod
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
+        pass
+
+    @abstractmethod
+    async def _list_tables(
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
+    ) -> list[TableSpec]:
+        pass
+
     async def list_databases(self) -> list[str]:
         """
         Execute SQL query to retrieve database names
@@ -319,8 +335,8 @@ class BaseSession(BaseModel):
         -------
         list[str]
         """
+        return sorted(await self._list_databases())
 
-    @abstractmethod
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         """
         Execute SQL query to retrieve schema names
@@ -334,8 +350,8 @@ class BaseSession(BaseModel):
         -------
         list[str]
         """
+        return sorted(await self._list_schemas(database_name=database_name))
 
-    @abstractmethod
     async def list_tables(
         self,
         database_name: str | None = None,
@@ -358,6 +374,12 @@ class BaseSession(BaseModel):
         -------
         list[TableSpec]
         """
+        return sorted(
+            await self._list_tables(
+                database_name=database_name, schema_name=schema_name, timeout=timeout
+            ),
+            key=lambda x: x.name,
+        )
 
     @abstractmethod
     async def list_table_schema(

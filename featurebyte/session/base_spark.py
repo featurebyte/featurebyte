@@ -245,7 +245,7 @@ class BaseSparkSession(BaseSession, ABC):
             except Exception as exc:
                 logger.error(f"Exception while deleting temp file {temp_filename}: {exc}")
 
-    async def list_databases(self) -> list[str]:
+    async def _list_databases(self) -> list[str]:
         try:
             databases = await self.execute_query_interactive("SHOW CATALOGS")
         except self._no_schema_error as exc:
@@ -258,7 +258,7 @@ class BaseSparkSession(BaseSession, ABC):
             output.extend(databases["catalog"])
         return output
 
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
         try:
             schemas = await self.execute_query_interactive(f"SHOW SCHEMAS IN `{database_name}`")
         except self._no_schema_error as exc:
@@ -273,7 +273,7 @@ class BaseSparkSession(BaseSession, ABC):
             # in DataBricks the header is databaseName instead of namespace
         return output
 
-    async def list_tables(
+    async def _list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
