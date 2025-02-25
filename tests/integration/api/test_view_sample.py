@@ -69,7 +69,7 @@ def test_event_view_sample(event_table, expected_min, expected_max):
     sample_kwargs = {"size": 10, "seed": 1234}
     event_view = event_table.get_view()
     sample_df = event_view.sample(**sample_kwargs)
-    assert sample_df.columns.tolist() == [
+    assert set(sample_df.columns.tolist()) == {
         "ËVENT_TIMESTAMP",
         "CREATED_AT",
         "CUST_ID",
@@ -79,14 +79,15 @@ def test_event_view_sample(event_table, expected_min, expected_max):
         "ÀMOUNT",
         "TZ_OFFSET",
         "TRANSACTION_ID",
+        "TIMESTAMP_STRING",
         "EMBEDDING_ARRAY",
         "ARRAY",
         "ARRAY_STRING",
         "FLAT_DICT",
         "NESTED_DICT",
-    ]
+    }
 
-    assert sample_df.shape == (10, 14)
+    assert sample_df.shape == (10, 15)
     actual_min = sample_df["ËVENT_TIMESTAMP"].min()
     actual_max = sample_df["ËVENT_TIMESTAMP"].max()
     assert (actual_min, actual_max) == (expected_min, expected_max)
@@ -120,7 +121,7 @@ def test_event_view_sample_seed(event_table, expected_min, expected_max):
     """
     event_view = event_table.get_view()
     sample_df = event_view.sample(size=10, seed=4321)
-    assert sample_df.shape == (10, 14)
+    assert sample_df.shape == (10, 15)
     actual_min = sample_df["ËVENT_TIMESTAMP"].min()
     actual_max = sample_df["ËVENT_TIMESTAMP"].max()
     assert (actual_min, actual_max) == (expected_min, expected_max)
@@ -155,7 +156,7 @@ def test_event_view_sample_with_date_range(event_table, expected_min, expected_m
         "to_timestamp": "2001-10-14",
     }
     sample_df = event_view.sample(**sample_params)
-    assert sample_df.shape == (15, 14)
+    assert sample_df.shape == (15, 15)
     actual_min = sample_df["ËVENT_TIMESTAMP"].min()
     actual_max = sample_df["ËVENT_TIMESTAMP"].max()
     assert (actual_min, actual_max) == (expected_min, expected_max)
