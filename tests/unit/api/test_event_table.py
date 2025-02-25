@@ -1257,8 +1257,9 @@ def test_add_timestamp_schema(
     cleaning_operations = [
         AddTimestampSchema(
             timestamp_schema=TimestampSchema(
-                is_utc_time=True,
+                is_utc_time=False,
                 format_string="%Y-%m-%d %H:%M:%S",
+                timezone=TimeZoneColumn(column_name="col_text", type="timezone"),
             )
         )
     ]

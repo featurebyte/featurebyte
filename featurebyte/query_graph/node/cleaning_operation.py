@@ -16,7 +16,11 @@ from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
-from featurebyte.query_graph.node.metadata.sdk_code import ClassEnum, ObjectClass
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    ClassEnum,
+    ObjectClass,
+    derive_sdk_code_from_timestamp_schema,
+)
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.typing import OptionalScalar, Scalar
 
@@ -159,10 +163,8 @@ class AddTimestampSchema(BaseCleaningOperation):
 
     def derive_sdk_code(self) -> ObjectClass:
         return ClassEnum.ADD_TIMESTAMP_SCHEMA(
-            timestamp_schema=ClassEnum.TIMESTAMP_SCHEMA(
-                format_string=self.timestamp_schema.format_string,
-                is_utc_time=self.timestamp_schema.is_utc_time,
-                timezone=self.timestamp_schema.timezone,
+            timestamp_schema=derive_sdk_code_from_timestamp_schema(
+                timestamp_schema=self.timestamp_schema
             )
         )
 

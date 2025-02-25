@@ -4,6 +4,7 @@ from featurebyte import AddTimestampSchema
 from featurebyte import ColumnCleaningOperation
 from featurebyte import EventTable
 from featurebyte import FeatureJobSetting
+from featurebyte import TimeZoneColumn
 from featurebyte import TimestampSchema
 
 event_table = EventTable.get_by_id(ObjectId("{table_id}"))
@@ -17,8 +18,10 @@ event_view = event_table.get_view(
                 AddTimestampSchema(
                     timestamp_schema=TimestampSchema(
                         format_string="%Y-%m-%d %H:%M:%S",
-                        is_utc_time=True,
-                        timezone=None,
+                        is_utc_time=False,
+                        timezone=TimeZoneColumn(
+                            column_name="col_text", type="timezone"
+                        ),
                     )
                 )
             ],

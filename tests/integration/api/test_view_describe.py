@@ -37,7 +37,7 @@ def test_event_view_describe(event_table, default_columns_batch_size):
     else:
         describe_df = event_view.describe()
 
-    assert describe_df.columns.tolist() == [
+    assert set(describe_df.columns.tolist()) == {
         "ËVENT_TIMESTAMP",
         "CREATED_AT",
         "CUST_ID",
@@ -52,7 +52,8 @@ def test_event_view_describe(event_table, default_columns_batch_size):
         "ARRAY_STRING",
         "FLAT_DICT",
         "NESTED_DICT",
-    ]
+        "TIMESTAMP_STRING",
+    }
 
     expected_row_idx = [
         "dtype",
@@ -80,7 +81,7 @@ def test_event_view_describe(event_table, default_columns_batch_size):
         ]
 
     assert describe_df.index.tolist() == expected_row_idx
-    assert describe_df.shape == (len(expected_row_idx), 14)
+    assert describe_df.shape == (len(expected_row_idx), 15)
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["min"]) == expected_min_timestamp
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
@@ -102,7 +103,7 @@ def test_event_view_describe_with_date_range(event_table):
     if event_table.name != "snowflake_event_table":
         expected_num_rows = 14
 
-    assert describe_df.shape == (expected_num_rows, 14)
+    assert describe_df.shape == (expected_num_rows, 15)
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["min"]) == expected_min_timestamp
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
