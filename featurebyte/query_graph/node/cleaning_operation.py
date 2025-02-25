@@ -107,9 +107,9 @@ class BaseCleaningOperation(FeatureByteBaseModel):
         """
 
 
-class AddTimestampSchemaCleaningOperation(BaseCleaningOperation):
+class AddTimestampSchema(BaseCleaningOperation):
     """
-    AddTimestampSchemaCleaningOperation class is used to add timestamp information that is missing from the schema.
+    AddTimestampSchema class is used to add timestamp information that is missing from the schema.
     The timestamp schema includes information such as the format string, whether the timestamp is in UTC time, and the
     timezone. Note that this operation should be the last operation in the cleaning operation list.
 
@@ -121,10 +121,11 @@ class AddTimestampSchemaCleaningOperation(BaseCleaningOperation):
     Examples
     --------
     Create a cleaning operation to add timestamp schema to the column with format string "YYYY-MM-DD HH24:MI:SS"
-
-    >>> fb.AddTimestampSchemaCleaningOperation(
+    where the timestamp is in UTC time and the timezone is "Asia/Singapore". Note that the format is specific to
+    the underlying database and is used to parse the timestamp values.
+    >>> fb.AddTimestampSchema(
     ...     timestamp_schema=fb.TimestampSchema(
-    ...         format_string="%Y-%m-%d %H:%M:%S", is_utc_time=True, timezone=None
+    ...         format_string="YYYY-MM-DD HH24:MI:SS", is_utc_time=True, timezone="Asia/Singapore"
     ...     )
     ... )  # doctest: +SKIP
 
@@ -135,9 +136,7 @@ class AddTimestampSchemaCleaningOperation(BaseCleaningOperation):
     """
 
     # class variables
-    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(
-        proxy_class="featurebyte.AddTimestampSchemaCleaningOperation"
-    )
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.AddTimestampSchema")
 
     # instance variables
     type: Literal[CleaningOperationType.ADD_TIMESTAMP_SCHEMA] = Field(
@@ -598,7 +597,7 @@ CLEANING_OPERATION_TYPES = [
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
     StringValueImputation,
-    AddTimestampSchemaCleaningOperation,
+    AddTimestampSchema,
 ]
 if TYPE_CHECKING:
     CleaningOperation = BaseCleaningOperation

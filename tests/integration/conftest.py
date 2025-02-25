@@ -35,7 +35,7 @@ from pydantic import ValidationError
 from pytest_split import plugin as pytest_split_plugin
 
 from featurebyte import (
-    AddTimestampSchemaCleaningOperation,
+    AddTimestampSchema,
     Catalog,
     Configurations,
     CronFeatureJobSetting,
@@ -1448,7 +1448,7 @@ def create_transactions_event_table_from_data_source(
     if data_source.type == SourceType.SNOWFLAKE:
         event_table.TIMESTAMP_STRING.update_critical_data_info(
             cleaning_operations=[
-                AddTimestampSchemaCleaningOperation(
+                AddTimestampSchema(
                     timestamp_schema=TimestampSchema(
                         format_string="YYYY-MM-DD HH24:MI:SS",
                         is_utc_time=True,

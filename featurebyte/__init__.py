@@ -89,7 +89,7 @@ from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.cleaning_operation import (
-    AddTimestampSchemaCleaningOperation,
+    AddTimestampSchema,
     ColumnCleaningOperation,
     DisguisedValueImputation,
     MissingValueImputation,
@@ -547,7 +547,7 @@ __all__ = [
     "ValueBeyondEndpointImputation",
     "StringValueImputation",
     # other cleaning operation(s)
-    "AddTimestampSchemaCleaningOperation",
+    "AddTimestampSchema",
     # feature & feature list version specific classes
     "DefaultVersionMode",
     "FeatureVersionInfo",

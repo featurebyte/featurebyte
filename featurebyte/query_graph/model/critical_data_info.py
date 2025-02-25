@@ -51,8 +51,6 @@ class CriticalDataInfo(FeatureByteBaseModel):
         ]
         if timestamp_imputation:
             if timestamp_imputation[0] != values[-1]:
-                raise CleaningOperationError(
-                    "AddTimestampSchemaCleaningOperation must be the last operation."
-                )
+                raise CleaningOperationError("AddTimestampSchema must be the last operation.")
 
         return values

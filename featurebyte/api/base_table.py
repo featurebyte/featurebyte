@@ -162,6 +162,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         * `UnexpectedValueImputation`: Imputes unexpected values not found in a given list.
         * `ValueBeyondEndpointImputation`: Imputes numeric or date values outside specified boundaries.
         * `StringValueImputation`: Imputes string values.
+        * `AddTimestampSchema`: Adds timestamp related metadata to a column.
 
         If the `imputed_value` parameter is None, the values to impute are replaced with missing values and the
         corresponding rows are ignored during aggregation operations.

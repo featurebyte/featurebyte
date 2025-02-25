@@ -32,7 +32,7 @@ from featurebyte.exception import (
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import (
-    AddTimestampSchemaCleaningOperation,
+    AddTimestampSchema,
     DisguisedValueImputation,
     MissingValueImputation,
 )
@@ -1255,7 +1255,7 @@ def test_add_timestamp_schema(
 
     # add timestamp schema to the column
     cleaning_operations = [
-        AddTimestampSchemaCleaningOperation(
+        AddTimestampSchema(
             timestamp_schema=TimestampSchema(
                 is_utc_time=True,
                 format_string="%Y-%m-%d %H:%M:%S",
@@ -1311,7 +1311,7 @@ def test_add_timestamp_schema(
 
 def test_add_timestamp_schema_validation(saved_event_table):
     """Test add timestamp schema validation"""
-    add_ts_schema_op = AddTimestampSchemaCleaningOperation(
+    add_ts_schema_op = AddTimestampSchema(
         timestamp_schema=TimestampSchema(
             is_utc_time=True,
             format_string="%Y-%m-%d %H:%M:%S",
@@ -1325,7 +1325,7 @@ def test_add_timestamp_schema_validation(saved_event_table):
             cleaning_operations=[add_ts_schema_op, imputation_op]
         )
 
-    expected_msg = "AddTimestampSchemaCleaningOperation must be the last operation."
+    expected_msg = "AddTimestampSchema must be the last operation."
     assert expected_msg in str(exc.value)
 
     # check when the add timestamp schema operation is the last operation, expect no error
@@ -1337,7 +1337,7 @@ def test_add_timestamp_schema_validation(saved_event_table):
     with pytest.raises(RecordUpdateException) as exc:
         saved_event_table.col_text.update_critical_data_info(
             cleaning_operations=[
-                AddTimestampSchemaCleaningOperation(
+                AddTimestampSchema(
                     timestamp_schema=TimestampSchema(
                         is_utc_time=False,
                         format_string="%Y-%m-%d %H:%M:%S",
@@ -1349,7 +1349,7 @@ def test_add_timestamp_schema_validation(saved_event_table):
 
     expected = (
         'Timezone column name "non_existing_column" is not found in columns_info: '
-        "AddTimestampSchemaCleaningOperation(timestamp_schema=TimestampSchema("
+        "AddTimestampSchema(timestamp_schema=TimestampSchema("
         "format_string='%Y-%m-%d %H:%M:%S', is_utc_time=False, "
         "timezone=TimeZoneColumn(column_name='non_existing_column', type='timezone')))"
     )
