@@ -46,11 +46,11 @@ class CriticalDataInfo(FeatureByteBaseModel):
 
         # check whether add timestamp cleaning operation is valid
         # if there is a timestamp cleaning operation, it should be the last operation
-        timestamp_imputation = [
+        ts_schema_cleaning_ops = [
             op for op in values if op.type == CleaningOperationType.ADD_TIMESTAMP_SCHEMA
         ]
-        if timestamp_imputation:
-            if timestamp_imputation[0] != values[-1]:
+        if ts_schema_cleaning_ops:
+            if ts_schema_cleaning_ops[0] != values[-1]:
                 raise CleaningOperationError("AddTimestampSchema must be the last operation.")
 
         return values

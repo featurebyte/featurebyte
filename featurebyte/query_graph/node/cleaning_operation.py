@@ -113,9 +113,15 @@ class BaseCleaningOperation(FeatureByteBaseModel):
 
 class AddTimestampSchema(BaseCleaningOperation):
     """
-    AddTimestampSchema class is used to add timestamp information that is missing from the schema.
-    The timestamp schema includes information such as the format string, whether the timestamp is in UTC time, and the
-    timezone. Note that this operation should be the last operation in the cleaning operation list.
+    The AddTimestampSchema class adds missing timestamp schema information to a table column.
+    This includes details such as the format string, whether the timestamp is in UTC, and the timezone.
+
+    **Important:** Do not use this column cleaning operation if the table registration already contains a
+    timestamp schema input (for example, the `reference_datetime_schema` provided in the table registration via
+    the create_time_series_table method). In such cases, the timestamp schema has been specified and this
+    operation is unnecessary.
+
+    Note that when used, this operation should be the last step in the cleaning operation list.
 
     Parameters
     ----------

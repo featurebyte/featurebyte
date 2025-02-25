@@ -1326,8 +1326,8 @@ def test_add_timestamp_schema_validation(saved_event_table):
             cleaning_operations=[add_ts_schema_op, imputation_op]
         )
 
-    expected_msg = "AddTimestampSchema must be the last operation."
-    assert expected_msg in str(exc.value)
+    expected = "AddTimestampSchema must be the last operation."
+    assert expected in str(exc.value)
 
     # check when the add timestamp schema operation is the last operation, expect no error
     saved_event_table.col_text.update_critical_data_info(
@@ -1353,5 +1353,25 @@ def test_add_timestamp_schema_validation(saved_event_table):
         "AddTimestampSchema(timestamp_schema=TimestampSchema("
         "format_string='%Y-%m-%d %H:%M:%S', is_utc_time=False, "
         "timezone=TimeZoneColumn(column_name='non_existing_column', type='timezone')))"
+    )
+    assert expected in str(exc.value)
+
+    # check validation check on non-supported dtype
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_event_table.col_int.update_critical_data_info(
+            cleaning_operations=[
+                AddTimestampSchema(
+                    timestamp_schema=TimestampSchema(
+                        is_utc_time=False,
+                        format_string="%Y-%m-%d %H:%M:%S",
+                        timezone=TimeZoneColumn(column_name="non_existing_column", type="timezone"),
+                    )
+                )
+            ]
+        )
+
+    expected = (
+        "AddTimestampSchema should only be used with supported datetime types: "
+        "[DATE, TIMESTAMP, TIMESTAMP_TZ, VARCHAR]. INT is not supported."
     )
     assert expected in str(exc.value)
