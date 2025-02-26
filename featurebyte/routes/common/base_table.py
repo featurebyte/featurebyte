@@ -21,6 +21,7 @@ from featurebyte.models.time_series_table import TimeSeriesTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+from featurebyte.query_graph.node.cleaning_operation import AddTimestampSchema
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
@@ -345,6 +346,14 @@ class BaseTableDocumentController(
         for col_info in columns_info:
             if col_info.name == column_name:
                 setattr(col_info, field, data)
+
+                # if cleaning operations contain AddTimestampSchema, reset semantic_id
+                if field == "critical_data_info":
+                    assert isinstance(data, CriticalDataInfo)
+                    for clean_op in data.cleaning_operations:
+                        if isinstance(clean_op, AddTimestampSchema):
+                            col_info.semantic_id = None
+
                 column_exists = True
                 break
 
