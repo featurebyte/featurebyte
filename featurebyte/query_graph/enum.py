@@ -90,6 +90,7 @@ class NodeType(StrEnum):
     TIMEDELTA = "timedelta"
     DATE_ADD = "date_add"
     ZIP_TIMESTAMP_TZ_TUPLE = "zip_timestamp_tz_tuple"
+    ADD_TIMESTAMP_SCHEMA = "add_timestamp_schema"
 
     # count dict related operations
     COUNT_DICT_TRANSFORM = "count_dict_transform"

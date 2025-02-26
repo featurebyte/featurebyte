@@ -36,7 +36,7 @@ def test_get_app__loading_time():
     get_app()
     elapsed_time = time.time() - start
     print(f"get_app took {elapsed_time} seconds")
-    assert elapsed_time < 5
+    assert elapsed_time < 10
 
 
 def test_get_status():

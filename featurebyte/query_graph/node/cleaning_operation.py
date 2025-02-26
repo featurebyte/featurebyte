@@ -15,7 +15,12 @@ from featurebyte.common.model_util import construct_serialize_function
 from featurebyte.enum import DBVarType, StrEnum
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.node.metadata.sdk_code import ClassEnum, ObjectClass
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    ClassEnum,
+    ObjectClass,
+    derive_sdk_code_from_timestamp_schema,
+)
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 from featurebyte.typing import OptionalScalar, Scalar
 
@@ -24,9 +29,10 @@ if TYPE_CHECKING:
     from featurebyte.query_graph.node import Node
 
 
-class ConditionOperationField(StrEnum):
+class CleaningOperationType(StrEnum):
     """Field values used in critical data info operation"""
 
+    # conditional cleaning operations
     MISSING = "missing"
     DISGUISED = "disguised"
     NOT_IN = "not_in"
@@ -36,20 +42,146 @@ class ConditionOperationField(StrEnum):
     GREATER_THAN_OR_EQUAL = "greater_than_or_equal"
     IS_STRING = "is_string"
 
+    # add metadata to the schema
+    ADD_TIMESTAMP_SCHEMA = "add_timestamp_schema"
+
+    @classmethod
+    def imputation_cleaning_operations(cls) -> Set["CleaningOperationType"]:
+        """
+        Imputation cleaning operations
+
+        Returns
+        -------
+        Set[CleaningOperationType]
+        """
+        return {
+            cls.MISSING,
+            cls.DISGUISED,
+            cls.NOT_IN,
+            cls.LESS_THAN,
+            cls.LESS_THAN_OR_EQUAL,
+            cls.GREATER_THAN,
+            cls.GREATER_THAN_OR_EQUAL,
+            cls.IS_STRING,
+        }
+
 
 class BaseCleaningOperation(FeatureByteBaseModel):
     """BaseCleaningOperation class"""
 
-    imputed_value: OptionalScalar = Field(
-        description="Value to replace existing value", default=None
-    )
+    type: CleaningOperationType
 
     # support all data types by default (if None)
     supported_dtypes: ClassVar[Optional[Set[DBVarType]]] = None
 
     def __str__(self) -> str:
         class_name = self.__class__.__name__
-        return f"{class_name}({self.model_dump()})"
+        params = super().__str__()
+        return f"{class_name}({params})"
+
+    @abstractmethod
+    def add_cleaning_operation(
+        self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType
+    ) -> "Node":
+        """
+        Add cleaning operation to the graph node
+
+        Parameters
+        ----------
+        graph_node: GraphNode
+            Nested graph node
+        input_node: Node
+            Input node to the query graph
+        dtype: DBVarType
+            Data type that output column will be casted to
+
+        Returns
+        -------
+        Node
+        """
+
+    @abstractmethod
+    def derive_sdk_code(self) -> ObjectClass:
+        """
+        Derive SDK code for the current cleaning operation
+
+        Returns
+        -------
+        ObjectClass
+        """
+
+
+class AddTimestampSchema(BaseCleaningOperation):
+    """
+    The AddTimestampSchema class adds missing timestamp schema information to a table column.
+    This includes details such as the format string, whether the timestamp is in UTC, and the timezone.
+
+    **Important:** Do not use this column cleaning operation if the table registration already contains a
+    timestamp schema input (for example, the `reference_datetime_schema` provided in the table registration via
+    the create_time_series_table method). In such cases, the timestamp schema has been specified and this
+    operation is unnecessary.
+
+    Note that when used, this operation should be the last step in the cleaning operation list. When this operation
+    is applied, the semantic type of the column will be reset to None.
+
+    Parameters
+    ----------
+    timestamp_schema: TimestampSchema
+        Timestamp schema to be added to the column.
+
+    Examples
+    --------
+    Create a cleaning operation to add timestamp schema to the column with format string "YYYY-MM-DD HH24:MI:SS"
+    where the timestamp is in UTC time and the timezone is "Asia/Singapore". Note that the format is specific to
+    the underlying database and is used to parse the timestamp values.
+    >>> fb.AddTimestampSchema(
+    ...     timestamp_schema=fb.TimestampSchema(
+    ...         format_string="YYYY-MM-DD HH24:MI:SS", is_utc_time=True, timezone="Asia/Singapore"
+    ...     )
+    ... )  # doctest: +SKIP
+
+    See Also
+    --------
+    - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
+        Schema for a timestamp column that can include timezone information.
+    """
+
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.AddTimestampSchema")
+
+    # instance variables
+    type: Literal[CleaningOperationType.ADD_TIMESTAMP_SCHEMA] = Field(
+        CleaningOperationType.ADD_TIMESTAMP_SCHEMA, frozen=True, repr=False
+    )
+    timestamp_schema: TimestampSchema = Field(
+        description="Timestamp schema to be added to the column."
+    )
+
+    def add_cleaning_operation(
+        self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType
+    ) -> "Node":
+        ts_schema_node = graph_node.add_operation(
+            node_type=NodeType.ADD_TIMESTAMP_SCHEMA,
+            node_params={"timestamp_schema": self.timestamp_schema},
+            node_output_type=NodeOutputType.SERIES,
+            input_nodes=[input_node],
+        )
+        return ts_schema_node
+
+    def derive_sdk_code(self) -> ObjectClass:
+        return ClassEnum.ADD_TIMESTAMP_SCHEMA(
+            timestamp_schema=derive_sdk_code_from_timestamp_schema(
+                timestamp_schema=self.timestamp_schema
+            )
+        )
+
+
+class BaseImputationCleaningOperation(BaseCleaningOperation):
+    """BaseImputationCleaningOperation class"""
+
+    imputed_value: OptionalScalar = Field(
+        description="Value to replace existing value", default=None
+    )
 
     def add_cleaning_operation(
         self, graph_node: "GraphNode", input_node: "Node", dtype: DBVarType
@@ -139,16 +271,6 @@ class BaseCleaningOperation(FeatureByteBaseModel):
         self.imputed_value = self._cast_scalar_parameter_to_dtype(self.imputed_value, dtype)
 
     @abstractmethod
-    def derive_sdk_code(self) -> ObjectClass:
-        """
-        Derive SDK code for the current cleaning operation
-
-        Returns
-        -------
-        ObjectClass
-        """
-
-    @abstractmethod
     def check_condition(self, value: OptionalScalar) -> bool:
         """
         Check whether the value fulfill this condition
@@ -181,7 +303,7 @@ class BaseCleaningOperation(FeatureByteBaseModel):
         """
 
 
-class MissingValueImputation(BaseCleaningOperation):
+class MissingValueImputation(BaseImputationCleaningOperation):
     """
     MissingValueImputation class is used to declare the operation to impute the missing value of a table column.
 
@@ -196,8 +318,8 @@ class MissingValueImputation(BaseCleaningOperation):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.MissingValueImputation")
 
     # instance variables
-    type: Literal[ConditionOperationField.MISSING] = Field(
-        ConditionOperationField.MISSING, frozen=True, repr=False
+    type: Literal[CleaningOperationType.MISSING] = Field(
+        CleaningOperationType.MISSING, frozen=True, repr=False
     )
     imputed_value: Scalar
 
@@ -216,7 +338,7 @@ class MissingValueImputation(BaseCleaningOperation):
         )
 
 
-class DisguisedValueImputation(BaseCleaningOperation):
+class DisguisedValueImputation(BaseImputationCleaningOperation):
     """
     DisguisedValueImputation class is used to declare the operation to impute the disguised value of a table column.
 
@@ -242,8 +364,8 @@ class DisguisedValueImputation(BaseCleaningOperation):
     )
 
     # instance variables
-    type: Literal[ConditionOperationField.DISGUISED] = Field(
-        ConditionOperationField.DISGUISED, frozen=True, repr=False
+    type: Literal[CleaningOperationType.DISGUISED] = Field(
+        CleaningOperationType.DISGUISED, frozen=True, repr=False
     )
     disguised_values: Sequence[OptionalScalar] = Field(
         description="List of values that need to be replaced."
@@ -279,7 +401,7 @@ class DisguisedValueImputation(BaseCleaningOperation):
         )
 
 
-class UnexpectedValueImputation(BaseCleaningOperation):
+class UnexpectedValueImputation(BaseImputationCleaningOperation):
     """
     UnexpectedValueImputation class is used to decalre the operation to impute the unexpected value of a table column.
     Note that this imputation operation will not impute missing value.
@@ -302,8 +424,8 @@ class UnexpectedValueImputation(BaseCleaningOperation):
     )
 
     # instance variables
-    type: Literal[ConditionOperationField.NOT_IN] = Field(
-        ConditionOperationField.NOT_IN, frozen=True, repr=False
+    type: Literal[CleaningOperationType.NOT_IN] = Field(
+        CleaningOperationType.NOT_IN, frozen=True, repr=False
     )
     expected_values: Sequence[OptionalScalar] = Field(
         description="List of values that are expected to be present."
@@ -345,7 +467,7 @@ class UnexpectedValueImputation(BaseCleaningOperation):
         )
 
 
-class ValueBeyondEndpointImputation(BaseCleaningOperation):
+class ValueBeyondEndpointImputation(BaseImputationCleaningOperation):
     """
     ValueBeyondEndpointImputation class is used to declare the operation to impute the value when the value in the
     column exceeds a specified endpoint type.
@@ -365,7 +487,7 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
     Create an imputation rule to ignore value higher than 1M.
 
     >>> fb.ValueBeyondEndpointImputation(type="less_than", end_point=1e6, imputed_value=None)
-    ValueBeyondEndpointImputation(imputed_value=None, type=less_than, end_point=1000000.0)
+    ValueBeyondEndpointImputation(type=less_than, imputed_value=None, end_point=1000000.0)
     """
 
     # class variables
@@ -375,10 +497,10 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
 
     # instance variables
     type: Literal[
-        ConditionOperationField.LESS_THAN,
-        ConditionOperationField.LESS_THAN_OR_EQUAL,
-        ConditionOperationField.GREATER_THAN,
-        ConditionOperationField.GREATER_THAN_OR_EQUAL,
+        CleaningOperationType.LESS_THAN,
+        CleaningOperationType.LESS_THAN_OR_EQUAL,
+        CleaningOperationType.GREATER_THAN,
+        CleaningOperationType.GREATER_THAN_OR_EQUAL,
     ] = Field(
         frozen=True,
         description="Determines how the boundary values are treated.\n"
@@ -414,10 +536,10 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
 
     def check_condition(self, value: OptionalScalar) -> bool:
         operation_map = {
-            ConditionOperationField.LESS_THAN: lambda x: x < self.end_point,
-            ConditionOperationField.LESS_THAN_OR_EQUAL: lambda x: x <= self.end_point,
-            ConditionOperationField.GREATER_THAN: lambda x: x > self.end_point,
-            ConditionOperationField.GREATER_THAN_OR_EQUAL: lambda x: x >= self.end_point,
+            CleaningOperationType.LESS_THAN: lambda x: x < self.end_point,
+            CleaningOperationType.LESS_THAN_OR_EQUAL: lambda x: x <= self.end_point,
+            CleaningOperationType.GREATER_THAN: lambda x: x > self.end_point,
+            CleaningOperationType.GREATER_THAN_OR_EQUAL: lambda x: x >= self.end_point,
         }
         try:
             return bool(operation_map[self.type](value))
@@ -427,10 +549,10 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
 
     def add_condition_operation(self, graph_node: "GraphNode", input_node: "Node") -> "Node":
         node_type_map = {
-            ConditionOperationField.LESS_THAN: NodeType.LT,
-            ConditionOperationField.LESS_THAN_OR_EQUAL: NodeType.LE,
-            ConditionOperationField.GREATER_THAN: NodeType.GT,
-            ConditionOperationField.GREATER_THAN_OR_EQUAL: NodeType.GE,
+            CleaningOperationType.LESS_THAN: NodeType.LT,
+            CleaningOperationType.LESS_THAN_OR_EQUAL: NodeType.LE,
+            CleaningOperationType.GREATER_THAN: NodeType.GT,
+            CleaningOperationType.GREATER_THAN_OR_EQUAL: NodeType.GE,
         }
         return graph_node.add_operation(
             node_type=node_type_map[self.type],
@@ -440,7 +562,7 @@ class ValueBeyondEndpointImputation(BaseCleaningOperation):
         )
 
 
-class StringValueImputation(BaseCleaningOperation):
+class StringValueImputation(BaseImputationCleaningOperation):
     """
     StringValueImputation class is used to declare the operation to impute the value when the value in the column is
     of astring type.
@@ -459,8 +581,8 @@ class StringValueImputation(BaseCleaningOperation):
     __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.StringValueImputation")
 
     # instance variables
-    type: Literal[ConditionOperationField.IS_STRING] = Field(
-        ConditionOperationField.IS_STRING, frozen=True, repr=False
+    type: Literal[CleaningOperationType.IS_STRING] = Field(
+        CleaningOperationType.IS_STRING, frozen=True, repr=False
     )
 
     def derive_sdk_code(self) -> ObjectClass:
@@ -484,6 +606,7 @@ CLEANING_OPERATION_TYPES = [
     UnexpectedValueImputation,
     ValueBeyondEndpointImputation,
     StringValueImputation,
+    AddTimestampSchema,
 ]
 if TYPE_CHECKING:
     CleaningOperation = BaseCleaningOperation
