@@ -194,6 +194,7 @@ def get_scd_join_expr(
         offset_direction=offset_direction,
         allow_exact_match=allow_exact_match,
         convert_timestamps_to_utc=convert_timestamps_to_utc,
+        include_ts_col=right_table.end_timestamp_column is not None,
     )
 
     left_subquery = left_view_with_last_ts_expr.subquery(alias="L")
@@ -289,6 +290,7 @@ def augment_table_with_effective_timestamp(
     offset_direction: OffsetDirection,
     allow_exact_match: bool = True,
     convert_timestamps_to_utc: bool = True,
+    include_ts_col: bool = False,
 ) -> Select:
     """
     This constructs a query that calculates the corresponding SCD effective date for each row in the
@@ -346,6 +348,8 @@ def augment_table_with_effective_timestamp(
         Whether to allow exact matching effective timestamps to be joined
     convert_timestamps_to_utc: bool
         Whether timestamps should be converted to UTC for joins
+    include_ts_col: bool
+        Whether to include the timestamp column in the output
 
     Returns
     -------
@@ -449,14 +453,14 @@ def augment_table_with_effective_timestamp(
         select(
             *_key_cols_as_quoted_identifiers(num_join_keys),
             quoted_identifier(LAST_TS),
-            quoted_identifier(TS_COL),
+            *[quoted_identifier(TS_COL)] if include_ts_col else [],
             *[quoted_identifier(col) for col in left_table.output_columns],
         )
         .from_(
             select(
                 *_key_cols_as_quoted_identifiers(num_join_keys),
                 alias_(matched_effective_timestamp_expr, alias=LAST_TS, quoted=True),
-                quoted_identifier(TS_COL),
+                *[quoted_identifier(TS_COL)] if include_ts_col else [],
                 *[quoted_identifier(col) for col in left_table.output_columns],
                 quoted_identifier(EFFECTIVE_TS_COL),
             )
