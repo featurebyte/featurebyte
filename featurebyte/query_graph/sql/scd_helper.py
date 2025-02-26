@@ -237,8 +237,10 @@ def get_scd_join_expr(
             )
         join_conditions.append(
             expressions.LT(  # type: ignore[arg-type]
-                this=get_qualified_column_identifier(TS_COL, "L"),
-                expression=end_timestamp_expr,
+                this=adapter.normalize_timestamp_before_comparison(
+                    get_qualified_column_identifier(TS_COL, "L")
+                ),
+                expression=adapter.normalize_timestamp_before_comparison(end_timestamp_expr),
             )
         )
 
