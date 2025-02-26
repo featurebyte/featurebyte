@@ -22,6 +22,7 @@ feat = item_view.groupby(by_keys=["event_id_col"], category=None).aggregate(
 )
 feat_1 = feat.copy()
 feat_1[feat.isnull()] = 0
+feat_1.name = "sum_item_amount"
 event_table = EventTable.get_by_id(ObjectId("{table_id}"))
 event_view = event_table.get_view(
     view_mode="manual",

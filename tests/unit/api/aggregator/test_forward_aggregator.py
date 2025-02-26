@@ -118,6 +118,31 @@ def test_forward_aggregate(forward_aggregator, offset):
     assert operation_structure.output_category == "target"
 
 
+def test_fillna_preserve_target_name(forward_aggregator):
+    """
+    Test forward_aggregate.
+    """
+    target = forward_aggregator.forward_aggregate(
+        "col_float",
+        AggFunc.SUM,
+        "7d",
+        "col_float_target",
+    )
+    target.fillna(0)
+    assert target.name == "col_float_target"
+    target.save()
+
+    # Must be ALIAS node type and not CONDITIONAL
+    target_model = target.cached_model
+    node = target_model.graph.get_node_by_name(target_model.node_name)
+    assert node.model_dump() == {
+        "name": "alias_1",
+        "type": NodeType.ALIAS,
+        "output_type": "series",
+        "parameters": {"name": "col_float_target"},
+    }
+
+
 def test_prepare_node_parameters(forward_aggregator):
     """
     Test prepare node parameters
