@@ -259,7 +259,9 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
 
 
 @pytest.mark.asyncio
-async def test_end_timestamp_column(session, data_source, source_type, config):
+async def test_end_timestamp_column(
+    session, data_source, source_type, config, scd_table_timestamp_format_string_with_time
+):
     """
     Self-contained test case to test handling of end timestamp column
     """
@@ -278,18 +280,15 @@ async def test_end_timestamp_column(session, data_source, source_type, config):
             "2022-04-01 10:00:00",
             "2022-05-01 10:00:00",
         ]),
-        "end_ts": pd.to_datetime([
-            "2022-04-01 10:00:00",
-            "2022-05-01 10:00:00",
-            "2022-05-05 10:00:00",
-        ]),
+        "end_ts": [
+            "2022|04|01|10:00:00",
+            "2022|05|01|10:00:00",
+            "2022|05|05|10:00:00",
+        ],
         "scd_cust_id": [1000, 1000, 1000],
         "scd_value": [1, 2, 3],
     })
     table_prefix = "TEST_SCD_END_TIMESTAMP"
-
-    def _quote(col_name) -> str:
-        return sql_to_string(quoted_identifier(col_name), source_type=session.source_type)
 
     # Register event table
     table_name = f"{table_prefix}_EVENT"
@@ -320,6 +319,10 @@ async def test_end_timestamp_column(session, data_source, source_type, config):
         natural_key_column="scd_cust_id",
         effective_timestamp_column="effective_ts",
         end_timestamp_column="end_ts",
+        end_timestamp_schema=TimestampSchema(
+            format_string=scd_table_timestamp_format_string_with_time,
+            is_utc_time=True,
+        ),
     )
     scd_view = scd_table.get_view()
     event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest")

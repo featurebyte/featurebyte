@@ -45,6 +45,8 @@ class Table:
     join_keys: list[str]
     input_columns: list[str]
     output_columns: list[str]
+    end_timestamp_column: Optional[str] = None
+    end_timestamp_schema: Optional[TimestampSchema] = None
 
     @property
     def timestamp_column_expr(self) -> Expression:
@@ -213,6 +215,8 @@ def get_scd_join_expr(
             join_keys=right_table.join_keys,
             input_columns=right_table.input_columns,
             output_columns=right_table.output_columns,
+            end_timestamp_column=right_table.end_timestamp_column,
+            end_timestamp_schema=right_table.end_timestamp_schema,
         )
     right_subquery = right_table.as_subquery(alias="R")
 
@@ -223,6 +227,19 @@ def get_scd_join_expr(
             expression=get_qualified_column_identifier(right_table.timestamp_column, "R"),
         ),
     ] + _key_cols_equality_conditions(right_table.join_keys)
+
+    if right_table.end_timestamp_column is not None:
+        end_timestamp_expr = get_qualified_column_identifier(right_table.end_timestamp_column, "R")
+        if convert_timestamps_to_utc:
+            end_timestamp_expr = _convert_to_utc_ntz(
+                end_timestamp_expr, right_table.end_timestamp_schema, adapter
+            )
+        join_conditions.append(
+            expressions.LT(  # type: ignore[arg-type]
+                this=get_qualified_column_identifier(TS_COL, "L"),
+                expression=end_timestamp_expr,
+            )
+        )
 
     select_expr = select_expr.from_(left_subquery, copy=False).join(
         right_subquery,
@@ -432,12 +449,14 @@ def augment_table_with_effective_timestamp(
         select(
             *_key_cols_as_quoted_identifiers(num_join_keys),
             quoted_identifier(LAST_TS),
+            quoted_identifier(TS_COL),
             *[quoted_identifier(col) for col in left_table.output_columns],
         )
         .from_(
             select(
                 *_key_cols_as_quoted_identifiers(num_join_keys),
                 alias_(matched_effective_timestamp_expr, alias=LAST_TS, quoted=True),
+                quoted_identifier(TS_COL),
                 *[quoted_identifier(col) for col in left_table.output_columns],
                 quoted_identifier(EFFECTIVE_TS_COL),
             )
