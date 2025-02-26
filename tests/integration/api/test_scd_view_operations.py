@@ -330,6 +330,7 @@ async def test_end_timestamp_column(
     )
     scd_table["scd_cust_id"].as_entity(entity.name)
 
+    # Check SCD joins. Note the last row in the expected result is NaN because of the end timestamp.
     scd_view = scd_table.get_view()
     event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest")
     df_actual = event_view.preview()
@@ -345,6 +346,8 @@ async def test_end_timestamp_column(
     })
     fb_assert_frame_equal(df_actual, df_expected)
 
+    # Check SCD lookup feature. Note the last row in the expected result is NaN because of the end
+    # timestamp.
     feature = scd_view["scd_value"].as_feature("test_end_timestamp_feature")
     feature.save()
     feature_list = FeatureList([feature], "my_list")
