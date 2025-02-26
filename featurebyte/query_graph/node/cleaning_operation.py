@@ -121,7 +121,8 @@ class AddTimestampSchema(BaseCleaningOperation):
     the create_time_series_table method). In such cases, the timestamp schema has been specified and this
     operation is unnecessary.
 
-    Note that when used, this operation should be the last step in the cleaning operation list.
+    Note that when used, this operation should be the last step in the cleaning operation list. When this operation
+    is applied, the semantic type of the column will be reset to None.
 
     Parameters
     ----------

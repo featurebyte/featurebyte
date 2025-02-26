@@ -17,7 +17,7 @@ from bson.objectid import ObjectId
 from pydantic import ValidationError
 from typeguard import TypeCheckError
 
-from featurebyte import TimestampSchema, TimeZoneColumn
+from featurebyte import Configurations, TimestampSchema, TimeZoneColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.enum import DBVarType, TableDataType
@@ -1253,6 +1253,32 @@ def test_add_timestamp_schema(
     # add entity
     saved_event_table.cust_id.as_entity(cust_id_entity.name)
 
+    # create a semantic
+    client = Configurations().get_client()
+    response = client.post(url="/semantic", json={"name": "SOME_SEMANTIC"})
+    assert response.status_code == 201
+    semantic_id = response.json()["_id"]
+
+    # add semantic to the column
+    cols_info = saved_event_table.columns_info
+    for col_info in cols_info:
+        if col_info.name == "cust_id":
+            col_info.semantic_id = ObjectId(semantic_id)
+
+    response = client.patch(
+        url=f"/event_table/{saved_event_table.id}",
+        json={"columns_info": [col_info.json_dict() for col_info in cols_info]},
+    )
+    assert response.status_code == 200
+
+    # check the semantic is added to the column
+    assert saved_event_table.cust_id.info.semantic_id == ObjectId(semantic_id)
+
+    # add non-timestamp schema cleaning operation to the column & semantic ID is not reset
+    cleaning_operations = [MissingValueImputation(imputed_value="")]
+    saved_event_table.col_text.update_critical_data_info(cleaning_operations=cleaning_operations)
+    assert saved_event_table.cust_id.info.semantic_id == ObjectId(semantic_id)
+
     # add timestamp schema to the column
     cleaning_operations = [
         AddTimestampSchema(
@@ -1268,6 +1294,9 @@ def test_add_timestamp_schema(
         saved_event_table.col_text.info.critical_data_info.cleaning_operations
         == cleaning_operations
     )
+
+    # check that semantic ID is reset
+    assert saved_event_table.col_text.info.semantic_id is None
 
     # check that datetime operation can be applied on the column
     view = saved_event_table.get_view()
