@@ -9,8 +9,9 @@ from typing import Optional
 from bson import ObjectId
 
 from featurebyte.enum import MaterializedTableNamePrefix
-from featurebyte.models.base import FeatureByteBaseDocumentModel
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
+from featurebyte.query_graph.model.common_table import TabularSource
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.worker.task.batch_feature_table import BatchFeatureTableTaskPayload
 from featurebyte.service.materialized_table import BaseMaterializedTableService
@@ -33,7 +34,7 @@ class BatchFeatureTableService(
     async def get_batch_feature_table_task_payload(
         self,
         data: BatchFeatureTableCreate,
-        parent_batch_feature_table_id: Optional[ObjectId] = None,
+        parent_batch_feature_table_name: Optional[str] = None,
     ) -> BatchFeatureTableTaskPayload:
         """
         Validate and convert a BatchFeatureTableCreate schema to a BatchFeatureTableTaskPayload schema
@@ -43,8 +44,8 @@ class BatchFeatureTableService(
         ----------
         data: BatchFeatureTableCreate
             BatchFeatureTable creation payload
-        parent_batch_feature_table_id: Optional[ObjectId]
-            Parent BatchFeatureTable ID
+        parent_batch_feature_table_name: Optional[str]
+            Parent BatchFeatureTable name
 
         Returns
         -------
@@ -54,7 +55,19 @@ class BatchFeatureTableService(
         # Check any conflict with existing documents
         output_document_id = data.id or ObjectId()
         await self._check_document_unique_constraints(
-            document=FeatureByteBaseDocumentModel(_id=output_document_id, name=data.name),
+            document=BatchFeatureTableModel(
+                _id=output_document_id,
+                name=data.name,
+                deployment_id=data.deployment_id,
+                batch_request_table_id=None,
+                request_input=None,
+                location=TabularSource(
+                    feature_store_id=ObjectId(),
+                    table_details=TableDetails(table_name="table_name"),
+                ),
+                columns_info=[],
+                num_rows=0,
+            ),
         )
 
         return BatchFeatureTableTaskPayload(
@@ -62,5 +75,5 @@ class BatchFeatureTableService(
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
-            parent_batch_feature_table_id=parent_batch_feature_table_id,
+            parent_batch_feature_table_name=parent_batch_feature_table_name,
         )
