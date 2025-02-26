@@ -324,6 +324,12 @@ async def test_end_timestamp_column(
             is_utc_time=True,
         ),
     )
+
+    entity = Entity.create(
+        "test_end_timestamp_column_entity", ["test_end_timestamp_column_cust_id"]
+    )
+    scd_table["scd_cust_id"].as_entity(entity.name)
+
     scd_view = scd_table.get_view()
     event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest")
     df_actual = event_view.preview()
@@ -338,6 +344,22 @@ async def test_end_timestamp_column(
         "scd_value_latest": [1, 2, np.nan],
     })
     fb_assert_frame_equal(df_actual, df_expected)
+
+    feature = scd_view["scd_value"].as_feature("test_end_timestamp_feature")
+    feature.save()
+    feature_list = FeatureList([feature], "my_list")
+    df_observation = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime([
+            "2022-03-20 10:00:00",
+            "2022-04-20 10:00:00",
+            "2022-05-20 10:00:00",
+        ]),
+        "test_end_timestamp_column_cust_id": [1000, 1000, 1000],
+    })
+    df_features = feature_list.compute_historical_features(df_observation)
+    df_expected = df_observation.copy()
+    df_expected["test_end_timestamp_feature"] = [1, 2, np.nan]
+    fb_assert_frame_equal(df_features, df_expected)
 
 
 def test_event_view_join_scd_view__preview_view(
