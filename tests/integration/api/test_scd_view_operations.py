@@ -258,6 +258,85 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
     fb_assert_frame_equal(df, expected, dict_like_columns=["state_code_counts_30d"])
 
 
+@pytest.mark.asyncio
+async def test_end_timestamp_column(session, data_source, source_type, config):
+    """
+    Self-contained test case to test handling of end timestamp column
+    """
+    df_events = pd.DataFrame({
+        "ts": pd.to_datetime([
+            "2022-03-20 10:00:00",
+            "2022-04-20 10:00:00",
+            "2022-05-20 10:00:00",
+        ]),
+        "cust_id": [1000, 1000, 1000],
+        "event_id": [1, 2, 3],
+    })
+    df_scd = pd.DataFrame({
+        "effective_ts": pd.to_datetime([
+            "2022-03-01 10:00:00",
+            "2022-04-01 10:00:00",
+            "2022-05-01 10:00:00",
+        ]),
+        "end_ts": pd.to_datetime([
+            "2022-04-01 10:00:00",
+            "2022-05-01 10:00:00",
+            "2022-05-05 10:00:00",
+        ]),
+        "scd_cust_id": [1000, 1000, 1000],
+        "scd_value": [1, 2, 3],
+    })
+    table_prefix = "TEST_SCD_END_TIMESTAMP"
+
+    def _quote(col_name) -> str:
+        return sql_to_string(quoted_identifier(col_name), source_type=session.source_type)
+
+    # Register event table
+    table_name = f"{table_prefix}_EVENT"
+    await session.register_table(table_name, df_events)
+
+    # Register scd table
+    table_name = f"{table_prefix}_SCD"
+    await session.register_table(table_name, df_scd)
+
+    event_source_table = data_source.get_source_table(
+        table_name=f"{table_prefix}_EVENT",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    event_table = event_source_table.create_event_table(
+        name=f"{source_type}_{table_prefix}_EVENT_DATA",
+        event_id_column="event_id",
+        event_timestamp_column="ts",
+    )
+    event_view = event_table.get_view()
+    scd_source_table = data_source.get_source_table(
+        table_name=f"{table_prefix}_SCD",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    scd_table = scd_source_table.create_scd_table(
+        name=f"{source_type}_{table_prefix}_SCD_DATA",
+        natural_key_column="scd_cust_id",
+        effective_timestamp_column="effective_ts",
+        end_timestamp_column="end_ts",
+    )
+    scd_view = scd_table.get_view()
+    event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest")
+    df_actual = event_view.preview()
+    df_expected = pd.DataFrame({
+        "ts": pd.to_datetime([
+            "2022-03-20 10:00:00",
+            "2022-04-20 10:00:00",
+            "2022-05-20 10:00:00",
+        ]),
+        "cust_id": [1000, 1000, 1000],
+        "event_id": [1, 2, 3],
+        "scd_value_latest": [1, 2, np.nan],
+    })
+    fb_assert_frame_equal(df_actual, df_expected)
+
+
 def test_event_view_join_scd_view__preview_view(
     event_table, scd_table, expected_dataframe_scd_join
 ):
