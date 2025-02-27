@@ -65,7 +65,18 @@ async def test_list_tables(config, session_without_datasets):
     def _sort_by_name(_tables):
         return sorted(_tables, key=lambda x: x["name"])
 
-    assert _sort_by_name([table.model_dump() for table in tables]) == _sort_by_name([
+    def _filter_grocery(_tables):
+        # Make the test more robust against randomly added tables by filtering by certain keywords
+        out = []
+        for table in _tables:
+            table_name = table["name"]
+            if "grocery" in table_name or "invoiceitems" in table_name:
+                out.append(table)
+        return out
+
+    assert _filter_grocery(
+        _sort_by_name([table.model_dump() for table in tables])
+    ) == _sort_by_name([
         {
             "name": "invoiceitems",
             "description": "The grocery item details within each invoice, including the "

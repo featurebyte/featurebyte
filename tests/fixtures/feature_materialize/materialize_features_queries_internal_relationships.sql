@@ -78,6 +78,7 @@ WITH ONLINE_REQUEST_TABLE AS (
       SELECT
         "__FB_KEY_COL_0",
         "__FB_LAST_TS",
+        "__FB_TS_COL",
         "__FB_TABLE_ROW_INDEX",
         "cust_id",
         "POINT_IN_TIME"
@@ -85,6 +86,7 @@ WITH ONLINE_REQUEST_TABLE AS (
         SELECT
           "__FB_KEY_COL_0",
           LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+          "__FB_TS_COL",
           "__FB_TABLE_ROW_INDEX",
           "cust_id",
           "POINT_IN_TIME",
@@ -170,7 +172,9 @@ WITH ONLINE_REQUEST_TABLE AS (
         "effective_timestamp",
         "col_text"
     ) AS R
-      ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL_0" = R."col_text"
+      ON L."__FB_LAST_TS" = R."effective_timestamp"
+      AND L."__FB_KEY_COL_0" = R."col_text"
+      AND L."__FB_TS_COL" < CAST(CONVERT_TIMEZONE('UTC', R."end_timestamp") AS TIMESTAMP)
   ) AS REQ
 ), "REQUEST_TABLE_POINT_IN_TIME_cust_id_000000000000000000000000" AS (
   SELECT DISTINCT

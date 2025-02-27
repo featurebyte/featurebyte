@@ -237,6 +237,8 @@ class SCDTable(TableApiObject):
             effective_timestamp_column=self.effective_timestamp_column,
             end_timestamp_column=self.end_timestamp_column,
             current_flag_column=self.current_flag_column,
+            effective_timestamp_schema=self.effective_timestamp_schema,
+            end_timestamp_schema=self.end_timestamp_schema,
         )
 
     def get_change_view(
