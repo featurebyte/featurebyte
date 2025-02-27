@@ -95,6 +95,8 @@ class SCDJoin(TableNode):
     left_output_columns: list[str]
     right_input_columns: list[str]
     right_output_columns: list[str]
+    end_timestamp_column: Optional[str]
+    end_timestamp_schema: Optional[TimestampSchema]
     join_type: Literal["left", "inner"]
     query_node_type = NodeType.JOIN
 
@@ -131,6 +133,8 @@ class SCDJoin(TableNode):
             join_keys=[self.right_on],
             input_columns=self.right_input_columns,
             output_columns=self.right_output_columns,
+            end_timestamp_column=self.end_timestamp_column,
+            end_timestamp_schema=self.end_timestamp_schema,
         )
         select_expr = get_scd_join_expr(
             left_table,
@@ -175,6 +179,12 @@ class SCDJoin(TableNode):
             if right_timestamp_metadata_dict is not None
             else None
         )
+        end_timestamp_metadata_dict = parameters["scd_parameters"].get("end_timestamp_metadata")
+        end_timestamp_schema = (
+            TimestampSchema(**end_timestamp_metadata_dict["timestamp_schema"])
+            if end_timestamp_metadata_dict is not None
+            else None
+        )
         node = SCDJoin(
             context=context,
             columns_map=columns_map,
@@ -191,5 +201,7 @@ class SCDJoin(TableNode):
             left_output_columns=parameters["left_output_columns"],
             right_input_columns=parameters["right_input_columns"],
             right_output_columns=parameters["right_output_columns"],
+            end_timestamp_column=parameters["scd_parameters"].get("end_timestamp_column"),
+            end_timestamp_schema=end_timestamp_schema,
         )
         return node
