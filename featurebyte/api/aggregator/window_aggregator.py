@@ -5,7 +5,7 @@ This module contains window aggregator related class
 from __future__ import annotations
 
 import os
-from typing import Any, List, Literal, Optional, Type, cast
+from typing import Any, List, Optional, Type, cast
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.change_view import ChangeView
@@ -178,12 +178,12 @@ class WindowAggregator(BaseAggregator):
 
         if self.is_calendar_aggregation(windows):
             if offset is not None:
-                offset_unit = self._validate_calendar_window("offset", offset)
+                offset_unit = self._validate_calendar_window(offset)
             else:
                 offset_unit = None
             for window in windows:
-                assert window is not None  # due to the above check
-                self._validate_calendar_window("windows", window, compatible_unit=offset_unit)
+                assert isinstance(window, CalendarWindow)  # due to the above check
+                self._validate_calendar_window(window, compatible_unit=offset_unit)
             if feature_job_setting is not None and not isinstance(
                 feature_job_setting, CronFeatureJobSetting
             ):
@@ -239,20 +239,11 @@ class WindowAggregator(BaseAggregator):
 
     def _validate_calendar_window(
         self,
-        param_type: Literal["windows", "offset"],
         window: str | CalendarWindow,
         compatible_unit: Optional[TimeIntervalUnit] = None,
     ) -> TimeIntervalUnit:
         if not isinstance(window, CalendarWindow):
-            # TODO: can remove since window must be CalendarWindow?
-            if param_type == "windows":
-                raise ValueError(
-                    f"Please specify {param_type} as a list of CalendarWindow for calendar aggregation"
-                )
-            else:
-                raise ValueError(
-                    f"Please specify {param_type} as CalendarWindow for calendar aggregation"
-                )
+            raise ValueError("Please specify offset as CalendarWindow for calendar aggregation")
         view = self.view
         unit = TimeIntervalUnit(window.unit)
         if compatible_unit is not None and unit != compatible_unit:
