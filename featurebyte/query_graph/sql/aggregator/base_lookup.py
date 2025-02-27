@@ -320,6 +320,12 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
                 join_keys=[lookup_specs[0].entity_column],
                 input_columns=[spec.input_column_name for spec in lookup_specs],
                 output_columns=agg_result_names,
+                end_timestamp_column=scd_parameters.end_timestamp_column,
+                end_timestamp_schema=(
+                    scd_parameters.end_timestamp_metadata.timestamp_schema
+                    if scd_parameters.end_timestamp_metadata
+                    else None
+                ),
             )
             table_expr = self.get_scd_join_expr_for_lookup(
                 left_table,

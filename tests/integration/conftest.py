@@ -1781,6 +1781,22 @@ def scd_table_timestamp_format_string_fixture(source_type):
     return "yyyy|MM|dd"
 
 
+@pytest.fixture(name="scd_table_timestamp_format_string_with_time", scope="session")
+def scd_table_timestamp_format_string_with_time_fixture(
+    scd_table_timestamp_format_string, source_type
+):
+    """
+    Fixture for custom date format string that is platform specific (with time components)
+    """
+    if source_type == SourceType.SNOWFLAKE:
+        time_format = "HH24:MI:SS"
+    elif source_type == SourceType.BIGQUERY:
+        time_format = "%H:%M:%S"
+    else:
+        time_format = "HH:mm:ss"
+    return f"{scd_table_timestamp_format_string}|{time_format}"
+
+
 @pytest.fixture(name="scd_table_timestamp_with_tz_format_string", scope="session")
 def scd_table_timestamp_with_tz_format_string_fixture(source_type):
     """
