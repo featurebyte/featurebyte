@@ -1206,10 +1206,7 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
             cleaning_operations=[AddTimestampSchema(timestamp_schema=TimestampSchema())]
         )
 
-    expected_msg = (
-        "Column date has AddTimestampSchema cleaning operation. Please remove the AddTimestampSchema cleaning "
-        "operation from the column and specify the reference_datetime_schema in the table model."
-    )
+    expected_msg = "Cannot update special column: date with AddTimestampSchema cleaning operation"
     assert expected_msg in str(exc.value)
 
 
