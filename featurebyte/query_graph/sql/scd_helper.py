@@ -114,6 +114,28 @@ class Table:
         )
 
 
+def has_end_timestamp_column(table: Table) -> bool:
+    """
+    Check if the table has an end timestamp column
+
+    Parameters
+    ----------
+    table: Table
+        Table to check
+
+    Returns
+    -------
+    bool
+    """
+    if table.end_timestamp_column:
+        if isinstance(table.expr, Select):
+            for col_expr in table.expr.expressions:
+                col_name = col_expr.alias or col_expr.name
+                if col_name == table.end_timestamp_column:
+                    return True
+    return False
+
+
 def get_scd_join_expr(
     left_table: Table,
     right_table: Table,
@@ -229,7 +251,7 @@ def get_scd_join_expr(
         ),
     ] + _key_cols_equality_conditions(right_table.join_keys)
 
-    if right_table.end_timestamp_column is not None:
+    if has_end_timestamp_column(right_table):
         end_timestamp_expr = get_qualified_column_identifier(right_table.end_timestamp_column, "R")
         if convert_timestamps_to_utc:
             end_timestamp_expr = _convert_to_utc_ntz(
