@@ -10,7 +10,11 @@ from bson import ObjectId
 
 from featurebyte.common.model_util import get_utc_now
 from featurebyte.enum import SemanticType
-from featurebyte.exception import ColumnNotFoundError, EntityTaggingIsNotAllowedError
+from featurebyte.exception import (
+    ColumnNotFoundError,
+    DocumentUpdateError,
+    EntityTaggingIsNotAllowedError,
+)
 from featurebyte.models.dimension_table import DimensionTableModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature_store import TableValidation, TableValidationStatus
@@ -341,6 +345,7 @@ class BaseTableDocumentController(
             Table object with updated columns info
         """
         document = await self.service.get_document(document_id=document_id)
+        special_columns = set(document.special_columns)
         columns_info = document.columns_info
         column_exists = False
         for col_info in columns_info:
@@ -352,6 +357,12 @@ class BaseTableDocumentController(
                     assert isinstance(data, CriticalDataInfo)
                     for clean_op in data.cleaning_operations:
                         if isinstance(clean_op, AddTimestampSchema):
+                            if col_info.name in special_columns:
+                                raise DocumentUpdateError(
+                                    f"Cannot update special column: {col_info.name} with AddTimestampSchema "
+                                    "cleaning operation"
+                                )
+
                             col_info.semantic_id = None
 
                 column_exists = True
