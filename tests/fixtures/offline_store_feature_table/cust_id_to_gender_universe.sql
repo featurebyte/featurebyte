@@ -131,7 +131,10 @@ WITH ENTITY_UNIVERSE AS (
     ) AS R
       ON L."__FB_LAST_TS" = R."effective_timestamp"
       AND L."__FB_KEY_COL_0" = R."col_text"
-      AND L."__FB_TS_COL" < CAST(CONVERT_TIMEZONE('UTC', R."end_timestamp") AS TIMESTAMP)
+      AND (
+        L."__FB_TS_COL" < CAST(CONVERT_TIMEZONE('UTC', R."end_timestamp") AS TIMESTAMP)
+        OR R."end_timestamp" IS NULL
+      )
   ) AS REQ
 )
 SELECT
