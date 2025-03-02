@@ -270,23 +270,26 @@ async def test_end_timestamp_column(
             "2022-03-20 10:00:00",
             "2022-04-20 10:00:00",
             "2022-05-20 10:00:00",
+            "2022-06-20 10:00:00",
         ]),
-        "cust_id": [1000, 1000, 1000],
-        "event_id": [1, 2, 3],
+        "cust_id": [1000, 1000, 1000, 1000],
+        "event_id": [1, 2, 3, 4],
     })
     df_scd = pd.DataFrame({
         "effective_ts": pd.to_datetime([
             "2022-03-01 10:00:00",
             "2022-04-01 10:00:00",
             "2022-05-01 10:00:00",
+            "2022-06-01 10:00:00",
         ]),
         "end_ts": [
             "2022|04|01|10:00:00",
             "2022|05|01|10:00:00",
             "2022|05|05|10:00:00",
+            None,
         ],
-        "scd_cust_id": [1000, 1000, 1000],
-        "scd_value": [1, 2, 3],
+        "scd_cust_id": [1000, 1000, 1000, 1000],
+        "scd_value": [1, 2, 3, 4],
     })
     table_prefix = "TEST_SCD_END_TIMESTAMP"
 
@@ -330,7 +333,7 @@ async def test_end_timestamp_column(
     )
     scd_table["scd_cust_id"].as_entity(entity.name)
 
-    # Check SCD joins. Note the last row in the expected result is NaN because of the end timestamp.
+    # Check SCD joins. Note the 3rd row in the expected result is NaN because of the end timestamp.
     scd_view = scd_table.get_view()
     event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest")
     df_actual = event_view.preview()
@@ -339,14 +342,15 @@ async def test_end_timestamp_column(
             "2022-03-20 10:00:00",
             "2022-04-20 10:00:00",
             "2022-05-20 10:00:00",
+            "2022-06-20 10:00:00",
         ]),
-        "cust_id": [1000, 1000, 1000],
-        "event_id": [1, 2, 3],
-        "scd_value_latest": [1, 2, np.nan],
+        "cust_id": [1000, 1000, 1000, 1000],
+        "event_id": [1, 2, 3, 4],
+        "scd_value_latest": [1, 2, np.nan, 4],
     })
     fb_assert_frame_equal(df_actual, df_expected)
 
-    # Check SCD lookup feature. Note the last row in the expected result is NaN because of the end
+    # Check SCD lookup feature. Note the 3rd row in the expected result is NaN because of the end
     # timestamp.
     feature = scd_view["scd_value"].as_feature("test_end_timestamp_feature")
     feature.save()
@@ -356,12 +360,13 @@ async def test_end_timestamp_column(
             "2022-03-20 10:00:00",
             "2022-04-20 10:00:00",
             "2022-05-20 10:00:00",
+            "2022-06-20 10:00:00",
         ]),
-        "test_end_timestamp_column_cust_id": [1000, 1000, 1000],
+        "test_end_timestamp_column_cust_id": [1000, 1000, 1000, 1000],
     })
     df_features = feature_list.compute_historical_features(df_observation)
     df_expected = df_observation.copy()
-    df_expected["test_end_timestamp_feature"] = [1, 2, np.nan]
+    df_expected["test_end_timestamp_feature"] = [1, 2, np.nan, 4]
     fb_assert_frame_equal(df_features, df_expected)
 
 
