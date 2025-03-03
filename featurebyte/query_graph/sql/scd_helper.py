@@ -114,6 +114,28 @@ class Table:
         )
 
 
+def has_end_timestamp_column(table: Table) -> bool:
+    """
+    Check if the table has an end timestamp column
+
+    Parameters
+    ----------
+    table: Table
+        Table to check
+
+    Returns
+    -------
+    bool
+    """
+    if table.end_timestamp_column:
+        if isinstance(table.expr, Select):
+            for col_expr in table.expr.expressions:
+                col_name = col_expr.alias or col_expr.name
+                if col_name == table.end_timestamp_column:
+                    return True
+    return False
+
+
 def get_scd_join_expr(
     left_table: Table,
     right_table: Table,
@@ -229,20 +251,27 @@ def get_scd_join_expr(
         ),
     ] + _key_cols_equality_conditions(right_table.join_keys)
 
-    if right_table.end_timestamp_column is not None:
+    if has_end_timestamp_column(right_table):
+        assert right_table.end_timestamp_column is not None
         end_timestamp_expr = get_qualified_column_identifier(right_table.end_timestamp_column, "R")
+        end_timestamp_expr_is_null = expressions.Is(
+            this=end_timestamp_expr,
+            expression=expressions.Null(),
+        )
         if convert_timestamps_to_utc:
             end_timestamp_expr = _convert_to_utc_ntz(
                 end_timestamp_expr, right_table.end_timestamp_schema, adapter
             )
-        join_conditions.append(
-            expressions.LT(  # type: ignore[arg-type]
+        record_validity_expr = expressions.Or(
+            this=expressions.LT(
                 this=adapter.normalize_timestamp_before_comparison(
                     get_qualified_column_identifier(TS_COL, "L")
                 ),
                 expression=adapter.normalize_timestamp_before_comparison(end_timestamp_expr),
-            )
+            ),
+            expression=end_timestamp_expr_is_null,
         )
+        join_conditions.append(record_validity_expr)  # type: ignore
 
     select_expr = select_expr.from_(left_subquery, copy=False).join(
         right_subquery,
