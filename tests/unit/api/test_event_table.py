@@ -1404,3 +1404,15 @@ def test_add_timestamp_schema_validation(saved_event_table):
         "[DATE, TIMESTAMP, TIMESTAMP_TZ, VARCHAR]. INT is not supported."
     )
     assert expected in str(exc.value)
+
+
+def test_event_table_with_event_timestamp_schema(snowflake_event_table_with_timestamp_schema):
+    """
+    Test creating EventTable with event timestamp schema
+    """
+    event_table = snowflake_event_table_with_timestamp_schema
+    assert event_table.event_timestamp_schema.model_dump() == {
+        "format_string": None,
+        "is_utc_time": True,
+        "timezone": {"column_name": "tz_offset", "type": "offset"},
+    }

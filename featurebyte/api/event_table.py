@@ -23,6 +23,7 @@ from featurebyte.models.event_table import EventTableModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.table import AllTableDataT, EventTableData
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ViewMetadata
@@ -84,6 +85,10 @@ class EventTable(TableApiObject):
     )
     internal_event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(
         alias="event_timestamp_timezone_offset_column", default=None
+    )
+    internal_event_timestamp_schema: Optional[TimestampSchema] = Field(
+        alias="event_timestamp_schema",
+        default=None,
     )
 
     # pydantic validators
@@ -213,6 +218,7 @@ class EventTable(TableApiObject):
             node_name=inserted_graph_node.name,
             default_feature_job_setting=self.default_feature_job_setting,
             event_id_column=self.event_id_column,
+            event_timestamp_schema=self.event_timestamp_schema,
         )
 
     @property
@@ -242,6 +248,20 @@ class EventTable(TableApiObject):
             return self.cached_model.event_timestamp_column
         except RecordRetrievalException:
             return self.internal_event_timestamp_column
+
+    @property
+    def event_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Timestamp schema of the event timestamp column
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        try:
+            return self.cached_model.event_timestamp_schema
+        except RecordRetrievalException:
+            return self.internal_event_timestamp_schema
 
     @property
     def event_id_column(self) -> Optional[str]:

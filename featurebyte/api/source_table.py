@@ -460,6 +460,7 @@ class SourceTable(AbstractTableData):
         event_timestamp_timezone_offset_column: Optional[str] = None,
         record_creation_timestamp_column: Optional[str] = None,
         description: Optional[str] = None,
+        event_timestamp_schema: Optional[TimestampSchema] = None,
         _id: Optional[ObjectId] = None,
     ) -> EventTable:
         """
@@ -496,6 +497,8 @@ class SourceTable(AbstractTableData):
             The optional column for the timestamp when a record was created.
         description: Optional[str]
             The optional description for the new table.
+        event_timestamp_schema: Optional[TimestampSchema]
+            The optional timestamp schema for the event timestamp column.
         _id: Optional[ObjectId]
             Identity value for constructed object. This should only be used for cases where we want to create an
             event table with a specific ID. This should not be a common operation, and is typically used in tests
@@ -532,6 +535,7 @@ class SourceTable(AbstractTableData):
             event_id_column=event_id_column,
             event_timestamp_timezone_offset=event_timestamp_timezone_offset,
             event_timestamp_timezone_offset_column=event_timestamp_timezone_offset_column,
+            event_timestamp_schema=event_timestamp_schema,
             description=description,
             _id=_id,
         )
