@@ -656,6 +656,7 @@ def transaction_dataframe(source_type):
     data["ëvent_timestamp"] = data["ëvent_timestamp"].dt.floor("us")
     # add timezone offset
     offsets = rng.choice(range(-18, 18, 1), size=data["ëvent_timestamp"].shape[0])
+    offsets = [max(min(val, 14), -12) for val in offsets]
     data["ëvent_timestamp"] = data["ëvent_timestamp"] + pd.Series(offsets) * pd.Timedelta(hours=1)
     formatted_offsets = [f"{i:+03d}:00" for i in offsets]
     data["ëvent_timestamp"] = pd.to_datetime(
@@ -694,6 +695,19 @@ def transaction_dataframe_upper_case(transaction_data):
         suffix = str(datetime.today().date())
         data.to_csv(f"transactions_data_upper_case_{suffix}.csv", index=False)
 
+    yield data
+
+
+@pytest.fixture(name="transaction_data_with_timestamp_schema", scope="session")
+def transaction_data_with_timestamp_schema_fixture(transaction_data_upper_case):
+    """
+    Convert transaction table column names to upper case
+    """
+    data = transaction_data_upper_case.copy()
+    event_timestamp_column = "ËVENT_TIMESTAMP"
+    data[event_timestamp_column] = data[event_timestamp_column].apply(
+        lambda x: x.tz_convert("UTC").tz_localize(None)
+    )
     yield data
 
 
@@ -974,6 +988,7 @@ def scd_data_table_name_custom_date_with_tz_format_fixture():
 @pytest_asyncio.fixture(name="dataset_registration_helper", scope="session")
 async def datasets_registration_helper_fixture(
     transaction_data_upper_case,
+    transaction_data_with_timestamp_schema,
     items_dataframe,
     dimension_dataframe,
     dimension_data_table_name,
@@ -1039,6 +1054,7 @@ async def datasets_registration_helper_fixture(
 
     # Event table
     helper.add_table("TEST_TABLE", transaction_data_upper_case)
+    helper.add_table("EVENT_TABLE_WITH_TIMESTAMP_SCHEMA", transaction_data_with_timestamp_schema)
 
     # Item table
     helper.add_table("ITEM_DATA_TABLE", items_dataframe)
@@ -1462,7 +1478,7 @@ def create_transactions_event_table_from_data_source(
         preview_df = view.TIMESTAMP_STRING.dt.hour.preview()
         pd.testing.assert_series_equal(
             preview_df[preview_df.columns[0]],
-            pd.Series([10, 2, 2, 6, 9, 16, 18, 13, 18, 19]),
+            pd.Series([12, 2, 2, 6, 9, 17, 18, 19, 20, 21]),
             check_names=False,
         )
 
@@ -1528,6 +1544,52 @@ def event_view_fixture(event_table):
         "NESTED_DICT",
     ]
     return event_view
+
+
+@pytest.fixture(name="event_table_with_timestamp_schema_name", scope="session")
+def event_table_with_timestamp_schema_name_fixture(source_type):
+    """
+    Fixture for the EventTable name
+    """
+    return f"{source_type}_event_table_with_timestamp_schema"
+
+
+@pytest.fixture(name="event_table_with_timestamp_schema", scope="session")
+def event_table_with_timestamp_schema_fixture(
+    session,
+    data_source,
+    event_table_with_timestamp_schema_name,
+    user_entity,
+    product_action_entity,
+    customer_entity,
+    catalog,
+):
+    """
+    Fixture for an EventTable in integration tests
+    """
+    _ = catalog
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name="EVENT_TABLE_WITH_TIMESTAMP_SCHEMA",
+    )
+    event_timestamp_schema = TimestampSchema(
+        is_utc_time=True,
+        timezone=TimeZoneColumn(column_name="TZ_OFFSET", type="offset"),
+    )
+    event_table = database_table.create_event_table(
+        name=event_table_with_timestamp_schema_name,
+        event_id_column="TRANSACTION_ID",
+        event_timestamp_column="ËVENT_TIMESTAMP",
+        event_timestamp_schema=event_timestamp_schema,
+    )
+    event_table.update_default_feature_job_setting(
+        feature_job_setting=FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
+    )
+    event_table["ÜSER ID"].as_entity(user_entity.name)
+    event_table["PRODUCT_ACTION"].as_entity(product_action_entity.name)
+    event_table["CUST_ID"].as_entity(customer_entity.name)
+    return event_table
 
 
 @pytest.fixture(name="item_table_name", scope="session")

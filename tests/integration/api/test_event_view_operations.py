@@ -1596,10 +1596,11 @@ def test_count_distinct_features(count_distinct_feature_group):
     pd.testing.assert_frame_equal(fl_preview, expected, check_dtype=False)
 
 
-def test_event_view_calendar_aggregation(event_view, source_type):
+def test_event_view_calendar_aggregation(event_table_with_timestamp_schema, source_type):
     """
     Test calendar aggregation on EventView
     """
+    event_view = event_table_with_timestamp_schema.get_view()
     feature = event_view.groupby("ÜSER ID").aggregate_over(
         value_column=None,
         method="count",
@@ -1619,13 +1620,7 @@ def test_event_view_calendar_aggregation(event_view, source_type):
     })
     df_features = feature_list.compute_historical_features(observation_set=df_training_events)
     df_expected = df_training_events.copy()
-    # Different result as currently we don't have the information of timestamp schema for the event
-    # timestamp column. Snowflake's event timestamp in the fixture is now stored as local time,
-    # while in other source types it is stored as UTC.
-    if source_type == SourceType.SNOWFLAKE:
-        df_expected["count_calendar_2m"] = [468, 429, 473, 440, 440]
-    else:
-        df_expected["count_calendar_2m"] = [472, 429, 476, 444, 443]
+    df_expected["count_calendar_2m"] = [469, 429, 474, 440, 440]
     fb_assert_frame_equal(
         df_features,
         df_expected,
