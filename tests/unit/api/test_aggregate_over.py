@@ -294,7 +294,7 @@ def test_time_series_view_aggregate_over__only_cron_feature_job_setting(
         )
     assert (
         str(exc_info.value)
-        == "feature_job_setting must be CronFeatureJobSetting for TimeSeriesView"
+        == "feature_job_setting must be CronFeatureJobSetting for calendar aggregation"
     )
 
 
@@ -321,10 +321,15 @@ def test_time_series_view_aggregate_over__only_feature_window(
     # Invalidate either offset or windows
     if is_offset:
         args["offset"] = invalid_window
-        expected = "Please specify offset as CalendarWindow for TimeSeriesView"
+        expected = "Please specify offset as CalendarWindow for calendar aggregation"
     else:
         args["windows"] = [invalid_window]
-        expected = "Please specify windows as a list of CalendarWindow for TimeSeriesView"
+        args["feature_job_setting"] = FeatureJobSetting(
+            blind_spot="0",
+            period="1d",
+            offset="1h",
+        )
+        expected = "CalendarWindow is only supported for calendar aggregation"
     with pytest.raises(ValueError) as exc_info:
         _ = view.groupby("store_id").aggregate_over(**args)
     assert str(exc_info.value) == expected
@@ -415,9 +420,10 @@ def test_non_time_series_view_aggregate_over__only_str_window(
     # Invalidate either offset or windows
     if is_offset:
         args["offset"] = invalid_window
+        expected = "CalendarWindow is only supported for calendar aggregation"
     else:
         args["windows"] = [invalid_window]
-    expected = "CalendarWindow is only supported for TimeSeriesView"
+        expected = "Please specify offset as CalendarWindow for calendar aggregation"
     with pytest.raises(ValueError) as exc_info:
         _ = view.groupby("cust_id").aggregate_over(**args)
     assert str(exc_info.value) == expected
@@ -441,5 +447,56 @@ def test_non_time_series_view_aggregate_over__only_str_window__non_cron_feature_
         )
     assert (
         str(exc_info.value)
-        == "feature_job_setting must be FeatureJobSetting for non-TimeSeriesView"
+        == "feature_job_setting must be FeatureJobSetting for non-calendar aggregation"
     )
+
+
+def test_event_view_calendar_window_aggregate(snowflake_event_view_with_entity):
+    """
+    Test calendar aggregation for event view
+    """
+    feature = snowflake_event_view_with_entity.groupby("cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=[CalendarWindow(unit="MONTH", size=3)],
+        feature_names=["col_int_sum_3m"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 1 * *",
+        ),
+    )["col_int_sum_3m"]
+
+    feature_dict = feature.model_dump()
+    node = get_node(feature_dict["graph"], "time_series_window_aggregate_1")
+    assert node == {
+        "name": "time_series_window_aggregate_1",
+        "type": "time_series_window_aggregate",
+        "output_type": "frame",
+        "parameters": {
+            "keys": ["cust_id"],
+            "parent": "col_float",
+            "agg_func": "sum",
+            "value_by": None,
+            "serving_names": ["cust_id"],
+            "entity_ids": [ObjectId("63f94ed6ea1f050131379214")],
+            "windows": [{"unit": "MONTH", "size": 3}],
+            "reference_datetime_column": "event_timestamp",
+            "reference_datetime_metadata": None,
+            "time_interval": None,
+            "names": ["col_int_sum_3m"],
+            "feature_job_setting": {
+                "crontab": {
+                    "minute": 0,
+                    "hour": 8,
+                    "day_of_month": 1,
+                    "month_of_year": "*",
+                    "day_of_week": "*",
+                },
+                "timezone": "Etc/UTC",
+                "reference_timezone": None,
+            },
+            "offset": None,
+        },
+    }
+
+    # check feature can be saved
+    feature.save()

@@ -17,13 +17,15 @@ from sqlglot import parse_one
 
 from featurebyte import (
     AggFunc,
+    CalendarWindow,
+    CronFeatureJobSetting,
     Entity,
     FeatureList,
     HistoricalFeatureTable,
     SourceType,
     to_timedelta,
 )
-from featurebyte.enum import InternalName
+from featurebyte.enum import InternalName, TimeIntervalUnit
 from featurebyte.exception import RecordCreationException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.sql.common import sql_to_string
@@ -1593,3 +1595,40 @@ def test_count_distinct_features(count_distinct_feature_group):
     ])
     pd.testing.assert_frame_equal(df_hist, expected, check_dtype=False)
     pd.testing.assert_frame_equal(fl_preview, expected, check_dtype=False)
+
+
+def test_event_view_calendar_aggregation(event_view, source_type):
+    """
+    Test calendar aggregation on EventView
+    """
+    feature = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=[CalendarWindow(unit=TimeIntervalUnit.MONTH, size=2)],
+        feature_names=["count_calendar_2m"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        ),
+    )["count_calendar_2m"]
+    feature_list = FeatureList([feature], name="my_list")
+
+    # test historical feature computation
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-02-01 10:00:00"] * 5),
+        "üser id": [1, 2, 3, 4, 5],
+    })
+    df_features = feature_list.compute_historical_features(observation_set=df_training_events)
+    df_expected = df_training_events.copy()
+    # Different result as currently we don't have the information of timestamp schema for the event
+    # timestamp column. Snowflake's event timestamp in the fixture is now stored as local time,
+    # while in other source types it is stored as UTC.
+    if source_type == SourceType.SNOWFLAKE:
+        df_expected["count_calendar_2m"] = [468, 429, 473, 440, 440]
+    else:
+        df_expected["count_calendar_2m"] = [472, 429, 476, 444, 443]
+    fb_assert_frame_equal(
+        df_features,
+        df_expected,
+        sort_by_columns=["POINT_IN_TIME", "üser id"],
+    )

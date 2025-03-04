@@ -631,13 +631,14 @@ class TimeSeriesWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseC
                     window.to_months(),
                 )
 
-            timestamp_expr = self.adapter.normalize_timestamp_before_comparison(
-                convert_timestamp_to_local(
-                    quoted_identifier(node.parameters.reference_datetime_column),
+            timestamp_expr = quoted_identifier(node.parameters.reference_datetime_column)
+            if node.parameters.reference_datetime_schema is not None:
+                timestamp_expr = convert_timestamp_to_local(
+                    timestamp_expr,
                     node.parameters.reference_datetime_schema,
                     self.adapter,
-                ),
-            )
+                )
+            timestamp_expr = self.adapter.normalize_timestamp_before_comparison(timestamp_expr)
             filtered_aggregate_input_expr = self.aggregate_input_expr.where(
                 expressions.and_(
                     expressions.GTE(

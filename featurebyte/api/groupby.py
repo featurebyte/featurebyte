@@ -136,7 +136,7 @@ class GroupBy:
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
-        windows: List[Optional[str] | CalendarWindow],
+        windows: List[Optional[str]] | List[CalendarWindow],
         feature_names: List[str],
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting] = None,

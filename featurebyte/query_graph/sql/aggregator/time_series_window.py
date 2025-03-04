@@ -312,11 +312,15 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         -------
         Select
         """
-        reference_datetime_expr = convert_timestamp_to_local(
-            quoted_identifier(aggregation_spec.parameters.reference_datetime_column),
-            aggregation_spec.parameters.reference_datetime_schema,
-            self.adapter,
+        reference_datetime_expr = quoted_identifier(
+            aggregation_spec.parameters.reference_datetime_column
         )
+        if aggregation_spec.parameters.reference_datetime_schema is not None:
+            reference_datetime_expr = convert_timestamp_to_local(
+                reference_datetime_expr,
+                aggregation_spec.parameters.reference_datetime_schema,
+                self.adapter,
+            )
         if aggregation_spec.window.is_fixed_size():
             bucket_expr = self.adapter.to_epoch_seconds(reference_datetime_expr)
         else:

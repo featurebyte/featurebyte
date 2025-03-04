@@ -2073,8 +2073,8 @@ class TimeSeriesWindowAggregateParameters(BaseGroupbyParameters):
 
     windows: List[CalendarWindow]
     reference_datetime_column: InColumnStr
-    reference_datetime_metadata: DBVarTypeMetadata
-    time_interval: TimeInterval
+    reference_datetime_metadata: Optional[DBVarTypeMetadata]
+    time_interval: Optional[TimeInterval]
     names: List[OutColumnStr]
     feature_job_setting: CronFeatureJobSetting
     offset: Optional[CalendarWindow] = None
@@ -2091,7 +2091,7 @@ class TimeSeriesWindowAggregateParameters(BaseGroupbyParameters):
         return self.reference_datetime_column
 
     @property
-    def reference_datetime_schema(self) -> TimestampSchema:
+    def reference_datetime_schema(self) -> Optional[TimestampSchema]:
         """
         Get reference datetime schema
 
@@ -2099,8 +2099,9 @@ class TimeSeriesWindowAggregateParameters(BaseGroupbyParameters):
         -------
         TimestampSchema
         """
-        assert self.reference_datetime_metadata.timestamp_schema is not None
-        return self.reference_datetime_metadata.timestamp_schema
+        if self.reference_datetime_metadata is not None:
+            return self.reference_datetime_metadata.timestamp_schema
+        return None
 
     @model_validator(mode="before")
     @classmethod

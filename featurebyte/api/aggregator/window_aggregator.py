@@ -5,7 +5,7 @@ This module contains window aggregator related class
 from __future__ import annotations
 
 import os
-from typing import Any, List, Literal, Optional, Type, cast
+from typing import Any, List, Optional, Type, cast
 
 from featurebyte.api.aggregator.base_aggregator import BaseAggregator
 from featurebyte.api.change_view import ChangeView
@@ -41,10 +41,6 @@ class WindowAggregator(BaseAggregator):
         return [EventView, ItemView, ChangeView, TimeSeriesView]
 
     @property
-    def is_time_series_aggregation(self) -> bool:
-        return isinstance(self.view, TimeSeriesView)
-
-    @property
     def aggregation_method_name(self) -> str:
         return "aggregate_over"
 
@@ -52,7 +48,7 @@ class WindowAggregator(BaseAggregator):
         self,
         value_column: Optional[str],
         method: str,
-        windows: List[Optional[str] | CalendarWindow],
+        windows: List[Optional[str]] | List[CalendarWindow],
         feature_names: List[str],
         timestamp_column: Optional[str] = None,
         feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting] = None,
@@ -126,7 +122,11 @@ class WindowAggregator(BaseAggregator):
         )
         assert method is not None
         agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
-        aggregation_node = self._add_aggregation_node(agg_method.type, node_params)
+        aggregation_node = self._add_aggregation_node(
+            agg_func=agg_method.type,
+            is_calendar_aggregation=self.is_calendar_aggregation(windows),
+            node_params=node_params,
+        )
         assert isinstance(feature_names, list)
 
         items = []
@@ -144,11 +144,15 @@ class WindowAggregator(BaseAggregator):
         feature_group = FeatureGroup(items)
         return feature_group
 
+    @classmethod
+    def is_calendar_aggregation(cls, windows: List[Optional[str]] | List[CalendarWindow]) -> bool:
+        return all(isinstance(window, CalendarWindow) for window in windows)
+
     def _validate_parameters(
         self,
         value_column: Optional[str],
         method: str,
-        windows: list[Optional[str] | CalendarWindow],
+        windows: List[Optional[str]] | List[CalendarWindow],
         feature_names: list[str],
         feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting],
         fill_value: OptionalScalar,
@@ -157,9 +161,7 @@ class WindowAggregator(BaseAggregator):
     ) -> None:
         self._validate_method_and_value_column(method=method, value_column=value_column)
         self._validate_fill_value_and_skip_fill_na(fill_value=fill_value, skip_fill_na=skip_fill_na)
-
-        if not isinstance(windows, list) or len(windows) == 0:
-            raise ValueError(f"windows is required and should be a non-empty list; got {windows}")
+        self._validate_windows(windows)
 
         if not isinstance(feature_names, list):
             raise ValueError(
@@ -174,25 +176,22 @@ class WindowAggregator(BaseAggregator):
         if len(windows) != len(set(feature_names)) or len(set(windows)) != len(feature_names):
             raise ValueError("Window sizes or feature names contains duplicated value(s).")
 
-        number_of_unbounded_windows = len([w for w in windows if w is None])
-
-        if self.is_time_series_aggregation:
-            if number_of_unbounded_windows > 0:
-                raise ValueError("Unbounded window is not supported for time series aggregation")
+        if self.is_calendar_aggregation(windows):
             if offset is not None:
-                offset_unit = self._validate_time_series_window("offset", offset)
+                offset_unit = self._validate_calendar_window(offset)
             else:
                 offset_unit = None
             for window in windows:
-                assert window is not None  # due to the above check
-                self._validate_time_series_window("windows", window, compatible_unit=offset_unit)
+                assert isinstance(window, CalendarWindow)  # due to the above check
+                self._validate_calendar_window(window, compatible_unit=offset_unit)
             if feature_job_setting is not None and not isinstance(
                 feature_job_setting, CronFeatureJobSetting
             ):
                 raise ValueError(
-                    "feature_job_setting must be CronFeatureJobSetting for TimeSeriesView"
+                    "feature_job_setting must be CronFeatureJobSetting for calendar aggregation"
                 )
         else:
+            number_of_unbounded_windows = len([w for w in windows if w is None])
             if number_of_unbounded_windows > 0:
                 if method != AggFunc.LATEST:
                     raise ValueError('Unbounded window is only supported for the "latest" method')
@@ -206,54 +205,62 @@ class WindowAggregator(BaseAggregator):
                 feature_job_setting, FeatureJobSetting
             ):
                 raise ValueError(
-                    "feature_job_setting must be FeatureJobSetting for non-TimeSeriesView"
+                    "feature_job_setting must be FeatureJobSetting for non-calendar aggregation"
                 )
             parsed_feature_job_setting = FeatureJobSetting(
-                **self._get_job_setting_params(feature_job_setting)
+                **self._get_job_setting_params(feature_job_setting, windows=windows)
             )
 
-            if windows is not None:
-                for window in windows:
-                    if window is not None:
-                        if isinstance(window, CalendarWindow):
-                            raise ValueError("CalendarWindow is only supported for TimeSeriesView")
-                        validate_window(window, parsed_feature_job_setting.period)
+            # Because of _validate_windows, we know that windows is a list of str or None
+            for window in windows:
+                if window is not None:
+                    assert isinstance(window, str)
+                    validate_window(window, parsed_feature_job_setting.period)
 
             if offset is not None:
                 if isinstance(offset, CalendarWindow):
-                    raise ValueError("CalendarWindow is only supported for TimeSeriesView")
+                    raise ValueError("CalendarWindow is only supported for calendar aggregation")
                 validate_window(offset, parsed_feature_job_setting.period)
 
-    def _validate_time_series_window(
+    @classmethod
+    def _validate_windows(cls, windows: List[Optional[str]] | List[CalendarWindow]) -> None:
+        if not isinstance(windows, list) or len(windows) == 0:
+            raise ValueError(f"windows is required and should be a non-empty list; got {windows}")
+
+        is_calendar = isinstance(windows[0], CalendarWindow)
+        if is_calendar:
+            for window in windows:
+                if not isinstance(window, CalendarWindow):
+                    raise ValueError("Please specify windows as only CalendarWindow")
+        else:
+            for window in windows:
+                if not isinstance(window, str) and window is not None:
+                    raise ValueError("Please specify windows as only str or None")
+
+    def _validate_calendar_window(
         self,
-        param_type: Literal["windows", "offset"],
         window: str | CalendarWindow,
         compatible_unit: Optional[TimeIntervalUnit] = None,
     ) -> TimeIntervalUnit:
         if not isinstance(window, CalendarWindow):
-            if param_type == "windows":
-                raise ValueError(
-                    f"Please specify {param_type} as a list of CalendarWindow for TimeSeriesView"
-                )
-            else:
-                raise ValueError(
-                    f"Please specify {param_type} as CalendarWindow for TimeSeriesView"
-                )
+            raise ValueError("Please specify offset as CalendarWindow for calendar aggregation")
         view = self.view
-        assert isinstance(view, TimeSeriesView)
         unit = TimeIntervalUnit(window.unit)
         if compatible_unit is not None and unit != compatible_unit:
             raise ValueError(
                 f"Window unit ({window.unit}) must be the same as the offset unit ({compatible_unit})"
             )
-        if unit < TimeIntervalUnit(view.time_interval.unit):
-            raise ValueError(
-                f"Window unit ({window.unit}) cannot be smaller than the table's time interval unit ({view.time_interval.unit})"
-            )
+        if isinstance(view, TimeSeriesView):
+            if unit < TimeIntervalUnit(view.time_interval.unit):
+                raise ValueError(
+                    f"Window unit ({window.unit}) cannot be smaller than the table's time interval unit ({view.time_interval.unit})"
+                )
         return unit
 
     def _get_job_setting_params(
-        self, feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting]
+        self,
+        feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting],
+        windows: list[Optional[str]] | list[CalendarWindow],
     ) -> dict[str, Any]:
         if feature_job_setting is not None:
             return feature_job_setting.model_dump()
@@ -265,20 +272,32 @@ class WindowAggregator(BaseAggregator):
                 f"feature_job_setting is required as the {type(self.view).__name__} does not "
                 "have a default feature job setting"
             )
+        if self.is_calendar_aggregation(windows):
+            if not isinstance(default_setting, CronFeatureJobSetting):
+                raise ValueError(
+                    "feature_job_setting must be CronFeatureJobSetting for calendar aggregation"
+                )
+        else:
+            if not isinstance(default_setting, FeatureJobSetting):
+                raise ValueError(
+                    "feature_job_setting must be FeatureJobSetting for non-calendar aggregation"
+                )
         return default_setting.model_dump()  # type: ignore[no-any-return]
 
     def _prepare_node_parameters(
         self,
         value_column: Optional[str],
         method: str,
-        windows: list[Optional[str] | CalendarWindow],
+        windows: list[Optional[str]] | list[CalendarWindow],
         offset: Optional[str | CalendarWindow],
         feature_names: Optional[list[str]],
         timestamp_column: Optional[str] = None,
         value_by_column: Optional[str] = None,
         feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting] = None,
     ) -> dict[str, Any]:
-        feature_job_setting_dict = self._get_job_setting_params(feature_job_setting)
+        feature_job_setting_dict = self._get_job_setting_params(
+            feature_job_setting, windows=windows
+        )
         params: dict[str, Any] = {
             "keys": self.keys,
             "parent": value_column,
@@ -291,14 +310,22 @@ class WindowAggregator(BaseAggregator):
             "serving_names": self.serving_names,
             "entity_ids": self.entity_ids,
         }
-        if self.is_time_series_aggregation:
-            assert isinstance(self.view, TimeSeriesView)
-            params.update({
-                "reference_datetime_column": self.view.reference_datetime_column,
-                "reference_datetime_metadata": self.view.operation_structure.get_dtype_metadata(
+        if self.is_calendar_aggregation(windows):
+            if isinstance(self.view, TimeSeriesView):
+                reference_datetime_column = self.view.reference_datetime_column
+                reference_datetime_metadata = self.view.operation_structure.get_dtype_metadata(
                     self.view.reference_datetime_column
-                ),
-                "time_interval": self.view.time_interval.model_dump(),
+                )
+                time_interval = self.view.time_interval
+            else:
+                assert self.view.timestamp_column is not None
+                reference_datetime_column = self.view.timestamp_column
+                reference_datetime_metadata = None
+                time_interval = None
+            params.update({
+                "reference_datetime_column": reference_datetime_column,
+                "reference_datetime_metadata": reference_datetime_metadata,
+                "time_interval": time_interval,
             })
         else:
             tile_id_version = int(os.environ.get("FEATUREBYTE_TILE_ID_VERSION", "2"))
@@ -312,8 +339,13 @@ class WindowAggregator(BaseAggregator):
             })
         return params
 
-    def _add_aggregation_node(self, agg_func: AggFunc, node_params: dict[str, Any]) -> Node:
-        if self.is_time_series_aggregation:
+    def _add_aggregation_node(
+        self,
+        agg_func: AggFunc,
+        is_calendar_aggregation: bool,
+        node_params: dict[str, Any],
+    ) -> Node:
+        if is_calendar_aggregation:
             return self.view.graph.add_operation(
                 node_type=NodeType.TIME_SERIES_WINDOW_AGGREGATE,
                 node_params=node_params,
