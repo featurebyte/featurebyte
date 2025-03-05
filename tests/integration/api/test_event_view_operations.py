@@ -1648,7 +1648,7 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     })
     df_features = feature_list.compute_historical_features(observation_set=df_training_events)
     df_expected = df_training_events.copy()
-    df_expected["count_7d"] = [469, 429, 474, 440, 440]
+    df_expected["count_7d"] = [124, 93, 106, 89, 95]
     fb_assert_frame_equal(
         df_features,
         df_expected,

@@ -10,8 +10,10 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, select
 
 from featurebyte.enum import InternalName
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
 def get_table_filtered_by_entity(
@@ -20,6 +22,7 @@ def get_table_filtered_by_entity(
     adapter: BaseAdapter,
     table_column_names: Optional[list[str]] = None,
     timestamp_column: Optional[str] = None,
+    timestamp_metadata: Optional[DBVarTypeMetadata] = None,
     distinct: bool = False,
 ) -> Select:
     """
@@ -70,9 +73,14 @@ def get_table_filtered_by_entity(
         join_conditions.append(condition)
 
     if timestamp_column is not None:
-        normalized_timestamp_column = adapter.normalize_timestamp_before_comparison(
-            get_qualified_column_identifier(timestamp_column, "R")
-        )
+        timestamp_expr = get_qualified_column_identifier(timestamp_column, "R")
+        if timestamp_metadata is not None and timestamp_metadata.timestamp_schema is not None:
+            timestamp_expr = convert_timestamp_to_utc(
+                timestamp_expr,
+                timestamp_metadata.timestamp_schema,
+                adapter,
+            )
+        normalized_timestamp_column = adapter.normalize_timestamp_before_comparison(timestamp_expr)
         join_conditions.append(
             expressions.GTE(
                 this=normalized_timestamp_column,
