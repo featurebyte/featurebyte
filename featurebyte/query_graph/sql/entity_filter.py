@@ -49,6 +49,8 @@ def get_table_filtered_by_entity(
     timestamp_column: Optional[str]
         If specified, additionally filter using the timestamp column based on the start and end date
         specified in the entity table
+    timestamp_metadata: Optional[DBVarTypeMetadata]
+        Metadata for the timestamp column
     distinct: bool
         If set, select distinct entity values from the entity table. Applicable for entity tables
         with composite keys.

@@ -5,6 +5,7 @@ This module contains session to EventView integration tests
 import json
 import os
 import time
+from datetime import datetime
 from unittest import mock
 from unittest.mock import patch
 
@@ -29,6 +30,7 @@ from featurebyte.enum import InternalName, TimeIntervalUnit
 from featurebyte.exception import RecordCreationException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from tests.util.helper import (
     assert_preview_result_equal,
     compute_historical_feature_table_dataframe_helper,
@@ -1628,18 +1630,19 @@ def test_event_view_calendar_aggregation(event_table_with_timestamp_schema, sour
     )
 
 
-def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, source_type):
+def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, source_type, config):
     """
     Test features on EventView with timestamp schema
     """
+    feature_name = "event_table_with_timestamp_schema_count_7d"
     event_view = event_table_with_timestamp_schema.get_view()
     feature = event_view.groupby("ÜSER ID").aggregate_over(
         value_column=None,
         method="count",
         windows=["7d"],
-        feature_names=["count_7d"],
-    )["count_7d"]
-    feature_list = FeatureList([feature], name="my_list")
+        feature_names=[feature_name],
+    )[feature_name]
+    feature_list = FeatureList([feature], name=f"{feature_name}_list")
 
     # test historical feature computation
     df_training_events = pd.DataFrame({
@@ -1648,9 +1651,43 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     })
     df_features = feature_list.compute_historical_features(observation_set=df_training_events)
     df_expected = df_training_events.copy()
-    df_expected["count_7d"] = [124, 93, 106, 89, 95]
+    df_expected[feature_name] = [124, 93, 106, 89, 95]
     fb_assert_frame_equal(
         df_features,
         df_expected,
         sort_by_columns=["POINT_IN_TIME", "üser id"],
     )
+
+    # test deployment and serving
+    feature_list.save()
+    deployment = feature_list.deploy(make_production_ready=True)
+    mock_datetime_value = datetime(2001, 1, 10, 12)
+    with patch("featurebyte.service.feature_manager.datetime") as feature_manager_datetime:
+        feature_manager_datetime.utcnow.return_value = mock_datetime_value
+        with patch(
+            "featurebyte.service.feature_materialize.datetime", autospec=True
+        ) as feature_materialize_datetime:
+            feature_materialize_datetime.utcnow.return_value = mock_datetime_value
+            deployment.enable()
+
+    entity_serving_names = [
+        {
+            "üser id": 1,
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+    client = config.get_client()
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 10, 12)
+        with patch("croniter.croniter.timestamp_to_datetime") as mock_croniter:
+            mock_croniter.return_value = datetime(2001, 1, 10, 10)
+            res = client.post(
+                f"/deployment/{deployment.id}/online_features",
+                json=data.json_dict(),
+            )
+
+    assert res.status_code == 200
+    df_features = pd.DataFrame(res.json()["features"])
+    df_expected = pd.DataFrame(entity_serving_names)
+    df_expected[feature_name] = 107
+    fb_assert_frame_equal(df_features, df_expected)
