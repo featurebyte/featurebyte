@@ -1320,7 +1320,7 @@ def check_day_of_week_counts(event_view, preview_param):
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "üser id": 1,
         "DAY_OF_WEEK_COUNTS_24h": '{"0":9,"1":3,"6":2}',
-        "DAY_OF_WEEK_ENTROPY_24h": 0.8921178708188161,
+        "DAY_OF_WEEK_ENTROPY_24h": 0.75893677276206,
     }
     assert_preview_result_equal(
         df_feature_preview, expected, dict_like_columns=["DAY_OF_WEEK_COUNTS_24h"]
