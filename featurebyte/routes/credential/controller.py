@@ -177,7 +177,7 @@ class CredentialController(
         # Allow deletion of credential if the user is not the feature store owner
         # User's credentials are not used to perform background/cleaning ops
         feature_store = feature_stores[0]
-        if feature_store.owner_id != credential.owner_id:
+        if feature_store.user_id != credential.user_id:
             await self.delete(document_id=document_id)
             return
 
