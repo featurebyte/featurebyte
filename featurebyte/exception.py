@@ -284,9 +284,9 @@ class FeatureStoreSchemaCollisionError(BaseConflictError):
         return "Feature Store ID is already in use."
 
 
-class FeatureListNotOnlineEnabledError(FeatureByteException):
+class DeploymentNotEnabledError(FeatureByteException):
     """
-    Raise when online features are requested for a FeatureList that is not online enabled
+    Raise when features are requested for a deployment that is not enabled
     """
 
 
@@ -556,4 +556,10 @@ class FeatureQueryExecutionError(FeatureByteException):
 class DescribeQueryExecutionError(FeatureByteException):
     """
     Raise when stats compute query fails to execute even after batching attempt
+    """
+
+
+class DeploymentNotOnlineEnabledError(BaseUnprocessableEntityError):
+    """
+    Raise when online features are requested for a deployment that is not online enabled
     """
