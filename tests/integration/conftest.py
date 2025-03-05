@@ -706,7 +706,7 @@ def transaction_data_with_timestamp_schema_fixture(transaction_data_upper_case):
     data = transaction_data_upper_case.copy()
     event_timestamp_column = "ËVENT_TIMESTAMP"
     data[event_timestamp_column] = data[event_timestamp_column].apply(
-        lambda x: x.tz_convert("UTC").tz_localize(None)
+        lambda x: x.tz_convert("UTC").tz_localize(None).strftime("%Y|%m|%d|%H:%M:%S")
     )
     yield data
 
@@ -1559,6 +1559,7 @@ def event_table_with_timestamp_schema_fixture(
     session,
     data_source,
     event_table_with_timestamp_schema_name,
+    timestamp_format_string_with_time,
     user_entity,
     product_action_entity,
     customer_entity,
@@ -1575,6 +1576,7 @@ def event_table_with_timestamp_schema_fixture(
     )
     event_timestamp_schema = TimestampSchema(
         is_utc_time=True,
+        format_string=timestamp_format_string_with_time,
         timezone=TimeZoneColumn(column_name="TZ_OFFSET", type="offset"),
     )
     event_table = database_table.create_event_table(
@@ -1831,8 +1833,8 @@ def scd_table_fixture(
     return scd_table
 
 
-@pytest.fixture(name="scd_table_timestamp_format_string", scope="session")
-def scd_table_timestamp_format_string_fixture(source_type):
+@pytest.fixture(name="timestamp_format_string", scope="session")
+def timestamp_format_string_fixture(source_type):
     """
     Fixture for custom date format string that is platform specific
     """
@@ -1843,10 +1845,8 @@ def scd_table_timestamp_format_string_fixture(source_type):
     return "yyyy|MM|dd"
 
 
-@pytest.fixture(name="scd_table_timestamp_format_string_with_time", scope="session")
-def scd_table_timestamp_format_string_with_time_fixture(
-    scd_table_timestamp_format_string, source_type
-):
+@pytest.fixture(name="timestamp_format_string_with_time", scope="session")
+def timestamp_format_string_with_time_fixture(timestamp_format_string, source_type):
     """
     Fixture for custom date format string that is platform specific (with time components)
     """
@@ -1856,7 +1856,7 @@ def scd_table_timestamp_format_string_with_time_fixture(
         time_format = "%H:%M:%S"
     else:
         time_format = "HH:mm:ss"
-    return f"{scd_table_timestamp_format_string}|{time_format}"
+    return f"{timestamp_format_string}|{time_format}"
 
 
 @pytest.fixture(name="scd_table_timestamp_with_tz_format_string", scope="session")
@@ -1875,7 +1875,7 @@ def scd_table_timestamp_with_tz_format_string_fixture(source_type):
 def scd_table_custom_date_format_fixture(
     scd_data_tabular_source_custom_date_format,
     scd_table_name_custom_date_format,
-    scd_table_timestamp_format_string,
+    timestamp_format_string,
     user_entity,
     status2_entity,
     catalog,
@@ -1892,7 +1892,7 @@ def scd_table_custom_date_format_fixture(
         effective_timestamp_column="Effective Timestamp",
         surrogate_key_column="ID",
         effective_timestamp_schema=TimestampSchema(
-            format_string=scd_table_timestamp_format_string, timezone="Asia/Singapore"
+            format_string=timestamp_format_string, timezone="Asia/Singapore"
         ),
     )
     scd_table["User ID"].as_entity("User")
@@ -1904,7 +1904,7 @@ def scd_table_custom_date_format_fixture(
 def time_series_table_fixture(
     time_series_data_tabular_source,
     time_series_table_name,
-    scd_table_timestamp_format_string,
+    timestamp_format_string,
     series_entity,
     user_entity,
     catalog,
@@ -1916,7 +1916,7 @@ def time_series_table_fixture(
     time_series_table = time_series_data_tabular_source.create_time_series_table(
         name=time_series_table_name,
         reference_datetime_column="reference_datetime_col",
-        reference_datetime_schema=TimestampSchema(format_string=scd_table_timestamp_format_string),
+        reference_datetime_schema=TimestampSchema(format_string=timestamp_format_string),
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
         series_id_column="series_id_col",
     )
@@ -1935,7 +1935,7 @@ def time_series_table_fixture(
 def time_series_table_tz_column_fixture(
     time_series_data_tz_column_tabular_source,
     time_series_table_tz_column_name,
-    scd_table_timestamp_format_string,
+    timestamp_format_string,
     series2_entity,
     user_entity,
     catalog,
@@ -1948,7 +1948,7 @@ def time_series_table_tz_column_fixture(
         name=time_series_table_tz_column_name,
         reference_datetime_column="reference_datetime_col",
         reference_datetime_schema=TimestampSchema(
-            format_string=scd_table_timestamp_format_string,
+            format_string=timestamp_format_string,
             timezone=TimeZoneColumn(column_name="tz_offset", type="timezone"),
         ),
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
