@@ -284,9 +284,9 @@ class FeatureStoreSchemaCollisionError(BaseConflictError):
         return "Feature Store ID is already in use."
 
 
-class FeatureListNotOnlineEnabledError(FeatureByteException):
+class DeploymentNotEnabledError(FeatureByteException):
     """
-    Raise when online features are requested for a FeatureList that is not online enabled
+    Raise when features are requested for a deployment that is not enabled
     """
 
 
@@ -574,4 +574,10 @@ class CronFeatureJobSettingConversionError(FeatureByteException):
 class InvalidDefaultFeatureJobSettingError(FeatureByteException):
     """
     Raise when the default feature job setting is invalid
+    """
+
+
+class DeploymentNotOnlineEnabledError(BaseUnprocessableEntityError):
+    """
+    Raise when online features are requested for a deployment that is not online enabled
     """

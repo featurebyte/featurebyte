@@ -15,7 +15,7 @@ from featurebyte import FeatureList
 from featurebyte.api.deployment import Deployment
 from featurebyte.config import Configurations
 from featurebyte.exception import (
-    FeatureListNotOnlineEnabledError,
+    DeploymentNotEnabledError,
     RecordCreationException,
     RecordRetrievalException,
 )
@@ -80,7 +80,7 @@ def test_info(deployment):
 
 def test_get_online_serving_code_not_deployed(deployment):
     """Test feature get_online_serving_code on un-deployed feature list"""
-    with pytest.raises(FeatureListNotOnlineEnabledError) as exc:
+    with pytest.raises(DeploymentNotEnabledError) as exc:
         deployment.get_online_serving_code()
     assert "Deployment is not enabled." in str(exc.value)
 
@@ -121,7 +121,10 @@ def test_list_deployment(deployment, snowflake_feature_store):
     assert response.json() == {"num_feature_list": 1, "num_feature": 1}
 
 
-def test_get_online_serving_code(deployment, catalog, config_file):
+@patch(
+    "featurebyte.routes.deployment.controller.DeploymentController._validate_deployment_is_online_enabled"
+)
+def test_get_online_serving_code(mock_validate, deployment, catalog, config_file):
     """Test feature get_online_serving_code"""
     # Use config
     Configurations(config_file, force=True)
@@ -349,7 +352,10 @@ def test_deployment_with_unbounded_window(
     deployment.disable()
 
 
-def test_get_online_serving_code_uses_deployment_entities(deployment, config_file):
+@patch(
+    "featurebyte.routes.deployment.controller.DeploymentController._validate_deployment_is_online_enabled"
+)
+def test_get_online_serving_code_uses_deployment_entities(mock_validate, deployment, config_file):
     """Test feature get_online_serving_code"""
     # Use config
     Configurations(config_file, force=True)
