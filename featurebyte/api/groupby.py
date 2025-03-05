@@ -526,6 +526,7 @@ class GroupBy:
         ...     method=fb.AggFunc.SUM,
         ...     target_name="TargetCustomerInventory_28d",
         ...     window="28d",
+        ...     fill_value=0.0,
         ... )
         """
         return ForwardAggregator(
@@ -627,6 +628,7 @@ class GroupBy:
         >>> target = active_credit_card_by_cust.forward_aggregate_asat(  # doctest: +SKIP
         ...     method=fb.AggFunc.COUNT,
         ...     feature_name="Number of Active Credit Cards",
+        ...     fill_value=0,
         ... )
 
 
@@ -635,6 +637,7 @@ class GroupBy:
         >>> target_12w_after = active_credit_card_by_cust.forward_aggregate_asat(  # doctest: +SKIP
         ...     method=fb.AggFunc.COUNT,
         ...     feature_name="Number of Active Credit Cards 12 w after",
+        ...     fill_value=0,
         ...     offset="12w",
         ... )
         """
