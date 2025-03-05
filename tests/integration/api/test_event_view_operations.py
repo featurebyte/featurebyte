@@ -1626,3 +1626,31 @@ def test_event_view_calendar_aggregation(event_table_with_timestamp_schema, sour
         df_expected,
         sort_by_columns=["POINT_IN_TIME", "üser id"],
     )
+
+
+def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, source_type):
+    """
+    Test features on EventView with timestamp schema
+    """
+    event_view = event_table_with_timestamp_schema.get_view()
+    feature = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["7d"],
+        feature_names=["count_7d"],
+    )["count_7d"]
+    feature_list = FeatureList([feature], name="my_list")
+
+    # test historical feature computation
+    df_training_events = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime(["2001-02-01 10:00:00"] * 5),
+        "üser id": [1, 2, 3, 4, 5],
+    })
+    df_features = feature_list.compute_historical_features(observation_set=df_training_events)
+    df_expected = df_training_events.copy()
+    df_expected["count_7d"] = [469, 429, 474, 440, 440]
+    fb_assert_frame_equal(
+        df_features,
+        df_expected,
+        sort_by_columns=["POINT_IN_TIME", "üser id"],
+    )
