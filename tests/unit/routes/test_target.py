@@ -290,5 +290,5 @@ class TestTargetApi(BaseCatalogApiTestSuite):
             assert mock_validate_entities_or_prepare_for_parent_serving.call_count > 1
             call_args = mock_validate_entities_or_prepare_for_parent_serving.call_args_list[0][1]
             # Check that node names is in the call args of mock_validate_entities_or_prepare_for_parent_serving
-            assert call_args["graph_nodes"][1][0].name == "project_1"
+            assert call_args["graph_nodes"][1][0].name == "alias_1"
             assert call_args["graph_nodes"][0] is not None

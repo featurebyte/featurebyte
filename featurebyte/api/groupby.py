@@ -468,7 +468,7 @@ class GroupBy:
         method: Union[AggFunc, str],
         window: str,
         target_name: str,
-        fill_value: OptionalScalar = None,
+        fill_value: OptionalScalar,
         skip_fill_na: Optional[bool] = None,
         offset: Optional[str] = None,
         target_type: Optional[TargetType] = None,
@@ -547,8 +547,8 @@ class GroupBy:
         value_column: Optional[str],
         method: Union[AggFunc, str],
         target_name: str,
+        fill_value: OptionalScalar,
         offset: Optional[str] = None,
-        fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
         target_type: Optional[TargetType] = None,
     ) -> Target:
@@ -587,6 +587,8 @@ class GroupBy:
             Aggregation method
         target_name: str
             Output feature name
+        fill_value: OptionalScalar
+            Value to fill if the value in the column is empty
         offset: Optional[str]
             Optional offset to apply to the point in time column in the target request. The
             aggregation result will be as at the point in time adjusted by this offset. Format of
@@ -602,8 +604,6 @@ class GroupBy:
             "d": day
             "w": week
 
-        fill_value: OptionalScalar
-            Value to fill if the value in the column is empty
         skip_fill_na: Optional[bool]
             Whether to skip filling NaN values, filling nan operation is skipped by default as it is
             expensive during feature serving

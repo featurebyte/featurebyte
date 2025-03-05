@@ -16,14 +16,16 @@ def test_forward_aggregate_asat__valid(
         value_column="col_float",
         method="sum",
         target_name="asat_target",
+        fill_value=0.0,
     )
     assert isinstance(target, Target)
     target_dict = target.model_dump()
     graph_dict = target_dict["graph"]
 
-    node_dict = get_node(graph_dict, target_dict["node_name"])
+    target_aggregate_node_name = "project_1"
+    node_dict = get_node(graph_dict, target_aggregate_node_name)
     assert node_dict == {
-        "name": "project_1",
+        "name": target_aggregate_node_name,
         "type": "project",
         "output_type": "series",
         "parameters": {"columns": ["asat_target"]},
@@ -56,6 +58,10 @@ def test_forward_aggregate_asat__valid(
         {"source": "input_1", "target": "graph_1"},
         {"source": "graph_1", "target": "forward_aggregate_as_at_1"},
         {"source": "forward_aggregate_as_at_1", "target": "project_1"},
+        {"source": "project_1", "target": "is_null_1"},
+        {"source": "project_1", "target": "conditional_1"},
+        {"source": "is_null_1", "target": "conditional_1"},
+        {"source": "conditional_1", "target": "alias_1"},
     ]
 
     # check SDK code generation
@@ -80,16 +86,21 @@ def test_aggregate_asat__offset(snowflake_scd_view_with_entity, gender_entity_id
     Test offset parameter
     """
     target = snowflake_scd_view_with_entity.groupby("col_boolean").forward_aggregate_asat(
-        value_column="col_float", method="sum", target_name="asat_target", offset="7d"
+        value_column="col_float",
+        method="sum",
+        target_name="asat_target",
+        offset="7d",
+        fill_value=0.0,
     )
 
     assert isinstance(target, Target)
     target_dict = target.model_dump()
     graph_dict = target_dict["graph"]
 
-    node_dict = get_node(graph_dict, target_dict["node_name"])
+    target_aggregate_node_name = "project_1"
+    node_dict = get_node(graph_dict, target_aggregate_node_name)
     assert node_dict == {
-        "name": "project_1",
+        "name": target_aggregate_node_name,
         "type": "project",
         "output_type": "series",
         "parameters": {"columns": ["asat_target"]},
