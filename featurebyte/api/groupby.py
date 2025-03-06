@@ -24,13 +24,13 @@ from featurebyte.api.scd_view import SCDView
 from featurebyte.api.target import Target
 from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import AggFunc, TargetType
+from featurebyte.enum import AggFunc, DBVarType, TargetType
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
 )
 from featurebyte.query_graph.model.window import CalendarWindow
-from featurebyte.typing import OptionalScalar
+from featurebyte.typing import UNSET, OptionalScalar, Unset
 
 
 class GroupBy:
@@ -462,13 +462,30 @@ class GroupBy:
             skip_fill_na=skip_fill_na,
         )
 
+    @staticmethod
+    def _get_fill_value_for_target(
+        value_dtype: Optional[DBVarType],
+        method: Union[AggFunc, str],
+        fill_value: Union[OptionalScalar, Unset],
+    ) -> OptionalScalar:
+        if fill_value is UNSET:
+            if method == AggFunc.COUNT:
+                fill_value = 0
+            if value_dtype in DBVarType.numeric_types() and method == AggFunc.SUM:
+                fill_value = 0.0
+
+        if fill_value is UNSET:
+            raise ValueError(f"fill_value is required for method {method}")
+
+        return fill_value  # type: ignore
+
     def forward_aggregate(
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
         window: str,
         target_name: str,
-        fill_value: OptionalScalar,
+        fill_value: Union[OptionalScalar, Unset] = UNSET,
         skip_fill_na: Optional[bool] = None,
         offset: Optional[str] = None,
         target_type: Optional[TargetType] = None,
@@ -500,7 +517,7 @@ class GroupBy:
 
         target_name: str
             Output target name
-        fill_value: OptionalScalar
+        fill_value: Union[OptionalScalar, Unset]
             Value to fill if the value in the column is empty
         skip_fill_na: Optional[bool]
             Whether to skip filling NaN values, filling nan operation is skipped by default as it is
@@ -529,6 +546,12 @@ class GroupBy:
         ...     fill_value=0.0,
         ... )
         """
+        set_fill_value = self._get_fill_value_for_target(
+            value_dtype=self.view_obj.column_var_type_map.get(value_column),  # type: ignore
+            method=method,
+            fill_value=fill_value,
+        )
+
         return ForwardAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
         ).forward_aggregate(
@@ -536,7 +559,7 @@ class GroupBy:
             method=method,
             window=window,
             target_name=target_name,
-            fill_value=fill_value,
+            fill_value=set_fill_value,
             skip_fill_na=skip_fill_na,
             offset=offset,
             target_type=target_type,
@@ -548,8 +571,8 @@ class GroupBy:
         value_column: Optional[str],
         method: Union[AggFunc, str],
         target_name: str,
-        fill_value: OptionalScalar,
         offset: Optional[str] = None,
+        fill_value: Union[OptionalScalar, Unset] = UNSET,
         skip_fill_na: Optional[bool] = None,
         target_type: Optional[TargetType] = None,
     ) -> Target:
@@ -588,8 +611,6 @@ class GroupBy:
             Aggregation method
         target_name: str
             Output feature name
-        fill_value: OptionalScalar
-            Value to fill if the value in the column is empty
         offset: Optional[str]
             Optional offset to apply to the point in time column in the target request. The
             aggregation result will be as at the point in time adjusted by this offset. Format of
@@ -605,6 +626,8 @@ class GroupBy:
             "d": day
             "w": week
 
+        fill_value: Union[OptionalScalar, Unset]
+            Value to fill if the value in the column is empty
         skip_fill_na: Optional[bool]
             Whether to skip filling NaN values, filling nan operation is skipped by default as it is
             expensive during feature serving
@@ -641,6 +664,12 @@ class GroupBy:
         ...     offset="12w",
         ... )
         """
+        set_fill_value = self._get_fill_value_for_target(
+            value_dtype=self.view_obj.column_var_type_map.get(value_column),  # type: ignore
+            method=method,
+            fill_value=fill_value,
+        )
+
         return ForwardAsAtAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
         ).forward_aggregate_asat(
@@ -648,7 +677,7 @@ class GroupBy:
             method=method,
             target_name=target_name,
             offset=offset,
-            fill_value=fill_value,
+            fill_value=set_fill_value,
             skip_fill_na=skip_fill_na,
             target_type=target_type,
         )

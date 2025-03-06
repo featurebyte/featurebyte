@@ -2,6 +2,8 @@
 Test forward_aggregate_asat
 """
 
+import pytest
+
 from featurebyte.api.target import Target
 from tests.util.helper import check_sdk_code_generation, get_node
 
@@ -129,3 +131,19 @@ def test_aggregate_asat__offset(snowflake_scd_view_with_entity, gender_entity_id
         },
         "type": "forward_aggregate_as_at",
     }
+
+
+def test_forward_aggregate__fill_value(
+    snowflake_scd_view_with_entity, snowflake_scd_table, gender_entity_id
+):
+    """
+    Test forward_aggregate_asat with fill_value not set
+    """
+    with pytest.raises(ValueError) as exc:
+        snowflake_scd_view_with_entity.groupby("col_boolean").forward_aggregate_asat(
+            value_column="col_float",
+            method="max",
+            target_name="asat_target",
+        )
+
+    assert "fill_value is required for method max" in str(exc.value)
