@@ -13,6 +13,7 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, select
 
 from featurebyte.enum import SourceType
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 
 REQUEST_TABLE_NAME = "REQUEST_TABLE"
@@ -245,6 +246,7 @@ class EventTableTimestampFilter:
     """
 
     timestamp_column_name: str
+    timestamp_schema: Optional[TimestampSchema]
     event_table_id: ObjectId
     start_timestamp_placeholder_name: Optional[str] = None
     end_timestamp_placeholder_name: Optional[str] = None

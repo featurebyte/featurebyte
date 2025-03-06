@@ -59,7 +59,7 @@ from featurebyte.query_graph.sql.timestamp_helper import (
 @pytest.mark.asyncio
 async def test_convert_timestamp_to_utc(
     session_without_datasets,
-    scd_table_timestamp_format_string,
+    timestamp_format_string,
     timestamp_value,
     timezone_offset_column,
     timestamp_schema,
@@ -69,7 +69,7 @@ async def test_convert_timestamp_to_utc(
     Test different specification of timestamp schema when constructing SCDTable
     """
     if timestamp_schema.format_string == "<date_format_placeholder>":
-        timestamp_schema.format_string = scd_table_timestamp_format_string
+        timestamp_schema.format_string = timestamp_format_string
     session = session_without_datasets
     df_scd = pd.DataFrame({
         "effective_timestamp_column": pd.Series([timestamp_value]),
@@ -151,7 +151,7 @@ async def test_convert_timestamp_to_utc(
 @pytest.mark.asyncio
 async def test_convert_timestamp_to_local(
     session_without_datasets,
-    scd_table_timestamp_format_string,
+    timestamp_format_string,
     timestamp_value,
     timezone_offset_column,
     timestamp_schema,
@@ -161,7 +161,7 @@ async def test_convert_timestamp_to_local(
     Test timestamp_helper's convert_timestamp_to_local function
     """
     if timestamp_schema.format_string == "<date_format_placeholder>":
-        timestamp_schema.format_string = scd_table_timestamp_format_string
+        timestamp_schema.format_string = timestamp_format_string
     session = session_without_datasets
     df_scd = pd.DataFrame({
         "effective_timestamp_column": pd.Series([timestamp_value]),

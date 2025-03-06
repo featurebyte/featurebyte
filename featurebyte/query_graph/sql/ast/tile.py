@@ -11,6 +11,7 @@ from sqlglot.expressions import Expression, Select, alias_
 
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
@@ -19,6 +20,7 @@ from featurebyte.query_graph.sql.common import SQLType, quoted_identifier
 from featurebyte.query_graph.sql.query_graph_util import get_parent_dtype
 from featurebyte.query_graph.sql.tile_compute_spec import TileComputeSpec, TileTableInputColumn
 from featurebyte.query_graph.sql.tiling import InputColumn, TileSpec, get_aggregator
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
 @dataclass
@@ -33,6 +35,7 @@ class BuildTileNode(TableNode):
     value_by: str | None
     tile_specs: list[TileSpec]
     timestamp: str
+    timestamp_metadata: DBVarTypeMetadata | None
     frequency_minute: int
     blind_spot: int
     time_modulo_frequency: int
@@ -84,13 +87,22 @@ class BuildTileNode(TableNode):
         timestamp_column = TileTableInputColumn(
             name=self.timestamp, expr=self.input_node.columns_map[self.timestamp]
         )
+        if self.timestamp_metadata is None:
+            timestamp_expr = self.context.adapter.convert_to_utc_timestamp(
+                quoted_identifier(self.timestamp)
+            )
+        else:
+            assert self.timestamp_metadata.timestamp_schema is not None
+            timestamp_expr = convert_timestamp_to_utc(
+                quoted_identifier(self.timestamp),
+                self.timestamp_metadata.timestamp_schema,
+                self.adapter,
+            )
         tile_index_expr = alias_(
             self.adapter.call_udf(
                 "F_TIMESTAMP_TO_INDEX",
                 [
-                    self.context.adapter.convert_to_utc_timestamp(
-                        quoted_identifier(self.timestamp)
-                    ),
+                    timestamp_expr,
                     make_literal_value(self.time_modulo_frequency),
                     make_literal_value(self.blind_spot),
                     make_literal_value(self.frequency_minute),
@@ -102,6 +114,7 @@ class BuildTileNode(TableNode):
             source_expr=source_expr,
             entity_table_expr=None,
             timestamp_column=timestamp_column,
+            timestamp_metadata=self.timestamp_metadata,
             key_columns=key_columns,
             value_by_column=value_by_column,
             value_columns=value_columns,
@@ -159,6 +172,10 @@ class BuildTileNode(TableNode):
         )
         columns_map = {col: quoted_identifier(col) for col in columns}
         fjs = FeatureJobSetting(**parameters["feature_job_setting"])
+        if parameters["timestamp_metadata"] is None:
+            timestamp_metadata = None
+        else:
+            timestamp_metadata = DBVarTypeMetadata(**parameters["timestamp_metadata"])
         sql_node = BuildTileNode(
             context=context,
             columns_map=columns_map,
@@ -167,6 +184,7 @@ class BuildTileNode(TableNode):
             value_by=parameters["value_by"],
             tile_specs=tile_specs,
             timestamp=parameters["timestamp"],
+            timestamp_metadata=timestamp_metadata,
             frequency_minute=fjs.period_seconds // 60,
             blind_spot=fjs.blind_spot_seconds,
             time_modulo_frequency=fjs.offset_seconds,
