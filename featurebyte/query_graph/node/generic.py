@@ -690,6 +690,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
             method=self.parameters.agg_func,
             window=self.parameters.window,
             target_name=self.parameters.name,
+            fill_value=None,
             skip_fill_na=True,
             offset=self.parameters.offset,
         )
@@ -2045,6 +2046,7 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
             f"method={method}, "
             f"target_name={target_name}, "
             f"offset={offset}, "
+            f"fill_value=None, "
             f"skip_fill_na=True)"
         )
         return statements, ExpressionStr(f"{grouped}.{agg}")

@@ -2,6 +2,8 @@
 Test forward aggregator.
 """
 
+import textwrap
+
 import pytest
 
 from featurebyte import AggFunc
@@ -176,3 +178,37 @@ def test_validate_parameters(
             window=window,
             target_name=target_name,
         )
+
+
+def test_forward_aggregate__fill_value(snowflake_event_view_with_entity):
+    """
+    Test forward_aggregate.
+    """
+    # create target without fill_value
+    target = snowflake_event_view_with_entity.groupby("col_int").forward_aggregate(
+        value_column="col_float",
+        method="sum",
+        window="7d",
+        target_name="target",
+    )
+    target.save()
+
+    # definition expected fill null value operations
+    partial_definition = """
+    target = event_view.groupby(
+        by_keys=["col_int"], category=None
+    ).forward_aggregate(
+        value_column="col_float",
+        method="sum",
+        window="7d",
+        target_name="target",
+        fill_value=None,
+        skip_fill_na=True,
+        offset=None,
+    )
+    target_1 = target.copy()
+    target_1[target.isnull()] = 0.0
+    target_1.name = "target"
+    output = target_1
+    """
+    assert textwrap.dedent(partial_definition).strip() in target.definition

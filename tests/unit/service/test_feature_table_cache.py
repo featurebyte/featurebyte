@@ -740,7 +740,7 @@ async def test_create_feature_table_cache__with_target(
         MERGE INTO "sf_db"."sf_schema"."{feature_table_cache_name}" AS feature_table_cache
         USING "sf_db"."sf_schema"."__TEMP__FEATURE_TABLE_CACHE_ObjectId" AS partial_features
         ON feature_table_cache."__FB_TABLE_ROW_INDEX" = partial_features."__FB_TABLE_ROW_INDEX"
-        WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_8bf3807cdb51975c6e7460e4cd56ce3a38213996" = partial_features."float_target"
+        WHEN MATCHED THEN UPDATE SET feature_table_cache."FEATURE_d3ecd3393ef9670503bf053572815406364a011a" = partial_features."float_target"
         """,
     )
 

@@ -386,6 +386,7 @@ def test_feature_with_target(event_table, observation_set, transaction_data_uppe
         value_column=value_column,
         window="2h",
         target_name="target_next_amount_2h",
+        fill_value=None,
     )
     observation_table_name = f"target_observation_table_name_{ObjectId()}"
     target_observation_table = target.compute_target_table(
