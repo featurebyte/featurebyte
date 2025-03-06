@@ -467,12 +467,16 @@ class GroupBy:
         value_dtype: Optional[DBVarType],
         method: Union[AggFunc, str],
         fill_value: Union[OptionalScalar, Unset],
+        category: Optional[str],
     ) -> OptionalScalar:
         if fill_value is UNSET:
-            if method == AggFunc.COUNT:
+            if method in {AggFunc.COUNT, AggFunc.NA_COUNT}:
                 fill_value = 0
             if value_dtype in DBVarType.numeric_types() and method == AggFunc.SUM:
                 fill_value = 0.0
+            if category is not None:
+                # fill_value is not supported for aggregation per category
+                fill_value = None
 
         if fill_value is UNSET:
             raise ValueError(f"fill_value is required for method {method}")
@@ -550,6 +554,7 @@ class GroupBy:
             value_dtype=self.view_obj.column_var_type_map.get(value_column),  # type: ignore
             method=method,
             fill_value=fill_value,
+            category=self.category,
         )
 
         return ForwardAggregator(
@@ -668,6 +673,7 @@ class GroupBy:
             value_dtype=self.view_obj.column_var_type_map.get(value_column),  # type: ignore
             method=method,
             fill_value=fill_value,
+            category=self.category,
         )
 
         return ForwardAsAtAggregator(
