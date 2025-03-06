@@ -1114,3 +1114,16 @@ def test_event_view_as_feature(
     ingest_graphs = offline_store_info.extract_offline_store_ingest_query_graphs()
     assert len(ingest_graphs) == 1
     assert ingest_graphs[0].offline_store_table_name == "cat1_transaction_id_1d"
+
+
+def test_event_view_with_event_timestamp_schema(snowflake_event_table_with_timestamp_schema):
+    """
+    Test event view with event timestamp schema
+    """
+    event_view = snowflake_event_table_with_timestamp_schema.get_view()
+    assert event_view.event_timestamp_schema.model_dump() == {
+        "format_string": None,
+        "is_utc_time": True,
+        "timezone": {"column_name": "tz_offset", "type": "offset"},
+    }
+    assert event_view.inherited_columns == {"col_int", "event_timestamp", "tz_offset"}

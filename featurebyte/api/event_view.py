@@ -18,6 +18,7 @@ from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters, InputNode
 from featurebyte.typing import validate_type_is_feature
 
@@ -71,6 +72,7 @@ class EventView(View, GroupByMixin, RawMixin):
         frozen=True,
         description="Returns the name of the column representing the event key of the Event view.",
     )
+    event_timestamp_schema: Optional[TimestampSchema] = Field(frozen=True)
 
     @property
     def timestamp_column(self) -> str:
@@ -117,6 +119,10 @@ class EventView(View, GroupByMixin, RawMixin):
         columns = {self.timestamp_column}
         if self.timestamp_timezone_offset_column is not None:
             columns.add(self.timestamp_timezone_offset_column)
+        if self.event_timestamp_schema is not None and isinstance(
+            self.event_timestamp_schema.timezone, TimeZoneColumn
+        ):
+            columns.add(self.event_timestamp_schema.timezone.column_name)
         return columns
 
     @property
@@ -146,6 +152,7 @@ class EventView(View, GroupByMixin, RawMixin):
         params.update({
             "default_feature_job_setting": self.default_feature_job_setting,
             "event_id_column": self.event_id_column,
+            "event_timestamp_schema": self.event_timestamp_schema,
         })
         return params
 

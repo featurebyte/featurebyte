@@ -260,7 +260,7 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
 
 @pytest.mark.asyncio
 async def test_end_timestamp_column(
-    session, data_source, source_type, config, scd_table_timestamp_format_string_with_time
+    session, data_source, source_type, config, timestamp_format_string_with_time
 ):
     """
     Self-contained test case to test handling of end timestamp column
@@ -323,7 +323,7 @@ async def test_end_timestamp_column(
         effective_timestamp_column="effective_ts",
         end_timestamp_column="end_ts",
         end_timestamp_schema=TimestampSchema(
-            format_string=scd_table_timestamp_format_string_with_time,
+            format_string=timestamp_format_string_with_time,
             is_utc_time=True,
         ),
     )
@@ -914,7 +914,7 @@ def test_timestamp_schema_validation(
     scd_data_tabular_source_custom_date_with_tz_format,
     scd_table_name_custom_date_with_tz_format,
     scd_table_timestamp_with_tz_format_string,
-    scd_table_timestamp_format_string,
+    timestamp_format_string,
     config,
 ):
     """Test timestamp schema validation for SCD table"""
@@ -981,7 +981,7 @@ def test_timestamp_schema_validation(
         effective_timestamp_column="effective_timestamp",
         surrogate_key_column="ID",
         effective_timestamp_schema=TimestampSchema(
-            format_string=scd_table_timestamp_format_string,
+            format_string=timestamp_format_string,
             timezone="America/New_York",
         ),
     )
@@ -1005,7 +1005,7 @@ def test_timestamp_schema_validation(
         effective_timestamp_column="effective_timestamp",
         surrogate_key_column="ID",
         effective_timestamp_schema=TimestampSchema(
-            format_string=scd_table_timestamp_format_string,
+            format_string=timestamp_format_string,
             timezone=TimeZoneColumn(column_name="timezone_offset", type="offset"),
         ),
     )
@@ -1029,7 +1029,7 @@ def test_timestamp_schema_validation(
         effective_timestamp_column="effective_timestamp",
         surrogate_key_column="ID",
         effective_timestamp_schema=TimestampSchema(
-            format_string=scd_table_timestamp_format_string,
+            format_string=timestamp_format_string,
             timezone=TimeZoneColumn(column_name="invalid_timezone_offset", type="offset"),
         ),
     )

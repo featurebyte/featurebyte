@@ -9,7 +9,7 @@ from typing import Any, ClassVar, List, Optional, Tuple, Type
 
 from pydantic import Field, model_validator
 
-from featurebyte.common.validator import construct_data_model_validator
+from featurebyte.common.validator import ColumnToTimestampSchema, construct_data_model_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import TableModel
@@ -69,10 +69,13 @@ class EventTableModel(EventTableData, TableModel):
         construct_data_model_validator(
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
-                ("event_timestamp_column", DBVarType.supported_timestamp_types()),
+                ("event_timestamp_column", DBVarType.supported_datetime_types()),
                 ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
                 ("event_id_column", DBVarType.supported_id_types()),
                 ("event_timestamp_timezone_offset_column", {DBVarType.VARCHAR}),
+            ],
+            column_to_timestamp_schema_pairs=[
+                ColumnToTimestampSchema("event_timestamp_column", "event_timestamp_schema"),
             ],
         )
     )

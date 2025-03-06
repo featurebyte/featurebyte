@@ -377,6 +377,7 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         # Construct a filter to be applied to the EventTable
         event_table_timestamp_filter = EventTableTimestampFilter(
             timestamp_column_name=event_timestamp_column,
+            timestamp_schema=None,  # TODO: Extract the correct timestamp schema
             event_table_id=event_table_id,
             start_timestamp_placeholder_name=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
             end_timestamp_placeholder_name=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER,

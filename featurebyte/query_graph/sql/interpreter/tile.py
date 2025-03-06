@@ -305,8 +305,14 @@ class TileSQLGenerator:
                 and column.table_id is not None
             ):
                 assert isinstance(column, SourceDataColumn), "SourceDataColumn expected"
+                timestamp_dtype_metadata = (
+                    input_filter_context.operation_structure.get_dtype_metadata(column.name)
+                )
                 return EventTableTimestampFilter(
                     timestamp_column_name=column.name,
+                    timestamp_schema=timestamp_dtype_metadata.timestamp_schema
+                    if timestamp_dtype_metadata
+                    else None,
                     event_table_id=column.table_id,
                 )
 

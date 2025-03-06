@@ -17,6 +17,7 @@ from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
 from featurebyte.enum import AggFunc, TimeIntervalUnit
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
@@ -320,7 +321,15 @@ class WindowAggregator(BaseAggregator):
             else:
                 assert self.view.timestamp_column is not None
                 reference_datetime_column = self.view.timestamp_column
-                reference_datetime_metadata = None
+                if (
+                    isinstance(self.view, EventView)
+                    and self.view.event_timestamp_schema is not None
+                ):
+                    reference_datetime_metadata = DBVarTypeMetadata(
+                        timestamp_schema=self.view.event_timestamp_schema
+                    )
+                else:
+                    reference_datetime_metadata = None
                 time_interval = None
             params.update({
                 "reference_datetime_column": reference_datetime_column,
