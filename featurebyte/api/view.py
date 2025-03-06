@@ -353,7 +353,9 @@ class ViewColumn(Series, SampleMixin):
         ...     "Windows"
         ... )
         >>> # Create a target from the OperatingSystemIsWindows column
-        >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target("UsesWindows")
+        >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target(
+        ...     "UsesWindows", fill_value=None
+        ... )
 
 
         If the view is a Slowly Changing Dimension View, you may also consider creating a target that retrieves the
@@ -361,7 +363,7 @@ class ViewColumn(Series, SampleMixin):
         an offset.
 
         >>> uses_windows_next_12w = customer_view.OperatingSystemIsWindows.as_target(
-        ...     "UsesWindows_next_12w", offset="12w"
+        ...     "UsesWindows_next_12w", offset="12w", fill_value=None
         ... )
         """
         view, input_column_name = self._get_view_and_input_col_for_lookup("as_target")
