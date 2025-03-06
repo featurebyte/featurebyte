@@ -65,7 +65,7 @@ class BatchFeatureTableController(
     async def create_batch_feature_table(
         self,
         data: BatchFeatureTableCreate,
-        parent_batch_feature_table_id: Optional[ObjectId] = None,
+        parent_batch_feature_table_name: Optional[str] = None,
     ) -> Task:
         """
         Create BatchFeatureTable by submitting an async prediction request task
@@ -74,8 +74,8 @@ class BatchFeatureTableController(
         ----------
         data: BatchFeatureTableCreate
             BatchFeatureTable creation request parameters
-        parent_batch_feature_table_id: Optional[ObjectId]
-            Parent BatchFeatureTable ID
+        parent_batch_feature_table_name: Optional[str]
+            Parent BatchFeatureTable name
 
         Returns
         -------
@@ -107,7 +107,7 @@ class BatchFeatureTableController(
 
         # prepare task payload and submit task
         payload = await self.service.get_batch_feature_table_task_payload(
-            data=data, parent_batch_feature_table_id=parent_batch_feature_table_id
+            data=data, parent_batch_feature_table_name=parent_batch_feature_table_name
         )
         task_id = await self.task_controller.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
@@ -179,19 +179,18 @@ class BatchFeatureTableController(
                 "Request input not found for the batch feature table"
             )
 
-        if batch_feature_table.parent_batch_feature_table_id:
-            batch_feature_table = await self.service.get_document(
-                document_id=batch_feature_table.parent_batch_feature_table_id
-            )
+        parent_batch_feature_table_name = (
+            batch_feature_table.parent_batch_feature_table_name or batch_feature_table.name
+        )
 
         assert self.service.catalog_id is not None
         catalog = await self.catalog_service.get_document(document_id=self.service.catalog_id)
         data: BatchFeatureTableCreate = BatchFeatureTableCreate(
-            name=f"{batch_feature_table.name} [{datetime.utcnow().isoformat()}]",
+            name=f"{parent_batch_feature_table_name} [{datetime.utcnow().isoformat()}]",
             feature_store_id=catalog.default_feature_store_ids[0],
             request_input=batch_feature_table.request_input,
             deployment_id=batch_feature_table.deployment_id,
         )
         return await self.create_batch_feature_table(
-            data=data, parent_batch_feature_table_id=batch_feature_table.id
+            data=data, parent_batch_feature_table_name=parent_batch_feature_table_name
         )

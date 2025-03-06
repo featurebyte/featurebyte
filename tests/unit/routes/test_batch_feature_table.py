@@ -311,7 +311,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
         response = test_api_client.get(response_dict["output_path"])
         recreate_response_dict = response.json()
         assert recreate_response_dict["name"] == "batch_feature_table [2024-02-13T00:00:00]"
-        assert recreate_response_dict["parent_batch_feature_table_id"] == id_before
+        assert recreate_response_dict["parent_batch_feature_table_name"] == "batch_feature_table"
 
         # should no longer reference the original batch request table
         assert recreate_response_dict["batch_request_table_id"] is None
@@ -352,7 +352,10 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             recreate_response_dict["name"]
             == "batch_feature_table_with_request_input [2024-02-13T00:00:00]"
         )
-        assert recreate_response_dict["parent_batch_feature_table_id"] == id_before
+        assert (
+            recreate_response_dict["parent_batch_feature_table_name"]
+            == "batch_feature_table_with_request_input"
+        )
         id_recreated = recreate_response_dict["_id"]
 
         # recreate the batch feature table from the recreated batch feature table
@@ -371,4 +374,7 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             recreate_response_dict["name"]
             == "batch_feature_table_with_request_input [2024-02-14T00:00:00]"
         )
-        assert recreate_response_dict["parent_batch_feature_table_id"] == id_before
+        assert (
+            recreate_response_dict["parent_batch_feature_table_name"]
+            == "batch_feature_table_with_request_input"
+        )

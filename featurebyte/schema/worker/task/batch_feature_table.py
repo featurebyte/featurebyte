@@ -9,7 +9,6 @@ from typing import ClassVar, Optional
 from pydantic import Field
 
 from featurebyte.enum import WorkerCommand
-from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.batch_feature_table import BatchFeatureTableModel
 from featurebyte.schema.batch_feature_table import BatchFeatureTableCreate
 from featurebyte.schema.worker.task.base import BaseTaskPayload, TaskPriority, TaskType
@@ -29,4 +28,4 @@ class BatchFeatureTableTaskPayload(BaseTaskPayload, BatchFeatureTableCreate):
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
     priority: TaskPriority = Field(default=TaskPriority.CRITICAL)
-    parent_batch_feature_table_id: Optional[PydanticObjectId] = Field(default=None)
+    parent_batch_feature_table_name: Optional[str] = Field(default=None)
