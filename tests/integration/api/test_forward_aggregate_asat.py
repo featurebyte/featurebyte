@@ -18,6 +18,7 @@ def test_forward_aggregate_asat(scd_table, scd_dataframe, source_type):
         method="count",
         target_name="Future Number of Users With This Status",
         offset="10d",
+        fill_value=None,
     )
 
     # check preview but provides children id

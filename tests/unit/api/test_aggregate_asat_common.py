@@ -19,6 +19,7 @@ def aggregate_asat_helper(view, is_forward, groupby_args, aggregate_kwargs):
     groupby_obj = view.groupby(*groupby_args)
     if is_forward:
         func = groupby_obj.forward_aggregate_asat
+        aggregate_kwargs["fill_value"] = aggregate_kwargs.pop("fill_value", None)
         if "name" in aggregate_kwargs:
             aggregate_kwargs["target_name"] = aggregate_kwargs.pop("name")
     else:

@@ -15,7 +15,11 @@ target = event_view.groupby(
     method="sum",
     window="1d",
     target_name="forward_aggregate_target",
+    fill_value=None,
     skip_fill_na=True,
     offset=None,
 )
-output = target
+target_1 = target.copy()
+target_1[target.isnull()] = 0.0
+target_1.name = "forward_aggregate_target"
+output = target_1

@@ -32,6 +32,7 @@ def databricks_use_case_fixture(transaction_entity, snowflake_event_view_with_en
         value_column="col_float",
         window="1d",
         target_name="float_target",
+        fill_value=0.0,
     )
     target.save()
     context = Context.create(name="transaction_context", primary_entity=primary_entity)

@@ -47,7 +47,7 @@ class ColumnInfo(ColumnSpecWithDescription):
 
     @model_validator(mode="before")
     @classmethod
-    def _validate_column_info(cls, values: Any) -> Any:
+    def _pre_validate_column_info(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.model_dump(by_alias=True)
 
@@ -80,3 +80,23 @@ class ColumnInfo(ColumnSpecWithDescription):
 
             values["critical_data_info"] = cdi
         return values
+
+    @model_validator(mode="after")
+    def _post_validate_column_info(self) -> "ColumnInfo":
+        cleaning_operations = []
+        if self.critical_data_info:
+            cleaning_operations = self.critical_data_info.cleaning_operations
+
+        for cleaning_operation in cleaning_operations:
+            if (
+                isinstance(cleaning_operation, AddTimestampSchema)
+                and cleaning_operation.timestamp_schema.has_timezone_offset_column
+            ):
+                timezone_offset_column = cleaning_operation.timestamp_schema.timezone.column_name  # type: ignore
+                if timezone_offset_column == self.name:
+                    raise ValueError(
+                        f'Timestamp schema timezone offset column "{timezone_offset_column}" '
+                        "cannot be the same as the column name"
+                    )
+
+        return self
