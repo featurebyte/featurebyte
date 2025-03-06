@@ -18,6 +18,22 @@
             {
                 "source": "forward_aggregate_1",
                 "target": "project_1"
+            },
+            {
+                "source": "project_1",
+                "target": "is_null_1"
+            },
+            {
+                "source": "project_1",
+                "target": "conditional_1"
+            },
+            {
+                "source": "is_null_1",
+                "target": "conditional_1"
+            },
+            {
+                "source": "conditional_1",
+                "target": "alias_1"
             }
         ],
         "nodes": [
@@ -175,11 +191,33 @@
                     ]
                 },
                 "type": "project"
+            },
+            {
+                "name": "is_null_1",
+                "output_type": "series",
+                "parameters": {},
+                "type": "is_null"
+            },
+            {
+                "name": "conditional_1",
+                "output_type": "series",
+                "parameters": {
+                    "value": 0.0
+                },
+                "type": "conditional"
+            },
+            {
+                "name": "alias_1",
+                "output_type": "series",
+                "parameters": {
+                    "name": "float_target"
+                },
+                "type": "alias"
             }
         ]
     },
     "name": "float_target",
-    "node_name": "project_1",
+    "node_name": "alias_1",
     "tabular_source": {
         "feature_store_id": "646f6c190ed28a5271fb02a1",
         "table_details": {

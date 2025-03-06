@@ -202,6 +202,7 @@ def test_forward_aggregate(
             window=window,
             offset=offset,
             target_name=target_parameter.target_name,
+            fill_value=None,
         )
         results = target.preview(preview_expected_values[["POINT_IN_TIME", "üser id"]])
 
@@ -238,6 +239,7 @@ def test_forward_aggregate_with_count_and_value_column_none(event_table, source_
         value_column=None,
         window="7d",
         target_name="count_target",
+        fill_value=None,
     )
     preview_params = {"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}
     target_preview = count_target.preview(pd.DataFrame([preview_params]))

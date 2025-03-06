@@ -229,6 +229,7 @@ def test_sdk_code_generation__lookup_target(
         method="sum",
         window="1d",
         target_name="forward_aggregate_target",
+        fill_value=0.0,
     )
     check_sdk_code_generation(
         forward_aggregate_target,
@@ -266,6 +267,7 @@ def test_sdk_code_generation__forward_aggregate_asat(
         value_column="col_float",
         method="sum",
         target_name="asat_target",
+        fill_value=0.0,
     )
     check_sdk_code_generation(
         aggregate_asat_target,
