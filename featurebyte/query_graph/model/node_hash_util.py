@@ -128,4 +128,8 @@ def exclude_non_aggregation_with_timestamp_node_timestamp_metadata(
         if node_parameters.get("left_timestamp_metadata") is None:
             node_parameters.pop("left_timestamp_metadata", None)
 
+    if node_type == NodeType.INPUT:
+        if node_parameters.get("event_timestamp_schema") is None:
+            node_parameters.pop("event_timestamp_schema", None)
+
     return node_parameters

@@ -162,6 +162,7 @@ class NodeType(StrEnum):
             cls.DT_EXTRACT,
             cls.DATE_DIFF,
             cls.DATE_ADD,
+            cls.INPUT,
         }
 
 

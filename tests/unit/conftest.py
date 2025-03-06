@@ -1122,6 +1122,12 @@ def snowflake_item_table_id_2_fixture():
     return ObjectId("6337f9651050ee7d5980662e")
 
 
+@pytest.fixture(name="snowflake_item_table_with_timestamp_schema_id")
+def snowflake_item_table_with_timestamp_schema_id_fixture():
+    """Snowflake item table ID with timestamp schema"""
+    return ObjectId("67c9170033e0a38cbf517413")
+
+
 @pytest.fixture(name="snowflake_time_series_table_id")
 def snowflake_time_series_table_id_fixture():
     """Snowflake time series table ID"""
@@ -1239,7 +1245,7 @@ def snowflake_event_table_with_timestamp_schema_fixture(
         event_timestamp_column="event_timestamp",
         event_timestamp_timezone_offset_column="tz_offset",
         event_timestamp_schema=TimestampSchema(
-            is_utc_time=True,
+            is_utc_time=False,
             timezone=TimeZoneColumn(column_name="tz_offset", type="offset"),
         ),
         record_creation_timestamp_column="created_at",
@@ -1384,6 +1390,29 @@ def snowflake_item_table_with_timezone_offset_column_fixture(
         item_id_column="item_id_col",
         event_table_name=snowflake_event_table_with_tz_offset_column.name,
     )
+    yield item_table
+
+
+@pytest.fixture(name="snowflake_item_table_with_timestamp_schema")
+def snowflake_item_table_with_timestamp_schema_fixture(
+    snowflake_database_table_item_table,
+    mock_get_persistent,
+    snowflake_item_table_with_timestamp_schema_id,
+    snowflake_event_table_with_timestamp_schema,
+):
+    """
+    Snowflake ItemTable object fixture
+    """
+    _ = mock_get_persistent
+    item_table = snowflake_database_table_item_table.create_item_table(
+        name="sf_item_table",
+        event_id_column="event_id_col",
+        item_id_column="item_id_col",
+        event_table_name=snowflake_event_table_with_timestamp_schema.name,
+        description="test item table",
+        _id=snowflake_item_table_with_timestamp_schema_id,
+    )
+    assert item_table.frame.node.parameters.id == item_table.id
     yield item_table
 
 
@@ -2095,6 +2124,28 @@ def filtered_non_time_based_feature_fixture(snowflake_item_table, transaction_en
         value_column="item_amount",
         method=AggFunc.SUM,
         feature_name="non_time_time_sum_amount_feature_gt10",
+    )
+    feature.save()
+    return feature
+
+
+@pytest.fixture(name="non_time_based_feature_with_event_timestamp_schema")
+def non_time_based_feature_with_event_timestamp_schema(
+    snowflake_item_table_with_timestamp_schema, transaction_entity
+):
+    """
+    Get a non-time-based feature with event timestamp schema
+    """
+    snowflake_item_table_with_timestamp_schema.event_id_col.as_entity(transaction_entity.name)
+    item_table = ItemTable(**{
+        **snowflake_item_table_with_timestamp_schema.json_dict(),
+        "item_id_column": "item_id_col",
+    })
+    item_view = item_table.get_view(event_suffix="_event_table")
+    feature = item_view.groupby("event_id_col").aggregate(
+        value_column="item_amount",
+        method=AggFunc.SUM,
+        feature_name="non_time_time_sum_amount_feature",
     )
     feature.save()
     return feature
