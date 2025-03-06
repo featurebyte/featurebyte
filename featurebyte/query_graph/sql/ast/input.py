@@ -22,6 +22,7 @@ from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, quoted_identifier
 from featurebyte.query_graph.sql.entity_filter import get_table_filtered_by_entity
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
 @dataclass
@@ -91,9 +92,16 @@ class InputNode(TableNode):
                     )
                 return expressions.Identifier(this=identifier_name)
 
-            timestamp_col_expr = self.context.adapter.normalize_timestamp_before_comparison(
-                quoted_identifier(push_down_filter.timestamp_column_name)
-            )
+            if push_down_filter.timestamp_schema is None:
+                timestamp_col_expr = self.context.adapter.normalize_timestamp_before_comparison(
+                    quoted_identifier(push_down_filter.timestamp_column_name)
+                )
+            else:
+                timestamp_col_expr = convert_timestamp_to_utc(
+                    quoted_identifier(push_down_filter.timestamp_column_name),
+                    push_down_filter.timestamp_schema,
+                    self.context.adapter,
+                )
             select_expr = select_expr.where(
                 expressions.and_(
                     expressions.GTE(
