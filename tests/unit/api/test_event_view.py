@@ -1123,7 +1123,7 @@ def test_event_view_with_event_timestamp_schema(snowflake_event_table_with_times
     event_view = snowflake_event_table_with_timestamp_schema.get_view()
     assert event_view.event_timestamp_schema.model_dump() == {
         "format_string": None,
-        "is_utc_time": True,
+        "is_utc_time": False,
         "timezone": {"column_name": "tz_offset", "type": "offset"},
     }
     assert event_view.inherited_columns == {"col_int", "event_timestamp", "tz_offset"}

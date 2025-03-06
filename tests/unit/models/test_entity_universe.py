@@ -94,6 +94,20 @@ def item_aggregate_graph_and_node(filtered_non_time_based_feature):
 
 
 @pytest.fixture
+def item_aggregate_with_timestamp_schema_graph_and_node(
+    non_time_based_feature_with_event_timestamp_schema,
+):
+    """
+    Fixture for an item aggregate node with timestamp schema
+    """
+    graph = non_time_based_feature_with_event_timestamp_schema.graph
+    item_aggregate_node = get_node_from_feature(
+        non_time_based_feature_with_event_timestamp_schema, NodeType.ITEM_GROUPBY
+    )
+    return graph, item_aggregate_node
+
+
+@pytest.fixture
 def window_aggregate_graph_and_node(float_feature_different_job_setting):
     """
     Fixture for a groupby node with entity
@@ -317,6 +331,75 @@ def test_item_aggregate_universe(catalog, item_aggregate_graph_and_node, source_
             (
               L."item_amount" > 10
             )
+        )
+        WHERE
+          "event_id_col" IS NOT NULL
+        """
+    ).strip()
+    assert assert_one_item_and_format_sql(constructor.get_entity_universe_template()) == expected
+
+
+def test_item_aggregate_with_timestamp_schema_universe(
+    catalog, item_aggregate_with_timestamp_schema_graph_and_node, source_info
+):
+    """
+    Test item aggregate feature's universe
+    """
+    _ = catalog
+    graph, node = item_aggregate_with_timestamp_schema_graph_and_node
+    constructor = get_entity_universe_constructor(graph, node, source_info)
+    expected = textwrap.dedent(
+        """
+        SELECT DISTINCT
+          CAST("event_id_col" AS BIGINT) AS "transaction_id"
+        FROM (
+          SELECT
+            L."event_id_col" AS "event_id_col",
+            L."item_id_col" AS "item_id_col",
+            L."item_type" AS "item_type",
+            L."item_amount" AS "item_amount",
+            L."created_at" AS "created_at",
+            L."event_timestamp" AS "event_timestamp",
+            R."event_timestamp" AS "event_timestamp_event_table",
+            R."cust_id" AS "cust_id_event_table",
+            R."tz_offset" AS "tz_offset_event_table"
+          FROM (
+            SELECT
+              "event_id_col" AS "event_id_col",
+              "item_id_col" AS "item_id_col",
+              "item_type" AS "item_type",
+              "item_amount" AS "item_amount",
+              "created_at" AS "created_at",
+              "event_timestamp" AS "event_timestamp"
+            FROM "sf_database"."sf_schema"."items_table"
+          ) AS L
+          INNER JOIN (
+            SELECT
+              ANY_VALUE("event_timestamp") AS "event_timestamp",
+              "col_int",
+              ANY_VALUE("cust_id") AS "cust_id",
+              ANY_VALUE("tz_offset") AS "tz_offset"
+            FROM (
+              SELECT
+                "event_timestamp" AS "event_timestamp",
+                "col_int" AS "col_int",
+                "cust_id" AS "cust_id",
+                "tz_offset" AS "tz_offset"
+              FROM "sf_database"."sf_schema"."sf_table_no_tz"
+              WHERE
+                CONVERT_TIMEZONE(
+                  'UTC',
+                  TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
+                ) >= __fb_last_materialized_timestamp
+                AND CONVERT_TIMEZONE(
+                  'UTC',
+                  TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
+                ) < __fb_current_feature_timestamp
+            )
+            GROUP BY
+              "col_int"
+          ) AS R
+            ON L."event_id_col" = R."col_int"
         )
         WHERE
           "event_id_col" IS NOT NULL

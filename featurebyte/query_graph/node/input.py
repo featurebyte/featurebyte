@@ -240,6 +240,7 @@ class EventTableInputNodeParameters(BaseInputNodeParameters):
     id_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: this should be compulsory
     event_timestamp_timezone_offset: Optional[str] = Field(default=None)
     event_timestamp_timezone_offset_column: Optional[InColumnStr] = Field(default=None)
+    event_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
 
     @model_validator(mode="before")
     @classmethod

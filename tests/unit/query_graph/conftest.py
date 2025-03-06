@@ -1800,6 +1800,7 @@ def query_graph_single_node(
                 "id_column": None,
                 "event_timestamp_timezone_offset": None,
                 "event_timestamp_timezone_offset_column": None,
+                "event_timestamp_schema": None,
             },
             "output_type": "frame",
         }

@@ -88,6 +88,7 @@ class EventTableData(BaseTableData):
                 "feature_store_details": {"type": feature_store_details.type},
                 "event_timestamp_timezone_offset": self.event_timestamp_timezone_offset,
                 "event_timestamp_timezone_offset_column": self.event_timestamp_timezone_offset_column,
+                "event_timestamp_schema": self.event_timestamp_schema,
                 **self._get_common_input_node_parameters(),
             },
         )

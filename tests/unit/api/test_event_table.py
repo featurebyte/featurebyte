@@ -1433,6 +1433,6 @@ def test_event_table_with_event_timestamp_schema(snowflake_event_table_with_time
     event_table = snowflake_event_table_with_timestamp_schema
     assert event_table.event_timestamp_schema.model_dump() == {
         "format_string": None,
-        "is_utc_time": True,
+        "is_utc_time": False,
         "timezone": {"column_name": "tz_offset", "type": "offset"},
     }
