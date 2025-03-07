@@ -24,7 +24,8 @@ from featurebyte.api.scd_view import SCDView
 from featurebyte.api.target import Target
 from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import AggFunc, DBVarType, TargetType
+from featurebyte.enum import AggFunc, TargetType
+from featurebyte.exception import TargetFillValueNotProvidedError
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
@@ -462,23 +463,6 @@ class GroupBy:
             skip_fill_na=skip_fill_na,
         )
 
-    @staticmethod
-    def _get_fill_value_for_target(
-        value_dtype: Optional[DBVarType],
-        method: Union[AggFunc, str],
-        fill_value: Union[OptionalScalar, Unset],
-    ) -> OptionalScalar:
-        if fill_value is UNSET:
-            if method == AggFunc.COUNT:
-                fill_value = 0
-            if value_dtype in DBVarType.numeric_types() and method == AggFunc.SUM:
-                fill_value = 0.0
-
-        if fill_value is UNSET:
-            raise ValueError(f"fill_value is required for method {method}")
-
-        return fill_value  # type: ignore
-
     def forward_aggregate(
         self,
         value_column: Optional[str],
@@ -532,6 +516,11 @@ class GroupBy:
         -------
         Target
 
+        Raises
+        ------
+        TargetFillValueNotProvidedError
+            If fill_value is not provided for the aggregation method
+
         Examples
         --------
         >>> items_view = catalog.get_view("INVOICEITEMS")
@@ -546,11 +535,8 @@ class GroupBy:
         ...     fill_value=0.0,
         ... )
         """
-        set_fill_value = self._get_fill_value_for_target(
-            value_dtype=self.view_obj.column_var_type_map.get(value_column),  # type: ignore
-            method=method,
-            fill_value=fill_value,
-        )
+        if fill_value is UNSET:
+            raise TargetFillValueNotProvidedError(f"fill_value is required for method {method}")
 
         return ForwardAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
@@ -559,7 +545,7 @@ class GroupBy:
             method=method,
             window=window,
             target_name=target_name,
-            fill_value=set_fill_value,
+            fill_value=fill_value,  # type: ignore
             skip_fill_na=skip_fill_na,
             offset=offset,
             target_type=target_type,
@@ -638,6 +624,11 @@ class GroupBy:
         -------
         Feature
 
+        Raises
+        ------
+        TargetFillValueNotProvidedError
+            If fill_value is not provided for the aggregation method
+
         Examples
         --------
         Count number of active cards per customer at a point-in-time.
@@ -664,11 +655,8 @@ class GroupBy:
         ...     offset="12w",
         ... )
         """
-        set_fill_value = self._get_fill_value_for_target(
-            value_dtype=self.view_obj.column_var_type_map.get(value_column),  # type: ignore
-            method=method,
-            fill_value=fill_value,
-        )
+        if fill_value is UNSET:
+            raise TargetFillValueNotProvidedError(f"fill_value is required for method {method}")
 
         return ForwardAsAtAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
@@ -677,7 +665,7 @@ class GroupBy:
             method=method,
             target_name=target_name,
             offset=offset,
-            fill_value=set_fill_value,
+            fill_value=fill_value,  # type: ignore
             skip_fill_na=skip_fill_na,
             target_type=target_type,
         )

@@ -308,20 +308,20 @@ def test_as_target__from_view_column(snowflake_dimension_view_with_entity, cust_
     Test calling as_target() correctly
     """
     view = snowflake_dimension_view_with_entity
-    feature = view["col_float"].as_target("FloatTarget", "1d")
-    assert feature.name == "FloatTarget"
-    assert feature.dtype == DBVarType.FLOAT
+    target = view["col_float"].as_target("FloatTarget", "1d", fill_value=None)
+    assert target.name == "FloatTarget"
+    assert target.dtype == DBVarType.FLOAT
 
-    feature_dict = feature.model_dump()
-    graph_dict = feature_dict["graph"]
-    float_feature_node_dict = get_node(graph_dict, feature_dict["node_name"])
+    target_dict = target.model_dump()
+    graph_dict = target_dict["graph"]
+    float_target_node_dict = get_node(graph_dict, target_dict["node_name"])
     lookup_node_dict = get_node(graph_dict, "lookup_target_1")
     assert graph_dict["edges"] == [
         {"source": "input_1", "target": "graph_1"},
         {"source": "graph_1", "target": "lookup_target_1"},
         {"source": "lookup_target_1", "target": "project_1"},
     ]
-    assert float_feature_node_dict == {
+    assert float_target_node_dict == {
         "name": "project_1",
         "type": "project",
         "output_type": "series",
@@ -461,3 +461,59 @@ def test_sdk_code_generation(saved_dimension_table, update_fixtures):
         update_fixtures=update_fixtures,
         table_id=saved_dimension_table.id,
     )
+
+
+def test_as_target__fill_value(snowflake_dimension_view_with_entity, cust_id_entity):
+    """
+    Test calling as_target() with fill_value
+    """
+    view = snowflake_dimension_view_with_entity
+    with pytest.raises(ValueError) as exc:
+        view["col_float"].as_target("FloatTarget", "1d")
+
+    assert "fill_value must be provided" in str(exc.value)
+
+    target = view["col_float"].as_target("FloatTarget", "1d", fill_value=0.0)
+    target.save()
+
+    partial_definition = """
+    dimension_view = dimension_table.get_view(
+        view_mode="manual",
+        drop_column_names=["created_at"],
+        column_cleaning_operations=[],
+    )
+    target = dimension_view["col_float"].as_target(
+        target_name="FloatTarget", offset="1d", fill_value=None
+    )
+    target_1 = target.copy()
+    target_1[target.isnull()] = 0.0
+    target_1.name = "FloatTarget"
+    output = target_1
+    """
+    assert textwrap.dedent(partial_definition).strip() in target.definition
+
+
+def test_as_feature__fill_value(snowflake_dimension_view_with_entity, cust_id_entity):
+    """
+    Test calling as_feature() with fill_value
+    """
+    view = snowflake_dimension_view_with_entity
+    feature = view["col_float"].as_feature("FloatFeature", "1d", fill_value=0.0)
+    feature.save()
+
+    partial_definition = """
+    dimension_view = dimension_table.get_view(
+        view_mode="manual",
+        drop_column_names=["created_at"],
+        column_cleaning_operations=[],
+    )
+    grouped = dimension_view.as_features(
+        column_names=["col_float"], feature_names=["FloatFeature"], offset=None
+    )
+    feat = grouped["FloatFeature"]
+    feat_1 = feat.copy()
+    feat_1[feat.isnull()] = 0.0
+    feat_1.name = "FloatFeature"
+    output = feat_1
+    """
+    assert textwrap.dedent(partial_definition).strip() in feature.definition

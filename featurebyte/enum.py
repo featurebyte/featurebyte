@@ -292,17 +292,6 @@ class DBVarType(StrEnum):
         """
         return {cls.FLOAT, cls.INT}
 
-    @classmethod
-    def numeric_types(cls) -> set[DBVarType]:
-        """
-        Types for numeric
-
-        Returns
-        -------
-        set[DBVarType]
-        """
-        return {cls.FLOAT, cls.INT}
-
     def to_type_str(self) -> str | None:
         """
         Convert DBVarType to internal type string
