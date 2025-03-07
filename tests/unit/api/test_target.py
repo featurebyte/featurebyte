@@ -164,6 +164,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         target_as = view.col_float.as_target(
             target_name="dimension_target",
             target_type=TargetType.REGRESSION,
+            fill_value=None,
         )
         assert target_as.target_type == TargetType.REGRESSION
 
@@ -209,6 +210,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
             view.col_float.as_target(
                 target_name="dimension_target",
                 target_type=TargetType.CLASSIFICATION,
+                fill_value=None,
             )
         assert expected in str(exc_info)
 

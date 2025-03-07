@@ -190,6 +190,7 @@ def test_forward_aggregate__fill_value(snowflake_event_view_with_entity):
         method="sum",
         window="7d",
         target_name="target",
+        fill_value=0.0,
     )
     target.save()
 

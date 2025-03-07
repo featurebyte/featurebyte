@@ -247,7 +247,7 @@ def test_sdk_code_generation__forward_aggregate_target(
     """Test SDK code generation for lookup target"""
     saved_event_table.col_int.as_entity(cust_id_entity.name)
     event_view = saved_event_table.get_view()
-    lookup_target = event_view["col_int"].as_target("lookup_target")
+    lookup_target = event_view["col_int"].as_target("lookup_target", fill_value=None)
     check_sdk_code_generation(
         lookup_target,
         to_use_saved_data=True,
@@ -651,7 +651,9 @@ def test_target_lookup_sdk_code_generation(snowflake_scd_table, cust_id_entity, 
 
     view = snowflake_scd_table.get_view()
     view['"quote column"'] = view["col_float"] * 2
-    target = view['"quote column"'].as_target(target_name="Target name with special characters")
+    target = view['"quote column"'].as_target(
+        target_name="Target name with special characters", fill_value=None
+    )
 
     # check that the feature can be saved without throwing error
     target.save()

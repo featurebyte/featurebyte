@@ -9,6 +9,6 @@ event_view = event_table.get_view(
     column_cleaning_operations=[],
 )
 target = event_view["col_int"].as_target(
-    target_name="lookup_target", offset=None
+    target_name="lookup_target", offset=None, fill_value=None
 )
 output = target
