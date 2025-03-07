@@ -62,7 +62,7 @@ class DatabricksUnityAdapter(DatabricksAdapter):
             "VECTOR_AGGREGATE_SIMPLE_AVERAGE": self.vector_aggregate_simple_avg,
         }
         assert udf_name in impl_mapping, f"Unsupported vector aggregation function: {udf_name}"
-        return impl_mapping[udf_name](*args)
+        return impl_mapping[udf_name](*args)  # type: ignore
 
     @classmethod
     def vector_aggregate_max(cls, array_expr: Expression) -> Expression:
