@@ -55,6 +55,7 @@ from featurebyte.enum import DBVarType, TargetType
 from featurebyte.exception import (
     NoJoinKeyFoundError,
     RepeatedColumnNamesError,
+    TargetFillValueNotProvidedError,
 )
 from featurebyte.logging import get_logger
 from featurebyte.models.batch_request_table import BatchRequestInput, ViewBatchRequestInput
@@ -74,7 +75,7 @@ from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
-from featurebyte.typing import ScalarSequence
+from featurebyte.typing import UNSET, OptionalScalar, ScalarSequence, Unset
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -314,6 +315,7 @@ class ViewColumn(Series, SampleMixin):
         target_name: str,
         offset: Optional[str] = None,
         target_type: Optional[TargetType] = None,
+        fill_value: Union[OptionalScalar, Unset] = UNSET,
     ) -> Target:
         """
         Create a lookup target directly from the column in the View.
@@ -331,10 +333,17 @@ class ViewColumn(Series, SampleMixin):
             When specified, retrieve target value as of this offset after the point-in-time.
         target_type: Optional[TargetType]
             Type of the target
+        fill_value: Union[OptionalScalar, Unset]
+            Value to fill if the value in the column is empty
 
         Returns
         -------
         Target
+
+        Raises
+        ------
+        TargetFillValueNotProvidedError
+            If fill_value is not provided.
 
         Examples
         --------
@@ -344,7 +353,9 @@ class ViewColumn(Series, SampleMixin):
         ...     "Windows"
         ... )
         >>> # Create a target from the OperatingSystemIsWindows column
-        >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target("UsesWindows")
+        >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target(
+        ...     "UsesWindows", fill_value=None
+        ... )
 
 
         If the view is a Slowly Changing Dimension View, you may also consider creating a target that retrieves the
@@ -352,7 +363,7 @@ class ViewColumn(Series, SampleMixin):
         an offset.
 
         >>> uses_windows_next_12w = customer_view.OperatingSystemIsWindows.as_target(
-        ...     "UsesWindows_next_12w", offset="12w"
+        ...     "UsesWindows_next_12w", offset="12w", fill_value=None
         ... )
         """
         view, input_column_name = self._get_view_and_input_col_for_lookup("as_target")
@@ -374,13 +385,23 @@ class ViewColumn(Series, SampleMixin):
             target_name=target_name,
             target_dtype=view.column_var_type_map[input_column_name],
         )
+
+        if fill_value is UNSET:
+            raise TargetFillValueNotProvidedError("fill_value must be provided")
+        elif fill_value is not None:
+            target.fillna(fill_value)  # type: ignore
         if target_type:
             validate_target_type(target_type, target.dtype)
             target.update_target_type(target_type)
         return target
 
     @typechecked
-    def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
+    def as_feature(
+        self,
+        feature_name: str,
+        offset: Optional[str] = None,
+        fill_value: OptionalScalar = None,
+    ) -> Feature:
         """
         Creates a lookup feature directly from the column in the View.
 
@@ -395,6 +416,8 @@ class ViewColumn(Series, SampleMixin):
             Name of the feature to create.
         offset: str
             When specified, retrieve feature value as of this offset prior to the point-in-time.
+        fill_value: OptionalScalar
+            Value to fill if the value in the column is empty
 
         Returns
         -------
@@ -425,6 +448,9 @@ class ViewColumn(Series, SampleMixin):
             [feature_name],
             offset=offset,
         )[feature_name]
+
+        if fill_value is not None:
+            feature.fillna(fill_value)  # type: ignore
         return cast(Feature, feature)
 
     @property

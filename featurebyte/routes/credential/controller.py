@@ -159,11 +159,33 @@ class CredentialController(
         )
         if other_credentials["data"]:
             await self.delete(document_id=document_id)
-        else:
-            raise DocumentDeletionError(
-                f"Cannot delete the last credential for feature store (ID: {feature_store_id}). "
-                "Please create a new credential before deleting this one to ensure continued access."
-            )
+            return
+
+        # Allow deletion if the featurestore is currently deleted
+        # NOTE: This will be converted to a is_deleted flag in the future
+        #     : This is to ensure that a proper cleanup of featurestore resources is completed
+        #     : before allowing deletion of the last credential
+        # We are looking at calling all underlying catalogs, tagged to the featurestore to be marked as is_deleted
+        # Cleaning them up before allowing the deletion of the last credential & last feature_store
+        feature_stores = await self.feature_store_service.list_documents(
+            query_filter={"_id": feature_store_id}
+        )
+        if len(feature_stores) == 0:
+            await self.delete(document_id=document_id)
+            return
+
+        # Allow deletion of credential if the user is not the feature store owner
+        # User's credentials are not used to perform background/cleaning ops
+        feature_store = feature_stores[0]
+        if feature_store.user_id != credential.user_id:
+            await self.delete(document_id=document_id)
+            return
+
+        # This is the last credential for the feature store
+        raise DocumentDeletionError(
+            f"Cannot delete the last credential for feature store (ID: {feature_store_id}). "
+            "Please create a new credential before deleting this one to ensure continued access."
+        )
 
     async def get_info(
         self,

@@ -12,6 +12,8 @@ col = scd_view["col_float"]
 view = scd_view.copy()
 view['"quote column"'] = col * 2
 target = view['"quote column"'].as_target(
-    target_name="Target name with special characters", offset=None
+    target_name="Target name with special characters",
+    offset=None,
+    fill_value=None,
 )
 output = target

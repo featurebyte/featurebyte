@@ -333,6 +333,12 @@ class CleaningOperationError(ValueError):
     """
 
 
+class TargetFillValueNotProvidedError(ValueError):
+    """
+    Raise when target fill value is not provided
+    """
+
+
 class EventViewMatchingEntityColumnNotFound(FeatureByteException):
     """
     Raise when we are unable to find a matching entity column when trying to add a feature to an event view.

@@ -16,7 +16,7 @@ component: api
 issues: []
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Make `fill_value` mandatory argument in `forward_aggregate` and `forward_aggregate_asat`"
+note: "Make `fill_value` mandatory argument in `forward_aggregate`, `forward_aggregate_asat` and `as_target`."
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
