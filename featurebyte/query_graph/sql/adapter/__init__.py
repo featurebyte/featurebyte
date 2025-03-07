@@ -15,6 +15,7 @@ from featurebyte.query_graph.sql.adapter.spark import SparkAdapter
 __all__ = [
     "BaseAdapter",
     "DatabricksAdapter",
+    "DatabricksUnityAdapter",
     "SnowflakeAdapter",
     "SparkAdapter",
     "get_sql_adapter",
