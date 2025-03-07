@@ -265,7 +265,7 @@ TEST_CASES = [
 ]
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks_unity"], indirect=True)
 @pytest.mark.parametrize(
     "agg_func,expected_results,vector_value_column",
     TEST_CASES,
