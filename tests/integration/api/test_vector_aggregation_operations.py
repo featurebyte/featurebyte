@@ -254,13 +254,13 @@ async def register_scd_table_with_array_column(
 
 TEST_CASES = [
     (AggFunc.MAX, [3.0, 3.0, 3.0], VECTOR_VALUE_FLOAT_COL),
-    # (AggFunc.AVG, [2.0, 2.0, 2.0], VECTOR_VALUE_FLOAT_COL),
+    (AggFunc.AVG, [2.0, 2.0, 2.0], VECTOR_VALUE_FLOAT_COL),
     (AggFunc.SUM, [4.0, 4.0, 4.0], VECTOR_VALUE_FLOAT_COL),
     (AggFunc.MAX, [3.0, 3.0, 3.0], VECTOR_VALUE_MIXED_COL),
-    # (AggFunc.AVG, [2.0, 2.0, 2.0], VECTOR_VALUE_MIXED_COL),
+    (AggFunc.AVG, [2.0, 2.0, 2.0], VECTOR_VALUE_MIXED_COL),
     (AggFunc.SUM, [4.0, 4.0, 4.0], VECTOR_VALUE_MIXED_COL),
     (AggFunc.MAX, [3.0, 3.0, 3.0], VECTOR_VALUE_INT_COL),
-    # (AggFunc.AVG, [2.0, 2.0, 2.0], VECTOR_VALUE_INT_COL),
+    (AggFunc.AVG, [2.0, 2.0, 2.0], VECTOR_VALUE_INT_COL),
     (AggFunc.SUM, [4.0, 4.0, 4.0], VECTOR_VALUE_INT_COL),
 ]
 

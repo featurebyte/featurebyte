@@ -384,7 +384,7 @@ class VectorAvgAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        sum_expression = self.adapter.call_udf(
+        sum_expression = self.adapter.call_vector_aggregation_function(
             "VECTOR_AGGREGATE_SUM", [quoted_identifier(col.name)]
         )
         count = expressions.Count(this=expressions.Star())
@@ -397,7 +397,7 @@ class VectorAvgAggregator(OrderIndependentAggregator):
         ]
 
     def merge(self, agg_id: str) -> Expression:
-        return self.adapter.call_udf(
+        return self.adapter.call_vector_aggregation_function(
             "VECTOR_AGGREGATE_AVG",
             [
                 Identifier(this=f"sum_list_value_{agg_id}"),

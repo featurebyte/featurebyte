@@ -11,6 +11,7 @@ from sqlglot.expressions import (
     ArraySize,
     Cast,
     DataType,
+    Div,
     Expression,
     First,
     Greatest,
@@ -18,6 +19,7 @@ from sqlglot.expressions import (
     IgnoreNulls,
     Lambda,
     Reduce,
+    Sum,
 )
 
 from featurebyte.enum import SourceType
@@ -54,6 +56,7 @@ class DatabricksUnityAdapter(DatabricksAdapter):
         impl_mapping = {
             "VECTOR_AGGREGATE_MAX": self.vector_aggregate_max,
             "VECTOR_AGGREGATE_SUM": self.vector_aggregate_sum,
+            "VECTOR_AGGREGATE_AVG": self.vector_aggregate_avg,
         }
         assert udf_name in impl_mapping, f"Unsupported vector aggregation function: {udf_name}"
         return impl_mapping[udf_name](*args)
@@ -152,4 +155,78 @@ class DatabricksUnityAdapter(DatabricksAdapter):
                     Identifier(this="x"),
                 ],
             ),
+        )
+
+    @classmethod
+    def vector_aggregate_avg(cls, array_expr: Expression, count_expr: Expression) -> Expression:
+        """
+        Call vector aggregate avg function
+
+        Parameters
+        ----------
+        array_expr : Expression
+            Array expression
+        count_expr : Expression
+            Count expression corresponding to the weight of the array when averaging
+
+        Returns
+        -------
+        Expression
+        """
+        return Anonymous(
+            this="zip_with",
+            expressions=[
+                Reduce(
+                    this=ArrayAgg(this=array_expr),
+                    initial=Anonymous(
+                        this="array_repeat",
+                        expressions=[
+                            Cast(this=make_literal_value(0), to=DataType.build("DOUBLE")),
+                            ArraySize(this=IgnoreNulls(this=First(this=array_expr))),
+                        ],
+                    ),
+                    merge=Lambda(
+                        this=Anonymous(
+                            this="zip_with",
+                            expressions=[
+                                Identifier(this="acc", quoted=False),
+                                Identifier(this="x", quoted=False),
+                                Lambda(
+                                    this=Add(
+                                        this=Identifier(this="a", quoted=False),
+                                        expression=Identifier(this="b", quoted=False),
+                                    ),
+                                    expressions=[
+                                        Identifier(this="a", quoted=False),
+                                        Identifier(this="b", quoted=False),
+                                    ],
+                                ),
+                            ],
+                        ),
+                        expressions=[
+                            Identifier(this="acc", quoted=False),
+                            Identifier(this="x", quoted=False),
+                        ],
+                    ),
+                ),
+                Anonymous(
+                    this="array_repeat",
+                    expressions=[
+                        Cast(this=Sum(this=count_expr), to=DataType.build("DOUBLE")),
+                        ArraySize(this=IgnoreNulls(this=First(this=array_expr))),
+                    ],
+                ),
+                Lambda(
+                    this=Div(
+                        this=Identifier(this="element", quoted=False),
+                        expression=Identifier(this="total_sum", quoted=False),
+                        typed=False,
+                        safe=False,
+                    ),
+                    expressions=[
+                        Identifier(this="element", quoted=False),
+                        Identifier(this="total_sum", quoted=False),
+                    ],
+                ),
+            ],
         )
