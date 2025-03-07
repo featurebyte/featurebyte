@@ -10,6 +10,7 @@ from sqlglot.expressions import (
     ArrayAgg,
     ArraySize,
     Cast,
+    Count,
     DataType,
     Div,
     Expression,
@@ -19,6 +20,7 @@ from sqlglot.expressions import (
     IgnoreNulls,
     Lambda,
     Reduce,
+    Star,
     Sum,
 )
 
@@ -57,6 +59,7 @@ class DatabricksUnityAdapter(DatabricksAdapter):
             "VECTOR_AGGREGATE_MAX": self.vector_aggregate_max,
             "VECTOR_AGGREGATE_SUM": self.vector_aggregate_sum,
             "VECTOR_AGGREGATE_AVG": self.vector_aggregate_avg,
+            "VECTOR_AGGREGATE_SIMPLE_AVERAGE": self.vector_aggregate_simple_avg,
         }
         assert udf_name in impl_mapping, f"Unsupported vector aggregation function: {udf_name}"
         return impl_mapping[udf_name](*args)
@@ -229,4 +232,57 @@ class DatabricksUnityAdapter(DatabricksAdapter):
                     ],
                 ),
             ],
+        )
+
+    @classmethod
+    def vector_aggregate_simple_avg(cls, array_expr: Expression) -> Expression:
+        """
+        Call vector aggregate avg function
+
+        Parameters
+        ----------
+        array_expr : Expression
+            Array expression
+
+        Returns
+        -------
+        Expression
+        """
+        return Reduce(
+            this=ArrayAgg(this=array_expr),
+            initial=Anonymous(
+                this="array_repeat",
+                expressions=[
+                    Cast(
+                        this=make_literal_value(0.0),
+                        to=DataType.build("DOUBLE"),
+                    ),
+                    ArraySize(this=IgnoreNulls(this=First(this=array_expr))),
+                ],
+            ),
+            merge=Lambda(
+                this=Anonymous(
+                    this="zip_with",
+                    expressions=[
+                        Identifier(this="acc"),
+                        Identifier(this="x"),
+                        Lambda(
+                            this=Add(
+                                this=Identifier(this="a"),
+                                expression=Div(
+                                    this=Identifier(this="b"),
+                                    expression=Count(this=Star()),
+                                    typed=False,
+                                    safe=False,
+                                ),
+                            ),
+                            expressions=[
+                                Identifier(this="a"),
+                                Identifier(this="b"),
+                            ],
+                        ),
+                    ],
+                ),
+                expressions=[Identifier(this="acc"), Identifier(this="x")],
+            ),
         )

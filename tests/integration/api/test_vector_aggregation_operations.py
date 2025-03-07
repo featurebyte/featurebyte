@@ -295,7 +295,7 @@ def test_vector_aggregation_operations__aggregate_over(
     }
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks_unity"], indirect=True)
 def test_vector_aggregation_operations__aggregate_over_compute_historical_features(
     event_table_with_array_column,
 ):
@@ -320,7 +320,7 @@ def test_vector_aggregation_operations__aggregate_over_compute_historical_featur
     assert list(historical_features.iloc[0][feature_name]) == [3.0, 3.0, 3.0]
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks_unity"], indirect=True)
 @pytest.mark.parametrize(
     "agg_func,expected_results,vector_value_column",
     TEST_CASES,
@@ -349,7 +349,7 @@ def test_vector_aggregation_operations__aggregate(
     }
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks_unity"], indirect=True)
 @pytest.mark.parametrize(
     "agg_func,expected_results,vector_value_column",
     TEST_CASES,
@@ -432,7 +432,7 @@ def test_vector_cosine_similarity(item_table_with_array_column):
     )
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks_unity"], indirect=True)
 def test_vector_value_column_latest_aggregation(event_table_with_array_column):
     """
     Test latest aggregation on vector column
