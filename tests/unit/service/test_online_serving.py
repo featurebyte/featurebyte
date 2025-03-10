@@ -11,7 +11,7 @@ import pytest
 import pytest_asyncio
 from bson import ObjectId
 
-from featurebyte.exception import FeatureListNotOnlineEnabledError, RequiredEntityNotProvidedError
+from featurebyte.exception import DeploymentNotEnabledError, RequiredEntityNotProvidedError
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
@@ -61,12 +61,12 @@ async def test_feature_list_not_deployed(
     """
     Test getting online features for not yet deployed feature list is not allowed
     """
-    with pytest.raises(FeatureListNotOnlineEnabledError) as exc:
+    with pytest.raises(DeploymentNotEnabledError) as exc:
         await online_serving_service.get_online_features_from_feature_list(
             feature_list=feature_list,
             request_data=entity_serving_names,
         )
-    assert str(exc.value) == "Feature List is not online enabled"
+    assert str(exc.value) == "Deployment is not enabled"
 
 
 @pytest.mark.asyncio

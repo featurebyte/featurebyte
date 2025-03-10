@@ -20,7 +20,7 @@ from jinja2 import Template
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.exception import (
-    FeatureListNotOnlineEnabledError,
+    DeploymentNotEnabledError,
     RequiredEntityNotProvidedError,
     UnsupportedRequestCodeTemplateLanguage,
 )
@@ -129,7 +129,7 @@ class OnlineServingService:
         ------
         RuntimeError
             When the provided FeatureList is not available for online serving
-        FeatureListNotOnlineEnabledError
+        DeploymentNotEnabledError
             When the provided FeatureList is not online enabled
         """
 
@@ -137,7 +137,7 @@ class OnlineServingService:
             raise RuntimeError("Online serving not available for this Feature List")
 
         if not feature_list.deployed:
-            raise FeatureListNotOnlineEnabledError("Feature List is not online enabled")
+            raise DeploymentNotEnabledError("Deployment is not enabled")
 
         feature_cluster = feature_list.feature_clusters[0]
         feature_store = await self.feature_store_service.get_document(
