@@ -1112,6 +1112,23 @@ class BaseAdapter(ABC):
         """
         return expressions.Anonymous(this=udf_name, expressions=args)
 
+    def call_vector_aggregation_function(self, udf_name: str, args: list[Expression]) -> Expression:
+        """
+        Construct a vector aggregation function call expression
+
+        Parameters
+        ----------
+        udf_name: str
+            Vector aggregation function name
+        args: list[Expression]
+            List of expressions to pass as arguments to the vector aggregation function
+
+        Returns
+        -------
+        Expression
+        """
+        return self.call_udf(udf_name, args)
+
     @classmethod
     def prepare_before_count_distinct(cls, expr: Expression, dtype: DBVarType) -> Expression:
         """
