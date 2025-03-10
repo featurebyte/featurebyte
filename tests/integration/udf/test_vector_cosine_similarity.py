@@ -5,11 +5,9 @@ Test vector cosine similarity
 import numpy as np
 import pytest
 
-from tests.source_types import SNOWFLAKE_AND_SPARK
+from tests.integration.udf.util import execute_query_with_udf
 
 
-# Note: Currently not applicable to databricks_unity
-@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
 @pytest.mark.parametrize(
     "array1, array2, expected",
     [
@@ -30,17 +28,23 @@ async def test_vector_cosine_similarity(to_array, session, array1, array2, expec
     async def _check(a, b):
         array_expr_a = to_array(a)
         array_expr_b = to_array(b)
-        query = f"SELECT F_VECTOR_COSINE_SIMILARITY({array_expr_a}, {array_expr_b}) AS OUT"
 
         # If expected is None, this means we expect an error.
         if expected is None:
             with pytest.raises(Exception):
-                await session.execute_query(query)
+                await execute_query_with_udf(
+                    session,
+                    "F_VECTOR_COSINE_SIMILARITY",
+                    [array_expr_a, array_expr_b],
+                )
             return
 
         # If expected is not None, proceed to assert the result.
-        df = await session.execute_query(query)
-        actual = df.iloc[0]["OUT"]
+        actual = await execute_query_with_udf(
+            session,
+            "F_VECTOR_COSINE_SIMILARITY",
+            [array_expr_a, array_expr_b],
+        )
         if actual is None:
             actual = 0
         np.testing.assert_allclose(actual, expected, 1e-5)
