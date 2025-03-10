@@ -122,6 +122,8 @@ def scd_data_with_array_fixture():
     Simulated data with an array column
     """
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "vector_data_scd.csv"))
+    for col in ["ITEM_ID", "CUST_ID", "USER_ID"]:
+        df[col] = df[col].astype(str)
     yield _update_df(df, "EVENT_TIMESTAMP")
 
 
