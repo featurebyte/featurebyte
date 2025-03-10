@@ -45,6 +45,12 @@ class Unset:
     Placeholder class for unset values
     """
 
+    def __repr__(self) -> str:
+        return "UNSET"
+
+    def __str__(self) -> str:
+        return "UNSET"
+
 
 UNSET = Unset()
 
