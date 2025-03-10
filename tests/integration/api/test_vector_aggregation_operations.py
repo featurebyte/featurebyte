@@ -278,16 +278,25 @@ TEST_CASES = [
 ]
 
 
-@pytest.mark.parametrize(
-    "agg_func,expected_results,vector_value_column",
-    TEST_CASES,
-)
+@pytest.fixture(params=TEST_CASES)
+def test_case(request, source_type):
+    """
+    Test case
+    """
+    _, _, vector_value_column = request.param
+    if source_type == "bigquery" and vector_value_column == VECTOR_VALUE_INT_COL:
+        pytest.skip("Aggregating ARRAY<INT64> is currently not supported in BigQuery")
+    return request.param
+
+
 def test_vector_aggregation_operations__aggregate_over(
-    event_table_with_array_column, agg_func, expected_results, vector_value_column
+    event_table_with_array_column,
+    test_case,
 ):
     """
     Test vector aggregation operations
     """
+    agg_func, expected_results, vector_value_column = test_case
     event_view = event_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = event_view.groupby("USER_ID").aggregate_over(
@@ -331,16 +340,11 @@ def test_vector_aggregation_operations__aggregate_over_compute_historical_featur
     assert list(historical_features.iloc[0][feature_name]) == [3.0, 3.0, 3.0]
 
 
-@pytest.mark.parametrize(
-    "agg_func,expected_results,vector_value_column",
-    TEST_CASES,
-)
-def test_vector_aggregation_operations__aggregate(
-    item_table_with_array_column, agg_func, expected_results, vector_value_column
-):
+def test_vector_aggregation_operations__aggregate(item_table_with_array_column, test_case):
     """
     Test vector aggregation operations
     """
+    agg_func, expected_results, vector_value_column = test_case
     item_view = item_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = item_view.groupby("ORDER_ID").aggregate(
@@ -359,16 +363,11 @@ def test_vector_aggregation_operations__aggregate(
     }
 
 
-@pytest.mark.parametrize(
-    "agg_func,expected_results,vector_value_column",
-    TEST_CASES,
-)
-def test_vector_aggregation_operations__aggregate_asat(
-    scd_table_with_array_column, agg_func, expected_results, vector_value_column
-):
+def test_vector_aggregation_operations__aggregate_asat(scd_table_with_array_column, test_case):
     """
     Test vector aggregation operations
     """
+    agg_func, expected_results, vector_value_column = test_case
     item_view = scd_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = item_view.groupby("USER_ID").aggregate_asat(
