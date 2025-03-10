@@ -174,6 +174,11 @@ def get_aggregation_expression(
         sql_func = agg_func_sql_mapping[agg_func]
         if parent_dtype is not None and parent_dtype in DBVarType.array_types():
             sql_func = _get_vector_sql_func(agg_func, False)
+            is_vector_aggregate = True
+        else:
+            is_vector_aggregate = False
+        if is_vector_aggregate:
+            return adapter.call_vector_aggregation_function(sql_func, [input_column_expr])
         return expressions.Anonymous(this=sql_func, expressions=[input_column_expr])
 
     # Must be NA_COUNT
