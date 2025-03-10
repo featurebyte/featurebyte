@@ -9,7 +9,7 @@ import datetime
 import json
 import logging
 import uuid
-from typing import Any, AsyncGenerator, OrderedDict, cast
+from typing import Any, AsyncGenerator, Optional, OrderedDict, cast
 
 import aiofiles
 import pandas as pd
@@ -515,6 +515,15 @@ class BigQuerySession(BaseSession):
                 return SqlTypeNames.FLOAT64
             return SqlTypeNames.STRING
 
+        def _detect_element_type_from_all(values: list[Any]) -> SqlTypeNames:
+            element_type: Optional[SqlTypeNames] = None
+            for value in values:
+                element_type = _detect_element_type(value)
+                if element_type == SqlTypeNames.STRING or element_type == SqlTypeNames.FLOAT64:
+                    return element_type
+            assert element_type is not None
+            return element_type
+
         schema = []
         db_type: str
         for colname, dtype in dataframe.dtypes.to_dict().items():
@@ -535,8 +544,11 @@ class BigQuerySession(BaseSession):
             ):
                 # Detect list element type
                 non_empty_values = dataframe[colname][~pd.isnull(dataframe[colname])]
+                all_values = []
+                for arr in non_empty_values:
+                    all_values.extend(arr)
                 if non_empty_values.shape[0] > 0:
-                    db_type = _detect_element_type(non_empty_values.iloc[0][0])
+                    db_type = _detect_element_type_from_all(all_values)
                 else:
                     db_type = SqlTypeNames.STRING
                 mode = "REPEATED"
