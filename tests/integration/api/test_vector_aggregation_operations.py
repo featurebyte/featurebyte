@@ -401,7 +401,7 @@ def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
         feature.preview(pd.DataFrame([preview_params]))
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", ["spark", "snowflake", "databricks_unity"], indirect=True)
 def test_vector_cosine_similarity(item_table_with_array_column):
     """
     Test vector cosine similarity
