@@ -344,6 +344,11 @@ def test_bigquery_schema_initializer__sql_objects(patched_bigquery_session_cls):
             "filename": "F_VECTOR_AGGREGATE_SUM.sql",
             "identifier": "F_VECTOR_AGGREGATE_SUM",
         },
+        {
+            "type": "function",
+            "filename": "F_VECTOR_COSINE_SIMILARITY.sql",
+            "identifier": "F_VECTOR_COSINE_SIMILARITY",
+        },
     ]
 
     def _sorted_result(lst):
