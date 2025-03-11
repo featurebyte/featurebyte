@@ -22,6 +22,7 @@ from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
+from tests.source_types import SNOWFLAKE_AND_SPARK
 
 VECTOR_VALUE_FLOAT_COL = "VECTOR_VALUE_FLOAT"
 VECTOR_VALUE_INT_COL = "VECTOR_VALUE_INT"
@@ -99,6 +100,8 @@ def item_data_with_array_fixture():
     df = pd.read_csv(
         os.path.join(os.path.dirname(__file__), "fixtures", "vector_data_item_data.csv")
     )
+    for col in ["ORDER_ID", "CUST_ID_ITEM", "USER_ID_ITEM", "ITEM_ID"]:
+        df[col] = df[col].astype(str)
     yield _update_df(df, "EVENT_TIMESTAMP_ITEM")
 
 
@@ -108,6 +111,8 @@ def event_data_with_array_fixture():
     Simulated data with an array column
     """
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "vector_data.csv"))
+    for col in ["ORDER_ID", "CUST_ID", "USER_ID"]:
+        df[col] = df[col].astype(str)
     yield _update_df(df, "EVENT_TIMESTAMP")
 
 
@@ -117,6 +122,8 @@ def scd_data_with_array_fixture():
     Simulated data with an array column
     """
     df = pd.read_csv(os.path.join(os.path.dirname(__file__), "fixtures", "vector_data_scd.csv"))
+    for col in ["ITEM_ID", "CUST_ID", "USER_ID"]:
+        df[col] = df[col].astype(str)
     yield _update_df(df, "EVENT_TIMESTAMP")
 
 
@@ -170,13 +177,19 @@ def vector_order_entity_fixture(catalog):
 
 @pytest_asyncio.fixture(name="event_table_with_array_column", scope="module")
 async def register_table_with_array_column(
-    event_data_with_array, session, data_source, catalog, vector_order_entity, vector_user_entity
+    event_data_with_array,
+    session_without_datasets,
+    data_source,
+    catalog,
+    vector_order_entity,
+    vector_user_entity,
 ):
     """
     Register a table with an array column
     """
     _ = catalog
     table_name = "event_table_with_vector"
+    session = session_without_datasets
     await session.register_table(table_name, event_data_with_array)
 
     database_table = data_source.get_source_table(
@@ -201,7 +214,7 @@ async def register_table_with_array_column(
 async def register_item_table_with_array_column(
     event_table_with_array_column,
     item_data_with_array,
-    session,
+    session_without_datasets,
     data_source,
     item_entity,
     vector_order_entity,
@@ -210,6 +223,7 @@ async def register_item_table_with_array_column(
     Register a table with an array column
     """
     table_name = "item_table_with_vector"
+    session = session_without_datasets
     await session.register_table(table_name, item_data_with_array)
 
     database_table = data_source.get_source_table(
@@ -230,12 +244,13 @@ async def register_item_table_with_array_column(
 
 @pytest_asyncio.fixture(name="scd_table_with_array_column", scope="module")
 async def register_scd_table_with_array_column(
-    scd_data_with_array, session, data_source, catalog, vector_user_entity
+    scd_data_with_array, session_without_datasets, data_source, catalog, vector_user_entity
 ):
     """
     Register a table with an array column
     """
     table_name = "scd_table_with_vector"
+    session = session_without_datasets
     await session.register_table(table_name, scd_data_with_array)
 
     database_table = data_source.get_source_table(
@@ -265,17 +280,25 @@ TEST_CASES = [
 ]
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
-@pytest.mark.parametrize(
-    "agg_func,expected_results,vector_value_column",
-    TEST_CASES,
-)
+@pytest.fixture(params=TEST_CASES)
+def test_case(request, source_type):
+    """
+    Test case
+    """
+    _, _, vector_value_column = request.param
+    if source_type == "bigquery" and vector_value_column == VECTOR_VALUE_INT_COL:
+        pytest.skip("Aggregating ARRAY<INT64> is currently not supported in BigQuery")
+    return request.param
+
+
 def test_vector_aggregation_operations__aggregate_over(
-    event_table_with_array_column, agg_func, expected_results, vector_value_column
+    event_table_with_array_column,
+    test_case,
 ):
     """
     Test vector aggregation operations
     """
+    agg_func, expected_results, vector_value_column = test_case
     event_view = event_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = event_view.groupby("USER_ID").aggregate_over(
@@ -295,7 +318,6 @@ def test_vector_aggregation_operations__aggregate_over(
     }
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 def test_vector_aggregation_operations__aggregate_over_compute_historical_features(
     event_table_with_array_column,
 ):
@@ -320,17 +342,11 @@ def test_vector_aggregation_operations__aggregate_over_compute_historical_featur
     assert list(historical_features.iloc[0][feature_name]) == [3.0, 3.0, 3.0]
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
-@pytest.mark.parametrize(
-    "agg_func,expected_results,vector_value_column",
-    TEST_CASES,
-)
-def test_vector_aggregation_operations__aggregate(
-    item_table_with_array_column, agg_func, expected_results, vector_value_column
-):
+def test_vector_aggregation_operations__aggregate(item_table_with_array_column, test_case):
     """
     Test vector aggregation operations
     """
+    agg_func, expected_results, vector_value_column = test_case
     item_view = item_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = item_view.groupby("ORDER_ID").aggregate(
@@ -349,17 +365,11 @@ def test_vector_aggregation_operations__aggregate(
     }
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
-@pytest.mark.parametrize(
-    "agg_func,expected_results,vector_value_column",
-    TEST_CASES,
-)
-def test_vector_aggregation_operations__aggregate_asat(
-    scd_table_with_array_column, agg_func, expected_results, vector_value_column
-):
+def test_vector_aggregation_operations__aggregate_asat(scd_table_with_array_column, test_case):
     """
     Test vector aggregation operations
     """
+    agg_func, expected_results, vector_value_column = test_case
     item_view = scd_table_with_array_column.get_view()
     feature_name = "vector_agg"
     feature = item_view.groupby("USER_ID").aggregate_asat(
@@ -378,7 +388,7 @@ def test_vector_aggregation_operations__aggregate_asat(
     }
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
+@pytest.mark.parametrize("source_type", SNOWFLAKE_AND_SPARK, indirect=True)
 @pytest.mark.parametrize("user_id", [2, 4])
 def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
     event_table_with_array_column, user_id
@@ -401,7 +411,6 @@ def test_vector_aggregation_operations_fails_for_vectors_of_different_lengths(
         feature.preview(pd.DataFrame([preview_params]))
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 def test_vector_cosine_similarity(item_table_with_array_column):
     """
     Test vector cosine similarity
@@ -432,7 +441,6 @@ def test_vector_cosine_similarity(item_table_with_array_column):
     )
 
 
-@pytest.mark.parametrize("source_type", ["spark", "snowflake"], indirect=True)
 def test_vector_value_column_latest_aggregation(event_table_with_array_column):
     """
     Test latest aggregation on vector column

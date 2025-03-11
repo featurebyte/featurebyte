@@ -86,6 +86,10 @@ async def test_list_tables(config, session_without_datasets):
             "name": "groceryproduct",
             "description": "The product group description for each grocery product.",
         },
+        {
+            "name": "groceryproduct_with_embeddings",
+            "description": "The product group description for each grocery product.",
+        },
         {"name": "__invoiceitems", "description": None},
         {"name": "__groceryinvoice", "description": None},
         {

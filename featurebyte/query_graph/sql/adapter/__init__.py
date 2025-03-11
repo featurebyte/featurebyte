@@ -8,12 +8,14 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter
 from featurebyte.query_graph.sql.adapter.bigquery import BigQueryAdapter
 from featurebyte.query_graph.sql.adapter.databricks import DatabricksAdapter
+from featurebyte.query_graph.sql.adapter.databricks_unity import DatabricksUnityAdapter
 from featurebyte.query_graph.sql.adapter.snowflake import SnowflakeAdapter
 from featurebyte.query_graph.sql.adapter.spark import SparkAdapter
 
 __all__ = [
     "BaseAdapter",
     "DatabricksAdapter",
+    "DatabricksUnityAdapter",
     "SnowflakeAdapter",
     "SparkAdapter",
     "get_sql_adapter",
@@ -37,8 +39,10 @@ def get_sql_adapter(source_info: SourceInfo) -> BaseAdapter:
         Instance of BaseAdapter
     """
     source_type = source_info.source_type
-    if source_type in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
+    if source_type == SourceType.DATABRICKS:
         return DatabricksAdapter(source_info)
+    if source_type == SourceType.DATABRICKS_UNITY:
+        return DatabricksUnityAdapter(source_info)
     if source_type == SourceType.SPARK:
         return SparkAdapter(source_info)
     if source_type == SourceType.BIGQUERY:
