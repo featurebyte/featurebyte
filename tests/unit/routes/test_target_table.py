@@ -146,6 +146,7 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "sample_from_timestamp": None,
             "sample_rows": None,
             "sample_to_timestamp": None,
+            "table_with_missing_data": None,
         }
 
     @pytest.mark.parametrize(

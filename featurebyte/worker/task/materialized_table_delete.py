@@ -140,11 +140,12 @@ class MaterializedTableDeleteTask(DataWarehouseMixin, BaseTask[MaterializedTable
         )
         db_session = await self.session_manager_service.get_feature_store_session(feature_store)
 
-        await db_session.drop_table(
-            table_name=document.location.table_details.table_name,
-            schema_name=document.location.table_details.schema_name,  # type: ignore
-            database_name=document.location.table_details.database_name,  # type: ignore
-        )
+        for warehouse_table in document.warehouse_tables:
+            await db_session.drop_table(
+                table_name=warehouse_table.table_name,
+                schema_name=warehouse_table.schema_name,  # type: ignore
+                database_name=warehouse_table.database_name,  # type: ignore
+            )
 
     async def execute(self, payload: MaterializedTableDeleteTaskPayload) -> Any:
         # table to delete action mapping

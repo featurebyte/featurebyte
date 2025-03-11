@@ -26,6 +26,7 @@ class DataWarehouseMixin:
         db_session: BaseSession,
         table_details: TableDetails,
         payload: BaseTaskPayload,
+        additional_table_details: list[TableDetails] | None = None,
     ) -> AsyncIterator[None]:
         """
         Drop the table on error
@@ -38,6 +39,8 @@ class DataWarehouseMixin:
             The table details
         payload: BaseTaskPayload
             The task payload
+        additional_table_details: list[TableDetails] | None
+            Additional table details to drop
 
         Yields
         ------
@@ -64,4 +67,15 @@ class DataWarehouseMixin:
                 database_name=table_details.database_name,
                 if_exists=True,
             )
+            if additional_table_details:
+                for additional_table in additional_table_details:
+                    assert additional_table.schema_name is not None
+                    assert additional_table.database_name is not None
+                    await db_session.drop_table(
+                        table_name=additional_table.table_name,
+                        schema_name=additional_table.schema_name,
+                        database_name=additional_table.database_name,
+                        if_exists=True,
+                    )
+
             raise exc

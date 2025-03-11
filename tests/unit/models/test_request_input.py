@@ -127,7 +127,7 @@ async def test_materialize__with_columns_and_renames(
           )
         )
         WHERE
-            "NEW_B" IS NOT NULL
+              "NEW_B" IS NOT NULL
         """
     ).strip()
     assert session.execute_query_long_running.call_args_list == [call(expected_query)]
@@ -168,7 +168,7 @@ async def test_materialize__with_renames_only(session, snowflake_database_table,
           )
         )
         WHERE
-            "NEW_B" IS NOT NULL
+              "NEW_B" IS NOT NULL
         """
     ).strip()
     assert session.execute_query_long_running.call_args_list == [call(expected_query)]
@@ -250,7 +250,7 @@ async def test_materialize__from_view_with_columns_and_renames(
           )
         )
         WHERE
-            "POINT_IN_TIME" IS NOT NULL
+              "POINT_IN_TIME" IS NOT NULL
         """
     ).strip()
     assert session.execute_query_long_running.call_args_list == [call(expected_query)]
