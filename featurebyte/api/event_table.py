@@ -21,7 +21,9 @@ from featurebyte.enum import DBVarType, TableDataType, ViewMode
 from featurebyte.exception import InvalidSettingsError, RecordRetrievalException
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.table import AllTableDataT, EventTableData
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
@@ -73,7 +75,7 @@ class EventTable(TableApiObject):
     type: Literal[TableDataType.EVENT_TABLE] = TableDataType.EVENT_TABLE
 
     # pydantic instance variable (internal use)
-    internal_default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+    internal_default_feature_job_setting: Optional[FeatureJobSettingUnion] = Field(
         alias="default_feature_job_setting", default=None
     )
     internal_event_timestamp_column: StrictStr = Field(alias="event_timestamp_column")
@@ -222,7 +224,7 @@ class EventTable(TableApiObject):
         )
 
     @property
-    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+    def default_feature_job_setting(self) -> Optional[FeatureJobSettingUnion]:
         """
         Default feature job setting of the EventTable
 
@@ -354,7 +356,9 @@ class EventTable(TableApiObject):
         return cls._get_by_id(id=id)
 
     @typechecked
-    def update_default_feature_job_setting(self, feature_job_setting: FeatureJobSetting) -> None:
+    def update_default_feature_job_setting(
+        self, feature_job_setting: FeatureJobSettingUnion
+    ) -> None:
         """
         Update default feature job setting
 
