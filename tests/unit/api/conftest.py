@@ -314,11 +314,22 @@ def event_table_with_cron_feature_job_setting_fixture(saved_event_table):
     """
     Fixture for an EventTable with a CronFeatureJobSetting as the default feature job setting
     """
-    assert saved_event_table.default_feature_job_setting is None
     saved_event_table.update_default_feature_job_setting(
         feature_job_setting=CronFeatureJobSetting(crontab="0 0 * * *", reference_timezone="Etc/UTC")
     )
     yield saved_event_table
+
+
+@pytest.fixture(name="item_table_with_cron_feature_job_setting")
+def item_table_with_cron_feature_job_setting_fixture(
+    snowflake_item_table, event_table_with_cron_feature_job_setting
+):
+    """
+    Fixture for an ItemTable whose EventTable has a CronFeatureJobSetting as the default feature job
+    setting.
+    """
+    _ = event_table_with_cron_feature_job_setting
+    yield snowflake_item_table
 
 
 @pytest.fixture()

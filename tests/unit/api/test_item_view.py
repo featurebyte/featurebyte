@@ -14,6 +14,7 @@ from featurebyte.exception import RecordCreationException, RepeatedColumnNamesEr
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
     FeatureJobSetting,
     TableFeatureJobSetting,
 )
@@ -1235,3 +1236,14 @@ def test_item_view_sample_table_node(snowflake_item_table):
     sample_table_node = view.graph.get_sample_table_node(view.node_name)
     assert sample_table_node.parameters.type == TableDataType.EVENT_TABLE
     assert sample_table_node.parameters.id == view.event_table_id
+
+
+def test_item_view_with_cron_default_feature_job_setting(
+    item_table_with_cron_feature_job_setting,
+):
+    """Test ItemView with cron default feature job setting"""
+    view = item_table_with_cron_feature_job_setting.get_view()
+    assert view.default_feature_job_setting == CronFeatureJobSetting(
+        crontab="0 0 * * *",
+        reference_timezone="Etc/UTC",
+    )
