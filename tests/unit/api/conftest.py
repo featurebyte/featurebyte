@@ -27,6 +27,7 @@ from featurebyte.api.item_table import ItemTable
 from featurebyte.api.source_table import SourceTable
 from featurebyte.config import Configurations
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 
 
@@ -306,6 +307,18 @@ def snowflake_item_table_fixture(
         _id=snowflake_item_table_id,
     )
     yield item_table
+
+
+@pytest.fixture(name="event_table_with_cron_feature_job_setting")
+def event_table_with_cron_feature_job_setting_fixture(saved_event_table):
+    """
+    Fixture for an EventTable with a CronFeatureJobSetting as the default feature job setting
+    """
+    assert saved_event_table.default_feature_job_setting is None
+    saved_event_table.update_default_feature_job_setting(
+        feature_job_setting=CronFeatureJobSetting(crontab="0 0 * * *", reference_timezone="Etc/UTC")
+    )
+    yield saved_event_table
 
 
 @pytest.fixture()

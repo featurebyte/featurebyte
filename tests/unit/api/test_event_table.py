@@ -642,26 +642,20 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure__event
 
 
 def test_update_default_job_setting__cron_feature_job_setting(
-    saved_event_table, config, mock_api_object_cache
+    event_table_with_cron_feature_job_setting, config, mock_api_object_cache
 ):
     """
     Test update default job setting using CronFeatureJobSetting
     """
     _ = mock_api_object_cache
 
-    assert saved_event_table.default_feature_job_setting is None
-    saved_event_table.update_default_feature_job_setting(
-        feature_job_setting=CronFeatureJobSetting(crontab="0 0 * * *", reference_timezone="Etc/UTC")
-    )
-    assert saved_event_table.saved is True
-
-    # check updated feature job settings stored at the persistent & memory
-    assert saved_event_table.default_feature_job_setting == CronFeatureJobSetting(
+    event_table = event_table_with_cron_feature_job_setting
+    assert event_table.default_feature_job_setting == CronFeatureJobSetting(
         crontab="0 0 * * *",
         reference_timezone="Etc/UTC",
     )
     client = config.get_client()
-    response = client.get(url=f"/event_table/{saved_event_table.id}")
+    response = client.get(url=f"/event_table/{event_table.id}")
     assert response.status_code == 200
     assert response.json()["default_feature_job_setting"] == {
         "crontab": {

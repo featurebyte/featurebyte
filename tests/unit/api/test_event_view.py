@@ -24,7 +24,10 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TableDetails, TabularSource
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
+)
 from featurebyte.query_graph.node.cleaning_operation import (
     DisguisedValueImputation,
     MissingValueImputation,
@@ -1127,3 +1130,15 @@ def test_event_view_with_event_timestamp_schema(snowflake_event_table_with_times
         "timezone": {"column_name": "tz_offset", "type": "offset"},
     }
     assert event_view.inherited_columns == {"col_int", "event_timestamp", "tz_offset"}
+
+
+def test_event_view_cron_feature_job_setting(event_table_with_cron_feature_job_setting):
+    """
+    Test event view with cron feature job setting
+    """
+    event_table = event_table_with_cron_feature_job_setting
+    event_view = event_table.get_view()
+    assert event_view.default_feature_job_setting == CronFeatureJobSetting(
+        crontab="0 0 * * *",
+        reference_timezone="Etc/UTC",
+    )
