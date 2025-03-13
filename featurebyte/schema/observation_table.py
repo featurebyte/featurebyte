@@ -16,6 +16,14 @@ from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, Pagi
 from featurebyte.schema.request_table import BaseRequestTableCreate, BaseRequestTableListRecord
 
 
+class ObservationTableModelResponse(ObservationTableModel):
+    """
+    ObservationTableModel response schema
+    """
+
+    is_valid: bool
+
+
 class ObservationTableCreate(BaseRequestTableCreate):
     """
     ObservationTableModel creation schema

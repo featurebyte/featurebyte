@@ -176,6 +176,22 @@ class ObservationTableModel(MaterializedTableModel):
             return self.request_input.target_id
         return None
 
+    @property
+    def is_valid(self) -> bool:
+        """
+        Check if the observation table is valid
+
+        Returns
+        -------
+        bool
+            True if the observation table is valid, False otherwise
+        """
+        if isinstance(self.request_input, TargetInput):
+            # NOTE: since the target table does not filter out missing data, we need to check if the table with
+            # missing data exists or not. If it does exist, then the observation table is not valid.
+            return self.table_with_missing_data is None
+        return True
+
     @field_validator("most_recent_point_in_time", "least_recent_point_in_time")
     @classmethod
     def _validate_most_recent_point_in_time(cls, value: Optional[str]) -> Optional[str]:

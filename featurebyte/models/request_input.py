@@ -22,7 +22,10 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    get_non_missing_and_missing_condition_pair,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.materialisation import (
     get_row_count_sql,
     get_source_expr,
@@ -228,35 +231,9 @@ class BaseRequestInput(FeatureByteBaseModel):
                 col for col in columns_to_exclude_missing_values if col in output_columns
             ]
             if valid_columns:
-                if missing_data_table_details is not None:
-                    # For destination table, only keep rows where all valid columns are not null.
-                    non_missing_expressions = [
-                        expressions.Is(
-                            this=quoted_identifier(col),
-                            expression=expressions.Not(this=expressions.Null()),
-                        )
-                        for col in valid_columns
-                    ]
-                    non_missing_condition = expressions.And(expressions=non_missing_expressions)
-                    # For missing table, select rows where at least one of the valid columns is null.
-                    missing_expressions = [
-                        expressions.Is(
-                            this=quoted_identifier(col),
-                            expression=expressions.Null(),
-                        )
-                        for col in valid_columns
-                    ]
-                    missing_condition = expressions.Or(expressions=missing_expressions)
-                else:
-                    # If no missing_data_table_details is provided, then exclude rows with missing values.
-                    non_missing_expressions = [
-                        expressions.Is(
-                            this=quoted_identifier(col),
-                            expression=expressions.Not(this=expressions.Null()),
-                        )
-                        for col in valid_columns
-                    ]
-                    non_missing_condition = expressions.And(expressions=non_missing_expressions)
+                non_missing_condition, missing_condition = (
+                    get_non_missing_and_missing_condition_pair(columns=valid_columns)
+                )
 
         # Create a helper function to apply conditions to the base query
         def apply_conditions(

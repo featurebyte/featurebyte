@@ -34,6 +34,7 @@ from featurebyte.schema.info import ObservationTableInfo
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableList,
+    ObservationTableModelResponse,
     ObservationTableUpdate,
     ObservationTableUpload,
 )
@@ -83,15 +84,15 @@ async def upload_observation_table(
     return await controller.upload_observation_table(data, observation_set)
 
 
-@router.get("/{observation_table_id}", response_model=ObservationTableModel)
+@router.get("/{observation_table_id}", response_model=ObservationTableModelResponse)
 async def get_observation_table(
     request: Request, observation_table_id: PyObjectId
-) -> ObservationTableModel:
+) -> ObservationTableModelResponse:
     """
     Get ObservationTable
     """
     controller = request.state.app_container.observation_table_controller
-    observation_table: ObservationTableModel = await controller.get(
+    observation_table: ObservationTableModelResponse = await controller.get_observable_table(
         document_id=observation_table_id
     )
     return observation_table

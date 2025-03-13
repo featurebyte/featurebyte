@@ -59,23 +59,18 @@ class DataWarehouseMixin:
                 "Failed to create request table. Dropping table.",
                 extra={"error": str(exc), "task_payload": payload.model_dump()},
             )
-            assert table_details.schema_name is not None
-            assert table_details.database_name is not None
-            await db_session.drop_table(
-                table_name=table_details.table_name,
-                schema_name=table_details.schema_name,
-                database_name=table_details.database_name,
-                if_exists=True,
-            )
+            tables_to_drop = [table_details]
             if additional_table_details:
-                for additional_table in additional_table_details:
-                    assert additional_table.schema_name is not None
-                    assert additional_table.database_name is not None
-                    await db_session.drop_table(
-                        table_name=additional_table.table_name,
-                        schema_name=additional_table.schema_name,
-                        database_name=additional_table.database_name,
-                        if_exists=True,
-                    )
+                tables_to_drop.extend(additional_table_details)
+
+            for tab_details in tables_to_drop:
+                assert tab_details.schema_name is not None
+                assert tab_details.database_name is not None
+                await db_session.drop_table(
+                    table_name=tab_details.table_name,
+                    schema_name=tab_details.schema_name,
+                    database_name=tab_details.database_name,
+                    if_exists=True,
+                )
 
             raise exc
