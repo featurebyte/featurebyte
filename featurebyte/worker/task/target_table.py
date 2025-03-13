@@ -90,7 +90,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         Returns
         -------
         Optional[TableDetails]
-            The table with missing
+            The table with missing data
         """
         table_with_missing_data: Optional[TableDetails] = None
         if filter_columns:

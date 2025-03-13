@@ -5,13 +5,14 @@ ObservationTable creation task
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Optional
 
 from dateutil import tz
 
 from featurebyte.enum import SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.feature_historical import (
     HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR,
@@ -23,6 +24,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.session.base import BaseSession
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 
@@ -52,6 +54,54 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
 
     async def get_task_description(self, payload: ObservationTableTaskPayload) -> str:
         return f'Save observation table "{payload.name}" from source table.'
+
+    @staticmethod
+    async def get_table_with_missing_data(
+        db_session: BaseSession, missing_data_table_details: TableDetails
+    ) -> Optional[TableDetails]:
+        """
+        Get the table with missing data
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            Database session
+        missing_data_table_details: TableDetails
+            Table details of the table with missing data
+
+        Returns
+        -------
+        Optional[TableDetails]
+            The table with missing data
+        """
+        # check missing data table whether it has data
+        missing_data_table_row_count = await db_session.execute_query_long_running(
+            sql_to_string(
+                get_source_count_expr(missing_data_table_details),
+                db_session.source_type,
+            )
+        )
+
+        table_with_missing_data = None
+        if (
+            missing_data_table_row_count is None
+            or missing_data_table_row_count.iloc[0]["row_count"] == 0
+        ):
+            logger.debug(
+                "Drop the table with missing data as it has no data",
+                extra=missing_data_table_details.model_dump(),
+            )
+
+            # drop the table if it has no data & set it to None
+            await db_session.drop_table(
+                table_name=missing_data_table_details.table_name,
+                schema_name=missing_data_table_details.schema_name,  # type: ignore
+                database_name=missing_data_table_details.database_name,  # type: ignore
+                if_exists=True,
+            )
+        else:
+            table_with_missing_data = missing_data_table_details
+        return table_with_missing_data
 
     async def execute(self, payload: ObservationTableTaskPayload) -> Any:
         feature_store = await self.feature_store_service.get_document(
@@ -103,33 +153,11 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             session=db_session, table_details=location.table_details
         )
 
-        # check missing data table whether it has data
-        missing_data_table_row_count = await db_session.execute_query_long_running(
-            sql_to_string(
-                get_source_count_expr(missing_data_table_details),
-                db_session.source_type,
-            )
+        # get the table with missing data if it has data
+        table_with_missing_data = await self.get_table_with_missing_data(
+            db_session=db_session,
+            missing_data_table_details=missing_data_table_details,
         )
-
-        table_with_missing_data = None
-        if (
-            missing_data_table_row_count is None
-            or missing_data_table_row_count.iloc[0]["row_count"] == 0
-        ):
-            logger.debug(
-                "Drop the table with missing data as it has no data",
-                extra=missing_data_table_details.model_dump(),
-            )
-
-            # drop the table if it has no data & set it to None
-            await db_session.drop_table(
-                table_name=missing_data_table_details.table_name,
-                schema_name=missing_data_table_details.schema_name,  # type: ignore
-                database_name=missing_data_table_details.database_name,  # type: ignore
-                if_exists=True,
-            )
-        else:
-            table_with_missing_data = missing_data_table_details
 
         async with self.drop_table_on_error(
             db_session,
