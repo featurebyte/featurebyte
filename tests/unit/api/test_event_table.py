@@ -653,6 +653,7 @@ def test_update_default_job_setting__cron_feature_job_setting(
     assert event_table.default_feature_job_setting == CronFeatureJobSetting(
         crontab="0 0 * * *",
         reference_timezone="Etc/UTC",
+        blind_spot="600s",
     )
     client = config.get_client()
     response = client.get(url=f"/event_table/{event_table.id}")
@@ -667,7 +668,27 @@ def test_update_default_job_setting__cron_feature_job_setting(
         },
         "timezone": "Etc/UTC",
         "reference_timezone": "Etc/UTC",
+        "blind_spot": "600s",
     }
+
+
+def test_update_default_job_setting__cron_feature_job_setting_invalid(
+    saved_event_table, config, mock_api_object_cache
+):
+    """
+    Test update default job setting using CronFeatureJobSetting
+    """
+    _ = mock_api_object_cache
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_event_table.update_default_feature_job_setting(
+            feature_job_setting=CronFeatureJobSetting(
+                crontab="0 0 1 * *", reference_timezone="Etc/UTC", blind_spot="600s"
+            )
+        )
+    assert (
+        str(exc.value)
+        == "The provided CronFeatureJobSetting cannot be used as a default feature job setting (cron schedule does not result in a fixed interval)"
+    )
 
 
 @pytest.fixture(name="mock_celery")

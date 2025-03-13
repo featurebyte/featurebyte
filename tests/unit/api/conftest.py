@@ -315,7 +315,11 @@ def event_table_with_cron_feature_job_setting_fixture(saved_event_table):
     Fixture for an EventTable with a CronFeatureJobSetting as the default feature job setting
     """
     saved_event_table.update_default_feature_job_setting(
-        feature_job_setting=CronFeatureJobSetting(crontab="0 0 * * *", reference_timezone="Etc/UTC")
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 0 * * *",
+            reference_timezone="Etc/UTC",
+            blind_spot="600s",
+        )
     )
     yield saved_event_table
 

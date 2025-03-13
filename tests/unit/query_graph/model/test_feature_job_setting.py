@@ -255,7 +255,10 @@ def test_to_feature_job_setting_failure(crontab_expr):
     """Test that non-periodic cron schedules fail conversion"""
     cron_job = CronFeatureJobSetting(crontab=crontab_expr, blind_spot="200s", timezone="Etc/UTC")
 
-    with pytest.raises(CronFeatureJobSettingConversionError):
+    with pytest.raises(
+        CronFeatureJobSettingConversionError,
+        match="cron schedule does not result in a fixed interval",
+    ):
         cron_job.to_feature_job_setting()
 
 
@@ -269,9 +272,7 @@ def test_to_feature_job_setting_invalid_timezone(invalid_timezone):
         crontab="10 * * * *", blind_spot="200s", timezone=invalid_timezone
     )
 
-    with pytest.raises(
-        CronFeatureJobSettingConversionError, match="Conversion is only supported for UTC timezone."
-    ):
+    with pytest.raises(CronFeatureJobSettingConversionError, match="timezone must be UTC"):
         cron_job.to_feature_job_setting()
 
 
@@ -280,6 +281,6 @@ def test_to_feature_job_setting_missing_blind_spot():
     cron_job = CronFeatureJobSetting(crontab="10 * * * *", blind_spot=None, timezone="Etc/UTC")
     with pytest.raises(
         CronFeatureJobSettingConversionError,
-        match="Conversion is only supported when blind_spot is specified",
+        match="blind_spot is not specified",
     ):
         cron_job.to_feature_job_setting()

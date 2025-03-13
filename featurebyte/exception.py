@@ -569,3 +569,9 @@ class CronFeatureJobSettingConversionError(FeatureByteException):
     """
     Raise when there is an error when converting a CronFeatureJobSetting to a FeatureJobSetting
     """
+
+
+class InvalidDefaultFeatureJobSettingError(FeatureByteException):
+    """
+    Raise when the default feature job setting is invalid
+    """

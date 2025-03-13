@@ -504,14 +504,10 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         """
         # Ensure we are working in UTC
         if "UTC" not in self.timezone:
-            raise CronFeatureJobSettingConversionError(
-                "Conversion is only supported for UTC timezone."
-            )
+            raise CronFeatureJobSettingConversionError("timezone must be UTC")
 
         if self.blind_spot is None:
-            raise CronFeatureJobSettingConversionError(
-                "Conversion is only supported when blind_spot is specified"
-            )
+            raise CronFeatureJobSettingConversionError("blind_spot is not specified")
 
         # Define the Unix epoch start time
         epoch_time = datetime(1970, 1, 1)
@@ -539,7 +535,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
             # If we find multiple interval values, fail immediately
             if len(interval_set) > 1:
                 raise CronFeatureJobSettingConversionError(
-                    "The cron schedule does not result in a fixed interval."
+                    "cron schedule does not result in a fixed interval"
                 )
 
             # Stop if we reach our max checking period (2 years)
