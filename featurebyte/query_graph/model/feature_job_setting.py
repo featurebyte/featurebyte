@@ -251,7 +251,7 @@ class FeatureJobSetting(BaseFeatureJobSetting):
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, CronFeatureJobSetting):
-            return False
+            return other == self
         if not isinstance(other, FeatureJobSetting):
             return NotImplemented
         return self.to_seconds() == other.to_seconds()
@@ -562,6 +562,12 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CronFeatureJobSetting):
+            if isinstance(other, FeatureJobSetting):
+                try:
+                    converted = self.to_feature_job_setting()
+                    return converted == other
+                except CronFeatureJobSettingConversionError:
+                    return False
             return False
         return (
             self.crontab == other.crontab

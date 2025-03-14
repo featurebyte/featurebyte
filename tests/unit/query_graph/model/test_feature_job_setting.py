@@ -284,3 +284,35 @@ def test_to_feature_job_setting_missing_blind_spot():
         match="blind_spot is not specified",
     ):
         cron_job.to_feature_job_setting()
+
+
+@pytest.mark.parametrize(
+    "setting_1,setting_2,expected",
+    [
+        (
+            CronFeatureJobSetting(crontab="10 * * * *"),
+            CronFeatureJobSetting(crontab="10 * * * *"),
+            True,
+        ),
+        (
+            CronFeatureJobSetting(crontab="10 * * * *", blind_spot="200s"),
+            FeatureJobSetting(period="3600s", offset="600s", blind_spot="200s"),
+            True,
+        ),
+        (
+            CronFeatureJobSetting(crontab="10 * * * 1", blind_spot="200s"),
+            FeatureJobSetting(period="3600s", offset="600s", blind_spot="200s"),
+            False,
+        ),
+    ],
+)
+def test_feature_job_setting_comparison(setting_1, setting_2, expected):
+    """
+    Test comparison of feature job settings
+    """
+    if expected:
+        assert setting_1 == setting_2
+        assert setting_2 == setting_1
+    else:
+        assert setting_1 != setting_2
+        assert setting_2 != setting_1

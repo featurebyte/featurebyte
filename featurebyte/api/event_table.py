@@ -364,8 +364,9 @@ class EventTable(TableApiObject):
 
         Parameters
         ----------
-        feature_job_setting: FeatureJobSetting
-            Feature job setting object
+        feature_job_setting: FeatureJobSettingUnion
+            Feature job setting object. It can be an instance of FeatureJobSetting or
+            CronFeatureJobSetting.
 
         Examples
         --------
