@@ -3,6 +3,7 @@ Common test fixtures used across api test directories
 """
 
 import textwrap
+import time
 from datetime import datetime
 from unittest.mock import Mock, patch
 
@@ -327,13 +328,21 @@ def event_table_with_cron_feature_job_setting_fixture(saved_event_table, cust_id
 
 @pytest.fixture(name="item_table_with_cron_feature_job_setting")
 def item_table_with_cron_feature_job_setting_fixture(
-    snowflake_item_table, event_table_with_cron_feature_job_setting
+    snowflake_item_table,
+    saved_event_table,
 ):
     """
     Fixture for an ItemTable whose EventTable has a CronFeatureJobSetting as the default feature job
     setting.
     """
-    _ = event_table_with_cron_feature_job_setting
+    saved_event_table.update_default_feature_job_setting(
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 0 * * *",
+            reference_timezone="Etc/UTC",
+            blind_spot="600s",
+        )
+    )
+    time.sleep(1)
     yield snowflake_item_table
 
 

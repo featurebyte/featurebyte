@@ -1246,4 +1246,5 @@ def test_item_view_with_cron_default_feature_job_setting(
     assert view.default_feature_job_setting == CronFeatureJobSetting(
         crontab="0 0 * * *",
         reference_timezone="Etc/UTC",
+        blind_spot="600s",
     )
