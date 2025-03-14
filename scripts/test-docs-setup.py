@@ -226,6 +226,7 @@ def setup() -> None:
         method="max",
         window="7d",
         target_name="target_latest_invoice_timestamp",
+        fill_value=None,
     )
     target_latest_invoice_timestamp.save(conflict_resolution="retrieve")
 

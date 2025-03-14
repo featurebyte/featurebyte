@@ -41,7 +41,9 @@ def lookup_target_fixture(snowflake_event_view_with_entity):
     """
     Lookup target fixture
     """
-    return snowflake_event_view_with_entity["col_float"].as_target("lookup_target", "7d")
+    return snowflake_event_view_with_entity["col_float"].as_target(
+        "lookup_target", "7d", fill_value=None
+    )
 
 
 @pytest.mark.asyncio

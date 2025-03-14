@@ -2,6 +2,8 @@
 Test forward aggregator.
 """
 
+import textwrap
+
 import pytest
 
 from featurebyte import AggFunc
@@ -116,6 +118,31 @@ def test_forward_aggregate(forward_aggregator, offset):
     assert operation_structure.output_category == "target"
 
 
+def test_fillna_preserve_target_name(forward_aggregator):
+    """
+    Test forward_aggregate.
+    """
+    target = forward_aggregator.forward_aggregate(
+        "col_float",
+        AggFunc.SUM,
+        "7d",
+        "col_float_target",
+    )
+    target.fillna(0)
+    assert target.name == "col_float_target"
+    target.save()
+
+    # Must be ALIAS node type and not CONDITIONAL
+    target_model = target.cached_model
+    node = target_model.graph.get_node_by_name(target_model.node_name)
+    assert node.model_dump() == {
+        "name": "alias_1",
+        "type": NodeType.ALIAS,
+        "output_type": "series",
+        "parameters": {"name": "col_float_target"},
+    }
+
+
 def test_prepare_node_parameters(forward_aggregator):
     """
     Test prepare node parameters
@@ -176,3 +203,38 @@ def test_validate_parameters(
             window=window,
             target_name=target_name,
         )
+
+
+def test_forward_aggregate__fill_value(snowflake_event_view_with_entity):
+    """
+    Test forward_aggregate.
+    """
+    # create target without fill_value
+    target = snowflake_event_view_with_entity.groupby("col_int").forward_aggregate(
+        value_column="col_float",
+        method="sum",
+        window="7d",
+        target_name="target",
+        fill_value=0.0,
+    )
+    target.save()
+
+    # definition expected fill null value operations
+    partial_definition = """
+    target = event_view.groupby(
+        by_keys=["col_int"], category=None
+    ).forward_aggregate(
+        value_column="col_float",
+        method="sum",
+        window="7d",
+        target_name="target",
+        fill_value=None,
+        skip_fill_na=True,
+        offset=None,
+    )
+    target_1 = target.copy()
+    target_1[target.isnull()] = 0.0
+    target_1.name = "target"
+    output = target_1
+    """
+    assert textwrap.dedent(partial_definition).strip() in target.definition

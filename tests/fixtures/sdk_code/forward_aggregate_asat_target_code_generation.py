@@ -15,6 +15,10 @@ target = scd_view.groupby(
     method="sum",
     target_name="asat_target",
     offset=None,
+    fill_value=None,
     skip_fill_na=True,
 )
-output = target
+target_1 = target.copy()
+target_1[target.isnull()] = 0.0
+target_1.name = "asat_target"
+output = target_1

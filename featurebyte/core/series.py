@@ -1273,6 +1273,7 @@ class Series(FrozenSeries):
             raise TypeError("Only boolean Series filtering is supported!")
 
         self._assert_assignment_valid(value)
+        original_name = self.name
         node_params = {}
         input_nodes = [self.node, key.node]
         if isinstance(value, Series):
@@ -1299,6 +1300,11 @@ class Series(FrozenSeries):
             # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
             # readable column name during series preview
             self.node_name = self.parent[self.name].node_name
+        else:
+            # This could be for a target object. Set name to add an alias node so that the name
+            # is preserved.
+            if original_name is not None:
+                self.name = original_name
 
     @typechecked
     def fillna(self, other: Scalar) -> None:

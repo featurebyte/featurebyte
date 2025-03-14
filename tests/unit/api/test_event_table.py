@@ -1285,7 +1285,7 @@ def test_add_timestamp_schema(
             timestamp_schema=TimestampSchema(
                 is_utc_time=False,
                 format_string="%Y-%m-%d %H:%M:%S",
-                timezone=TimeZoneColumn(column_name="col_text", type="timezone"),
+                timezone="Asia/Singapore",
             )
         )
     ]
@@ -1402,5 +1402,23 @@ def test_add_timestamp_schema_validation(saved_event_table):
     expected = (
         "AddTimestampSchema should only be used with supported datetime types: "
         "[DATE, TIMESTAMP, TIMESTAMP_TZ, VARCHAR]. INT is not supported."
+    )
+    assert expected in str(exc.value)
+
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_event_table.col_text.update_critical_data_info(
+            cleaning_operations=[
+                AddTimestampSchema(
+                    timestamp_schema=TimestampSchema(
+                        is_utc_time=False,
+                        format_string="%Y-%m-%d %H:%M:%S",
+                        timezone=TimeZoneColumn(column_name="col_text", type="timezone"),
+                    )
+                )
+            ]
+        )
+
+    expected = (
+        'Timestamp schema timezone offset column "col_text" cannot be the same as the column name'
     )
     assert expected in str(exc.value)

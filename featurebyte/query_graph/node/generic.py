@@ -690,6 +690,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
             method=self.parameters.agg_func,
             window=self.parameters.window,
             target_name=self.parameters.name,
+            fill_value=None,
             skip_fill_na=True,
             offset=self.parameters.offset,
         )
@@ -1300,7 +1301,7 @@ class LookupTargetNode(BaseLookupNode):
         input_column_name = ValueStr.create(self.parameters.input_column_names[0])
         lookup_target_str = (
             f"{var_name}[{input_column_name}].as_target(target_name={ValueStr.create(feature_names[0])}, "
-            f"offset={ValueStr.create(offset)})"
+            f"offset={ValueStr.create(offset)}, fill_value=None)"
         )
         return statements, ExpressionStr(lookup_target_str)
 
@@ -2045,6 +2046,7 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
             f"method={method}, "
             f"target_name={target_name}, "
             f"offset={offset}, "
+            f"fill_value=None, "
             f"skip_fill_na=True)"
         )
         return statements, ExpressionStr(f"{grouped}.{agg}")

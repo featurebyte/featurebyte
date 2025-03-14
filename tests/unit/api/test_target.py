@@ -38,10 +38,14 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         method="sum",
         window="1d",
         target_name="float_target",
+        fill_value=None,
         skip_fill_na=True,
         offset=None,
     )
-    output = target
+    target_1 = target.copy()
+    target_1[target.isnull()] = 0.0
+    target_1.name = "float_target"
+    output = target_1
     """
     )
     expected_saved_item_definition = (
@@ -66,10 +70,14 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         method="sum",
         window="1d",
         target_name="float_target",
+        fill_value=None,
         skip_fill_na=True,
         offset=None,
     )
-    output = target
+    target_1 = target.copy()
+    target_1[target.isnull()] = 0.0
+    target_1.name = "float_target"
+    output = target_1
     output.save(_id=ObjectId("{item_id}"))
     """
     )
@@ -122,6 +130,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
             window="1d",
             target_name="float_target",
             target_type=TargetType.REGRESSION,
+            fill_value=0.0,
         )
         assert target_agg.target_type == TargetType.REGRESSION
 
@@ -139,6 +148,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
             method="sum",
             target_name="asat_target",
             target_type=TargetType.REGRESSION,
+            fill_value=0.0,
         )
         assert target_agg_asat.target_type == TargetType.REGRESSION
 
@@ -154,6 +164,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         target_as = view.col_float.as_target(
             target_name="dimension_target",
             target_type=TargetType.REGRESSION,
+            fill_value=None,
         )
         assert target_as.target_type == TargetType.REGRESSION
 
@@ -179,6 +190,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
                 window="1d",
                 target_name="float_target",
                 target_type=TargetType.CLASSIFICATION,
+                fill_value=0.0,
             )
         assert expected in str(exc_info)
 
@@ -188,6 +200,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
                 method="sum",
                 target_name="asat_target",
                 target_type=TargetType.CLASSIFICATION,
+                fill_value=0.0,
             )
         assert expected in str(exc_info)
 
@@ -197,6 +210,7 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
             view.col_float.as_target(
                 target_name="dimension_target",
                 target_type=TargetType.CLASSIFICATION,
+                fill_value=None,
             )
         assert expected in str(exc_info)
 

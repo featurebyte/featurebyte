@@ -1976,6 +1976,7 @@ def float_target_fixture(grouped_event_view):
         value_column="col_float",
         window="1d",
         target_name="float_target",
+        fill_value=0.0,
     )
     return target
 

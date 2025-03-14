@@ -1004,6 +1004,7 @@ async def test_get_target__feature_table_cache(
         value_column="ÀMOUNT",
         window="24h",
         target_name="avg_24h_target",
+        fill_value=None,
     )
 
     df_training_events, _ = get_training_events_and_expected_result()
