@@ -310,7 +310,7 @@ def snowflake_item_table_fixture(
 
 
 @pytest.fixture(name="event_table_with_cron_feature_job_setting")
-def event_table_with_cron_feature_job_setting_fixture(saved_event_table):
+def event_table_with_cron_feature_job_setting_fixture(saved_event_table, cust_id_entity):
     """
     Fixture for an EventTable with a CronFeatureJobSetting as the default feature job setting
     """
@@ -321,6 +321,7 @@ def event_table_with_cron_feature_job_setting_fixture(saved_event_table):
             blind_spot="600s",
         )
     )
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
     yield saved_event_table
 
 
