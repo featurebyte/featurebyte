@@ -3,6 +3,7 @@ Feature Job Setting Model
 """
 
 from abc import abstractmethod
+from datetime import datetime, timedelta
 from typing import Any, ClassVar, Dict, Optional, Union
 
 from croniter import croniter
@@ -16,6 +17,7 @@ from featurebyte.common.model_util import (
     parse_duration_string,
     validate_job_setting_parameters,
 )
+from featurebyte.exception import CronFeatureJobSettingConversionError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.periodic_task import Crontab
 
@@ -363,6 +365,13 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
             "If not provided, the timezone parameter is used as the reference timezone."
         ),
     )
+    blind_spot: Optional[str] = Field(
+        default=None,
+        description=(
+            "Establishes the time difference between when the feature is calculated and the most "
+            "recent event timestamp to be processed. Used for non-calendar based feature jobs."
+        ),
+    )
 
     def get_cron_expression(self) -> str:
         """
@@ -478,6 +487,79 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         # note: this is only used to populate feast feature view ttl parameters.
         # the actual ttl handling is done in the on demand feature view
         return 30 * 24 * 60 * 60  # 30 days
+
+    def to_feature_job_setting(self) -> FeatureJobSetting:
+        """
+        Convert the CronFeatureJobSetting to FeatureJobSetting. This is possible if the
+        CronFeatureJobSetting has a fixed interval and is defined in UTC timezone.
+
+        Returns
+        -------
+        FeatureJobSetting
+
+        Raises
+        ------
+        CronFeatureJobSettingConversionError
+            If the conversion is not possible
+        """
+        # Ensure we are working in UTC
+        if "UTC" not in self.timezone:
+            raise CronFeatureJobSettingConversionError(
+                "Conversion is only supported for UTC timezone."
+            )
+
+        if self.blind_spot is None:
+            raise CronFeatureJobSettingConversionError(
+                "Conversion is only supported when blind_spot is specified"
+            )
+
+        # Define the Unix epoch start time
+        epoch_time = datetime(1970, 1, 1)
+
+        # Generate cron occurrences starting from Unix epoch
+        cron = croniter(self.get_cron_expression(), epoch_time)
+
+        # Collect execution times over a large window (up to 2 years max)
+        max_check_period = timedelta(days=730)
+        prev_time = cron.get_next(datetime)
+        execution_times = [prev_time]
+
+        # Track interval consistency
+        interval_set = set()
+        check_limit = 1000  # Allow more checks for long-cycle cron jobs
+
+        for _ in range(check_limit):
+            next_time = cron.get_next(datetime)
+            execution_times.append(next_time)
+
+            # Compute interval from the last execution
+            interval = (next_time - prev_time).total_seconds()
+            interval_set.add(interval)
+
+            # If we find multiple interval values, fail immediately
+            if len(interval_set) > 1:
+                raise CronFeatureJobSettingConversionError(
+                    "The cron schedule does not result in a fixed interval."
+                )
+
+            # Stop if we reach our max checking period (2 years)
+            if next_time - epoch_time > max_check_period:
+                break
+
+            prev_time = next_time
+
+        # Extract period (uniform interval detected)
+        period = int(next(iter(interval_set)))
+
+        # Compute offset: First execution time after epoch in seconds (modulo period)
+        first_execution = execution_times[0]
+        offset = int((first_execution - epoch_time).total_seconds()) % period
+
+        return FeatureJobSetting(
+            period=f"{period}s",
+            offset=f"{offset}s",
+            blind_spot=self.blind_spot,
+        )
 
     def __hash__(self) -> int:
         return hash((self.crontab, self.timezone, self.reference_timezone))

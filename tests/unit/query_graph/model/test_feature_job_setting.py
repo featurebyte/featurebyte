@@ -6,6 +6,7 @@ import pytest
 from bson import ObjectId
 
 from featurebyte import FeatureJobSetting
+from featurebyte.exception import CronFeatureJobSettingConversionError
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     TableFeatureJobSetting,
@@ -213,3 +214,72 @@ def test_extract_offline_store_feature_table_name_postfix(crontab_expr, expected
     """Test extracting offline store feature table name postfix"""
     fjs = CronFeatureJobSetting(crontab=crontab_expr)
     assert fjs.extract_offline_store_feature_table_name_postfix(10) == expected
+
+
+@pytest.mark.parametrize(
+    "crontab_expr, blind_spot, expected",
+    [
+        # Every hour at 10 minutes past
+        ("10 * * * *", "200s", FeatureJobSetting(period="3600s", offset="600s", blind_spot="200s")),
+        # Every 2 hour
+        ("0 */2 * * *", "300s", FeatureJobSetting(period="7200s", offset="0s", blind_spot="300s")),
+        # Daily at midnight
+        ("0 0 * * *", "600s", FeatureJobSetting(period="86400s", offset="0s", blind_spot="600s")),
+        # Weekly on Monday at 2 AM
+        (
+            "0 2 * * 1",
+            "1000s",
+            FeatureJobSetting(period="604800s", offset="352800s", blind_spot="1000s"),
+        ),
+    ],
+)
+def test_to_feature_job_setting(crontab_expr, blind_spot, expected):
+    """Test to_feature_job_setting with valid cron schedules and required blind_spot"""
+    cron_job = CronFeatureJobSetting(
+        crontab=crontab_expr, blind_spot=blind_spot, timezone="Etc/UTC"
+    )
+    result = cron_job.to_feature_job_setting()
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "crontab_expr",
+    [
+        "0 10,11 * * *",  # Runs at hour 10 and 11, not a fixed interval
+        "0 2 * * 1,3",  # Runs on Monday and Wednesday, not periodic
+        "0 0 1 1,6 *",  # Runs on Jan 1st and June 1st, gap is inconsistent
+        "0 3 1 * *",  # Runs on the 1st of each month, months have different lengths
+    ],
+)
+def test_to_feature_job_setting_failure(crontab_expr):
+    """Test that non-periodic cron schedules fail conversion"""
+    cron_job = CronFeatureJobSetting(crontab=crontab_expr, blind_spot="200s", timezone="Etc/UTC")
+
+    with pytest.raises(CronFeatureJobSettingConversionError):
+        cron_job.to_feature_job_setting()
+
+
+@pytest.mark.parametrize(
+    "invalid_timezone",
+    ["America/New_York", "Asia/Tokyo", "Europe/London"],
+)
+def test_to_feature_job_setting_invalid_timezone(invalid_timezone):
+    """Test that a non-UTC timezone raises an error"""
+    cron_job = CronFeatureJobSetting(
+        crontab="10 * * * *", blind_spot="200s", timezone=invalid_timezone
+    )
+
+    with pytest.raises(
+        CronFeatureJobSettingConversionError, match="Conversion is only supported for UTC timezone."
+    ):
+        cron_job.to_feature_job_setting()
+
+
+def test_to_feature_job_setting_missing_blind_spot():
+    """Test that missing blind_spot raises an error when creating CronFeatureJobSetting"""
+    cron_job = CronFeatureJobSetting(crontab="10 * * * *", blind_spot=None, timezone="Etc/UTC")
+    with pytest.raises(
+        CronFeatureJobSettingConversionError,
+        match="Conversion is only supported when blind_spot is specified",
+    ):
+        cron_job.to_feature_job_setting()

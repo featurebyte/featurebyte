@@ -563,3 +563,9 @@ class DescribeQueryExecutionError(FeatureByteException):
     """
     Raise when stats compute query fails to execute even after batching attempt
     """
+
+
+class CronFeatureJobSettingConversionError(FeatureByteException):
+    """
+    Raise when there is an error when converting a CronFeatureJobSetting to a FeatureJobSetting
+    """

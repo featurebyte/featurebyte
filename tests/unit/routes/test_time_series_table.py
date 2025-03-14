@@ -135,6 +135,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                     "month_of_year": "*",
                 },
                 "timezone": "Etc/UTC",
+                "blind_spot": None,
             },
             "status": "PUBLISHED",
             "validation": {"status": "PASSED", "validation_message": None, "updated_at": None},
@@ -172,6 +173,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 },
                 "timezone": "Etc/UTC",
                 "reference_timezone": "Etc/UTC",
+                "blind_spot": None,
             },
             "record_creation_timestamp_column": "created_at",
         }
@@ -235,6 +237,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 },
                 "timezone": "Etc/UTC",
                 "reference_timezone": None,
+                "blind_spot": None,
             },
             None,
             None,
@@ -258,6 +261,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 },
                 "timezone": "Etc/UTC",
                 "reference_timezone": "Etc/UTC",
+                "blind_spot": None,
             },
             {
                 "crontab": {
@@ -269,6 +273,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 },
                 "timezone": "Etc/UTC",
                 "reference_timezone": None,
+                "blind_spot": None,
             },
         ]
 
