@@ -45,6 +45,7 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
           SELECT
             "__FB_KEY_COL_0",
             "__FB_LAST_TS",
+            "__FB_TS_COL",
             "col_int",
             "col_float",
             "col_char",
@@ -57,6 +58,7 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
             SELECT
               "__FB_KEY_COL_0",
               LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL", "__FB_TS_TIE_BREAKER_COL" NULLS LAST) AS "__FB_LAST_TS",
+              "__FB_TS_COL",
               "col_int",
               "col_float",
               "col_char",
@@ -162,7 +164,12 @@ WITH __FB_TILE_COMPUTE_INPUT_TABLE_NAME AS (
             "effective_timestamp",
             "col_text"
         ) AS R
-          ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL_0" = R."col_text"
+          ON L."__FB_LAST_TS" = R."effective_timestamp"
+          AND L."__FB_KEY_COL_0" = R."col_text"
+          AND (
+            L."__FB_TS_COL" < CAST(CONVERT_TIMEZONE('UTC', R."end_timestamp") AS TIMESTAMP)
+            OR R."end_timestamp" IS NULL
+          )
       ) AS REQ
       LEFT JOIN (
         SELECT

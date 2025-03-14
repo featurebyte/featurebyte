@@ -12,6 +12,7 @@ from sqlglot.expressions import Select
 from typing_extensions import Literal
 
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier
 from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
@@ -88,10 +89,14 @@ class SCDJoin(TableNode):
     right_on: str
     left_timestamp_column: str
     right_timestamp_column: str
+    left_timestamp_schema: Optional[TimestampSchema]
+    right_timestamp_schema: Optional[TimestampSchema]
     left_input_columns: list[str]
     left_output_columns: list[str]
     right_input_columns: list[str]
     right_output_columns: list[str]
+    end_timestamp_column: Optional[str]
+    end_timestamp_schema: Optional[TimestampSchema]
     join_type: Literal["left", "inner"]
     query_node_type = NodeType.JOIN
 
@@ -116,6 +121,7 @@ class SCDJoin(TableNode):
         left_table = Table(
             expr=cast(Select, self.left_node.sql),
             timestamp_column=self.left_timestamp_column,
+            timestamp_schema=self.left_timestamp_schema,
             join_keys=[self.left_on],
             input_columns=self.left_input_columns,
             output_columns=self.left_output_columns,
@@ -123,9 +129,12 @@ class SCDJoin(TableNode):
         right_table = Table(
             expr=cast(Select, self.right_node.sql),
             timestamp_column=self.right_timestamp_column,
+            timestamp_schema=self.right_timestamp_schema,
             join_keys=[self.right_on],
             input_columns=self.right_input_columns,
             output_columns=self.right_output_columns,
+            end_timestamp_column=self.end_timestamp_column,
+            end_timestamp_schema=self.end_timestamp_schema,
         )
         select_expr = get_scd_join_expr(
             left_table,
@@ -156,6 +165,26 @@ class SCDJoin(TableNode):
         ):
             columns_map[output_col] = get_qualified_column_identifier(input_col, "R")
 
+        left_timestamp_metadata_dict = parameters["scd_parameters"].get("left_timestamp_metadata")
+        right_timestamp_metadata_dict = parameters["scd_parameters"].get(
+            "effective_timestamp_metadata"
+        )
+        left_timestamp_schema = (
+            TimestampSchema(**left_timestamp_metadata_dict["timestamp_schema"])
+            if left_timestamp_metadata_dict is not None
+            else None
+        )
+        right_timestamp_schema = (
+            TimestampSchema(**right_timestamp_metadata_dict["timestamp_schema"])
+            if right_timestamp_metadata_dict is not None
+            else None
+        )
+        end_timestamp_metadata_dict = parameters["scd_parameters"].get("end_timestamp_metadata")
+        end_timestamp_schema = (
+            TimestampSchema(**end_timestamp_metadata_dict["timestamp_schema"])
+            if end_timestamp_metadata_dict is not None
+            else None
+        )
         node = SCDJoin(
             context=context,
             columns_map=columns_map,
@@ -166,9 +195,13 @@ class SCDJoin(TableNode):
             join_type=parameters["join_type"],
             left_timestamp_column=parameters["scd_parameters"]["left_timestamp_column"],
             right_timestamp_column=parameters["scd_parameters"]["effective_timestamp_column"],
+            left_timestamp_schema=left_timestamp_schema,
+            right_timestamp_schema=right_timestamp_schema,
             left_input_columns=parameters["left_input_columns"],
             left_output_columns=parameters["left_output_columns"],
             right_input_columns=parameters["right_input_columns"],
             right_output_columns=parameters["right_output_columns"],
+            end_timestamp_column=parameters["scd_parameters"].get("end_timestamp_column"),
+            end_timestamp_schema=end_timestamp_schema,
         )
         return node

@@ -120,7 +120,7 @@ def test_groupby__wrong_method(snowflake_event_view_with_entity):
     """
     grouped = GroupBy(obj=snowflake_event_view_with_entity, keys="cust_id")
     with pytest.raises(ValueError) as exc:
-        grouped.aggregate_over("a", "unknown_method", ["1d"], ["feature_name"])
+        grouped.aggregate_over("col_int", "unknown_method", ["1d"], ["feature_name"])
     expected_message = "Aggregation method not supported: unknown_method"
     assert expected_message in str(exc.value)
 
@@ -211,6 +211,7 @@ def test_groupby__default_feature_job_setting(
         "tile_id_version": 2,
         "aggregation_id": "sum_bce3698f0e05238c6e3553eed17170936ded5c09",
         "timestamp": "event_timestamp",
+        "timestamp_metadata": None,
         "value_by": None,
         "serving_names": ["cust_id"],
         "entity_ids": [cust_id_entity.id],
@@ -252,6 +253,7 @@ def test_groupby__category(snowflake_event_view_with_entity, cust_id_entity):
         "tile_id_version": 2,
         "aggregation_id": "sum_c55afdfdca81f4387ba39197c13acc7ab649be1f",
         "timestamp": "event_timestamp",
+        "timestamp_metadata": None,
         "value_by": "col_int",
         "serving_names": ["cust_id"],
         "entity_ids": [cust_id_entity.id],

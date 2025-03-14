@@ -2,10 +2,16 @@
 Tests for feature preview SQL generation
 """
 
+import pandas as pd
 import pytest
 
-from featurebyte.enum import SourceType
+from featurebyte.enum import InternalName, SourceType
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.cron import (
+    JobScheduleTable,
+    JobScheduleTableSet,
+    get_cron_feature_job_settings,
+)
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from tests.util.helper import assert_equal_with_expected_fixture
@@ -52,6 +58,29 @@ def test_get_feature_preview_sql__category_groupby(
     assert_equal_with_expected_fixture(
         preview_sql,
         "tests/fixtures/expected_preview_sql_category.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_get_feature_preview_sql__category_groupby_multiple(
+    query_graph_with_category_groupby_multiple, source_info, update_fixtures
+):
+    """Test generated preview SQL with category groupby is as expected"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    graph, node = query_graph_with_category_groupby_multiple
+    preview_sql = get_feature_or_target_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=graph,
+        nodes=[node],
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
+        source_info=source_info,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_sql_category_multiple.sql",
         update_fixture=update_fixtures,
     )
 
@@ -550,5 +579,49 @@ def test_get_feature_preview_sql__non_tile_window_aggregate(
     assert_equal_with_expected_fixture(
         preview_sql,
         "tests/fixtures/expected_preview_non_tile_window_aggregate.sql",
+        update_fixture=update_fixtures,
+    )
+
+
+def test_get_feature_preview_sql__time_series_window_aggregate(
+    global_graph, time_series_window_aggregate_feature_node, source_info, update_fixtures
+):
+    """Test generated preview SQL for time series window aggregate"""
+    point_in_time_and_serving_name = {
+        "POINT_IN_TIME": "2022-04-20 10:00:00",
+        "CUSTOMER_ID": "C1",
+    }
+    cron_feature_job_settings = get_cron_feature_job_settings(
+        global_graph, [time_series_window_aggregate_feature_node]
+    )
+    job_schedule_table_set = JobScheduleTableSet(
+        tables=[
+            JobScheduleTable(
+                table_name="job_schedule_1",
+                cron_feature_job_setting=cron_feature_job_settings[0],
+                job_schedule_dataframe=pd.DataFrame([
+                    {
+                        InternalName.CRON_JOB_SCHEDULE_DATETIME: pd.Timestamp(
+                            "2022-04-20 18:00:00"
+                        ),
+                        InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC: pd.Timestamp(
+                            "2022-04-20 10:00:00"
+                        ),
+                    }
+                ]),
+            )
+        ],
+    )
+    preview_sql = get_feature_or_target_preview_sql(
+        request_table_name=REQUEST_TABLE_NAME,
+        graph=global_graph,
+        nodes=[time_series_window_aggregate_feature_node],
+        point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
+        source_info=source_info,
+        job_schedule_table_set=job_schedule_table_set,
+    )
+    assert_equal_with_expected_fixture(
+        preview_sql,
+        "tests/fixtures/expected_preview_time_series_window_aggregate.sql",
         update_fixture=update_fixtures,
     )

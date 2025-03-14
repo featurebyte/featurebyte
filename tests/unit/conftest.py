@@ -20,6 +20,7 @@ import httpx
 import pandas as pd
 import pytest
 import pytest_asyncio
+import redis
 from bson import ObjectId
 from cachetools import TTLCache
 from fastapi.testclient import TestClient as BaseTestClient
@@ -27,6 +28,7 @@ from snowflake.connector import ProgrammingError
 from snowflake.connector.constants import QueryStatus
 
 from featurebyte import (
+    CalendarWindow,
     CronFeatureJobSetting,
     FeatureJobSetting,
     MissingValueImputation,
@@ -61,7 +63,9 @@ from featurebyte.models.tile import OnDemandTileComputeResult, TileSpec
 from featurebyte.query_graph.graph import GlobalQueryGraph
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.feature_historical import HistoricalFeatureQueryGenerator
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -71,7 +75,6 @@ from featurebyte.schema.worker.task.base import BaseTaskPayload
 from featurebyte.session.base import DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS
 from featurebyte.session.snowflake import SnowflakeSession
 from featurebyte.storage.local import LocalStorage
-from featurebyte.worker import get_redis
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from featurebyte.worker.test_util.random_task import Command, LongRunningTask
 from tests.unit.conftest_config import (
@@ -79,7 +82,7 @@ from tests.unit.conftest_config import (
     config_fixture,
     mock_config_path_env_fixture,
 )
-from tests.util.helper import inject_request_side_effect
+from tests.util.helper import inject_request_side_effect, safe_freeze_time
 
 # register tests.unit.routes.base so that API stacktrace display properly
 pytest.register_assert_rewrite("tests.unit.routes.base")
@@ -242,6 +245,42 @@ def patched_feature_table_cache_metadata_unique_identifier():
     """
     with patch(
         "featurebyte.service.feature_table_cache_metadata.ObjectId",
+        side_effect=get_increasing_object_id_callable(),
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def patched_cron_helper_unique_identifier():
+    """
+    Fixture to mock ObjectId to a fixed value
+    """
+    with patch(
+        "featurebyte.service.cron_helper.ObjectId",
+        side_effect=get_increasing_object_id_callable(),
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def patched_execute_feature_query_set_unique_identifier():
+    """
+    Fixture to mock ObjectId to a fixed value
+    """
+    with patch(
+        "featurebyte.session.session_helper.ObjectId",
+        side_effect=get_increasing_object_id_callable(),
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def patched_preview_service_unique_identifier():
+    """
+    Fixture to mock ObjectId to a fixed value
+    """
+    with patch(
+        "featurebyte.service.preview.ObjectId",
         side_effect=get_increasing_object_id_callable(),
     ):
         yield
@@ -611,6 +650,11 @@ def snowflake_query_map_fixture():
                 "data_type": json.dumps({"type": "FIXED", "scale": 0}),
                 "comment": None,
             },
+            {
+                "column_name": "another_timestamp_col",
+                "data_type": json.dumps({"type": "TIMESTAMP_TZ"}),
+                "comment": None,
+            },
         ],
         'SHOW COLUMNS IN "sf_database"."sf_schema"."scd_table_state_map"': [
             {
@@ -872,9 +916,28 @@ def snowflake_feature_store_params():
     }
 
 
+@pytest.fixture(name="patched_to_thread")
+def patched_to_thread_fixture():
+    """
+    Patch to_thread function to run the function synchronously in session manager to avoid tests
+    hanging due to asyncio
+    """
+
+    def _patched_to_thread(func, timeout, error_handler, *args, **kwargs):
+        _ = timeout
+        _ = error_handler
+        return func(*args, **kwargs)
+
+    with patch("featurebyte.service.session_manager.to_thread", side_effect=_patched_to_thread):
+        yield
+
+
 @pytest.fixture(name="snowflake_feature_store")
 def snowflake_feature_store(
-    snowflake_feature_store_params, snowflake_execute_query, snowflake_feature_store_id
+    snowflake_feature_store_params,
+    snowflake_execute_query,
+    snowflake_feature_store_id,
+    patched_to_thread,
 ):
     """
     Snowflake database source fixture
@@ -1303,7 +1366,9 @@ def snowflake_time_series_table_fixture(
         name="sf_time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            timezone="Etc/UTC", format_string="YYYY-MM-DD HH24:MI:SS"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         description="test time series table",
@@ -1542,8 +1607,26 @@ def snowflake_scd_view_with_entity_fixture(snowflake_scd_table_with_entity):
     return snowflake_scd_table_with_entity.get_view()
 
 
+@pytest.fixture(name="snowflake_time_series_view_with_entity")
+def snowflake_time_series_view_with_entity_fixture(snowflake_time_series_table_with_entity):
+    """
+    Snowflake time series view with entity
+    """
+    return snowflake_time_series_table_with_entity.get_view()
+
+
+@pytest.fixture(name="freeze_time_observation_table_task")
+def freeze_time_observation_table_task_fixture():
+    """
+    Freeze time for ObservationTableTask due to freezegun not working well with pydantic in some
+    cases (in this case, apparently only the ObservationTableTask)
+    """
+    with safe_freeze_time("2011-03-08T15:37:00"):
+        yield
+
+
 @pytest.fixture(name="patched_observation_table_service")
-def patched_observation_table_service_fixture():
+def patched_observation_table_service_fixture(freeze_time_observation_table_task):
     """
     Patch ObservationTableService.validate_materialized_table_and_get_metadata
     """
@@ -1893,6 +1976,7 @@ def float_target_fixture(grouped_event_view):
         value_column="col_float",
         window="1d",
         target_name="float_target",
+        fill_value=0.0,
     )
     return target
 
@@ -2345,6 +2429,23 @@ def count_distinct_window_aggregate_feature_fixture(
     return feature
 
 
+@pytest.fixture(name="ts_window_aggregate_feature")
+def ts_window_aggregate_feature_fixture(snowflake_time_series_view_with_entity):
+    """
+    Fixture for a feature using time series window aggregate
+    """
+    feature = snowflake_time_series_view_with_entity.groupby("store_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=[CalendarWindow(unit="MONTH", size=3)],
+        feature_names=["col_float_sum_3month"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 1 * *",
+        ),
+    )["col_float_sum_3month"]
+    return feature
+
+
 @pytest.fixture(name="request_column_point_in_time")
 def request_column_point_in_time():
     """
@@ -2623,7 +2724,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     "persistent": persistent,
                     "temp_storage": temp_storage,
                     "celery": get_celery(),
-                    "redis": get_redis(),
+                    "redis": redis.from_url(TEST_REDIS_URI),
                     "storage": storage,
                     "catalog_id": payload.catalog_id,
                 }
@@ -2911,3 +3012,39 @@ def adapter_fixture(source_info):
 @pytest.fixture(name="session_manager_service")
 def session_manager_service_fixture(app_container_no_catalog):
     return app_container_no_catalog.session_manager_service
+
+
+@pytest.fixture(name="saved_features_set")
+def saved_features_set_fixture(float_feature):
+    """
+    Fixture for a saved feature model
+    """
+    float_feature.save()
+    another_feature = float_feature + 123
+    another_feature.name = "another_feature"
+    another_feature.save()
+    feature_list = FeatureList([float_feature, another_feature], name="my_feature_list")
+    feature_list.save()
+    feature_cluster = feature_list.cached_model.feature_clusters[0]
+    graph = feature_cluster.graph
+    node_names = feature_cluster.node_names
+    nodes = [graph.get_node_by_name(node_name) for node_name in node_names]
+    return graph, nodes, feature_list.feature_names
+
+
+@pytest.fixture(name="feature_query_generator")
+def feature_query_generator_fixture(saved_features_set, source_info):
+    """
+    Fixture for FeatureQueryGenerator
+    """
+    graph, nodes, feature_names = saved_features_set
+    generator = HistoricalFeatureQueryGenerator(
+        graph=graph,
+        nodes=nodes,
+        request_table_name="my_request_table",
+        request_table_columns=["POINT_IN_TIME", "cust_id"],
+        source_info=source_info,
+        output_table_details=TableDetails(table_name="my_output_table"),
+        output_feature_names=feature_names,
+    )
+    return generator

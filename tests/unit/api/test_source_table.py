@@ -4,7 +4,6 @@ Unit test for SourceTable
 
 from unittest.mock import AsyncMock, Mock, patch
 
-import freezegun
 import pandas as pd
 import pytest
 
@@ -192,7 +191,6 @@ def test_get_or_create_scd_table__create(snowflake_database_table_scd_table, cat
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table(
     snowflake_database_table, snowflake_execute_query, catalog, cust_id_entity, mock_log_handler
 ):
@@ -252,7 +250,6 @@ def test_create_observation_table(
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table_with_sample_rows(
     snowflake_database_table, snowflake_execute_query, catalog
 ):

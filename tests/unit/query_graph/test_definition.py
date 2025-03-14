@@ -733,6 +733,7 @@ def test_extract_definition__forward_aggregate(query_graph_and_assign_node, even
             "parent": "column_41a32af12d0e8bc4d3405f31b9bf52034f7cb98e",
             "serving_names": ["CUST_ID"],
             "timestamp_col": "column_5430b65a132f391e1ada3fe6389bee6e856bdd77",
+            "timestamp_metadata": None,
             "value_by": None,
             "window": "604800s",
         },
@@ -850,6 +851,9 @@ def test_extract_definition__scd_join(global_graph, event_table_input_node, scd_
                 "end_timestamp_column": None,
                 "left_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
                 "natural_key_column": None,
+                "effective_timestamp_metadata": None,
+                "end_timestamp_metadata": None,
+                "left_timestamp_metadata": None,
             },
         },
     )
@@ -887,7 +891,9 @@ def test_extract_definition__scd_lookup(
             "scd_parameters": {
                 "current_flag_column": "is_record_current",
                 "effective_timestamp_column": "column_9a6d0e6c2e504d026e3b3001c9480e7a992cb2bb",
+                "effective_timestamp_metadata": None,
                 "end_timestamp_column": None,
+                "end_timestamp_metadata": None,
                 "natural_key_column": "cust_id",
                 "offset": None,
             },
@@ -929,7 +935,8 @@ def test_extract_definition__event_lookup(global_graph, event_table_input_node, 
             "entity_column": "order_id",
             "entity_id": ObjectId("63dbe68cd918ef71acffd127"),
             "event_parameters": {
-                "event_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823"
+                "event_timestamp_column": "column_e007333d31736e39a0c148e730a98bbc4cc6f823",
+                "event_timestamp_metadata": None,
             },
             "feature_names": ["feat_98d843176d15410f62195cdc6698331e04d6a1dd_order_method"],
             "input_column_names": ["order_method"],

@@ -12,7 +12,10 @@ from featurebyte.query_graph.model.entity_relationship_info import (
     EntityAncestorDescendantMapper,
     EntityRelationshipInfo,
 )
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
@@ -20,12 +23,14 @@ from featurebyte.query_graph.node.generic import (
     LookupNode,
     LookupTargetNode,
     NonTileWindowAggregateNode,
+    TimeSeriesWindowAggregateNode,
 )
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.mixin import AggregationOpStructMixin, BaseGroupbyParameters
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
+from featurebyte.query_graph.ttl_handling_util import is_ttl_handling_required
 
 
 @dataclass
@@ -37,13 +42,14 @@ class AggregationInfo:
     - ItemGroupbyNode (non-time-to-live)
     - AggregateAsAtNode (non-time-to-live)
     - LookupNode (SCD lookup, Event lookup & Dimension lookup) (non-time-to-live)
+    - TimeSeriesWindowAggregateNode (time series aggregation)
     - RequestColumnNode
     """
 
     agg_node_types: List[NodeType]
     primary_entity_ids: List[PydanticObjectId]
     primary_entity_dtypes: List[DBVarType]
-    feature_job_settings: List[FeatureJobSetting]
+    feature_job_settings: List[FeatureJobSettingUnion]
     has_request_column: bool
     has_ingest_graph_node: bool
     has_ttl_agg_type: bool
@@ -130,7 +136,7 @@ class FeatureJobSettingExtractor:
             return None
         return self.default_feature_job_setting
 
-    def extract_from_agg_node(self, node: Node) -> Optional[FeatureJobSetting]:
+    def extract_from_agg_node(self, node: Node) -> Optional[FeatureJobSettingUnion]:
         """
         Extract feature job setting from the given node, return None if the node is not an aggregation node
 
@@ -141,8 +147,11 @@ class FeatureJobSettingExtractor:
 
         Returns
         -------
-        Optional[FeatureJobSetting]
+        Optional[FeatureJobSettingUnion]
         """
+        if isinstance(node, TimeSeriesWindowAggregateNode):
+            return node.parameters.feature_job_setting
+
         if not isinstance(node, AggregationOpStructMixin):
             return None
 
@@ -154,7 +163,7 @@ class FeatureJobSettingExtractor:
 
         return self.default_feature_job_setting
 
-    def extract_from_target_node(self, node: Node) -> Optional[FeatureJobSetting]:
+    def extract_from_target_node(self, node: Node) -> Optional[FeatureJobSettingUnion]:
         """
         Extract feature job setting from the given target node. DFS is used to find the first
         aggregation node in the lineage of the target node.
@@ -166,10 +175,10 @@ class FeatureJobSettingExtractor:
 
         Returns
         -------
-        Optional[FeatureJobSetting]
+        Optional[FeatureJobSettingUnion]
         """
         for _node in self.graph.iterate_nodes(target_node=node, node_type=None):
-            if isinstance(_node, AggregationOpStructMixin):
+            if isinstance(_node, (AggregationOpStructMixin, TimeSeriesWindowAggregateNode)):
                 return self.extract_from_agg_node(node=_node)
         return None
 
@@ -281,10 +290,7 @@ class DecomposePointState:
 
         if node.name in self.aggregation_node_names:
             aggregation_info.agg_node_types = [node.type]
-            if isinstance(node, GroupByNode):
-                aggregation_info.has_ttl_agg_type = any(node.parameters.windows)
-            elif isinstance(node, NonTileWindowAggregateNode):
-                aggregation_info.has_ttl_agg_type = True
+            aggregation_info.has_ttl_agg_type = is_ttl_handling_required(node=node)
 
         if isinstance(node.parameters, BaseGroupbyParameters):
             groupby_keys = node.parameters.keys

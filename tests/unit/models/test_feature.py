@@ -14,6 +14,7 @@ from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureNamespaceModel, FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.metadata.operation import AggregationColumn, SourceDataColumn
 
 
@@ -186,7 +187,9 @@ def test_extract_operation_structure(feature_model_dict):
         "filter": False,
     }
     expected_columns = [
-        SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params)
+        SourceDataColumn(
+            name="col_float", dtype_info=DBVarTypeInfo(dtype="FLOAT"), **common_source_col_params
+        )
     ]
     assert op_struct.source_columns == expected_columns
     assert op_struct.derived_columns == []
@@ -199,12 +202,16 @@ def test_extract_operation_structure(feature_model_dict):
             category=None,
             offset=None,
             type="aggregation",
-            column=SourceDataColumn(name="col_float", dtype="FLOAT", **common_source_col_params),
+            column=SourceDataColumn(
+                name="col_float",
+                dtype_info=DBVarTypeInfo(dtype="FLOAT"),
+                **common_source_col_params,
+            ),
             filter=False,
             aggregation_type="groupby",
             node_names={"input_1", "graph_1", "groupby_1", "project_1"},
             node_name="groupby_1",
-            dtype="FLOAT",
+            dtype_info=DBVarTypeInfo(dtype="FLOAT"),
         )
     ]
 

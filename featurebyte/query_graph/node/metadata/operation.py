@@ -27,6 +27,7 @@ from typing_extensions import Annotated
 from featurebyte.enum import AggFunc, DBVarType, StrEnum, TableDataType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 
 
 class NodeOutputCategory(StrEnum):
@@ -62,7 +63,7 @@ class BaseColumn:
 
     name: Optional[str]
         Column name
-    dtype: DBVarType
+    dtype_info: DBVarTypeInfo
         Column table type
     filter: bool
         Whether the column has been filtered
@@ -73,10 +74,21 @@ class BaseColumn:
     """
 
     name: Optional[str]
-    dtype: DBVarType
+    dtype_info: DBVarTypeInfo
     filter: bool
     node_names: Set[str]
     node_name: str
+
+    @property
+    def dtype(self) -> DBVarType:
+        """
+        Retrieve the column data type
+
+        Returns
+        -------
+        DBVarType
+        """
+        return self.dtype_info.dtype
 
     def _get_hash_key(self) -> Tuple[Optional[str], DBVarType, bool, str]:
         """
@@ -245,7 +257,7 @@ class BaseDerivedColumn(BaseColumn):
         columns: Sequence[Union[BaseDataColumn, "BaseDerivedColumn"]],
         transform: Optional[str],
         node_name: str,
-        dtype: DBVarType,
+        dtype_info: DBVarTypeInfo,
         other_node_names: Optional[Set[str]] = None,
     ) -> BaseDerivedColumnT:
         """
@@ -261,8 +273,8 @@ class BaseDerivedColumn(BaseColumn):
             Node transformation
         node_name: str
             Node name
-        dtype: DBVarType
-            Column type
+        dtype_info: DBVarTypeInfo
+            Column database var type info
         other_node_names: Optional[Set[str]]
             Set of node name
 
@@ -279,7 +291,7 @@ class BaseDerivedColumn(BaseColumn):
             transforms.append(transform)
         return cls(
             name=name,
-            dtype=dtype,
+            dtype_info=dtype_info,
             columns=columns,
             transforms=transforms,
             node_names=node_names,
@@ -473,13 +485,13 @@ class OperationStructure:
             assert len(self.aggregations) == len(set(agg.name for agg in self.aggregations))
 
     @property
-    def series_output_dtype(self) -> DBVarType:
+    def series_output_dtype_info(self) -> DBVarTypeInfo:
         """
         Retrieve the series output variable type
 
         Returns
         -------
-        DBVarType
+        DBVarTypeInfo
 
         Raises
         ------
@@ -500,8 +512,8 @@ class OperationStructure:
             raise ValueError("Series output should contain one and only one column.")
 
         if self.output_category == NodeOutputCategory.VIEW:
-            return self.columns[0].dtype
-        return self.aggregations[0].dtype
+            return self.columns[0].dtype_info
+        return self.aggregations[0].dtype_info
 
     @property
     def all_node_names(self) -> Set[str]:
@@ -651,6 +663,27 @@ class OperationStructure:
             row_index_lineage=self.row_index_lineage,
             is_time_based=self.is_time_based,
         )
+
+    def get_dtype_metadata(self, column_name: Optional[str]) -> Optional[DBVarTypeMetadata]:
+        """
+        Retrieve the timestamp schema for the given column name
+
+        Parameters
+        ----------
+        column_name: str
+            Column name
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if column_name is None:
+            return None
+
+        for column in self.columns:
+            if column.name == column_name:
+                return column.dtype_info.metadata
+        return None
 
 
 class OperationStructureInfo:

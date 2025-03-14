@@ -3,8 +3,9 @@ name: publish
   workflow_dispatch: {}
   push:
     branches:
-      - main
-      - post-release/*
+      - main            # Allow main branch           --> X.Y.Z.devN
+      - post-release/*  # Allow post-release branches --> X.Y.Z.postN
+      - stable/*        # Allow stable branches       --> X.Y.Z.postN
 permissions:
   contents: write
 env:
@@ -165,4 +166,4 @@ jobs:
               - type: section
                 text:
                   type: mrkdwn
-                  text: "```publish: [${{ env.PUBLISH_RESULT }} - ${{ needs.publish.outputs.DEV_VERSION }}]```"
+                  text: "```publish: [${{ needs.publish.result }} - ${{ needs.publish.outputs.DEV_VERSION }}]```"

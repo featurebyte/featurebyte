@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 from featurebyte import AggFunc, FeatureList
-from tests.util.helper import tz_localize_if_needed
+from tests.util.helper import fb_assert_frame_equal, tz_localize_if_needed
 
 
 @pytest.fixture
@@ -183,12 +183,38 @@ def test_change_view_custom_date_format(scd_table_custom_date_format, source_typ
         windows=["1w"],
         feature_names=["count_1w"],
     )["count_1w"]
-    df = count_1w_feature.preview(
-        pd.DataFrame([{"POINT_IN_TIME": "2001-11-15 10:00:00", "üser id": 1}])
-    )
+    preview_params = pd.DataFrame([
+        {"POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"), "üser id": 1}
+    ])
+    df = count_1w_feature.preview(preview_params)
     tz_localize_if_needed(df, source_type)
-    assert df.iloc[0].to_dict() == {
-        "POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"),
-        "üser id": 1,
-        "count_1w": 1,
-    }
+    expected = preview_params.copy()
+    expected["count_1w"] = np.nan
+    fb_assert_frame_equal(df, expected)
+
+
+def test_change_view_custom_date_format_and_join(
+    scd_table_custom_date_format, scd_table, source_type
+):
+    """
+    Test change view operations with an SCDTable with custom date format
+    """
+    change_view = scd_table_custom_date_format.get_change_view("User Status")
+
+    # Check that the timestamp column in the change view is used correctly downstream
+    view = scd_table.get_view()
+    joined_view = change_view.join(view)
+    feature = joined_view.groupby("User ID").aggregate_over(
+        value_column="User Status",
+        method=AggFunc.NA_COUNT,
+        windows=["1w"],
+        feature_names=["na_count_1w"],
+    )["na_count_1w"]
+    preview_params = pd.DataFrame([
+        {"POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"), "üser id": 1}
+    ])
+    df = feature.preview(preview_params)
+    tz_localize_if_needed(df, source_type)
+    expected = preview_params.copy()
+    expected["na_count_1w"] = np.nan
+    fb_assert_frame_equal(df, expected)

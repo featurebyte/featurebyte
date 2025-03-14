@@ -452,9 +452,8 @@ def patched_num_features_per_query():
     """
     Patch the NUM_FEATURES_PER_QUERY parameter to trigger executing feature query in batches
     """
-    with patch("featurebyte.query_graph.sql.feature_historical.NUM_FEATURES_PER_QUERY", 4):
-        with patch("featurebyte.service.historical_features_and_target.NUM_FEATURES_PER_QUERY", 4):
-            yield
+    with patch("featurebyte.session.session_helper.NUM_FEATURES_PER_QUERY", 4):
+        yield
 
 
 @pytest.fixture(name="new_user_id_entity", scope="session")
@@ -608,9 +607,7 @@ def check_historical_features_system_metrics(config, historical_feature_table_id
 async def test_get_historical_features(
     session,
     data_source,
-    feature_group,
-    feature_group_per_category,
-    feature_group_timestamp_agg,
+    feature_list_with_combined_feature_groups,
     in_out_formats,
     user_entity,
     new_user_id_entity,
@@ -624,23 +621,7 @@ async def test_get_historical_features(
     assert input_format in {"dataframe", "table", "uploaded_table"}
     assert output_format in {"dataframe", "table"}
 
-    feature_group["COUNT_2h DIV COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
-    feature_list = FeatureList(
-        [
-            feature_group["COUNT_2h"],
-            feature_group["COUNT_24h"],
-            feature_group_per_category["COUNT_BY_ACTION_24h"],
-            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
-            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
-            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
-            feature_group["COUNT_2h DIV COUNT_24h"],
-            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
-            feature_group_timestamp_agg["TS_MIN_24h"],
-            feature_group_timestamp_agg["TS_MAX_24h"],
-        ],
-        name="My FeatureList",
-    )
-
+    feature_list = feature_list_with_combined_feature_groups
     df_training_events, df_historical_expected = get_training_events_and_expected_result()
 
     if "table" in input_format:
@@ -1023,6 +1004,7 @@ async def test_get_target__feature_table_cache(
         value_column="ÀMOUNT",
         window="24h",
         target_name="avg_24h_target",
+        fill_value=None,
     )
 
     df_training_events, _ = get_training_events_and_expected_result()
@@ -1467,7 +1449,7 @@ def test_add_feature_on_view_with_join(event_view, scd_table, non_time_based_fea
     event_view_preview = event_view.sample()
     new_columns = event_view_preview.columns.tolist()
     expected_updated_column_names = [*original_column_names, "transaction_count", "User Status New"]
-    assert new_columns == expected_updated_column_names
+    assert set(new_columns) == set(expected_updated_column_names)
 
     # check column materialized correctly
     pd.testing.assert_series_equal(

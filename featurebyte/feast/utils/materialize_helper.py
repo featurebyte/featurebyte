@@ -9,17 +9,18 @@ from datetime import datetime
 from typing import Any, List, Optional
 from unittest.mock import patch
 
-from cachetools import TTLCache
 from feast import FeatureStore, FeatureView, utils
 from tqdm import tqdm
 
 from featurebyte.enum import InternalName
 from featurebyte.exception import FeatureMaterializationError
-from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, to_thread
+from featurebyte.session.base import (
+    LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+    BaseSession,
+    to_thread,
+)
 
 DEFAULT_MATERIALIZE_START_DATE = datetime(1970, 1, 1)
-
-feast_snowflake_session_cache: TTLCache[Any, Any] = TTLCache(maxsize=1024, ttl=3600)
 
 
 def _filter_by_name(obj_list: List[Any], columns: List[str]) -> List[Any]:
@@ -41,6 +42,7 @@ def _filter_by_name(obj_list: List[Any], columns: List[str]) -> List[Any]:
 
 
 async def materialize_partial(
+    session: BaseSession,
     feature_store: FeatureStore,
     feature_view: FeatureView,
     columns: List[str],
@@ -53,6 +55,8 @@ async def materialize_partial(
 
     Parameters
     ----------
+    session : BaseSession
+        Session object
     feature_store : FeatureStore
         FeatureStore object
     feature_view : FeatureView
@@ -93,13 +97,10 @@ async def materialize_partial(
         feature_view.projection.features, columns
     )
 
-    # FIXME: This patch modifies the cache used by the SnowflakeOfflineStore to introduce
-    # ttl of 10 minutes to recover from a stale connection.
+    # FIXME: This patch will reuse the Snowflake connection from the session object for
+    # FEAST online store materialization
     if feature_store.config.offline_store.type == "snowflake.offline":
-        key = str(feature_store.config.offline_store)
-        if key not in feast_snowflake_session_cache:
-            feast_snowflake_session_cache[key] = {}
-        snowflake_session_cache = feast_snowflake_session_cache[key]
+        snowflake_session_cache = {feature_store.config.offline_store.type: session.connection}
     else:
         snowflake_session_cache = {}
 

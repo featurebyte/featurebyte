@@ -40,6 +40,21 @@ AllSupportedValueTypes = Union[Scalar, ScalarSequence, Timestamp]
 Func = Callable[..., Any]
 
 
+class Unset:
+    """
+    Placeholder class for unset values
+    """
+
+    def __repr__(self) -> str:
+        return "UNSET"
+
+    def __str__(self) -> str:
+        return "UNSET"
+
+
+UNSET = Unset()
+
+
 def is_scalar(value: Any) -> bool:
     """
     Returns whether the provided value is a Scalar value

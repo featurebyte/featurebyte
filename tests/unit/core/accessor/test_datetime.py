@@ -80,7 +80,7 @@ def test_accessor_getattr__timestamp(timestamp_series):
             lambda s: s.dt.day,
             """
             (
-              DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(86400000000 AS BIGINT)
+              DATEDIFF(MICROSECOND, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(86400000000 AS BIGINT)
             )
             """,
         ),
@@ -88,7 +88,7 @@ def test_accessor_getattr__timestamp(timestamp_series):
             lambda s: s.dt.hour,
             """
             (
-              DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(3600000000 AS BIGINT)
+              DATEDIFF(MICROSECOND, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(3600000000 AS BIGINT)
             )
             """,
         ),
@@ -96,7 +96,7 @@ def test_accessor_getattr__timestamp(timestamp_series):
             lambda s: s.dt.minute,
             """
             (
-              DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(60000000 AS BIGINT)
+              DATEDIFF(MICROSECOND, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(60000000 AS BIGINT)
             )
             """,
         ),
@@ -104,7 +104,7 @@ def test_accessor_getattr__timestamp(timestamp_series):
             lambda s: s.dt.second,
             """
             (
-              DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT)
+              DATEDIFF(MICROSECOND, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT)
             )
             """,
         ),
@@ -112,7 +112,7 @@ def test_accessor_getattr__timestamp(timestamp_series):
             lambda s: s.dt.millisecond,
             """
             (
-              DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(1000 AS BIGINT)
+              DATEDIFF(MICROSECOND, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(1000 AS BIGINT)
             )
             """,
         ),
@@ -120,7 +120,7 @@ def test_accessor_getattr__timestamp(timestamp_series):
             lambda s: s.dt.microsecond,
             """
             (
-              DATEDIFF(microsecond, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(1 AS BIGINT)
+              DATEDIFF(MICROSECOND, "PROMOTION_START_DATE", "TIMESTAMP") * CAST(1 AS BIGINT) / CAST(1 AS BIGINT)
             )
             """,
         ),
@@ -270,6 +270,7 @@ def test_timezone_offset__manually_specified_constant(timestamp_series):
     assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": "+08:00",
+        "timestamp_metadata": None,
     }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 1
@@ -284,6 +285,7 @@ def test_timezone_offset__manually_specified_column(timestamp_series, varchar_se
     assert timestamp_hour.node.parameters.model_dump() == {
         "property": "hour",
         "timezone_offset": None,
+        "timestamp_metadata": None,
     }
     dt_extract_input_nodes = timestamp_hour.graph.backward_edges_map[timestamp_hour.node.name]
     assert len(dt_extract_input_nodes) == 2

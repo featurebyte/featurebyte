@@ -12,14 +12,16 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Type
 
-from pydantic import ValidationError
-
 import featurebyte.models
 from featurebyte.common.env_util import is_development_mode
-from featurebyte.common.progress import ProgressCallbackType, get_ranged_progress_callback
+from featurebyte.common.progress import (
+    ProgressCallbackType,
+    get_ranged_progress_callback,
+    ranged_progress_callback_iterator,
+)
 from featurebyte.exception import DataWarehouseOperationError
 from featurebyte.logging import get_logger
-from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel, User
+from featurebyte.models.base import FeatureByteCatalogBaseDocumentModel
 from featurebyte.models.catalog import CatalogModel
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.models.task import Task
@@ -28,8 +30,7 @@ from featurebyte.persistent import Persistent
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.worker.task.catalog_cleanup import CatalogCleanupTaskPayload
 from featurebyte.service.catalog import AllCatalogService
-from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.session_helper import SessionHelper
 from featurebyte.service.task_manager import TaskManager
 from featurebyte.storage import Storage
 from featurebyte.worker.task.base import BaseTask
@@ -81,20 +82,18 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
     def __init__(
         self,
         task_manager: TaskManager,
-        feature_store_service: FeatureStoreService,
         all_catalog_service: AllCatalogService,
         persistent: Persistent,
         storage: Storage,
-        session_manager_service: SessionManagerService,
+        session_helper: SessionHelper,
         task_progress_updater: TaskProgressUpdater,
     ):
         super().__init__(task_manager=task_manager)
         self.task_progress_updater = task_progress_updater
-        self.feature_store_service = feature_store_service
         self.all_catalog_service = all_catalog_service
         self.persistent = persistent
         self.storage = storage
-        self.session_manager_service = session_manager_service
+        self.session_helper = session_helper
 
     @property
     def model_packages(self) -> list[Any]:
@@ -151,22 +150,24 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
     async def _cleanup_warehouse_tables(
         self, catalog: CatalogModel, warehouse_tables: set[TableDetails]
     ) -> None:
-        feature_store = await self.feature_store_service.get_document(
-            catalog.default_feature_store_ids[0]
-        )
-        session = await self.session_manager_service.get_feature_store_session(
-            feature_store, user_override=User(id=feature_store.user_id)
-        )
-        fs_source_info = feature_store.get_source_info()
-        for warehouse_table in warehouse_tables:
-            try:
-                await session.drop_table(
-                    table_name=warehouse_table.table_name,
-                    schema_name=warehouse_table.schema_name or fs_source_info.schema_name,
-                    database_name=warehouse_table.database_name or fs_source_info.database_name,
-                )
-            except DataWarehouseOperationError as exc:
-                logger.exception(f"Error dropping warehouse table ({warehouse_table}): {exc}")
+        if catalog.default_feature_store_ids:
+            fs_and_session = await self.session_helper.try_to_get_feature_store_and_session(
+                feature_store_id=catalog.default_feature_store_ids[0]
+            )
+            if not fs_and_session:
+                return
+
+            feature_store, session = fs_and_session
+            fs_source_info = feature_store.get_source_info()
+            for warehouse_table in warehouse_tables:
+                try:
+                    await session.drop_table(
+                        table_name=warehouse_table.table_name,
+                        schema_name=warehouse_table.schema_name or fs_source_info.schema_name,
+                        database_name=warehouse_table.database_name or fs_source_info.database_name,
+                    )
+                except DataWarehouseOperationError as exc:
+                    logger.exception(f"Error dropping warehouse table ({warehouse_table}): {exc}")
 
     async def _cleanup_store_files(self, remote_file_paths: set[Path]) -> None:
         for remote_file_path in remote_file_paths:
@@ -272,7 +273,7 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                     assert isinstance(obj, FeatureByteCatalogBaseDocumentModel)
                     warehouse_tables.update(obj.warehouse_tables)
                     remote_file_paths.update(obj.remote_storage_paths)
-                except ValidationError as exc:
+                except Exception as exc:
                     if is_development_mode():
                         raise
 
@@ -283,7 +284,6 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                         doc_dict["_id"],
                         exc,
                     )
-                    pass
 
             # cleanup the warehouse tables & remote files
             await mongo_progress_callback(
@@ -335,12 +335,10 @@ class CatalogCleanupTask(BaseTask[CatalogCleanupTaskPayload]):
                     use_raw_query_filter=True,
                 )
             ]
-            for i, catalog in enumerate(catalogs_to_cleanup):
-                catalog_progress_callback = get_ranged_progress_callback(
-                    progress_callback=self.task_progress_updater.update_progress,
-                    from_percent=int(100 * i / len(catalogs_to_cleanup)),
-                    to_percent=int(100 * (i + 1) / len(catalogs_to_cleanup)),
-                )
+            for catalog, catalog_progress_callback in ranged_progress_callback_iterator(
+                items=catalogs_to_cleanup,
+                progress_callback=self.task_progress_updater.update_progress,
+            ):
                 await catalog_progress_callback(
                     percent=0,
                     message=f'Cleaning up catalog "{catalog.name}"',

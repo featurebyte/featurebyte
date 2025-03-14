@@ -79,6 +79,7 @@ from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.deploy import (
     DeployFeatureListManagementService,
     DeployFeatureManagementService,
@@ -117,7 +118,10 @@ from featurebyte.service.feature_offline_store_info import OfflineStoreInfoIniti
 from featurebyte.service.feature_preview import FeaturePreviewService
 from featurebyte.service.feature_readiness import FeatureReadinessService
 from featurebyte.service.feature_store import FeatureStoreService
-from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
+from featurebyte.service.feature_store_warehouse import (
+    FeatureStoreWarehouseService,
+    NonInteractiveFeatureStoreWarehouseService,
+)
 from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.feature_table_cache_metadata import FeatureTableCacheMetadataService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
@@ -149,7 +153,7 @@ from featurebyte.service.online_store_compute_query_service import OnlineStoreCo
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.parent_serving import ParentEntityLookupService
 from featurebyte.service.periodic_task import PeriodicTaskService
-from featurebyte.service.preview import PreviewService
+from featurebyte.service.preview import NonInteractivePreviewService, PreviewService
 from featurebyte.service.query_cache import QueryCacheDocumentService
 from featurebyte.service.query_cache_cleanup import QueryCacheCleanupService
 from featurebyte.service.query_cache_cleanup_scheduler import QueryCacheCleanupSchedulerService
@@ -159,6 +163,7 @@ from featurebyte.service.relationship_info import RelationshipInfoService
 from featurebyte.service.scd_table import SCDTableService
 from featurebyte.service.scd_table_validation import SCDTableValidationService
 from featurebyte.service.semantic import SemanticService
+from featurebyte.service.session_helper import SessionHelper
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.specialized_dtype import SpecializedDtypeDetectionService
 from featurebyte.service.static_source_table import StaticSourceTableService
@@ -264,6 +269,7 @@ app_container_config.register_class(CredentialController)
 app_container_config.register_class(CredentialService)
 app_container_config.register_class(SpecializedDtypeDetectionService)
 app_container_config.register_class(ContextService)
+app_container_config.register_class(CronHelper)
 app_container_config.register_class(DataWarehouseMigrationMixin)
 app_container_config.register_class(DeployFeatureManagementService)
 app_container_config.register_class(DeployFeatureListManagementService)
@@ -326,6 +332,8 @@ app_container_config.register_class(HistoricalFeaturesValidationParametersServic
 app_container_config.register_class(ItemTableController)
 app_container_config.register_class(ItemTableService)
 app_container_config.register_class(NamespaceHandler)
+app_container_config.register_class(NonInteractivePreviewService)
+app_container_config.register_class(NonInteractiveFeatureStoreWarehouseService)
 app_container_config.register_class(ObservationSetHelper)
 app_container_config.register_class(ObservationTableController)
 app_container_config.register_class(ObservationTableDeleteValidator)
@@ -387,6 +395,7 @@ app_container_config.register_class(SemanticController)
 app_container_config.register_class(SemanticService)
 app_container_config.register_class(SemanticRelationshipService)
 app_container_config.register_class(SessionManagerService)
+app_container_config.register_class(SessionHelper)
 app_container_config.register_class(StaticSourceTableController)
 app_container_config.register_class(StaticSourceTableService)
 app_container_config.register_class(SystemMetricsService)

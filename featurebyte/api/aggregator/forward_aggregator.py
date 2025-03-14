@@ -14,7 +14,8 @@ from featurebyte.api.item_view import ItemView
 from featurebyte.api.target import Target
 from featurebyte.api.view import View
 from featurebyte.common.model_util import parse_duration_string
-from featurebyte.enum import AggFunc
+from featurebyte.common.validator import validate_target_type
+from featurebyte.enum import AggFunc, TargetType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.typing import OptionalScalar
@@ -46,6 +47,7 @@ class ForwardAggregator(BaseAggregator):
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
         offset: Optional[str] = None,
+        target_type: Optional[TargetType] = None,
     ) -> Target:
         """
         Aggregate given value_column for each group specified in keys over a time window.
@@ -67,6 +69,8 @@ class ForwardAggregator(BaseAggregator):
         offset: Optional[str]
             Offset duration to apply to the window, such as '1d'. If specified, the windows will be
             shifted forward by the offset duration
+        target_type: Optional[TargetType]
+            Type of the Target used to indicate the modeling type of the target
 
         Returns
         -------
@@ -105,6 +109,9 @@ class ForwardAggregator(BaseAggregator):
         target = self.view.project_target_from_node(
             forward_aggregate_node, target_name, output_var_type
         )
+        if target_type:
+            validate_target_type(target_type, target.dtype)
+            target.update_target_type(target_type)
         if not skip_fill_na:
             return self._fill_feature_or_target(target, method, target_name, fill_value)  # type: ignore[return-value]
         return target
@@ -150,6 +157,7 @@ class ForwardAggregator(BaseAggregator):
             "value_by": self.category,
             "entity_ids": self.entity_ids,
             "timestamp_col": timestamp_col,
+            "timestamp_metadata": self.view.operation_structure.get_dtype_metadata(timestamp_col),
             "offset": offset,
         }
 

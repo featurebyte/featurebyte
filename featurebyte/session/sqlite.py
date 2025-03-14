@@ -15,7 +15,7 @@ from featurebyte.enum import DBVarType, SourceType
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.session.base import (
-    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     BaseSchemaInitializer,
     BaseSession,
 )
@@ -47,17 +47,17 @@ class SQLiteSession(BaseSession):
         # no way to cancel query in sqlite
         return True
 
-    async def list_databases(self) -> list[str]:
+    async def _list_databases(self) -> list[str]:
         return []
 
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
         return []
 
-    async def list_tables(
+    async def _list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         tables = await self.execute_query(
             "SELECT name FROM sqlite_master WHERE type = 'table'", timeout=timeout
@@ -94,7 +94,7 @@ class SQLiteSession(BaseSession):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
         schema = await self.execute_query(f'PRAGMA table_info("{table_name}")', timeout=timeout)
         column_name_type_map = collections.OrderedDict()

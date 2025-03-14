@@ -32,6 +32,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     StatementT,
     VariableNameGenerator,
     VarNameExpressionInfo,
+    derive_sdk_code_from_timestamp_schema,
 )
 from featurebyte.query_graph.node.schema import (
     ColumnSpec,
@@ -82,6 +83,12 @@ class BaseInputNodeParameters(FeatureByteBaseModel):
         if columns and isinstance(columns[0], str):
             values["columns"] = [{"name": col, "dtype": DBVarType.UNKNOWN} for col in columns]
         return values
+
+    @model_validator(mode="after")
+    def _validate_parameters(self) -> "BaseInputNodeParameters":
+        if not self.columns:
+            raise ValueError("columns should not be empty")
+        return self
 
     def extract_feature_store_object(
         self,
@@ -394,10 +401,8 @@ class TimeSeriesTableInputNodeParameters(BaseInputNodeParameters):
             "record_creation_timestamp_column": table_info.get("record_creation_timestamp_column"),
             "series_id_column": self.id_column,
             "reference_datetime_column": self.reference_datetime_column,
-            "reference_datetime_schema": ClassEnum.TIMESTAMP_SCHEMA(
-                format_string=self.reference_datetime_schema.format_string,
-                is_utc_time=self.reference_datetime_schema.is_utc_time,
-                timezone=self.reference_datetime_schema.timezone,
+            "reference_datetime_schema": derive_sdk_code_from_timestamp_schema(
+                timestamp_schema=self.reference_datetime_schema
             ),
             "time_interval": ClassEnum.TIME_INTERVAL(
                 value=self.time_interval.value,
@@ -470,7 +475,7 @@ class InputNode(BaseNode):
                     table_type=TableDataType(self.parameters.type),
                     node_names={self.name},
                     node_name=self.name,
-                    dtype=DBVarType(column.dtype),
+                    dtype_info=column.dtype_info,
                     filter=False,
                 )
                 for column in self.parameters.columns

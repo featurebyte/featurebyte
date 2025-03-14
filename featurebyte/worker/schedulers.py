@@ -5,6 +5,7 @@ Customized MongoDB Scheduler
 import datetime
 from typing import Any
 
+import pytz
 from celery import schedules
 from celerybeatmongo.schedulers import MongoScheduleEntry as BaseMongoScheduleEntry
 from celerybeatmongo.schedulers import MongoScheduler as BaseMongoScheduler
@@ -16,6 +17,24 @@ class MongoScheduleEntry(BaseMongoScheduleEntry):
     """
 
     epoch_time: datetime.datetime = datetime.datetime(1970, 1, 1)
+
+    def _default_now(self) -> Any:
+        if hasattr(self._task, "timezone"):
+            timezone = getattr(self._task, "timezone")
+            if timezone:
+                return datetime.datetime.now(pytz.timezone(timezone))
+        return super()._default_now()
+
+    def default_now(self) -> Any:
+        return self._default_now()
+
+    def next(self) -> Any:
+        self._task.last_run_at = self._default_now()
+        self._task.total_run_count += 1
+        self._task.run_immediately = False
+        return self.__class__(self._task)
+
+    __next__ = next
 
     def is_due(self) -> Any:
         """

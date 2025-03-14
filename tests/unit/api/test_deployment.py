@@ -329,6 +329,7 @@ def test_deployment_with_unbounded_window(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
+        # Time-to-live (TTL) handling to clean up expired data
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=3600)
         feature_timestamp = pd.to_datetime(

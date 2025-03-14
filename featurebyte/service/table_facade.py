@@ -11,8 +11,10 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.feature_store import TableModel, TableStatus
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSettingUnion
 from featurebyte.schema.event_table import EventTableServiceUpdate
-from featurebyte.schema.feature_job_setting_analysis import FeatureJobSetting
+from featurebyte.schema.scd_table import SCDTableServiceUpdate
+from featurebyte.schema.time_series_table import TimeSeriesTableServiceUpdate
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.dimension_table_validation import DimensionTableValidationService
 from featurebyte.service.event_table import EventTableService
@@ -237,7 +239,7 @@ class TableFacadeService:
             await self.update_table_columns_info(table_id, columns_info, service=service)
 
     async def update_default_feature_job_setting(
-        self, table_id: ObjectId, default_feature_job_setting: FeatureJobSetting
+        self, table_id: ObjectId, default_feature_job_setting: FeatureJobSettingUnion
     ) -> None:
         """
         Update default feature job setting
@@ -246,14 +248,41 @@ class TableFacadeService:
         ----------
         table_id: ObjectId
             Table id
-        default_feature_job_setting: FeatureJobSetting
+        default_feature_job_setting: FeatureJobSettingUnion
             Default feature job setting
+
+        Raises
+        ------
+        ValueError
+            If default feature job setting is not supported for table type
         """
-        await self.event_table_service.update_document(
-            document_id=table_id,
-            data=EventTableServiceUpdate(default_feature_job_setting=default_feature_job_setting),
-            return_document=False,
-        )
+        table = await self.table_service.get_document(table_id)
+        if table.type == TableDataType.EVENT_TABLE:
+            await self.event_table_service.update_document(
+                document_id=table_id,
+                data=EventTableServiceUpdate(
+                    default_feature_job_setting=default_feature_job_setting
+                ),
+                return_document=False,
+            )
+        elif table.type == TableDataType.SCD_TABLE:
+            await self.scd_table_service.update_document(
+                document_id=table_id,
+                data=SCDTableServiceUpdate(default_feature_job_setting=default_feature_job_setting),
+                return_document=False,
+            )
+        elif table.type == TableDataType.TIME_SERIES_TABLE:
+            await self.time_series_table_service.update_document(
+                document_id=table_id,
+                data=TimeSeriesTableServiceUpdate(
+                    default_feature_job_setting=default_feature_job_setting
+                ),
+                return_document=False,
+            )
+        else:
+            raise ValueError(
+                f"Default feature job setting not supported for table type {table.type}"
+            )
 
     def table_needs_validation(self, table_model: TableModel) -> bool:
         """

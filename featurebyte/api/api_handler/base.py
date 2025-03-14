@@ -152,7 +152,7 @@ class ListHandler:
                         mapping_function = partial(map_object_id_to_name, object_map)
                     new_field_values = item_list[foreign_key_field].apply(mapping_function)
                 else:
-                    new_field_values = [[]] * item_list.shape[0]
+                    new_field_values = [None] * item_list.shape[0]
                 item_list[foreign_key_mapping.new_field_name] = new_field_values
         additionally_processed_list = self.additional_post_processing(item_list)
         return additionally_processed_list

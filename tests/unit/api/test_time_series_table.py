@@ -17,7 +17,7 @@ from typeguard import TypeCheckError
 
 from featurebyte.api.entity import Entity
 from featurebyte.api.time_series_table import TimeSeriesTable
-from featurebyte.enum import TableDataType
+from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -27,22 +27,37 @@ from featurebyte.exception import (
 )
 from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.time_series_table import TimeSeriesTableModel
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
+    TableFeatureJobSetting,
+    TableIdFeatureJobSetting,
 )
 from featurebyte.query_graph.model.time_series_table import TimeInterval
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
+from featurebyte.query_graph.model.timestamp_schema import (
+    ExtendedTimestampSchema,
+    TimestampSchema,
+    TimestampTupleSchema,
+    TimeZoneColumn,
+    TimezoneOffsetSchema,
+)
 from featurebyte.query_graph.node.cleaning_operation import (
+    AddTimestampSchema,
     DisguisedValueImputation,
     MissingValueImputation,
 )
 from tests.unit.api.base_table_test import BaseTableTestSuite, DataType
-from tests.util.helper import check_sdk_code_generation, compare_pydantic_obj
+from tests.util.helper import check_sdk_code_generation
 
 
 @pytest.fixture(name="time_series_table_dict")
 def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id):
     """TimeSeriesTable in serialized dictionary format"""
+    ts_schema = {
+        "format_string": "YYYY-MM-DD HH24:MI:SS",
+        "timezone": "Etc/UTC",
+        "is_utc_time": None,
+    }
     return {
         "type": "time_series_table",
         "name": "sf_time_series_table",
@@ -117,7 +132,7 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "semantic_id": None,
                 "critical_data_info": None,
                 "description": "Date column",
-                "dtype_metadata": None,
+                "dtype_metadata": {"timestamp_schema": ts_schema, "timestamp_tuple_schema": None},
             },
             {
                 "entity_id": None,
@@ -137,14 +152,19 @@ def time_series_table_dict_fixture(snowflake_database_time_series_table, user_id
                 "description": None,
                 "dtype_metadata": None,
             },
+            {
+                "critical_data_info": None,
+                "description": None,
+                "dtype": "TIMESTAMP_TZ",
+                "dtype_metadata": None,
+                "entity_id": None,
+                "name": "another_timestamp_col",
+                "semantic_id": None,
+            },
         ],
         "series_id_column": "col_int",
         "reference_datetime_column": "date",
-        "reference_datetime_schema": {
-            "format_string": None,
-            "timezone": "Etc/UTC",
-            "is_utc_time": None,
-        },
+        "reference_datetime_schema": ts_schema,
         "time_interval": {"unit": "DAY", "value": 1},
         "record_creation_timestamp_column": "created_at",
         "default_feature_job_setting": None,
@@ -167,7 +187,9 @@ def test_create_time_series_table(
         name="sf_time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         description="Some description",
@@ -199,7 +221,9 @@ def test_create_time_series_table(
             name=123,
             series_id_column="col_int",
             reference_datetime_column=234,
-            reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+            ),
             time_interval=TimeInterval(value=1, unit="DAY"),
             record_creation_timestamp_column=345,
         )
@@ -218,7 +242,9 @@ def test_create_time_series_table__duplicated_record(
             name="sf_time_series_table",
             series_id_column="col_int",
             reference_datetime_column="date",
-            reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+            ),
             time_interval=TimeInterval(value=1, unit="DAY"),
             record_creation_timestamp_column="created_at",
         )
@@ -238,7 +264,9 @@ def test_create_time_series_table__retrieval_exception(snowflake_database_time_s
                 name="sf_time_series_table",
                 series_id_column="col_int",
                 reference_datetime_column="date",
-                reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+                reference_datetime_schema=TimestampSchema(
+                    format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+                ),
                 time_interval=TimeInterval(value=1, unit="DAY"),
                 record_creation_timestamp_column="created_at",
             )
@@ -295,6 +323,7 @@ class TestTimeSeriesTableTestSuite(BaseTableTestSuite):
         "col_binary",
         "col_int",
         "store_id",
+        "another_timestamp_col",
     }
     expected_table_sql = """
     SELECT
@@ -306,7 +335,8 @@ class TestTimeSeriesTableTestSuite(BaseTableTestSuite):
       "col_boolean" AS "col_boolean",
       CAST("date" AS VARCHAR) AS "date",
       CAST("created_at" AS VARCHAR) AS "created_at",
-      "store_id" AS "store_id"
+      "store_id" AS "store_id",
+      CAST("another_timestamp_col" AS VARCHAR) AS "another_timestamp_col"
     FROM "sf_database"."sf_schema"."time_series_table"
     LIMIT 10
     """
@@ -328,7 +358,8 @@ class TestTimeSeriesTableTestSuite(BaseTableTestSuite):
       "col_boolean" AS "col_boolean",
       CAST("date" AS VARCHAR) AS "date",
       CAST("created_at" AS VARCHAR) AS "created_at",
-      "store_id" AS "store_id"
+      "store_id" AS "store_id",
+      CAST("another_timestamp_col" AS VARCHAR) AS "another_timestamp_col"
     FROM "sf_database"."sf_schema"."time_series_table"
     LIMIT 10
     """
@@ -354,7 +385,9 @@ def test_info__time_series_table_without_record_creation_date(
         name="sf_time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
     )
 
@@ -376,7 +409,7 @@ def test_info(saved_time_series_table, cust_id_entity):
         "default_feature_job_setting": None,
         "status": "PUBLIC_DRAFT",
         "entities": [{"name": "customer", "serving_names": ["cust_id"], "catalog_name": "catalog"}],
-        "column_count": 9,
+        "column_count": 10,
         "table_details": {
             "database_name": "sf_database",
             "schema_name": "sf_schema",
@@ -476,6 +509,14 @@ def test_info(saved_time_series_table, cust_id_entity):
             "critical_data_info": None,
             "description": None,
         },
+        {
+            "critical_data_info": None,
+            "description": None,
+            "dtype": "TIMESTAMP_TZ",
+            "entity": None,
+            "name": "another_timestamp_col",
+            "semantic": None,
+        },
     ]
 
 
@@ -504,7 +545,9 @@ def test_time_series_table__record_creation_exception(
                 name="sf_time_series_table",
                 series_id_column="col_int",
                 reference_datetime_column="date",
-                reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+                reference_datetime_schema=TimestampSchema(
+                    format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+                ),
                 time_interval=TimeInterval(value=1, unit="DAY"),
                 record_creation_timestamp_column="created_at",
                 _id=snowflake_time_series_table_id,
@@ -544,6 +587,7 @@ def test_update_default_job_setting__saved_time_series_table(
             month_of_year="*",
         ),
         timezone="Etc/UTC",
+        reference_timezone="Etc/UTC",
     )
     client = config.get_client()
     response = client.get(url=f"/time_series_table/{saved_time_series_table.id}")
@@ -557,6 +601,7 @@ def test_update_default_job_setting__saved_time_series_table(
             "month_of_year": "*",
         },
         "timezone": "Etc/UTC",
+        "reference_timezone": "Etc/UTC",
     }
 
 
@@ -579,6 +624,27 @@ def test_update_default_job_setting__record_update_exception(snowflake_time_seri
                 )
             )
 
+    with pytest.raises(RecordUpdateException) as exc:
+        snowflake_time_series_table.update_default_feature_job_setting(
+            feature_job_setting=CronFeatureJobSetting(
+                crontab=Crontab(
+                    minute=0,
+                    hour=1,
+                    day_of_week="*",
+                    day_of_month="*",
+                    month_of_year="*",
+                ),
+                timezone="Etc/UTC",
+                reference_timezone="Asia/Singapore",
+            )
+        )
+
+    expected_msg = (
+        "Cannot update default feature job setting reference timezone to Asia/Singapore as it is different "
+        "from the timezone of the reference datetime column (Etc/UTC)."
+    )
+    assert expected_msg in str(exc.value)
+
 
 def test_update_record_creation_timestamp_column__unsaved_object(
     snowflake_database_time_series_table, catalog
@@ -590,7 +656,9 @@ def test_update_record_creation_timestamp_column__unsaved_object(
         name="time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
     )
     assert time_series_table.record_creation_timestamp_column is None
@@ -673,6 +741,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "month_of_year": "*",
             },
             "timezone": "Etc/UTC",
+            "reference_timezone": "Etc/UTC",
         }
     }
     assert len(history) == 2
@@ -689,6 +758,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 month_of_year="*",
             ),
             timezone="Etc/UTC",
+            reference_timezone=None,
         )
     )
     t3 = datetime.utcnow()
@@ -704,6 +774,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "month_of_year": "*",
             },
             "timezone": "Etc/UTC",
+            "reference_timezone": "Etc/UTC",
         }
     }
     assert len(history) == 3
@@ -788,6 +859,13 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "Etc/UTC",
                 "Etc/UTC",
             ),
+            (
+                "UPDATE",
+                'update: "sf_time_series_table"',
+                "default_feature_job_setting.reference_timezone",
+                "Etc/UTC",
+                "Etc/UTC",
+            ),
         ],
         columns=["action_type", "name", "field_name", "old_value", "new_value"],
     )
@@ -843,6 +921,13 @@ def test_default_feature_job_setting_history(saved_time_series_table):
                 "default_feature_job_setting.crontab.month_of_year",
                 np.nan,
                 "*",
+            ),
+            (
+                "UPDATE",
+                'update: "sf_time_series_table"',
+                "default_feature_job_setting.reference_timezone",
+                np.nan,
+                "Etc/UTC",
             ),
             (
                 "UPDATE",
@@ -914,16 +999,7 @@ def test_time_series_table__entity_relation_auto_tagging(
     saved_time_series_table.store_id.as_entity("customer")
 
     updated_transaction_entity = Entity.get_by_id(id=transaction_entity.id)
-    compare_pydantic_obj(
-        updated_transaction_entity.parents,
-        expected=[
-            {
-                "id": customer.id,
-                "table_type": "time_series_table",
-                "table_id": saved_time_series_table.id,
-            }
-        ],
-    )
+    assert updated_transaction_entity.parents == []
     updated_customer_entity = Entity.get_by_id(id=customer.id)
     assert updated_customer_entity.parents == []
 
@@ -969,8 +1045,12 @@ def test_accessing_saved_time_series_table_attributes(saved_time_series_table):
     saved_time_series_table.update_default_feature_job_setting(
         feature_job_setting=feature_job_setting
     )
-    assert saved_time_series_table.default_feature_job_setting == feature_job_setting
-    assert cloned.default_feature_job_setting == feature_job_setting
+    effective_feature_job_setting = CronFeatureJobSetting(
+        **feature_job_setting.model_dump(exclude={"reference_timezone"}),
+        reference_timezone="Etc/UTC",
+    )
+    assert saved_time_series_table.default_feature_job_setting == effective_feature_job_setting
+    assert cloned.default_feature_job_setting == effective_feature_job_setting
 
 
 def test_timezone__valid(snowflake_database_time_series_table, catalog):
@@ -981,13 +1061,35 @@ def test_timezone__valid(snowflake_database_time_series_table, catalog):
         name="sf_time_series_table",
         series_id_column="col_int",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=None, timezone="Asia/Singapore"),
+        reference_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Asia/Singapore"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
     )
     assert time_series_table.reference_datetime_schema.timezone == "Asia/Singapore"
 
     input_node_params = time_series_table.frame.node.parameters
     assert input_node_params.reference_datetime_schema.timezone == "Asia/Singapore"
+
+    # check update default feature job setting without providing reference timezone
+    cron_feature_job_setting = CronFeatureJobSetting(
+        crontab=Crontab(
+            minute=0,
+            hour=1,
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        ),
+        timezone="US/Pacific",
+        reference_timezone=None,
+    )
+    time_series_table.update_default_feature_job_setting(
+        feature_job_setting=cron_feature_job_setting
+    )
+    default_feature_job_setting = time_series_table.default_feature_job_setting
+    assert default_feature_job_setting.crontab == cron_feature_job_setting.crontab
+    assert default_feature_job_setting.timezone == cron_feature_job_setting.timezone
+    assert default_feature_job_setting.reference_timezone == "Asia/Singapore"
 
 
 def test_timezone__invalid(snowflake_database_time_series_table, catalog):
@@ -999,10 +1101,28 @@ def test_timezone__invalid(snowflake_database_time_series_table, catalog):
             name="sf_time_series_table",
             series_id_column="col_int",
             reference_datetime_column="date",
-            reference_datetime_schema=TimestampSchema(format_string=None, timezone="Space/Time"),
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Space/Time"
+            ),
             time_interval=TimeInterval(value=1, unit="DAY"),
         )
     assert "Invalid timezone name." in str(exc.value)
+
+    with pytest.raises(RecordCreationException) as exc:
+        snowflake_database_time_series_table.create_time_series_table(
+            name="sf_time_series_table",
+            series_id_column="col_int",
+            reference_datetime_column="date",
+            reference_datetime_schema=TimestampSchema(
+                format_string="YYYY-MM-DD HH24:MI:SS", timezone="Asia/Singapore"
+            ),
+            time_interval=TimeInterval(value=2, unit="DAY"),
+        )
+
+    expected_msg = (
+        "Only intervals defined with a single time unit (e.g., 1 hour, 1 day) are supported."
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_timezone_offset__valid_column(snowflake_database_time_series_table, catalog):
@@ -1013,11 +1133,10 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
         series_id_column="col_int",
         reference_datetime_column="date",
         reference_datetime_schema=TimestampSchema(
-            format_string=None,
+            format_string="YYYY-MM-DD HH24:MI:SS",
             timezone=TimeZoneColumn(
                 column_name="col_text",
                 type="offset",
-                format_string="TZH:TZM",
             ),
         ),
         time_interval=TimeInterval(value=1, unit="DAY"),
@@ -1026,6 +1145,72 @@ def test_timezone_offset__valid_column(snowflake_database_time_series_table, cat
 
     input_node_params = time_series_table.frame.node.parameters
     assert input_node_params.reference_datetime_schema.timezone.column_name == "col_text"
+
+    # check tagged semantic
+    column_semantic_map = {}
+    for col_info in time_series_table.info(verbose=True)["columns_info"]:
+        if col_info["semantic"]:
+            column_semantic_map[col_info["name"]] = col_info["semantic"]
+
+    assert column_semantic_map == {
+        "col_int": "series_id",
+        "date": "time_series_date_time",
+        "col_text": "time_zone",
+    }
+
+    # check reference column map & conditionally expand columns logic
+    view = time_series_table.get_view()
+    assert view._reference_column_map == {"date": ["col_text"]}
+    assert view._conditionally_expand_columns(["date"]) == ["date", "col_text"]
+
+    # create zip timestamp with timezone offset column
+    ts_tz_col = view.date.zip_timestamp_timezone_columns()
+    assert ts_tz_col.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
+    assert ts_tz_col.dtype_info == DBVarTypeInfo(
+        dtype=DBVarType.TIMESTAMP_TZ_TUPLE,
+        metadata=DBVarTypeMetadata(
+            timestamp_schema=None,
+            timestamp_tuple_schema=TimestampTupleSchema(
+                timezone_offset_schema=TimezoneOffsetSchema(dtype=DBVarType.VARCHAR),
+                timestamp_schema=ExtendedTimestampSchema(
+                    dtype=view.date.dtype,
+                    format_string="YYYY-MM-DD HH24:MI:SS",
+                    timezone=TimeZoneColumn(
+                        column_name="col_text",
+                        type="offset",
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    # test update default feature job setting
+    cron_feature_job_setting = CronFeatureJobSetting(
+        crontab=Crontab(
+            minute=0,
+            hour=1,
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        ),
+        timezone="Etc/UTC",
+    )
+    time_series_table.update_default_feature_job_setting(
+        feature_job_setting=cron_feature_job_setting
+    )
+    assert time_series_table.default_feature_job_setting == cron_feature_job_setting
+
+    # attempt to add timestamp schema to special column
+    with pytest.raises(RecordUpdateException) as exc:
+        time_series_table.date.update_critical_data_info(
+            cleaning_operations=[AddTimestampSchema(timestamp_schema=TimestampSchema())]
+        )
+
+    expected_msg = (
+        "Column date has AddTimestampSchema cleaning operation. Please remove the AddTimestampSchema cleaning "
+        "operation from the column and specify the reference_datetime_schema in the table model."
+    )
+    assert expected_msg in str(exc.value)
 
 
 def test_timezone_offset__invalid_column(snowflake_database_time_series_table, catalog):
@@ -1037,7 +1222,7 @@ def test_timezone_offset__invalid_column(snowflake_database_time_series_table, c
             series_id_column="col_int",
             reference_datetime_column="date",
             reference_datetime_schema=TimestampSchema(
-                format_string=None,
+                format_string="YYYY-MM-DD HH24:MI:SS",
                 timezone=TimeZoneColumn(
                     column_name="col_float",
                     type="offset",
@@ -1088,7 +1273,7 @@ def test_shape(snowflake_time_series_table, snowflake_query_map):
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
     ) as mock_execute_query:
         mock_execute_query.side_effect = side_effect
-        assert snowflake_time_series_table.shape() == (1000, 9)
+        assert snowflake_time_series_table.shape() == (1000, 10)
         # Check that the correct query was executed
         assert (
             mock_execute_query.call_args[0][0]
@@ -1104,7 +1289,8 @@ def test_shape(snowflake_time_series_table, snowflake_query_map):
                     "col_boolean" AS "col_boolean",
                     "date" AS "date",
                     "created_at" AS "created_at",
-                    "store_id" AS "store_id"
+                    "store_id" AS "store_id",
+                    "another_timestamp_col" AS "another_timestamp_col"
                   FROM "sf_database"."sf_schema"."time_series_table"
                 )
                 SELECT
@@ -1141,7 +1327,9 @@ def test_create_time_series_table_without_series_id_column(
         name="sf_time_series_table",
         series_id_column=None,
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(format_string=None, timezone="Etc/UTC"),
+        reference_datetime_schema=TimestampSchema(
+            format_string="YYYY-MM-DD HH24:MI:SS", timezone="Etc/UTC"
+        ),
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         description="Some description",
@@ -1167,3 +1355,48 @@ def test_create_time_series_table_without_series_id_column(
 
     # expect subset to work
     _ = event_view[["col_text", "col_int"]]
+
+
+def test_create_new_version(snowflake_time_series_table, ts_window_aggregate_feature):
+    """Test creating a new version of a feature created from a time series table"""
+    table_id_fjs = ts_window_aggregate_feature.table_id_feature_job_settings
+    assert table_id_fjs == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_time_series_table.id,
+            feature_job_setting=CronFeatureJobSetting(
+                crontab=Crontab(
+                    minute=0,
+                    hour=8,
+                    day_of_month=1,
+                    day_of_week="*",
+                    month_of_year="*",
+                ),
+                timezone="Etc/UTC",
+            ),
+        )
+    ]
+    ts_window_aggregate_feature.save()
+
+    new_fjs = CronFeatureJobSetting(
+        crontab=Crontab(
+            minute=0,
+            hour=4,
+            day_of_month=1,
+            day_of_week="*",
+            month_of_year="*",
+        ),
+        timezone="Asia/Singapore",
+    )
+    new_feature = ts_window_aggregate_feature.create_new_version(
+        table_feature_job_settings=[
+            TableFeatureJobSetting(
+                table_name=snowflake_time_series_table.name, feature_job_setting=new_fjs
+            )
+        ]
+    )
+    assert new_feature.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_time_series_table.id,
+            feature_job_setting=new_fjs,
+        )
+    ]

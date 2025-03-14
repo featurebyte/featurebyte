@@ -1005,7 +1005,10 @@ def test_as_feature__from_view_column(
             "serving_name": "item_id",
             "entity_id": item_entity.id,
             "scd_parameters": None,
-            "event_parameters": {"event_timestamp_column": "event_timestamp_event_table"},
+            "event_parameters": {
+                "event_timestamp_column": "event_timestamp_event_table",
+                "event_timestamp_metadata": None,
+            },
         },
     }
 

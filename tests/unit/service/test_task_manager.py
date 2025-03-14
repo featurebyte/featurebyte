@@ -9,6 +9,7 @@ from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
+from celerybeatmongo.models import PeriodicTask as PeriodicTaskDoc
 
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.models.base import User
@@ -68,6 +69,7 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
                 "is_revocable": True,
                 "is_rerunnable": True,
             },
+            queue="io_task:2",
             parent_id=None,
         )
 
@@ -83,11 +85,11 @@ async def test_task_manager__long_running_tasks(task_manager, celery, user_id, p
             kwargs=celery.send_task.call_args.kwargs["kwargs"],
             worker="worker",
             retries=0,
-            queue="default",
+            queue="cpu_task:2",
         )
         document = task.model_dump(by_alias=True)
         document["_id"] = str(document["_id"])
-        await persistent._db[Task.collection_name()].insert_one(document)
+        await persistent._db[Task.collection_name()].replace_one({"_id": task_id}, document)
 
         task = await task_manager.get_task(task_id=task_id)
         assert str(task.id) == task_id
@@ -121,11 +123,11 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
             kwargs=celery.send_task.call_args.kwargs["kwargs"],
             worker="worker",
             retries=0,
-            queue="default",
+            queue="cpu_task:2",
         )
         document = task.model_dump(by_alias=True)
         document["_id"] = str(document["_id"])
-        await persistent._db[Task.collection_name()].insert_one(document)
+        await persistent._db[Task.collection_name()].replace_one({"_id": task_id}, document)
         time.sleep(0.1)
 
     page_sizes = [1, 2, 5, 10, 20]
@@ -149,6 +151,16 @@ async def test_task_manager__list_tasks(task_manager, celery, user_id, persisten
         # check list order
         assert [item.id for item in ascending_list] == task_ids
         assert [item.id for item in descending_list] == list(reversed(task_ids))
+
+    # check list with filter
+    selected_task_ids = [str(task_id) for task_id in task_ids[:2]]
+    items, total = await task_manager.list_tasks(
+        page=1,
+        page_size=10,
+        query_filter={"_id": {"$in": selected_task_ids}},
+    )
+    assert total == 2
+    assert {str(item.id) for item in items} == set(selected_task_ids)
 
 
 @pytest.mark.asyncio
@@ -181,7 +193,7 @@ async def test_task_manager__schedule_cron_task(task_manager, user_id, catalog):
     """
     Test task manager service -- schedule interval task
     """
-    crontab = Crontab(minute="*/1", hour="*", day_of_week="*", day_of_month="*", month_of_year="*")
+    crontab = Crontab(minute="*/1", hour=0, day_of_week="*", day_of_month="*", month_of_year="*")
     payload = LongRunningPayload(user_id=user_id, catalog_id=catalog.id)
     periodic_task_id = await task_manager.schedule_cron_task(
         name="test_cron_task",
@@ -193,7 +205,11 @@ async def test_task_manager__schedule_cron_task(task_manager, user_id, catalog):
     )
     assert periodic_task.name == "test_cron_task"
     assert periodic_task.kwargs == {**payload.json_dict(), "is_scheduled_task": True}
-    assert periodic_task.crontab == crontab
+    assert periodic_task.crontab == Crontab(**{**crontab.model_dump(), "hour": "0"})
+
+    # check that celerybeatmongo PeriodicTaskDoc model is created without any error
+    periodic_task_doc = PeriodicTaskDoc(**periodic_task.model_dump())
+    assert periodic_task_doc.crontab.hour == "0"
 
     await task_manager.delete_periodic_task(periodic_task_id)
     with pytest.raises(DocumentNotFoundError):
@@ -219,12 +235,14 @@ async def test_task_manager__revoke_tasks(task_manager, celery, user_id, persist
         kwargs=celery.send_task.call_args.kwargs["kwargs"],
         worker="worker",
         retries=0,
-        queue="default",
+        queue="cpu_task:2",
     )
     document = task.model_dump(by_alias=True)
     document["_id"] = str(document["_id"])
     document["child_task_ids"] = [str(uuid4()), str(uuid4()), str(uuid4())]
-    await persistent._db[Task.collection_name()].insert_one(document)
+    await persistent._db[Task.collection_name()].replace_one({"_id": task_id}, document)
+
+    task_manager.redis.lrange.return_value = None
 
     # revoke task
     await task_manager.revoke_task(task_id)
@@ -263,6 +281,7 @@ async def test_task_manager__submit_mark_as_scheduled_task(task_manager, celery,
             "is_revocable": True,
             "is_rerunnable": True,
         },
+        queue="io_task:2",
         parent_id=None,
     )
 
@@ -288,11 +307,11 @@ async def test_task_manager__rerun_task(task_manager, celery, user_id, persisten
         kwargs=celery.send_task.call_args.kwargs["kwargs"],
         worker="worker",
         retries=0,
-        queue="default",
+        queue="cpu_task:2",
     )
     document = task.model_dump(by_alias=True)
     document["_id"] = str(document["_id"])
-    await persistent._db[Task.collection_name()].insert_one(document)
+    await persistent._db[Task.collection_name()].replace_one({"_id": task_id}, document)
 
     new_task_id = await task_manager.rerun_task(task_id)
     celery.send_task.assert_called_with(
@@ -310,6 +329,7 @@ async def test_task_manager__rerun_task(task_manager, celery, user_id, persisten
             "is_rerunnable": True,
             "is_scheduled_task": False,
         },
+        queue="cpu_task:2",
     )
 
     assert new_task_id != task_id

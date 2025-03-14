@@ -249,7 +249,9 @@
                     "scd_parameters": {
                         "current_flag_column": "is_active",
                         "effective_timestamp_column": "effective_timestamp",
+                        "effective_timestamp_metadata": null,
                         "end_timestamp_column": "end_timestamp",
+                        "end_timestamp_metadata": null,
                         "natural_key_column": "col_text",
                         "offset": null
                     },
@@ -265,7 +267,9 @@
                     "backward": true,
                     "current_flag_column": "is_active",
                     "effective_timestamp_column": "effective_timestamp",
+                    "effective_timestamp_metadata": null,
                     "end_timestamp_column": "end_timestamp",
+                    "end_timestamp_metadata": null,
                     "entity_ids": [
                         {
                             "$oid": "65f11f1d8a03610e41399306"

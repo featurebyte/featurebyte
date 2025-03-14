@@ -13,7 +13,6 @@ import pymongo
 from bson import ObjectId
 from pydantic import Field, model_validator
 
-from featurebyte.common.model_util import convert_seconds_to_time_format
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import (
@@ -30,7 +29,9 @@ from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQuer
 from featurebyte.models.parent_serving import FeatureNodeRelationshipsInfo
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.node.generic import GroupByNodeParameters
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
@@ -99,7 +100,7 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
     feature_ids: List[PydanticObjectId]
     primary_entity_ids: List[PydanticObjectId]
     serving_names: List[str]
-    feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    feature_job_setting: Optional[FeatureJobSettingUnion] = Field(default=None)
     has_ttl: bool
     last_materialized_at: Optional[datetime] = Field(default=None)
     online_stores_last_materialized_at: List[OnlineStoreLastMaterializedAt] = Field(
@@ -259,13 +260,9 @@ class OfflineStoreFeatureTableModel(FeatureByteCatalogBaseDocumentModel):
 
         if self.feature_job_setting:
             # take the frequency part of the feature job setting
-            freq_part = ""
-            for component in reversed(range(1, 5)):
-                freq_part = convert_seconds_to_time_format(
-                    self.feature_job_setting.period_seconds, components=component
-                )
-                if len(freq_part) <= max_freq_len:
-                    break
+            freq_part = self.feature_job_setting.extract_offline_store_feature_table_name_postfix(
+                max_length=max_freq_len
+            )
             keep = max_len - len(freq_part) - 1
             name = f"{name[:keep]}_{freq_part}"
         return name
@@ -409,7 +406,7 @@ def get_combined_ingest_graph(
     features: List[FeatureModel],
     primary_entities: List[EntityModel],
     has_ttl: bool,
-    feature_job_setting: Optional[FeatureJobSetting],
+    feature_job_setting: Optional[FeatureJobSettingUnion],
 ) -> OfflineIngestGraphMetadata:
     """
     Returns a combined ingest graph and related information for all features belonging to a
@@ -423,7 +420,7 @@ def get_combined_ingest_graph(
         List of primary entity models
     has_ttl : bool
         Whether the feature table has TTL
-    feature_job_setting : Optional[FeatureJobSetting]
+    feature_job_setting : Optional[FeatureJobSettingUnion]
         Feature job setting
 
     Returns

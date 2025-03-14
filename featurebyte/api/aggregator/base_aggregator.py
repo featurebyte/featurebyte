@@ -7,6 +7,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Optional, Type, Union
 
+from featurebyte.api.aggregator.util import validate_value_with_timestamp_schema
 from featurebyte.api.aggregator.vector_validator import validate_vector_aggregate_parameters
 from featurebyte.api.feature import Feature
 from featurebyte.api.target import Target
@@ -14,6 +15,7 @@ from featurebyte.api.view import View
 from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.exception import AggregationNotSupportedForViewError
 from featurebyte.models.base import PydanticObjectId
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.agg_func import AggFuncType
 from featurebyte.typing import OptionalScalar, get_or_default
@@ -100,6 +102,7 @@ class BaseAggregator(ABC):
                 f"{method} aggregation method is not supported for {self.aggregation_method_name}"
             )
 
+        validate_value_with_timestamp_schema(self.view.operation_structure, value_column)
         validate_vector_aggregate_parameters(self.view.columns_info, value_column, method)
 
     @staticmethod
@@ -137,17 +140,19 @@ class BaseAggregator(ABC):
             If aggregation method does not support input variable type
         """
         # value_column is None for count-like aggregation method
-        if value_column in self.view.column_var_type_map:
-            input_var_type = self.view.column_var_type_map[value_column]
+        if value_column in self.view.column_dtype_info_map:
+            input_dtype_info = self.view.column_dtype_info_map[value_column]
         else:
-            input_var_type = DBVarType.FLOAT
-        if not agg_method.is_var_type_supported(input_var_type):
+            input_dtype_info = DBVarTypeInfo(dtype=DBVarType.FLOAT)
+        if not agg_method.is_var_type_supported(input_var_type=input_dtype_info.dtype):
             raise ValueError(
-                f'Aggregation method "{method}" does not support "{input_var_type}" input variable'
+                f'Aggregation method "{method}" does not support "{input_dtype_info.dtype}" input variable'
             )
-        return agg_method.derive_output_var_type(
-            input_var_type=input_var_type, category=self.category
+
+        output_dtype_info = agg_method.derive_output_dtype_info(
+            input_dtype_info=input_dtype_info, category=self.category
         )
+        return output_dtype_info.dtype
 
     def _project_feature_from_aggregation_node(
         self,

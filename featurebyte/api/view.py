@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+from functools import cached_property
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -45,20 +46,24 @@ from featurebyte.common.join_utils import (
     is_column_name_in_columns,
 )
 from featurebyte.common.utils import validate_datetime_input
+from featurebyte.common.validator import validate_target_type
 from featurebyte.core.frame import Frame, FrozenFrame
 from featurebyte.core.generic import ProtectedColumnsQueryObject, QueryObject
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
-from featurebyte.enum import DBVarType
+from featurebyte.core.util import series_binary_operation
+from featurebyte.enum import DBVarType, TargetType
 from featurebyte.exception import (
     NoJoinKeyFoundError,
     RepeatedColumnNamesError,
+    TargetFillValueNotProvidedError,
 )
 from featurebyte.logging import get_logger
-from featurebyte.models.batch_request_table import ViewBatchRequestInput
+from featurebyte.models.batch_request_table import BatchRequestInput, ViewBatchRequestInput
 from featurebyte.models.observation_table import ViewObservationInput
 from featurebyte.models.static_source_table import ViewStaticSourceInput
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import (
     CleaningOperation,
@@ -70,7 +75,7 @@ from featurebyte.query_graph.node.nested import BaseGraphNode
 from featurebyte.schema.batch_request_table import BatchRequestTableCreate
 from featurebyte.schema.observation_table import ObservationTableCreate
 from featurebyte.schema.static_source_table import StaticSourceTableCreate
-from featurebyte.typing import ScalarSequence
+from featurebyte.typing import UNSET, OptionalScalar, ScalarSequence, Unset
 
 if TYPE_CHECKING:
     from featurebyte.api.groupby import GroupBy
@@ -305,7 +310,13 @@ class ViewColumn(Series, SampleMixin):
         return cast(View, view[[input_column_name]]), input_column_name
 
     @typechecked
-    def as_target(self, target_name: str, offset: Optional[str] = None) -> Target:
+    def as_target(
+        self,
+        target_name: str,
+        offset: Optional[str] = None,
+        target_type: Optional[TargetType] = None,
+        fill_value: Union[OptionalScalar, Unset] = UNSET,
+    ) -> Target:
         """
         Create a lookup target directly from the column in the View.
 
@@ -320,10 +331,19 @@ class ViewColumn(Series, SampleMixin):
             Name of the target to create.
         offset: str
             When specified, retrieve target value as of this offset after the point-in-time.
+        target_type: Optional[TargetType]
+            Type of the target
+        fill_value: Union[OptionalScalar, Unset]
+            Value to fill if the value in the column is empty
 
         Returns
         -------
         Target
+
+        Raises
+        ------
+        TargetFillValueNotProvidedError
+            If fill_value is not provided.
 
         Examples
         --------
@@ -333,7 +353,9 @@ class ViewColumn(Series, SampleMixin):
         ...     "Windows"
         ... )
         >>> # Create a target from the OperatingSystemIsWindows column
-        >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target("UsesWindows")
+        >>> uses_windows = customer_view.OperatingSystemIsWindows.as_target(
+        ...     "UsesWindows", fill_value=None
+        ... )
 
 
         If the view is a Slowly Changing Dimension View, you may also consider creating a target that retrieves the
@@ -341,7 +363,7 @@ class ViewColumn(Series, SampleMixin):
         an offset.
 
         >>> uses_windows_next_12w = customer_view.OperatingSystemIsWindows.as_target(
-        ...     "UsesWindows_next_12w", offset="12w"
+        ...     "UsesWindows_next_12w", offset="12w", fill_value=None
         ... )
         """
         view, input_column_name = self._get_view_and_input_col_for_lookup("as_target")
@@ -358,14 +380,28 @@ class ViewColumn(Series, SampleMixin):
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[input_node],
         )
-        return view.project_target_from_node(
+        target = view.project_target_from_node(
             input_node=lookup_node,
             target_name=target_name,
             target_dtype=view.column_var_type_map[input_column_name],
         )
 
+        if fill_value is UNSET:
+            raise TargetFillValueNotProvidedError("fill_value must be provided")
+        elif fill_value is not None:
+            target.fillna(fill_value)  # type: ignore
+        if target_type:
+            validate_target_type(target_type, target.dtype)
+            target.update_target_type(target_type)
+        return target
+
     @typechecked
-    def as_feature(self, feature_name: str, offset: Optional[str] = None) -> Feature:
+    def as_feature(
+        self,
+        feature_name: str,
+        offset: Optional[str] = None,
+        fill_value: OptionalScalar = None,
+    ) -> Feature:
         """
         Creates a lookup feature directly from the column in the View.
 
@@ -380,6 +416,8 @@ class ViewColumn(Series, SampleMixin):
             Name of the feature to create.
         offset: str
             When specified, retrieve feature value as of this offset prior to the point-in-time.
+        fill_value: OptionalScalar
+            Value to fill if the value in the column is empty
 
         Returns
         -------
@@ -410,6 +448,9 @@ class ViewColumn(Series, SampleMixin):
             [feature_name],
             offset=offset,
         )[feature_name]
+
+        if fill_value is not None:
+            feature.fillna(fill_value)  # type: ignore
         return cast(Feature, feature)
 
     @property
@@ -531,6 +572,38 @@ class ViewColumn(Series, SampleMixin):
         4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
         """
         return super().isin(other=other)
+
+    def zip_timestamp_timezone_columns(self) -> ViewColumn:
+        """
+        Zips the timestamp and timezone columns into a single timestamp with timezone tuple.
+
+        Returns
+        -------
+        ViewColumn
+            A new column with the zipped timestamp and timezone columns.
+
+        Raises
+        ------
+        ValueError
+            If the column does not have an associated timezone column.
+        """
+        timezone_column_name = self.associated_timezone_column_name
+        if timezone_column_name is None:
+            raise ValueError(
+                "Column must have a timezone column associated with it to zip the columns."
+            )
+
+        # Must have a timestamp schema because the column has an associated timezone column
+        timestamp_schema = self.dtype_info.timestamp_schema
+        assert timestamp_schema is not None
+
+        return series_binary_operation(
+            input_series=self,
+            other=self._parent[timezone_column_name],  # type: ignore
+            node_type=NodeType.ZIP_TIMESTAMP_TZ_TUPLE,
+            output_var_type=DBVarType.TIMESTAMP_TZ_TUPLE,
+            additional_node_params={"timestamp_schema": timestamp_schema},
+        )
 
 
 class GroupByMixin:
@@ -945,7 +1018,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         """
         return ["entity_columns"]
 
-    @property
+    @cached_property
     def inherited_columns(self) -> set[str]:
         """
         Special columns set which will be automatically added to the object of same class
@@ -961,6 +1034,24 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             return additional_columns
         return {join_col}.union(self._get_additional_inherited_columns())
 
+    @cached_property
+    def _reference_column_map(self) -> dict[str, list[str]]:
+        """
+        Contains the mapping of one column that references another column(s) in the view.
+
+        Returns
+        -------
+        dict[str, list[str]]
+        """
+        output = {}
+        for col_info in self.columns_info:
+            dtype_metadata = col_info.dtype_metadata
+            timestamp_schema = dtype_metadata.timestamp_schema if dtype_metadata else None
+            timezone = timestamp_schema.timezone if timestamp_schema else None
+            if isinstance(timezone, TimeZoneColumn):
+                output[col_info.name] = [timezone.column_name]
+        return output
+
     def _get_additional_inherited_columns(self) -> set[str]:
         """
         Additional columns set to be added to inherited_columns. To be overridden by subclasses of
@@ -972,12 +1063,33 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         """
         return set()
 
+    def _conditionally_expand_columns(self, columns: list[str]) -> list[str]:
+        """
+        Conditionally expand columns based on the item provided. If the column of the selected columns is
+        referring other columns, the expanded columns will include the referred columns as well.
+
+        Parameters
+        ----------
+        columns: list[str]
+            List of columns
+
+        Returns
+        -------
+        list[str]
+            Expanded list of columns
+        """
+        additional_cols = set()
+        for col in columns:
+            if col in self._reference_column_map:
+                additional_cols.update(self._reference_column_map[col])
+        return columns + list(additional_cols)
+
     @typechecked
     def __getitem__(
         self, item: Union[str, List[str], FrozenSeries]
     ) -> Union[FrozenSeries, FrozenFrame]:
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
-            item = sorted(self.inherited_columns.union(item))
+            item = sorted(self.inherited_columns.union(self._conditionally_expand_columns(item)))
         output = super().__getitem__(item)
         return output
 
@@ -1808,6 +1920,36 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         )
         return ObservationTable.get_by_id(observation_table_doc["_id"])
 
+    def get_batch_request_input(
+        self,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
+    ) -> BatchRequestInput:
+        """
+        Get a BatchRequestInput object for the SourceTable.
+
+        Parameters
+        ----------
+        columns: Optional[list[str]]
+            Include only these columns in the view for the batch request input. If None,
+            all columns are included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the view using this mapping from old column names to new column names
+            for the batch request input. If None, no columns are renamed.
+
+        Returns
+        -------
+        BatchRequestInput
+            BatchRequestInput object.
+        """
+        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
+        return ViewBatchRequestInput(
+            graph=pruned_graph,
+            node_name=mapped_node.name,
+            columns=columns,
+            columns_rename_mapping=columns_rename_mapping,
+        )
+
     def create_batch_request_table(
         self,
         name: str,
@@ -1846,15 +1988,11 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
         ...   }
         ... )
         """
-        pruned_graph, mapped_node = self.extract_pruned_graph_and_node()
         payload = BatchRequestTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=ViewBatchRequestInput(
-                graph=pruned_graph,
-                node_name=mapped_node.name,
-                columns=columns,
-                columns_rename_mapping=columns_rename_mapping,
+            request_input=self.get_batch_request_input(
+                columns=columns, columns_rename_mapping=columns_rename_mapping
             ),
         )
         batch_request_table_doc = BatchRequestTable.post_async_task(

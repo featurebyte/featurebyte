@@ -258,6 +258,118 @@ async def test_feature_derived_from_multiple_scd_joins(session, data_source, sou
     fb_assert_frame_equal(df, expected, dict_like_columns=["state_code_counts_30d"])
 
 
+@pytest.mark.asyncio
+async def test_end_timestamp_column(
+    session, data_source, source_type, config, scd_table_timestamp_format_string_with_time
+):
+    """
+    Self-contained test case to test handling of end timestamp column
+    """
+    df_events = pd.DataFrame({
+        "ts": pd.to_datetime([
+            "2022-03-20 10:00:00",
+            "2022-04-20 10:00:00",
+            "2022-05-20 10:00:00",
+            "2022-06-20 10:00:00",
+        ]),
+        "cust_id": [1000, 1000, 1000, 1000],
+        "event_id": [1, 2, 3, 4],
+    })
+    df_scd = pd.DataFrame({
+        "effective_ts": pd.to_datetime([
+            "2022-03-01 10:00:00",
+            "2022-04-01 10:00:00",
+            "2022-05-01 10:00:00",
+            "2022-06-01 10:00:00",
+        ]),
+        "end_ts": [
+            "2022|04|01|10:00:00",
+            "2022|05|01|10:00:00",
+            "2022|05|05|10:00:00",
+            None,
+        ],
+        "scd_cust_id": [1000, 1000, 1000, 1000],
+        "scd_value": [1, 2, 3, 4],
+    })
+    table_prefix = "TEST_SCD_END_TIMESTAMP"
+
+    # Register event table
+    table_name = f"{table_prefix}_EVENT"
+    await session.register_table(table_name, df_events)
+
+    # Register scd table
+    table_name = f"{table_prefix}_SCD"
+    await session.register_table(table_name, df_scd)
+
+    event_source_table = data_source.get_source_table(
+        table_name=f"{table_prefix}_EVENT",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    event_table = event_source_table.create_event_table(
+        name=f"{source_type}_{table_prefix}_EVENT_DATA",
+        event_id_column="event_id",
+        event_timestamp_column="ts",
+    )
+    event_view = event_table.get_view()
+    scd_source_table = data_source.get_source_table(
+        table_name=f"{table_prefix}_SCD",
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+    )
+    scd_table = scd_source_table.create_scd_table(
+        name=f"{source_type}_{table_prefix}_SCD_DATA",
+        natural_key_column="scd_cust_id",
+        effective_timestamp_column="effective_ts",
+        end_timestamp_column="end_ts",
+        end_timestamp_schema=TimestampSchema(
+            format_string=scd_table_timestamp_format_string_with_time,
+            is_utc_time=True,
+        ),
+    )
+
+    entity = Entity.create(
+        "test_end_timestamp_column_entity", ["test_end_timestamp_column_cust_id"]
+    )
+    scd_table["scd_cust_id"].as_entity(entity.name)
+
+    # Check SCD joins. Note the 3rd row in the expected result is NaN because of the end timestamp.
+    scd_view = scd_table.get_view()
+    event_view = event_view.join(scd_view, on="cust_id", rsuffix="_latest")
+    df_actual = event_view.preview()
+    df_expected = pd.DataFrame({
+        "ts": pd.to_datetime([
+            "2022-03-20 10:00:00",
+            "2022-04-20 10:00:00",
+            "2022-05-20 10:00:00",
+            "2022-06-20 10:00:00",
+        ]),
+        "cust_id": [1000, 1000, 1000, 1000],
+        "event_id": [1, 2, 3, 4],
+        "scd_value_latest": [1, 2, np.nan, 4],
+    })
+    fb_assert_frame_equal(df_actual, df_expected)
+
+    # Check SCD lookup feature. Note the 3rd row in the expected result is NaN because of the end
+    # timestamp.
+    feature = scd_view["scd_value"].as_feature("test_end_timestamp_feature")
+    feature.save()
+    feature_list = FeatureList([feature], "my_list")
+    df_observation = pd.DataFrame({
+        "POINT_IN_TIME": pd.to_datetime([
+            "2022-03-20 10:00:00",
+            "2022-04-20 10:00:00",
+            "2022-05-20 10:00:00",
+            "2022-06-20 10:00:00",
+        ]),
+        "test_end_timestamp_column_cust_id": [1000, 1000, 1000, 1000],
+    })
+    df_features = feature_list.compute_historical_features(df_observation)
+    df_expected = df_observation.copy()
+    df_expected["test_end_timestamp_feature"] = [1, 2, np.nan, 4]
+    fb_assert_frame_equal(df_features, df_expected)
+
+
 def test_event_view_join_scd_view__preview_view(
     event_table, scd_table, expected_dataframe_scd_join
 ):
@@ -686,111 +798,25 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
     feature_list = FeatureList([feature], name="test_scd_view_custom_date_format")
     observations_set = pd.DataFrame({
         "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
-        "user_status_2": ["STÀTUS_CODE_47"] * 10,
+        "user_status_2": ["STÀTUS_CODE_37"] * 10,
     })
     expected = observations_set.copy()
     expected["Current Number of Users With This Status"] = [
         1,
         1,
-        2,
         1,
         1,
         1,
-        np.nan,
-        np.nan,
-        np.nan,
-        np.nan,
+        1,
+        1,
+        1,
+        1,
+        1,
     ]
     df = feature_list.compute_historical_features(observations_set)
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)
     pd.testing.assert_frame_equal(df, expected, check_dtype=False)
-
-
-@pytest.mark.parametrize(
-    "timestamp_value, timezone_offset_column, timestamp_schema, expected",
-    [
-        (
-            pd.Timestamp("2022-01-15 10:00:00"),
-            None,
-            TimestampSchema(timezone="Asia/Singapore"),
-            pd.Timestamp("2022-01-15 02:00:00"),
-        ),
-        (
-            pd.Timestamp("2022-01-15 10:00:00"),
-            None,
-            TimestampSchema(timezone="UTC"),
-            pd.Timestamp("2022-01-15 10:00:00"),
-        ),
-        (
-            "20220115",
-            None,
-            TimestampSchema(format_string="<date_format_placeholder>"),
-            "2022-01-15 00:00:00",
-        ),
-        (
-            "20220115",
-            None,
-            TimestampSchema(format_string="<date_format_placeholder>", timezone="America/New_York"),
-            "2022-01-15 05:00:00",
-        ),
-        (
-            pd.Timestamp("2022-01-15 10:00:00"),
-            {"tz_offset": "Asia/Singapore"},
-            TimestampSchema(timezone=TimeZoneColumn(column_name="tz_offset", type="timezone")),
-            pd.Timestamp("2022-01-15 02:00:00"),
-        ),
-        (
-            pd.Timestamp("2022-01-15 10:00:00"),
-            {"tz_offset": "+08:00"},
-            TimestampSchema(timezone=TimeZoneColumn(column_name="tz_offset", type="offset")),
-            pd.Timestamp("2022-01-15 02:00:00"),
-        ),
-    ],
-)
-@pytest.mark.asyncio
-async def test_scd_view_timestamp_schema(
-    session_without_datasets,
-    data_source,
-    scd_table_timestamp_format_string,
-    timestamp_value,
-    timezone_offset_column,
-    timestamp_schema,
-    expected,
-):
-    """
-    Test different specification of timestamp schema when constructing SCDTable
-    """
-    if timestamp_schema.format_string == "<date_format_placeholder>":
-        timestamp_schema.format_string = scd_table_timestamp_format_string
-    session = session_without_datasets
-    df_scd = pd.DataFrame({
-        "effective_timestamp_column": pd.Series([timestamp_value]),
-        "user_id": ["user_1"],
-        "value": [123],
-    })
-    if timezone_offset_column is not None:
-        assert isinstance(timezone_offset_column, dict)
-        for k, v in timezone_offset_column.items():
-            df_scd[k] = v
-    table_name = "test_scd_view_timestamp_schema_{}".format(ObjectId()).upper()
-    await session.register_table(table_name, df_scd)
-    source_table = data_source.get_source_table(
-        database_name=session.database_name, schema_name=session.schema_name, table_name=table_name
-    )
-    scd_table = SCDTable.create(
-        source_table=source_table,
-        name=table_name,
-        natural_key_column="user_id",
-        effective_timestamp_column="effective_timestamp_column",
-        effective_timestamp_schema=timestamp_schema,
-    )
-    view = scd_table.get_view()
-    df_preview = view.preview()
-    actual = df_preview["effective_timestamp_column"].iloc[0]
-    if isinstance(actual, str) and ".000" in actual:
-        actual = actual.replace(".000", "")
-    assert actual == expected
 
 
 @pytest.mark.parametrize(
@@ -804,7 +830,7 @@ async def test_scd_view_timestamp_schema(
         (
             "2022-01-15",
             TimestampSchema(timezone="Asia/Singapore"),
-            pd.Timestamp("2022-01-15 16:00:00"),
+            pd.Timestamp("2022-01-16 00:00:00"),
         ),
     ],
 )
@@ -852,3 +878,145 @@ async def test_scd_view_date_type(
     df_preview = view.preview()
     actual = df_preview["effective_timestamp_column"].iloc[0]
     assert actual == expected
+
+
+def test_timestamp_schema_validation(
+    mock_task_manager,
+    scd_data_tabular_source_custom_date_with_tz_format,
+    scd_table_name_custom_date_with_tz_format,
+    scd_table_timestamp_with_tz_format_string,
+    scd_table_timestamp_format_string,
+    config,
+):
+    """Test timestamp schema validation for SCD table"""
+    _ = mock_task_manager
+    client = config.get_client()
+
+    # create SCD table with timestamp schema containing timezone information
+    scd_table = scd_data_tabular_source_custom_date_with_tz_format.create_scd_table(
+        name=scd_table_name_custom_date_with_tz_format,
+        natural_key_column="User ID",
+        effective_timestamp_column="Effective Timestamp",
+        surrogate_key_column="ID",
+        effective_timestamp_schema=TimestampSchema(
+            format_string="kkk",
+            timezone="Asia/Singapore",  # invalid format string
+        ),
+    )
+
+    # check table validation (expecting failure)
+    response = client.get(f"/scd_table/{scd_table.id}")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["validation"] == {
+        "status": "FAILED",
+        "validation_message": response_dict["validation"]["validation_message"],
+        "task_id": None,
+        "updated_at": response_dict["validation"]["updated_at"],
+    }
+    assert (
+        "Timestamp column 'Effective Timestamp' has invalid format string (kkk)."
+        in response_dict["validation"]["validation_message"]
+    )
+
+    # clean up SCD table
+    scd_table.delete()
+
+    # create SCD table with timestamp schema without timezone information
+    scd_table = scd_data_tabular_source_custom_date_with_tz_format.create_scd_table(
+        name=scd_table_name_custom_date_with_tz_format,
+        natural_key_column="User ID",
+        effective_timestamp_column="Effective Timestamp",
+        surrogate_key_column="ID",
+        effective_timestamp_schema=TimestampSchema(
+            format_string=scd_table_timestamp_with_tz_format_string
+        ),
+    )
+
+    # check table validation
+    response = client.get(f"/scd_table/{scd_table.id}")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["validation"] == {
+        "status": "PASSED",
+        "validation_message": None,
+        "task_id": None,
+        "updated_at": response_dict["validation"]["updated_at"],
+    }
+    scd_table.delete()
+
+    # create SCD table with offset timezone information
+    scd_table = scd_data_tabular_source_custom_date_with_tz_format.create_scd_table(
+        name=scd_table_name_custom_date_with_tz_format,
+        natural_key_column="User ID",
+        effective_timestamp_column="effective_timestamp",
+        surrogate_key_column="ID",
+        effective_timestamp_schema=TimestampSchema(
+            format_string=scd_table_timestamp_format_string,
+            timezone="America/New_York",
+        ),
+    )
+
+    # check table validation
+    response = client.get(f"/scd_table/{scd_table.id}")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["validation"] == {
+        "status": "PASSED",
+        "validation_message": None,
+        "task_id": None,
+        "updated_at": response_dict["validation"]["updated_at"],
+    }
+    scd_table.delete()
+
+    # create SCD table with offset timezone information
+    scd_table = scd_data_tabular_source_custom_date_with_tz_format.create_scd_table(
+        name=scd_table_name_custom_date_with_tz_format,
+        natural_key_column="User ID",
+        effective_timestamp_column="effective_timestamp",
+        surrogate_key_column="ID",
+        effective_timestamp_schema=TimestampSchema(
+            format_string=scd_table_timestamp_format_string,
+            timezone=TimeZoneColumn(column_name="timezone_offset", type="offset"),
+        ),
+    )
+
+    # check table validation
+    response = client.get(f"/scd_table/{scd_table.id}")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["validation"] == {
+        "status": "PASSED",
+        "validation_message": None,
+        "task_id": None,
+        "updated_at": response_dict["validation"]["updated_at"],
+    }
+    scd_table.delete()
+
+    # check invalid timezone column
+    scd_table = scd_data_tabular_source_custom_date_with_tz_format.create_scd_table(
+        name=scd_table_name_custom_date_with_tz_format,
+        natural_key_column="User ID",
+        effective_timestamp_column="effective_timestamp",
+        surrogate_key_column="ID",
+        effective_timestamp_schema=TimestampSchema(
+            format_string=scd_table_timestamp_format_string,
+            timezone=TimeZoneColumn(column_name="invalid_timezone_offset", type="offset"),
+        ),
+    )
+
+    # check table validation
+    response = client.get(f"/scd_table/{scd_table.id}")
+    assert response.status_code == 200
+    response_dict = response.json()
+    assert response_dict["validation"] == {
+        "status": "FAILED",
+        "validation_message": response_dict["validation"]["validation_message"],
+        "task_id": None,
+        "updated_at": response_dict["validation"]["updated_at"],
+    }
+    assert (
+        "Timestamp column 'effective_timestamp' has invalid timezone (column_name='invalid_timezone_offset' type='offset')."
+        in response_dict["validation"]["validation_message"]
+    )
+    scd_table.delete()

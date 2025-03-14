@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field, StrictStr, model_validator
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import DBVarType, SourceType, StorageType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr
-from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.source_info import SourceInfo
 
@@ -417,17 +417,34 @@ class ColumnSpec(FeatureByteBaseModel):
     dtype: DBVarType
     dtype_metadata: Optional[DBVarTypeMetadata] = None
 
-    @model_validator(mode="after")
-    def _validate_string_timestamp_format_string(self) -> "ColumnSpec":
-        if (
-            self.dtype == DBVarType.VARCHAR
-            and self.dtype_metadata is not None
-            and self.dtype_metadata.timestamp_schema is not None
-        ):
+    def _validate_timestamp_settings(self) -> None:
+        assert self.dtype_metadata is not None
+        assert self.dtype_metadata.timestamp_schema is not None
+
+        # invalid setting: unsupported datetime types
+        if self.dtype not in DBVarType.supported_ts_datetime_types():
+            expected_dtypes = sorted(DBVarType.supported_ts_datetime_types())
+            raise ValueError(
+                f"Column {self.name} is of type {self.dtype} (expected: {expected_dtypes})"
+            )
+
+        if self.dtype == DBVarType.VARCHAR:
+            # invalid setting: missing format_string for VARCHAR timestamp
             if self.dtype_metadata.timestamp_schema.format_string is None:
                 raise ValueError(
                     f"format_string is required in the timestamp_schema for column {self.name}"
                 )
+        else:
+            # invalid setting: format_string provided but column is not string
+            if self.dtype_metadata.timestamp_schema.format_string:
+                raise ValueError(
+                    f"format_string is not supported in the timestamp_schema for non-string column {self.name}"
+                )
+
+    @model_validator(mode="after")
+    def _validate_string_timestamp_format_string(self) -> "ColumnSpec":
+        if self.dtype_metadata and self.dtype_metadata.timestamp_schema:
+            self._validate_timestamp_settings()
         return self
 
     @property
@@ -443,3 +460,15 @@ class ColumnSpec(FeatureByteBaseModel):
         if self.dtype_metadata is not None:
             return self.dtype_metadata.timestamp_schema
         return None
+
+    @property
+    def dtype_info(self) -> DBVarTypeInfo:
+        """
+        Returns the database var type info object
+
+        Returns
+        -------
+        DBVarTypeInfo
+            Var type info
+        """
+        return DBVarTypeInfo(dtype=self.dtype, metadata=self.dtype_metadata)

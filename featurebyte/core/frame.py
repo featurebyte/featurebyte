@@ -4,6 +4,7 @@ Frame class
 
 from __future__ import annotations
 
+import json
 from typing import Any, ClassVar, List, Tuple, TypeVar, Union
 
 import pandas as pd
@@ -16,6 +17,7 @@ from featurebyte.core.series import FrozenSeries, Series
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.validator import construct_unique_name_validator
 
 
@@ -46,6 +48,17 @@ class BaseFrame(QueryObject):
         dict[str, DBVarType]
         """
         return {col.name: col.dtype for col in self.columns_info}
+
+    @property
+    def column_dtype_info_map(self) -> dict[str, DBVarTypeInfo]:
+        """
+        Column name to column dtype info mapping
+
+        Returns
+        -------
+        dict[str, dict[str, Any]]
+        """
+        return {col.name: col.dtype_info for col in self.columns_info}
 
     @property
     def dtypes(self) -> pd.Series:
@@ -121,11 +134,11 @@ class FrozenFrame(GetAttrMixin, BaseFrame, OpsMixin):
         """
         if isinstance(item, str):
             if item not in self.column_var_type_map:
-                raise KeyError(f"Column {item} not found!")
+                raise KeyError(f"Column {json.dumps(item)} not found!")
         if isinstance(item, list) and all(isinstance(elem, str) for elem in item):
             not_found_columns = [elem for elem in item if elem not in self.column_var_type_map]
             if not_found_columns:
-                raise KeyError(f"Columns {not_found_columns} not found!")
+                raise KeyError(f"Columns {json.dumps(not_found_columns)} not found!")
 
     @typechecked
     def __getitem__(

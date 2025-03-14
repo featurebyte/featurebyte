@@ -67,12 +67,14 @@ WITH ENTITY_UNIVERSE AS (
       SELECT
         "__FB_KEY_COL_0",
         "__FB_LAST_TS",
+        "__FB_TS_COL",
         "POINT_IN_TIME",
         "cust_id"
       FROM (
         SELECT
           "__FB_KEY_COL_0",
           LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+          "__FB_TS_COL",
           "POINT_IN_TIME",
           "cust_id",
           "__FB_EFFECTIVE_TS_COL"
@@ -154,7 +156,12 @@ WITH ENTITY_UNIVERSE AS (
         "effective_timestamp",
         "col_text"
     ) AS R
-      ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL_0" = R."col_text"
+      ON L."__FB_LAST_TS" = R."effective_timestamp"
+      AND L."__FB_KEY_COL_0" = R."col_text"
+      AND (
+        L."__FB_TS_COL" < CAST(CONVERT_TIMEZONE('UTC', R."end_timestamp") AS TIMESTAMP)
+        OR R."end_timestamp" IS NULL
+      )
   ) AS REQ
 )
 SELECT

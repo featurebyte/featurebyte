@@ -4,6 +4,8 @@ SCDTableValidationService
 
 from __future__ import annotations
 
+from typing import Optional
+
 import pandas as pd
 from sqlglot import expressions
 from sqlglot.expressions import select
@@ -11,6 +13,7 @@ from sqlglot.expressions import select
 from featurebyte.enum import AggFunc, SpecialColumnName
 from featurebyte.exception import TableValidationError
 from featurebyte.models.scd_table import SCDTableModel
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.asat_helper import (
@@ -40,11 +43,12 @@ class SCDTableValidationService(
 
     @classmethod
     def table_needs_validation(cls, table_model: SCDTableModel) -> bool:
-        if table_model.natural_key_column is None:
+        needs_validation = BaseTableValidationService.table_needs_validation(table_model)
+        if not needs_validation and table_model.natural_key_column is None:
             return False
         return True
 
-    async def validate_table(
+    async def _validate_table(
         self,
         session: BaseSession,
         table_model: SCDTableModel,
@@ -80,8 +84,10 @@ class SCDTableValidationService(
                 session.adapter,
                 table_details=table_model.tabular_source.table_details,
                 effective_timestamp_column=table_model.effective_timestamp_column,
+                effective_timestamp_schema=table_model.effective_timestamp_schema,
                 natural_key_column=natural_key_column,
                 end_timestamp_column=table_model.end_timestamp_column,
+                end_timestamp_schema=table_model.end_timestamp_schema,
                 num_records=num_records,
             )
             df_result: pd.DataFrame = await session.execute_query_long_running(query)
@@ -149,8 +155,10 @@ class SCDTableValidationService(
         adapter: BaseAdapter,
         table_details: TableDetails,
         effective_timestamp_column: str,
+        effective_timestamp_schema: Optional[TimestampSchema],
         natural_key_column: str,
         end_timestamp_column: str,
+        end_timestamp_schema: Optional[TimestampSchema],
         num_records: int = 10,
     ) -> str:
         required_columns = [natural_key_column, effective_timestamp_column, end_timestamp_column]
@@ -161,7 +169,9 @@ class SCDTableValidationService(
         record_validity_condition = get_record_validity_condition(
             adapter=adapter,
             effective_timestamp_column=effective_timestamp_column,
+            effective_timestamp_schema=effective_timestamp_schema,
             end_timestamp_column=end_timestamp_column,
+            end_timestamp_schema=end_timestamp_schema,
             point_in_time_expr=point_in_time_expr,
         )
         groupby_keys = [

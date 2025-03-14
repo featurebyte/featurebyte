@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any, ClassVar, List, Optional
 
 from pydantic import Field
+from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.target_namespace import TargetNamespaceListHandler
@@ -15,7 +16,7 @@ from featurebyte.api.entity import Entity
 from featurebyte.api.feature_or_target_namespace_mixin import FeatureOrTargetNamespaceMixin
 from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObject
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TargetType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.target_namespace import TargetNamespaceModel
@@ -47,10 +48,16 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
     # pydantic instance variables
     internal_window: Optional[str] = Field(alias="window", default=None)
     internal_dtype: DBVarType = Field(alias="dtype")
+    internal_target_type: Optional[TargetType] = Field(alias="target_type", default=None)
 
     @classmethod
     def create(
-        cls, name: str, primary_entity: List[str], dtype: DBVarType, window: Optional[str] = None
+        cls,
+        name: str,
+        primary_entity: List[str],
+        dtype: DBVarType,
+        window: Optional[str] = None,
+        target_type: Optional[TargetType] = None,
     ) -> TargetNamespace:
         """
         Create a new TargetNamespace.
@@ -65,6 +72,8 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             Data type of the TargetNamespace
         window: Optional[str]
             Window of the TargetNamespace
+        target_type: Optional[TargetType]
+            Type of the Target used to indicate the modeling type of the target
 
         Returns
         -------
@@ -78,11 +87,12 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
         ...     window="7d",
         ...     dtype=DBVarType.FLOAT,
         ...     primary_entity=["customer"],
+        ...     target_type=fb.TargetType.REGRESSION,
         ... )
         """
         entity_ids = [Entity.get(entity_name).id for entity_name in primary_entity]
         target_namespace = TargetNamespace(
-            name=name, entity_ids=entity_ids, dtype=dtype, window=window
+            name=name, entity_ids=entity_ids, dtype=dtype, window=window, target_type=target_type
         )
         target_namespace.save()
         return target_namespace
@@ -116,6 +126,20 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             return self.internal_window
 
     @property
+    def target_type(self) -> Optional[TargetType]:
+        """
+        Type of the Target used to indicate the modeling type of the target
+
+        Returns
+        -------
+        TargetType
+        """
+        try:
+            return self.cached_model.target_type
+        except RecordRetrievalException:
+            return self.internal_target_type
+
+    @property
     def target_ids(self) -> List[PydanticObjectId]:
         """
         List of target IDs from the same target namespace
@@ -144,6 +168,41 @@ class TargetNamespace(FeatureOrTargetNamespaceMixin, DeletableApiObject, Savable
             list_schema=cls._list_schema,
             list_fields=cls._list_fields,
             list_foreign_keys=cls._list_foreign_keys,
+        )
+
+    @typechecked
+    def update_target_type(self, target_type: TargetType) -> None:
+        """
+        Update the target type of the target namespace.
+
+        A target type can be one of the following:
+
+        The target type determines the nature of the prediction task and must be one of the following:
+
+        1. **REGRESSION** - The target variable is continuous, predicting numerical values.
+        2. **CLASSIFICATION** - The target variable has two possible categorical outcomes (binary classification).
+        3. **MULTI_CLASSIFICATION** - The target variable has more than two possible categorical outcomes.
+
+        Parameters
+        ----------
+        target_type: TargetType
+            Type of the Target used to indicate the modeling type of the target
+
+        Examples
+        --------
+        >>> target_namespace = fb.TargetNamespace.create(  # doctest: +SKIP
+        ...     name="amount_7d_target",
+        ...     window="7d",
+        ...     dtype=DBVarType.FLOAT,
+        ...     primary_entity=["customer"],
+        ... )
+        >>> target_namespace.update_target_type(fb.TargetType.REGRESSION)  # doctest: +SKIP
+        """
+        self.update(
+            update_payload={"target_type": target_type},
+            allow_update_local=False,
+            url=f"{self._route}/{self.id}",
+            skip_update_schema_check=True,
         )
 
     def delete(self) -> None:

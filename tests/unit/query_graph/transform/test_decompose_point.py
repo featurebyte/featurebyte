@@ -2,7 +2,11 @@
 
 import pytest
 
-from featurebyte.query_graph.transform.decompose_point import AggregationInfo, DecomposePointState
+from featurebyte.query_graph.transform.decompose_point import (
+    AggregationInfo,
+    DecomposePointExtractor,
+    DecomposePointState,
+)
 
 
 @pytest.fixture(name="decompose_point_global_state")
@@ -64,3 +68,15 @@ def test_check_input_aggregations(
         input_node_names=input_node_names,
     )
     assert output == expected
+
+
+def test_decompose_point_extractor(
+    global_graph,
+    time_series_window_aggregate_feature_node,
+):
+    """Test decompose_point_extractor for the case where the query graph has cron feature job setting."""
+    extractor = DecomposePointExtractor(global_graph)
+    output = extractor.extract(node=time_series_window_aggregate_feature_node)
+    assert output.decompose_node_names == set()
+    assert output.ingest_graph_output_node_names == set()
+    assert output.aggregation_node_names == {"time_series_window_aggregate_1"}

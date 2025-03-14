@@ -6,13 +6,13 @@ from __future__ import annotations
 
 import re
 import string
-from typing import List, Optional, cast
+from typing import List, Optional, Tuple, cast
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Identifier, Select, alias_, select
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum
+from featurebyte.enum import DBVarType, InternalName, SourceType, StrEnum, TimeIntervalUnit
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter, VectorAggColumn
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -32,6 +32,8 @@ class SnowflakeAdapter(BaseAdapter):
 
     # https://docs.snowflake.com/en/sql-reference/data-types-datetime
     TIMEZONE_DATE_FORMAT_EXPRESSIONS = ["TZH", "TZM"]
+
+    ISO_FORMAT_STRING = 'YYYY-MM-DD"T"HH24:MI:SS"Z"'
 
     class SnowflakeDataType(StrEnum):
         """
@@ -85,8 +87,8 @@ class SnowflakeAdapter(BaseAdapter):
 
     @classmethod
     def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
-        output_expr = expressions.Anonymous(
-            this="DATEADD", expressions=["second", quantity_expr, timestamp_expr]
+        output_expr = expressions.DateAdd(
+            this=timestamp_expr, expression=quantity_expr, unit=expressions.Var(this="second")
         )
         return output_expr
 
@@ -94,8 +96,8 @@ class SnowflakeAdapter(BaseAdapter):
     def dateadd_microsecond(
         cls, quantity_expr: Expression, timestamp_expr: Expression
     ) -> Expression:
-        output_expr = expressions.Anonymous(
-            this="DATEADD", expressions=["microsecond", quantity_expr, timestamp_expr]
+        output_expr = expressions.DateAdd(
+            this=timestamp_expr, expression=quantity_expr, unit=expressions.Var(this="microsecond")
         )
         return output_expr
 
@@ -528,3 +530,94 @@ class SnowflakeAdapter(BaseAdapter):
             this="CONVERT_TIMEZONE",
             expressions=[make_literal_value("UTC"), timestamp_tz],
         )
+
+    @classmethod
+    def convert_utc_to_timezone(
+        cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
+    ) -> Expression:
+        if timezone_type == "name":
+            return expressions.Anonymous(
+                this="CONVERT_TIMEZONE",
+                expressions=[make_literal_value("UTC"), make_literal_value(timezone), expr],
+            )
+        timezone_offset_seconds = expressions.Anonymous(
+            this="F_TIMEZONE_OFFSET_TO_SECOND",
+            expressions=[timezone],
+        )
+        return cls.dateadd_second(timezone_offset_seconds, expr)
+
+    @classmethod
+    def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
+        mapping = {
+            TimeIntervalUnit.YEAR: "year",
+            TimeIntervalUnit.QUARTER: "quarter",
+            TimeIntervalUnit.WEEK: "week",
+            TimeIntervalUnit.MONTH: "month",
+            TimeIntervalUnit.DAY: "day",
+            TimeIntervalUnit.HOUR: "hour",
+            TimeIntervalUnit.MINUTE: "minute",
+        }
+        mapped_unit = mapping[unit]
+        return expressions.Anonymous(
+            this="DATE_TRUNC",
+            expressions=[make_literal_value(mapped_unit), timestamp_expr],
+        )
+
+    @classmethod
+    def subtract_seconds(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        return cls.dateadd_second(
+            quantity_expr=make_literal_value(-num_units),
+            timestamp_expr=timestamp_expr,
+        )
+
+    @classmethod
+    def subtract_months(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        return expressions.DateAdd(
+            this=timestamp_expr,
+            expression=make_literal_value(-num_units),
+            unit=expressions.Var(this="month"),
+        )
+
+    @classmethod
+    def to_string_from_timestamp(cls, expr: Expression) -> Expression:
+        assert cls.ISO_FORMAT_STRING
+        return expressions.Anonymous(
+            this="TO_CHAR",
+            expressions=[
+                expr,
+                make_literal_value(cls.ISO_FORMAT_STRING),
+            ],
+        )
+
+    @classmethod
+    def zip_timestamp_string_and_timezone(
+        cls, timestamp_str_expr: Expression, timezone_expr: Expression
+    ) -> Expression:
+        return expressions.Anonymous(
+            this="OBJECT_CONSTRUCT",
+            expressions=[
+                make_literal_value(cls.ZIPPED_TIMESTAMP_FIELD),
+                timestamp_str_expr,
+                make_literal_value(cls.ZIPPED_TIMEZONE_FIELD),
+                timezone_expr,
+            ],
+        )
+
+    @classmethod
+    def unzip_timestamp_string_and_timezone(
+        cls, zipped_expr: Expression
+    ) -> Tuple[Expression, Expression]:
+        timestamp_str_expr = cls.cast_to_string(
+            expressions.Anonymous(
+                this="GET",
+                expressions=[zipped_expr, make_literal_value(cls.ZIPPED_TIMESTAMP_FIELD)],
+            ),
+            None,
+        )
+        timezone_expr = cls.cast_to_string(
+            expressions.Anonymous(
+                this="GET", expressions=[zipped_expr, make_literal_value(cls.ZIPPED_TIMEZONE_FIELD)]
+            ),
+            None,
+        )
+        return timestamp_str_expr, timezone_expr

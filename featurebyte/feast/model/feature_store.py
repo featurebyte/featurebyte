@@ -2,6 +2,7 @@
 This module contains feature store details used to construct feast data source & offline store config
 """
 
+import tempfile
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Union, cast
 
@@ -20,6 +21,7 @@ from featurebyte.feast.infra.offline_stores.spark_thrift_source import SparkThri
 from featurebyte.models.credential import (
     BaseDatabaseCredential,
     BaseStorageCredential,
+    PrivateKeyCredential,
     UsernamePasswordCredential,
 )
 from featurebyte.query_graph.node.schema import (
@@ -135,21 +137,28 @@ class FeastSnowflakeDetails(AbstractDatabaseDetailsForFeast, BaseSnowflakeDetail
         database_credential: Optional[BaseDatabaseCredential],
         storage_credential: Optional[BaseStorageCredential],
     ) -> Any:
-        username, password = None, None
-        if database_credential:
-            assert isinstance(database_credential, UsernamePasswordCredential)
-            username = database_credential.username
-            password = database_credential.password
+        connection_params = {
+            "account": self.account,
+            "warehouse": self.warehouse,
+            "database": self.database_name,
+            "schema_": self.schema_name,
+            "role": self.role_name,
+        }
 
-        return SnowflakeOfflineStoreConfig(
-            account=self.account,
-            user=username,
-            password=password,
-            role=self.role_name,
-            warehouse=self.warehouse,
-            database=self.database_name,
-            schema_=self.schema_name,
-        )
+        if database_credential:
+            if isinstance(database_credential, PrivateKeyCredential):
+                with tempfile.NamedTemporaryFile() as key_file:
+                    key_file.write(database_credential.private_key.encode("utf-8"))
+                    connection_params["user"] = database_credential.username
+                    # Use placeholder for private key and passphrase as config is not used
+                    connection_params["private_key"] = "placeholder"
+                    connection_params["private_key_passphrase"] = "placeholder"
+                    return SnowflakeOfflineStoreConfig(**connection_params)
+            else:
+                assert isinstance(database_credential, UsernamePasswordCredential)
+                connection_params["user"] = database_credential.username
+                connection_params["password"] = database_credential.password
+                return SnowflakeOfflineStoreConfig(**connection_params)
 
 
 class FeastSparkDetails(AbstractDatabaseDetailsForFeast, SparkDetails):

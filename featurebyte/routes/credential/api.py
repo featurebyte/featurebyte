@@ -72,7 +72,9 @@ class CredentialRouter(
         return CredentialRead(**credential.model_dump(by_alias=True))
 
     async def delete_object(self, request: Request, credential_id: PyObjectId) -> DeleteResponse:
-        return await super().delete_object(request, credential_id)
+        controller = self.get_controller_for_request(request)
+        await controller.delete_credential(credential_id)
+        return DeleteResponse()
 
     async def list_audit_logs(
         self,

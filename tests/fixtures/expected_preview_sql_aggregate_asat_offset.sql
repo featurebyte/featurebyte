@@ -33,9 +33,9 @@ WITH REQUEST_TABLE AS (
     ) AS SCD
       ON REQ."MEMBERSHIP_STATUS" = SCD."membership_status"
       AND (
-        SCD."effective_ts" <= DATEADD(microsecond, -604800000000.0, REQ."POINT_IN_TIME")
+        SCD."effective_ts" <= DATEADD(MICROSECOND, -604800000000.0, REQ."POINT_IN_TIME")
         AND (
-          SCD."__FB_END_TS" > DATEADD(microsecond, -604800000000.0, REQ."POINT_IN_TIME")
+          SCD."__FB_END_TS" > DATEADD(MICROSECOND, -604800000000.0, REQ."POINT_IN_TIME")
           OR SCD."__FB_END_TS" IS NULL
         )
       )

@@ -10,6 +10,7 @@ from typing_extensions import Literal
 from featurebyte.enum import DBVarType, SpecialColumnName
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.metadata.config import (
     OnDemandFunctionCodeGenConfig,
@@ -66,7 +67,7 @@ class RequestColumnNode(BaseNode):
             aggregations=[
                 AggregationColumn(
                     name=self.parameters.column_name,
-                    dtype=self.parameters.dtype,
+                    dtype_info=DBVarTypeInfo(dtype=self.parameters.dtype),
                     filter=False,
                     node_names={self.name},
                     node_name=self.name,

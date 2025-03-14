@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
+from pydantic import TypeAdapter
 
 from featurebyte.common.date_util import get_current_job_datetime
 from featurebyte.logging import get_logger
@@ -19,10 +20,14 @@ from featurebyte.models.feature_materialize_prerequisite import (
 )
 from featurebyte.models.feature_materialize_run import FeatureMaterializeRun, IncompleteTileTask
 from featurebyte.models.offline_store_feature_table import OfflineStoreFeatureTableModel
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
+    FeatureJobSettingUnion,
+)
 from featurebyte.schema.worker.task.scheduled_feature_materialize import (
     ScheduledFeatureMaterializeTaskPayload,
 )
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.feature_materialize_prerequisite import (
     FeatureMaterializePrerequisiteService,
 )
@@ -183,6 +188,7 @@ class FeatureMaterializeSyncService:
 
         feature_job_setting = feature_table.feature_job_setting
         assert feature_job_setting is not None
+        assert isinstance(feature_job_setting, FeatureJobSetting)
 
         tic = prerequisite.scheduled_job_ts.timestamp()
         prerequisite_met = False
@@ -290,7 +296,9 @@ class FeatureMaterializeSyncService:
             return None
         current_job_datetime = self._get_scheduled_job_ts_from_datetime(
             input_dt=datetime.utcnow(),
-            feature_job_setting=FeatureJobSetting(**feature_table_dict["feature_job_setting"]),
+            feature_job_setting=TypeAdapter(FeatureJobSettingUnion).validate_python(
+                feature_table_dict["feature_job_setting"]
+            ),
         )
         return current_job_datetime
 
@@ -298,10 +306,16 @@ class FeatureMaterializeSyncService:
     def _get_scheduled_job_ts_from_datetime(
         cls,
         input_dt: datetime,
-        feature_job_setting: FeatureJobSetting,
+        feature_job_setting: FeatureJobSettingUnion,
     ) -> datetime:
-        return get_current_job_datetime(
-            input_dt=input_dt,
-            frequency_minutes=feature_job_setting.period_seconds // 60,
-            time_modulo_frequency_seconds=feature_job_setting.offset_seconds,
+        if isinstance(feature_job_setting, FeatureJobSetting):
+            return get_current_job_datetime(
+                input_dt=input_dt,
+                frequency_minutes=feature_job_setting.period_seconds // 60,
+                time_modulo_frequency_seconds=feature_job_setting.offset_seconds,
+            )
+
+        return CronHelper.get_next_scheduled_job_ts(
+            cron_feature_job_setting=feature_job_setting,
+            current_ts=input_dt,
         )

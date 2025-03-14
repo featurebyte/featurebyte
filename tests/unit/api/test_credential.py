@@ -9,9 +9,13 @@ import pandas as pd
 import pytest
 from bson import ObjectId
 
-from featurebyte import AccessTokenCredential, S3StorageCredential, UsernamePasswordCredential
+from featurebyte import (
+    AccessTokenCredential,
+    S3StorageCredential,
+    UsernamePasswordCredential,
+)
 from featurebyte.api.credential import Credential
-from featurebyte.exception import RecordRetrievalException
+from featurebyte.exception import RecordDeletionException, RecordRetrievalException
 from featurebyte.models.credential import CredentialModel
 from tests.util.helper import compare_pydantic_obj
 
@@ -29,7 +33,15 @@ def test_credential_creation__success(snowflake_feature_store, credential):
     """
     Credential creation success
     """
-    credential.delete()
+    with pytest.raises(RecordDeletionException) as exc:
+        credential.delete()
+
+    expected = (
+        f"Cannot delete the last credential for feature store (ID: {snowflake_feature_store.id}). "
+        "Please create a new credential before deleting this one to ensure continued access."
+    )
+    assert expected in str(exc.value)
+
     new_credential = Credential.create(
         feature_store_name=snowflake_feature_store.name,
         database_credential=UsernamePasswordCredential(username="username", password="password"),
@@ -57,6 +69,28 @@ def test_credential_creation__success(snowflake_feature_store, credential):
             "s3_secret_access_key": "********",
         },
     )
+
+    # delete the credential should work now
+    credential.delete()
+
+
+def test_credential_delete__success(snowflake_feature_store, credential):
+    """
+    Credential deletion success after featurestore is deleted
+    """
+    with pytest.raises(RecordDeletionException) as exc:
+        credential.delete()
+
+    expected = (
+        f"Cannot delete the last credential for feature store (ID: {snowflake_feature_store.id}). "
+        "Please create a new credential before deleting this one to ensure continued access."
+    )
+    assert expected in str(exc.value)
+
+    snowflake_feature_store.delete()
+
+    # delete the credential should work now
+    credential.delete()
 
 
 @pytest.mark.asyncio

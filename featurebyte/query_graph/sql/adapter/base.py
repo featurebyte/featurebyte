@@ -6,14 +6,14 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from numpy import format_float_positional
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import DBVarType, InternalName, TimeIntervalUnit
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -47,6 +47,10 @@ class BaseAdapter(ABC):
     TABLESAMPLE_SUPPORTS_VIEW = True
     TIMEZONE_DATE_FORMAT_EXPRESSIONS: List[str] = []
 
+    ISO_FORMAT_STRING = ""
+    ZIPPED_TIMESTAMP_FIELD = "timestamp"
+    ZIPPED_TIMEZONE_FIELD = "timezone"
+
     def __init__(self, source_info: SourceInfo):
         self.source_info = source_info
         self.source_type = source_info.source_type
@@ -66,6 +70,40 @@ class BaseAdapter(ABC):
         -------
         Expression
         """
+
+    @classmethod
+    def to_epoch_months(cls, timestamp_expr: Expression) -> Expression:
+        """
+        Expression to convert a timestamp to epoch months
+
+        Parameters
+        ----------
+        timestamp_expr : Expression
+            Input expression
+
+        Returns
+        -------
+        Expression
+        """
+        return expressions.Sub(
+            this=expressions.Mul(
+                this=expressions.Paren(
+                    this=expressions.Sub(
+                        this=expressions.Extract(
+                            this=expressions.Var(this=cls.get_datetime_extract_property("year")),
+                            expression=timestamp_expr,
+                        ),
+                        expression=make_literal_value(1970),
+                    )
+                ),
+                expression=make_literal_value(12),
+            )
+            + expressions.Extract(
+                this=expressions.Var(this=cls.get_datetime_extract_property("month")),
+                expression=timestamp_expr,
+            ),
+            expression=make_literal_value(1),
+        )
 
     @classmethod
     @abstractmethod
@@ -202,13 +240,10 @@ class BaseAdapter(ABC):
         -------
         Expression
         """
-        return expressions.Anonymous(
-            this="DATEDIFF",
-            expressions=[
-                expressions.Identifier(this="microsecond"),
-                timestamp_expr_1,
-                timestamp_expr_2,
-            ],
+        return expressions.DateDiff(
+            this=timestamp_expr_2,
+            expression=timestamp_expr_1,
+            unit=expressions.Var(this="microsecond"),
         )
 
     @classmethod
@@ -236,6 +271,7 @@ class BaseAdapter(ABC):
         agg_result_names: list[str],
         inner_agg_result_names: list[str],
         inner_agg_expr: expressions.Select,
+        max_num_categories: Optional[int] = None,
     ) -> expressions.Select:
         """
         Aggregate per category values into key value pairs
@@ -280,19 +316,71 @@ class BaseAdapter(ABC):
             is to be used as the values in the aggregated key-value pairs)
         inner_agg_expr : expressions.Query:
             Query that produces the intermediate aggregation result
+        max_num_categories : Optional[int]
+            Maximum number of categories to keep in the output. If None, a default value of 50000
+            will be used.
 
         Returns
         -------
         str
         """
+
+        # Limit number of categories to max_num_categories, ordering by the inner aggregated result
+        # (the dict values)
+        if max_num_categories is None:
+            max_num_categories = 50000
+        ordering_column_name = "__fb_object_agg_row_number"
+        ordering_expr = expressions.Window(
+            this=expressions.RowNumber(),
+            partition_by=([quoted_identifier(point_in_time_column)] if point_in_time_column else [])
+            + [quoted_identifier(col) for col in serving_names],
+            order=expressions.Order(
+                expressions=[
+                    expressions.Ordered(
+                        this=quoted_identifier(inner_agg_result_names[0]), desc=True
+                    )
+                ]
+            ),
+        )
+        inner_agg_columns = (
+            ([quoted_identifier(point_in_time_column)] if point_in_time_column else [])
+            + [quoted_identifier(col) for col in serving_names]
+            + [quoted_identifier(value_by)]
+            + [quoted_identifier(col) for col in inner_agg_result_names]
+        )
+        inner_agg_expr = (
+            select(*inner_agg_columns)
+            .from_(
+                select(
+                    *inner_agg_columns,
+                    alias_(
+                        ordering_expr,
+                        alias=ordering_column_name,
+                        quoted=True,
+                    ),
+                )
+                .from_(inner_agg_expr.subquery())
+                .subquery()
+            )
+            .where(
+                expressions.LTE(
+                    this=quoted_identifier(ordering_column_name),
+                    expression=make_literal_value(max_num_categories),
+                )
+            )
+        )
+
+        # Construct the outer aggregation query forming the key-value pairs
         inner_alias = "INNER_"
 
         if point_in_time_column:
-            outer_group_by_keys = [f"{inner_alias}.{quoted_identifier(point_in_time_column).sql()}"]
+            outer_group_by_keys = [
+                get_qualified_column_identifier(point_in_time_column, inner_alias)
+            ]
         else:
             outer_group_by_keys = []
         for serving_name in serving_names:
-            outer_group_by_keys.append(f"{inner_alias}.{quoted_identifier(serving_name).sql()}")
+            outer_group_by_keys.append(get_qualified_column_identifier(serving_name, inner_alias))
 
         category_col = get_qualified_column_identifier(value_by, inner_alias)
 
@@ -1024,6 +1112,23 @@ class BaseAdapter(ABC):
         """
         return expressions.Anonymous(this=udf_name, expressions=args)
 
+    def call_vector_aggregation_function(self, udf_name: str, args: list[Expression]) -> Expression:
+        """
+        Construct a vector aggregation function call expression
+
+        Parameters
+        ----------
+        udf_name: str
+            Vector aggregation function name
+        args: list[Expression]
+            List of expressions to pass as arguments to the vector aggregation function
+
+        Returns
+        -------
+        Expression
+        """
+        return self.call_udf(udf_name, args)
+
     @classmethod
     def prepare_before_count_distinct(cls, expr: Expression, dtype: DBVarType) -> Expression:
         """
@@ -1152,6 +1257,22 @@ class BaseAdapter(ABC):
 
     @classmethod
     @abstractmethod
+    def to_string_from_timestamp(cls, expr: Expression) -> Expression:
+        """
+        Convert a timestamp to a string
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the timestamp
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
     def convert_timezone_to_utc(
         cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
     ) -> Expression:
@@ -1171,4 +1292,162 @@ class BaseAdapter(ABC):
         Returns
         -------
         Expression
+        """
+
+    @classmethod
+    @abstractmethod
+    def convert_utc_to_timezone(
+        cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
+    ) -> Expression:
+        """
+        Convert a UTC timestamp to a local timezone
+
+        Parameters
+        ----------
+        expr: Expression
+            Expression representing the timestamp in local timezone
+        timezone: Expression
+            Timezone expression
+        timezone_type: Literal["name", "offset"]
+            Type of timezone expression. "name" for timezone names such as "America/New_York", and
+            "offset" for timezone offsets such as "-08:00"
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
+    def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
+        """
+        Truncate a timestamp to the specified unit
+
+        Parameters
+        ----------
+        timestamp_expr: Expression
+            Timestamp expression
+        unit: TimeIntervalUnit
+            Unit to truncate to
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
+    def subtract_seconds(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        """
+        Subtract seconds from a timestamp
+
+        Parameters
+        ----------
+        timestamp_expr: Expression
+            Timestamp expression
+        num_units: int
+            Number of seconds to subtract
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
+    def subtract_months(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        """
+        Subtract months from a timestamp
+
+        Parameters
+        ----------
+        timestamp_expr: Expression
+            Timestamp expression
+        num_units: int
+            Number of months to subtract
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    def zip_timestamp_and_timezone(
+        cls, timestamp_utc_expr: Expression, timezone_expr: Expression
+    ) -> Expression:
+        """
+        Zip a timestamp and a timezone together
+
+        Parameters
+        ----------
+        timestamp_utc_expr: Expression
+            Timestamp expression converted to UTC
+        timezone_expr: Expression
+            Timezone expression
+
+        Returns
+        -------
+        Expression
+        """
+        timestamp_str_expr = cls.to_string_from_timestamp(timestamp_utc_expr)
+        return cls.zip_timestamp_string_and_timezone(timestamp_str_expr, timezone_expr)
+
+    @classmethod
+    def unzip_timestamp_and_timezone(cls, zipped_expr: Expression) -> Tuple[Expression, Expression]:
+        """
+        Unzip a zipped timestamp and timezone column into two expressions, one for timestamp and one
+        for timezone.
+
+        Parameters
+        ----------
+        zipped_expr: Expression
+            Zipped expression
+
+        Returns
+        -------
+        Tuple[Expression, Expression]
+        """
+        timestamp_str_expr, timezone_offset_expr = cls.unzip_timestamp_string_and_timezone(
+            zipped_expr
+        )
+        timestamp_utc_expr = cls.to_timestamp_from_string(timestamp_str_expr, cls.ISO_FORMAT_STRING)
+        return timestamp_utc_expr, timezone_offset_expr
+
+    @classmethod
+    @abstractmethod
+    def zip_timestamp_string_and_timezone(
+        cls, timestamp_str_expr: Expression, timezone_expr: Expression
+    ) -> Expression:
+        """
+        Zip a timestamp encoded as ISO formatted string and a timezone together
+
+        Parameters
+        ----------
+        timestamp_str_expr: Expression
+            Timestamp stsring expression
+        timezone_expr: Expression
+            Timezone expression
+
+        Returns
+        -------
+        Expression
+        """
+
+    @classmethod
+    @abstractmethod
+    def unzip_timestamp_string_and_timezone(
+        cls, zipped_expr: Expression
+    ) -> Tuple[Expression, Expression]:
+        """
+        Unzip a zipped timestamp and timezone column into two expressions, one for timestamp and one
+        for timezone. The unzipped timestamp remains encoded as string in UTC.
+
+        Parameters
+        ----------
+        zipped_expr: Expression
+            Zipped expression
+
+        Returns
+        -------
+        Tuple[Expression, Expression]
         """

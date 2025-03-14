@@ -20,7 +20,7 @@ from featurebyte.query_graph.model.table import (
     SourceTableData,
 )
 from featurebyte.query_graph.node.cleaning_operation import (
-    ConditionOperationField,
+    CleaningOperationType,
     DisguisedValueImputation,
     MissingValueImputation,
     StringValueImputation,
@@ -90,7 +90,7 @@ def event_table_data_fixture(tabular_source):
                     cleaning_operations=[
                         MissingValueImputation(imputed_value=0),
                         ValueBeyondEndpointImputation(
-                            type=ConditionOperationField.LESS_THAN, end_point=0, imputed_value=None
+                            type=CleaningOperationType.LESS_THAN, end_point=0, imputed_value=None
                         ),
                     ]
                 ),

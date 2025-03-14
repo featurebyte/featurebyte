@@ -54,6 +54,7 @@ from featurebyte.query_graph.transform.definition import (
 )
 from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_from_graph
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
+from featurebyte.query_graph.ttl_handling_util import is_ttl_handling_required
 
 
 class TableIdColumnNames(FeatureByteBaseModel):
@@ -645,6 +646,21 @@ class FeatureModel(BaseFeatureModel):
         bool
         """
         return self.graph.has_node_type(target_node=self.node, node_type=NodeType.GENERIC_FUNCTION)
+
+    @property
+    def has_bounded_window_aggregated_node(self) -> bool:
+        """
+        Returns whether the Feature object has any bounded window aggregation node in the computation.
+        If True, it requires TTL handling to remove the outdated data during the online store computation.
+
+        Returns
+        -------
+        bool
+        """
+        for node in self.graph.iterate_nodes(target_node=self.node, node_type=None):
+            if is_ttl_handling_required(node):
+                return True
+        return False
 
     class Settings(BaseFeatureModel.Settings):
         """

@@ -28,6 +28,7 @@ from featurebyte.query_graph.node.generic import (
     ItemGroupbyNode,
     LookupNode,
     NonTileWindowAggregateNode,
+    TimeSeriesWindowAggregateNode,
 )
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters
 from featurebyte.query_graph.node.nested import ItemViewGraphNodeParameters
@@ -47,6 +48,9 @@ from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import AggregationType, TileBasedAggregationSpec
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
+from featurebyte.query_graph.sql.timestamp_helper import (
+    convert_timestamp_to_local,
+)
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
@@ -469,7 +473,7 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
 
 class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
     """
-    Construct the entity universe expression for tile based aggregate node
+    Construct the entity universe expression for non-tile window aggregate node
     """
 
     def get_serving_names(self) -> List[str]:
@@ -534,6 +538,101 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
         return [universe_expr]
 
 
+class TimeSeriesWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
+    """
+    Construct the entity universe expression for time series window aggregate node
+    """
+
+    def get_serving_names(self) -> List[str]:
+        node = cast(TimeSeriesWindowAggregateNode, self.node)
+        return node.parameters.serving_names
+
+    def get_entity_universe_template(self) -> List[Expression]:
+        node = cast(TimeSeriesWindowAggregateNode, self.node)
+
+        if not node.parameters.serving_names:
+            return [DUMMY_ENTITY_UNIVERSE]
+
+        max_windows = {}
+        for window in node.parameters.windows:
+            key = window.is_fixed_size()
+            if key not in max_windows:
+                max_windows[key] = window
+            else:
+                max_windows[key] = max(max_windows[key], window)
+
+        universe_exprs: List[Expression] = []
+        for window in max_windows.values():
+            job_datetime_rounded_to_window_unit = self.adapter.timestamp_truncate(
+                quoted_identifier(CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER),
+                window.unit,
+            )
+            if window.is_fixed_size():
+                window_end_expr = self.adapter.subtract_seconds(
+                    job_datetime_rounded_to_window_unit,
+                    window.to_seconds(),
+                )
+                if node.parameters.offset is not None:
+                    assert node.parameters.offset.is_fixed_size()
+                    window_end_expr = self.adapter.subtract_seconds(
+                        window_end_expr,
+                        node.parameters.offset.to_seconds(),
+                    )
+                window_start_expr = self.adapter.subtract_seconds(
+                    window_end_expr,
+                    window.to_seconds(),
+                )
+            else:
+                window_end_expr = self.adapter.subtract_months(
+                    job_datetime_rounded_to_window_unit,
+                    window.to_months(),
+                )
+                if node.parameters.offset is not None:
+                    assert not node.parameters.offset.is_fixed_size()
+                    window_end_expr = self.adapter.subtract_months(
+                        window_end_expr,
+                        node.parameters.offset.to_months(),
+                    )
+                window_start_expr = self.adapter.subtract_months(
+                    window_end_expr,
+                    window.to_months(),
+                )
+
+            timestamp_expr = self.adapter.normalize_timestamp_before_comparison(
+                convert_timestamp_to_local(
+                    quoted_identifier(node.parameters.reference_datetime_column),
+                    node.parameters.reference_datetime_schema,
+                    self.adapter,
+                ),
+            )
+            filtered_aggregate_input_expr = self.aggregate_input_expr.where(
+                expressions.and_(
+                    expressions.GTE(
+                        this=timestamp_expr,
+                        expression=window_start_expr,
+                    ),
+                    expressions.LT(
+                        this=timestamp_expr,
+                        expression=window_end_expr,
+                    ),
+                )
+            )
+            universe_expr = (
+                select(*[
+                    expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
+                    for key, serving_name in zip(
+                        node.parameters.keys, node.parameters.serving_names
+                    )
+                ])
+                .distinct()
+                .from_(filtered_aggregate_input_expr.subquery())
+                .where(columns_not_null(node.parameters.keys))
+            )
+            universe_exprs.append(universe_expr)
+
+        return universe_exprs
+
+
 def get_entity_universe_constructor(
     graph: QueryGraphModel, node: Node, source_info: SourceInfo
 ) -> BaseEntityUniverseConstructor:
@@ -564,6 +663,7 @@ def get_entity_universe_constructor(
         NodeType.ITEM_GROUPBY: ItemAggregateNodeEntityUniverseConstructor,
         NodeType.GROUPBY: TileBasedAggregateNodeEntityUniverseConstructor,
         NodeType.NON_TILE_WINDOW_AGGREGATE: NonTileWindowAggregateNodeEntityUniverseConstructor,
+        NodeType.TIME_SERIES_WINDOW_AGGREGATE: TimeSeriesWindowAggregateNodeEntityUniverseConstructor,
     }
     if node.type in node_type_to_constructor:
         return node_type_to_constructor[node.type](graph, node, source_info)  # type: ignore

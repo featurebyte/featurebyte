@@ -99,7 +99,7 @@ async def test_validation_query__no_end_timestamp(
     Test active record counts query when end_timestamp_column is None
     """
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame()
-    await service.validate_table(mock_snowflake_session, table_no_end_timestamp)
+    await service._validate_table(mock_snowflake_session, table_no_end_timestamp)
     queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
@@ -120,7 +120,7 @@ async def test_validation_query__with_end_timestamp(
     Test active record counts query when end_timestamp_column is available
     """
     mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame()
-    await service.validate_table(mock_snowflake_session, table_with_end_timestamp)
+    await service._validate_table(mock_snowflake_session, table_with_end_timestamp)
     queries = extract_session_executed_queries(mock_snowflake_session)
     assert_equal_with_expected_fixture(
         queries,
@@ -140,7 +140,7 @@ async def test_validation_exception__with_end_timestamp_1(
         pd.DataFrame({"cust_id": [100, 101]})
     ]
     with pytest.raises(TableValidationError) as exc:
-        await service.validate_table(mock_snowflake_session, table_with_end_timestamp)
+        await service._validate_table(mock_snowflake_session, table_with_end_timestamp)
     assert (
         str(exc.value)
         == "Multiple active records found for the same natural key. Examples of natural keys with multiple active records are: [100, 101]"
@@ -159,7 +159,7 @@ async def test_validation_exception__with_end_timestamp_2(
         pd.DataFrame({"cust_id": [100, 101]}),
     ]
     with pytest.raises(TableValidationError) as exc:
-        await service.validate_table(mock_snowflake_session, table_with_end_timestamp)
+        await service._validate_table(mock_snowflake_session, table_with_end_timestamp)
     assert (
         str(exc.value)
         == "Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: [100, 101]"
@@ -177,7 +177,7 @@ async def test_validation_exception__no_end_timestamp(
         pd.DataFrame({"cust_id": [100, 101]})
     ]
     with pytest.raises(TableValidationError) as exc:
-        await service.validate_table(mock_snowflake_session, table_no_end_timestamp)
+        await service._validate_table(mock_snowflake_session, table_no_end_timestamp)
     assert (
         str(exc.value)
         == "Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: [100, 101]"

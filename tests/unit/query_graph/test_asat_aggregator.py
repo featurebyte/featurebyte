@@ -524,7 +524,7 @@ def test_same_source_different_keys(aggregation_specs_same_source_different_keys
     assert result.updated_table_expr.sql(pretty=True) == expected
 
 
-def test_asat_aggregate_with_cateogry(aggregation_spec_with_category, source_info):
+def test_asat_aggregate_with_category(aggregation_spec_with_category, source_info):
     """
     Test AsAtAggregator with category parameter
     """
@@ -559,27 +559,44 @@ def test_asat_aggregate_with_cateogry(aggregation_spec_with_category, source_inf
             ) AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1"
           FROM (
             SELECT
-              REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-              REQ."serving_cust_id" AS "serving_cust_id",
-              SCD."category_col" AS "category_col",
-              SUM(SCD."value") AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1_inner"
-            FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
-            INNER JOIN (
+              "POINT_IN_TIME",
+              "serving_cust_id",
+              "category_col",
+              "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1_inner"
+            FROM (
               SELECT
-                *
-              FROM SCD_TABLE
-            ) AS SCD
-              ON REQ."serving_cust_id" = SCD."cust_id"
-              AND (
-                SCD."effective_ts" <= REQ."POINT_IN_TIME"
-                AND (
-                  SCD."end_ts" > REQ."POINT_IN_TIME" OR SCD."end_ts" IS NULL
-                )
+                "POINT_IN_TIME",
+                "serving_cust_id",
+                "category_col",
+                "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1_inner",
+                ROW_NUMBER() OVER (PARTITION BY "POINT_IN_TIME", "serving_cust_id" ORDER BY "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1_inner" DESC) AS "__fb_object_agg_row_number"
+              FROM (
+                SELECT
+                  REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+                  REQ."serving_cust_id" AS "serving_cust_id",
+                  SCD."category_col" AS "category_col",
+                  SUM(SCD."value") AS "_fb_internal_serving_cust_id_as_at_sum_value_cust_id_category_col_input_1_inner"
+                FROM "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id" AS REQ
+                INNER JOIN (
+                  SELECT
+                    *
+                  FROM SCD_TABLE
+                ) AS SCD
+                  ON REQ."serving_cust_id" = SCD."cust_id"
+                  AND (
+                    SCD."effective_ts" <= REQ."POINT_IN_TIME"
+                    AND (
+                      SCD."end_ts" > REQ."POINT_IN_TIME" OR SCD."end_ts" IS NULL
+                    )
+                  )
+                GROUP BY
+                  REQ."POINT_IN_TIME",
+                  REQ."serving_cust_id",
+                  SCD."category_col"
               )
-            GROUP BY
-              REQ."POINT_IN_TIME",
-              REQ."serving_cust_id",
-              SCD."category_col"
+            )
+            WHERE
+              "__fb_object_agg_row_number" <= 50000
           ) AS INNER_
           GROUP BY
             INNER_."POINT_IN_TIME",
@@ -629,9 +646,9 @@ def test_aggregate_asat_with_offset(aggregation_spec_with_offset, source_info):
           ) AS SCD
             ON REQ."serving_cust_id" = SCD."cust_id"
             AND (
-              SCD."effective_ts" <= DATEADD(microsecond, -604800000000.0, REQ."POINT_IN_TIME")
+              SCD."effective_ts" <= DATE_ADD(REQ."POINT_IN_TIME", -604800000000.0, 'MICROSECOND')
               AND (
-                SCD."__FB_END_TS" > DATEADD(microsecond, -604800000000.0, REQ."POINT_IN_TIME")
+                SCD."__FB_END_TS" > DATE_ADD(REQ."POINT_IN_TIME", -604800000000.0, 'MICROSECOND')
                 OR SCD."__FB_END_TS" IS NULL
               )
             )
@@ -683,9 +700,9 @@ def test_forward_aggregate_asat_with_offset(forward_aggregation_spec_with_offset
           ) AS SCD
             ON REQ."serving_cust_id" = SCD."cust_id"
             AND (
-              SCD."effective_ts" <= DATEADD(microsecond, 604800000000.0, REQ."POINT_IN_TIME")
+              SCD."effective_ts" <= DATE_ADD(REQ."POINT_IN_TIME", 604800000000.0, 'MICROSECOND')
               AND (
-                SCD."__FB_END_TS" > DATEADD(microsecond, 604800000000.0, REQ."POINT_IN_TIME")
+                SCD."__FB_END_TS" > DATE_ADD(REQ."POINT_IN_TIME", 604800000000.0, 'MICROSECOND')
                 OR SCD."__FB_END_TS" IS NULL
               )
             )

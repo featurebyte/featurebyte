@@ -6,7 +6,7 @@ import pytest
 
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.sql.ast.generic import Conditional
-from tests.unit.query_graph.test_sql import make_context, make_str_expression_node
+from tests.unit.query_graph.util import make_context, make_str_expression_node
 
 
 def test_conditional__scalar_parameter(input_node):

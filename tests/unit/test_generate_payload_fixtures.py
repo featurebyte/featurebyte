@@ -196,6 +196,7 @@ def test_save_payload_fixtures(
         entity_ids=[cust_id_entity.id],
         window="7d",
         dtype=DBVarType.FLOAT,
+        target_type="regression",
     )
     target_table = TargetTableCreate(
         _id="646f6c1c0ed28a5271fb32da",
@@ -218,6 +219,15 @@ def test_save_payload_fixtures(
         name="batch_feature_table",
         feature_store_id=snowflake_feature_store.id,
         batch_request_table_id=batch_request_table.id,
+        deployment_id=deployment.id,
+    )
+    batch_feature_table_with_request_input = BatchFeatureTableCreate(
+        _id="646f6c1c0ed28a5271fb12dc",
+        name="batch_feature_table_with_request_input",
+        feature_store_id=snowflake_feature_store.id,
+        request_input=SourceTableBatchRequestInput(
+            source=snowflake_dimension_table.tabular_source,
+        ),
         deployment_id=deployment.id,
     )
     static_source_table = StaticSourceTableCreate(
@@ -305,6 +315,7 @@ def test_save_payload_fixtures(
         (target_table, "target_table"),
         (batch_request_table, "batch_request_table"),
         (batch_feature_table, "batch_feature_table"),
+        (batch_feature_table_with_request_input, "batch_feature_table_with_request_input"),
         (static_source_table, "static_source_table"),
         (catalog, "catalog"),
         (credential, "credential"),

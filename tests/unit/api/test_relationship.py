@@ -2,6 +2,7 @@
 Test relationships module
 """
 
+import pandas as pd
 import pytest
 import pytest_asyncio
 from bson import ObjectId
@@ -192,3 +193,30 @@ def test_catalog_id(persisted_relationship_info):
     relationship = Relationship.get_by_id(persisted_relationship_info.id)
     catalog = Catalog.get_active()
     assert relationship.catalog_id == catalog.id
+
+
+def test_entity_relationship(
+    saved_event_table, saved_time_series_table, transaction_entity, cust_id_entity
+):
+    """Test entity relationship for event and time series table"""
+    # tag the event table & time series table primary key columns as entities
+    assert saved_event_table.event_id_column == "col_int"
+    assert saved_time_series_table.series_id_column == "col_int"
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_time_series_table.col_int.as_entity(transaction_entity.name)
+
+    # tag entity to other columns in event table
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+
+    relationships = Relationship.list()
+    relationship = relationships.iloc[0]
+    assert relationships.shape[0] == 1
+    assert relationship.relationship_type == "child_parent"
+    assert relationship.entity == "transaction"
+    assert relationship.related_entity == "customer"
+
+    # tag entity to other columns in time series table
+    saved_time_series_table.store_id.as_entity(cust_id_entity.name)
+
+    # check no change in relationship
+    pd.testing.assert_frame_equal(relationships, Relationship.list())

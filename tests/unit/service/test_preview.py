@@ -10,13 +10,18 @@ from sqlglot import parse_one
 
 from featurebyte import FeatureStore
 from featurebyte.common.utils import dataframe_from_json
-from featurebyte.exception import MissingPointInTimeColumnError, RequiredEntityNotProvidedError
+from featurebyte.exception import (
+    DescribeQueryExecutionError,
+    MissingPointInTimeColumnError,
+    RequiredEntityNotProvidedError,
+)
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.schema.feature_list import FeatureListPreview
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.schema.preview import FeatureOrTargetPreview
 from featurebyte.warning import QueryNoLimitWarning
+from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
 @pytest.fixture(name="empty_graph")
@@ -291,6 +296,41 @@ async def test_describe_drop_all_null_stats(
         assert "%missing" not in result.index
     else:
         assert "%missing" in result.index
+
+
+@pytest.mark.asyncio
+async def test_describe_dynamic_batching(
+    preview_service,
+    feature_store_sample,
+    mock_snowflake_session,
+    update_fixtures,
+):
+    """
+    Test describe with dynamic batching. Expect to see increasing simplified queries being executed
+    as execute_query_long_running for stats computation fails.
+    """
+
+    async def execute_query_always_fail_for_stats(query):
+        if "CREATE TABLE" in query:
+            return
+        raise RuntimeError("Failing the query on purpose!")
+
+    mock_snowflake_session.execute_query_long_running.side_effect = (
+        execute_query_always_fail_for_stats
+    )
+
+    with pytest.raises(DescribeQueryExecutionError):
+        await preview_service.describe(
+            feature_store_sample,
+            size=0,
+            seed=0,
+        )
+
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    fixture_filename = (
+        "tests/fixtures/preview_service/expected_describe_dynamic_batching_queries.sql"
+    )
+    assert_equal_with_expected_fixture(queries, fixture_filename, update_fixtures)
 
 
 @pytest.mark.asyncio

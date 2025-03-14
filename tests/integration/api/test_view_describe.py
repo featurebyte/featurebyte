@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal
+from sqlglot import expressions
 
+from featurebyte.query_graph.sql.interpreter import PreviewMixin
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 
 
@@ -35,7 +37,7 @@ def test_event_view_describe(event_table, default_columns_batch_size):
     else:
         describe_df = event_view.describe()
 
-    assert describe_df.columns.tolist() == [
+    assert set(describe_df.columns.tolist()) == {
         "ËVENT_TIMESTAMP",
         "CREATED_AT",
         "CUST_ID",
@@ -50,7 +52,8 @@ def test_event_view_describe(event_table, default_columns_batch_size):
         "ARRAY_STRING",
         "FLAT_DICT",
         "NESTED_DICT",
-    ]
+        "TIMESTAMP_STRING",
+    }
 
     expected_row_idx = [
         "dtype",
@@ -78,7 +81,7 @@ def test_event_view_describe(event_table, default_columns_batch_size):
         ]
 
     assert describe_df.index.tolist() == expected_row_idx
-    assert describe_df.shape == (len(expected_row_idx), 14)
+    assert describe_df.shape == (len(expected_row_idx), 15)
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["min"]) == expected_min_timestamp
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
@@ -100,7 +103,7 @@ def test_event_view_describe_with_date_range(event_table):
     if event_table.name != "snowflake_event_table":
         expected_num_rows = 14
 
-    assert describe_df.shape == (expected_num_rows, 14)
+    assert describe_df.shape == (expected_num_rows, 15)
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["min"]) == expected_min_timestamp
     assert _to_utc_no_offset(describe_df["ËVENT_TIMESTAMP"]["max"]) == expected_max_timestamp
 
@@ -363,3 +366,56 @@ async def test_databricks_varchar_with_max_length(session, feature_store, catalo
 
     result = source_table.sample()
     assert result.shape[0] > 0
+
+
+def test_dynamic_batching(event_table):
+    """
+    Test describe for EventView
+    """
+    original_construct_stats_sql = PreviewMixin._construct_stats_sql
+
+    num_patched_queries = {"count": 0}
+
+    def patched_construct_stats_sql(*args, **kwargs):
+        """
+        Patch construct_stats_sql to deliberately cause error when there are more than 5 columns
+        in the select statement. This is to test dynamic batching of describe queries
+        """
+        select_expr, *remaining = original_construct_stats_sql(*args, **kwargs)
+        columns = kwargs["columns"]
+        if len(columns) > 5:
+            select_expr = select_expr.select(
+                expressions.alias_(
+                    expressions.Anonymous(this="FAIL_NOW"), alias="_debug_col", quoted=True
+                )
+            )
+            num_patched_queries["count"] += 1
+        return select_expr, *remaining
+
+    event_view = event_table.get_view()
+
+    with patch.object(
+        PreviewMixin,
+        "_construct_stats_sql",
+        new=patched_construct_stats_sql,
+    ):
+        describe_df = event_view.describe()
+
+    assert num_patched_queries["count"] > 0
+    assert set(describe_df.columns.tolist()) == {
+        "TIMESTAMP_STRING",
+        "ËVENT_TIMESTAMP",
+        "CREATED_AT",
+        "CUST_ID",
+        "ÜSER ID",
+        "PRODUCT_ACTION",
+        "SESSION_ID",
+        "ÀMOUNT",
+        "TZ_OFFSET",
+        "TRANSACTION_ID",
+        "EMBEDDING_ARRAY",
+        "ARRAY",
+        "ARRAY_STRING",
+        "FLAT_DICT",
+        "NESTED_DICT",
+    }

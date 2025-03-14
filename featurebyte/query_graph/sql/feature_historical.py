@@ -10,14 +10,16 @@ from typing import List, Optional, Tuple, cast
 
 import numpy as np
 import pandas as pd
-from bson import ObjectId
 from pandas.api.types import is_datetime64_any_dtype
 from sqlglot import expressions
 
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logging import get_logger
-from featurebyte.models.feature_query_set import FeatureQuery, FeatureQuerySet
+from featurebyte.models.feature_query_set import (
+    FeatureQueryGenerator,
+    FeatureQuerySet,
+)
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.models.tile import OnDemandTileTable
@@ -26,12 +28,10 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.batch_helper import (
-    NUM_FEATURES_PER_QUERY,
-    construct_join_feature_sets_query,
-    maybe_add_row_index_column,
-    split_nodes,
+    FeatureQuery,
 )
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.sql.cron import JobScheduleTableSet
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.session.base import BaseSession
@@ -258,6 +258,7 @@ def get_historical_features_expr(
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
+    job_schedule_table_set: Optional[JobScheduleTableSet] = None,
 ) -> Tuple[expressions.Select, list[str]]:
     """Construct the SQL code that extracts historical features
 
@@ -279,6 +280,9 @@ def get_historical_features_expr(
         Preparation required for serving parent features
     on_demand_tile_tables: Optional[list[OnDemandTileTable]]
         List of on-demand tile tables if available
+    job_schedule_table_set: Optional[JobScheduleTableSet]
+        Job schedule table set if available. These will be used to compute features that are using
+        a cron-based feature job setting.
 
     Returns
     -------
@@ -292,6 +296,7 @@ def get_historical_features_expr(
         is_online_serving=False,
         parent_serving_preparation=parent_serving_preparation,
         on_demand_tile_tables=on_demand_tile_tables,
+        job_schedule_table_set=job_schedule_table_set,
     )
     plan = planner.generate_plan(nodes)
 
@@ -302,6 +307,73 @@ def get_historical_features_expr(
     )
     feature_names = plan.feature_names
     return historical_features_expr, feature_names
+
+
+class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
+    """
+    Historical feature query generator
+    """
+
+    def __init__(
+        self,
+        graph: QueryGraph,
+        nodes: list[Node],
+        request_table_name: str,
+        request_table_columns: list[str],
+        source_info: SourceInfo,
+        output_table_details: TableDetails,
+        output_feature_names: list[str],
+        output_include_row_index: bool = False,
+        serving_names_mapping: dict[str, str] | None = None,
+        parent_serving_preparation: Optional[ParentServingPreparation] = None,
+        on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
+        job_schedule_table_set: Optional[JobScheduleTableSet] = None,
+    ):
+        self.request_table_name = request_table_name
+        self.graph = graph
+        self.nodes = nodes
+        self.request_table_columns = request_table_columns
+        self.source_info = source_info
+        self.output_table_details = output_table_details
+        self.output_feature_names = output_feature_names
+        self.serving_names_mapping = serving_names_mapping
+        self.parent_serving_preparation = parent_serving_preparation
+        self.on_demand_tile_tables = on_demand_tile_tables
+        self.job_schedule_table_set = job_schedule_table_set
+        self.output_include_row_index = output_include_row_index
+
+    def get_query_graph(self) -> QueryGraph:
+        return self.graph
+
+    def get_nodes(self) -> list[Node]:
+        return self.nodes
+
+    def generate_feature_query(self, node_names: list[str], table_name: str) -> FeatureQuery:
+        nodes = [self.graph.get_node_by_name(node_name) for node_name in node_names]
+        feature_set_expr, feature_names = get_historical_features_expr(
+            graph=self.graph,
+            nodes=nodes,
+            request_table_columns=[InternalName.TABLE_ROW_INDEX.value] + self.request_table_columns,
+            serving_names_mapping=self.serving_names_mapping,
+            source_info=self.source_info,
+            request_table_name=self.request_table_name,
+            parent_serving_preparation=self.parent_serving_preparation,
+            on_demand_tile_tables=self.on_demand_tile_tables,
+            job_schedule_table_set=self.job_schedule_table_set,
+        )
+        query = sql_to_string(
+            get_sql_adapter(self.source_info).create_table_as(
+                table_details=TableDetails(table_name=table_name),
+                select_expr=feature_set_expr,
+            ),
+            self.source_info.source_type,
+        )
+        return FeatureQuery(
+            sql=query,
+            feature_names=feature_names,
+            node_names=node_names,
+            table_name=table_name,
+        )
 
 
 def get_historical_features_query_set(
@@ -315,6 +387,7 @@ def get_historical_features_query_set(
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
+    job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
 ) -> FeatureQuerySet:
@@ -342,6 +415,9 @@ def get_historical_features_query_set(
         Preparation required for serving parent features
     on_demand_tile_tables: Optional[list[OnDemandTileTable]]
         List of on-demand tile tables if available
+    job_schedule_table_set: Optional[JobScheduleTableSet]
+        Job schedule table set if available. These will be used to compute features that are using
+        a cron-based feature job setting.
     output_include_row_index: bool
         Whether to include the TABLE_ROW_INDEX column in the output
     progress_message : str
@@ -351,85 +427,27 @@ def get_historical_features_query_set(
     -------
     FeatureQuerySet
     """
-    # Process nodes in batches
-    node_groups = split_nodes(graph, nodes, NUM_FEATURES_PER_QUERY, source_info)
-
-    if len(node_groups) == 1:
-        # Fallback to simpler non-batched query if there is only one group to avoid overhead
-        sql_expr, _ = get_historical_features_expr(
-            graph=graph,
-            nodes=nodes,
-            request_table_columns=maybe_add_row_index_column(
-                request_table_columns, output_include_row_index
-            ),
-            serving_names_mapping=serving_names_mapping,
-            source_info=source_info,
-            request_table_name=request_table_name,
-            parent_serving_preparation=parent_serving_preparation,
-            on_demand_tile_tables=on_demand_tile_tables,
-        )
-        output_query = sql_to_string(
-            get_sql_adapter(source_info).create_table_as(
-                table_details=output_table_details,
-                select_expr=sql_expr,
-            ),
-            source_type=source_info.source_type,
-        )
-        return FeatureQuerySet(
-            feature_queries=[],
-            output_query=output_query,
-            output_table_name=output_table_details.table_name,
-            progress_message=progress_message,
-            validate_output_row_index=output_include_row_index,
-        )
-
-    feature_queries = []
-    feature_set_table_name_prefix = f"__TEMP_{ObjectId()}"
-
-    for i, nodes_group in enumerate(node_groups):
-        feature_set_expr, feature_names = get_historical_features_expr(
-            graph=graph,
-            nodes=nodes_group,
-            request_table_columns=[InternalName.TABLE_ROW_INDEX.value] + request_table_columns,
-            serving_names_mapping=serving_names_mapping,
-            source_info=source_info,
-            request_table_name=request_table_name,
-            parent_serving_preparation=parent_serving_preparation,
-            on_demand_tile_tables=on_demand_tile_tables,
-        )
-        feature_set_table_name = f"{feature_set_table_name_prefix}_{i}"
-        query = sql_to_string(
-            get_sql_adapter(source_info).create_table_as(
-                table_details=TableDetails(table_name=feature_set_table_name),
-                select_expr=feature_set_expr,
-            ),
-            source_info.source_type,
-        )
-        feature_queries.append(
-            FeatureQuery(
-                sql=query,
-                table_name=feature_set_table_name,
-                feature_names=feature_names,
-            )
-        )
-    output_expr = construct_join_feature_sets_query(
-        feature_queries=feature_queries,
-        output_feature_names=output_feature_names,
+    feature_query_generator = HistoricalFeatureQueryGenerator(
+        graph=graph,
+        nodes=nodes,
         request_table_name=request_table_name,
         request_table_columns=request_table_columns,
+        source_info=source_info,
+        output_table_details=output_table_details,
+        output_feature_names=output_feature_names,
         output_include_row_index=output_include_row_index,
+        serving_names_mapping=serving_names_mapping,
+        parent_serving_preparation=parent_serving_preparation,
+        on_demand_tile_tables=on_demand_tile_tables,
+        job_schedule_table_set=job_schedule_table_set,
     )
-    output_query = sql_to_string(
-        get_sql_adapter(source_info).create_table_as(
-            table_details=output_table_details,
-            select_expr=output_expr,
-        ),
-        source_type=source_info.source_type,
-    )
-    return FeatureQuerySet(
-        feature_queries=feature_queries,
-        output_query=output_query,
-        output_table_name=output_table_details.table_name,
+    feature_query_set = FeatureQuerySet(
+        feature_query_generator=feature_query_generator,
+        request_table_name=request_table_name,
+        request_table_columns=request_table_columns,
+        output_table_details=output_table_details,
+        output_feature_names=output_feature_names,
+        output_include_row_index=output_include_row_index,
         progress_message=progress_message,
-        validate_output_row_index=output_include_row_index,
     )
+    return feature_query_set

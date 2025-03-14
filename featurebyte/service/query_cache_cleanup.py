@@ -8,10 +8,9 @@ from bson import ObjectId
 
 from featurebyte.logging import get_logger
 from featurebyte.models.query_cache import QueryCacheType
-from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.query_cache import QueryCacheDocumentService
 from featurebyte.service.query_cache_cleanup_scheduler import QueryCacheCleanupSchedulerService
-from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.session_helper import SessionHelper
 from featurebyte.storage import Storage
 
 logger = get_logger(__name__)
@@ -24,14 +23,12 @@ class QueryCacheCleanupService:
 
     def __init__(
         self,
-        feature_store_service: FeatureStoreService,
-        session_manager_service: SessionManagerService,
+        session_helper: SessionHelper,
         query_cache_document_service: QueryCacheDocumentService,
         query_cache_cleanup_scheduler_service: QueryCacheCleanupSchedulerService,
         storage: Storage,
     ):
-        self.session_manager_service = session_manager_service
-        self.feature_store_service = feature_store_service
+        self.session_helper = session_helper
         self.query_cache_document_service = query_cache_document_service
         self.query_cache_cleanup_scheduler_service = query_cache_cleanup_scheduler_service
         self.storage = storage
@@ -45,9 +42,13 @@ class QueryCacheCleanupService:
         feature_store_id: ObjectId
             Feature store identifier
         """
-        feature_store = await self.feature_store_service.get_document(feature_store_id)
-        session = await self.session_manager_service.get_feature_store_session(feature_store)
+        fs_and_session = await self.session_helper.try_to_get_feature_store_and_session(
+            feature_store_id=feature_store_id
+        )
+        if not fs_and_session:
+            return
 
+        _, session = fs_and_session
         logger.info("Query cache cleanup started for feature store %s", feature_store_id)
         n_success = 0
         n_failure = 0

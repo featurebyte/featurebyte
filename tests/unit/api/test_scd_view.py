@@ -136,6 +136,9 @@ def test_event_view_join_scd_view(
             "current_flag_column": "is_active",
             "end_timestamp_column": "end_timestamp",
             "left_timestamp_column": "event_timestamp",
+            "effective_timestamp_metadata": None,
+            "end_timestamp_metadata": None,
+            "left_timestamp_metadata": None,
         },
         "metadata": {"type": "join", "rsuffix": "_scd", "rprefix": ""},
     }
@@ -178,9 +181,11 @@ def test_scd_view_as_feature(snowflake_scd_table, cust_id_entity):
             "entity_id": cust_id_entity.id,
             "scd_parameters": {
                 "effective_timestamp_column": "effective_timestamp",
+                "effective_timestamp_metadata": None,
                 "natural_key_column": "col_text",
                 "current_flag_column": "is_active",
                 "end_timestamp_column": "end_timestamp",
+                "end_timestamp_metadata": None,
                 "offset": "7d",
             },
             "event_parameters": None,
@@ -221,7 +226,7 @@ def test_scd_view_inherited__columns(snowflake_scd_view):
     timestamp column
     """
     subset_view = snowflake_scd_view[["col_float"]]
-    assert subset_view.columns == ["col_float", "col_text", "effective_timestamp"]
+    assert subset_view.columns == ["col_float", "col_text", "effective_timestamp", "end_timestamp"]
 
 
 def test_scd_view_as_feature__special_column(
@@ -245,8 +250,10 @@ def test_scd_view_as_feature__special_column(
         "entity_id": cust_id_entity.id,
         "scd_parameters": {
             "effective_timestamp_column": "effective_timestamp",
+            "effective_timestamp_metadata": None,
             "current_flag_column": "is_active",
             "end_timestamp_column": "end_timestamp",
+            "end_timestamp_metadata": None,
             "natural_key_column": "col_text",
             "offset": None,
         },

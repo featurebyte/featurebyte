@@ -172,6 +172,7 @@ def test_nested_graph_pruning(input_details, groupby_node_params):
             "tile_id": None,
             "tile_id_version": 1,
             "timestamp": "ts",
+            "timestamp_metadata": None,
             "value_by": None,
             "windows": ["2h"],
             "offset": None,

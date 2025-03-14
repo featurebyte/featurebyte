@@ -169,7 +169,8 @@ def get_precomputed_lookup_feature_table(
                     lookup_steps=lookup_steps,
                     entity_lookup_steps_mapping=entity_lookup_steps_mapping,
                     feature_store=feature_store_model,
-                )
+                ),
+                source_type=feature_store_model.get_source_info().source_type,
             )
         ).model_dump(by_alias=True),
         precomputed_lookup_feature_table_info=PrecomputedLookupFeatureTableInfo(

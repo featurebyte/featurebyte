@@ -49,6 +49,7 @@ from featurebyte.query_graph.sql.online_serving import (
     TemporaryBatchRequestTable,
     get_online_features,
 )
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
@@ -218,6 +219,7 @@ class FeatureMaterializeService:
         entity_validation_service: EntityValidationService,
         deployment_service: DeploymentService,
         feature_materialize_run_service: FeatureMaterializeRunService,
+        cron_helper: CronHelper,
         system_metrics_service: SystemMetricsService,
         redis: Redis[Any],
     ):
@@ -231,6 +233,7 @@ class FeatureMaterializeService:
         self.entity_validation_service = entity_validation_service
         self.deployment_service = deployment_service
         self.feature_materialize_run_service = feature_materialize_run_service
+        self.cron_helper = cron_helper
         self.system_metrics_service = system_metrics_service
         self.redis = redis
 
@@ -284,16 +287,17 @@ class FeatureMaterializeService:
         )
         feature_timestamp = datetime.utcnow()
 
+        select_expr = feature_table_model.entity_universe.get_entity_universe_expr(
+            current_feature_timestamp=feature_timestamp,
+            last_materialized_timestamp=(
+                feature_table_model.last_materialized_at
+                if use_last_materialized_timestamp
+                else None
+            ),
+        )
         await session.create_table_as(
             table_details=batch_request_table.table_details,
-            select_expr=feature_table_model.entity_universe.get_entity_universe_expr(
-                current_feature_timestamp=feature_timestamp,
-                last_materialized_timestamp=(
-                    feature_table_model.last_materialized_at
-                    if use_last_materialized_timestamp
-                    else None
-                ),
-            ),
+            select_expr=select_expr,
         )
         await BaseMaterializedTableService.add_row_index_column(
             session, batch_request_table.table_details
@@ -333,6 +337,7 @@ class FeatureMaterializeService:
                 session_handler=SessionHandler(
                     session=session, redis=self.redis, feature_store=feature_store
                 ),
+                cron_helper=self.cron_helper,
                 graph=feature_table_model.feature_cluster.graph,
                 nodes=nodes,
                 request_data=batch_request_table,
@@ -695,6 +700,7 @@ class FeatureMaterializeService:
                         )
                     )
                     await self._materialize_online(
+                        session=session,
                         feature_store=feature_store,
                         feature_table=current_feature_table,
                         columns=feature_table_model.output_column_names,
@@ -741,6 +747,8 @@ class FeatureMaterializeService:
                 current_feature_table,
                 materialized_features,
             ) in materialized_features_set.iterate_materialized_features():
+                if not materialized_features.column_names:
+                    continue
                 await self._initialize_new_columns_offline_and_online(
                     session=session,
                     current_feature_table=current_feature_table,
@@ -926,6 +934,7 @@ class FeatureMaterializeService:
                     current_feature_table, materialized_features.feature_timestamp
                 )
             await self._initialize_new_columns_online(
+                session=session,
                 feature_table=current_feature_table,
                 column_names=column_names,
                 end_date=materialize_end_date,
@@ -987,6 +996,7 @@ class FeatureMaterializeService:
 
     async def _initialize_new_columns_online(
         self,
+        session: BaseSession,
         feature_table: OfflineStoreFeatureTableModel,
         column_names: List[str],
         end_date: datetime,
@@ -1003,6 +1013,7 @@ class FeatureMaterializeService:
             if feature_store is not None and feature_store.config.online_store is not None:
                 assert feature_store.online_store_id is not None
                 await self._materialize_online(
+                    session=session,
                     feature_store=feature_store,
                     feature_table=feature_table,
                     columns=column_names,
@@ -1042,6 +1053,7 @@ class FeatureMaterializeService:
                 feature_store.online_store_id
             )
             await self._materialize_online(
+                session=session,
                 feature_store=feature_store,
                 feature_table=current_feature_table,
                 columns=feature_table_model.output_column_names,
@@ -1100,6 +1112,7 @@ class FeatureMaterializeService:
 
     async def _materialize_online(
         self,
+        session: BaseSession,
         feature_store: FeastFeatureStore,
         feature_table: OfflineStoreFeatureTableModel,
         columns: List[str],
@@ -1118,6 +1131,7 @@ class FeatureMaterializeService:
             for i in range(0, len(columns), NUM_COLUMNS_PER_MATERIALIZE):
                 columns_batch = columns[i : i + NUM_COLUMNS_PER_MATERIALIZE]
                 await materialize_partial(
+                    session=session,
                     feature_store=feature_store,
                     feature_view=feature_store.get_feature_view(feature_table.name),
                     columns=columns_batch,

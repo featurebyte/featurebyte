@@ -281,7 +281,10 @@
             {
                 "name": "date_diff_1",
                 "output_type": "series",
-                "parameters": {},
+                "parameters": {
+                    "left_timestamp_metadata": null,
+                    "right_timestamp_metadata": null
+                },
                 "type": "date_diff"
             },
             {
@@ -363,6 +366,7 @@
                     "tile_id": "TILE_SUM_5075A32B3AD63EF26B142FED42003F7722022559",
                     "tile_id_version": 2,
                     "timestamp": "event_timestamp",
+                    "timestamp_metadata": null,
                     "value_by": null,
                     "windows": [
                         "24h"
@@ -418,6 +422,7 @@
                     "tile_id": "TILE_SUM_FA3804C2F2AB322422FB47867A04F7AC554DCC5E",
                     "tile_id_version": 2,
                     "timestamp": "event_timestamp",
+                    "timestamp_metadata": null,
                     "value_by": null,
                     "windows": [
                         "24h"

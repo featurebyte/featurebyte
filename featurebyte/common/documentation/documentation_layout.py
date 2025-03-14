@@ -133,6 +133,12 @@ def _get_table_layout() -> List[DocLayoutItem]:
         ]),
         DocLayoutItem([TABLE, SET_FEATURE_JOB, "EventTable.list_feature_job_setting_analysis"]),
         DocLayoutItem([TABLE, SET_FEATURE_JOB, "EventTable.update_default_feature_job_setting"]),
+        DocLayoutItem([TABLE, SET_FEATURE_JOB, "SCDTable.update_default_feature_job_setting"]),
+        DocLayoutItem([
+            TABLE,
+            SET_FEATURE_JOB,
+            "TimeSeriesTable.update_default_feature_job_setting",
+        ]),
         DocLayoutItem(
             [TABLE, EXPLORE, "Table.describe"],
             doc_path_override="api.base_table.TableApiObject.describe.md",
@@ -828,7 +834,9 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "StringValueImputation"]),
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "ColumnCleaningOperation"]),
         DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "TableCleaningOperation"]),
+        DocLayoutItem([UTILITY_CLASSES, CLEANING_OPERATION, "AddTimestampSchema"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "AggFunc"]),
+        DocLayoutItem([UTILITY_CLASSES, ENUMS, "TargetType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "DefaultVersionMode"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "enum.DBVarType"]),
         DocLayoutItem([UTILITY_CLASSES, ENUMS, "FeatureListStatus"]),
@@ -875,7 +883,9 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimestampSchema"]),
+        DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeZoneColumn"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimeInterval"]),
+        DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "CalendarWindow"]),
         DocLayoutItem([UTILITY_CLASSES, REQUEST_COLUMN, "RequestColumn.point_in_time"]),
         DocLayoutItem([UTILITY_CLASSES, USER_DEFINED_FUNCTION, "FunctionParameter"]),
         DocLayoutItem([UTILITY_CLASSES, ONLINE_STORE_DETAILS, "RedisOnlineStoreDetails"]),
@@ -1009,6 +1019,9 @@ def _get_batch_feature_table_layout() -> List[DocLayoutItem]:
         *_get_materialized_table_layout(BATCH_FEATURE_TABLE),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.batch_request_table_id"]),
         DocLayoutItem([BATCH_FEATURE_TABLE, LINEAGE, "BatchFeatureTable.deployment_id"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, MANAGE, "BatchFeatureTable.to_pandas"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, MANAGE, "BatchFeatureTable.to_spark_df"]),
+        DocLayoutItem([BATCH_FEATURE_TABLE, MANAGE, "BatchFeatureTable.update_description"]),
     ]
 
 
@@ -1029,6 +1042,7 @@ def _get_observation_table_layout() -> List[DocLayoutItem]:
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.primary_entity_ids"]),
         DocLayoutItem([OBSERVATION_TABLE, INFO, "ObservationTable.primary_entity"]),
         DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.to_pandas"]),
+        DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.to_spark_df"]),
         DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.update_description"]),
         DocLayoutItem([OBSERVATION_TABLE, MANAGE, "ObservationTable.update_purpose"]),
         DocLayoutItem([OBSERVATION_TABLE, CREATE, "ObservationTable.upload"]),
@@ -1048,6 +1062,8 @@ def _get_batch_request_table_layout() -> List[DocLayoutItem]:
         *_get_materialized_table_layout(BATCH_REQUEST_TABLE),
         DocLayoutItem([BATCH_REQUEST_TABLE, INFO, "BatchRequestTable.context_id"]),
         DocLayoutItem([BATCH_REQUEST_TABLE, MANAGE, "BatchRequestTable.to_pandas"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, MANAGE, "BatchRequestTable.to_spark_df"]),
+        DocLayoutItem([BATCH_REQUEST_TABLE, MANAGE, "BatchRequestTable.update_description"]),
     ]
 
 
@@ -1073,6 +1089,8 @@ def _get_historical_feature_table_layout() -> List[DocLayoutItem]:
             LINEAGE,
             "HistoricalFeatureTable.observation_table_id",
         ]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, MANAGE, "HistoricalFeatureTable.to_pandas"]),
+        DocLayoutItem([HISTORICAL_FEATURE_TABLE, MANAGE, "HistoricalFeatureTable.to_spark_df"]),
         DocLayoutItem([
             HISTORICAL_FEATURE_TABLE,
             MANAGE,
@@ -1131,6 +1149,8 @@ def _get_target_layout() -> List[DocLayoutItem]:
         DocLayoutItem([TARGET, SERVE, "Target.compute_targets"]),
         DocLayoutItem([TARGET, SERVE, "Target.compute_target_table"]),
         DocLayoutItem([TARGET, CREATE, "TargetNamespace.create"]),
+        DocLayoutItem([TARGET, MANAGE, "TargetNamespace.update_target_type"]),
+        DocLayoutItem([TARGET, MANAGE, "Target.update_target_type"]),
     ]
 
 

@@ -2,6 +2,8 @@
 This module contains nested graph related node classes
 """
 
+import json
+
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from abc import ABC, abstractmethod
 from typing import (
@@ -29,7 +31,11 @@ from featurebyte.query_graph.enum import (
     NodeOutputType,
     NodeType,
 )
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.node.base import BaseNode, BasePrunableNode, NodeT
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.metadata.config import (
@@ -44,6 +50,7 @@ from featurebyte.query_graph.node.metadata.operation import (
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
+    CommentStr,
     ExpressionStr,
     ObjectClass,
     StatementStr,
@@ -173,7 +180,7 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     """
 
     aggregation_nodes_info: List[AggregationNodeInfo]
-    feature_job_setting: Optional[FeatureJobSetting]
+    feature_job_setting: Optional[FeatureJobSettingUnion]
     has_ttl: bool
     offline_store_table_name: str
     output_dtype: DBVarType
@@ -663,6 +670,144 @@ class BaseGraphNode(BasePrunableNode):
             node_name=self.name,
         )
 
+    def _add_ttl_handling_statements_for_feature_job_setting(
+        self,
+        input_df_name: str,
+        statements: List[Any],
+        var_name_generator: VariableNameGenerator,
+        feat_ts_col: str,
+        ttl_handling_column: str,
+        ttl_seconds: int,
+        is_databricks_udf: bool,
+    ) -> List[StatementT]:
+        # need to apply TTL handling on the input column
+        var_name_map = {}
+        for var_name in ["request_time", "cutoff", "feat_ts", "mask"]:
+            var_name_map[var_name] = var_name_generator.convert_to_variable_name(
+                variable_name_prefix=var_name, node_name=None
+            )
+
+        # add comments
+        statements.append(CommentStr(f"TTL handling for {ttl_handling_column} column"))
+
+        statements.append(  # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
+            (
+                var_name_map["request_time"],
+                self._to_datetime_expr(
+                    ExpressionStr(
+                        subset_frame_column_expr(
+                            VariableNameStr(input_df_name),
+                            SpecialColumnName.POINT_IN_TIME.value,
+                        )
+                    ),
+                    to_handle_none=is_databricks_udf,
+                ),
+            )
+        )
+        statements.append(  # cutoff = request_time - pd.Timedelta(seconds=ttl_seconds)
+            (
+                var_name_map["cutoff"],
+                ExpressionStr(
+                    f"{var_name_map['request_time']} - pd.Timedelta(seconds={ttl_seconds})"
+                ),
+            )
+        )
+        statements.append(  # feature_ts = pd.to_datetime(input_df_name[ttl_handling_column], unit="s", utc=True)
+            (
+                var_name_map["feat_ts"],
+                self._to_datetime_expr(
+                    ExpressionStr(
+                        subset_frame_column_expr(VariableNameStr(input_df_name), feat_ts_col)
+                    ),
+                    to_handle_none=False,
+                    unit="s",
+                ),
+            )
+        )
+        statements.append(  # mask = (feature_ts >= cutoff) & (feature_ts <= request_time)
+            (
+                var_name_map["mask"],
+                ExpressionStr(
+                    f"({var_name_map['feat_ts']} >= {var_name_map['cutoff']}) & "
+                    f"({var_name_map['feat_ts']} <= {var_name_map['request_time']})"
+                ),
+            )
+        )
+        statements.append(  # inputs.loc["feat"][~mask] = np.nan
+            StatementStr(
+                f"{input_df_name}.loc[~{var_name_map['mask']}, {repr(ttl_handling_column)}] = np.nan"
+            )
+        )
+        return statements
+
+    def _add_ttl_handling_statements_for_cron_feature_job_setting(
+        self,
+        input_df_name: str,
+        statements: List[Any],
+        var_name_generator: VariableNameGenerator,
+        feat_ts_col: str,
+        ttl_handling_column: str,
+        cron_expression: str,
+        cron_timezone: str,
+    ) -> List[StatementT]:
+        var_name_map = {}
+        for var_name in ["cron", "prev_time", "feat_ts", "mask"]:
+            var_name_map[var_name] = var_name_generator.convert_to_variable_name(
+                variable_name_prefix=var_name, node_name=None
+            )
+
+        statements.append(  # add comments
+            CommentStr(
+                f"TTL handling for {ttl_handling_column} column with cron expression {cron_expression}"
+            )
+        )
+        statements.append(  # cron = croniter.croniter(cron_expression)
+            (
+                var_name_map["cron"],
+                ExpressionStr(f"croniter.croniter({json.dumps(cron_expression)})"),
+            )
+        )
+        statements.append(  # prev_time = cron.timestamp_to_datetime(cron.get_prev())
+            (
+                var_name_map["prev_time"],
+                ExpressionStr(
+                    f"{var_name_map['cron']}.timestamp_to_datetime({var_name_map['cron']}.get_prev())"
+                ),
+            )
+        )
+        statements.append(  # prev_time = prev_time.replace(tzinfo=ZoneInfo(cron_timezone)).astimezone(pytz.utc)
+            (
+                var_name_map["prev_time"],
+                ExpressionStr(
+                    f"{var_name_map['prev_time']}.replace(tzinfo=ZoneInfo({json.dumps(cron_timezone)})).astimezone(pytz.utc)"
+                ),
+            )
+        )
+        statements.append(  # feat_ts = pd.to_datetime(input_df_name[feat_ts_col], unit="s", utc=True)
+            (
+                var_name_map["feat_ts"],
+                self._to_datetime_expr(
+                    ExpressionStr(
+                        subset_frame_column_expr(VariableNameStr(input_df_name), feat_ts_col)
+                    ),
+                    to_handle_none=False,
+                    unit="s",
+                ),
+            )
+        )
+        statements.append(  # mask = feat_ts <= prev_time
+            (
+                var_name_map["mask"],
+                ExpressionStr(f"{var_name_map['feat_ts']} <= {var_name_map['prev_time']}"),
+            )
+        )
+        statements.append(  # inputs.loc[mask, "feat"] = np.nan
+            StatementStr(
+                f"{input_df_name}.loc[{var_name_map['mask']}, {repr(ttl_handling_column)}] = np.nan"
+            )
+        )
+        return statements
+
     def _derive_on_demand_view_or_user_defined_function_helper(
         self,
         var_name_generator: VariableNameGenerator,
@@ -693,60 +838,27 @@ class BaseGraphNode(BasePrunableNode):
             assert ttl_seconds is not None
             input_df_name = config_for_ttl.input_df_name
             feat_ts_col = f"{ttl_handling_column}{FEAST_TIMESTAMP_POSTFIX}"
-            # need to apply TTL handling on the input column
-            var_name_map = {}
-            for var_name in ["request_time", "cutoff", "feat_ts", "mask"]:
-                var_name_map[var_name] = var_name_generator.convert_to_variable_name(
-                    variable_name_prefix=var_name, node_name=None
+            if isinstance(node_params.feature_job_setting, FeatureJobSetting):
+                statements = self._add_ttl_handling_statements_for_feature_job_setting(
+                    input_df_name=input_df_name,
+                    statements=statements,
+                    var_name_generator=var_name_generator,
+                    feat_ts_col=feat_ts_col,
+                    ttl_handling_column=ttl_handling_column,
+                    ttl_seconds=ttl_seconds,
+                    is_databricks_udf=is_databricks_udf,
                 )
 
-            # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
-            statements.append((
-                var_name_map["request_time"],
-                self._to_datetime_expr(
-                    ExpressionStr(
-                        subset_frame_column_expr(
-                            VariableNameStr(input_df_name),
-                            SpecialColumnName.POINT_IN_TIME.value,
-                        )
-                    ),
-                    to_handle_none=is_databricks_udf,
-                ),
-            ))
-            statements.append(  # cutoff = request_time - pd.Timedelta(seconds=ttl_seconds)
-                (
-                    var_name_map["cutoff"],
-                    ExpressionStr(
-                        f"{var_name_map['request_time']} - pd.Timedelta(seconds={ttl_seconds})"
-                    ),
+            if isinstance(node_params.feature_job_setting, CronFeatureJobSetting):
+                statements = self._add_ttl_handling_statements_for_cron_feature_job_setting(
+                    input_df_name=input_df_name,
+                    statements=statements,
+                    var_name_generator=var_name_generator,
+                    feat_ts_col=feat_ts_col,
+                    ttl_handling_column=ttl_handling_column,
+                    cron_expression=node_params.feature_job_setting.get_cron_expression(),
+                    cron_timezone=node_params.feature_job_setting.timezone,
                 )
-            )
-            statements.append(  # feature_ts = pd.to_datetime(input_df_name[ttl_handling_column], unit="s", utc=True)
-                (
-                    var_name_map["feat_ts"],
-                    self._to_datetime_expr(
-                        ExpressionStr(
-                            subset_frame_column_expr(VariableNameStr(input_df_name), feat_ts_col)
-                        ),
-                        to_handle_none=False,
-                        unit="s",
-                    ),
-                )
-            )
-            statements.append(  # mask = (feature_ts >= cutoff) & (feature_ts <= request_time)
-                (
-                    var_name_map["mask"],
-                    ExpressionStr(
-                        f"({var_name_map['feat_ts']} >= {var_name_map['cutoff']}) & "
-                        f"({var_name_map['feat_ts']} <= {var_name_map['request_time']})"
-                    ),
-                )
-            )
-            statements.append(  # inputs.loc["feat"][~mask] = np.nan
-                StatementStr(
-                    f"{input_df_name}.loc[~{var_name_map['mask']}, {repr(ttl_handling_column)}] = np.nan"
-                )
-            )
 
         if node_params.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
@@ -791,7 +903,7 @@ class BaseGraphNode(BasePrunableNode):
             ttl_handling_column = column_name
             config_for_ttl = config
             assert self.parameters.feature_job_setting is not None
-            ttl_seconds = 2 * self.parameters.feature_job_setting.period_seconds
+            ttl_seconds = self.parameters.feature_job_setting.extract_ttl_seconds()
 
         return self._derive_on_demand_view_or_user_defined_function_helper(
             var_name_generator=var_name_generator,

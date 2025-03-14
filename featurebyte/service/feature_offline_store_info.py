@@ -13,14 +13,15 @@ from featurebyte.models.offline_store_ingest_query import (
     OfflineStoreInfoMetadata,
     ServingNameInfo,
 )
-from featurebyte.query_graph.enum import GraphNodeType, NodeType
+from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.base import BaseNode
-from featurebyte.query_graph.node.generic import GroupByNodeParameters
 from featurebyte.query_graph.node.nested import OfflineStoreIngestQueryGraphNodeParameters
 from featurebyte.query_graph.transform.decompose_point import FeatureJobSettingExtractor
 from featurebyte.query_graph.transform.null_filling_value import NullFillingValueExtractor
@@ -57,7 +58,7 @@ class OfflineStoreInfoInitializationService:
     async def offline_store_feature_table_creator(
         self,
         primary_entity_ids: Sequence[ObjectId],
-        feature_job_setting: Optional[FeatureJobSetting],
+        feature_job_setting: Optional[FeatureJobSettingUnion],
         has_ttl: bool,
         catalog_id: ObjectId,
         table_name_prefix: str,
@@ -247,6 +248,7 @@ class OfflineStoreInfoInitializationService:
                 NullFillingValueExtractor(graph=feature.graph).extract(node=feature.node).fill_value
             )
 
+        has_ttl = feature.has_bounded_window_aggregated_node
         if result.is_decomposed:
             decomposed_graph, output_node_name = await self.reconstruct_decomposed_graph(
                 graph=result.graph,
@@ -264,20 +266,6 @@ class OfflineStoreInfoInitializationService:
                 graph=feature.graph
             ).extract_from_target_node(node=feature.node)
 
-            has_ttl = False
-            for node in feature.graph.iterate_nodes(
-                target_node=feature.node, node_type=NodeType.GROUPBY
-            ):
-                assert isinstance(node.parameters, GroupByNodeParameters)
-                has_ttl = any(node.parameters.windows)
-                if any(node.parameters.windows):
-                    has_ttl = True
-                    break
-            for _ in feature.graph.iterate_nodes(
-                target_node=feature.node, node_type=NodeType.NON_TILE_WINDOW_AGGREGATE
-            ):
-                has_ttl = True
-                break
             table_name = (
                 await self.offline_store_feature_table_creator(
                     primary_entity_ids=feature.primary_entity_ids,
@@ -318,14 +306,15 @@ class OfflineStoreInfoInitializationService:
             ],
         )
         if not dry_run:
+            feature_job_settings = [
+                setting.feature_job_setting for setting in feature.table_id_feature_job_settings
+            ]
             offline_store_info.initialize(
                 feature_versioned_name=feature.versioned_name,
                 feature_dtype=feature.dtype,
-                feature_job_settings=[
-                    setting.feature_job_setting for setting in feature.table_id_feature_job_settings
-                ],
+                feature_job_settings=feature_job_settings,
                 feature_id=feature.id,
-                has_ttl=metadata.has_ttl if metadata else False,
+                has_ttl=has_ttl,
                 null_filling_value=null_filling_value,
             )
 

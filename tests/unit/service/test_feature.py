@@ -148,6 +148,7 @@ async def test_feature_document_contains_raw_graph(feature_service, feature, api
                 "period": "1800s",
             },
             "timestamp": "event_timestamp",
+            "timestamp_metadata": None,
             "value_by": None,
             "windows": ["30m"],
             "offset": None,

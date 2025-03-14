@@ -59,6 +59,7 @@ class AggregationType(StrEnum):
     NON_TILE_WINDOW = "non_tile_window"
     FORWARD = "forward"
     FORWARD_AS_AT = "forward_as_at"
+    TIME_SERIES = "time_series"
 
 
 @dataclass
@@ -612,7 +613,10 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
 
     def get_source_hash_parameters(self) -> dict[str, Any]:
         params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
-        parameters_dict = self.parameters.model_dump(exclude={"parent", "agg_func", "name"})
+        if self.parameters.value_by is None:
+            parameters_dict = self.parameters.model_dump(exclude={"parent", "agg_func", "name"})
+        else:
+            parameters_dict = self.parameters.model_dump(exclude={"name"})
         if parameters_dict.get("entity_ids") is not None:
             parameters_dict["entity_ids"] = [
                 str(entity_id) for entity_id in parameters_dict["entity_ids"]
@@ -664,11 +668,16 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
 
     def get_source_hash_parameters(self) -> dict[str, Any]:
         params: dict[str, Any] = {"source_expr": self.source_expr.sql()}
-        parameters_dict = self.parameters.model_dump(exclude={"parent", "agg_func", "name"})
+        if self.parameters.value_by is None:
+            parameters_dict = self.parameters.model_dump(exclude={"parent", "agg_func", "name"})
+        else:
+            parameters_dict = self.parameters.model_dump(exclude={"name"})
         if parameters_dict.get("entity_ids") is not None:
             parameters_dict["entity_ids"] = [
                 str(entity_id) for entity_id in parameters_dict["entity_ids"]
             ]
+        if parameters_dict.get("timestamp_metadata") is None:
+            parameters_dict.pop("timestamp_metadata", None)
         params["parameters"] = parameters_dict
         return params
 

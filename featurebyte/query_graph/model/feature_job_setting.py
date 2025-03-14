@@ -2,19 +2,48 @@
 Feature Job Setting Model
 """
 
-from typing import Any, ClassVar, Dict, Union
+from abc import abstractmethod
+from typing import Any, ClassVar, Dict, Optional, Union
 
 from croniter import croniter
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
 from pydantic_extra_types.timezone_name import TimeZoneName
+from typing_extensions import Annotated, Literal
 
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.common.model_util import parse_duration_string, validate_job_setting_parameters
+from featurebyte.common.model_util import (
+    convert_seconds_to_time_format,
+    parse_duration_string,
+    validate_job_setting_parameters,
+)
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.periodic_task import Crontab
 
 
-class FeatureJobSetting(FeatureByteBaseModel):
+class BaseFeatureJobSetting(FeatureByteBaseModel):
+    """
+    Base Feature Job Setting class
+    """
+
+    @abstractmethod
+    def extract_offline_store_feature_table_name_postfix(self, max_length: int) -> str:
+        """
+        Extract offline store feature table name postfix
+
+        Parameters
+        ----------
+        max_length: int
+            Maximum length of the postfix
+        """
+
+    @abstractmethod
+    def extract_ttl_seconds(self) -> int:
+        """
+        Extract TTL in seconds
+        """
+
+
+class FeatureJobSetting(BaseFeatureJobSetting):
     """
     FeatureJobSetting class is used to declare the Feature Job Setting.
 
@@ -45,6 +74,13 @@ class FeatureJobSetting(FeatureByteBaseModel):
     ...  period="60m"
     ...  offset="135s"
     ... )
+
+    See Also
+    --------
+    - [EventTable.update_feature_job_setting](/reference/featurebyte.api.event_table.EventTable.update_default_feature_job_setting/):
+        Update feature job setting for the event table.
+    - [SCDTable.update_feature_job_setting](/reference/featurebyte.api.scd_table.SCDTable.update_default_feature_job_setting/):
+        Update feature job setting for the slowly changing dimension table.
     """
 
     # class variables
@@ -195,36 +231,119 @@ class FeatureJobSetting(FeatureByteBaseModel):
             execution_buffer=f"{fjs['execution_buffer']}s",
         )
 
+    def extract_offline_store_feature_table_name_postfix(self, max_length: int) -> str:
+        # take the frequency part of the feature job setting
+        postfix = ""
+        for component in reversed(range(1, 5)):
+            postfix = convert_seconds_to_time_format(self.period_seconds, components=component)
+            if len(postfix) <= max_length:
+                break
+        return postfix
+
+    def extract_ttl_seconds(self) -> int:
+        ttl_seconds = 2 * self.period_seconds
+        return ttl_seconds
+
     def __hash__(self) -> int:
         return hash(f"{self.period_seconds}_{self.offset_seconds}_{self.blind_spot_seconds}")
 
     def __eq__(self, other: object) -> bool:
+        if isinstance(other, CronFeatureJobSetting):
+            return False
         if not isinstance(other, FeatureJobSetting):
             return NotImplemented
         return self.to_seconds() == other.to_seconds()
 
 
-class CronFeatureJobSetting(FeatureByteBaseModel):
+class CronFeatureJobSetting(BaseFeatureJobSetting):
     """
     CronFeatureJobSetting class is used to declare a cron-based Feature Job Setting.
 
-    The setting comprises two parameters:
+    Parameters
+    ----------
+    crontab : Union[str, Crontab]
+        The cron schedule for the feature job. It can be provided either as a string in cron format (e.g., `"10 * * * *"`)
+        or as a `Crontab` object with detailed scheduling parameters.
 
-    - The crontab parameter specifies the cron schedule for the feature job.
-    - The timezone parameter defines the timezone for the cron schedule. It is used to determine the time at which the feature job should run.
+        **Cron String Format:**
+        A standard cron string consists of five fields separated by spaces, representing different units of time. The format is as follows:
+
+        ~~~
+        ┌───────────── minute (0 - 59)
+        │ ┌───────────── hour (0 - 23)
+        │ │ ┌───────────── day of the month (1 - 31)
+        │ │ │ ┌───────────── month (1 - 12)
+        │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday)
+        │ │ │ │ │
+        │ │ │ │ │
+        \* \* \* \* \*
+        ~~~
+
+        **Field Descriptions:**
+        - **Minute (`0-59`)**: Specifies the exact minute when the job should run.
+            - Example: `10` means the job runs at the 10th minute of the hour.
+            - Special Characters:
+                - `\*` : Every minute.
+                - `\*/5` : Every 5 minutes.
+                - `10,20,30` : At minutes 10, 20, and 30.
+        - **Hour (`0-23`)**: Specifies the exact hour when the job should run.
+            - Example: `\*` means the job runs every hour.
+            - Special Characters:
+                - `\*` : Every hour.
+                - `\*/2` : Every 2 hours.
+                - `0,12` : At midnight and noon.
+        - **Day of Month (`1-31`)**: Specifies the exact day of the month when the job should run.
+            - Example: `\*` means the job runs every day of the month.
+            - Special Characters:
+                - `\*` : Every day.
+                - `1-15` : From the 1st to the 15th day of the month.
+                - `10,20,30` : On the 10th, 20th, and 30th day.
+        - **Month (`1-12`)**: Specifies the exact month when the job should run.
+            - Example: `\*` means the job runs every month.
+            - Special Characters:
+                - `\*` : Every month.
+                - `1,6,12` : In January, June, and December.
+        - **Day of Week (`0-6`)**: Specifies the exact day of the week when the job should run. (0 represents Sunday)
+            - Example: `\*` means the job runs every day of the week.
+            - Special Characters:
+                - `\*` : Every day.
+                - `1-5` : From Monday to Friday.
+                - `0,6` : On Sunday and Saturday.
+        **Examples of Valid Cron Strings:**
+        - `"10 \* \* \* \*"`: Runs at the 10th minute of every hour.
+        - `"0 0 \* \* \*"`: Runs daily at midnight.
+        - `"30 14 1 \* \*"`: Runs at 2:30 PM on the first day of every month.
+        - `"15 10 \* \* 1-5"`: Runs at 10:15 AM every weekday (Monday to Friday).
+        - `"\*/5 \* \* \* \*"`: Runs every 5 minutes.
+
+    timezone : TimeZoneName, default="Etc/UTC"
+        The timezone for the cron schedule. It determines the local time at which the feature job should execute.
+        The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones) (commonly known as the IANA Time Zone Database or tz database).
+
+    reference_timezone : Optional[TimeZoneName]
+        Time zone used to define calendar-based aggregation periods (e.g., daily, weekly, or monthly).
+        This reference time zone ensures consistency when calculating calendar periods across different data time zones.
+        If not provided, the timezone parameter is used as the reference timezone. The time zones are defined by the [International Time Zone Database](https://www.iana.org/time-zones) (commonly known as the IANA Time Zone Database or tz database).
 
     Examples
     --------
     Consider a case study where a data warehouse refreshes each hour.
     The data refresh starts 10 seconds after the hour based on the UTC timezone.
 
-    - crontab: "10 * * * *"
-    - timezone: "Etc/UTC"
-
     >>> feature_job_setting = fb.CronFeatureJobSetting(  # doctest: +SKIP
     ...     crontab="10 * * * *",
     ...     timezone="Etc/UTC",
     ... )
+
+
+    See Also
+    --------
+    - [Crontab](/reference/featurebyte.models.periodic_task.Crontab/):
+        Crontab class for specifying cron schedule.
+    - [TimeSeriesTable.update_feature_job_setting](/reference/featurebyte.api.time_series_table.TimeSeriesTable.update_default_feature_job_setting/):
+        Update feature job setting for the time series table.
+    - [aggregate_over](/reference/featurebyte.api.groupby.GroupBy.aggregate_over/):
+        Window aggregation specification
     """
 
     # class variables
@@ -236,6 +355,36 @@ class CronFeatureJobSetting(FeatureByteBaseModel):
         default="Etc/UTC",
         description="Timezone for the cron schedule. It is used to determine the time at which the feature job should run.",
     )
+    reference_timezone: Optional[TimeZoneName] = Field(
+        default=None,
+        description=(
+            "Time zone used to define calendar-based aggregation periods (e.g., daily, weekly, or monthly). "
+            "This reference time zone ensures consistency when calculating calendar periods across different data time zones."
+            "If not provided, the timezone parameter is used as the reference timezone."
+        ),
+    )
+
+    def get_cron_expression(self) -> str:
+        """
+        Get cron expression
+
+        Returns
+        -------
+        """
+        crontab = self.crontab
+        if isinstance(crontab, str):
+            return crontab
+        return f"{crontab.minute} {crontab.hour} {crontab.day_of_month} {crontab.month_of_year} {crontab.day_of_week}"
+
+    def get_cron_expression_with_timezone(self) -> str:
+        """
+        Get cron expression with timezone
+
+        Returns
+        -------
+        str
+        """
+        return f"{self.get_cron_expression()}_{self.timezone}_{self.reference_timezone}"
 
     @model_validator(mode="after")
     def _validate_cron_expression(self) -> "CronFeatureJobSetting":
@@ -266,7 +415,112 @@ class CronFeatureJobSetting(FeatureByteBaseModel):
                 part: int(cron_parts[i]) if cron_parts[i].isdigit() else cron_parts[i]
                 for i, part in enumerate(parts)
             })
+
+        # limit max frequency to hourly
+        assert isinstance(self.crontab, Crontab)
+        if isinstance(self.crontab.minute, str) and not self.crontab.minute.isdigit():
+            raise ValueError("Cron schedule more frequent than hourly is not supported.")
+
         return self
+
+    def extract_offline_store_feature_table_name_postfix(self, max_length: int) -> str:
+        crontab = self.crontab
+
+        assert isinstance(crontab, Crontab)
+        hour = crontab.hour
+        day_of_month = crontab.day_of_month
+        month_of_year = crontab.month_of_year
+        day_of_week = crontab.day_of_week
+
+        # Helper functions
+        def has_step(field: Union[int, str]) -> bool:
+            return isinstance(field, str) and "/" in field
+
+        def has_multiple(field: Union[int, str]) -> bool:
+            return isinstance(field, str) and "," in field
+
+        def has_range(field: Union[int, str]) -> bool:
+            return isinstance(field, str) and "-" in field
+
+        def has_non_standard(field: Union[int, str]) -> bool:
+            return isinstance(field, str) and ("#" in field)
+
+        # Check for yearly (single month and specific day_of_month)
+        if month_of_year != "*" and not has_multiple(month_of_year) and day_of_month != "*":
+            return "yearly"[:max_length]
+
+        # Check for monthly or daily based on day_of_month
+        if day_of_month != "*":
+            if has_step(day_of_month):
+                return "daily"[:max_length]
+            else:
+                return "monthly"[:max_length]
+
+        # Check for monthly based on non-standard day_of_week
+        if has_non_standard(day_of_week):
+            return "monthly"[:max_length]
+
+        # Check for weekly or daily based on day_of_week
+        if day_of_week != "*":
+            if has_range(day_of_week):
+                return "daily"[:max_length]
+            else:
+                return "weekly"[:max_length]
+
+        # Check for hourly
+        if hour == "*" or has_step(hour) or has_multiple(hour) or has_range(hour):
+            return "hourly"[:max_length]
+
+        # Default to daily
+        return "daily"[:max_length]
+
+    def extract_ttl_seconds(self) -> int:
+        # note: this is only used to populate feast feature view ttl parameters.
+        # the actual ttl handling is done in the on demand feature view
+        return 30 * 24 * 60 * 60  # 30 days
+
+    def __hash__(self) -> int:
+        return hash((self.crontab, self.timezone, self.reference_timezone))
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CronFeatureJobSetting):
+            return False
+        return (
+            self.crontab == other.crontab
+            and self.timezone == other.timezone
+            and self.reference_timezone == other.reference_timezone
+        )
+
+
+def feature_job_setting_discriminator(value: Any) -> Literal["interval", "cron"]:
+    """
+    Discriminator for feature job setting
+
+    Parameters
+    ----------
+    value : Any
+        Input value
+
+    Returns
+    -------
+    Literal["interval", "cron"]
+    """
+    if isinstance(value, dict):
+        if "crontab" in value:
+            return "cron"
+        return "interval"
+    if isinstance(value, FeatureJobSetting):
+        return "interval"
+    return "cron"
+
+
+FeatureJobSettingUnion = Annotated[
+    Union[
+        Annotated[FeatureJobSetting, Tag("interval")],
+        Annotated[CronFeatureJobSetting, Tag("cron")],
+    ],
+    Discriminator(feature_job_setting_discriminator),
+]
 
 
 class TableFeatureJobSetting(FeatureByteBaseModel):
@@ -318,7 +572,7 @@ class TableFeatureJobSetting(FeatureByteBaseModel):
     table_name: str = Field(
         description="Name of the table to which the feature job setting applies feature_job_setting."
     )
-    feature_job_setting: FeatureJobSetting = Field(
+    feature_job_setting: FeatureJobSettingUnion = Field(
         description="Feature class that contains specific settings that should be applied to feature jobs that "
         "involve time aggregate operations and use timestamps from the table specified in the table_name parameter."
     )
@@ -330,10 +584,12 @@ class TableIdFeatureJobSetting(FeatureByteBaseModel):
     """
 
     table_id: PydanticObjectId
-    feature_job_setting: FeatureJobSetting
+    feature_job_setting: FeatureJobSettingUnion
 
     def __hash__(self) -> int:
-        return hash(f"{self.table_id}_{self.feature_job_setting.to_seconds()}")
+        if isinstance(self.feature_job_setting, FeatureJobSetting):
+            return hash(f"{self.table_id}_{self.feature_job_setting.to_seconds()}")
+        return hash((self.table_id, self.feature_job_setting))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, (TableIdFeatureJobSetting, dict)):

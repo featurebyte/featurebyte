@@ -17,6 +17,7 @@ from bson.objectid import ObjectId
 from pydantic import ValidationError
 from typeguard import TypeCheckError
 
+from featurebyte import Configurations, TimestampSchema, TimeZoneColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
 from featurebyte.enum import DBVarType, TableDataType
@@ -31,6 +32,7 @@ from featurebyte.exception import (
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.node.cleaning_operation import (
+    AddTimestampSchema,
     DisguisedValueImputation,
     MissingValueImputation,
 )
@@ -1242,3 +1244,181 @@ def test_associate_conflicting_dtype_to_different_tables(
         f"match the entity dtype INT."
     )
     assert expected_msg in str(exc.value)
+
+
+def test_add_timestamp_schema(
+    saved_event_table, cust_id_entity, arbitrary_default_feature_job_setting, update_fixtures
+):
+    """Test add timestamp schema to non-special columns"""
+    # add entity
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+
+    # create a semantic
+    client = Configurations().get_client()
+    response = client.post(url="/semantic", json={"name": "SOME_SEMANTIC"})
+    assert response.status_code == 201
+    semantic_id = response.json()["_id"]
+
+    # add semantic to the column
+    cols_info = saved_event_table.columns_info
+    for col_info in cols_info:
+        if col_info.name == "cust_id":
+            col_info.semantic_id = ObjectId(semantic_id)
+
+    response = client.patch(
+        url=f"/event_table/{saved_event_table.id}",
+        json={"columns_info": [col_info.json_dict() for col_info in cols_info]},
+    )
+    assert response.status_code == 200
+
+    # check the semantic is added to the column
+    assert saved_event_table.cust_id.info.semantic_id == ObjectId(semantic_id)
+
+    # add non-timestamp schema cleaning operation to the column & semantic ID is not reset
+    cleaning_operations = [MissingValueImputation(imputed_value="")]
+    saved_event_table.col_text.update_critical_data_info(cleaning_operations=cleaning_operations)
+    assert saved_event_table.cust_id.info.semantic_id == ObjectId(semantic_id)
+
+    # add timestamp schema to the column
+    cleaning_operations = [
+        AddTimestampSchema(
+            timestamp_schema=TimestampSchema(
+                is_utc_time=False,
+                format_string="%Y-%m-%d %H:%M:%S",
+                timezone="Asia/Singapore",
+            )
+        )
+    ]
+    saved_event_table.col_text.update_critical_data_info(cleaning_operations=cleaning_operations)
+    assert (
+        saved_event_table.col_text.info.critical_data_info.cleaning_operations
+        == cleaning_operations
+    )
+
+    # check that semantic ID is reset
+    assert saved_event_table.col_text.info.semantic_id is None
+
+    # check that datetime operation can be applied on the column
+    view = saved_event_table.get_view()
+    view["col_text_day"] = view.col_text.dt.day
+
+    # check preview sql
+    expected_preview_sql = """
+    SELECT
+      "col_int" AS "col_int",
+      "col_float" AS "col_float",
+      "col_char" AS "col_char",
+      CAST("col_text" AS VARCHAR) AS "col_text",
+      "col_binary" AS "col_binary",
+      "col_boolean" AS "col_boolean",
+      CAST("event_timestamp" AS VARCHAR) AS "event_timestamp",
+      "cust_id" AS "cust_id",
+      DATE_PART(day, TO_TIMESTAMP("col_text", '%Y-%m-%d %H:%M:%S')) AS "col_text_day"
+    FROM "sf_database"."sf_schema"."sf_table"
+    LIMIT 10
+    """
+    assert view.preview_sql().strip() == textwrap.dedent(expected_preview_sql).strip()
+
+    # construct feature & save
+    feat = view.groupby("cust_id").aggregate_over(
+        "col_text_day",
+        method="max",
+        windows=["7d"],
+        feature_names=["max_col_text_day"],
+        feature_job_setting=arbitrary_default_feature_job_setting,
+    )["max_col_text_day"]
+    feat.save()
+
+    check_sdk_code_generation(
+        feat,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/add_timestamp_schema.py",
+        update_fixtures=update_fixtures,
+        table_id=saved_event_table.id,
+    )
+
+
+def test_add_timestamp_schema_validation(saved_event_table):
+    """Test add timestamp schema validation"""
+    add_ts_schema_op = AddTimestampSchema(
+        timestamp_schema=TimestampSchema(
+            is_utc_time=True,
+            format_string="%Y-%m-%d %H:%M:%S",
+        )
+    )
+    imputation_op = MissingValueImputation(imputed_value=0)
+
+    # check validation
+    with pytest.raises(ValidationError) as exc:
+        saved_event_table.col_text.update_critical_data_info(
+            cleaning_operations=[add_ts_schema_op, imputation_op]
+        )
+
+    expected = "AddTimestampSchema must be the last operation."
+    assert expected in str(exc.value)
+
+    # check when the add timestamp schema operation is the last operation, expect no error
+    saved_event_table.col_text.update_critical_data_info(
+        cleaning_operations=[imputation_op, add_ts_schema_op]
+    )
+
+    # check validation check on non-existing timezone offset column
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_event_table.col_text.update_critical_data_info(
+            cleaning_operations=[
+                AddTimestampSchema(
+                    timestamp_schema=TimestampSchema(
+                        is_utc_time=False,
+                        format_string="%Y-%m-%d %H:%M:%S",
+                        timezone=TimeZoneColumn(column_name="non_existing_column", type="timezone"),
+                    )
+                )
+            ]
+        )
+
+    expected = (
+        'Timezone column name "non_existing_column" is not found in columns_info: '
+        "AddTimestampSchema(timestamp_schema=TimestampSchema("
+        "format_string='%Y-%m-%d %H:%M:%S', is_utc_time=False, "
+        "timezone=TimeZoneColumn(column_name='non_existing_column', type='timezone')))"
+    )
+    assert expected in str(exc.value)
+
+    # check validation check on non-supported dtype
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_event_table.col_int.update_critical_data_info(
+            cleaning_operations=[
+                AddTimestampSchema(
+                    timestamp_schema=TimestampSchema(
+                        is_utc_time=False,
+                        format_string="%Y-%m-%d %H:%M:%S",
+                        timezone=TimeZoneColumn(column_name="non_existing_column", type="timezone"),
+                    )
+                )
+            ]
+        )
+
+    expected = (
+        "AddTimestampSchema should only be used with supported datetime types: "
+        "[DATE, TIMESTAMP, TIMESTAMP_TZ, VARCHAR]. INT is not supported."
+    )
+    assert expected in str(exc.value)
+
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_event_table.col_text.update_critical_data_info(
+            cleaning_operations=[
+                AddTimestampSchema(
+                    timestamp_schema=TimestampSchema(
+                        is_utc_time=False,
+                        format_string="%Y-%m-%d %H:%M:%S",
+                        timezone=TimeZoneColumn(column_name="col_text", type="timezone"),
+                    )
+                )
+            ]
+        )
+
+    expected = (
+        'Timestamp schema timezone offset column "col_text" cannot be the same as the column name'
+    )
+    assert expected in str(exc.value)

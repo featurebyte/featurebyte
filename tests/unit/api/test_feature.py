@@ -2001,3 +2001,56 @@ def test_feature_or_view_column_name_contains_quote(
 
     # check feature can be saved without error
     feature.save()
+
+
+def test_create_new_version_for_non_tile_window_aggregate(
+    snowflake_event_table_with_entity,
+    snowflake_event_view_with_entity_and_feature_job,
+    count_distinct_window_aggregate_feature,
+):
+    """Test create new version for non-tile window aggregate feature"""
+    feature_fjs = FeatureJobSetting(blind_spot="600s", period="1800s", offset="300s")
+    count_distinct_window_aggregate_feature.save()
+    assert count_distinct_window_aggregate_feature.cached_model.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_event_table_with_entity.id,
+            feature_job_setting=feature_fjs,
+        )
+    ]
+    assert (
+        snowflake_event_view_with_entity_and_feature_job.default_feature_job_setting != feature_fjs
+    )
+
+    # attempt to upgrade readiness to production ready should fail
+    with pytest.raises(RecordUpdateException) as exc:
+        count_distinct_window_aggregate_feature.update_readiness(FeatureReadiness.PRODUCTION_READY)
+    expected_msg = (
+        "Discrepancies found between the promoted feature version you are trying to promote to PRODUCTION_READY, "
+        "and the input table."
+    )
+    assert expected_msg in str(exc.value)
+
+    # check create new version
+    new_fjs = FeatureJobSetting(blind_spot="45m", period="30m", offset="15m")
+    new_version = count_distinct_window_aggregate_feature.create_new_version(
+        table_feature_job_settings=[
+            TableFeatureJobSetting(
+                table_name=snowflake_event_table_with_entity.name,
+                feature_job_setting=new_fjs,
+            )
+        ],
+    )
+
+    # check non-tile window aggregate feature's new version
+    assert new_version.cached_model.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=snowflake_event_table_with_entity.id,
+            feature_job_setting=new_fjs,
+        )
+    ]
+    assert set(new_version.cached_model.graph.nodes_map.keys()) == {
+        "input_1",
+        "graph_1",
+        "non_tile_window_aggregate_1",
+        "project_1",
+    }

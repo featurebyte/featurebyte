@@ -57,6 +57,43 @@ class TestTargetNamespaceApi(BaseCatalogApiTestSuite):
             target_payload["name"] = f'{target_payload["name"]}_{i}'
             yield target_payload
 
+    def test_create_201(self, test_api_client_persistent, create_success_response, user_id):
+        """Test create target namespace"""
+        test_api_client, _ = test_api_client_persistent
+        response = create_success_response
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        assert response.json()["target_type"] == "regression"
+
+    def test_update_422_setting_target_type(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test update target namespace"""
+        test_api_client, _ = test_api_client_persistent
+        target_namespace_id = create_success_response.json()["_id"]
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}", json={"target_type": "classification"}
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        assert (
+            response.json()["detail"] == "Updating target type after setting it is not supported."
+        )
+
+    def test_update_target_type_200(self, test_api_client_persistent):
+        """Test update target type"""
+        test_api_client, _ = test_api_client_persistent
+        response = test_api_client.post(
+            "/target_namespace", json={**self.payload, "target_type": None}
+        )
+        target_namespace_id = response.json()["_id"]
+        assert response.status_code == HTTPStatus.CREATED, response.json()
+        assert response.json()["target_type"] is None
+
+        response = test_api_client.patch(
+            f"/target_namespace/{target_namespace_id}", json={"target_type": "classification"}
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json()["target_type"] == "classification"
+
     def test_delete_target_namespace(self, test_api_client_persistent, create_success_response):
         """Test delete target namespace"""
         test_api_client, _ = test_api_client_persistent

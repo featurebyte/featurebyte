@@ -17,8 +17,10 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
     cast,
 )
+from uuid import UUID
 
 from bson import ObjectId
 from typing_extensions import Literal
@@ -63,7 +65,7 @@ class Persistent(ABC):
         document: Document,
         user_id: Optional[ObjectId],
         disable_audit: bool = False,
-    ) -> ObjectId:
+    ) -> Union[ObjectId, UUID]:
         """
         Insert record into collection. Note that when using this method inside a non BaseDocumentService,
         please use with caution as it does not inject user_id and catalog_id into the document automatically.
@@ -81,7 +83,7 @@ class Persistent(ABC):
 
         Returns
         -------
-        ObjectId
+        Union[ObjectId, UUID]
             Id of the inserted document
         """
         document["created_at"] = get_utc_now()
@@ -94,7 +96,7 @@ class Persistent(ABC):
         documents: Iterable[Document],
         user_id: Optional[ObjectId],
         disable_audit: bool = False,
-    ) -> list[ObjectId]:
+    ) -> list[Union[ObjectId, UUID]]:
         """
         Insert records into collection. Note that when using this method inside a non BaseDocumentService,
         please use with caution as it does not inject user_id and catalog_id into the document automatically.
@@ -112,7 +114,7 @@ class Persistent(ABC):
 
         Returns
         -------
-        list[ObjectId]
+        list[Union[ObjectId, UUID]]
             Ids of the inserted document
         """
         utc_now = get_utc_now()
@@ -700,13 +702,13 @@ class Persistent(ABC):
         yield self
 
     @abstractmethod
-    async def _insert_one(self, collection_name: str, document: Document) -> ObjectId:
+    async def _insert_one(self, collection_name: str, document: Document) -> Union[ObjectId, UUID]:
         pass
 
     @abstractmethod
     async def _insert_many(
         self, collection_name: str, documents: Iterable[Document]
-    ) -> list[ObjectId]:
+    ) -> list[Union[ObjectId, UUID]]:
         pass
 
     @abstractmethod

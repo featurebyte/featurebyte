@@ -1,5 +1,28 @@
 # Changelog
 
+## v2.1.1 (2025-03-14)
+
+### 🛑 Breaking Changes
+
++ `api` Make `fill_value` mandatory argument in `forward_aggregate`, `forward_aggregate_asat` and `as_target`.
+
+### 💡 Enhancements
+
++ `service` fillna operation on a Target object now preserves the original target name automatically
++ `credential` Add support for key-pair authentication for Snowflake feature store
++ `api` Support creating batch feature tables from source tables and views without creating batch request tables.
++ `middleware` Merging ExecutionContext and ExceptionMiddleware functionality
++ `api` Introduce AddTimestampSchema column cleaning operation
++ `target` Introduce a target_type attribute to the target object, allowing explicit specification and updates of target prediction types.
++ `session` Sort database object listings in lexical order
+
+### 🐛 Bug Fixes
+
++ `service` Fix concurrent materialization of feature lists with overlapping features
++ `service` Fix syntax error due to malformed DATEDIFF expressions
++ `session` Fix fallback calls for table and schema listing when user has not access to catalog INFORMATION_SCHEMA
++ `service` Fix SCD joins to take end timestamp column into account when available
+
 ## v2.1.0 (2024-12-20)
 
 ### 💡 Enhancements

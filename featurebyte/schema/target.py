@@ -10,6 +10,7 @@ from typing import Any, List, Optional
 from bson import ObjectId
 from pydantic import Field, StrictStr
 
+from featurebyte.enum import TargetType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     NameStr,
@@ -36,6 +37,7 @@ class TargetCreate(FeatureByteBaseModel):
     graph: QueryGraph
     node_name: str
     tabular_source: TabularSource
+    target_type: Optional[TargetType] = Field(default=None)
 
 
 class TargetList(PaginationMixin):
@@ -62,6 +64,7 @@ class TargetInfo(FeatureByteBaseModel):
     metadata: Any
     namespace_description: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
+    target_type: Optional[TargetType] = Field(default=None)
 
 
 class ComputeTargetRequest(ComputeRequest):

@@ -94,15 +94,15 @@ class Task(FeatureByteBaseDocumentModel):
 
     id: UUID = Field(default_factory=uuid4, alias="_id")  # type: ignore
     status: str
-    result: str
+    result: Optional[str] = Field(default=None)
     traceback: Optional[str] = Field(default=None)
     children: List[str]
     start_time: Optional[datetime] = Field(default=None)
-    date_done: datetime
+    date_done: Optional[datetime] = Field(default=None)
     name: str
     args: List[Any]
     kwargs: Dict[str, Any]
-    worker: str
+    worker: Optional[str] = Field(default=None)
     retries: int
     queue: str
     progress: Optional[Dict[str, Any]] = Field(default=None)

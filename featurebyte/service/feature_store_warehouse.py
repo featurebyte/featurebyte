@@ -32,7 +32,11 @@ from featurebyte.query_graph.sql.materialisation import (
 from featurebyte.schema.feature_store import FeatureStoreShape
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
+from featurebyte.session.base import (
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    BaseSession,
+)
 
 MAX_TABLE_CELLS = int(
     os.environ.get("MAX_TABLE_CELLS", 10000000 * 300)
@@ -46,6 +50,8 @@ class FeatureStoreWarehouseService:
     """
     FeatureStoreWarehouseService is responsible for interacting with the data warehouse.
     """
+
+    session_initialization_timeout = INTERACTIVE_SESSION_TIMEOUT_SECONDS
 
     def __init__(
         self,
@@ -339,7 +345,7 @@ class FeatureStoreWarehouseService:
             document_id=location.feature_store_id
         )
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
+            feature_store=feature_store, timeout=self.session_initialization_timeout
         )
         shape, _, _ = await self._get_table_shape(location, db_session)
         return FeatureStoreShape(num_rows=shape[0], num_cols=shape[1])
@@ -374,7 +380,7 @@ class FeatureStoreWarehouseService:
             document_id=location.feature_store_id
         )
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
+            feature_store=feature_store, timeout=self.session_initialization_timeout
         )
         sql_expr = get_source_expr(source=location.table_details, column_names=column_names)
 
@@ -422,7 +428,7 @@ class FeatureStoreWarehouseService:
             document_id=location.feature_store_id
         )
         db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
+            feature_store=feature_store, timeout=self.session_initialization_timeout
         )
 
         shape, has_row_index, columns = await self._get_table_shape(location, db_session)
@@ -445,3 +451,11 @@ class FeatureStoreWarehouseService:
             source_type=db_session.source_type,
         )
         return db_session.get_async_query_stream(sql)
+
+
+class NonInteractiveFeatureStoreWarehouseService(FeatureStoreWarehouseService):
+    """
+    FeatureStoreWarehouseService for long-running queries
+    """
+
+    session_initialization_timeout = NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS

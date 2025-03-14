@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 from bson import ObjectId
+from pydantic import TypeAdapter
 
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.common.utils import timer
@@ -27,7 +28,7 @@ from featurebyte.models.offline_store_feature_table import (
     OfflineStoreFeatureTableModel,
 )
 from featurebyte.models.offline_store_ingest_query import OfflineStoreIngestQueryGraph
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSettingUnion
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
@@ -424,7 +425,9 @@ class OfflineStoreFeatureTableManagerService:
     ) -> OfflineStoreFeatureTableModel:
         feature_job_setting = None
         if feature_table_dict["feature_job_setting"]:
-            feature_job_setting = FeatureJobSetting(**feature_table_dict["feature_job_setting"])
+            feature_job_setting = TypeAdapter(FeatureJobSettingUnion).validate_python(
+                feature_table_dict["feature_job_setting"]
+            )
         feature_table_model = await self._construct_offline_store_feature_table_model(
             feature_table_name=feature_table_dict["name"],
             feature_ids=updated_feature_ids,
@@ -473,7 +476,7 @@ class OfflineStoreFeatureTableManagerService:
         feature_ids: List[ObjectId],
         primary_entity_ids: List[PydanticObjectId],
         has_ttl: bool,
-        feature_job_setting: Optional[FeatureJobSetting],
+        feature_job_setting: Optional[FeatureJobSettingUnion],
     ) -> OfflineStoreFeatureTableModel:
         feature_ids_to_model = await self._get_feature_ids_to_model(feature_ids)
         primary_entities = await self._get_entities(primary_entity_ids)

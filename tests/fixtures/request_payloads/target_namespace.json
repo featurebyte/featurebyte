@@ -15,5 +15,6 @@
     "target_ids": [
         "64a80107d667dd0c2b13d8cd"
     ],
+    "target_type": "regression",
     "window": "7d"
 }

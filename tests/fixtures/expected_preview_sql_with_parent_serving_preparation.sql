@@ -54,7 +54,7 @@ WITH REQUEST_TABLE AS (
           DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
         ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
         DATEADD(
-          microsecond,
+          MICROSECOND,
           (
             48 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
           ) * -1,

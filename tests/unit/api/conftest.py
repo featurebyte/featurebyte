@@ -11,7 +11,14 @@ import pytest
 from bson.objectid import ObjectId
 from pandas.testing import assert_frame_equal
 
-from featurebyte import Catalog, RequestColumn, TargetNamespace, UseCase
+from featurebyte import (
+    Catalog,
+    RequestColumn,
+    TargetNamespace,
+    TimeInterval,
+    TimestampSchema,
+    UseCase,
+)
 from featurebyte.api.base_table import TableColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
@@ -20,6 +27,7 @@ from featurebyte.api.item_table import ItemTable
 from featurebyte.api.source_table import SourceTable
 from featurebyte.config import Configurations
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 
 
 @pytest.fixture()
@@ -81,7 +89,8 @@ def expected_time_series_table_preview_query() -> str:
           "col_boolean" AS "col_boolean",
           CAST("date" AS VARCHAR) AS "date",
           CAST("created_at" AS VARCHAR) AS "created_at",
-          "store_id" AS "store_id"
+          "store_id" AS "store_id",
+          CAST("another_timestamp_col" AS VARCHAR) AS "another_timestamp_col"
         FROM "sf_database"."sf_schema"."time_series_table"
         LIMIT 10
         """
@@ -223,8 +232,36 @@ def saved_time_series_table_fixture(snowflake_time_series_table, catalog):
     assert snowflake_time_series_table.status == TableStatus.PUBLIC_DRAFT
     assert isinstance(snowflake_time_series_table.created_at, datetime)
     assert isinstance(snowflake_time_series_table.tabular_source.feature_store_id, ObjectId)
-
     yield snowflake_time_series_table
+
+
+@pytest.fixture(name="snowflake_time_series_table_with_tz_offset_column")
+def snowflake_time_series_table_fixture(
+    snowflake_database_time_series_table,
+    catalog,
+    cust_id_entity,
+    transaction_entity,
+    mock_detect_and_update_column_dtypes,
+):
+    """TimeSeriesTable object fixture"""
+    _ = catalog, mock_detect_and_update_column_dtypes
+    time_series_table = snowflake_database_time_series_table.create_time_series_table(
+        name="sf_time_series_table",
+        series_id_column="col_int",
+        reference_datetime_column="date",
+        reference_datetime_schema=TimestampSchema(
+            timezone=TimeZoneColumn(column_name="col_text", type="offset"),
+            format_string="YYYY-MM-DD HH24:MI:SS",
+        ),
+        time_interval=TimeInterval(value=1, unit="DAY"),
+        record_creation_timestamp_column="created_at",
+        description="test time series table",
+        _id=ObjectId("63f9506dd478b941271ed957"),
+    )
+    time_series_table.store_id.as_entity(cust_id_entity.name)
+    time_series_table.col_int.as_entity(transaction_entity.name)
+    assert time_series_table.frame.node.parameters.id == time_series_table.id
+    yield time_series_table
 
 
 @pytest.fixture(name="snowflake_scd_table_v2")

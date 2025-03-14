@@ -4,9 +4,12 @@ Utilities related to progress update
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, Tuple
+from typing import Any, Callable, Coroutine, Generator, Tuple, TypeVar
+
+import numpy as np
 
 ProgressCallbackType = Callable[..., Coroutine[Any, Any, None]]
+T = TypeVar("T")
 
 
 def get_ranged_progress_callback(
@@ -81,3 +84,33 @@ def divide_progress_callback(
         at_percent,
         100,
     )
+
+
+def ranged_progress_callback_iterator(
+    items: list[T], progress_callback: ProgressCallbackType
+) -> Generator[Tuple[T, ProgressCallbackType], None, None]:
+    """
+    Returns a generator that yields items and a progress callback that updates the progress based on the number
+
+    Parameters
+    ----------
+    items: list[T]
+        List of items to iterate over
+    progress_callback: ProgressCallbackType
+        Progress callback to update the progress
+
+    Yields
+    ------
+    Tuple[T, ProgressCallbackType]
+        Item and progress callback
+    """
+    total_items = len(items)
+    for i, item in enumerate(items):
+        from_percent = int(np.floor((i / total_items) * 100))
+        to_percent = int(np.ceil(((i + 1) / total_items) * 100))
+        ranged_callback = get_ranged_progress_callback(
+            progress_callback,
+            from_percent,
+            to_percent,
+        )
+        yield item, ranged_callback

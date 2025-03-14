@@ -67,9 +67,14 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
         }
 
         # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)
-        parameters_dict = self.parameters.model_dump(
-            exclude={"parent", "agg_func", "name", "windows", "offset"}
-        )
+        if self.parameters.value_by is None:
+            parameters_dict = self.parameters.model_dump(
+                exclude={"parent", "agg_func", "name", "windows", "offset"}
+            )
+        else:
+            parameters_dict = self.parameters.model_dump(exclude={"name", "windows", "offset"})
+        if parameters_dict.get("timestamp_metadata", None) is None:
+            parameters_dict.pop("timestamp_metadata", None)
         if parameters_dict.get("entity_ids") is not None:
             parameters_dict["entity_ids"] = [
                 str(entity_id) for entity_id in parameters_dict["entity_ids"]

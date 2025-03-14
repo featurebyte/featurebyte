@@ -25,6 +25,7 @@ def feature_job_setting_fixture():
 
 def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
     """Test creation, serialization and deserialization of an TimeSeriesTable"""
+    ts_schema = TimestampSchema(format_string=None, timezone="Etc/UTC", is_utc_time=None)
     columns_info = [
         {
             "name": "col",
@@ -42,7 +43,10 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             "semantic_id": None,
             "critical_data_info": None,
             "description": None,
-            "dtype_metadata": None,
+            "dtype_metadata": {
+                "timestamp_schema": ts_schema.model_dump(),
+                "timestamp_tuple_schema": None,
+            },
         },
         {
             "name": "series_id",
@@ -74,9 +78,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
         columns_info=columns_info,
         series_id_column="series_id",
         reference_datetime_column="date",
-        reference_datetime_schema=TimestampSchema(
-            format_string=None, timezone="Etc/UTC", is_utc_time=None
-        ),
+        reference_datetime_schema=ts_schema,
         time_interval=TimeInterval(value=1, unit="DAY"),
         record_creation_timestamp_column="created_at",
         default_feature_job_setting=feature_job_setting,
@@ -97,6 +99,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
                 "day_of_week": "*",
             },
             "timezone": "Etc/UTC",
+            "reference_timezone": None,
         },
         "columns_info": columns_info,
         "series_id_column": "series_id",

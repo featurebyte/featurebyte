@@ -8,8 +8,9 @@ from dataclasses import dataclass
 from typing import Literal, Optional, cast
 
 from sqlglot import expressions, parse_one
-from sqlglot.expressions import Expression, Select, alias_, select
+from sqlglot.expressions import Expression, Identifier, Select, alias_, select
 
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
@@ -17,6 +18,7 @@ from featurebyte.query_graph.sql.common import get_qualified_column_identifier, 
 # Internally used identifiers when constructing SQL
 from featurebyte.query_graph.sql.deduplication import get_deduplicated_expr
 from featurebyte.query_graph.sql.offset import OffsetDirection, add_offset_to_timestamp
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 TS_COL = "__FB_TS_COL"
 EFFECTIVE_TS_COL = "__FB_EFFECTIVE_TS_COL"
@@ -37,11 +39,14 @@ class Table:
     Representation of a table to be used in SCD join
     """
 
-    expr: str | Select
+    expr: str | Expression
     timestamp_column: str | Expression
+    timestamp_schema: Optional[TimestampSchema]
     join_keys: list[str]
     input_columns: list[str]
     output_columns: list[str]
+    end_timestamp_column: Optional[str] = None
+    end_timestamp_schema: Optional[TimestampSchema] = None
 
     @property
     def timestamp_column_expr(self) -> Expression:
@@ -80,7 +85,9 @@ class Table:
             # This is when joining with tile tables. We can assume that tile index (the timestamp
             # column) will not have any missing values, so remove_missing_timestamp_values is
             # ignored.
-            return expressions.Table(this=expressions.Identifier(this=self.expr), alias=alias)
+            return expressions.Table(this=Identifier(this=self.expr), alias=alias)
+        if isinstance(self.expr, Identifier):
+            return expressions.Table(this=self.expr, alias=alias)
         assert isinstance(self.expr, Select)
         if remove_missing_timestamp_values:
             expr = self.expr_with_non_missing_timestamp_values
@@ -105,6 +112,28 @@ class Table:
                 expression=expressions.Not(this=expressions.Null()),
             )
         )
+
+
+def has_end_timestamp_column(table: Table) -> bool:
+    """
+    Check if the table has an end timestamp column
+
+    Parameters
+    ----------
+    table: Table
+        Table to check
+
+    Returns
+    -------
+    bool
+    """
+    if table.end_timestamp_column:
+        if isinstance(table.expr, Select):
+            for col_expr in table.expr.expressions:
+                col_name = col_expr.alias or col_expr.name
+                if col_name == table.end_timestamp_column:
+                    return True
+    return False
 
 
 def get_scd_join_expr(
@@ -187,6 +216,7 @@ def get_scd_join_expr(
         offset_direction=offset_direction,
         allow_exact_match=allow_exact_match,
         convert_timestamps_to_utc=convert_timestamps_to_utc,
+        include_ts_col=right_table.end_timestamp_column is not None,
     )
 
     left_subquery = left_view_with_last_ts_expr.subquery(alias="L")
@@ -204,9 +234,12 @@ def get_scd_join_expr(
         right_table = Table(
             expr=deduplicated_expr,
             timestamp_column=right_table.timestamp_column,
+            timestamp_schema=right_table.timestamp_schema,
             join_keys=right_table.join_keys,
             input_columns=right_table.input_columns,
             output_columns=right_table.output_columns,
+            end_timestamp_column=right_table.end_timestamp_column,
+            end_timestamp_schema=right_table.end_timestamp_schema,
         )
     right_subquery = right_table.as_subquery(alias="R")
 
@@ -218,6 +251,28 @@ def get_scd_join_expr(
         ),
     ] + _key_cols_equality_conditions(right_table.join_keys)
 
+    if has_end_timestamp_column(right_table):
+        assert right_table.end_timestamp_column is not None
+        end_timestamp_expr = get_qualified_column_identifier(right_table.end_timestamp_column, "R")
+        end_timestamp_expr_is_null = expressions.Is(
+            this=end_timestamp_expr,
+            expression=expressions.Null(),
+        )
+        if convert_timestamps_to_utc:
+            end_timestamp_expr = _convert_to_utc_ntz(
+                end_timestamp_expr, right_table.end_timestamp_schema, adapter
+            )
+        record_validity_expr = expressions.Or(
+            this=expressions.LT(
+                this=adapter.normalize_timestamp_before_comparison(
+                    get_qualified_column_identifier(TS_COL, "L")
+                ),
+                expression=adapter.normalize_timestamp_before_comparison(end_timestamp_expr),
+            ),
+            expression=end_timestamp_expr_is_null,
+        )
+        join_conditions.append(record_validity_expr)  # type: ignore
+
     select_expr = select_expr.from_(left_subquery, copy=False).join(
         right_subquery,
         join_type=join_type,
@@ -228,7 +283,9 @@ def get_scd_join_expr(
 
 
 def _convert_to_utc_ntz(
-    col_expr: expressions.Expression, adapter: BaseAdapter
+    col_expr: expressions.Expression,
+    timestamp_schema: Optional[TimestampSchema],
+    adapter: BaseAdapter,
 ) -> expressions.Expression:
     """
     Convert timestamp expression to UTC values and NTZ timestamps
@@ -237,6 +294,8 @@ def _convert_to_utc_ntz(
     ----------
     col_expr: expressions.Expression
         Timestamp expression to convert
+    timestamp_schema: TimestampSchema
+        Timestamp schema
     adapter: BaseAdapter
         Instance of BaseAdapter for engine specific sql generation
 
@@ -244,8 +303,14 @@ def _convert_to_utc_ntz(
     -------
     expressions.Expression
     """
-    utc_ts_expr = adapter.convert_to_utc_timestamp(col_expr)
-    return expressions.Cast(this=utc_ts_expr, to=parse_one("TIMESTAMP"))
+    if timestamp_schema is None:
+        utc_ts_expr = adapter.convert_to_utc_timestamp(col_expr)
+        return expressions.Cast(this=utc_ts_expr, to=parse_one("TIMESTAMP"))
+    return convert_timestamp_to_utc(
+        column_expr=col_expr,
+        timestamp_schema=timestamp_schema,
+        adapter=adapter,
+    )
 
 
 def augment_table_with_effective_timestamp(
@@ -256,6 +321,7 @@ def augment_table_with_effective_timestamp(
     offset_direction: OffsetDirection,
     allow_exact_match: bool = True,
     convert_timestamps_to_utc: bool = True,
+    include_ts_col: bool = False,
 ) -> Select:
     """
     This constructs a query that calculates the corresponding SCD effective date for each row in the
@@ -313,6 +379,8 @@ def augment_table_with_effective_timestamp(
         Whether to allow exact matching effective timestamps to be joined
     convert_timestamps_to_utc: bool
         Whether timestamps should be converted to UTC for joins
+    include_ts_col: bool
+        Whether to include the timestamp column in the output
 
     Returns
     -------
@@ -330,8 +398,8 @@ def augment_table_with_effective_timestamp(
         left_ts_col = left_table.timestamp_column_expr
     right_ts_col = right_table.timestamp_column_expr
     if convert_timestamps_to_utc:
-        left_ts_col = _convert_to_utc_ntz(left_ts_col, adapter)
-        right_ts_col = _convert_to_utc_ntz(right_ts_col, adapter)
+        left_ts_col = _convert_to_utc_ntz(left_ts_col, left_table.timestamp_schema, adapter)
+        right_ts_col = _convert_to_utc_ntz(right_ts_col, right_table.timestamp_schema, adapter)
 
     # Left table. Set up special columns: TS_COL, KEY_COL, EFFECTIVE_TS_COL and TS_TIE_BREAKER_COL
     left_view_with_ts_and_key = select(
@@ -416,12 +484,14 @@ def augment_table_with_effective_timestamp(
         select(
             *_key_cols_as_quoted_identifiers(num_join_keys),
             quoted_identifier(LAST_TS),
+            *[quoted_identifier(TS_COL)] if include_ts_col else [],
             *[quoted_identifier(col) for col in left_table.output_columns],
         )
         .from_(
             select(
                 *_key_cols_as_quoted_identifiers(num_join_keys),
                 alias_(matched_effective_timestamp_expr, alias=LAST_TS, quoted=True),
+                *[quoted_identifier(TS_COL)] if include_ts_col else [],
                 *[quoted_identifier(col) for col in left_table.output_columns],
                 quoted_identifier(EFFECTIVE_TS_COL),
             )
@@ -494,8 +564,10 @@ def _key_cols_equality_conditions(right_table_join_keys: list[str]) -> list[expr
 
 
 def augment_scd_table_with_end_timestamp(
+    adapter: BaseAdapter,
     table_expr: Select,
     effective_timestamp_column: str,
+    effective_timestamp_schema: Optional[TimestampSchema],
     natural_key_column: str,
 ) -> Select:
     """
@@ -504,10 +576,14 @@ def augment_scd_table_with_end_timestamp(
 
     Parameters
     ----------
+    adapter: BaseAdapter
+        SQL adapter
     table_expr: Select
         Select statement representing the SCD table
     effective_timestamp_column: str
         Effective timestamp column name
+    effective_timestamp_schema: Optional[TimestampSchema]
+        Effective timestamp schema
     natural_key_column: str
         Natural key column name
 
@@ -515,16 +591,20 @@ def augment_scd_table_with_end_timestamp(
     -------
     Select
     """
-
+    effective_timestamp_expr = quoted_identifier(effective_timestamp_column)
+    if effective_timestamp_schema is not None:
+        effective_timestamp_expr = convert_timestamp_to_utc(
+            column_expr=effective_timestamp_expr,
+            timestamp_schema=effective_timestamp_schema,
+            adapter=adapter,
+        )
     order = expressions.Order(
         expressions=[
-            expressions.Ordered(this=quoted_identifier(effective_timestamp_column)),
+            expressions.Ordered(this=effective_timestamp_expr),
         ]
     )
     end_timestamp_expr = expressions.Window(
-        this=expressions.Anonymous(
-            this="LEAD", expressions=[quoted_identifier(effective_timestamp_column)]
-        ),
+        this=expressions.Anonymous(this="LEAD", expressions=[effective_timestamp_expr]),
         partition_by=[quoted_identifier(natural_key_column)],
         order=order,
     )

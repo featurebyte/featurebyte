@@ -24,7 +24,11 @@ from featurebyte.routes.common.feature_metadata_extractor import FeatureOrTarget
 from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHelper
 from featurebyte.schema.feature_list import SampleEntityServingNames
 from featurebyte.schema.preview import TargetPreview
-from featurebyte.schema.target import TargetCreate, TargetInfo, TargetList
+from featurebyte.schema.target import (
+    TargetCreate,
+    TargetInfo,
+    TargetList,
+)
 from featurebyte.schema.target_namespace import TargetNamespaceServiceUpdate
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature_preview import FeaturePreviewService
@@ -205,6 +209,7 @@ class TargetController(BaseDocumentController[TargetModel, TargetService, Target
             metadata=target_metadata,
             namespace_description=namespace.description,
             description=target_doc.description,
+            target_type=namespace.target_type,
         )
 
     async def preview(self, target_preview: TargetPreview) -> dict[str, Any]:

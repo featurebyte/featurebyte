@@ -31,14 +31,18 @@ from bson import ObjectId
 from databricks import sql as databricks_sql
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
+from pydantic import ValidationError
 from pytest_split import plugin as pytest_split_plugin
 
 from featurebyte import (
+    AddTimestampSchema,
     Catalog,
     Configurations,
+    CronFeatureJobSetting,
     DatabricksDetails,
     FeatureGroup,
     FeatureJobSetting,
+    FeatureList,
     OnlineStore,
     RedisOnlineStoreDetails,
     SnowflakeDetails,
@@ -54,12 +58,13 @@ from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,
     GoogleCredential,
+    PrivateKeyCredential,
     UsernamePasswordCredential,
 )
 from featurebyte.models.task import Task as TaskModel
 from featurebyte.models.tile import TileSpec
 from featurebyte.persistent.mongo import MongoDB
-from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.schema import (
     BigQueryDetails,
     DatabricksUnityDetails,
@@ -192,19 +197,43 @@ def credentials_mapping():
     """
     Credentials for integration testing
     """
-    username_password = CredentialModel(
-        name="snowflake_featurestore",
-        feature_store_id=ObjectId(),
-        database_credential=UsernamePasswordCredential(
-            username=os.getenv("SNOWFLAKE_USER"),
-            password=os.getenv("SNOWFLAKE_PASSWORD"),
-        ),
-    )
+    try:
+        passphrase = os.getenv("SNOWFLAKE_PRIVATE_KEY_PASSPHRASE", os.getenv("SNOWFLAKE_PASSWORD"))
+        if not passphrase:
+            passphrase = None
+        username_private_key = CredentialModel(
+            name="snowflake_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=PrivateKeyCredential(
+                username=os.getenv("SNOWFLAKE_USER"),
+                private_key=os.getenv("SNOWFLAKE_PRIVATE_KEY"),
+                passphrase=passphrase,
+            ),
+        )
+    except ValidationError:
+        message = textwrap.dedent(
+            """
+            🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+            😠 SNOWFLAKE PRIVATE KEY NOT SET UP CORRECTLY!
+            😠 USING LEGACY USERNAME/PASSWORD CREDENTIALS!
+            😠 TESTS WILL BREAK FOR YOU SOON!
+            🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+            """
+        )
+        logger.warning(message)
+        username_private_key = CredentialModel(
+            name="snowflake_featurestore",
+            feature_store_id=ObjectId(),
+            database_credential=UsernamePasswordCredential(
+                username=os.getenv("SNOWFLAKE_USER"),
+                password=os.getenv("SNOWFLAKE_PASSWORD"),
+            ),
+        )
     return {
-        "snowflake_featurestore": username_password,
-        "snowflake_featurestore_invalid_because_same_schema_a": username_password,
-        "snowflake_featurestore_invalid_because_same_schema_b": username_password,
-        "snowflake_featurestore_unreachable": username_password,
+        "snowflake_featurestore": username_private_key,
+        "snowflake_featurestore_invalid_because_same_schema_a": username_private_key,
+        "snowflake_featurestore_invalid_because_same_schema_b": username_private_key,
+        "snowflake_featurestore_unreachable": username_private_key,
         "snowflake_featurestore_wrong_creds": CredentialModel(
             name="snowflake_featurestore",
             feature_store_id=ObjectId(),
@@ -634,6 +663,7 @@ def transaction_dataframe(source_type):
     )
     data["tz_offset"] = formatted_offsets
     data["transaction_id"] = [f"T{i}" for i in range(data.shape[0])]
+    data["timestamp_string"] = timestamps.astype(str).values
 
     if source_type != "sqlite":
         data["embedding_array"] = [rng.random(10).tolist() for _ in range(row_number)]
@@ -756,9 +786,34 @@ def scd_dataframe_custom_date_format_fixture(scd_dataframe):
     DataFrame fixture with slowly changing dimension with custom date format
     """
     data = scd_dataframe.copy()
-    data["Effective Timestamp"] = data["Effective Timestamp"].dt.strftime("%Y%m%d")
+    # Adjust effective timestamp to make it more friendly for testing (e.g. not producing all null
+    # values when joining with time series table)
+    data["Effective Timestamp"] = (data["Effective Timestamp"].min() - pd.Timedelta("7d")).strftime(
+        "%Y|%m|%d"
+    )
     data = (
         data.drop_duplicates(["User ID", "Effective Timestamp"])
+        .sort_values(["User ID", "Effective Timestamp"])
+        .reset_index(drop=True)
+    )
+    yield data
+
+
+@pytest.fixture(name="scd_dataframe_custom_date_with_tz_format", scope="session")
+def scd_dataframe_custom_date_with_tz_format_fixture(scd_dataframe):
+    """
+    DataFrame fixture with slowly changing dimension with custom date format (with timezone)
+    """
+    data = scd_dataframe.copy()
+    data["Effective Timestamp"] = (
+        data["Effective Timestamp"].dt.tz_convert("Asia/Singapore").astype(str)
+    )
+    timestamps = pd.to_datetime(data["Effective Timestamp"])
+    data["timezone_offset"] = timestamps.dt.strftime("%z")
+    data["invalid_timezone_offset"] = "xyz" + data["timezone_offset"]
+    data["effective_timestamp"] = timestamps.dt.strftime("%Y|%m|%d")
+    data = (
+        data.drop_duplicates(["User ID", "effective_timestamp"])
         .sort_values(["User ID", "Effective Timestamp"])
         .reset_index(drop=True)
     )
@@ -770,21 +825,33 @@ def time_series_dataframe_fixture(scd_dataframe):
     """
     DataFrame fixture for time series data
     """
+    rng = np.random.RandomState(0)
     start_date = scd_dataframe["Effective Timestamp"].dt.floor("d").min()
     num_rows = 100
     dfs = []
     series_ids = ["S{}".format(i) for i in range(10)]
     reference_dates = (
-        pd.date_range(start_date, freq="1d", periods=num_rows).to_series().dt.strftime("%Y%m%d")
+        pd.date_range(start_date, freq="1d", periods=num_rows).to_series().dt.strftime("%Y|%m|%d")
     )
     for i, series_id in enumerate(series_ids):
         df = pd.DataFrame({
             "reference_datetime_col": reference_dates,
             "series_id_col": [series_id] * num_rows,
+            "user_id_col": rng.choice(scd_dataframe["User ID"].unique(), num_rows),
             "value_col": np.arange(0, num_rows) / num_rows + i,
         })
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
+
+
+@pytest.fixture(name="time_series_tz_column_dataframe", scope="session")
+def time_series_dataframe_tz_column_fixture(time_series_dataframe):
+    """
+    DataFrame fixture for time series data with timezone column
+    """
+    df = time_series_dataframe.copy()
+    df["tz_offset"] = "Asia/Singapore"
+    return df
 
 
 @pytest.fixture(name="observation_table_dataframe", scope="session")
@@ -896,6 +963,14 @@ def scd_data_table_name_custom_date_format_fixture():
     return "SCD_DATA_TABLE_CUSTOM_DATE_FORMAT"
 
 
+@pytest.fixture(name="scd_data_table_name_custom_date_with_tz_format", scope="session")
+def scd_data_table_name_custom_date_with_tz_format_fixture():
+    """
+    Get the scd table name used in integration tests (custom date with timezone)
+    """
+    return "SCD_DATA_TABLE_CUSTOM_DATE_WITH_TZ_FORMAT"
+
+
 @pytest_asyncio.fixture(name="dataset_registration_helper", scope="session")
 async def datasets_registration_helper_fixture(
     transaction_data_upper_case,
@@ -904,9 +979,12 @@ async def datasets_registration_helper_fixture(
     dimension_data_table_name,
     scd_dataframe,
     scd_dataframe_custom_date_format,
+    scd_dataframe_custom_date_with_tz_format,
     scd_data_table_name,
     scd_data_table_name_custom_date_format,
+    scd_data_table_name_custom_date_with_tz_format,
     time_series_dataframe,
+    time_series_tz_column_dataframe,
     observation_table_dataframe,
 ):
     """
@@ -971,9 +1049,13 @@ async def datasets_registration_helper_fixture(
     # SCD table
     helper.add_table(scd_data_table_name, scd_dataframe)
     helper.add_table(scd_data_table_name_custom_date_format, scd_dataframe_custom_date_format)
+    helper.add_table(
+        scd_data_table_name_custom_date_with_tz_format, scd_dataframe_custom_date_with_tz_format
+    )
 
     # Time series table
     helper.add_table("TIME_SERIES_TABLE", time_series_dataframe)
+    helper.add_table("TIME_SERIES_TABLE_TZ_COLUMN", time_series_tz_column_dataframe)
 
     # Observation table
     helper.add_table("ORIGINAL_OBSERVATION_TABLE", observation_table_dataframe)
@@ -1296,6 +1378,20 @@ def series_entity_fixture(catalog):
     return entity
 
 
+@pytest.fixture(name="series2_entity", scope="session")
+def series2_entity_fixture(catalog):
+    """
+    Fixture for an Entity "Series" (used in time_series_table_tz_column to avoid relationships
+    validation error)
+    """
+    _ = catalog
+    entity = Entity(
+        _id=ObjectId("678a14b858c05007c3e20c82"), name="Series2", serving_names=["series_id_2"]
+    )
+    entity.save()
+    return entity
+
+
 def tag_entities_for_event_table(event_table):
     """
     Helper function to tag entities for the event table fixture
@@ -1330,6 +1426,7 @@ def create_transactions_event_table_from_data_source(
         "ÀMOUNT": "FLOAT",
         "TZ_OFFSET": "VARCHAR",
         "TRANSACTION_ID": "VARCHAR",
+        "TIMESTAMP_STRING": "VARCHAR",
         "EMBEDDING_ARRAY": "ARRAY",
         "ARRAY": "ARRAY",
         "ARRAY_STRING": "ARRAY",
@@ -1347,6 +1444,28 @@ def create_transactions_event_table_from_data_source(
         feature_job_setting=FeatureJobSetting(blind_spot="30m", period="1h", offset="30m")
     )
     tag_entities_for_event_table(event_table)
+
+    if data_source.type == SourceType.SNOWFLAKE:
+        event_table.TIMESTAMP_STRING.update_critical_data_info(
+            cleaning_operations=[
+                AddTimestampSchema(
+                    timestamp_schema=TimestampSchema(
+                        format_string="YYYY-MM-DD HH24:MI:SS",
+                        is_utc_time=True,
+                        timezone=TimeZoneColumn(type="offset", column_name="TZ_OFFSET"),
+                    )
+                )
+            ]
+        )
+        # check the timestamp schema is used in dt.hour calculation
+        view = event_table.get_view()
+        preview_df = view.TIMESTAMP_STRING.dt.hour.preview()
+        pd.testing.assert_series_equal(
+            preview_df[preview_df.columns[0]],
+            pd.Series([10, 2, 2, 6, 9, 16, 18, 13, 18, 19]),
+            check_names=False,
+        )
+
     return event_table
 
 
@@ -1401,6 +1520,7 @@ def event_view_fixture(event_table):
         "ÀMOUNT",
         "TZ_OFFSET",
         "TRANSACTION_ID",
+        "TIMESTAMP_STRING",
         "EMBEDDING_ARRAY",
         "ARRAY",
         "ARRAY_STRING",
@@ -1528,11 +1648,27 @@ def scd_data_tabular_source_custom_date_format_fixture(
     return database_table
 
 
+@pytest.fixture(name="scd_data_tabular_source_custom_date_with_tz_format", scope="session")
+def scd_data_tabular_source_custom_date_with_tz_format_fixture(
+    session,
+    data_source,
+    scd_data_table_name_custom_date_with_tz_format,
+):
+    """
+    Fixture for scd table tabular source
+    """
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name=scd_data_table_name_custom_date_with_tz_format,
+    )
+    return database_table
+
+
 @pytest.fixture(name="time_series_data_tabular_source", scope="session")
 def time_series_data_tabular_source_custom_date_format_fixture(
     session,
     data_source,
-    scd_data_table_name_custom_date_format,
 ):
     """
     Fixture for scd table tabular source
@@ -1541,6 +1677,22 @@ def time_series_data_tabular_source_custom_date_format_fixture(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name="TIME_SERIES_TABLE",
+    )
+    return database_table
+
+
+@pytest.fixture(name="time_series_data_tz_column_tabular_source", scope="session")
+def time_series_data_tabular_source_tz_column_tabular_source(
+    session,
+    data_source,
+):
+    """
+    Fixture for scd table tabular source
+    """
+    database_table = data_source.get_source_table(
+        database_name=session.database_name,
+        schema_name=session.schema_name,
+        table_name="TIME_SERIES_TABLE_TZ_COLUMN",
     )
     return database_table
 
@@ -1561,12 +1713,28 @@ def scd_table_name_custom_date_format_fixture(source_type):
     return f"{source_type}_scd_table_custom_date_format"
 
 
+@pytest.fixture(name="scd_table_name_custom_date_with_tz_format", scope="session")
+def scd_table_name_custom_date_with_tz_format_fixture(source_type):
+    """
+    Fixture for the SCDTable name (with timezone)
+    """
+    return f"{source_type}_scd_table_custom_date_with_tz_format"
+
+
 @pytest.fixture(name="time_series_table_name", scope="session")
 def time_series_table_name_fixture(source_type):
     """
     Fixture for the TimeSeriesTable name
     """
     return f"{source_type}_time_series_table"
+
+
+@pytest.fixture(name="time_series_table_tz_column_name", scope="session")
+def time_series_table_tz_column_name_fixture(source_type):
+    """
+    Fixture for the TimeSeriesTable name (with timezone offset column)
+    """
+    return f"{source_type}_time_series_table_tz_column"
 
 
 def tag_entities_for_scd_table(scd_table):
@@ -1607,10 +1775,38 @@ def scd_table_timestamp_format_string_fixture(source_type):
     Fixture for custom date format string that is platform specific
     """
     if source_type == SourceType.SNOWFLAKE:
-        return "YYYYMMDD"
+        return "YYYY|MM|DD"
     if source_type == SourceType.BIGQUERY:
-        return "%Y%m%d"
-    return "yyyyMMdd"
+        return "%Y|%m|%d"
+    return "yyyy|MM|dd"
+
+
+@pytest.fixture(name="scd_table_timestamp_format_string_with_time", scope="session")
+def scd_table_timestamp_format_string_with_time_fixture(
+    scd_table_timestamp_format_string, source_type
+):
+    """
+    Fixture for custom date format string that is platform specific (with time components)
+    """
+    if source_type == SourceType.SNOWFLAKE:
+        time_format = "HH24:MI:SS"
+    elif source_type == SourceType.BIGQUERY:
+        time_format = "%H:%M:%S"
+    else:
+        time_format = "HH:mm:ss"
+    return f"{scd_table_timestamp_format_string}|{time_format}"
+
+
+@pytest.fixture(name="scd_table_timestamp_with_tz_format_string", scope="session")
+def scd_table_timestamp_with_tz_format_string_fixture(source_type):
+    """
+    Fixture for custom date format string that is platform specific (with timezone)
+    """
+    if source_type == SourceType.SNOWFLAKE:
+        return "YYYY-MM-DD HH24:MI:SSTZH:TZM"
+    if source_type == SourceType.BIGQUERY:
+        return "%Y-%m-%d %H:%M:%S%Ez"
+    return "yyyy-MM-dd HH:mm:ssXXX"
 
 
 @pytest.fixture(name="scd_table_custom_date_format", scope="session")
@@ -1648,6 +1844,7 @@ def time_series_table_fixture(
     time_series_table_name,
     scd_table_timestamp_format_string,
     series_entity,
+    user_entity,
     catalog,
 ):
     """
@@ -1661,7 +1858,48 @@ def time_series_table_fixture(
         time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
         series_id_column="series_id_col",
     )
+    time_series_table.update_default_feature_job_setting(
+        CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        )
+    )
     time_series_table["series_id_col"].as_entity(series_entity.name)
+    time_series_table["user_id_col"].as_entity(user_entity.name)
+    return time_series_table
+
+
+@pytest.fixture(name="time_series_table_tz_column", scope="session")
+def time_series_table_tz_column_fixture(
+    time_series_data_tz_column_tabular_source,
+    time_series_table_tz_column_name,
+    scd_table_timestamp_format_string,
+    series2_entity,
+    user_entity,
+    catalog,
+):
+    """
+    Fixture for a SCDTable in integration tests
+    """
+    _ = catalog
+    time_series_table = time_series_data_tz_column_tabular_source.create_time_series_table(
+        name=time_series_table_tz_column_name,
+        reference_datetime_column="reference_datetime_col",
+        reference_datetime_schema=TimestampSchema(
+            format_string=scd_table_timestamp_format_string,
+            timezone=TimeZoneColumn(column_name="tz_offset", type="timezone"),
+        ),
+        time_interval=TimeInterval(unit=TimeIntervalUnit.DAY, value=1),
+        series_id_column="series_id_col",
+    )
+    time_series_table.update_default_feature_job_setting(
+        CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        )
+    )
+    time_series_table["series_id_col"].as_entity(series2_entity.name)
+    time_series_table["user_id_col"].as_entity(user_entity.name)
     return time_series_table
 
 
@@ -2046,6 +2284,29 @@ def count_distinct_feature_group_fixture(item_table, dimension_table):
         item_type_count_distinct_by_cust_features,
         cust_consistency_of_item_type,
     ])
+
+
+@pytest.fixture(name="feature_list_with_combined_feature_groups")
+def feature_list_with_combined_feature_groups_fixture(
+    feature_group, feature_group_per_category, feature_group_timestamp_agg
+):
+    feature_group["COUNT_2h DIV COUNT_24h"] = feature_group["COUNT_2h"] / feature_group["COUNT_24h"]
+    feature_list = FeatureList(
+        [
+            feature_group["COUNT_2h"],
+            feature_group["COUNT_24h"],
+            feature_group_per_category["COUNT_BY_ACTION_24h"],
+            feature_group_per_category["ENTROPY_BY_ACTION_24h"],
+            feature_group_per_category["MOST_FREQUENT_ACTION_24h"],
+            feature_group_per_category["NUM_UNIQUE_ACTION_24h"],
+            feature_group["COUNT_2h DIV COUNT_24h"],
+            feature_group_per_category["ACTION_SIMILARITY_2h_to_24h"],
+            feature_group_timestamp_agg["TS_MIN_24h"],
+            feature_group_timestamp_agg["TS_MAX_24h"],
+        ],
+        name="My FeatureList",
+    )
+    return feature_list
 
 
 @pytest.fixture(name="mock_graph_clear_period", autouse=True)

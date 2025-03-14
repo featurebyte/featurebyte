@@ -368,13 +368,15 @@ class VectorMaxAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        max_expression = self.adapter.call_udf(
+        max_expression = self.adapter.call_vector_aggregation_function(
             "VECTOR_AGGREGATE_MAX", [quoted_identifier(col.name)]
         )
         return [self.construct_array_tile_spec(max_expression, f"value_{agg_id}", AggFunc.MAX)]
 
     def merge(self, agg_id: str) -> Expression:
-        return self.adapter.call_udf("VECTOR_AGGREGATE_MAX", [Identifier(this=f"value_{agg_id}")])
+        return self.adapter.call_vector_aggregation_function(
+            "VECTOR_AGGREGATE_MAX", [Identifier(this=f"value_{agg_id}")]
+        )
 
 
 class VectorAvgAggregator(OrderIndependentAggregator):
@@ -382,7 +384,7 @@ class VectorAvgAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        sum_expression = self.adapter.call_udf(
+        sum_expression = self.adapter.call_vector_aggregation_function(
             "VECTOR_AGGREGATE_SUM", [quoted_identifier(col.name)]
         )
         count = expressions.Count(this=expressions.Star())
@@ -395,7 +397,7 @@ class VectorAvgAggregator(OrderIndependentAggregator):
         ]
 
     def merge(self, agg_id: str) -> Expression:
-        return self.adapter.call_udf(
+        return self.adapter.call_vector_aggregation_function(
             "VECTOR_AGGREGATE_AVG",
             [
                 Identifier(this=f"sum_list_value_{agg_id}"),
@@ -409,7 +411,7 @@ class VectorSumAggregator(OrderIndependentAggregator):
 
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
-        sum_expression = self.adapter.call_udf(
+        sum_expression = self.adapter.call_vector_aggregation_function(
             "VECTOR_AGGREGATE_SUM", [quoted_identifier(col.name)]
         )
         return [
@@ -417,7 +419,7 @@ class VectorSumAggregator(OrderIndependentAggregator):
         ]
 
     def merge(self, agg_id: str) -> Expression:
-        return self.adapter.call_udf(
+        return self.adapter.call_vector_aggregation_function(
             "VECTOR_AGGREGATE_SUM",
             [
                 Identifier(this=f"sum_list_value_{agg_id}"),

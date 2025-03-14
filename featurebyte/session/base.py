@@ -48,9 +48,10 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.source_info import SourceInfo
 
 INTERACTIVE_SESSION_TIMEOUT_SECONDS = 30
-NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS = 120
+NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS = 1200
 MINUTES_IN_SECONDS = 60
 HOUR_IN_SECONDS = 60 * MINUTES_IN_SECONDS
+INTERACTIVE_QUERY_TIMEOUT_SECONDS = 30
 DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS = 10 * MINUTES_IN_SECONDS
 LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS = 24 * HOUR_IN_SECONDS
 APPLICATION_NAME = "FeatureByte"
@@ -310,6 +311,22 @@ class BaseSession(BaseModel):
         return str(ObjectId()).upper()
 
     @abstractmethod
+    async def _list_databases(self) -> list[str]:
+        pass
+
+    @abstractmethod
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
+        pass
+
+    @abstractmethod
+    async def _list_tables(
+        self,
+        database_name: str | None = None,
+        schema_name: str | None = None,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
+    ) -> list[TableSpec]:
+        pass
+
     async def list_databases(self) -> list[str]:
         """
         Execute SQL query to retrieve database names
@@ -318,8 +335,8 @@ class BaseSession(BaseModel):
         -------
         list[str]
         """
+        return sorted(await self._list_databases())
 
-    @abstractmethod
     async def list_schemas(self, database_name: str | None = None) -> list[str]:
         """
         Execute SQL query to retrieve schema names
@@ -333,13 +350,13 @@ class BaseSession(BaseModel):
         -------
         list[str]
         """
+        return sorted(await self._list_schemas(database_name=database_name))
 
-    @abstractmethod
     async def list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         """
         Execute SQL query to retrieve table names
@@ -357,6 +374,12 @@ class BaseSession(BaseModel):
         -------
         list[TableSpec]
         """
+        return sorted(
+            await self._list_tables(
+                database_name=database_name, schema_name=schema_name, timeout=timeout
+            ),
+            key=lambda x: x.name,
+        )
 
     @abstractmethod
     async def list_table_schema(
@@ -364,7 +387,7 @@ class BaseSession(BaseModel):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
         """
         Execute SQL query to retrieve table schema of a given table name and convert the
@@ -680,7 +703,7 @@ class BaseSession(BaseModel):
             raise exc
 
     async def execute_query_interactive(
-        self, query: str, timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS
+        self, query: str, timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS
     ) -> pd.DataFrame | None:
         """
         Execute SQL query that is expected to run for a short time
@@ -813,6 +836,7 @@ class BaseSession(BaseModel):
         schema_name: str,
         database_name: str,
         if_exists: bool = False,
+        timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
     ) -> None:
         """
         Drop a table
@@ -827,6 +851,8 @@ class BaseSession(BaseModel):
             Database name
         if_exists : bool
             If True, drop the table only if it exists
+        timeout : float
+            Timeout in seconds
 
         Raises
         ------
@@ -848,7 +874,7 @@ class BaseSession(BaseModel):
                 ),
                 source_type=self.source_type,
             )
-            await self.execute_query(query)
+            await self.execute_query(query, timeout=timeout)
 
         try:
             await _drop(is_view=False)

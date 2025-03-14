@@ -9,6 +9,8 @@ from typing import Any, Callable, ClassVar, Dict, List, Literal, Optional, Union
 
 import pymongo
 from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from pydantic import BaseModel, Field, Strict, StrictStr, model_validator
 from typing_extensions import Annotated
 
@@ -119,6 +121,7 @@ class DatabaseCredentialType(StrEnum):
 
     USERNAME_PASSWORD = "USERNAME_PASSWORD"
     ACCESS_TOKEN = "ACCESS_TOKEN"
+    PRIVATE_KEY = "PRIVATE_KEY"
     KERBEROS_KEYTAB = "KERBEROS_KEYTAB"
     GOOGLE = "GOOGLE"
 
@@ -171,6 +174,90 @@ class AccessTokenCredential(BaseDatabaseCredential):
     # instance variables
     type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = DatabaseCredentialType.ACCESS_TOKEN
     access_token: StrictStr = Field(description="The access token used to connect.")
+
+
+class PrivateKeyCredential(BaseDatabaseCredential):
+    """
+    Data class for a private key credential.
+
+    Examples
+    --------
+    >>> private_key_credential = PrivateKeyCredential.from_file(
+    ...     username="user", key_filepath="rsa_key.p8", passphrase="password"
+    ... )  # doctest: +SKIP
+    """
+
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.PrivateKeyCredential")
+
+    # instance variables
+    type: Literal[DatabaseCredentialType.PRIVATE_KEY] = DatabaseCredentialType.PRIVATE_KEY
+
+    username: StrictStr = Field(description="Username to use with the private key.")
+    private_key: StrictStr = Field(description="The private key used to connect in PEM format.")
+    passphrase: Optional[StrictStr] = Field(
+        default=None,
+        description="The passphrase used to encrypt the private key. If the private key is not encrypted, this field should be None.",
+    )
+
+    @property
+    def pem_private_key(self) -> Any:
+        return serialization.load_pem_private_key(
+            self.private_key.encode("ascii"),
+            password=self.passphrase.encode("ascii") if self.passphrase else None,
+            backend=default_backend(),
+        )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _format_private_key(self, values: Any) -> Any:
+        # replace newline ascii characters with actual newline characters
+        values["private_key"] = values["private_key"].replace("\\n", "\n")
+        # replace space before / after header / footer with newline characters
+        values["private_key"] = (
+            values["private_key"].replace(" -----", "\n-----").replace("----- ", "-----\n")
+        )
+        return values
+
+    @model_validator(mode="after")
+    def _validate_key(self) -> "PrivateKeyCredential":
+        # check passphrase if private key is in decrypted PEM format
+        if self.private_key.startswith("-----BEGIN"):
+            try:
+                _ = self.pem_private_key
+            except TypeError:
+                raise ValueError("Password was not given but private key is encrypted.")
+            except ValueError:
+                raise ValueError("Passphrase provided is incorrect for the private key.")
+
+        return self
+
+    @classmethod
+    def from_file(
+        cls, username: str, key_filepath: str, passphrase: Optional[str] = None
+    ) -> "PrivateKeyCredential":
+        """
+        Create a PrivateKeyCredential from a private key file.
+
+        Parameters
+        ----------
+        username: str
+            Username to use with the private key.
+        key_filepath: str
+            Path to the private key file.
+        passphrase: Optional[str]
+            Passphrase to use with the private key. If the private key is not encrypted, this should be None.
+
+        Returns
+        -------
+        PrivateKeyCredential
+        """
+        with open(key_filepath, "r") as key_file:
+            private_key = key_file.read()
+
+        return PrivateKeyCredential(
+            username=username, private_key=private_key, passphrase=passphrase
+        )
 
 
 class KerberosKeytabCredential(BaseDatabaseCredential):
@@ -271,6 +358,7 @@ DatabaseCredential = Annotated[
     Union[
         UsernamePasswordCredential,
         AccessTokenCredential,
+        PrivateKeyCredential,
         KerberosKeytabCredential,
         GoogleCredential,
     ],

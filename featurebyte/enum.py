@@ -114,20 +114,20 @@ class StrEnum(str, Enum):
         return str(self.value)
 
 
-class TimeIntervalUnit(StrEnum):
+class TimeIntervalUnit(OrderedStrEnum):
     """
     The TimeIntervalUnit enum class specifies supported time interval units
     """
 
     __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TimeIntervalUnit")
 
-    MINUTE = "MINUTE", "minute"
-    HOUR = "HOUR", "hour"
-    DAY = "DAY", "day"
-    WEEK = "WEEK", "week"
-    MONTH = "MONTH", "month"
-    QUARTER = "QUARTER", "quarter"
-    YEAR = "YEAR", "year"
+    MINUTE = "MINUTE"
+    HOUR = "HOUR"
+    DAY = "DAY"
+    WEEK = "WEEK"
+    MONTH = "MONTH"
+    QUARTER = "QUARTER"
+    YEAR = "YEAR"
 
 
 class DBVarType(StrEnum):
@@ -156,6 +156,9 @@ class DBVarType(StrEnum):
     TIMEDELTA = "TIMEDELTA", "Time delta column"
     EMBEDDING = "EMBEDDING", "Embedding column"
     FLAT_DICT = "FLAT_DICT", "Flat dictionary column"
+
+    # specialized composite type
+    TIMESTAMP_TZ_TUPLE = "TIMESTAMP_TZ_TUPLE", "Tuple of (timestamp, timezone offset)"
 
     # unknown type
     UNKNOWN = "UNKNOWN", "Unknown column type"
@@ -256,6 +259,39 @@ class DBVarType(StrEnum):
         """
         return cls.dictionary_types().union({cls.FLAT_DICT}).union(cls.array_types())
 
+    @classmethod
+    def binary_class_target_types(cls) -> set[DBVarType]:
+        """
+        Types for binary classification target
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return cls.multiclass_target_types().union({cls.BOOL})
+
+    @classmethod
+    def multiclass_target_types(cls) -> set[DBVarType]:
+        """
+        Types for classification target
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.CHAR, cls.INT, cls.VARCHAR}
+
+    @classmethod
+    def regression_target_types(cls) -> set[DBVarType]:
+        """
+        Types for regression target
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.FLOAT, cls.INT}
+
     def to_type_str(self) -> str | None:
         """
         Convert DBVarType to internal type string
@@ -282,6 +318,52 @@ class DBVarType(StrEnum):
         set[DBVarType]
         """
         return {cls.TIMESTAMP, cls.TIMESTAMP_TZ, cls.DATE, cls.VARCHAR}
+
+    @classmethod
+    def supported_ts_datetime_types(cls) -> set[DBVarType]:
+        """
+        Supported datetime types for time series tables
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.TIMESTAMP, cls.DATE, cls.VARCHAR}
+
+    @classmethod
+    def not_supported_feature_save_types(cls) -> set[DBVarType]:
+        """
+        Types that are not supported for feature saving
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {cls.TIMESTAMP_TZ_TUPLE}
+
+
+class TargetType(StrEnum):
+    """
+    The TargetType enum class provides a way to represent different types of modeling. It can be used to specify the
+    purpose of the target object.
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.TargetType")
+
+    REGRESSION = "regression", "Regression modeling"
+    CLASSIFICATION = "classification", "Binary classification modeling"
+    MULTI_CLASSIFICATION = "multi_classification", "Multi-class classification modeling"
+
+    @classmethod
+    def classification_types(cls) -> set[TargetType]:
+        """
+        Classification target types
+
+        Returns
+        -------
+        set[TargetType]
+        """
+        return {cls.CLASSIFICATION, cls.MULTI_CLASSIFICATION}
 
 
 class AggFunc(StrEnum):
@@ -324,6 +406,17 @@ class AggFunc(StrEnum):
         list[str]
         """
         return [c.value for c in cls]
+
+    @property
+    def is_order_dependent(self) -> bool:
+        """
+        Check if aggregation function is order dependent
+
+        Returns
+        -------
+        bool
+        """
+        return self.value in {self.LATEST}
 
 
 class SourceType(StrEnum):
@@ -413,10 +506,14 @@ class InternalName(StrEnum):
     FEATURE_TIMESTAMP_COLUMN = "__feature_timestamp"
 
     VIEW_TIMESTAMP_EPOCH = "__FB_VIEW_TIMESTAMP_EPOCH"
+    JOB_SCHEDULE_EPOCH = "__FB_JOB_SCHEDULE_EPOCH"
     WINDOW_START_EPOCH = "__FB_WINDOW_START_EPOCH"
     WINDOW_END_EPOCH = "__FB_WINDOW_END_EPOCH"
 
     INPUT_TABLE_SQL_PLACEHOLDER = "__FB_INPUT_TABLE_SQL_PLACEHOLDER"
+
+    CRON_JOB_SCHEDULE_DATETIME = "__FB_CRON_JOB_SCHEDULE_DATETIME"
+    CRON_JOB_SCHEDULE_DATETIME_UTC = "__FB_CRON_JOB_SCHEDULE_DATETIME_UTC"
 
 
 class WorkerCommand(StrEnum):
@@ -465,6 +562,17 @@ class TableDataType(StrEnum):
     DIMENSION_TABLE = "dimension_table"
     SCD_TABLE = "scd_table"
     TIME_SERIES_TABLE = "time_series_table"
+
+    @classmethod
+    def with_default_feature_job_setting(cls) -> set[str]:
+        """
+        Table data types that have default feature job setting
+
+        Returns
+        -------
+        set[str]
+        """
+        return {cls.EVENT_TABLE, cls.SCD_TABLE, cls.TIME_SERIES_TABLE}
 
 
 class ViewMode(StrEnum):

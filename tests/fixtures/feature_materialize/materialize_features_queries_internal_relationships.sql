@@ -55,19 +55,22 @@ SELECT
   *
 FROM "TEMP_REQUEST_TABLE_000000000000000000000000";
 
-CREATE TABLE "sf_db"."sf_schema"."TEMP_FEATURE_TABLE_000000000000000000000000" AS
+CREATE TABLE "__TEMP_000000000000000000000000_0" AS
 WITH ONLINE_REQUEST_TABLE AS (
   SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
     REQ."cust_id",
     CAST('2022-01-01 00:00:00' AS TIMESTAMP) AS POINT_IN_TIME
   FROM "sf_db"."sf_schema"."TEMP_REQUEST_TABLE_000000000000000000000000" AS REQ
 ), JOINED_PARENTS_ONLINE_REQUEST_TABLE AS (
   SELECT
+    REQ."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
     REQ."cust_id" AS "cust_id",
     REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
     REQ."cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000"
   FROM (
     SELECT
+      L."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
       L."cust_id" AS "cust_id",
       L."POINT_IN_TIME" AS "POINT_IN_TIME",
       R."col_boolean" AS "cust_id_000000000000000000000000"
@@ -75,12 +78,16 @@ WITH ONLINE_REQUEST_TABLE AS (
       SELECT
         "__FB_KEY_COL_0",
         "__FB_LAST_TS",
+        "__FB_TS_COL",
+        "__FB_TABLE_ROW_INDEX",
         "cust_id",
         "POINT_IN_TIME"
       FROM (
         SELECT
           "__FB_KEY_COL_0",
           LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+          "__FB_TS_COL",
+          "__FB_TABLE_ROW_INDEX",
           "cust_id",
           "POINT_IN_TIME",
           "__FB_EFFECTIVE_TS_COL"
@@ -90,10 +97,12 @@ WITH ONLINE_REQUEST_TABLE AS (
             "cust_id" AS "__FB_KEY_COL_0",
             NULL AS "__FB_EFFECTIVE_TS_COL",
             2 AS "__FB_TS_TIE_BREAKER_COL",
+            "__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
             "cust_id" AS "cust_id",
             "POINT_IN_TIME" AS "POINT_IN_TIME"
           FROM (
             SELECT
+              REQ."__FB_TABLE_ROW_INDEX",
               REQ."cust_id",
               REQ."POINT_IN_TIME"
             FROM ONLINE_REQUEST_TABLE AS REQ
@@ -104,6 +113,7 @@ WITH ONLINE_REQUEST_TABLE AS (
             "col_text" AS "__FB_KEY_COL_0",
             "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
             1 AS "__FB_TS_TIE_BREAKER_COL",
+            NULL AS "__FB_TABLE_ROW_INDEX",
             NULL AS "cust_id",
             NULL AS "POINT_IN_TIME"
           FROM (
@@ -162,7 +172,12 @@ WITH ONLINE_REQUEST_TABLE AS (
         "effective_timestamp",
         "col_text"
     ) AS R
-      ON L."__FB_LAST_TS" = R."effective_timestamp" AND L."__FB_KEY_COL_0" = R."col_text"
+      ON L."__FB_LAST_TS" = R."effective_timestamp"
+      AND L."__FB_KEY_COL_0" = R."col_text"
+      AND (
+        L."__FB_TS_COL" < CAST(CONVERT_TIMEZONE('UTC', R."end_timestamp") AS TIMESTAMP)
+        OR R."end_timestamp" IS NULL
+      )
   ) AS REQ
 ), "REQUEST_TABLE_POINT_IN_TIME_cust_id_000000000000000000000000" AS (
   SELECT DISTINCT
@@ -171,6 +186,7 @@ WITH ONLINE_REQUEST_TABLE AS (
   FROM JOINED_PARENTS_ONLINE_REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
     REQ."cust_id",
     REQ."POINT_IN_TIME",
     REQ."cust_id_000000000000000000000000",
@@ -241,6 +257,7 @@ WITH ONLINE_REQUEST_TABLE AS (
     AND REQ."cust_id_000000000000000000000000" = T1."cust_id_000000000000000000000000"
 )
 SELECT
+  AGG."__FB_TABLE_ROW_INDEX",
   AGG."cust_id",
   (
     CONCAT(
@@ -251,3 +268,11 @@ SELECT
     )
   ) AS "complex_parent_child_feature_V220101"
 FROM _FB_AGGREGATED AS AGG;
+
+CREATE TABLE "sf_db"."sf_schema"."TEMP_FEATURE_TABLE_000000000000000000000000" AS
+SELECT
+  REQ."cust_id",
+  T0."complex_parent_child_feature_V220101"
+FROM "TEMP_REQUEST_TABLE_000000000000000000000000" AS REQ
+LEFT JOIN "__TEMP_000000000000000000000000_0" AS T0
+  ON REQ."__FB_TABLE_ROW_INDEX" = T0."__FB_TABLE_ROW_INDEX";

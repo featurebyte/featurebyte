@@ -9,7 +9,7 @@ from typing import Any, ClassVar, List, Optional, Tuple, Type
 
 from pydantic import Field, model_validator
 
-from featurebyte.common.validator import construct_data_model_validator
+from featurebyte.common.validator import ColumnToTimestampSchema, construct_data_model_validator
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import TableModel
@@ -73,18 +73,19 @@ class TimeSeriesTableModel(TimeSeriesTableData, TableModel):
         construct_data_model_validator(
             columns_info_key="columns_info",
             expected_column_field_name_type_pairs=[
-                ("reference_datetime_column", DBVarType.supported_datetime_types()),
+                ("reference_datetime_column", DBVarType.supported_ts_datetime_types()),
                 ("reference_datetime_schema", {DBVarType.VARCHAR}),
                 ("record_creation_timestamp_column", DBVarType.supported_timestamp_types()),
                 ("series_id_column", DBVarType.supported_id_types()),
             ],
-        )
+            column_to_timestamp_schema_pairs=[
+                ColumnToTimestampSchema("reference_datetime_column", "reference_datetime_schema"),
+            ],
+        ),
     )
 
     @property
     def primary_key_columns(self) -> List[str]:
-        if self.series_id_column:
-            return [self.series_id_column]
         return []
 
     @property

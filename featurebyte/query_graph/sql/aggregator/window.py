@@ -41,6 +41,7 @@ AggSpecEntityIDs = Tuple[str, ...]
 TileIndicesIdType = Tuple[Window, Offset, Frequency, BlindSpot, TimeModuloFreq, AggSpecEntityIDs]
 TileIdType = str
 IsOrderDependent = bool
+AggregationIdType = str
 AggregationSpecIdType = Tuple[TileIdType, Window, Offset, AggSpecEntityIDs, IsOrderDependent]
 
 ROW_NUMBER = "__FB_ROW_NUMBER"
@@ -275,13 +276,24 @@ class TileBasedAggregationSpecSet:
         # require two different groupbys and left joins in the resulting SQL. Include serving_names
         # here because each group of AggregationSpecs will be joined with exactly one expanded
         # request table, and an expanded request table is specific to serving names
-        key = (
-            aggregation_spec.tile_table_id,
-            aggregation_spec.window,
-            aggregation_spec.offset,
-            tuple(aggregation_spec.serving_names),
-            aggregation_spec.is_order_dependent,
-        )
+        if aggregation_spec.value_by is None:
+            key = (
+                aggregation_spec.tile_table_id,
+                aggregation_spec.window,
+                aggregation_spec.offset,
+                tuple(aggregation_spec.serving_names),
+                aggregation_spec.is_order_dependent,
+            )
+        else:
+            # For cross aggregate, use separate aggregation queries since the aggregation result
+            # affect the selection of keys in the output
+            key = (
+                aggregation_spec.aggregation_id,
+                aggregation_spec.window,
+                aggregation_spec.offset,
+                tuple(aggregation_spec.serving_names),
+                aggregation_spec.is_order_dependent,
+            )
 
         # Initialize containers for new tile_table_id and window combination
         if key not in self.aggregation_specs:

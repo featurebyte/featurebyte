@@ -82,7 +82,7 @@ class TimeSeriesTable(TableApiObject):
                     "internal_record_creation_timestamp_column",
                     DBVarType.supported_timestamp_types(),
                 ),
-                ("internal_reference_datetime_column", DBVarType.supported_datetime_types()),
+                ("internal_reference_datetime_column", DBVarType.supported_ts_datetime_types()),
                 ("internal_series_id_column", DBVarType.supported_id_types()),
             ],
         )
@@ -150,9 +150,9 @@ class TimeSeriesTable(TableApiObject):
         )
 
         # The input of view graph node is the table node. The final graph looks like this:
-        #    +-----------+     +----------------------------+
+        #    +-----------+     +----------------------------------+
         #    | InputNode + --> | GraphNode(type:time_series_view) +
-        #    +-----------+     +----------------------------+
+        #    +-----------+     +----------------------------------+
         drop_column_names = drop_column_names or []
         if view_mode == ViewMode.AUTO and self.record_creation_timestamp_column:
             drop_column_names.append(self.record_creation_timestamp_column)
@@ -338,6 +338,11 @@ class TimeSeriesTable(TableApiObject):
         >>> time_series_table.update_default_feature_job_setting(
         ...     new_feature_job_setting
         ... )  # doctest: +SKIP
+
+        See Also
+        --------
+        - [CronFeatureJobSetting](/reference/featurebyte.query_graph.model.feature_job_setting.CronFeatureJobSetting/):
+            Class for specifying the cron job settings.
         """
         self.update(
             update_payload={"default_feature_job_setting": feature_job_setting.model_dump()},

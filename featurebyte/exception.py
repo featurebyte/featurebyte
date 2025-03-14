@@ -84,6 +84,12 @@ class QueryNotSupportedError(NotImplementedError):
     """
 
 
+class OperationNotSupportedError(NotImplementedError):
+    """
+    Raise when the operation is not supported
+    """
+
+
 class BaseUnprocessableEntityError(FeatureByteException):
     """
     Base exception class for 422 Unprocessable Entity responses
@@ -172,33 +178,9 @@ class InvalidSettingsError(FeatureByteException):
     """
 
 
-class DuplicatedRegistryError(FeatureByteException):
-    """
-    Raised when the feature registry record already exists at the feature store
-    """
-
-
-class MissingFeatureRegistryError(FeatureByteException):
-    """
-    Raised when the feature registry record does not exist
-    """
-
-
-class InvalidFeatureRegistryOperationError(FeatureByteException):
-    """
-    Raised when the operation on the registry is invalid
-    """
-
-
 class ObjectHasBeenSavedError(FeatureByteException):
     """
     Raise when the object has been saved before
-    """
-
-
-class TableSchemaHasBeenChangedError(FeatureByteException):
-    """
-    Raise when the table schema has been changed (different from the time EventTable object is saved)
     """
 
 
@@ -302,17 +284,6 @@ class FeatureStoreSchemaCollisionError(BaseConflictError):
         return "Feature Store ID is already in use."
 
 
-class NoFeatureStorePresentError(BaseFailedDependencyError):
-    """
-    Raise when we cannot find a feature store, when we expect one to be there.
-    """
-
-    def __str__(self) -> str:
-        return (
-            "No feature store found. Please create one before trying to access this functionality."
-        )
-
-
 class FeatureListNotOnlineEnabledError(FeatureByteException):
     """
     Raise when online features are requested for a FeatureList that is not online enabled
@@ -353,6 +324,18 @@ class AggregationNotSupportedForViewError(FeatureByteException):
 class InvalidImputationsError(ValueError):
     """
     Raise when the imputations do not fulfill constraints (for example, double imputations is detected).
+    """
+
+
+class CleaningOperationError(ValueError):
+    """
+    Raise when cleaning operation fails
+    """
+
+
+class TargetFillValueNotProvidedError(ValueError):
+    """
+    Raise when target fill value is not provided
     """
 
 
@@ -561,4 +544,22 @@ class TableValidationError(FeatureByteException):
 class InvalidOutputRowIndexError(FeatureByteException):
     """
     Raise when output row index is invalid
+    """
+
+
+class FeatureTableRequestInputNotFoundError(BaseUnprocessableEntityError):
+    """
+    Raise when request input is not found for the feature table
+    """
+
+
+class FeatureQueryExecutionError(FeatureByteException):
+    """
+    Raise when there is an error with feature query execution
+    """
+
+
+class DescribeQueryExecutionError(FeatureByteException):
+    """
+    Raise when stats compute query fails to execute even after batching attempt
     """

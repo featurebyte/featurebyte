@@ -6,10 +6,11 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from datetime import datetime
+from functools import cached_property
 from typing import Any, Dict, List, Literal, Optional, cast
 
 from dateutil import tz
-from pydantic import Field, PrivateAttr, StrictStr
+from pydantic import Field, StrictStr
 from sqlglot import expressions
 from sqlglot.expressions import Select
 
@@ -284,9 +285,8 @@ class ViewRequestInput(BaseRequestInput):
     # special handling for those attributes that are expensive to deserialize
     # internal_* is used to store the raw data from persistence, _* is used as a cache
     internal_graph: Any = Field(alias="graph", default=None)
-    _graph: Optional[QueryGraphModel] = PrivateAttr(default=None)
 
-    @property
+    @cached_property
     def graph(self) -> QueryGraphModel:
         """
         Get the graph. If the graph is not loaded, load it first.
@@ -295,13 +295,11 @@ class ViewRequestInput(BaseRequestInput):
         -------
         QueryGraphModel
         """
-        # TODO: make this a cached_property for pydantic v2
-        if self._graph is None:
-            if isinstance(self.internal_graph, dict):
-                self._graph = QueryGraphModel(**self.internal_graph)
-            else:
-                self._graph = self.internal_graph
-        return self._graph
+        if isinstance(self.internal_graph, dict):
+            return QueryGraphModel(**self.internal_graph)
+        else:
+            assert isinstance(self.internal_graph, QueryGraphModel)
+            return self.internal_graph
 
     def get_query_expr(self, source_info: SourceInfo) -> Select:
         return get_view_expr(graph=self.graph, node_name=self.node_name, source_info=source_info)

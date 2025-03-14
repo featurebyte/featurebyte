@@ -1,5 +1,7 @@
+CREATE TABLE "__TEMP_0" AS
 WITH ONLINE_REQUEST_TABLE AS (
   SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
     REQ."CUSTOMER_ID",
     REQ."order_id",
     SYSDATE() AS POINT_IN_TIME
@@ -10,6 +12,7 @@ WITH ONLINE_REQUEST_TABLE AS (
   FROM ONLINE_REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
+    REQ."__FB_TABLE_ROW_INDEX",
     REQ."CUSTOMER_ID",
     REQ."order_id",
     REQ."POINT_IN_TIME",
@@ -80,8 +83,18 @@ WITH ONLINE_REQUEST_TABLE AS (
     ON REQ."order_id" = T1."order_id"
 )
 SELECT
+  AGG."__FB_TABLE_ROW_INDEX",
   AGG."CUSTOMER_ID",
   AGG."order_id",
   CAST("_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f" AS DOUBLE) AS "a_48h_average",
   CAST("_fb_internal_order_id_item_count_None_order_id_None_input_2" AS BIGINT) AS "order_size"
-FROM _FB_AGGREGATED AS AGG
+FROM _FB_AGGREGATED AS AGG;
+
+SELECT
+  REQ."CUSTOMER_ID",
+  REQ."order_id",
+  T0."a_48h_average",
+  T0."order_size"
+FROM "MY_REQUEST_TABLE" AS REQ
+LEFT JOIN "__TEMP_0" AS T0
+  ON REQ."__FB_TABLE_ROW_INDEX" = T0."__FB_TABLE_ROW_INDEX"

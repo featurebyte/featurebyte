@@ -11,10 +11,10 @@ import re
 import sys
 import tempfile
 import textwrap
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import ExitStack, asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Generator
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -1069,3 +1069,59 @@ def get_sql_adapter_from_source_type(source_type):
     return get_sql_adapter(
         SourceInfo(source_type=source_type, database_name="my_db", schema_name="my_schema")
     )
+
+
+@contextmanager
+def safe_freeze_time_for_mod(target_mod, frozen_datetime):
+    """
+    Manually patch datetime for a specific module without freezegun
+    """
+    with patch(target_mod) as patched_datetime:
+        datetime_obj = pd.Timestamp(frozen_datetime).to_pydatetime()
+        patched_datetime.utcnow.return_value = datetime_obj
+        patched_datetime.today.return_value = datetime_obj.date()
+        yield
+
+
+@contextmanager
+def safe_freeze_time(frozen_datetime):
+    """
+    Freeze time workaround due to freezegun not working well with pydantic in some cases
+    """
+    mod_lists = [
+        "featurebyte.common.model_util.datetime",
+        "featurebyte.service.feature_materialize.datetime",
+        "featurebyte.worker.task.observation_table.datetime",
+    ]
+    with ExitStack() as stack:
+        for mod in mod_lists:
+            stack.enter_context(safe_freeze_time_for_mod(mod, frozen_datetime))
+        yield
+
+
+def feature_query_set_to_string(
+    feature_query_set,
+    nodes,
+    source_info,
+    num_features_per_query=20,
+    nodes_group_override=None,
+):
+    """
+    Helper function that given a FeatureQuerySet, return the full query string concatenating all the
+    feature queries and the final output query.
+    """
+    generator = feature_query_set.feature_query_generator
+    node_names = [node.name for node in nodes]
+    if nodes_group_override:
+        nodes_group = nodes_group_override
+    else:
+        nodes_group = generator.split_nodes(node_names, num_features_per_query, source_info)
+    queries = []
+    for i, nodes in enumerate(nodes_group):
+        feature_query = generator.generate_feature_query(
+            [node.name for node in nodes], f"__TEMP_{i}"
+        )
+        queries.append(feature_query.sql)
+        feature_query_set.add_completed_feature_query(feature_query)
+    queries.append(feature_query_set.construct_output_query(source_info))
+    return ";\n\n".join(queries)

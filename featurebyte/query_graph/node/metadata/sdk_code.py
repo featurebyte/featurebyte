@@ -18,6 +18,7 @@ from pydantic import Field
 
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 
 
@@ -235,16 +236,18 @@ class ClassEnum(Enum):
     SCD_VIEW = ("featurebyte", "SCDView")
     CHANGE_VIEW = ("featurebyte", "ChangeView")
 
-    # imputations
+    # cleaning operations
     MISSING_VALUE_IMPUTATION = ("featurebyte", "MissingValueImputation")
     DISGUISED_VALUE_IMPUTATION = ("featurebyte", "DisguisedValueImputation")
     UNEXPECTED_VALUE_IMPUTATION = ("featurebyte", "UnexpectedValueImputation")
     VALUE_BEYOND_ENDPOINT_IMPUTATION = ("featurebyte", "ValueBeyondEndpointImputation")
     STRING_VALUE_IMPUTATION = ("featurebyte", "StringValueImputation")
+    ADD_TIMESTAMP_SCHEMA = ("featurebyte", "AddTimestampSchema")
 
     # others
     COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")
     FEATURE_JOB_SETTING = ("featurebyte", "FeatureJobSetting")
+    CRON_FEATURE_JOB_SETTING = ("featurebyte", "CronFeatureJobSetting")
     TO_TIMEDELTA = ("featurebyte", "to_timedelta")
     COLUMN_CLEANING_OPERATION = ("featurebyte", "ColumnCleaningOperation")
     REQUEST_COLUMN = ("featurebyte.api.request_column", "RequestColumn")
@@ -252,6 +255,8 @@ class ClassEnum(Enum):
     HAVERSINE = ("featurebyte", "haversine")
     TIMESTAMP_SCHEMA = ("featurebyte", "TimestampSchema")
     TIME_INTERVAL = ("featurebyte", "TimeInterval")
+    TIME_ZONE_COLUMN = ("featurebyte", "TimeZoneColumn")
+    CALENDAR_WINDOW = ("featurebyte", "CalendarWindow")
 
     def __call__(
         self, *args: Any, _method_name: Optional[str] = None, **kwargs: Any
@@ -611,3 +616,28 @@ class CodeGenerator(FeatureByteBaseModel):
         if to_format:
             return format_str(code, mode=FileMode(line_length=80))
         return code
+
+
+def derive_sdk_code_from_timestamp_schema(timestamp_schema: TimestampSchema) -> ObjectClass:
+    """
+    Derive the SDK code for the timestamp schema
+
+    Parameters
+    ----------
+    timestamp_schema: TimestampSchema
+        Timestamp schema object
+
+    Returns
+    -------
+    ObjectClass
+    """
+    timezone: Any = timestamp_schema.timezone
+    if isinstance(timezone, TimeZoneColumn):
+        timezone = ClassEnum.TIME_ZONE_COLUMN(column_name=timezone.column_name, type=timezone.type)
+
+    output = ClassEnum.TIMESTAMP_SCHEMA(
+        format_string=timestamp_schema.format_string,
+        is_utc_time=timestamp_schema.is_utc_time,
+        timezone=timezone,
+    )
+    return output

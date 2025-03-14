@@ -234,16 +234,35 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
               ) AS "result_1"
             FROM (
               SELECT
-                REQ."serving_name" AS "serving_name",
-                REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-                REQ."value_by" AS "value_by",
-                {methods[0]}(TABLE."parent") AS "result_0_inner",
-                {methods[1]}(TABLE."parent") AS "result_1_inner"
-              FROM REQ
-              GROUP BY
-                REQ."serving_name",
-                REQ."POINT_IN_TIME",
-                REQ."value_by"
+                "serving_name",
+                "POINT_IN_TIME",
+                "value_by",
+                "result_0_inner",
+                "result_1_inner"
+              FROM (
+                SELECT
+                  "serving_name",
+                  "POINT_IN_TIME",
+                  "value_by",
+                  "result_0_inner",
+                  "result_1_inner",
+                  ROW_NUMBER() OVER (PARTITION BY "serving_name", "POINT_IN_TIME" ORDER BY "result_0_inner" DESC) AS "__fb_object_agg_row_number"
+                FROM (
+                  SELECT
+                    REQ."serving_name" AS "serving_name",
+                    REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+                    REQ."value_by" AS "value_by",
+                    {methods[0]}(TABLE."parent") AS "result_0_inner",
+                    {methods[1]}(TABLE."parent") AS "result_1_inner"
+                  FROM REQ
+                  GROUP BY
+                    REQ."serving_name",
+                    REQ."POINT_IN_TIME",
+                    REQ."value_by"
+                )
+              )
+              WHERE
+                "__fb_object_agg_row_number" <= 50000
             ) AS INNER_
             GROUP BY
               INNER_."serving_name",
@@ -288,16 +307,35 @@ def test_get_groupby_expr__multiple_groupby_columns__non_snowflake_vector_aggrs(
               ) AS "result_1"
             FROM (
               SELECT
-                REQ."serving_name" AS "serving_name",
-                REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-                REQ."value_by" AS "value_by",
-                {methods[0]}(TABLE."parent") AS "result_0_inner",
-                {methods[1]}(TABLE."parent") AS "result_1_inner"
-              FROM REQ
-              GROUP BY
-                REQ."serving_name",
-                REQ."POINT_IN_TIME",
-                REQ."value_by"
+                "serving_name",
+                "POINT_IN_TIME",
+                "value_by",
+                "result_0_inner",
+                "result_1_inner"
+              FROM (
+                SELECT
+                  "serving_name",
+                  "POINT_IN_TIME",
+                  "value_by",
+                  "result_0_inner",
+                  "result_1_inner",
+                  ROW_NUMBER() OVER (PARTITION BY "serving_name", "POINT_IN_TIME" ORDER BY "result_0_inner" DESC) AS "__fb_object_agg_row_number"
+                FROM (
+                  SELECT
+                    REQ."serving_name" AS "serving_name",
+                    REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+                    REQ."value_by" AS "value_by",
+                    {methods[0]}(TABLE."parent") AS "result_0_inner",
+                    {methods[1]}(TABLE."parent") AS "result_1_inner"
+                  FROM REQ
+                  GROUP BY
+                    REQ."serving_name",
+                    REQ."POINT_IN_TIME",
+                    REQ."value_by"
+                )
+              )
+              WHERE
+                "__fb_object_agg_row_number" <= 50000
             ) AS INNER_
             GROUP BY
               INNER_."serving_name",
@@ -354,12 +392,15 @@ def test_get_groupby_expr__multiple_groupby_columns__snowflake_vector_aggrs(
         )
         i += 1
         groupby_columns.append(groupby_column)
-    groupby_columns = update_aggregation_expression_for_columns(groupby_columns, adapter)
+    groupby_keys = [groupby_key, groupby_key_point_in_time]
+    groupby_columns = update_aggregation_expression_for_columns(
+        groupby_columns, groupby_keys, None, adapter
+    )
     if not use_value_by:
         value_by = None
     groupby_expr = get_groupby_expr(
         input_expr=select_expr,
-        groupby_keys=[groupby_key, groupby_key_point_in_time],
+        groupby_keys=groupby_keys,
         groupby_columns=groupby_columns,
         value_by=value_by,
         adapter=adapter,
@@ -417,15 +458,32 @@ def test_get_groupby_expr(agg_func, parent_dtype, method, common_params, spark_s
           ) AS "result"
         FROM (
           SELECT
-            REQ."serving_name" AS "serving_name",
-            REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
-            REQ."value_by" AS "value_by",
-            {method}(TABLE."parent") AS "result_inner"
-          FROM REQ
-          GROUP BY
-            REQ."serving_name",
-            REQ."POINT_IN_TIME",
-            REQ."value_by"
+            "serving_name",
+            "POINT_IN_TIME",
+            "value_by",
+            "result_inner"
+          FROM (
+            SELECT
+              "serving_name",
+              "POINT_IN_TIME",
+              "value_by",
+              "result_inner",
+              ROW_NUMBER() OVER (PARTITION BY "serving_name", "POINT_IN_TIME" ORDER BY "result_inner" DESC) AS "__fb_object_agg_row_number"
+            FROM (
+              SELECT
+                REQ."serving_name" AS "serving_name",
+                REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+                REQ."value_by" AS "value_by",
+                {method}(TABLE."parent") AS "result_inner"
+              FROM REQ
+              GROUP BY
+                REQ."serving_name",
+                REQ."POINT_IN_TIME",
+                REQ."value_by"
+            )
+          )
+          WHERE
+            "__fb_object_agg_row_number" <= 50000
         ) AS INNER_
         GROUP BY
           INNER_."serving_name",

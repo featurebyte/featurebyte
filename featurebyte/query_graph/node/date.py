@@ -11,6 +11,8 @@ from typing_extensions import Literal
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimestampTupleSchema
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputNode,
     BaseSeriesOutputWithSingleOperandNode,
@@ -35,20 +37,50 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 
 
+class DatetimeExtractNodeParameters(FeatureByteBaseModel):
+    """Parameters"""
+
+    property: DatetimeSupportedPropertyType
+    timezone_offset: Optional[str] = Field(default=None)
+    timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property  # type: ignore
+    def timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+            Timestamp schema
+        """
+        if self.timestamp_metadata:
+            return self.timestamp_metadata.timestamp_schema
+        return None
+
+    @property  # type: ignore
+    def timestamp_tuple_schema(self) -> Optional[TimestampTupleSchema]:
+        """
+        Timestamp tuple schema
+
+        Returns
+        -------
+        Optional[TimestampTupleSchema]
+            Timestamp tuple schema
+        """
+        if self.timestamp_metadata:
+            return self.timestamp_metadata.timestamp_tuple_schema
+        return None
+
+
 class DatetimeExtractNode(BaseSeriesOutputNode):
     """DatetimeExtractNode class"""
 
-    class Parameters(FeatureByteBaseModel):
-        """Parameters"""
-
-        property: DatetimeSupportedPropertyType
-        timezone_offset: Optional[str] = Field(default=None)
-
     type: Literal[NodeType.DT_EXTRACT] = NodeType.DT_EXTRACT
-    parameters: Parameters
+    parameters: DatetimeExtractNodeParameters
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.INT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.INT)
 
     @property
     def max_input_count(self) -> int:
@@ -186,8 +218,8 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
             "minute": 60,
         }
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, operand: str) -> str:
         return f"{operand}.dt.{self.parameters.property}"
@@ -213,10 +245,74 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
         return f"pd.to_timedelta({operand}).total_seconds() // {self.unit_to_seconds[self.parameters.property]}"
 
 
+class DateDifferenceParameters(FeatureByteBaseModel):
+    """Parameters for DateDifferenceNode"""
+
+    left_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+    right_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def left_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Left timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+            Left timestamp schema
+        """
+        if self.left_timestamp_metadata:
+            return self.left_timestamp_metadata.timestamp_schema
+        return None
+
+    @property
+    def right_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Right timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+            Right timestamp schema
+        """
+        if self.right_timestamp_metadata:
+            return self.right_timestamp_metadata.timestamp_schema
+        return None
+
+    @property
+    def left_timestamp_tuple_schema(self) -> Optional[TimestampTupleSchema]:
+        """
+        Left timestamp tuple schema
+
+        Returns
+        -------
+        Optional[TimestampTupleSchema]
+            Left timestamp tuple schema
+        """
+        if self.left_timestamp_metadata:
+            return self.left_timestamp_metadata.timestamp_tuple_schema
+        return None
+
+    @property
+    def right_timestamp_tuple_schema(self) -> Optional[TimestampTupleSchema]:
+        """
+        Right timestamp tuple schema
+
+        Returns
+        -------
+        Optional[TimestampTupleSchema]
+            Right timestamp tuple schema
+        """
+        if self.right_timestamp_metadata:
+            return self.right_timestamp_metadata.timestamp_tuple_schema
+        return None
+
+
 class DateDifferenceNode(BaseSeriesOutputNode):
     """DateDifferenceNode class"""
 
     type: Literal[NodeType.DATE_DIFF] = NodeType.DATE_DIFF
+    parameters: DateDifferenceParameters
 
     @property
     def max_input_count(self) -> int:
@@ -227,8 +323,8 @@ class DateDifferenceNode(BaseSeriesOutputNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.TIMEDELTA
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.TIMEDELTA)
 
     def _derive_python_code(
         self,
@@ -301,8 +397,8 @@ class TimeDeltaNode(BaseSeriesOutputNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.TIMEDELTA
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.TIMEDELTA)
 
     def _derive_python_code(
         self,
@@ -384,6 +480,21 @@ class DateAddNode(BaseSeriesOutputNode):
         """Parameters"""
 
         value: Optional[int] = Field(default=None)
+        left_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+        @property
+        def left_timestamp_schema(self) -> Optional[TimestampSchema]:
+            """
+            Left timestamp schema
+
+            Returns
+            -------
+            Optional[TimestampSchema]
+                Left timestamp schema
+            """
+            if self.left_timestamp_metadata:
+                return self.left_timestamp_metadata.timestamp_schema
+            return None
 
     type: Literal[NodeType.DATE_ADD] = NodeType.DATE_ADD
     parameters: Parameters
@@ -397,12 +508,12 @@ class DateAddNode(BaseSeriesOutputNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         if inputs[0].output_category == NodeOutputCategory.FEATURE:
             # when the inputs[0] is requested column, inputs[0].columns is empty.
             # in this case, we should derive the var type from inputs[0].aggregations
-            return inputs[0].aggregations[0].dtype
-        return inputs[0].columns[0].dtype
+            return inputs[0].aggregations[0].dtype_info
+        return inputs[0].columns[0].dtype_info
 
     def _derive_python_code(
         self,

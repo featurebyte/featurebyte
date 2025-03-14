@@ -6,7 +6,6 @@ import textwrap
 from unittest import mock
 from unittest.mock import AsyncMock, patch
 
-import freezegun
 import pandas as pd
 import pytest
 
@@ -49,6 +48,7 @@ class TestTimeSeriesView(BaseViewTestSuite):
       "col_boolean" AS "col_boolean",
       CAST("date" AS VARCHAR) AS "date",
       "store_id" AS "store_id",
+      CAST("another_timestamp_col" AS VARCHAR) AS "another_timestamp_col",
       (
         "store_id" + 1
       ) AS "new_col"
@@ -109,6 +109,7 @@ def test_from_time_series_table(snowflake_time_series_table, mock_api_object_cac
             month_of_year="*",
         ),
         timezone="Etc/UTC",
+        reference_timezone="Etc/UTC",
     )
 
 
@@ -316,7 +317,6 @@ def test_sdk_code_generation(saved_time_series_table, update_fixtures):
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table_from_time_series_view__no_sample(
     snowflake_time_series_table, snowflake_execute_query, catalog, cust_id_entity
 ):
@@ -360,7 +360,8 @@ def test_create_observation_table_from_time_series_view__no_sample(
               "col_binary" AS "col_binary",
               "col_boolean" AS "col_boolean",
               "date" AS "date",
-              "store_id" AS "store_id"
+              "store_id" AS "store_id",
+              "another_timestamp_col" AS "another_timestamp_col"
             FROM "sf_database"."sf_schema"."time_series_table"
           )
         )
@@ -383,9 +384,10 @@ def test_create_observation_table_from_time_series_view__no_sample(
 
 
 @pytest.mark.usefixtures("patched_observation_table_service")
-@freezegun.freeze_time("2011-03-08T15:37:00")
 def test_create_observation_table_from_time_series_view__with_sample(
-    snowflake_time_series_table_with_entity, snowflake_execute_query, cust_id_entity
+    snowflake_time_series_table_with_entity,
+    snowflake_execute_query,
+    cust_id_entity,
 ):
     """
     Test creating ObservationTable from an TimeSeriesView
@@ -432,7 +434,8 @@ def test_create_observation_table_from_time_series_view__with_sample(
                 "col_binary" AS "col_binary",
                 "col_boolean" AS "col_boolean",
                 "date" AS "date",
-                "store_id" AS "store_id"
+                "store_id" AS "store_id",
+                "another_timestamp_col" AS "another_timestamp_col"
               FROM "sf_database"."sf_schema"."time_series_table"
             )
           )
@@ -474,7 +477,8 @@ def test_shape(snowflake_time_series_table, snowflake_query_map):
             "col_binary" AS "col_binary",
             "col_boolean" AS "col_boolean",
             "date" AS "date",
-            "store_id" AS "store_id"
+            "store_id" AS "store_id",
+            "another_timestamp_col" AS "another_timestamp_col"
           FROM "sf_database"."sf_schema"."time_series_table"
         )
         SELECT
@@ -506,7 +510,7 @@ def test_shape(snowflake_time_series_table, snowflake_query_map):
         "featurebyte.session.snowflake.SnowflakeSession.execute_query"
     ) as mock_execute_query:
         mock_execute_query.side_effect = side_effect
-        assert view.shape() == (1000, 8)
+        assert view.shape() == (1000, 9)
         # Check that the correct query was executed
         assert mock_execute_query.call_args[0][0] == expected_call_view
         # test view colum shape

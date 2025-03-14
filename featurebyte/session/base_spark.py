@@ -22,7 +22,7 @@ from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
 from featurebyte.session.base import (
-    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     BaseSchemaInitializer,
     BaseSession,
     MetadataSchemaInitializer,
@@ -245,7 +245,7 @@ class BaseSparkSession(BaseSession, ABC):
             except Exception as exc:
                 logger.error(f"Exception while deleting temp file {temp_filename}: {exc}")
 
-    async def list_databases(self) -> list[str]:
+    async def _list_databases(self) -> list[str]:
         try:
             databases = await self.execute_query_interactive("SHOW CATALOGS")
         except self._no_schema_error as exc:
@@ -258,7 +258,7 @@ class BaseSparkSession(BaseSession, ABC):
             output.extend(databases["catalog"])
         return output
 
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
         try:
             schemas = await self.execute_query_interactive(f"SHOW SCHEMAS IN `{database_name}`")
         except self._no_schema_error as exc:
@@ -273,11 +273,11 @@ class BaseSparkSession(BaseSession, ABC):
             # in DataBricks the header is databaseName instead of namespace
         return output
 
-    async def list_tables(
+    async def _list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
             f"SHOW TABLES IN `{database_name}`.`{schema_name}`", timeout=timeout
@@ -293,7 +293,7 @@ class BaseSparkSession(BaseSession, ABC):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
         schema = await self.execute_query_interactive(
             f"DESCRIBE `{database_name}`.`{schema_name}`.`{table_name}`",

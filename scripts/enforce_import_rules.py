@@ -156,6 +156,7 @@ if __name__ == "__main__":
         "IPython",
         "mlflow",
         "croniter",
+        "pytz",
     }
 
     # Common libraries that can be imported from both backend and client
@@ -218,6 +219,7 @@ if __name__ == "__main__":
                     "featurebyte.session.base",  # query_graph/sql/{online_serving.py, feature_historical.py}
                     "featurebyte.session.session_helper",  # query_graph/sql/online_serving.py
                     "featurebyte.service.online_store_table_version",  # query_graph/sql/online_serving.py
+                    "featurebyte.service.cron_helper",  # query_graph/sql/online_serving.py
                 }
             ),
             "no_import_from": BACKEND_ONLY_MODS.union(CLIENT_ONLY_MODS),

@@ -113,12 +113,10 @@ class OnDemandFeatureViewConstructor:
             fv_source = name_to_feast_feature_view[
                 offline_store_info.metadata.offline_store_table_name
             ]
-            if fv_source.ttl is not None:
-                ttl_seconds = fv_source.ttl.total_seconds()
             sources.append(fv_source)
 
-        if not has_point_in_time and ttl_seconds:
-            # add point in time request source if the feature has TTL
+        if not has_point_in_time:
+            # add point in time request source if not already present
             req_source = name_to_feast_request_source[SpecialColumnName.POINT_IN_TIME.value]
             sources.append(req_source)
 

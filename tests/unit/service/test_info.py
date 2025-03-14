@@ -687,7 +687,11 @@ async def test_get_target_info(app_container, entity, target):
                 "filter": False,
             }
         },
-        "post_aggregation": None,
+        "post_aggregation": {
+            "inputs": ["F0"],
+            "name": "float_target",
+            "transforms": ["is_null", "conditional"],
+        },
     }
 
     expected_info = TargetInfo(

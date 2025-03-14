@@ -162,6 +162,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
         * `UnexpectedValueImputation`: Imputes unexpected values not found in a given list.
         * `ValueBeyondEndpointImputation`: Imputes numeric or date values outside specified boundaries.
         * `StringValueImputation`: Imputes string values.
+        * `AddTimestampSchema`: Adds timestamp related metadata to a column.
 
         If the `imputed_value` parameter is None, the values to impute are replaced with missing values and the
         corresponding rows are ignored during aggregation operations.
@@ -189,7 +190,7 @@ class TableColumn(FeatureByteBaseModel, ParentMixin):
 
         >>> event_table.column_cleaning_operations
         [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0.0),
-        ValueBeyondEndpointImputation(imputed_value=0.0, type=less_than, end_point=0.0)])]
+        ValueBeyondEndpointImputation(type=less_than, imputed_value=0.0, end_point=0.0)])]
 
         Remove cleaning operations and show the column cleaning operations of the event table.
 
@@ -662,7 +663,7 @@ class TableApiObject(
         ...     ]
         ... )
         >>> event_table.column_cleaning_operations
-        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0.0), ValueBeyondEndpointImputation(imputed_value=0.0, type=less_than, end_point=0.0)])]
+        [ColumnCleaningOperation(column_name='Amount', cleaning_operations=[MissingValueImputation(imputed_value=0.0), ValueBeyondEndpointImputation(type=less_than, imputed_value=0.0, end_point=0.0)])]
 
         Empty list of column cleaning operations after resetting the cleaning operations.
 

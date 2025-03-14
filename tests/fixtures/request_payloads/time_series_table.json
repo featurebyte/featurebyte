@@ -45,7 +45,14 @@
         {
             "description": "Date column",
             "dtype": "VARCHAR",
-            "dtype_metadata": null,
+            "dtype_metadata": {
+                "timestamp_schema": {
+                    "format_string": "YYYY-MM-DD HH24:MI:SS",
+                    "is_utc_time": null,
+                    "timezone": "Etc/UTC"
+                },
+                "timestamp_tuple_schema": null
+            },
             "name": "date"
         },
         {
@@ -59,6 +66,12 @@
             "dtype": "INT",
             "dtype_metadata": null,
             "name": "store_id"
+        },
+        {
+            "description": null,
+            "dtype": "TIMESTAMP_TZ",
+            "dtype_metadata": null,
+            "name": "another_timestamp_col"
         }
     ],
     "default_feature_job_setting": null,
@@ -67,7 +80,7 @@
     "record_creation_timestamp_column": "created_at",
     "reference_datetime_column": "date",
     "reference_datetime_schema": {
-        "format_string": null,
+        "format_string": "YYYY-MM-DD HH24:MI:SS",
         "is_utc_time": null,
         "timezone": "Etc/UTC"
     },

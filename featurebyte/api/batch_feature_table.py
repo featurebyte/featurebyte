@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, ClassVar, List, Optional, Union
 
 import pandas as pd
+from typeguard import typechecked
 
 from featurebyte.api.api_object import ApiObject
 from featurebyte.api.api_object_util import ForeignKeyMapping
@@ -40,6 +41,42 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         ForeignKeyMapping("feature_store_id", FeatureStore, "feature_store_name"),
         ForeignKeyMapping("batch_request_table_id", BatchRequestTable, "batch_request_table_name"),
     ]
+
+    def to_pandas(self) -> pd.DataFrame:
+        """
+        Converts the batch feature table to a pandas dataframe.
+
+        Returns
+        -------
+        pd.DataFrame
+
+        Examples
+        --------
+        >>> batch_feature_table = catalog.get_batch_feature_table(
+        ...     "batch_feature_table"
+        ... )  # doctest: +SKIP
+        >>> batch_feature_table.to_pandas()  # doctest: +SKIP
+        """
+        return super().to_pandas()
+
+    def to_spark_df(self) -> Any:
+        """
+        Get a spark dataframe from the batch feature table.
+
+        Returns
+        -------
+        Any
+            Spark DataFrame
+
+        Examples
+        --------
+        >>> batch_feature_table = catalog.get_batch_feature_table(
+        ...     "batch_feature_table"
+        ... )  # doctest: +SKIP
+        >>> batch_feature_table.to_spark_df()  # doctest: +SKIP
+        """
+
+        return super().to_spark_df()
 
     def preview(self, limit: int = 10) -> pd.DataFrame:
         """
@@ -171,3 +208,22 @@ class BatchFeatureTable(BatchFeatureTableModel, ApiObject, MaterializedTableMixi
         # noqa: DAR402
         """
         super().delete()
+
+    @typechecked
+    def update_description(self, description: Optional[str]) -> None:
+        """
+        Update description for the batch feature table.
+
+        Parameters
+        ----------
+        description: Optional[str]
+            Description of the object
+
+        Examples
+        --------
+        >>> batch_feature_table = catalog.get_batch_feature_table(
+        ...     "batch_feature_table_name"
+        ... )  # doctest: +SKIP
+        >>> batch_feature_table.update_description(description)  # doctest: +SKIP
+        """
+        super().update_description(description)

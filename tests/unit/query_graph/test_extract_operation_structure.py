@@ -4,7 +4,16 @@ Unit tests for query graph operation structure extraction
 
 import pytest
 
+from featurebyte import TimestampSchema
+from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
+from featurebyte.query_graph.model.timestamp_schema import (
+    ExtendedTimestampSchema,
+    TimestampTupleSchema,
+    TimeZoneColumn,
+    TimezoneOffsetSchema,
+)
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
 from tests.unit.query_graph.util import to_dict
 from tests.util.helper import compare_pydantic_obj
@@ -587,6 +596,57 @@ def test_extract_operation__join_double_aggregations(
     assert op_struct.is_time_based is True
 
 
+def test_extract_operation__scd_join(
+    global_graph, event_table_input_node, scd_table_input_node_with_tz
+):
+    """Test extract_operation_structure: join with SCD table"""
+    node_params = {
+        "left_on": "cust_id",
+        "right_on": "cust_id",
+        "left_input_columns": ["ts", "cust_id"],
+        "left_output_columns": ["ts", "cust_id"],
+        "right_input_columns": ["membership_status", "effective_ts", "timezone"],
+        "right_output_columns": [
+            "latest_membership_status",
+            "latest_effective_ts",
+            "latest_timezone",
+        ],
+        "join_type": "left",
+        "scd_parameters": {
+            "left_timestamp_column": "ts",
+            "effective_timestamp_column": "effective_ts",
+        },
+    }
+    join_node = global_graph.add_operation(
+        node_type=NodeType.JOIN,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[event_table_input_node, scd_table_input_node_with_tz],
+    )
+    op_struct = global_graph.extract_operation_structure(
+        node=join_node, keep_all_source_columns=True
+    )
+    # check output column names
+    assert [col.name for col in op_struct.columns] == [
+        "ts",
+        "cust_id",
+        "latest_membership_status",
+        "latest_effective_ts",
+        "latest_timezone",
+    ]
+    latest_eff_ts_col = next(col for col in op_struct.columns if col.name == "latest_effective_ts")
+    assert latest_eff_ts_col.dtype_info == DBVarTypeInfo(
+        dtype=DBVarType.TIMESTAMP,
+        metadata=DBVarTypeMetadata(
+            timestamp_schema=TimestampSchema(
+                format_string=None,
+                is_utc_time=None,
+                timezone=TimeZoneColumn(type="timezone", column_name="latest_timezone"),
+            )
+        ),
+    )
+
+
 @pytest.mark.parametrize("keep_all_source_columns", [True, False])
 def test_extract_operation__lookup_feature(
     global_graph,
@@ -813,6 +873,66 @@ def test_extract_operation__aggregate_asat_feature(
         node_name=aggregate_asat_feature_node.name
     )
     assert primary_input_nodes == [scd_table_input_node]
+
+
+@pytest.mark.parametrize("keep_all_source_columns", [True, False])
+def test_extract_operation__time_series_window_aggregate_feature(
+    global_graph,
+    time_series_window_aggregate_feature_node,
+    time_series_table_input_node,
+    keep_all_source_columns,
+):
+    """Test extract_operation_structure: features derived from aggregate_asat"""
+    op_struct = global_graph.extract_operation_structure(
+        node=time_series_window_aggregate_feature_node,
+        keep_all_source_columns=keep_all_source_columns,
+    )
+    common_data_params = extract_column_parameters(time_series_table_input_node)
+    expected_columns = [
+        {"name": "snapshot_date", "dtype": "VARCHAR", **common_data_params},
+    ]
+    if keep_all_source_columns:
+        expected_columns.append({
+            "name": "cust_id",
+            "dtype": "INT",
+            **common_data_params,
+        })
+    expected_columns.append({"name": "a", "dtype": "FLOAT", **common_data_params})
+
+    expected_aggregations = [
+        {
+            "name": "a_7d_sum",
+            "dtype": "FLOAT",
+            "filter": False,
+            "node_names": {"input_1", "project_1", "time_series_window_aggregate_1"},
+            "node_name": "time_series_window_aggregate_1",
+            "method": "sum",
+            "keys": ["cust_id"],
+            "window": "7_DAY",
+            "category": None,
+            "offset": None,
+            "type": "aggregation",
+            "column": {
+                "dtype": "FLOAT",
+                "name": "a",
+                **common_data_params,
+            },
+            "aggregation_type": "time_series_window_aggregate",
+        }
+    ]
+
+    assert to_dict(op_struct.columns) == expected_columns
+    assert to_dict(op_struct.aggregations) == expected_aggregations
+    assert op_struct.output_category == "feature"
+    assert op_struct.output_type == "series"
+    assert op_struct.row_index_lineage == ("time_series_window_aggregate_1",)
+    assert op_struct.is_time_based is True
+
+    # check main input nodes
+    primary_input_nodes = global_graph.get_primary_input_nodes(
+        node_name=time_series_window_aggregate_feature_node.name
+    )
+    assert primary_input_nodes == [time_series_table_input_node]
 
 
 def test_extract_operation__alias(global_graph, input_node):
@@ -1266,3 +1386,94 @@ def test_request_column_operation_structure(
     assert to_dict(op_struct.columns) == expected_columns
     assert op_struct.output_type == NodeOutputType.SERIES
     assert op_struct.output_category == NodeOutputCategory.FEATURE
+
+
+def test_zip_timestamp_timezone_tuple_operation_structure(
+    global_graph, scd_table_input_node_with_tz
+):
+    """Test zip timestamp timezone tuple operation structure"""
+    proj_eff_ts = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["effective_ts"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[scd_table_input_node_with_tz],
+    )
+    proj_tz = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["timezone"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[scd_table_input_node_with_tz],
+    )
+    zip_ts_tz_tuple = global_graph.add_operation(
+        node_type=NodeType.ZIP_TIMESTAMP_TZ_TUPLE,
+        node_params={
+            "timestamp_schema": TimestampSchema(
+                format_string="%Y-%m-%d %H:%M:%S",
+                timezone=TimeZoneColumn(column_name="timezone", type="offset"),
+            )
+        },
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[proj_eff_ts, proj_tz],
+    )
+
+    # check output operation structure
+    op_struct = global_graph.extract_operation_structure(
+        node=zip_ts_tz_tuple, keep_all_source_columns=True
+    )
+    assert op_struct.output_type == NodeOutputType.SERIES
+    assert op_struct.output_category == NodeOutputCategory.VIEW
+    assert op_struct.row_index_lineage == ("input_1",)
+    assert op_struct.aggregations == []
+    expected_columns = [
+        {
+            "columns": [
+                {
+                    "dtype": "TIMESTAMP",
+                    "filter": False,
+                    "name": "effective_ts",
+                    "node_name": "input_1",
+                    "node_names": {"input_1", "project_1"},
+                    "table_id": scd_table_input_node_with_tz.parameters.id,
+                    "table_type": "scd_table",
+                    "type": "source",
+                },
+                {
+                    "dtype": "VARCHAR",
+                    "filter": False,
+                    "name": "timezone",
+                    "node_name": "input_1",
+                    "node_names": {"project_2", "input_1"},
+                    "table_id": scd_table_input_node_with_tz.parameters.id,
+                    "table_type": "scd_table",
+                    "type": "source",
+                },
+            ],
+            "dtype": "TIMESTAMP_TZ_TUPLE",
+            "filter": False,
+            "name": None,
+            "node_name": "zip_timestamp_tz_tuple_1",
+            "node_names": {"input_1", "project_1", "project_2", "zip_timestamp_tz_tuple_1"},
+            "transforms": [
+                "zip_timestamp_tz_tuple(timestamp_schema={'format_string': '%Y-%m-%d %H:%M:%S', 'is_utc_time': None, 'timezone': {'column_name': 'timezone', 'type': 'offset'}})"
+            ],
+            "type": "derived",
+        }
+    ]
+    assert to_dict(op_struct.columns) == expected_columns
+
+    # check dtype metadata
+    assert op_struct.series_output_dtype_info == DBVarTypeInfo(
+        dtype=DBVarType.TIMESTAMP_TZ_TUPLE,
+        metadata=DBVarTypeMetadata(
+            timestamp_schema=None,
+            timestamp_tuple_schema=TimestampTupleSchema(
+                timestamp_schema=ExtendedTimestampSchema(
+                    dtype=DBVarType.TIMESTAMP,
+                    format_string=None,
+                    is_utc_time=None,
+                    timezone=TimeZoneColumn(type="timezone", column_name="timezone"),
+                ),
+                timezone_offset_schema=TimezoneOffsetSchema(dtype=DBVarType.VARCHAR),
+            ),
+        ),
+    )

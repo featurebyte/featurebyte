@@ -12,6 +12,7 @@ from typing_extensions import Literal
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.base import BaseNode
 from featurebyte.query_graph.node.count_dict import CountDictTransformNode
+from featurebyte.query_graph.node.input import SourceTableInputNodeParameters
 from featurebyte.query_graph.node.metadata.column import InColumnStr, OutColumnStr
 from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import VariableNameStr
@@ -146,3 +147,14 @@ def test_to_datetime_expr(input_vals, additional_params, expected_expr, expected
         assert output is pd.NaT
     else:
         assert output == expected_vals
+
+
+def test_input_node_parameters(input_details):
+    """Test input node parameters"""
+    with pytest.raises(ValueError) as exc:
+        SourceTableInputNodeParameters(
+            columns=[],
+            **input_details,
+        )
+
+    assert "Value error, columns should not be empty" in str(exc.value)

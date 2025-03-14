@@ -5,13 +5,13 @@ DatabricksAdapter class for generating Databricks specific SQL expressions
 from __future__ import annotations
 
 import re
-from typing import Optional
+from typing import Optional, Tuple
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType, SourceType, StrEnum
+from featurebyte.enum import DBVarType, SourceType, StrEnum, TimeIntervalUnit
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter.base import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -28,6 +28,7 @@ class DatabricksAdapter(BaseAdapter):
     # https://spark.apache.org/docs/latest/sql-ref-datetime-pattern.html
     # https://docs.databricks.com/en/sql/language-manual/sql-ref-datetime-pattern.html
     TIMEZONE_DATE_FORMAT_EXPRESSIONS = ["V", "z", "Z", "O", "X", "x"]
+    ISO_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss'Z'"
 
     class DataType(StrEnum):
         """
@@ -305,3 +306,73 @@ class DatabricksAdapter(BaseAdapter):
     ) -> Expression:
         _ = timezone_type
         return expressions.Anonymous(this="to_utc_timestamp", expressions=[expr, timezone])
+
+    @classmethod
+    def convert_utc_to_timezone(
+        cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
+    ) -> Expression:
+        _ = timezone_type
+        return expressions.Anonymous(this="from_utc_timestamp", expressions=[expr, timezone])
+
+    @classmethod
+    def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
+        mapping = {
+            TimeIntervalUnit.YEAR: "YEAR",
+            TimeIntervalUnit.QUARTER: "QUARTER",
+            TimeIntervalUnit.MONTH: "MONTH",
+            TimeIntervalUnit.WEEK: "WEEK",
+            TimeIntervalUnit.DAY: "DAY",
+            TimeIntervalUnit.HOUR: "HOUR",
+            TimeIntervalUnit.MINUTE: "MINUTE",
+        }
+        return expressions.Anonymous(
+            this="date_trunc",
+            expressions=[make_literal_value(mapping[unit]), timestamp_expr],
+        )
+
+    @classmethod
+    def subtract_seconds(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        return expressions.Anonymous(
+            this="timestampadd",
+            expressions=["second", make_literal_value(-num_units), timestamp_expr],
+        )
+
+    @classmethod
+    def subtract_months(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        return expressions.Anonymous(
+            this="timestampadd",
+            expressions=["month", make_literal_value(-num_units), timestamp_expr],
+        )
+
+    @classmethod
+    def to_string_from_timestamp(cls, expr: Expression) -> Expression:
+        return expressions.Anonymous(
+            this="date_format",
+            expressions=[expr, make_literal_value(cls.ISO_FORMAT_STRING)],
+        )
+
+    @classmethod
+    def zip_timestamp_string_and_timezone(
+        cls, timestamp_str_expr: Expression, timezone_expr: Expression
+    ) -> Expression:
+        return expressions.Anonymous(
+            this="named_struct",
+            expressions=[
+                make_literal_value(cls.ZIPPED_TIMESTAMP_FIELD),
+                timestamp_str_expr,
+                make_literal_value(cls.ZIPPED_TIMEZONE_FIELD),
+                timezone_expr,
+            ],
+        )
+
+    @classmethod
+    def unzip_timestamp_string_and_timezone(
+        cls, zipped_expr: Expression
+    ) -> Tuple[Expression, Expression]:
+        timestamp_str_expr = expressions.Dot(
+            this=zipped_expr, expression=expressions.Identifier(this=cls.ZIPPED_TIMESTAMP_FIELD)
+        )
+        timezone_expr = expressions.Dot(
+            this=zipped_expr, expression=expressions.Identifier(this=cls.ZIPPED_TIMEZONE_FIELD)
+        )
+        return timestamp_str_expr, timezone_expr

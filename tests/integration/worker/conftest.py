@@ -52,7 +52,7 @@ def celery_service_fixture(worker_type):
             "--loglevel=INFO",
             "--beat",
             "--scheduler",
-            "celerybeatmongo.schedulers.MongoScheduler",
+            "featurebyte.worker.schedulers.MongoScheduler",
         ]
     else:
         command = [

@@ -36,6 +36,7 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.materialisation import get_source_expr
 from featurebyte.query_graph.transform.definition import DefinitionHashExtractor
 from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_from_graph
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_table_cache_metadata import FeatureTableCacheMetadataService
@@ -44,7 +45,8 @@ from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, BaseSession
+from featurebyte.utils.redis import acquire_lock
 
 FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE = 10
 
@@ -65,6 +67,7 @@ class FeatureTableCacheService:
         tile_cache_service: TileCacheService,
         feature_list_service: FeatureListService,
         warehouse_table_service: WarehouseTableService,
+        cron_helper: CronHelper,
         redis: Redis[Any],
     ):
         self.feature_table_cache_metadata_service = feature_table_cache_metadata_service
@@ -74,6 +77,7 @@ class FeatureTableCacheService:
         self.tile_cache_service = tile_cache_service
         self.feature_list_service = feature_list_service
         self.warehouse_table_service = warehouse_table_service
+        self.cron_helper = cron_helper
         self.redis = redis
 
     async def definition_hashes_for_nodes(
@@ -168,24 +172,33 @@ class FeatureTableCacheService:
 
     async def get_feature_query(
         self,
-        observation_table_id: ObjectId,
+        db_session: BaseSession,
+        observation_table: ObservationTableModel,
         hashes: List[str],
         output_column_names: List[str],
         additional_columns: List[str],
+        sample_size: Optional[int] = None,
+        seed: int = 42,
     ) -> expressions.Select:
         """
         Get sql query to retrieve cached feature values from feature cache table(s)
 
         Parameters
         ----------
-        observation_table_id: ObjectId
-            Observation table id
+        db_session: BaseSession
+            Database session
+        observation_table: ObservationTableModel
+            Observation table
         hashes: List[str]
             Definition hashes corresponding to the list of nodes
         output_column_names: List[str]
             Output column names corresponding to the list of hashes
         additional_columns: List[str]
             Additional columns to include in the select query
+        sample_size: Optional[int]
+            Optional sample size to read from the cache table
+        seed: int
+            Seed for random sampling
 
         Returns
         -------
@@ -194,7 +207,7 @@ class FeatureTableCacheService:
         # Retrieve cached definitions
         hashes_set = set(hashes)
         cached_definitions = await self.feature_table_cache_metadata_service.get_cached_definitions(
-            observation_table_id=observation_table_id
+            observation_table_id=observation_table.id
         )
         cached_definition_hash_mapping = {}
         for definition in cached_definitions:
@@ -212,17 +225,51 @@ class FeatureTableCacheService:
 
         # Join necessary feature cache tables based on the definition hashes
         select_expr = expressions.select()
+        non_feature_columns = [InternalName.TABLE_ROW_INDEX] + additional_columns
+
         table_name_to_alias = {}
         for i, table_name in enumerate(sorted(required_cache_tables)):
             table_alias = f"T{i}"
             table_name_to_alias[table_name] = table_alias
             if i == 0:
-                select_expr = select_expr.from_(
-                    expressions.Table(
-                        this=quoted_identifier(table_name),
-                        alias=expressions.TableAlias(this=expressions.Identifier(this=table_alias)),
-                    ),
-                )
+                # Add random sampling if sample_size is specified
+                if sample_size is not None:
+                    feature_exprs = []
+                    for output_feature_name, definition_hash in zip(output_column_names, hashes):
+                        _table_name, column_name = cached_definition_hash_mapping[definition_hash]
+                        if _table_name == table_name:
+                            feature_exprs.append(quoted_identifier(column_name))
+
+                    select_expr = select_expr.from_(
+                        expressions.Table(this=quoted_identifier(table_name))
+                    )
+                    select_expr = select_expr.select(
+                        *[quoted_identifier(column_name) for column_name in non_feature_columns],
+                        *feature_exprs,
+                    )
+                    select_expr = db_session.adapter.random_sample(
+                        select_expr,
+                        desired_row_count=sample_size,
+                        total_row_count=observation_table.num_rows,
+                        seed=seed,
+                    )
+                    select_expr = select_expr.limit(sample_size)
+                    select_expr = expressions.select().from_(
+                        select_expr.subquery(
+                            alias=expressions.TableAlias(
+                                this=expressions.Identifier(this=table_alias)
+                            ),
+                        )
+                    )
+                else:
+                    select_expr = select_expr.from_(
+                        expressions.Table(
+                            this=quoted_identifier(table_name),
+                            alias=expressions.TableAlias(
+                                this=expressions.Identifier(this=table_alias)
+                            ),
+                        ),
+                    )
             else:
                 select_expr = select_expr.join(
                     expressions.Table(
@@ -251,8 +298,10 @@ class FeatureTableCacheService:
                 )
             )
         select_expr = select_expr.select(
-            get_qualified_column_identifier(InternalName.TABLE_ROW_INDEX, "T0"),
-            *[get_qualified_column_identifier(col, "T0") for col in additional_columns],
+            *[
+                get_qualified_column_identifier(column_name, "T0")
+                for column_name in non_feature_columns
+            ],
             *feature_exprs,
         )
         return select_expr
@@ -344,6 +393,7 @@ class FeatureTableCacheService:
                 session=db_session,
                 tile_cache_service=self.tile_cache_service,
                 warehouse_table_service=self.warehouse_table_service,
+                cron_helper=self.cron_helper,
                 graph=graph,
                 nodes=nodes_only,
                 observation_set=observation_table,
@@ -352,6 +402,55 @@ class FeatureTableCacheService:
                 serving_names_mapping=serving_names_mapping,
                 parent_serving_preparation=parent_serving_preparation,
                 progress_callback=progress_callback,
+            )
+
+    async def _ensure_feature_cache_table_columns(
+        self,
+        db_session: BaseSession,
+        cache_metadata: FeatureTableCacheMetadataModel,
+        graph: QueryGraph,
+        non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
+    ) -> None:
+        async with acquire_lock(
+            self.redis,
+            f"feature_table_cache_update:{cache_metadata.table_name}",
+            timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+        ):
+            # Only insert non-existing columns to the table. We need to acquire a lock to handle the
+            # case where multiple requests are trying to add the same feature to the cache table at
+            # the same time.
+            adapter = db_session.adapter
+            table_expr = expressions.Table(
+                this=quoted_identifier(cache_metadata.table_name),
+                db=quoted_identifier(db_session.schema_name),
+                catalog=quoted_identifier(db_session.database_name),
+            )
+            existing_columns = set(
+                col.upper()
+                for col in (
+                    await db_session.list_table_schema(
+                        table_name=cache_metadata.table_name,
+                        database_name=db_session.database_name,
+                        schema_name=db_session.schema_name,
+                        timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+                    )
+                ).keys()
+            )
+            columns_expr = [
+                expressions.ColumnDef(
+                    this=quoted_identifier(definition.feature_name),
+                    kind=adapter.get_physical_type_from_dtype(
+                        extract_dtype_from_graph(graph, node)
+                    ),
+                )
+                for node, definition in non_cached_nodes
+                if definition.feature_name is not None
+                and definition.feature_name.upper() not in existing_columns
+            ]
+            # While "column already exist" error is not expected, still retry to handle other errors
+            # such as rate limiting (occurring in tests for BigQuery)
+            await db_session.retry_sql(
+                adapter.alter_table_add_columns(table_expr, columns_expr),
             )
 
     async def _materialize_and_update_cache(  # pylint: disable=too-many-arguments
@@ -415,29 +514,15 @@ class FeatureTableCacheService:
                 )
 
             # alter cached tables adding columns for new features
-            adapter = db_session.adapter
-            table_exr = expressions.Table(
-                this=quoted_identifier(cache_metadata.table_name),
-                db=quoted_identifier(db_session.schema_name),
-                catalog=quoted_identifier(db_session.database_name),
+            await self._ensure_feature_cache_table_columns(
+                db_session=db_session,
+                cache_metadata=cache_metadata,
+                graph=graph,
+                non_cached_nodes=non_cached_nodes,
             )
-            columns_expr = [
-                expressions.ColumnDef(
-                    this=quoted_identifier(cast(str, definition.feature_name)),
-                    kind=adapter.get_physical_type_from_dtype(
-                        extract_dtype_from_graph(graph, node)
-                    ),
-                )
-                for node, definition in non_cached_nodes
-            ]
-            tic = time.time()
-            try:
-                await db_session.retry_sql(adapter.alter_table_add_columns(table_exr, columns_expr))
-            except db_session.no_schema_error:
-                # Can occur on concurrent historical feature tasks on overlapping features
-                pass
 
             # merge temp table into cache table
+            tic = time.time()
             merge_conditions = [
                 expressions.EQ(
                     this=get_qualified_column_identifier(
@@ -618,6 +703,7 @@ class FeatureTableCacheService:
         nodes: List[Node],
         definition_hashes_mapping: Optional[Dict[str, str]] = None,
         columns: Optional[List[str]] = None,
+        sample_size: Optional[int] = None,
     ) -> pd.DataFrame:
         """
         Given the graph and set of nodes, read respective cached features from feature table cache.
@@ -637,6 +723,8 @@ class FeatureTableCacheService:
             computed from the graph
         columns: Optional[List[str]]
             Optional list of columns to read from the cache table
+        sample_size: Optional[int]
+            Optional sample size to read from the cache table
 
         Returns
         -------
@@ -648,12 +736,14 @@ class FeatureTableCacheService:
             feature_store=feature_store
         )
         select_expr = await self.get_feature_query(
-            observation_table_id=observation_table.id,
+            db_session=db_session,
+            observation_table=observation_table,
             hashes=hashes,
             output_column_names=[
                 cast(str, graph.get_node_output_column_name(node.name)) for node in nodes
             ],
             additional_columns=columns or [],
+            sample_size=sample_size,
         )
         sql = sql_to_string(select_expr, source_type=db_session.source_type)
         return await db_session.execute_query_long_running(sql)
@@ -725,7 +815,8 @@ class FeatureTableCacheService:
 
         request_column_names = [col.name for col in observation_table.columns_info]
         select_expr = await self.get_feature_query(
-            observation_table_id=observation_table.id,
+            db_session=db_session,
+            observation_table=observation_table,
             hashes=hashes,
             output_column_names=[
                 cast(str, graph.get_node_output_column_name(node.name)) for node in nodes

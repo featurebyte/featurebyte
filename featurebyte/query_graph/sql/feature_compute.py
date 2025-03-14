@@ -35,6 +35,7 @@ from featurebyte.query_graph.sql.aggregator.latest import LatestAggregator
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
 from featurebyte.query_graph.sql.aggregator.lookup_target import LookupTargetAggregator
 from featurebyte.query_graph.sql.aggregator.non_tile_window import NonTileWindowAggregator
+from featurebyte.query_graph.sql.aggregator.time_series_window import TimeSeriesWindowAggregator
 from featurebyte.query_graph.sql.aggregator.window import WindowAggregator
 from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
@@ -46,6 +47,11 @@ from featurebyte.query_graph.sql.common import (
     construct_cte_sql,
     quoted_identifier,
 )
+from featurebyte.query_graph.sql.cron import (
+    JobScheduleTableSet,
+    get_request_table_joined_job_schedule_expr,
+    get_request_table_with_job_schedule_name,
+)
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specifications.aggregate_asat import AggregateAsAtSpec
@@ -56,6 +62,9 @@ from featurebyte.query_graph.sql.specifications.lookup import LookupSpec
 from featurebyte.query_graph.sql.specifications.lookup_target import LookupTargetSpec
 from featurebyte.query_graph.sql.specifications.non_tile_window_aggregate import (
     NonTileWindowAggregateSpec,
+)
+from featurebyte.query_graph.sql.specifications.time_series_window_aggregate import (
+    TimeSeriesWindowAggregateSpec,
 )
 from featurebyte.query_graph.sql.specs import (
     AggregationSpec,
@@ -77,6 +86,7 @@ AggregatorType = Union[
     ItemAggregator,
     AsAtAggregator,
     NonTileWindowAggregator,
+    TimeSeriesWindowAggregator,
     ForwardAggregator,
     ForwardAsAtAggregator,
 ]
@@ -95,6 +105,7 @@ class FeatureExecutionPlan:
         source_info: SourceInfo,
         is_online_serving: bool,
         parent_serving_preparation: ParentServingPreparation | None = None,
+        job_schedule_table_set: Optional[JobScheduleTableSet] = None,
         feature_store_details: Optional[FeatureStoreDetails] = None,
     ) -> None:
         aggregator_kwargs = {"source_info": source_info, "is_online_serving": is_online_serving}
@@ -106,6 +117,7 @@ class FeatureExecutionPlan:
             AggregationType.ITEM: ItemAggregator(**aggregator_kwargs),
             AggregationType.AS_AT: AsAtAggregator(**aggregator_kwargs),
             AggregationType.NON_TILE_WINDOW: NonTileWindowAggregator(**aggregator_kwargs),
+            AggregationType.TIME_SERIES: TimeSeriesWindowAggregator(**aggregator_kwargs),
             AggregationType.FORWARD: ForwardAggregator(**aggregator_kwargs),
             AggregationType.FORWARD_AS_AT: ForwardAsAtAggregator(**aggregator_kwargs),
         }
@@ -114,6 +126,7 @@ class FeatureExecutionPlan:
         self.adapter = get_sql_adapter(source_info)
         self.source_type = source_info.source_type
         self.parent_serving_preparation = parent_serving_preparation
+        self.job_schedule_table_set = job_schedule_table_set
         self.feature_name_dtype_mapping: dict[str, DBVarType] = {}
         self.feature_store_details = feature_store_details
 
@@ -540,6 +553,23 @@ class FeatureExecutionPlan:
             request_table_columns = request_table_columns + list(new_columns)
             exclude_columns.update(new_columns)
 
+        if self.job_schedule_table_set is not None and self.job_schedule_table_set.tables:
+            assert request_table_columns is not None
+            for job_schedule_table in self.job_schedule_table_set.tables:
+                request_table_with_schedule_name = get_request_table_with_job_schedule_name(
+                    request_table_name, job_schedule_table.cron_feature_job_setting
+                )
+                request_table_with_schedule_expr = get_request_table_joined_job_schedule_expr(
+                    request_table_name,
+                    request_table_columns,
+                    job_schedule_table.table_name,
+                    self.adapter,
+                )
+                cte_statements.append((
+                    quoted_identifier(request_table_with_schedule_name),
+                    request_table_with_schedule_expr,
+                ))
+
         for aggregator in self.iter_aggregators():
             cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))
 
@@ -585,6 +615,7 @@ class FeatureExecutionPlanner:
         source_info: SourceInfo | None = None,
         parent_serving_preparation: ParentServingPreparation | None = None,
         on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
+        job_schedule_table_set: Optional[JobScheduleTableSet] = None,
     ):
         if source_info is None:
             source_info = SourceInfo(
@@ -596,6 +627,7 @@ class FeatureExecutionPlanner:
             source_info,
             is_online_serving,
             parent_serving_preparation=parent_serving_preparation,
+            job_schedule_table_set=job_schedule_table_set,
         )
         self.source_info = source_info
         self.serving_names_mapping = serving_names_mapping
@@ -678,6 +710,9 @@ class FeatureExecutionPlanner:
         non_tile_window_aggregate_nodes = list(
             self.graph.iterate_nodes(node, NodeType.NON_TILE_WINDOW_AGGREGATE)
         )
+        time_series_window_aggregate_nodes = list(
+            self.graph.iterate_nodes(node, NodeType.TIME_SERIES_WINDOW_AGGREGATE)
+        )
         forward_aggregate_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE))
         forward_asat_nodes = list(self.graph.iterate_nodes(node, NodeType.FORWARD_AGGREGATE_AS_AT))
 
@@ -708,6 +743,14 @@ class FeatureExecutionPlanner:
                 out.extend(
                     self.get_non_tiling_specs(
                         NonTileWindowAggregateSpec, non_tile_window_aggregate_node
+                    )
+                )
+
+        if time_series_window_aggregate_nodes:
+            for time_series_window_aggregate_node in time_series_window_aggregate_nodes:
+                out.extend(
+                    self.get_non_tiling_specs(
+                        TimeSeriesWindowAggregateSpec, time_series_window_aggregate_node
                     )
                 )
 

@@ -85,6 +85,7 @@ def test_attributes_populated():
 
         # Add to failures if necessary
         if failure_mode.is_failure():
+            print(failure_mode)
             failures.append(
                 Failure(
                     menu_item=item.menu_item,

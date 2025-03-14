@@ -47,7 +47,7 @@ from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
 from featurebyte.core.accessor.feature_string import FeatureStrAccessorMixin
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
-from featurebyte.enum import ConflictResolution
+from featurebyte.enum import ConflictResolution, DBVarType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
@@ -666,6 +666,8 @@ class Feature(
         ------
         RecordCreationException
             When the feature object cannot be saved using feature definition.
+        NotImplementedError
+            When the feature data type is not supported for saving.
 
         Examples
         --------
@@ -680,6 +682,11 @@ class Feature(
         ... )["InvoiceAmountAvg_60days"]
         >>> invoice_amount_avg_60days.save()  # doctest: +SKIP
         """
+        if self.dtype in DBVarType.not_supported_feature_save_types():
+            raise NotImplementedError(
+                f"Feature with data type {self.dtype} is not supported for saving."
+            )
+
         if is_server_mode():
             # server mode save a feature by POST /feature/ endpoint directly without running the feature definition.
             super().save(conflict_resolution=conflict_resolution, _id=_id)
@@ -903,7 +910,7 @@ class Feature(
         >>> new_feature.info()["table_cleaning_operation"]
         {'this': [{'table_name': 'GROCERYINVOICE',
            'column_cleaning_operations': [{'column_name': 'Amount',
-             'cleaning_operations': [{'imputed_value': 0.0, 'type': 'missing'}]}]}],
+             'cleaning_operations': [{'type': 'missing', 'imputed_value': 0.0}]}]}],
          'default': []}
 
         Check the tables used by this feature first:

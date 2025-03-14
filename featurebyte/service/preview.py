@@ -15,11 +15,14 @@ from sqlglot.expressions import Select
 
 from featurebyte.common.utils import dataframe_to_json, timer
 from featurebyte.enum import DBVarType, InternalName
+from featurebyte.exception import DescribeQueryExecutionError
 from featurebyte.logging import get_logger, truncate_query
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
+from featurebyte.query_graph.sql.interpreter.preview import DescribeQueries
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
@@ -29,7 +32,11 @@ from featurebyte.schema.feature_store import (
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.query_cache_manager import QueryCacheManagerService
 from featurebyte.service.session_manager import SessionManagerService
-from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSession
+from featurebyte.session.base import (
+    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    BaseSession,
+)
 from featurebyte.session.session_helper import run_coroutines
 from featurebyte.warning import QueryNoLimitWarning
 
@@ -43,6 +50,8 @@ class PreviewService:
     """
     PreviewService class
     """
+
+    session_initialization_timeout = INTERACTIVE_SESSION_TIMEOUT_SECONDS
 
     def __init__(
         self,
@@ -95,7 +104,7 @@ class PreviewService:
             assert feature_store
 
         session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store, timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS
+            feature_store=feature_store, timeout=self.session_initialization_timeout
         )
         return feature_store, session
 
@@ -360,58 +369,41 @@ class PreviewService:
             )
             total_num_rows = None
 
-        describe_queries = GraphInterpreter(
+        graph_interpreter = GraphInterpreter(
             sample.graph, source_info=feature_store.get_source_info()
-        ).construct_describe_queries(
+        )
+        operation_structure = graph_interpreter.extract_operation_structure_for_node(
+            sample.node_name
+        )
+        sample_sql_tree, type_conversions = graph_interpreter._construct_sample_sql(
             node_name=sample.node_name,
             num_rows=size,
             seed=seed,
             from_timestamp=sample.from_timestamp,
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
-            stats_names=sample.stats_names,
-            columns_batch_size=columns_batch_size,
+            skip_conversion=True,
             total_num_rows=total_num_rows,
             sample_on_primary_table=sample_on_primary_table,
         )
+
         input_table_name, is_table_cached = await self._get_or_cache_table(
             session=session,
             params=sample,
-            table_expr=describe_queries.data.expr,
+            table_expr=sample_sql_tree,
         )
 
         try:
-            df_queries = []
-            for describe_query in describe_queries.queries:
-                query = cast(
-                    str,
-                    SqlExpressionTemplate(
-                        describe_query.expr, source_type=session.source_type
-                    ).render(
-                        data={
-                            InternalName.INPUT_TABLE_SQL_PLACEHOLDER: quoted_identifier(
-                                input_table_name
-                            )
-                        },
-                        as_str=True,
-                    ),
-                )
-                logger.debug("Execute describe SQL", extra={"describe_sql": query})
-                result = await self._get_or_cache_dataframe(
-                    session,
-                    sample.feature_store_id,
-                    sample.enable_query_cache,
-                    query,
-                    allow_long_running,
-                )
-                columns = describe_query.columns
-                assert result is not None
-                df_query = pd.DataFrame(
-                    result.values.reshape(len(columns), -1).T,
-                    index=describe_query.row_names,
-                    columns=[str(column.name) for column in columns],
-                )
-                df_queries.append(df_query)
+            df_queries = await self._run_describe_queries_with_batching(
+                graph_interpreter=graph_interpreter,
+                operation_structure=operation_structure,
+                sample_sql_tree=sample_sql_tree,
+                sample=sample,
+                input_table_name=input_table_name,
+                session=session,
+                columns_batch_size=columns_batch_size,
+                allow_long_running=allow_long_running,
+            )
         finally:
             if not is_table_cached:
                 # Need to cleanup as the table is not managed by query cache
@@ -425,7 +417,113 @@ class PreviewService:
         if drop_all_null_stats:
             results = results.dropna(axis=0, how="all")
 
-        return dataframe_to_json(results, describe_queries.type_conversions, skip_prepare=True)
+        return dataframe_to_json(results, type_conversions, skip_prepare=True)
+
+    async def _run_describe_queries_with_batching(
+        self,
+        graph_interpreter: GraphInterpreter,
+        operation_structure: OperationStructure,
+        sample_sql_tree: Select,
+        sample: FeatureStoreSample,
+        input_table_name: str,
+        session: BaseSession,
+        columns_batch_size: Optional[int],
+        allow_long_running: bool,
+    ) -> list[pd.DataFrame]:
+        if columns_batch_size is None:
+            columns_batch_size = DEFAULT_COLUMNS_BATCH_SIZE
+
+        columns_batch_size = min(columns_batch_size, len(operation_structure.columns))
+        pending_column_names = {column.name for column in operation_structure.columns}
+        df_queries_all = []
+        while columns_batch_size >= 1:
+            pending_columns = [
+                column
+                for column in operation_structure.columns
+                if column.name in pending_column_names
+            ]
+            column_groups = [
+                pending_columns[i : i + columns_batch_size]
+                for i in range(0, len(pending_columns), columns_batch_size)
+            ]
+            describe_queries = graph_interpreter.construct_describe_queries(
+                column_groups=column_groups,
+                sample_sql_tree=sample_sql_tree,
+                stats_names=sample.stats_names,
+            )
+            df_queries = await self._run_describe_queries(
+                describe_queries=describe_queries,
+                input_table_name=input_table_name,
+                session=session,
+                sample=sample,
+                allow_long_running=allow_long_running,
+            )
+            for df_query in df_queries:
+                df_queries_all.append(df_query)
+                pending_column_names -= set(df_query.columns)
+            if not pending_column_names:
+                break
+            logger.info("Retrying describe queries with smaller batch size")
+            # Reduce batch size and retry
+            columns_batch_size //= 2
+
+        if pending_column_names:
+            raise DescribeQueryExecutionError(
+                "Failed to describe columns: %s" % pending_column_names
+            )
+
+        return df_queries_all
+
+    async def _run_describe_queries(
+        self,
+        describe_queries: DescribeQueries,
+        input_table_name: str,
+        session: BaseSession,
+        sample: FeatureStoreSample,
+        allow_long_running: bool,
+    ) -> list[pd.DataFrame]:
+        df_queries = []
+        for describe_query in describe_queries.queries:
+            query = cast(
+                str,
+                SqlExpressionTemplate(describe_query.expr, source_type=session.source_type).render(
+                    data={
+                        InternalName.INPUT_TABLE_SQL_PLACEHOLDER: quoted_identifier(
+                            input_table_name
+                        )
+                    },
+                    as_str=True,
+                ),
+            )
+            logger.debug("Execute describe SQL", extra={"describe_sql": query})
+            try:
+                result = await self._get_or_cache_dataframe(
+                    session,
+                    sample.feature_store_id,
+                    sample.enable_query_cache,
+                    query,
+                    allow_long_running,
+                )
+            except Exception:
+                column_names = ", ".join(
+                    sorted([
+                        column.name for column in describe_query.columns if column.name is not None
+                    ])
+                )
+                logger.exception(
+                    "Error when running describe query, attempting to retry (columns: %s)"
+                    % column_names
+                )
+                continue
+            columns = describe_query.columns
+            assert result is not None
+            df_query = pd.DataFrame(
+                result.values.reshape(len(columns), -1).T,
+                index=describe_query.row_names,
+                columns=[str(column.name) for column in columns],
+            )
+            df_queries.append(df_query)
+        return df_queries
 
     async def value_counts(  # pylint: disable=too-many-locals
         self,
@@ -615,3 +713,11 @@ class PreviewService:
             allow_long_running=allow_long_running,
         )
         return df_result.iloc[0]["count"]  # type: ignore
+
+
+class NonInteractivePreviewService(PreviewService):
+    """
+    PreviewService class for long-running queries
+    """
+
+    session_initialization_timeout = NON_INTERACTIVE_SESSION_TIMEOUT_SECONDS

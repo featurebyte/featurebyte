@@ -4,6 +4,8 @@ BatchFeatureTableService class
 
 from __future__ import annotations
 
+from typing import Optional
+
 from bson import ObjectId
 
 from featurebyte.enum import MaterializedTableNamePrefix
@@ -29,7 +31,9 @@ class BatchFeatureTableService(
         return "BatchFeatureTable"
 
     async def get_batch_feature_table_task_payload(
-        self, data: BatchFeatureTableCreate
+        self,
+        data: BatchFeatureTableCreate,
+        parent_batch_feature_table_id: Optional[ObjectId] = None,
     ) -> BatchFeatureTableTaskPayload:
         """
         Validate and convert a BatchFeatureTableCreate schema to a BatchFeatureTableTaskPayload schema
@@ -39,6 +43,8 @@ class BatchFeatureTableService(
         ----------
         data: BatchFeatureTableCreate
             BatchFeatureTable creation payload
+        parent_batch_feature_table_id: Optional[ObjectId]
+            Parent BatchFeatureTable ID
 
         Returns
         -------
@@ -52,8 +58,9 @@ class BatchFeatureTableService(
         )
 
         return BatchFeatureTableTaskPayload(
-            **data.model_dump(),
+            **data.model_dump(by_alias=True),
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,
+            parent_batch_feature_table_id=parent_batch_feature_table_id,
         )

@@ -9,6 +9,7 @@ from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.base import BaseSeriesOutputNode
 from featurebyte.query_graph.node.metadata.config import (
     OnDemandFunctionCodeGenConfig,
@@ -31,8 +32,8 @@ class VectorCosineSimilarityNode(BaseSeriesOutputNode):
 
     type: Literal[NodeType.VECTOR_COSINE_SIMILARITY] = NodeType.VECTOR_COSINE_SIMILARITY
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     @property
     def max_input_count(self) -> int:

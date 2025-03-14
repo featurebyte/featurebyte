@@ -4,7 +4,7 @@ This module contains datetime accessor class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, ClassVar, Iterable, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Iterable, Optional, Union, cast
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.model_util import validate_timezone_offset_string
@@ -467,7 +467,7 @@ class DatetimeAccessor:
                 f" {self._obj.dtype} type. Available attributes:"
                 f" {', '.join(self._property_node_params_map.keys())}."
             )
-        node_params = {"property": self._property_node_params_map[field_name]}
+        node_params: dict[str, Any] = {"property": self._property_node_params_map[field_name]}
         timezone_offset = self._infer_timezone_offset(self._obj)
 
         if timezone_offset is not None and not isinstance(timezone_offset, str):
@@ -481,6 +481,11 @@ class DatetimeAccessor:
 
         if isinstance(timezone_offset, str):
             node_params["timezone_offset"] = timezone_offset
+
+        if self._node_type == NodeType.DT_EXTRACT:
+            dtype_info = self._obj.dtype_info
+            if dtype_info and dtype_info.metadata:
+                node_params["timestamp_metadata"] = dtype_info.metadata
 
         return series_unary_operation(
             input_series=self._obj,

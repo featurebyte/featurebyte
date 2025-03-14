@@ -5,17 +5,21 @@ BigQueryAdapter class
 from __future__ import annotations
 
 import re
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from sqlglot import expressions
 from sqlglot.expressions import Anonymous, Expression
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType, SourceType, StrEnum
+from featurebyte.enum import DBVarType, SourceType, StrEnum, TimeIntervalUnit
 from featurebyte.query_graph.sql import expression as fb_expressions
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import get_fully_qualified_function_call, sql_to_string
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_function_call,
+    quoted_identifier,
+    sql_to_string,
+)
 from featurebyte.typing import DatetimeSupportedPropertyType
 
 
@@ -30,6 +34,7 @@ class BigQueryAdapter(BaseAdapter):
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_elements_date_time
     TIMEZONE_DATE_FORMAT_EXPRESSIONS = ["%z", "%Z", "%Ez"]
+    ISO_FORMAT_STRING = "%Y-%m-%dT%H:%M:%SZ"
 
     class DataType(StrEnum):
         """
@@ -331,9 +336,11 @@ class BigQueryAdapter(BaseAdapter):
 
     @classmethod
     def to_timestamp_from_string(cls, expr: Expression, format_string: str) -> Expression:
-        return expressions.Anonymous(
-            this="PARSE_DATETIME",
-            expressions=[make_literal_value(format_string), expr],
+        return cls._ensure_datetime(
+            expressions.Anonymous(
+                this="PARSE_TIMESTAMP",
+                expressions=[make_literal_value(format_string), expr],
+            )
         )
 
     @classmethod
@@ -347,3 +354,83 @@ class BigQueryAdapter(BaseAdapter):
                 expressions=[cls._ensure_datetime(expr), timezone],
             )
         )
+
+    @classmethod
+    def convert_utc_to_timezone(
+        cls, expr: Expression, timezone: Expression, timezone_type: Literal["name", "offset"]
+    ) -> Expression:
+        _ = timezone_type
+        return expressions.Anonymous(
+            this="DATETIME",
+            expressions=[cls._ensure_timestamp_tz(expr), timezone],
+        )
+
+    @classmethod
+    def timestamp_truncate(cls, timestamp_expr: Expression, unit: TimeIntervalUnit) -> Expression:
+        mapping = {
+            TimeIntervalUnit.YEAR: "YEAR",
+            TimeIntervalUnit.QUARTER: "QUARTER",
+            TimeIntervalUnit.MONTH: "MONTH",
+            TimeIntervalUnit.WEEK: "WEEK",
+            TimeIntervalUnit.DAY: "DAY",
+            TimeIntervalUnit.HOUR: "HOUR",
+            TimeIntervalUnit.MINUTE: "MINUTE",
+        }
+        return expressions.Anonymous(
+            this="TIMESTAMP_TRUNC",
+            expressions=[timestamp_expr, expressions.Var(this=mapping[unit])],
+        )
+
+    @classmethod
+    def subtract_seconds(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        return expressions.DatetimeSub(
+            this=cls._ensure_datetime(timestamp_expr),
+            expression=make_literal_value(num_units),
+            unit=expressions.Var(this="SECOND"),
+        )
+
+    @classmethod
+    def subtract_months(cls, timestamp_expr: Expression, num_units: int) -> Expression:
+        return expressions.DatetimeSub(
+            this=cls._ensure_datetime(timestamp_expr),
+            expression=make_literal_value(num_units),
+            unit=expressions.Var(this="MONTH"),
+        )
+
+    @classmethod
+    def to_string_from_timestamp(cls, expr: Expression) -> Expression:
+        return expressions.Anonymous(
+            this="FORMAT_DATETIME", expressions=[make_literal_value(cls.ISO_FORMAT_STRING), expr]
+        )
+
+    @classmethod
+    def zip_timestamp_string_and_timezone(
+        cls, timestamp_str_expr: Expression, timezone_expr: Expression
+    ) -> Expression:
+        return expressions.Anonymous(
+            this="STRUCT",
+            expressions=[
+                expressions.alias_(
+                    timestamp_str_expr,
+                    alias=cls.ZIPPED_TIMESTAMP_FIELD,
+                    quoted=True,
+                ),
+                expressions.alias_(
+                    timezone_expr,
+                    alias=cls.ZIPPED_TIMEZONE_FIELD,
+                    quoted=True,
+                ),
+            ],
+        )
+
+    @classmethod
+    def unzip_timestamp_string_and_timezone(
+        cls, zipped_expr: Expression
+    ) -> Tuple[Expression, Expression]:
+        timestamp_str_expr = expressions.Dot(
+            this=zipped_expr, expression=quoted_identifier(cls.ZIPPED_TIMESTAMP_FIELD)
+        )
+        timezone_expr = expressions.Dot(
+            this=zipped_expr, expression=quoted_identifier(cls.ZIPPED_TIMEZONE_FIELD)
+        )
+        return timestamp_str_expr, timezone_expr

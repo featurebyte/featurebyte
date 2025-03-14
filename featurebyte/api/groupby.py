@@ -22,10 +22,16 @@ from featurebyte.api.feature_group import FeatureGroup
 from featurebyte.api.item_view import ItemView
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.target import Target
+from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.common.doc_util import FBAutoDoc
-from featurebyte.enum import AggFunc
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
-from featurebyte.typing import OptionalScalar
+from featurebyte.enum import AggFunc, TargetType
+from featurebyte.exception import TargetFillValueNotProvidedError
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
+)
+from featurebyte.query_graph.model.window import CalendarWindow
+from featurebyte.typing import UNSET, OptionalScalar, Unset
 
 
 class GroupBy:
@@ -83,7 +89,7 @@ class GroupBy:
     @typechecked
     def __init__(
         self,
-        obj: Union[EventView, ItemView, ChangeView, SCDView],
+        obj: Union[EventView, ItemView, ChangeView, SCDView, TimeSeriesView],
         keys: Union[str, List[str]],
         category: Optional[str] = None,
     ):
@@ -130,13 +136,13 @@ class GroupBy:
         self,
         value_column: Optional[str],
         method: Union[AggFunc, str],
-        windows: List[Optional[str]],
+        windows: List[Optional[str] | CalendarWindow],
         feature_names: List[str],
         timestamp_column: Optional[str] = None,
-        feature_job_setting: Optional[FeatureJobSetting] = None,
+        feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
-        offset: Optional[str] = None,
+        offset: Optional[str | CalendarWindow] = None,
     ) -> FeatureGroup:
         """
         The aggregate_over method of a GroupBy instance returns a FeatureGroup containing Aggregate Over a Window
@@ -235,10 +241,30 @@ class GroupBy:
         ...     windows=["28d"],
         ... )
 
+        Time series aggregation over the past 3 months
+
+        >>> # Time series view
+        >>> ts_view = catalog.get_view("TS_VIEW")  # doctest: +SKIP
+        >>> feature = ts_view.groupby("entity_id").aggregate_over(  # doctest: +SKIP
+        ...     value_column="value",
+        ...     method=fb.AggFunc.SUM,
+        ...     windows=[fb.CalendarWindow(size=3, unit=fb.TimeIntervalUnit.MONTH)],
+        ...     feature_names=["sum_value_3m"],
+        ...     feature_job_setting=fb.CronFeatureJobSetting(
+        ...         crontab="0 0 * * *", timezone="Asia/Singapore"
+        ...     ),
+        ... )["sum_value_3m"]
+
         See Also
         --------
-        - [FeatureGroup](/reference/featurebyte.api.feature_group.FeatureGroup/): FeatureGroup object
-        - [Feature](/reference/featurebyte.api.feature.Feature/): Feature object
+        - [CalendarWindow](/reference/featurebyte.query_graph.model.window.CalendarWindow/):
+            Calendar window for feature derivation
+        - [CronFeatureJobSetting](/reference/featurebyte.query_graph.model.feature_job_setting.CronFeatureJobSetting/):
+            Class for specifying the cron job settings.
+        - [FeatureGroup](/reference/featurebyte.api.feature_group.FeatureGroup/):
+            FeatureGroup object
+        - [Feature](/reference/featurebyte.api.feature.Feature/):
+            Feature object
         """
         return WindowAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
@@ -443,9 +469,10 @@ class GroupBy:
         method: Union[AggFunc, str],
         window: str,
         target_name: str,
-        fill_value: OptionalScalar = None,
+        fill_value: Union[OptionalScalar, Unset] = UNSET,
         skip_fill_na: Optional[bool] = None,
         offset: Optional[str] = None,
+        target_type: Optional[TargetType] = None,
     ) -> Target:
         """
         The forward_aggregate method of a GroupBy class instance returns a Forward Aggregated Target object. This object
@@ -474,7 +501,7 @@ class GroupBy:
 
         target_name: str
             Output target name
-        fill_value: OptionalScalar
+        fill_value: Union[OptionalScalar, Unset]
             Value to fill if the value in the column is empty
         skip_fill_na: Optional[bool]
             Whether to skip filling NaN values, filling nan operation is skipped by default as it is
@@ -482,10 +509,17 @@ class GroupBy:
         offset: Optional[str]
             Offset duration to apply to the window, such as '1d'. If specified, the windows will be
             shifted forward by the offset duration
+        target_type: Optional[TargetType]
+            Type of the Target used to indicate the modeling type of the target
 
         Returns
         -------
         Target
+
+        Raises
+        ------
+        TargetFillValueNotProvidedError
+            If fill_value is not provided for the aggregation method
 
         Examples
         --------
@@ -498,8 +532,12 @@ class GroupBy:
         ...     method=fb.AggFunc.SUM,
         ...     target_name="TargetCustomerInventory_28d",
         ...     window="28d",
+        ...     fill_value=0.0,
         ... )
         """
+        if fill_value is UNSET:
+            raise TargetFillValueNotProvidedError(f"fill_value is required for method {method}")
+
         return ForwardAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
         ).forward_aggregate(
@@ -507,9 +545,10 @@ class GroupBy:
             method=method,
             window=window,
             target_name=target_name,
-            fill_value=fill_value,
+            fill_value=fill_value,  # type: ignore
             skip_fill_na=skip_fill_na,
             offset=offset,
+            target_type=target_type,
         )
 
     @typechecked
@@ -519,8 +558,9 @@ class GroupBy:
         method: Union[AggFunc, str],
         target_name: str,
         offset: Optional[str] = None,
-        fill_value: OptionalScalar = None,
+        fill_value: Union[OptionalScalar, Unset] = UNSET,
         skip_fill_na: Optional[bool] = None,
+        target_type: Optional[TargetType] = None,
     ) -> Target:
         """
         The forward_aggregate_asat method of a GroupBy instance returns an Aggregate ""as at""
@@ -572,15 +612,22 @@ class GroupBy:
             "d": day
             "w": week
 
-        fill_value: OptionalScalar
+        fill_value: Union[OptionalScalar, Unset]
             Value to fill if the value in the column is empty
         skip_fill_na: Optional[bool]
             Whether to skip filling NaN values, filling nan operation is skipped by default as it is
             expensive during feature serving
+        target_type: Optional[TargetType]
+            Type of the Target used to indicate the modeling type of the target
 
         Returns
         -------
         Feature
+
+        Raises
+        ------
+        TargetFillValueNotProvidedError
+            If fill_value is not provided for the aggregation method
 
         Examples
         --------
@@ -595,6 +642,7 @@ class GroupBy:
         >>> target = active_credit_card_by_cust.forward_aggregate_asat(  # doctest: +SKIP
         ...     method=fb.AggFunc.COUNT,
         ...     feature_name="Number of Active Credit Cards",
+        ...     fill_value=0,
         ... )
 
 
@@ -603,9 +651,13 @@ class GroupBy:
         >>> target_12w_after = active_credit_card_by_cust.forward_aggregate_asat(  # doctest: +SKIP
         ...     method=fb.AggFunc.COUNT,
         ...     feature_name="Number of Active Credit Cards 12 w after",
+        ...     fill_value=0,
         ...     offset="12w",
         ... )
         """
+        if fill_value is UNSET:
+            raise TargetFillValueNotProvidedError(f"fill_value is required for method {method}")
+
         return ForwardAsAtAggregator(
             self.view_obj, self.category, self.entity_ids, self.keys, self.serving_names
         ).forward_aggregate_asat(
@@ -613,6 +665,7 @@ class GroupBy:
             method=method,
             target_name=target_name,
             offset=offset,
-            fill_value=fill_value,
+            fill_value=fill_value,  # type: ignore
             skip_fill_na=skip_fill_na,
+            target_type=target_type,
         )

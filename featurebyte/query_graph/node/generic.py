@@ -12,7 +12,14 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
+)
+from featurebyte.query_graph.model.time_series_table import TimeInterval
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node.base import (
     BaseNode,
     BasePrunableNode,
@@ -238,7 +245,7 @@ class FilterNode(BaseNode):
                     transform=transform_info,
                     node_name=self.name,
                     other_node_names=mask_operation_info.all_node_names,
-                    dtype=col.dtype,
+                    dtype_info=col.dtype_info,
                 )
                 for col in input_operation_info.aggregations
             ]
@@ -359,7 +366,7 @@ class AssignColumnMixin:
         new_column_name: str,
         columns: List[ViewDataColumn],
         node_name: str,
-        new_column_var_type: DBVarType,
+        new_column_dtype_info: DBVarTypeInfo,
     ) -> OperationStructure:
         """
         Construct operation structure of the assign-column-like operation
@@ -374,7 +381,7 @@ class AssignColumnMixin:
             List of columns that are used to derive the series
         node_name: str
             Node name of the operation that assign a series to a frame
-        new_column_var_type: DBVarType
+        new_column_dtype_info: DBVarTypeInfo
             Variable type of new column
 
         Returns
@@ -387,7 +394,7 @@ class AssignColumnMixin:
             columns=columns,
             transform=None,
             node_name=node_name,
-            dtype=new_column_var_type,
+            dtype_info=new_column_dtype_info,
         )
         return OperationStructure(
             columns=input_columns + [new_column],
@@ -447,16 +454,16 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             series_input = inputs[1]
             self._validate_series(series_input)
             columns = series_input.columns
-            dtype = series_input.series_output_dtype
+            dtype_info = series_input.series_output_dtype_info
         else:
-            dtype = self.detect_var_type_from_value(self.parameters.value)
+            dtype_info = self.detect_dtype_info_from_value(self.parameters.value)
 
         return self._construct_operation_structure(
             input_operation_info=input_operation_info,
             new_column_name=self.parameters.name,
             columns=columns,
             node_name=self.name,
-            new_column_var_type=dtype,
+            new_column_dtype_info=dtype_info,
         )
 
     def _derive_sdk_code(
@@ -543,8 +550,8 @@ class LagNode(BaseSeriesOutputNode):
         # entity column
         return [self.parameters.entity_columns[input_index - 1]]
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return inputs[0].series_output_dtype
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return inputs[0].series_output_dtype_info
 
     def _derive_sdk_code(
         self,
@@ -589,6 +596,13 @@ class ForwardAggregateParameters(BaseGroupbyParameters):
     window: Optional[str] = Field(default=None)
     offset: Optional[str] = Field(default=None)
     timestamp_col: InColumnStr
+    timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def timestamp_schema(self) -> Optional[TimestampSchema]:
+        if self.timestamp_metadata:
+            return self.timestamp_metadata.timestamp_schema
+        return None
 
 
 class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
@@ -615,7 +629,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
         columns: List[ViewDataColumn],
         node_name: str,
         other_node_names: Set[str],
-        output_var_type: DBVarType,
+        output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
@@ -631,7 +645,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
                 aggregation_type=self.type,
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
-                dtype=output_var_type,
+                dtype_info=output_dtype_info,
             )
         ]
 
@@ -676,6 +690,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
             method=self.parameters.agg_func,
             window=self.parameters.window,
             target_name=self.parameters.name,
+            fill_value=None,
             skip_fill_na=True,
             offset=self.parameters.offset,
         )
@@ -691,6 +706,20 @@ class BaseWindowAggregateParameters(BaseGroupbyParameters):
     names: List[OutColumnStr]
     feature_job_setting: FeatureJobSetting
     offset: Optional[str] = Field(default=None)
+    timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.timestamp_metadata:
+            return self.timestamp_metadata.timestamp_schema
+        return None
 
 
 class GroupByNodeParameters(BaseWindowAggregateParameters):
@@ -745,7 +774,7 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
         columns: List[ViewDataColumn],
         node_name: str,
         other_node_names: Set[str],
-        output_var_type: DBVarType,
+        output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
@@ -761,7 +790,7 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
                 aggregation_type=self.type,  # type: ignore[arg-type]
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
-                dtype=output_var_type,
+                dtype_info=output_dtype_info,
             )
             for name, window in zip(self.parameters.names, self.parameters.windows)
         ]
@@ -928,7 +957,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
         columns: List[ViewDataColumn],
         node_name: str,
         other_node_names: Set[str],
-        output_var_type: DBVarType,
+        output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
@@ -944,7 +973,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
                 aggregation_type=self.type,
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
-                dtype=output_var_type,
+                dtype_info=output_dtype_info,
             )
         ]
 
@@ -990,6 +1019,34 @@ class SCDBaseParameters(FeatureByteBaseModel):
     natural_key_column: Optional[InColumnStr] = Field(default=None)  # DEV-556: should be compulsory
     current_flag_column: Optional[InColumnStr] = Field(default=None)
     end_timestamp_column: Optional[InColumnStr] = Field(default=None)
+    effective_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+    end_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def effective_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get effective timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.effective_timestamp_metadata:
+            return self.effective_timestamp_metadata.timestamp_schema
+        return None
+
+    @property
+    def end_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get end timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.end_timestamp_metadata:
+            return self.end_timestamp_metadata.timestamp_schema
+        return None
 
     @model_validator(mode="before")
     @classmethod
@@ -1007,6 +1064,20 @@ class SCDJoinParameters(SCDBaseParameters):
     """Parameters for SCD join"""
 
     left_timestamp_column: InColumnStr
+    left_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def left_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get left timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.left_timestamp_metadata:
+            return self.left_timestamp_metadata.timestamp_schema
+        return None
 
 
 class SCDLookupParameters(SCDBaseParameters):
@@ -1019,6 +1090,20 @@ class EventLookupParameters(FeatureByteBaseModel):
     """Parameters for EventTable lookup"""
 
     event_timestamp_column: InColumnStr
+    event_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def event_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get event timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.event_timestamp_metadata:
+            return self.event_timestamp_metadata.timestamp_schema
+        return None
 
 
 class LookupParameters(FeatureByteBaseModel):
@@ -1080,7 +1165,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
         columns: List[ViewDataColumn],
         node_name: str,
         other_node_names: Set[str],
-        output_var_type: DBVarType,
+        output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         name_to_column = {col.name: col for col in columns}
         offset = None
@@ -1099,7 +1184,7 @@ class BaseLookupNode(AggregationOpStructMixin, BaseNode):
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
                 filter=any(col.filter for col in columns),
-                dtype=name_to_column[input_column_name].dtype,
+                dtype_info=name_to_column[input_column_name].dtype_info,
             )
             for input_column_name, feature_name in zip(
                 self.parameters.input_column_names, self.parameters.feature_names
@@ -1216,7 +1301,7 @@ class LookupTargetNode(BaseLookupNode):
         input_column_name = ValueStr.create(self.parameters.input_column_names[0])
         lookup_target_str = (
             f"{var_name}[{input_column_name}].as_target(target_name={ValueStr.create(feature_names[0])}, "
-            f"offset={ValueStr.create(offset)})"
+            f"offset={ValueStr.create(offset)}, fill_value=None)"
         )
         return statements, ExpressionStr(lookup_target_str)
 
@@ -1371,13 +1456,17 @@ class JoinNode(BasePrunableNode):
     ) -> OperationStructure:
         params = self.parameters
         # construct input column name to output column name mapping for left & right columns
-        left_col_map = dict(zip(params.left_input_columns, params.left_output_columns))
-        right_col_map = dict(zip(params.right_input_columns, params.right_output_columns))
+        left_col_map: dict[str, str] = dict(
+            zip(params.left_input_columns, params.left_output_columns)
+        )
+        right_col_map: dict[str, str] = dict(
+            zip(params.right_input_columns, params.right_output_columns)
+        )
 
         # construct input column name to output column mapping for left & right columns
         left_columns = {
             col.name: col.clone(
-                name=left_col_map[col.name],  # type: ignore
+                name=left_col_map[col.name],
                 # if the join type is left, current node is not a compulsory node for the column
                 node_names=(
                     col.node_names.union([self.name])
@@ -1385,6 +1474,7 @@ class JoinNode(BasePrunableNode):
                     else col.node_names
                 ),
                 node_name=self.name,
+                dtype_info=col.dtype_info.remap_column_name(left_col_map),
             )
             for col in inputs[0].columns
             if col.name in left_col_map
@@ -1401,14 +1491,14 @@ class JoinNode(BasePrunableNode):
                     # when keep_all_source_columns is True, we should include the right_on column in the join
                     # so that any changes on the right_on column can be tracked.
                     right_columns[col.name] = DerivedDataColumn.create(
-                        name=right_col_map[col.name],  # type: ignore
+                        name=right_col_map[col.name],
                         # the main source column must be on the right most side
                         # this is used to decide the timestamp column source table in
                         # `iterate_group_by_node_and_table_id_pairs`
                         columns=[left_on_col, right_on_col, col],
                         transform=transform_info,
                         node_name=self.name,
-                        dtype=col.dtype,
+                        dtype_info=col.dtype_info.remap_column_name(right_col_map),
                         other_node_names=col.node_names,
                     )
                 else:
@@ -1416,6 +1506,7 @@ class JoinNode(BasePrunableNode):
                         name=right_col_map[col.name],  # type: ignore
                         node_names=col.node_names.union([self.name]),
                         node_name=self.name,
+                        dtype_info=col.dtype_info.remap_column_name(right_col_map),
                     )
 
         is_event_item_join = (
@@ -1630,7 +1721,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             transform=self.transform_info,
             node_name=self.name,
             other_node_names=feature_operation_info.all_node_names,
-            dtype=feature_operation_info.series_output_dtype,
+            dtype_info=feature_operation_info.series_output_dtype_info,
         )
 
         # If this View has a column that has the same name as the feature to be added, it will be
@@ -1640,7 +1731,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
             new_column_name=self.parameters.name,
             columns=[derived_column],
             node_name=self.name,
-            new_column_var_type=feature_operation_info.series_output_dtype,
+            new_column_dtype_info=feature_operation_info.series_output_dtype_info,
         )
 
     def _derive_sdk_code(
@@ -1683,6 +1774,20 @@ class TrackChangesNodeParameters(FeatureByteBaseModel):
     new_tracked_column_name: OutColumnStr
     previous_valid_from_column_name: OutColumnStr
     new_valid_from_column_name: OutColumnStr
+    effective_timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @property
+    def effective_timestamp_schema(self) -> Optional[TimestampSchema]:
+        """
+        Get effective timestamp schema
+
+        Returns
+        -------
+        Optional[TimestampSchema]
+        """
+        if self.effective_timestamp_metadata:
+            return self.effective_timestamp_metadata.timestamp_schema
+        return None
 
 
 class TrackChangesNode(BaseNode):
@@ -1727,10 +1832,13 @@ class TrackChangesNode(BaseNode):
             if column.name == self.parameters.natural_key_column
         )
         columns = [natural_key_source_column]
-        track_dtype = tracked_source_column.dtype
-        valid_dtype = effective_timestamp_source_column.dtype
+        track_dtype = tracked_source_column.dtype_info
+        valid_dtype = effective_timestamp_source_column.dtype_info
+        if valid_dtype is not None and valid_dtype.timestamp_schema is not None:
+            # Timestamp columns have been converted within the TRACK_CHANGES node
+            valid_dtype = DBVarTypeInfo(dtype=DBVarType.TIMESTAMP)
         transform_info = self.transform_info
-        for column_name, dtype in [
+        for column_name, dtype_info in [
             (self.parameters.previous_tracked_column_name, track_dtype),
             (self.parameters.new_tracked_column_name, track_dtype),
             (self.parameters.previous_valid_from_column_name, valid_dtype),
@@ -1741,7 +1849,7 @@ class TrackChangesNode(BaseNode):
                 columns=[effective_timestamp_source_column, tracked_source_column],
                 transform=transform_info,
                 node_name=self.name,
-                dtype=dtype,
+                dtype_info=dtype_info,
             )
             columns.append(derived_column)
         return OperationStructure(
@@ -1832,7 +1940,7 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
         columns: List[ViewDataColumn],
         node_name: str,
         other_node_names: Set[str],
-        output_var_type: DBVarType,
+        output_dtype_info: DBVarTypeInfo,
     ) -> List[AggregationColumn]:
         col_name_map = {col.name: col for col in columns}
         return [
@@ -1848,7 +1956,7 @@ class BaseAggregateAsAtNode(AggregationOpStructMixin, BaseNode):
                 aggregation_type=self.type,  # type: ignore[arg-type]
                 node_names={node_name}.union(other_node_names),
                 node_name=node_name,
-                dtype=output_var_type,
+                dtype_info=output_dtype_info,
             )
         ]
 
@@ -1938,6 +2046,7 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
             f"method={method}, "
             f"target_name={target_name}, "
             f"offset={offset}, "
+            f"fill_value=None, "
             f"skip_fill_na=True)"
         )
         return statements, ExpressionStr(f"{grouped}.{agg}")
@@ -1957,6 +2066,159 @@ class NonTileWindowAggregateNode(BaseWindowAggregateNode):
     type: Literal[NodeType.NON_TILE_WINDOW_AGGREGATE] = NodeType.NON_TILE_WINDOW_AGGREGATE
     output_type: NodeOutputType = NodeOutputType.FRAME
     parameters: NonTileWindowAggregateParameters
+
+
+class TimeSeriesWindowAggregateParameters(BaseGroupbyParameters):
+    """Parameters for AggregateAsAtNode"""
+
+    windows: List[CalendarWindow]
+    reference_datetime_column: InColumnStr
+    reference_datetime_metadata: DBVarTypeMetadata
+    time_interval: TimeInterval
+    names: List[OutColumnStr]
+    feature_job_setting: CronFeatureJobSetting
+    offset: Optional[CalendarWindow] = None
+
+    @property
+    def timestamp(self) -> str:
+        """
+        Get the timestamp column name used in QueryGraph.iterate_group_by_node_and_table_id_pairs
+
+        Returns
+        -------
+        str
+        """
+        return self.reference_datetime_column
+
+    @property
+    def reference_datetime_schema(self) -> TimestampSchema:
+        """
+        Get reference datetime schema
+
+        Returns
+        -------
+        TimestampSchema
+        """
+        assert self.reference_datetime_metadata.timestamp_schema is not None
+        return self.reference_datetime_metadata.timestamp_schema
+
+    @model_validator(mode="before")
+    @classmethod
+    def _handle_backwards_compatibility(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if "reference_datetime_schema" in values:
+            values["reference_datetime_metadata"] = {
+                "timestamp_schema": values["reference_datetime_schema"]
+            }
+        return values
+
+
+class TimeSeriesWindowAggregateNode(AggregationOpStructMixin):
+    """
+    TimeSeriesWindowAggregateNode class.
+    """
+
+    type: Literal[NodeType.TIME_SERIES_WINDOW_AGGREGATE] = NodeType.TIME_SERIES_WINDOW_AGGREGATE
+    output_type: NodeOutputType = NodeOutputType.FRAME
+    parameters: TimeSeriesWindowAggregateParameters
+
+    def _get_aggregations(
+        self,
+        columns: List[ViewDataColumn],
+        node_name: str,
+        other_node_names: Set[str],
+        output_dtype_info: DBVarTypeInfo,
+    ) -> List[AggregationColumn]:
+        col_name_map = {col.name: col for col in columns}
+        return [
+            AggregationColumn(
+                name=name,
+                method=self.parameters.agg_func,
+                keys=self.parameters.keys,
+                window=window.to_string(),
+                category=self.parameters.value_by,
+                offset=self.parameters.offset.to_string() if self.parameters.offset else None,
+                column=col_name_map.get(self.parameters.parent),
+                filter=any(col.filter for col in columns),
+                aggregation_type=self.type,  # type: ignore[arg-type]
+                node_names={node_name}.union(other_node_names),
+                node_name=node_name,
+                dtype_info=output_dtype_info,
+            )
+            for name, window in zip(self.parameters.names, self.parameters.windows)
+        ]
+
+    def _exclude_source_columns(self) -> List[str]:
+        return [str(key) for key in self.parameters.keys]
+
+    def _is_time_based(self) -> bool:
+        return True
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._extract_column_str_values(self.parameters.model_dump(), InColumnStr)
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _derive_sdk_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: SDKCodeGenConfig,
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        statements, var_name = self._convert_expression_to_variable(
+            var_name_expression=var_name_expressions[0],
+            var_name_generator=var_name_generator,
+            node_output_type=NodeOutputType.FRAME,
+            node_output_category=NodeOutputCategory.VIEW,
+            to_associate_with_node_name=False,
+        )
+        keys = ValueStr.create(self.parameters.keys)
+        category = ValueStr.create(self.parameters.value_by)
+        fjs = self.parameters.feature_job_setting
+        feature_job_setting: ObjectClass = ClassEnum.CRON_FEATURE_JOB_SETTING(
+            crontab=fjs.get_cron_expression(),
+            timezone=fjs.timezone,
+            reference_timezone=fjs.reference_timezone,
+        )
+        windows = [
+            ClassEnum.CALENDAR_WINDOW(
+                unit=window.unit,
+                size=window.size,
+            )
+            for window in self.parameters.windows
+        ]
+        offset = (
+            ClassEnum.CALENDAR_WINDOW(
+                unit=self.parameters.offset.unit,
+                size=self.parameters.offset.size,
+            )
+            if self.parameters.offset
+            else None
+        )
+        grouped = f"{var_name}.groupby(by_keys={keys}, category={category})"
+        out_var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+            node_name=self.name,
+        )
+        expression = get_object_class_from_function_call(
+            callable_name=f"{grouped}.aggregate_over",
+            value_column=self.parameters.parent,
+            method=self.parameters.agg_func,
+            windows=windows,
+            feature_names=self.parameters.names,
+            feature_job_setting=feature_job_setting,
+            skip_fill_na=True,
+            offset=offset,
+        )
+        statements.append((out_var_name, expression))
+        return statements, out_var_name
 
 
 class AliasNode(BaseNode):
@@ -2088,8 +2350,8 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return inputs[0].series_output_dtype
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return inputs[0].series_output_dtype_info
 
     def _prepare_var_name_and_mask_var_name(
         self,

@@ -229,6 +229,7 @@ def test_sdk_code_generation__lookup_target(
         method="sum",
         window="1d",
         target_name="forward_aggregate_target",
+        fill_value=0.0,
     )
     check_sdk_code_generation(
         forward_aggregate_target,
@@ -246,7 +247,7 @@ def test_sdk_code_generation__forward_aggregate_target(
     """Test SDK code generation for lookup target"""
     saved_event_table.col_int.as_entity(cust_id_entity.name)
     event_view = saved_event_table.get_view()
-    lookup_target = event_view["col_int"].as_target("lookup_target")
+    lookup_target = event_view["col_int"].as_target("lookup_target", fill_value=None)
     check_sdk_code_generation(
         lookup_target,
         to_use_saved_data=True,
@@ -266,6 +267,7 @@ def test_sdk_code_generation__forward_aggregate_asat(
         value_column="col_float",
         method="sum",
         target_name="asat_target",
+        fill_value=0.0,
     )
     check_sdk_code_generation(
         aggregate_asat_target,
@@ -649,7 +651,9 @@ def test_target_lookup_sdk_code_generation(snowflake_scd_table, cust_id_entity, 
 
     view = snowflake_scd_table.get_view()
     view['"quote column"'] = view["col_float"] * 2
-    target = view['"quote column"'].as_target(target_name="Target name with special characters")
+    target = view['"quote column"'].as_target(
+        target_name="Target name with special characters", fill_value=None
+    )
 
     # check that the feature can be saved without throwing error
     target.save()
@@ -661,4 +665,22 @@ def test_target_lookup_sdk_code_generation(snowflake_scd_table, cust_id_entity, 
         fixture_path="tests/fixtures/sdk_code/target_scd_lookup.py",
         update_fixtures=update_fixtures,
         table_id=snowflake_scd_table.id,
+    )
+
+
+def test_ts_window_agg_feature_sdk_code_generation(
+    snowflake_time_series_table_with_entity,
+    ts_window_aggregate_feature,
+    update_fixtures,
+):
+    """Test SDK code generation for time series window aggregation feature"""
+    ts_window_aggregate_feature.save()
+
+    check_sdk_code_generation(
+        ts_window_aggregate_feature,
+        to_use_saved_data=True,
+        to_format=True,
+        fixture_path="tests/fixtures/sdk_code/ts_window_aggregate_feature.py",
+        update_fixtures=update_fixtures,
+        table_id=snowflake_time_series_table_with_entity.id,
     )

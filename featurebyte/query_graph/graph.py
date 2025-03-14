@@ -40,6 +40,7 @@ from featurebyte.query_graph.node.generic import (
     LookupNode,
     LookupTargetNode,
     NonTileWindowAggregateNode,
+    TimeSeriesWindowAggregateNode,
 )
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import (
@@ -236,7 +237,12 @@ class QueryGraph(QueryGraphModel):
 
     def iterate_group_by_node_and_table_id_pairs(
         self, target_node: Node
-    ) -> Iterator[Tuple[Union[GroupByNode, NonTileWindowAggregateNode], Optional[ObjectId]]]:
+    ) -> Iterator[
+        Tuple[
+            Union[GroupByNode, NonTileWindowAggregateNode, TimeSeriesWindowAggregateNode],
+            Optional[ObjectId],
+        ]
+    ]:
         """
         Iterate all GroupBy nodes and their corresponding Table ID
 
@@ -247,7 +253,7 @@ class QueryGraph(QueryGraphModel):
 
         Yields
         ------
-        Tuple[GroupByNode, Optional[ObjectId]]
+        Tuple[Union[GroupByNode, NonTileWindowAggregateNode, TimeSeriesWindowAggregateNode], Optional[ObjectId]]
             GroupBy node and its corresponding EventTable input node
         """
         operation_structure_info = OperationStructureExtractor(graph=self).extract(
@@ -264,14 +270,20 @@ class QueryGraph(QueryGraphModel):
                 target_node=target_node, node_type=NodeType.NON_TILE_WINDOW_AGGREGATE
             ):
                 yield non_tile_window_aggregate_node
+            for ts_window_aggregate_node in self.iterate_nodes(
+                target_node=target_node, node_type=NodeType.TIME_SERIES_WINDOW_AGGREGATE
+            ):
+                yield ts_window_aggregate_node
 
         for node in _iter_window_aggregate_nodes():
-            assert isinstance(node, (GroupByNode, NonTileWindowAggregateNode))
-            group_by_op_struct = operation_structure_info.operation_structure_map[node.name]
+            assert isinstance(
+                node, (GroupByNode, NonTileWindowAggregateNode, TimeSeriesWindowAggregateNode)
+            )
+            agg_node_op_struct = operation_structure_info.operation_structure_map[node.name]
             timestamp_col = next(
                 (
                     col
-                    for col in group_by_op_struct.columns
+                    for col in agg_node_op_struct.columns
                     if col.name == node.parameters.timestamp
                 ),
                 None,

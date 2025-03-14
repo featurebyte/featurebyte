@@ -21,8 +21,9 @@ from featurebyte.models.tile import OnDemandTileComputeResult
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.batch_helper import NUM_FEATURES_PER_QUERY, get_feature_names
+from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
+from featurebyte.query_graph.sql.cron import get_cron_feature_job_settings
 from featurebyte.query_graph.sql.feature_historical import (
     PROGRESS_MESSAGE_COMPUTING_FEATURES,
     PROGRESS_MESSAGE_COMPUTING_TARGET,
@@ -33,6 +34,7 @@ from featurebyte.query_graph.sql.feature_historical import (
     validate_request_schema,
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
@@ -137,6 +139,7 @@ async def get_historical_features(
     session: BaseSession,
     tile_cache_service: TileCacheService,
     warehouse_table_service: WarehouseTableService,
+    cron_helper: CronHelper,
     graph: QueryGraph,
     nodes: list[Node],
     observation_set: Union[pd.DataFrame, ObservationTableModel],
@@ -154,6 +157,8 @@ async def get_historical_features(
         Session to use to make queries
     tile_cache_service: TileCacheService
         Tile cache service
+    cron_helper: CronHelper
+        Cron helper for simulating feature job schedules
     warehouse_table_service: WarehouseTableService
         Warehouse table service
     graph : QueryGraph
@@ -193,8 +198,14 @@ async def get_historical_features(
     request_table_columns = observation_set.columns
 
     # Execute feature SQL code
-    await observation_set.register_as_request_table(
-        session, request_table_name, add_row_index=len(nodes) > NUM_FEATURES_PER_QUERY
+    await observation_set.register_as_request_table(session, request_table_name, add_row_index=True)
+
+    # Register job schedule tables if necessary
+    cron_feature_job_settings = get_cron_feature_job_settings(graph, nodes)
+    job_schedule_table_set = await cron_helper.register_job_schedule_tables(
+        session=session,
+        request_table_name=request_table_name,
+        cron_feature_job_settings=cron_feature_job_settings,
     )
 
     temp_tile_tables_tag = f"historical_features_{output_table_details.table_name}"
@@ -250,6 +261,7 @@ async def get_historical_features(
             request_table_name=request_table_name,
             parent_serving_preparation=parent_serving_preparation,
             on_demand_tile_tables=tile_compute_result.on_demand_tile_tables,
+            job_schedule_table_set=job_schedule_table_set,
             output_include_row_index=output_include_row_index,
             progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
         )
@@ -289,6 +301,13 @@ async def get_historical_features(
                 table_name=warehouse_table.location.table_details.table_name,
                 schema_name=warehouse_table.location.table_details.schema_name,
                 database_name=warehouse_table.location.table_details.database_name,
+                if_exists=True,
+            )
+        for job_schedule_table in job_schedule_table_set.tables:
+            await session.drop_table(
+                table_name=job_schedule_table.table_name,
+                schema_name=session.schema_name,
+                database_name=session.database_name,
                 if_exists=True,
             )
 
@@ -359,7 +378,7 @@ async def get_target(
     await observation_set.register_as_request_table(
         session,
         request_table_name,
-        add_row_index=len(nodes) > NUM_FEATURES_PER_QUERY,
+        add_row_index=True,
     )
 
     # Generate SQL code that computes the targets

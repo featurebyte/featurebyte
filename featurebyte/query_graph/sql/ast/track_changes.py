@@ -14,6 +14,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.node.generic import TrackChangesNodeParameters
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext, TableNode
 from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
 def create_lag_expression(
@@ -64,9 +65,16 @@ class TrackChanges(TableNode):
         input_node = cast(TableNode, context.input_sql_nodes[0])
 
         # Previous value column
+        effective_timestamp_expr = quoted_identifier(parameters.effective_timestamp_column)
+        if parameters.effective_timestamp_schema is not None:
+            effective_timestamp_expr = convert_timestamp_to_utc(
+                effective_timestamp_expr,
+                parameters.effective_timestamp_schema,
+                context.adapter,
+            )
         previous_value = create_lag_expression(
             partition_key_expr=quoted_identifier(parameters.natural_key_column),
-            timestamp_column_expr=quoted_identifier(parameters.effective_timestamp_column),
+            timestamp_column_expr=effective_timestamp_expr,
             column_expr=quoted_identifier(parameters.tracked_column),
         )
 
@@ -80,7 +88,7 @@ class TrackChanges(TableNode):
             select(
                 quoted_identifier(parameters.natural_key_column),
                 alias_(
-                    quoted_identifier(parameters.effective_timestamp_column),
+                    effective_timestamp_expr,
                     alias=parameters.new_valid_from_column_name,
                     quoted=True,
                 ),

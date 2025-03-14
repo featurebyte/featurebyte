@@ -15,7 +15,10 @@ from featurebyte.config import FEATURE_PREVIEW_ROW_LIMIT
 from featurebyte.enum import InternalName, SourceType, SpecialColumnName
 from featurebyte.exception import LimitExceededError, MissingPointInTimeColumnError
 from featurebyte.logging import get_logger
+from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, sql_to_string
+from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.feature_preview import get_feature_or_target_preview_sql
 from featurebyte.query_graph.sql.materialisation import get_source_expr
@@ -28,6 +31,7 @@ from featurebyte.schema.feature_list import (
     PreviewObservationSet,
 )
 from featurebyte.schema.preview import FeatureOrTargetPreview, FeaturePreview, TargetPreview
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
@@ -62,6 +66,7 @@ class FeaturePreviewService(PreviewService):
         feature_service: FeatureService,
         target_service: TargetService,
         query_cache_manager_service: QueryCacheManagerService,
+        cron_helper: CronHelper,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -72,6 +77,7 @@ class FeaturePreviewService(PreviewService):
         self.observation_table_service = observation_table_service
         self.feature_service = feature_service
         self.target_service = target_service
+        self.cron_helper = cron_helper
 
     @property
     def feature_list_preview_max_features_number(self) -> int:
@@ -176,6 +182,42 @@ class FeaturePreviewService(PreviewService):
 
         return point_in_time_and_serving_name_list, updated
 
+    def _get_cron_job_schedule_table_set(
+        self,
+        point_in_time_and_serving_name_list: list[Dict[str, Any]],
+        graph: QueryGraphModel,
+        nodes: list[Node],
+    ) -> JobScheduleTableSet:
+        """
+        Get cron job schedule table set
+
+        Parameters
+        ----------
+        point_in_time_and_serving_name_list: list[Dict[str, Any]]
+            List of dictionary consisting the point in time and entity ids based on which the feature
+            preview will be computed
+        graph: QueryGraphModel
+            Query graph model
+        nodes: list[Node]
+            List of query graph node
+
+        Returns
+        -------
+        JobScheduleTableSet
+        """
+        cron_feature_job_settings = get_cron_feature_job_settings(graph, nodes)
+        point_in_time_values = pd.to_datetime([
+            row[SpecialColumnName.POINT_IN_TIME] for row in point_in_time_and_serving_name_list
+        ])
+        min_point_in_time = point_in_time_values.min()
+        max_point_in_time = point_in_time_values.max()
+        job_schedule_table_set = self.cron_helper.get_cron_job_schedule_table_set_for_preview(
+            min_point_in_time=min_point_in_time,
+            max_point_in_time=max_point_in_time,
+            cron_feature_job_settings=cron_feature_job_settings,
+        )
+        return job_schedule_table_set
+
     async def preview_target_or_feature(
         self, feature_or_target_preview: FeatureOrTargetPreview
     ) -> dict[str, Any]:
@@ -224,6 +266,9 @@ class FeaturePreviewService(PreviewService):
                 feature_store=feature_store,
             )
         )
+        job_schedule_table_set = self._get_cron_job_schedule_table_set(
+            point_in_time_and_serving_name_list, graph, [feature_node]
+        )
         preview_sql = get_feature_or_target_preview_sql(
             request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
             graph=graph,
@@ -231,6 +276,7 @@ class FeaturePreviewService(PreviewService):
             point_in_time_and_serving_name_list=point_in_time_and_serving_name_list,
             source_info=feature_store.get_source_info(),
             parent_serving_preparation=parent_serving_preparation,
+            job_schedule_table_set=job_schedule_table_set,
         )
         result = await session.execute_query(preview_sql)
         if result is None:
@@ -356,6 +402,11 @@ class FeaturePreviewService(PreviewService):
                 request_column_names=request_column_names,
                 feature_store=feature_store,
             )
+            job_schedule_table_set = self._get_cron_job_schedule_table_set(
+                point_in_time_and_serving_name_list,
+                feature_cluster.graph,
+                feature_cluster.nodes,
+            )
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
             )
@@ -366,6 +417,7 @@ class FeaturePreviewService(PreviewService):
                 point_in_time_and_serving_name_list=point_in_time_and_serving_name_list,
                 source_info=feature_store.get_source_info(),
                 parent_serving_preparation=parent_serving_preparation,
+                job_schedule_table_set=job_schedule_table_set,
             )
             _result = await db_session.execute_query(preview_sql)
             if result is None:

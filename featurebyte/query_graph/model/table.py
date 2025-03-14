@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from bson import ObjectId
-from pydantic import Field, StrictStr
+from pydantic import Field, StrictStr, field_validator
 from typing_extensions import Annotated, Literal
 
 from featurebyte.common.join_utils import (
@@ -28,6 +28,7 @@ from featurebyte.query_graph.model.common_table import (
     SPECIFIC_DATA_TABLES,
     BaseTableData,
 )
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node import Node
@@ -526,6 +527,7 @@ class SCDTableData(BaseTableData):
         track_changes_column: str,
         proxy_input_nodes: List[Node],
         column_names: ChangeViewColumnNames,
+        effective_timestamp_metadata: Optional[DBVarTypeMetadata],
     ) -> GraphNode:
         frame_node = proxy_input_nodes[0]
         view_graph_node.add_operation(
@@ -538,6 +540,7 @@ class SCDTableData(BaseTableData):
                 "new_tracked_column_name": column_names.new_tracked_column_name,
                 "previous_valid_from_column_name": column_names.previous_valid_from_column_name,
                 "new_valid_from_column_name": column_names.new_valid_from_column_name,
+                "effective_timestamp_metadata": effective_timestamp_metadata,
             },
             node_output_type=NodeOutputType.FRAME,
             input_nodes=[frame_node],
@@ -617,11 +620,16 @@ class SCDTableData(BaseTableData):
             timestamp_column=self.effective_timestamp_column,
             prefixes=prefixes,
         )
+        effective_timestamp_metadata = None
+        for col in self.columns_info:
+            if col.name == self.effective_timestamp_column and col.dtype_metadata:
+                effective_timestamp_metadata = col.dtype_metadata
         view_graph_node = self._add_change_view_operations(
             view_graph_node=view_graph_node,
             track_changes_column=track_changes_column,
             proxy_input_nodes=proxy_input_nodes,
             column_names=column_names,
+            effective_timestamp_metadata=effective_timestamp_metadata,
         )
         columns_info = self._prepare_change_view_columns_info(
             column_names=column_names, track_changes_column=track_changes_column
@@ -644,6 +652,14 @@ class TimeSeriesTableData(BaseTableData):
         if self.series_id_column:
             return [self.series_id_column]
         return []
+
+    @field_validator("time_interval")
+    def validate_time_interval(cls, value: TimeInterval) -> TimeInterval:
+        if value.value != 1:
+            raise ValueError(
+                "Only intervals defined with a single time unit (e.g., 1 hour, 1 day) are supported."
+            )
+        return value
 
     def construct_input_node(self, feature_store_details: FeatureStoreDetails) -> InputNode:
         return InputNode(

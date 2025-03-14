@@ -6,9 +6,11 @@ from dataclasses import dataclass
 from typing import Any, List, Optional, Set, Tuple
 
 from featurebyte.common.model_util import convert_version_string_to_dict, parse_duration_string
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TargetType
+from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
+from featurebyte.query_graph.node.cleaning_operation import CleaningOperationType
 
 
 @dataclass
@@ -19,6 +21,27 @@ class ColumnToTimestampSchema:
 
     column_field_name: str
     timestamp_schema_field_name: str
+
+
+def _column_info_has_add_timestamp_schema_cleaning_operation(column_info: dict[str, Any]) -> bool:
+    """
+    Check whether the column_info has AddTimestampSchema cleaning operation
+
+    Parameters
+    ----------
+    column_info: dict[str, Any]
+        Column info dictionary
+
+    Returns
+    -------
+    bool
+    """
+    col_info = ColumnInfo(**column_info)
+    if col_info.critical_data_info:
+        for clean_op in col_info.critical_data_info.cleaning_operations:
+            if clean_op.type == CleaningOperationType.ADD_TIMESTAMP_SCHEMA:
+                return True
+    return False
 
 
 def construct_data_model_validator(
@@ -94,7 +117,10 @@ def construct_data_model_validator(
                 continue
             timestamp_schema = getattr(self, column_to_timestamp_schema.timestamp_schema_field_name)
             if timestamp_schema:
-                timestamp_schema_mapping[col_name] = timestamp_schema
+                timestamp_schema_mapping[col_name] = (
+                    timestamp_schema,
+                    column_to_timestamp_schema.timestamp_schema_field_name,
+                )
             col_dtype = col_info_map[col_name].get("dtype")
             if col_dtype in ambiguous_timestamp_types and not timestamp_schema:
                 raise ValueError(
@@ -103,9 +129,21 @@ def construct_data_model_validator(
 
         # Update columns_info with timestamp_schema
         if timestamp_schema_mapping:
-            for col_name, timestamp_schema in timestamp_schema_mapping.items():
+            for col_name, (
+                timestamp_schema,
+                ts_schema_field_name,
+            ) in timestamp_schema_mapping.items():
                 if col_name in col_info_map:
                     col_info = col_info_map[col_name]
+
+                    # check whether col_info has AddTimestampSchema cleaning operation
+                    if _column_info_has_add_timestamp_schema_cleaning_operation(col_info):
+                        raise ValueError(
+                            f"Column {col_name} has AddTimestampSchema cleaning operation. "
+                            "Please remove the AddTimestampSchema cleaning operation from the column and "
+                            f"specify the {ts_schema_field_name} in the table model."
+                        )
+
                     dtype_metadata = col_info.get("dtype_metadata")
                     if dtype_metadata is None:
                         dtype_metadata = {}
@@ -178,6 +216,38 @@ def columns_info_validator(
             if column_info.name in column_names:
                 raise ValueError(f'Column name "{column_info.name}" is duplicated.')
             column_names.add(column_info.name)
+
+        # check timestamp_schema timezone column name
+        for column_info in values:
+            if (
+                column_info.timestamp_schema
+                and column_info.timestamp_schema.has_timezone_offset_column
+            ):
+                assert column_info.timestamp_schema is not None
+                assert isinstance(column_info.timestamp_schema.timezone, TimeZoneColumn)
+                timezone_column_name = column_info.timestamp_schema.timezone.column_name
+                if timezone_column_name not in column_names:
+                    raise ValueError(
+                        f'Timezone column name "{timezone_column_name}" is not found in columns_info: {column_info}'
+                    )
+
+            if (
+                isinstance(column_info, ColumnInfo)
+                and column_info.critical_data_info
+                and column_info.critical_data_info.cleaning_operations
+            ):
+                for clean_op in column_info.critical_data_info.cleaning_operations:
+                    if clean_op.type == CleaningOperationType.ADD_TIMESTAMP_SCHEMA:
+                        assert hasattr(clean_op, "timestamp_schema")
+                        if (
+                            clean_op.timestamp_schema
+                            and clean_op.timestamp_schema.has_timezone_offset_column
+                        ):
+                            timezone_column_name = clean_op.timestamp_schema.timezone.column_name
+                            if timezone_column_name not in column_names:
+                                raise ValueError(
+                                    f'Timezone column name "{timezone_column_name}" is not found in columns_info: {clean_op}'
+                                )
     return values
 
 
@@ -224,3 +294,39 @@ def duration_string_validator(cls: Any, value: Any) -> Any:
         # Try to parse using pandas#Timedelta. If it fails, a ValueError will be thrown.
         parse_duration_string(value)
     return value
+
+
+def validate_target_type(target_type: Optional[TargetType], dtype: Optional[DBVarType]) -> None:
+    """
+    Validate target type and dtype consistency
+
+    Parameters
+    ----------
+    target_type: Optional[TargetType]
+        Target type used to indicate the modeling type of the target
+    dtype: Optional[DBVarType]
+        Data type of the TargetNamespace
+
+    Raises
+    ------
+    DocumentInconsistencyError
+        If target type is not consistent with dtype
+    """
+    if not target_type or not dtype:
+        return
+
+    if target_type == TargetType.CLASSIFICATION and dtype in DBVarType.binary_class_target_types():
+        return
+
+    if target_type == TargetType.REGRESSION and dtype in DBVarType.regression_target_types():
+        return
+
+    if (
+        target_type == TargetType.MULTI_CLASSIFICATION
+        and dtype in DBVarType.multiclass_target_types()
+    ):
+        return
+
+    raise DocumentInconsistencyError(
+        f"Target type {target_type} is not consistent with dtype {dtype}"
+    )

@@ -6,6 +6,7 @@ import copy
 from http import HTTPStatus
 from unittest.mock import patch
 
+import freezegun
 import pytest
 from bson.objectid import ObjectId
 
@@ -204,3 +205,170 @@ class TestBatchFeatureTableApi(BaseMaterializedTableTestSuite):
             response.json()["detail"]
             == "Deployment is referenced by BatchFeatureTable: batch_feature_table"
         )
+
+    def test_create_success_from_request_input(self, test_api_client_persistent):
+        """Test create success from request input"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/batch_feature_table_with_request_input.json"
+        )
+        id_before = payload["_id"]
+        response = self.post(test_api_client, payload)
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        response_dict = response.json()
+        assert response_dict["_id"] == id_before
+        assert response_dict["name"] == "batch_feature_table_with_request_input"
+
+    def test_create_fails_multiple_request_inputs(self, test_api_client_persistent):
+        """Test create fails with multiple request inputs"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/batch_feature_table_with_request_input.json"
+        )
+        payload["batch_request_table_id"] = str(ObjectId())
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        response_dict = response.json()
+        assert response_dict["detail"] == [
+            {
+                "type": "value_error",
+                "loc": ["body"],
+                "msg": "Value error, Only one of batch_request_table_id or request_input must be provided",
+                "input": payload,
+                "ctx": {"error": {}},
+            }
+        ]
+
+    def test_create_fails_no_request_input(self, test_api_client_persistent):
+        """Test create fails with no request input"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = self.load_payload("tests/fixtures/request_payloads/batch_feature_table.json")
+        payload["batch_request_table_id"] = None
+        response = self.post(test_api_client, payload)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        response_dict = response.json()
+        assert response_dict["detail"] == [
+            {
+                "type": "value_error",
+                "loc": ["body"],
+                "msg": "Value error, Either batch_request_table_id or request_input must be provided",
+                "input": payload,
+                "ctx": {"error": {}},
+            }
+        ]
+
+    @pytest.mark.asyncio
+    async def test_recreate_fails_for_older_request_table(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test recreate from existing feature table using request table success"""
+        test_api_client, persistent = test_api_client_persistent
+        id_before = create_success_response.json()["_id"]
+
+        # remove request_input to emulate older records
+        await persistent.update_one(
+            collection_name="batch_feature_table",
+            query_filter={"_id": ObjectId(id_before)},
+            update={"$unset": {"request_input": ""}},
+            user_id=None,
+        )
+
+        response = test_api_client.post(
+            f"{self.base_route}/{id_before}",
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, response.json()
+        response_dict = response.json()
+        assert response_dict["detail"] == "Request input not found for the batch feature table"
+
+    def test_recreate_success_from_request_table(
+        self, test_api_client_persistent, create_success_response
+    ):
+        """Test recreate from existing feature table using request table success"""
+        # recreate the batch feature table
+        test_api_client, _ = test_api_client_persistent
+        id_before = create_success_response.json()["_id"]
+
+        with freezegun.freeze_time("2024-02-13"):
+            response = test_api_client.post(
+                f"{self.base_route}/{id_before}",
+            )
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        recreate_response_dict = response.json()
+        assert recreate_response_dict["name"] == "batch_feature_table [2024-02-13T00:00:00]"
+        assert recreate_response_dict["parent_batch_feature_table_id"] == id_before
+
+        # should no longer reference the original batch request table
+        assert recreate_response_dict["batch_request_table_id"] is None
+
+    def test_recreate_success_from_request_input(self, test_api_client_persistent):
+        """Test recreate from existing feature table using request input success"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+
+        payload = self.load_payload(
+            "tests/fixtures/request_payloads/batch_feature_table_with_request_input.json"
+        )
+        id_before = payload["_id"]
+        response = self.post(test_api_client, payload)
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        response_dict = response.json()
+        assert response_dict["_id"] == id_before
+        assert response_dict["name"] == "batch_feature_table_with_request_input"
+
+        # recreate the batch feature table
+        with freezegun.freeze_time("2024-02-13"):
+            response = test_api_client.post(
+                f"{self.base_route}/{id_before}",
+            )
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        recreate_response_dict = response.json()
+        assert (
+            recreate_response_dict["name"]
+            == "batch_feature_table_with_request_input [2024-02-13T00:00:00]"
+        )
+        assert recreate_response_dict["parent_batch_feature_table_id"] == id_before
+        id_recreated = recreate_response_dict["_id"]
+
+        # recreate the batch feature table from the recreated batch feature table
+        with freezegun.freeze_time("2024-02-14"):
+            response = test_api_client.post(
+                f"{self.base_route}/{id_recreated}",
+            )
+
+        response = self.wait_for_results(test_api_client, response)
+        response_dict = response.json()
+        assert response_dict["status"] == "SUCCESS", response_dict["traceback"]
+
+        response = test_api_client.get(response_dict["output_path"])
+        recreate_response_dict = response.json()
+        assert (
+            recreate_response_dict["name"]
+            == "batch_feature_table_with_request_input [2024-02-14T00:00:00]"
+        )
+        assert recreate_response_dict["parent_batch_feature_table_id"] == id_before

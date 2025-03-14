@@ -13,7 +13,8 @@ from featurebyte.api.aggregator.util import conditional_set_skip_fill_na
 from featurebyte.api.scd_view import SCDView
 from featurebyte.api.target import Target
 from featurebyte.api.view import View
-from featurebyte.enum import AggFunc
+from featurebyte.common.validator import validate_target_type
+from featurebyte.enum import AggFunc, TargetType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.node.agg_func import construct_agg_func
 from featurebyte.typing import OptionalScalar
@@ -45,6 +46,7 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
         offset: Optional[str] = None,
         fill_value: OptionalScalar = None,
         skip_fill_na: Optional[bool] = None,
+        target_type: Optional[TargetType] = None,
     ) -> Target:
         """
         Aggregate a column in SlowlyChangingView as at a point in time to produce a Target
@@ -75,6 +77,8 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
             Value to fill if the value in the column is empty
         skip_fill_na: bool
             Whether to skip filling na values
+        target_type: Optional[TargetType]
+            Type of the Target used to indicate the modeling type of the target
 
         Returns
         -------
@@ -113,6 +117,9 @@ class ForwardAsAtAggregator(BaseAsAtAggregator):
         agg_method = construct_agg_func(agg_func=cast(AggFunc, method))
         output_var_type = self.get_output_var_type(agg_method, method, value_column)
         target = self.view.project_target_from_node(node, target_name, output_var_type)
+        if target_type:
+            validate_target_type(target_type, target.dtype)
+            target.update_target_type(target_type)
         if not skip_fill_na:
             return self._fill_feature_or_target(target, method, target_name, fill_value)  # type: ignore[return-value]
         return target

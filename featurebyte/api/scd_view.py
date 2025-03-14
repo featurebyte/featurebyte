@@ -13,6 +13,7 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.exception import JoinViewMismatchError
 from featurebyte.logging import get_logger
 from featurebyte.query_graph.enum import GraphNodeType
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.generic import SCDBaseParameters
 
 logger = get_logger(__name__)
@@ -56,6 +57,8 @@ class SCDView(View, GroupByMixin, RawMixin):
     surrogate_key_column: Optional[str] = Field(frozen=True)
     end_timestamp_column: Optional[str] = Field(frozen=True)
     current_flag_column: Optional[str] = Field(frozen=True)
+    effective_timestamp_schema: Optional[TimestampSchema] = Field(frozen=True)
+    end_timestamp_schema: Optional[TimestampSchema] = Field(frozen=True)
 
     @property
     def timestamp_column(self) -> Optional[str]:
@@ -80,6 +83,16 @@ class SCDView(View, GroupByMixin, RawMixin):
 
     def _get_additional_inherited_columns(self) -> set[str]:
         columns = {self.effective_timestamp_column}
+        if self.end_timestamp_column:
+            columns.add(self.end_timestamp_column)
+        if self.effective_timestamp_schema is not None and isinstance(
+            self.effective_timestamp_schema.timezone, TimeZoneColumn
+        ):
+            columns.add(self.effective_timestamp_schema.timezone.column_name)
+        if self.end_timestamp_schema is not None and isinstance(
+            self.end_timestamp_schema.timezone, TimeZoneColumn
+        ):
+            columns.add(self.end_timestamp_schema.timezone.column_name)
         return columns
 
     @property
@@ -98,6 +111,8 @@ class SCDView(View, GroupByMixin, RawMixin):
             "effective_timestamp_column": self.effective_timestamp_column,
             "end_timestamp_column": self.end_timestamp_column,
             "current_flag_column": self.current_flag_column,
+            "effective_timestamp_schema": self.effective_timestamp_schema,
+            "end_timestamp_schema": self.end_timestamp_schema,
         })
         return params
 
@@ -140,6 +155,12 @@ class SCDView(View, GroupByMixin, RawMixin):
             natural_key_column=self.natural_key_column,
             current_flag_column=self.current_flag_column,
             end_timestamp_column=self.end_timestamp_column,
+            effective_timestamp_metadata=self.operation_structure.get_dtype_metadata(
+                column_name=self.effective_timestamp_column
+            ),
+            end_timestamp_metadata=self.operation_structure.get_dtype_metadata(
+                column_name=self.end_timestamp_column
+            ),
         )
 
     def _get_join_parameters(self, calling_view: View) -> dict[str, Any]:
@@ -154,6 +175,9 @@ class SCDView(View, GroupByMixin, RawMixin):
         return {
             "scd_parameters": {
                 "left_timestamp_column": left_timestamp_column,
+                "left_timestamp_metadata": calling_view.operation_structure.get_dtype_metadata(
+                    column_name=left_timestamp_column
+                ),
                 **self.get_common_scd_parameters().model_dump(),
             }
         }

@@ -6,6 +6,7 @@ import pytest
 
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.node.metadata.operation import (
     DerivedDataColumn,
     NodeOutputCategory,
@@ -24,7 +25,7 @@ def source_col1_fixture():
         table_type="event_table",
         node_names={"input_1"},
         node_name="input_1",
-        dtype=DBVarType.FLOAT,
+        dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
         filter=False,
     )
 
@@ -38,7 +39,7 @@ def source_col2_fixture():
         table_type="event_table",
         node_names={"input_1"},
         node_name="input_1",
-        dtype=DBVarType.INT,
+        dtype_info=DBVarTypeInfo(dtype=DBVarType.INT),
         filter=False,
     )
 
@@ -63,7 +64,7 @@ def derived_col1_fixture(source_col1, source_col2, transform_add):
         columns=[source_col1, source_col2],
         transform=transform_add,
         node_name="add_1",
-        dtype=DBVarType.FLOAT,
+        dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
     )
 
 
@@ -75,7 +76,7 @@ def derived_col2_fixture(derived_col1):
         columns=[derived_col1],
         transform="alias",
         node_name="alias_1",
-        dtype=DBVarType.FLOAT,
+        dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
     )
 
 
@@ -123,7 +124,7 @@ def test_derived_data_column_create(
         columns=[source_col1, derived_col1],
         transform=transform_mul,
         node_name="mul_1",
-        dtype=DBVarType.FLOAT,
+        dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
     )
     assert derived_col == DerivedDataColumn(
         name="new_derived_col",
@@ -131,7 +132,7 @@ def test_derived_data_column_create(
         transforms=[transform_add, transform_mul],
         node_names={"input_1", "add_1", "mul_1"},
         node_name="mul_1",
-        dtype=DBVarType.FLOAT,
+        dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
         filter=False,
     )
 
@@ -144,7 +145,7 @@ def test_insert_column():
         table_type="event_table",
         node_names={"input_1", "project_1"},
         node_name="input_1",
-        dtype=DBVarType.FLOAT,
+        dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
         filter=False,
     )
     another_col1 = col1.clone(node_names={"input_1", "filter_1"}, node_name="filter_1", filter=True)
@@ -195,7 +196,7 @@ def test_data_column_clone_with_replacement(source_col1):
         table_type=source_col1.table_type,
         node_names={"input_1"},
         node_name="input_1",
-        dtype=DBVarType.FLOAT,
+        dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
         filter=False,
     )
 
@@ -211,7 +212,7 @@ def test_data_column_clone_with_replacement(source_col1):
         table_type=source_col1.table_type,
         node_names={"graph_1"},
         node_name="graph_1",
-        dtype=DBVarType.FLOAT,
+        dtype_info=DBVarTypeInfo(dtype=DBVarType.FLOAT),
         filter=False,
     )
 

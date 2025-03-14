@@ -61,7 +61,22 @@ async def test_list_tables(config, session_without_datasets):
     session = session_without_datasets
 
     tables = await session.list_tables(database_name="demo_datasets", schema_name="grocery")
-    assert [table.model_dump() for table in tables] == [
+
+    def _sort_by_name(_tables):
+        return sorted(_tables, key=lambda x: x["name"])
+
+    def _filter_grocery(_tables):
+        # Make the test more robust against randomly added tables by filtering by certain keywords
+        out = []
+        for table in _tables:
+            table_name = table["name"]
+            if "grocery" in table_name or "invoiceitems" in table_name:
+                out.append(table)
+        return out
+
+    assert _filter_grocery(
+        _sort_by_name([table.model_dump() for table in tables])
+    ) == _sort_by_name([
         {
             "name": "invoiceitems",
             "description": "The grocery item details within each invoice, including the "
@@ -69,6 +84,10 @@ async def test_list_tables(config, session_without_datasets):
         },
         {
             "name": "groceryproduct",
+            "description": "The product group description for each grocery product.",
+        },
+        {
+            "name": "groceryproduct_with_embeddings",
             "description": "The product group description for each grocery product.",
         },
         {"name": "__invoiceitems", "description": None},
@@ -83,4 +102,4 @@ async def test_list_tables(config, session_without_datasets):
             "name": "grocerycustomer",
             "description": "Customer details, including their name, address, and date of birth.",
         },
-    ]
+    ])

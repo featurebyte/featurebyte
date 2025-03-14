@@ -3,14 +3,14 @@ Tests for NonTileWindowAggregator
 """
 
 import pytest
-from sqlglot.expressions import select
 
 from featurebyte.query_graph.sql.aggregator.non_tile_window import NonTileWindowAggregator
-from featurebyte.query_graph.sql.common import construct_cte_sql, sql_to_string
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.feature_historical import get_historical_features_expr
 from featurebyte.query_graph.sql.specifications.non_tile_window_aggregate import (
     NonTileWindowAggregateSpec,
 )
+from tests.unit.query_graph.util import get_combined_aggregation_expr_from_aggregator
 from tests.util.helper import assert_equal_with_expected_fixture
 
 
@@ -37,22 +37,10 @@ def test_non_tile_window_aggregate(agg_specs, update_fixtures, source_info):
     aggregator = NonTileWindowAggregator(source_info=source_info)
     for spec in agg_specs:
         aggregator.update(spec)
-    result = aggregator.update_aggregation_table_expr(
-        select("POINT_IN_TIME", "cust_id").from_("REQUEST_TABLE"),
-        "POINT_IN_TIME",
-        ["POINT_IN_TIME", "cust_id"],
-        0,
-    )
+    result_expr = get_combined_aggregation_expr_from_aggregator(aggregator)
     assert_equal_with_expected_fixture(
-        result.updated_table_expr.sql(pretty=True),
+        result_expr.sql(pretty=True),
         "tests/fixtures/aggregator/expected_non_tile_window_aggregator.sql",
-        update_fixture=update_fixtures,
-    )
-    assert_equal_with_expected_fixture(
-        construct_cte_sql(aggregator.get_common_table_expressions("REQUEST_TABLE"))
-        .select(1)
-        .sql(pretty=True),
-        "tests/fixtures/aggregator/expected_non_tile_window_aggregator_ctes.sql",
         update_fixture=update_fixtures,
     )
 

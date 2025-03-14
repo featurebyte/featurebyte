@@ -25,7 +25,7 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
 from featurebyte.models.base import FeatureByteBaseModel
-from featurebyte.models.batch_request_table import SourceTableBatchRequestInput
+from featurebyte.models.batch_request_table import BatchRequestInput, SourceTableBatchRequestInput
 from featurebyte.models.feature_store import ConstructGraphMixin, FeatureStoreModel
 from featurebyte.models.observation_table import SourceTableObservationInput
 from featurebyte.models.static_source_table import SourceTableStaticSourceInput
@@ -774,6 +774,11 @@ class SourceTable(AbstractTableData):
         ...     current_flag_column="CurrentRecord",
         ...     record_creation_timestamp_column="record_available_at",
         ... )
+
+        See Also
+        --------
+        - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
+            Schema for a timestamp column that can include timezone information.
         """
 
         from featurebyte.api.scd_table import SCDTable
@@ -825,7 +830,8 @@ class SourceTable(AbstractTableData):
         reference_datetime_schema: TimestampSchema
             The schema of the reference datetime column.
         time_interval: TimeInterval
-            The time interval of the time series.
+            Specifies the time interval for the time series. Note that only intervals defined with a single time unit
+            (e.g., 1 hour, 1 day) are supported.
         series_id_column: Optional[str]
             The column that represents the unique identifier for each time series.
         record_creation_timestamp_column: str
@@ -858,6 +864,13 @@ class SourceTable(AbstractTableData):
         ...     series_id_column="StoreGuid",
         ...     record_creation_timestamp_column="record_available_at",
         ... )
+
+        See Also
+        --------
+        - [TimestampSchema](/reference/featurebyte.query_graph.model.timestamp_schema.TimestampSchema/):
+            Schema for a timestamp column that can include timezone information.
+        - [TimeIntervalUnit](/reference/featurebyte.enum.TimeIntervalUnit/):
+            Time interval unit for the time series.
         """
 
         from featurebyte.api.time_series_table import TimeSeriesTable
@@ -1258,6 +1271,34 @@ class SourceTable(AbstractTableData):
         )
         return ObservationTable.get_by_id(observation_table_doc["_id"])
 
+    def get_batch_request_input(
+        self,
+        columns: Optional[list[str]] = None,
+        columns_rename_mapping: Optional[dict[str, str]] = None,
+    ) -> BatchRequestInput:
+        """
+        Get a BatchRequestInput object for the SourceTable.
+
+        Parameters
+        ----------
+        columns: Optional[list[str]]
+            Include only these columns in the view for the batch request input. If None,
+            all columns are included.
+        columns_rename_mapping: Optional[dict[str, str]]
+            Rename columns in the view using this mapping from old column names to new column names
+            for the batch request input. If None, no columns are renamed.
+
+        Returns
+        -------
+        BatchRequestInput
+            BatchRequestInput object.
+        """
+        return SourceTableBatchRequestInput(
+            source=self.tabular_source,
+            columns=columns,
+            columns_rename_mapping=columns_rename_mapping,
+        )
+
     def create_batch_request_table(
         self,
         name: str,
@@ -1305,10 +1346,8 @@ class SourceTable(AbstractTableData):
         payload = BatchRequestTableCreate(
             name=name,
             feature_store_id=self.feature_store.id,
-            request_input=SourceTableBatchRequestInput(
-                source=self.tabular_source,
-                columns=columns,
-                columns_rename_mapping=columns_rename_mapping,
+            request_input=self.get_batch_request_input(
+                columns=columns, columns_rename_mapping=columns_rename_mapping
             ),
         )
         batch_request_table_doc = BatchRequestTable.post_async_task(

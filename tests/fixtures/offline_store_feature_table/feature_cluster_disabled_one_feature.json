@@ -195,6 +195,7 @@
                     "tile_id": "TILE_SUM_E8C51D7D1EC78E1F35195FC0CF61221B3F830295",
                     "tile_id_version": 2,
                     "timestamp": "event_timestamp",
+                    "timestamp_metadata": null,
                     "value_by": null,
                     "windows": [
                         "1d"

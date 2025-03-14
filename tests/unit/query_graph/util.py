@@ -1,9 +1,12 @@
 from dataclasses import asdict
+from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
 import scipy as sp
+from sqlglot import expressions
 
+from featurebyte.enum import SourceType
 from featurebyte.query_graph.node.metadata.operation import (
     AggregationColumn,
     DerivedDataColumn,
@@ -11,6 +14,11 @@ from featurebyte.query_graph.node.metadata.operation import (
     PostAggregationColumn,
     SourceDataColumn,
 )
+from featurebyte.query_graph.sql.aggregator.base import Aggregator
+from featurebyte.query_graph.sql.ast.base import SQLNodeContext
+from featurebyte.query_graph.sql.ast.generic import StrExpressionNode
+from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql
+from featurebyte.query_graph.sql.source_info import SourceInfo
 
 
 def to_dict(obj, exclude=None, include=None):
@@ -36,7 +44,16 @@ def to_dict(obj, exclude=None, include=None):
     if isinstance(
         obj, (SourceDataColumn, DerivedDataColumn, AggregationColumn, PostAggregationColumn)
     ):
-        return to_dict(asdict(obj), exclude=exclude, include=include)
+        col_dict = to_dict(asdict(obj), exclude=exclude, include=include)
+        if "dtype_info" in col_dict:
+            col_dict["dtype"] = col_dict.pop("dtype_info")["dtype"]
+        if isinstance(obj, AggregationColumn):
+            if "column" in col_dict:
+                col_dict["column"] = to_dict(obj.column)
+        if isinstance(obj, (DerivedDataColumn, PostAggregationColumn)):
+            if "columns" in col_dict:
+                col_dict["columns"] = [to_dict(col) for col in obj.columns]
+        return col_dict
     if hasattr(obj, "dict"):
         return to_dict(obj.model_dump(), exclude=exclude, include=include)
     return obj
@@ -108,3 +125,60 @@ def evaluate_and_compare_odfv_and_udf_results(
     pd.testing.assert_series_equal(
         out_odfv_null, out_udf_null, check_dtype=False, check_names=False
     )
+
+
+def get_combined_aggregation_expr_from_aggregator(
+    aggregator: Aggregator, request_columns: list[str] | None = None
+):
+    """
+    Get the combined aggregation expression from the aggregator
+    """
+    if request_columns is None:
+        request_columns = ["cust_id"]
+    result = aggregator.update_aggregation_table_expr(
+        expressions.select("POINT_IN_TIME", *request_columns).from_("REQUEST_TABLE"),
+        "POINT_IN_TIME",
+        ["POINT_IN_TIME"] + request_columns,
+        0,
+    )
+    result_expr = result.updated_table_expr
+    select_with_ctes = construct_cte_sql(aggregator.get_common_table_expressions("REQUEST_TABLE"))
+    result_expr.args["with"] = select_with_ctes.args["with"]
+    return result_expr
+
+
+def make_context(
+    node_type=None, parameters=None, input_sql_nodes=None, sql_type=None, source_type=None
+):
+    """
+    Helper function to create a SQLNodeContext with only arguments that matter in tests
+    """
+    if parameters is None:
+        parameters = {}
+    if sql_type is None:
+        sql_type = SQLType.MATERIALIZE
+    if source_type is None:
+        source_type = SourceType.SNOWFLAKE
+    source_info = SourceInfo(source_type=source_type, database_name="db", schema_name="public")
+    mock_query_node = Mock(type=node_type)
+    mock_query_node.parameters.model_dump.return_value = parameters
+    mock_graph = Mock()
+    context = SQLNodeContext(
+        graph=mock_graph,
+        query_node=mock_query_node,
+        input_sql_nodes=input_sql_nodes,
+        sql_type=sql_type,
+        source_info=source_info,
+        to_filter_scd_by_current_flag=False,
+        event_table_timestamp_filter=None,
+        aggregation_specs=None,
+        on_demand_entity_filters=None,
+    )
+    return context
+
+
+def make_str_expression_node(table_node, expr):
+    """
+    Helper function to create a StrExpressionNode used only in tests
+    """
+    return StrExpressionNode(make_context(), table_node=table_node, expr=expr)

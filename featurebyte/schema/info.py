@@ -489,7 +489,7 @@ class BatchFeatureTableInfo(BaseInfo):
     Schema for batch feature table info
     """
 
-    batch_request_table_name: str
+    batch_request_table_name: Optional[str]
     deployment_name: str
     table_details: TableDetails
 

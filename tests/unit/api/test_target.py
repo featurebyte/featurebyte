@@ -8,7 +8,8 @@ import pytest
 import featurebyte
 from featurebyte.api.target import Target
 from featurebyte.api.target_namespace import TargetNamespace
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, TargetType
+from featurebyte.exception import DocumentInconsistencyError
 from tests.unit.api.base_feature_or_target_test import FeatureOrTargetBaseTestSuite, TestItemType
 from tests.util.helper import fb_assert_frame_equal
 
@@ -37,10 +38,14 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         method="sum",
         window="1d",
         target_name="float_target",
+        fill_value=None,
         skip_fill_na=True,
         offset=None,
     )
-    output = target
+    target_1 = target.copy()
+    target_1[target.isnull()] = 0.0
+    target_1.name = "float_target"
+    output = target_1
     """
     )
     expected_saved_item_definition = (
@@ -65,10 +70,14 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         method="sum",
         window="1d",
         target_name="float_target",
+        fill_value=None,
         skip_fill_na=True,
         offset=None,
     )
-    output = target
+    target_1 = target.copy()
+    target_1[target.isnull()] = 0.0
+    target_1.name = "float_target"
+    output = target_1
     output.save(_id=ObjectId("{item_id}"))
     """
     )
@@ -105,6 +114,105 @@ class TestTargetTestSuite(FeatureOrTargetBaseTestSuite):
         """
         float_target.save()
         assert float_target.window == "1d"
+
+    def test_create_target_with_target_type(
+        self,
+        grouped_event_view,
+        snowflake_scd_view_with_entity,
+        snowflake_dimension_table,
+        cust_id_entity,
+    ):
+        """Test creating a target with a target type"""
+        # check forward aggregate
+        target_agg = grouped_event_view.forward_aggregate(
+            method="sum",
+            value_column="col_float",
+            window="1d",
+            target_name="float_target",
+            target_type=TargetType.REGRESSION,
+            fill_value=0.0,
+        )
+        assert target_agg.target_type == TargetType.REGRESSION
+
+        # save the target & check target type
+        target_agg.save()
+        assert target_agg.saved
+        assert target_agg.target_type == TargetType.REGRESSION
+        assert target_agg.target_namespace.target_type == TargetType.REGRESSION
+
+        # check forward aggregate asat
+        target_agg_asat = snowflake_scd_view_with_entity.groupby(
+            "col_boolean"
+        ).forward_aggregate_asat(
+            value_column="col_float",
+            method="sum",
+            target_name="asat_target",
+            target_type=TargetType.REGRESSION,
+            fill_value=0.0,
+        )
+        assert target_agg_asat.target_type == TargetType.REGRESSION
+
+        # save the target & check target type
+        target_agg_asat.save()
+        assert target_agg_asat.saved
+        assert target_agg_asat.target_type == TargetType.REGRESSION
+        assert target_agg_asat.target_namespace.target_type == TargetType.REGRESSION
+
+        # check as target
+        snowflake_dimension_table["col_int"].as_entity(cust_id_entity.name)
+        view = snowflake_dimension_table.get_view()
+        target_as = view.col_float.as_target(
+            target_name="dimension_target",
+            target_type=TargetType.REGRESSION,
+            fill_value=None,
+        )
+        assert target_as.target_type == TargetType.REGRESSION
+
+        # save the target & check target type
+        target_as.save()
+        assert target_as.saved
+        assert target_as.target_type == TargetType.REGRESSION
+        assert target_as.target_namespace.target_type == TargetType.REGRESSION
+
+    def test_create_target_with_inconsistent_target_type(
+        self,
+        grouped_event_view,
+        snowflake_scd_view_with_entity,
+        snowflake_dimension_table,
+        cust_id_entity,
+    ):
+        """Test creating a target with an inconsistent target type"""
+        expected = "Target type classification is not consistent with dtype FLOAT"
+        with pytest.raises(DocumentInconsistencyError) as exc_info:
+            grouped_event_view.forward_aggregate(
+                method="sum",
+                value_column="col_float",
+                window="1d",
+                target_name="float_target",
+                target_type=TargetType.CLASSIFICATION,
+                fill_value=0.0,
+            )
+        assert expected in str(exc_info)
+
+        with pytest.raises(DocumentInconsistencyError) as exc_info:
+            snowflake_scd_view_with_entity.groupby("col_boolean").forward_aggregate_asat(
+                value_column="col_float",
+                method="sum",
+                target_name="asat_target",
+                target_type=TargetType.CLASSIFICATION,
+                fill_value=0.0,
+            )
+        assert expected in str(exc_info)
+
+        snowflake_dimension_table["col_int"].as_entity(cust_id_entity.name)
+        view = snowflake_dimension_table.get_view()
+        with pytest.raises(DocumentInconsistencyError) as exc_info:
+            view.col_float.as_target(
+                target_name="dimension_target",
+                target_type=TargetType.CLASSIFICATION,
+                fill_value=None,
+            )
+        assert expected in str(exc_info)
 
     def test_list_includes_namespace(self, float_target, cust_id_entity):
         """

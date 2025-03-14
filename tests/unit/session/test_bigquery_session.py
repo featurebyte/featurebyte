@@ -70,10 +70,10 @@ class MockBigQueryClient:
         ])
 
     def list_datasets(self, project, page_token=None):
-        return MockIterator([Mock(dataset_id="demo_datasets"), Mock(dataset_id="creditcard")])
+        return MockIterator([Mock(dataset_id="creditcard"), Mock(dataset_id="demo_datasets")])
 
     def list_tables(self, dataset, page_token=None):
-        return MockIterator([Mock(table_id="transactions"), Mock(table_id="calls")])
+        return MockIterator([Mock(table_id="calls"), Mock(table_id="transactions")])
 
     def get_table(self, table):
         return Mock(
@@ -194,19 +194,19 @@ async def test_bigquery_session(bigquery_session_dict):
         "client_email": "test@featurebyte.com"
     }
     assert await session.list_databases() == [
-        "vpc-host-prod-xa739-xz970",
         "vpc-host-nonprod-xa739-xz970",
+        "vpc-host-prod-xa739-xz970",
     ]
     assert await session.list_schemas(database_name="vpc-host-prod-xa739-xz970") == [
-        "demo_datasets",
         "creditcard",
+        "demo_datasets",
     ]
     tables = await session.list_tables(
         database_name="vpc-host-prod-xa739-xz970", schema_name="creditcard"
     )
     assert [table.name for table in tables] == [
-        "transactions",
         "calls",
+        "transactions",
     ]
     assert await session.list_table_schema(
         database_name="hive_metastore", schema_name="default", table_name="transactions"
@@ -343,6 +343,11 @@ def test_bigquery_schema_initializer__sql_objects(patched_bigquery_session_cls):
             "type": "function",
             "filename": "F_VECTOR_AGGREGATE_SUM.sql",
             "identifier": "F_VECTOR_AGGREGATE_SUM",
+        },
+        {
+            "type": "function",
+            "filename": "F_VECTOR_COSINE_SIMILARITY.sql",
+            "identifier": "F_VECTOR_COSINE_SIMILARITY",
         },
     ]
 

@@ -8,10 +8,11 @@ import collections
 import datetime
 import json
 import logging
-from typing import Any, AsyncGenerator, OrderedDict
+from typing import Annotated, Any, AsyncGenerator, OrderedDict, Union
 
 import pandas as pd
 import pyarrow as pa
+from pydantic import Field
 from snowflake import connector
 from snowflake.connector.constants import FIELD_TYPES
 from snowflake.connector.errors import Error as SnowflakeError
@@ -22,7 +23,7 @@ from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import CursorSchemaError, DataWarehouseConnectionError
 from featurebyte.logging import get_logger
-from featurebyte.models.credential import UsernamePasswordCredential
+from featurebyte.models.credential import PrivateKeyCredential, UsernamePasswordCredential
 from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.table import TableDetails, TableSpec
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -33,7 +34,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.session.base import (
     APPLICATION_NAME,
-    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     BaseSchemaInitializer,
     BaseSession,
 )
@@ -53,6 +54,14 @@ db_vartype_mapping = {
     SnowflakeDataType.ARRAY: DBVarType.ARRAY,
     SnowflakeDataType.OBJECT: DBVarType.DICT,
 }
+
+SnowflakeCredential = Annotated[
+    Union[
+        UsernamePasswordCredential,
+        PrivateKeyCredential,
+    ],
+    Field(discriminator="type"),
+]
 
 
 class SnowflakeSession(BaseSession):
@@ -74,21 +83,29 @@ class SnowflakeSession(BaseSession):
     schema_name: str
     role_name: str
     source_type: SourceType = SourceType.SNOWFLAKE
-    database_credential: UsernamePasswordCredential
+    database_credential: SnowflakeCredential
 
     def _initialize_connection(self) -> None:
         try:
-            self._connection = connector.connect(
-                user=self.database_credential.username,
-                password=self.database_credential.password,
-                account=self.account,
-                warehouse=self.warehouse,
-                database=self.database_name,
-                schema=self.schema_name,
-                role_name=self.role_name,
-                application=APPLICATION_NAME,
-                client_session_keep_alive=True,
-            )
+            connection_params = {
+                "account": self.account,
+                "warehouse": self.warehouse,
+                "database": self.database_name,
+                "schema": self.schema_name,
+                "role_name": self.role_name,
+                "application": APPLICATION_NAME,
+                "client_session_keep_alive": True,
+            }
+
+            if isinstance(self.database_credential, PrivateKeyCredential):
+                connection_params["user"] = self.database_credential.username
+                connection_params["private_key"] = self.database_credential.pem_private_key
+            else:
+                assert isinstance(self.database_credential, UsernamePasswordCredential)
+                connection_params["user"] = self.database_credential.username
+                connection_params["password"] = self.database_credential.password
+
+            self._connection = connector.connect(**connection_params)
         except SnowflakeError as exc:
             raise DataWarehouseConnectionError(exc.msg) from exc
 
@@ -115,7 +132,7 @@ class SnowflakeSession(BaseSession):
     def is_threadsafe(cls) -> bool:
         return True
 
-    async def list_databases(self) -> list[str]:
+    async def _list_databases(self) -> list[str]:
         """
         Execute SQL query to retrieve database names
 
@@ -131,7 +148,7 @@ class SnowflakeSession(BaseSession):
             output.extend(databases["DATABASE_NAME"].tolist())
         return output
 
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
         """
         Execute SQL query to retrieve schema names
 
@@ -152,11 +169,11 @@ class SnowflakeSession(BaseSession):
             output.extend(schemas["SCHEMA_NAME"].tolist())
         return output
 
-    async def list_tables(
+    async def _list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         tables = await self.execute_query_interactive(
             f'SELECT TABLE_NAME, COMMENT FROM "{database_name}".INFORMATION_SCHEMA.TABLES '
@@ -295,7 +312,7 @@ class SnowflakeSession(BaseSession):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
         schema = await self.execute_query_interactive(
             f'SHOW COLUMNS IN "{database_name}"."{schema_name}"."{table_name}"',

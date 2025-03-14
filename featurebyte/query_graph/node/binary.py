@@ -8,17 +8,27 @@ from typing import ClassVar, List, Sequence, Tuple
 from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
+from featurebyte.query_graph.model.timestamp_schema import (
+    ExtendedTimestampSchema,
+    TimestampSchema,
+    TimestampTupleSchema,
+    TimezoneOffsetSchema,
+)
 from featurebyte.query_graph.node.base import (
     BaseSeriesOutputWithAScalarParamNode,
     BinaryArithmeticOpNode,
     BinaryOpWithBoolOutputNode,
+    SingleValueNodeParameters,
 )
 from featurebyte.query_graph.node.metadata.config import (
     OnDemandFunctionCodeGenConfig,
     OnDemandViewCodeGenConfig,
 )
-from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.metadata.operation import (
+    OperationStructure,
+)
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ExpressionStr,
     StatementT,
@@ -149,9 +159,9 @@ class DivideNode(BinaryArithmeticOpNode):
 
     type: Literal[NodeType.DIV] = NodeType.DIV
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         _ = inputs
-        return DBVarType.FLOAT
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand} / {right_operand}"
@@ -177,8 +187,8 @@ class PowerNode(BaseSeriesOutputWithAScalarParamNode):
 
     type: Literal[NodeType.POWER] = NodeType.POWER
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.FLOAT
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.FLOAT)
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.pow({right_operand})"
@@ -201,8 +211,8 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
     ) -> Sequence[str]:
         return self._assert_empty_required_input_columns()
 
-    def derive_var_type(self, inputs: List[OperationStructure]) -> DBVarType:
-        return DBVarType.BOOL
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.BOOL)
 
     def generate_expression(self, left_operand: str, right_operand: str) -> str:
         return f"{left_operand}.isin({right_operand})"
@@ -252,3 +262,56 @@ class IsInNode(BaseSeriesOutputWithAScalarParamNode):
             f"False if pd.isna({left_op}) or not isinstance({right_op}, list) else {left_op} in {right_op}"
         )
         return [], expr
+
+
+class ZipTimestampTZTupleNodeParameters(SingleValueNodeParameters):
+    """ZipTimestampTZTupleNodeParameters class"""
+
+    timestamp_schema: TimestampSchema
+
+
+class ZipTimestampTZTupleNode(BaseSeriesOutputWithAScalarParamNode):
+    """ZipTimestampTZTupleNode class"""
+
+    type: Literal[NodeType.ZIP_TIMESTAMP_TZ_TUPLE] = NodeType.ZIP_TIMESTAMP_TZ_TUPLE
+    output_type: NodeOutputType = NodeOutputType.SERIES
+    parameters: ZipTimestampTZTupleNodeParameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 2
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        _ = input_index, available_column_names
+        return self._assert_empty_required_input_columns()
+
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        input_dtype_info = inputs[0].series_output_dtype_info
+        input_dtype_metadata = input_dtype_info.metadata
+        assert input_dtype_metadata is not None
+        assert input_dtype_metadata.timestamp_schema is not None
+        return DBVarTypeInfo(
+            dtype=DBVarType.TIMESTAMP_TZ_TUPLE,
+            metadata=DBVarTypeMetadata(
+                timestamp_tuple_schema=TimestampTupleSchema(
+                    timestamp_schema=ExtendedTimestampSchema(
+                        dtype=input_dtype_info.dtype,
+                        **input_dtype_metadata.timestamp_schema.model_dump(),
+                    ),
+                    timezone_offset_schema=TimezoneOffsetSchema(
+                        dtype=inputs[1].series_output_dtype_info.dtype
+                    ),
+                )
+            ),
+        )
+
+    def generate_expression(self, left_operand: str, right_operand: str) -> str:
+        _ = self, right_operand
+        return f"{left_operand}.zip_timestamp_timezone_columns()"
+
+    def generate_udf_expression(self, left_operand: str, right_operand: str) -> str:
+        raise NotImplementedError(
+            "generate_udf_expression is not implemented for ZipTimestampTZTupleNode"
+        )

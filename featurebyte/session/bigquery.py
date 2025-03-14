@@ -9,7 +9,7 @@ import datetime
 import json
 import logging
 import uuid
-from typing import Any, AsyncGenerator, OrderedDict, cast
+from typing import Any, AsyncGenerator, Optional, OrderedDict, cast
 
 import aiofiles
 import pandas as pd
@@ -47,7 +47,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.session.base import (
     APPLICATION_NAME,
-    INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+    INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     BaseSchemaInitializer,
     BaseSession,
     MetadataSchemaInitializer,
@@ -319,7 +319,7 @@ class BigQuerySession(BaseSession):
             return False
         return True
 
-    async def list_databases(self) -> list[str]:
+    async def _list_databases(self) -> list[str]:
         """
         Execute SQL query to retrieve database names
 
@@ -338,7 +338,7 @@ class BigQuerySession(BaseSession):
                 break
         return output
 
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
         """
         Execute SQL query to retrieve schema names
 
@@ -364,11 +364,11 @@ class BigQuerySession(BaseSession):
                 break
         return output
 
-    async def list_tables(
+    async def _list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         output = []
         next_page_token = None
@@ -515,6 +515,15 @@ class BigQuerySession(BaseSession):
                 return SqlTypeNames.FLOAT64
             return SqlTypeNames.STRING
 
+        def _detect_element_type_from_all(values: list[Any]) -> SqlTypeNames:
+            element_type: Optional[SqlTypeNames] = None
+            for value in values:
+                element_type = _detect_element_type(value)
+                if element_type == SqlTypeNames.STRING or element_type == SqlTypeNames.FLOAT64:
+                    return element_type
+            assert element_type is not None
+            return element_type
+
         schema = []
         db_type: str
         for colname, dtype in dataframe.dtypes.to_dict().items():
@@ -535,8 +544,11 @@ class BigQuerySession(BaseSession):
             ):
                 # Detect list element type
                 non_empty_values = dataframe[colname][~pd.isnull(dataframe[colname])]
+                all_values = []
+                for arr in non_empty_values:
+                    all_values.extend(arr)
                 if non_empty_values.shape[0] > 0:
-                    db_type = _detect_element_type(non_empty_values.iloc[0][0])
+                    db_type = _detect_element_type_from_all(all_values)
                 else:
                     db_type = SqlTypeNames.STRING
                 mode = "REPEATED"
@@ -591,7 +603,7 @@ class BigQuerySession(BaseSession):
         table_name: str | None,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> OrderedDict[str, ColumnSpecWithDescription]:
         assert database_name is not None
         assert schema_name is not None
@@ -697,7 +709,7 @@ class BigQuerySchemaInitializer(BaseSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 3
+        return 4
 
     async def create_schema(self) -> None:
         create_schema_query = (

@@ -15,7 +15,7 @@ WITH REQUEST_TABLE AS (
           DATE_PART(EPOCH_SECOND, MAX(POINT_IN_TIME)) - 1800
         ) / 3600) * 3600 + 1800 - 900 AS TIMESTAMP) AS __FB_ENTITY_TABLE_END_DATE,
         DATEADD(
-          microsecond,
+          MICROSECOND,
           (
             2160 * 3600 * CAST(1000000 AS BIGINT) / CAST(1 AS BIGINT)
           ) * -1,
@@ -128,7 +128,7 @@ SELECT
   AGG."CUSTOMER_ID",
   (
     DATEDIFF(
-      microsecond,
+      MICROSECOND,
       "POINT_IN_TIME",
       "_fb_internal_CUSTOMER_ID_window_w7776000_latest_50f68db8e6d7bdc807e50be52095e09ea8901b8d"
     ) * CAST(1 AS BIGINT) / CAST(1000000 AS BIGINT)

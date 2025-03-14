@@ -10,7 +10,6 @@ from sqlglot import expressions
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.session.base import BaseSession
-from tests.source_types import SNOWFLAKE_SPARK_BIGQUERY
 from tests.util.helper import fb_assert_frame_equal
 
 
@@ -61,7 +60,7 @@ def _get_query_groupby(session: BaseSession, aggregate_function: str, with_count
     if with_count:
         udf_args.append(expressions.Identifier(this="COUNT"))
     udf_result = sql_to_string(
-        session.adapter.call_udf(aggregate_function, udf_args),
+        session.adapter.call_vector_aggregation_function(aggregate_function, udf_args),
         source_type=session.source_type,
     )
     return f"""
@@ -80,7 +79,6 @@ def _get_query(session, aggregate_function: str, with_count: bool = False) -> st
     return _get_query_groupby(session, aggregate_function, with_count)
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_max(setup_test_data, session):
     """
@@ -97,7 +95,6 @@ async def test_vector_aggregate_max(setup_test_data, session):
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_sum(setup_test_data, session):
     """
@@ -114,7 +111,6 @@ async def test_vector_aggregate_sum(setup_test_data, session):
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_simple_avg(setup_test_data, session):
     """
@@ -131,7 +127,6 @@ async def test_vector_aggregate_simple_avg(setup_test_data, session):
     fb_assert_frame_equal(df, expected_df, sort_by_columns=["ID_COL"])
 
 
-@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_BIGQUERY, indirect=True)
 @pytest.mark.asyncio
 async def test_vector_aggregate_avg(setup_test_data, session):
     """

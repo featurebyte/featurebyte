@@ -21,6 +21,8 @@ from featurebyte.core.mixin import OpsMixin, ParentMixin
 from featurebyte.core.util import SeriesBinaryOperator, series_unary_operation
 from featurebyte.enum import DBVarType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
+from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 from featurebyte.typing import Scalar, ScalarSequence, Timestamp, is_scalar_nan
 
 FrozenSeriesT = TypeVar("FrozenSeriesT", bound="FrozenSeries")
@@ -99,8 +101,7 @@ class DefaultSeriesBinaryOperator(SeriesBinaryOperator):
                 this_feature_job_setting = table_id_to_feature_job_settings.get(table_id)
                 if (
                     this_feature_job_setting
-                    and this_feature_job_setting.to_seconds()
-                    != other_feature_job_setting.to_seconds()
+                    and this_feature_job_setting != other_feature_job_setting
                 ):
                     error_message = (
                         f"Feature job setting (table ID: {table_id}) of "
@@ -150,6 +151,31 @@ class FrozenSeries(
             name=self.name,
             dtype=self.dtype,
         )
+
+    @property
+    def dtype_info(self) -> DBVarTypeInfo:
+        """
+        Get the DBVarTypeInfo of the series
+
+        Returns
+        -------
+        DBVarTypeInfo
+        """
+        return self.operation_structure.series_output_dtype_info
+
+    @property
+    def associated_timezone_column_name(self) -> Optional[str]:
+        """
+        Get the associated timezone column name
+
+        Returns
+        -------
+        Optional[str]
+        """
+        if self.dtype_info and self.dtype_info.timestamp_schema:
+            if isinstance(self.dtype_info.timestamp_schema.timezone, TimeZoneColumn):
+                return self.dtype_info.timestamp_schema.timezone.column_name
+        return None
 
     @property
     def binary_op_output_class_priority(self) -> int:
@@ -447,7 +473,10 @@ class FrozenSeries(
             node_type=NodeType.DATE_DIFF,
             output_var_type=DBVarType.TIMEDELTA,
             right_op=right_op,
-            additional_node_params={},
+            additional_node_params={
+                "left_timestamp_metadata": self.dtype_info and self.dtype_info.metadata,
+                "right_timestamp_metadata": other.dtype_info and other.dtype_info.metadata,
+            },
         )
 
     @typechecked
@@ -468,16 +497,33 @@ class FrozenSeries(
         -------
         FrozenSeriesT
             output of the date difference operation
+
+        Raises
+        ------
+        NotImplementedError
+            If the input series has TIMESTAMP_TZ_TUPLE data type
         """
         bin_op_other = other
         if isinstance(other, pd.Timedelta):
             bin_op_other = other.total_seconds()
+
+        has_timezone_tz_tuple = self.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
+        if isinstance(other, FrozenSeries):
+            has_timezone_tz_tuple |= other.dtype == DBVarType.TIMESTAMP_TZ_TUPLE
+
+        if has_timezone_tz_tuple:
+            raise NotImplementedError(
+                "Date add operation is not supported for TIMESTAMP_TZ_TUPLE data type."
+            )
+
         return self._binary_op(
             other=bin_op_other,
             node_type=NodeType.DATE_ADD,
             output_var_type=DBVarType.TIMESTAMP,
             right_op=right_op,
-            additional_node_params={},
+            additional_node_params={
+                "left_timestamp_metadata": self.dtype_info and self.dtype_info.metadata,
+            },
         )
 
     @typechecked
@@ -580,7 +626,16 @@ class FrozenSeries(
         >>> print(view["Amount"].is_datetime)
         False
         """
-        return self.dtype in (DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ, DBVarType.DATE)
+        return (
+            self.dtype
+            in (
+                DBVarType.TIMESTAMP,
+                DBVarType.TIMESTAMP_TZ,
+                DBVarType.DATE,
+                DBVarType.TIMESTAMP_TZ_TUPLE,
+            )
+            or self.dtype_info.timestamp_schema is not None
+        )
 
     @property
     def is_numeric(self) -> bool:
@@ -1218,6 +1273,7 @@ class Series(FrozenSeries):
             raise TypeError("Only boolean Series filtering is supported!")
 
         self._assert_assignment_valid(value)
+        original_name = self.name
         node_params = {}
         input_nodes = [self.node, key.node]
         if isinstance(value, Series):
@@ -1244,6 +1300,11 @@ class Series(FrozenSeries):
             # Update the current node as a PROJECT / ALIAS from the parent. This is to allow
             # readable column name during series preview
             self.node_name = self.parent[self.name].node_name
+        else:
+            # This could be for a target object. Set name to add an alias node so that the name
+            # is preserved.
+            if original_name is not None:
+                self.name = original_name
 
     @typechecked
     def fillna(self, other: Scalar) -> None:

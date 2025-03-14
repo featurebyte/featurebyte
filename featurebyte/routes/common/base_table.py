@@ -20,6 +20,8 @@ from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.models.time_series_table import TimeSeriesTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
+from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
+from featurebyte.query_graph.node.cleaning_operation import AddTimestampSchema
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
@@ -118,6 +120,24 @@ class BaseTableDocumentController(
             special_column_name = getattr(document, field)
             if special_column_name:
                 column_semantic_map[special_column_name] = semantic_id
+
+        # tag time zone column as TIME_ZONE
+        for column_info in document.columns_info:
+            # extract timezone column from timestamp schema & tag it as TIME_ZONE
+            timestamp_schema = column_info.timestamp_schema
+            if timestamp_schema and timestamp_schema.timezone:
+                timezone = timestamp_schema.timezone
+                if isinstance(timezone, TimeZoneColumn):
+                    if timezone.column_name in column_semantic_map:
+                        # skip if already tagged
+                        continue
+
+                    column_semantic_map[
+                        timezone.column_name
+                    ] = await self.semantic_service.get_or_create_document(
+                        name=SemanticType.TIME_ZONE.value
+                    )
+
         return column_semantic_map
 
     async def _add_semantic_tags(self, document: TableDocumentT) -> TableDocumentT:
@@ -326,6 +346,14 @@ class BaseTableDocumentController(
         for col_info in columns_info:
             if col_info.name == column_name:
                 setattr(col_info, field, data)
+
+                # if cleaning operations contain AddTimestampSchema, reset semantic_id
+                if field == "critical_data_info":
+                    assert isinstance(data, CriticalDataInfo)
+                    for clean_op in data.cleaning_operations:
+                        if isinstance(clean_op, AddTimestampSchema):
+                            col_info.semantic_id = None
+
                 column_exists = True
                 break
 

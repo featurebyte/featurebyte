@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple
 
 from bson import ObjectId
 from pydantic import Field, field_validator
+from pydantic_extra_types.timezone_name import TimeZoneName
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.validator import construct_sort_validator
@@ -16,7 +17,10 @@ from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.mixin import QueryGraphMixin
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandFunctionCodeGenConfig
@@ -41,23 +45,6 @@ from featurebyte.query_graph.transform.on_demand_function import (
 from featurebyte.query_graph.transform.on_demand_view import OnDemandFeatureViewExtractor
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 from featurebyte.typing import Scalar
-
-
-def get_time_aggregate_ttl_in_secs(feature_job_setting: FeatureJobSetting) -> int:
-    """
-    Get time-to-live (TTL) in seconds for the time aggregate operation
-
-    Parameters
-    ----------
-    feature_job_setting: FeatureJobSetting
-        FeatureJobSetting
-
-    Returns
-    -------
-    int
-        Time-to-live (TTL) in seconds
-    """
-    return 2 * feature_job_setting.period_seconds
 
 
 class OfflineStoreInfoMetadata(OfflineStoreMetadata):
@@ -102,7 +89,7 @@ class OfflineStoreIngestQueryGraph(FeatureByteBaseModel):
     # whether the offline store ingest query graph has time-to-live (TTL) component
     primary_entity_ids: List[PydanticObjectId]
     primary_entity_dtypes: List[DBVarType]
-    feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    feature_job_setting: Optional[FeatureJobSettingUnion] = Field(default=None)
     has_ttl: bool
 
     # pydantic validators
@@ -293,6 +280,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     # list of on demand feature codes that are used by the feature or target when the feature is online-enabled
     serving_names_info: List[ServingNameInfo] = Field(default_factory=list)
     time_to_live_in_secs: Optional[int] = Field(default=None)
+    cron_expression: Optional[str] = Field(default=None)
+    cron_timezone: Optional[TimeZoneName] = Field(default=None)
     null_filling_value: Optional[Scalar] = Field(default=None)
     odfv_info: Optional[OnDemandFeatureViewInfo] = Field(default=None)
     udf_info: Optional[UserDefinedFunctionInfo] = Field(default=None)
@@ -315,7 +304,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         self,
         feature_versioned_name: str,
         feature_dtype: DBVarType,
-        feature_job_settings: List[FeatureJobSetting],
+        feature_job_settings: List[FeatureJobSettingUnion],
         feature_id: ObjectId,
         has_ttl: bool,
         null_filling_value: Optional[Scalar] = None,
@@ -329,7 +318,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             Feature versioned name
         feature_dtype: DBVarType
             Output dtype of the feature
-        feature_job_settings: List[FeatureJobSetting]
+        feature_job_settings: List[FeatureJobSettingUnion]
             List of feature job settings used by the feature
         feature_id: ObjectId
             Feature ID
@@ -342,9 +331,13 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         self.null_filling_value = null_filling_value
         if has_ttl and feature_job_settings:
             self.time_to_live_in_secs = min(
-                get_time_aggregate_ttl_in_secs(feature_job_setting)
+                feature_job_setting.extract_ttl_seconds()
                 for feature_job_setting in feature_job_settings
             )
+
+            if isinstance(feature_job_settings[0], CronFeatureJobSetting):
+                self.cron_expression = feature_job_settings[0].get_cron_expression()
+                self.cron_timezone = feature_job_settings[0].timezone
 
         unique_func_name = f"{sanitize_identifier(feature_versioned_name)}_{feature_id}"
         if self.is_decomposed or self.time_to_live_in_secs or self.null_filling_value is not None:
@@ -481,6 +474,9 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                     output_df_name=output_df_name,
                     ttl_seconds=ttl_seconds,
                     var_name_generator=VariableNameGenerator(),
+                    cron_expression=self.cron_expression,
+                    cron_timezone=self.cron_timezone,
+                    comment="# Time-to-live (TTL) handling to clean up expired data",
                 )
                 code_generator.add_statements(statements=[statements])
 

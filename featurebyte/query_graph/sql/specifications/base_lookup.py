@@ -52,8 +52,12 @@ class BaseLookupSpec(NonTileBasedAggregationSpec, ABC):
         }
         if self.scd_parameters is not None:
             params["scd_parameters"] = self.scd_parameters.model_dump()
+            if params["scd_parameters"].get("end_timestamp_metadata") is None:
+                params["scd_parameters"].pop("end_timestamp_metadata", None)
         if self.event_parameters is not None:
             params["event_parameters"] = self.event_parameters.model_dump()
+            if params["event_parameters"].get("event_timestamp_metadata") is None:
+                params["event_parameters"].pop("event_timestamp_metadata", None)
         return params
 
     @classmethod

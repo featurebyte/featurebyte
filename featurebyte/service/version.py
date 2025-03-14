@@ -14,18 +14,16 @@ from featurebyte.exception import (
     NoChangesInFeatureVersionError,
     NoFeatureJobSettingInSourceError,
 )
-from featurebyte.models.event_table import EventTableModel
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
-    FeatureJobSetting,
+    FeatureJobSettingUnion,
     TableFeatureJobSetting,
 )
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.cleaning_operation import TableCleaningOperation
-from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.schema.feature import FeatureNewVersionCreate, FeatureServiceCreate
 from featurebyte.schema.feature_list import FeatureListNewVersionCreate, FeatureListServiceCreate
 from featurebyte.service.feature import FeatureService
@@ -89,10 +87,12 @@ class VersionService:
         node_name_to_replacement_node: dict[str, Node] = {}
         table_feature_job_settings = table_feature_job_settings or []
         if table_feature_job_settings or use_source_settings:
-            table_name_to_feature_job_setting: dict[str, FeatureJobSetting] = {
-                data_feature_job_setting.table_name: data_feature_job_setting.feature_job_setting
-                for data_feature_job_setting in table_feature_job_settings
-            }
+            table_name_to_feature_job_setting: dict[str, FeatureJobSettingUnion] = {}
+            for table_feature_job_setting in table_feature_job_settings:
+                table_name_to_feature_job_setting[table_feature_job_setting.table_name] = (
+                    table_feature_job_setting.feature_job_setting
+                )
+
             table_id_to_table: dict[ObjectId, ProxyTableModel] = {
                 doc["_id"]: ProxyTableModel(**doc)  # type: ignore
                 async for doc in self.table_service.list_documents_as_dict_iterator(
@@ -100,18 +100,20 @@ class VersionService:
                 )
             }
             for (
-                group_by_node,
+                agg_node,
                 table_id,
             ) in feature.graph.iterate_group_by_node_and_table_id_pairs(target_node=feature.node):
                 # prepare feature job setting
                 assert table_id is not None, "Table ID should not be None."
                 table = table_id_to_table[table_id]
-                feature_job_setting: Optional[FeatureJobSetting] = None
+                feature_job_setting: Optional[FeatureJobSettingUnion] = None
                 if use_source_settings:
                     # use the event table source's default feature job setting if table is event table
                     # otherwise, do not create a replacement node for the group by node
-                    if table.type == TableDataType.EVENT_TABLE:
-                        assert isinstance(table, EventTableModel)
+                    if table.type in TableDataType.with_default_feature_job_setting():
+                        assert hasattr(
+                            table, "default_feature_job_setting"
+                        ), "Table should have default feature job setting attribute."
                         feature_job_setting = table.default_feature_job_setting
                         if not feature_job_setting:
                             raise NoFeatureJobSettingInSourceError(
@@ -124,12 +126,13 @@ class VersionService:
 
                 if feature_job_setting:
                     # input node will be used when we need to support updating specific
-                    # GroupBy node given event table ID
-                    parameters = group_by_node.parameters.model_dump()
+                    # aggregation node given table ID
+                    parameters = agg_node.parameters.model_dump()
                     parameters["feature_job_setting"] = feature_job_setting.model_dump()
-                    if group_by_node.parameters.model_dump() != parameters:
-                        node_name_to_replacement_node[group_by_node.name] = GroupByNode(**{
-                            **group_by_node.model_dump(),
+                    if agg_node.parameters.model_dump() != parameters:
+                        node_class = type(agg_node)
+                        node_name_to_replacement_node[agg_node.name] = node_class(**{
+                            **agg_node.model_dump(),
                             "parameters": parameters,
                         })
 

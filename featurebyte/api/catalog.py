@@ -180,6 +180,11 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         -------
         Catalog
 
+        Raises
+        ------
+        RecordRetrievalException
+            If the catalog with the provided name does not exist.
+
         Examples
         --------
         >>> catalog = Catalog.activate("grocery")
@@ -190,7 +195,13 @@ class Catalog(NameAttributeUpdatableMixin, SavableApiObject, CatalogGetByIdMixin
         2       INVOICEITEMS       item_table
         3     GROCERYINVOICE      event_table
         """
-        catalog = cls.get(name)
+        current_catalog_id = get_active_catalog_id()
+        activate_catalog(None)
+        try:
+            catalog = cls.get(name)
+        except RecordRetrievalException:
+            activate_catalog(current_catalog_id)
+            raise
         activate_catalog(catalog.id)
         logger.info(f"Catalog activated: {catalog.name}")
         return catalog

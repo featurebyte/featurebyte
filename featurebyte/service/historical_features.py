@@ -15,6 +15,7 @@ from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.routes.common.feature_or_target_table import ValidationParameters
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
+from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_store import FeatureStoreService
@@ -58,10 +59,12 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
         tile_cache_service: TileCacheService,
         feature_table_cache_service: FeatureTableCacheService,
         warehouse_table_service: WarehouseTableService,
+        cron_helper: CronHelper,
     ):
         self.tile_cache_service = tile_cache_service
         self.feature_table_cache_service = feature_table_cache_service
         self.warehouse_table_service = warehouse_table_service
+        self.cron_helper = cron_helper
 
     async def execute(self, executor_params: HistoricalFeatureExecutorParams) -> ExecutionResult:
         if (
@@ -87,6 +90,7 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 session=executor_params.session,
                 tile_cache_service=self.tile_cache_service,
                 warehouse_table_service=self.warehouse_table_service,
+                cron_helper=self.cron_helper,
                 graph=executor_params.graph,
                 nodes=executor_params.nodes,
                 observation_set=executor_params.observation_set,

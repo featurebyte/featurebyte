@@ -14,7 +14,7 @@ from featurebyte import SourceType
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
-from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS, BaseSchemaInitializer
+from featurebyte.session.base import INTERACTIVE_QUERY_TIMEOUT_SECONDS, BaseSchemaInitializer
 from featurebyte.session.base_spark import (
     BaseSparkMetadataSchemaInitializer,
     BaseSparkSchemaInitializer,
@@ -52,7 +52,7 @@ class DatabricksUnitySchemaInitializer(BaseSparkSchemaInitializer):
 
     @property
     def current_working_schema_version(self) -> int:
-        return 20
+        return 21
 
     async def create_schema(self) -> None:
         await super().create_schema()
@@ -154,24 +154,24 @@ class DatabricksUnitySession(DatabricksSession):
         # grant ownership of the table or view to the group
         await self.set_owner("TABLE", table_name)
 
-    async def list_schemas(self, database_name: str | None = None) -> list[str]:
+    async def _list_schemas(self, database_name: str | None = None) -> list[str]:
         try:
             schemas = await self.execute_query_interactive(
                 f"SELECT SCHEMA_NAME FROM `{database_name}`.INFORMATION_SCHEMA.SCHEMATA"
             )
         except self._no_schema_error:
             # fallback to using show statements if catalog does not have information schema
-            return await super().list_schemas()
+            return await super().list_schemas(database_name=database_name)
         output = []
         if schemas is not None:
             output.extend(schemas["SCHEMA_NAME"].tolist())
         return output
 
-    async def list_tables(
+    async def _list_tables(
         self,
         database_name: str | None = None,
         schema_name: str | None = None,
-        timeout: float = INTERACTIVE_SESSION_TIMEOUT_SECONDS,
+        timeout: float = INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     ) -> list[TableSpec]:
         try:
             tables = await self.execute_query_interactive(
@@ -181,7 +181,9 @@ class DatabricksUnitySession(DatabricksSession):
             )
         except self._no_schema_error:
             # fallback to using show statements if catalog does not have information schema
-            return await super().list_tables()
+            return await super().list_tables(
+                database_name=database_name, schema_name=schema_name, timeout=timeout
+            )
         output = []
         if tables is not None:
             for _, (name, comment) in tables.iterrows():
