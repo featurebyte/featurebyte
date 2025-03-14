@@ -227,11 +227,32 @@ async def test_observation_table_upload(
         df = pd.read_parquet(file_path)
     else:
         raise ValueError(f"Unsupported file type: {file_type}")
-    number_of_rows = df.shape[0]
+
+    target_name = "Target"
+    target_namespace = TargetNamespace.create(
+        name=target_name, primary_entity=[], dtype=DBVarType.FLOAT
+    )
+
+    number_of_rows = df[target_name].dropna().shape[0]
     observation_table = ObservationTable.upload(
         file_path=file_path,
         name=f"uploaded_observation_table_{file_type}",
+        target_column=target_name,
     )
+
+    # check existence of table with missing data
+    table_with_missing_data = observation_table.cached_model.table_with_missing_data
+    assert table_with_missing_data is not None
+
+    data_source = feature_store.get_data_source()
+    missing_data_table = data_source.get_source_table(
+        database_name=table_with_missing_data.database_name,
+        schema_name=table_with_missing_data.schema_name,
+        table_name=table_with_missing_data.table_name,
+    )
+    missing_data_table_df = missing_data_table.preview()
+    assert missing_data_table_df[target_name].isna().all()
+    assert missing_data_table_df.shape[0] == 1
 
     # Assert response
     assert observation_table.name == f"uploaded_observation_table_{file_type}"
@@ -239,7 +260,7 @@ async def test_observation_table_upload(
         type=RequestInputType.UPLOADED_FILE,
         file_name=file_name,
     )
-    expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id"}
+    expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id", target_name}
     actual_columns = {column.name for column in observation_table.columns_info}
     assert expected_columns == actual_columns
 
@@ -248,8 +269,12 @@ async def test_observation_table_upload(
         observation_table.location.table_details, session, source_type, number_of_rows
     )
     check_materialized_table_preview_methods(
-        observation_table, [SpecialColumnName.POINT_IN_TIME, "cust_id"], number_of_rows
+        observation_table, [SpecialColumnName.POINT_IN_TIME, "cust_id", target_name], number_of_rows
     )
+
+    # delete the observation table & target
+    observation_table.delete()
+    target_namespace.delete()
 
 
 @pytest.mark.asyncio

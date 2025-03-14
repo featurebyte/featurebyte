@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 from dateutil import tz
 
-from featurebyte.enum import SpecialColumnName
+from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
 from featurebyte.query_graph.node.schema import TableDetails
@@ -103,7 +103,21 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             table_with_missing_data = missing_data_table_details
         return table_with_missing_data
 
-    async def execute(self, payload: ObservationTableTaskPayload) -> Any:
+    async def create_observation_table(
+        self,
+        payload: ObservationTableTaskPayload,
+        override_model_params: Optional[dict[str, Any]] = None,
+    ) -> None:
+        """
+        Create an ObservationTable from the given payload
+
+        Parameters
+        ----------
+        payload: ObservationTableTaskPayload
+            ObservationTable creation payload
+        override_model_params: Optional[dict[str, Any]]
+            Override model parameters
+        """
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
         )
@@ -149,9 +163,14 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             columns_to_exclude_missing_values=columns_to_exclude_missing_values,
             missing_data_table_details=missing_data_table_details,
         )
-        await self.observation_table_service.add_row_index_column(
-            session=db_session, table_details=location.table_details
-        )
+
+        # check if the table has row index column
+        columns_specs = await db_session.list_table_schema(**location.table_details.json_dict())
+        has_row_index = InternalName.TABLE_ROW_INDEX in columns_specs
+        if not has_row_index:
+            await self.observation_table_service.add_row_index_column(
+                session=db_session, table_details=location.table_details
+            )
 
         # get the table with missing data if it has data
         table_with_missing_data = await self.get_table_with_missing_data(
@@ -182,21 +201,27 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
                 "Creating a new ObservationTable", extra=location.table_details.model_dump()
             )
             primary_entity_ids = payload.primary_entity_ids or []
-            observation_table = ObservationTableModel(
-                _id=payload.output_document_id,
-                user_id=payload.user_id,
-                name=payload.name,
-                location=location,
-                context_id=payload.context_id,
-                request_input=payload.request_input,
-                purpose=payload.purpose,
-                primary_entity_ids=primary_entity_ids,
-                has_row_index=True,
-                target_namespace_id=payload.target_namespace_id,
-                sample_rows=payload.sample_rows,
-                sample_from_timestamp=payload.sample_from_timestamp,
-                sample_to_timestamp=payload.sample_to_timestamp,
-                table_with_missing_data=table_with_missing_data,
+            override_model_params = override_model_params or {}
+            observation_table_params = {
+                "_id": payload.output_document_id,
+                "user_id": payload.user_id,
+                "name": payload.name,
+                "location": location,
+                "context_id": payload.context_id,
+                "request_input": payload.request_input,
+                "purpose": payload.purpose,
+                "primary_entity_ids": primary_entity_ids,
+                "has_row_index": True,
+                "target_namespace_id": payload.target_namespace_id,
+                "sample_rows": payload.sample_rows,
+                "sample_from_timestamp": payload.sample_from_timestamp,
+                "sample_to_timestamp": payload.sample_to_timestamp,
+                "table_with_missing_data": table_with_missing_data,
                 **additional_metadata,
-            )
+                **override_model_params,
+            }
+            observation_table = ObservationTableModel(**observation_table_params)
             await self.observation_table_service.create_document(observation_table)
+
+    async def execute(self, payload: ObservationTableTaskPayload) -> Any:
+        await self.create_observation_table(payload)
