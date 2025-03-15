@@ -133,3 +133,19 @@ def exclude_non_aggregation_with_timestamp_node_timestamp_metadata(
             node_parameters.pop("event_timestamp_schema", None)
 
     return node_parameters
+
+
+def handle_time_series_window_aggregate_node_parameters(node_parameters: Dict[str, Any]) -> None:
+    """
+    Handle time series window aggregate node parameters
+
+    Parameters
+    ----------
+    node_parameters: Dict[str, Any]
+        Node parameters
+    """
+    # Consider None blind_spot in CronFeatureJobSetting as the same as not provided for backward
+    # compatibility
+    feature_job_setting = node_parameters.get("feature_job_setting", {})
+    if feature_job_setting.get("blind_spot") is None:
+        feature_job_setting.pop("blind_spot", None)

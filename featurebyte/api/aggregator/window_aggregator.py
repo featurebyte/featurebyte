@@ -16,6 +16,7 @@ from featurebyte.api.time_series_view import TimeSeriesView
 from featurebyte.api.view import View
 from featurebyte.api.window_validator import validate_window
 from featurebyte.enum import AggFunc, TimeIntervalUnit
+from featurebyte.exception import CronFeatureJobSettingConversionError
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -205,9 +206,9 @@ class WindowAggregator(BaseAggregator):
             if feature_job_setting is not None and not isinstance(
                 feature_job_setting, FeatureJobSetting
             ):
-                raise ValueError(
-                    "feature_job_setting must be FeatureJobSetting for non-calendar aggregation"
-                )
+                # Try to convert the provided CronFeatureJobSetting to FeatureJobSetting
+                _ = self._convert_cron_feature_job_setting(feature_job_setting)
+
             parsed_feature_job_setting = FeatureJobSetting(
                 **self._get_job_setting_params(feature_job_setting, windows=windows)
             )
@@ -258,6 +259,17 @@ class WindowAggregator(BaseAggregator):
                 )
         return unit
 
+    @staticmethod
+    def _convert_cron_feature_job_setting(
+        cron_feature_job_setting: CronFeatureJobSetting,
+    ) -> FeatureJobSetting:
+        try:
+            return cron_feature_job_setting.to_feature_job_setting()
+        except CronFeatureJobSettingConversionError as e:
+            raise ValueError(
+                f"feature_job_setting cannot be used for non-calendar aggregation ({str(e)})"
+            )
+
     def _get_job_setting_params(
         self,
         feature_job_setting: Optional[FeatureJobSetting | CronFeatureJobSetting],
@@ -278,11 +290,9 @@ class WindowAggregator(BaseAggregator):
                 raise ValueError(
                     "feature_job_setting must be CronFeatureJobSetting for calendar aggregation"
                 )
-        else:
-            if not isinstance(default_setting, FeatureJobSetting):
-                raise ValueError(
-                    "feature_job_setting must be FeatureJobSetting for non-calendar aggregation"
-                )
+        elif isinstance(default_setting, CronFeatureJobSetting):
+            default_setting = self._convert_cron_feature_job_setting(default_setting)
+
         return default_setting.model_dump()  # type: ignore[no-any-return]
 
     def _prepare_node_parameters(

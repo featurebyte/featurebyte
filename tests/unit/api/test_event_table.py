@@ -30,7 +30,10 @@ from featurebyte.exception import (
     RecordUpdateException,
 )
 from featurebyte.models.event_table import EventTableModel
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
+)
 from featurebyte.query_graph.node.cleaning_operation import (
     AddTimestampSchema,
     DisguisedValueImputation,
@@ -636,6 +639,56 @@ def test_update_default_job_setting__feature_job_setting_analysis_failure__event
         snowflake_event_table.initialize_default_feature_job_setting()
     expected_msg = f'EventTable (id: "{snowflake_event_table.id}") not found. Please save the EventTable object first.'
     assert expected_msg in str(exc)
+
+
+def test_update_default_job_setting__cron_feature_job_setting(
+    event_table_with_cron_feature_job_setting, config, mock_api_object_cache
+):
+    """
+    Test update default job setting using CronFeatureJobSetting
+    """
+    _ = mock_api_object_cache
+
+    event_table = event_table_with_cron_feature_job_setting
+    assert event_table.default_feature_job_setting == CronFeatureJobSetting(
+        crontab="0 0 * * *",
+        reference_timezone="Etc/UTC",
+        blind_spot="600s",
+    )
+    client = config.get_client()
+    response = client.get(url=f"/event_table/{event_table.id}")
+    assert response.status_code == 200
+    assert response.json()["default_feature_job_setting"] == {
+        "crontab": {
+            "minute": 0,
+            "hour": 0,
+            "day_of_month": "*",
+            "month_of_year": "*",
+            "day_of_week": "*",
+        },
+        "timezone": "Etc/UTC",
+        "reference_timezone": "Etc/UTC",
+        "blind_spot": "600s",
+    }
+
+
+def test_update_default_job_setting__cron_feature_job_setting_invalid(
+    saved_event_table, config, mock_api_object_cache
+):
+    """
+    Test update default job setting using CronFeatureJobSetting
+    """
+    _ = mock_api_object_cache
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_event_table.update_default_feature_job_setting(
+            feature_job_setting=CronFeatureJobSetting(
+                crontab="0 0 1 * *", reference_timezone="Etc/UTC", blind_spot="600s"
+            )
+        )
+    assert (
+        str(exc.value)
+        == "The provided CronFeatureJobSetting cannot be used as a default feature job setting (cron schedule does not result in a fixed interval)"
+    )
 
 
 @pytest.fixture(name="mock_celery")

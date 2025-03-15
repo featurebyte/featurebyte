@@ -17,7 +17,9 @@ from featurebyte.enum import TableDataType
 from featurebyte.exception import EventViewMatchingEntityColumnNotFound
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters, InputNode
 from featurebyte.typing import validate_type_is_feature
@@ -58,7 +60,7 @@ class EventView(View, GroupByMixin, RawMixin):
     _view_graph_node_type: ClassVar[GraphNodeType] = GraphNodeType.EVENT_VIEW
 
     # pydantic instance variables
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+    default_feature_job_setting: Optional[FeatureJobSettingUnion] = Field(
         frozen=True,
         description="Returns the default feature job setting for the view.\n\n"
         "The Default Feature Job Setting establishes the default setting used by "

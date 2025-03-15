@@ -5,7 +5,7 @@ This module contains SQL operation related node classes
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from typing import Any, ClassVar, Dict, List, Optional, Sequence, Set, Tuple, Union, cast
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from typing_extensions import Literal
 
 from featurebyte.common.model_util import parse_duration_string
@@ -707,6 +707,28 @@ class BaseWindowAggregateParameters(BaseGroupbyParameters):
     feature_job_setting: FeatureJobSetting
     offset: Optional[str] = Field(default=None)
     timestamp_metadata: Optional[DBVarTypeMetadata] = Field(default=None)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _convert_node_parameters_format(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.model_dump(by_alias=True)
+
+        if "feature_job_setting" in values:
+            # Try to convert feature_job_setting if it is cron based
+            try:
+                feature_job_setting = values["feature_job_setting"]
+                if isinstance(feature_job_setting, BaseModel):
+                    feature_job_setting = feature_job_setting.model_dump(by_alias=True)
+                cron_job_setting = CronFeatureJobSetting(**feature_job_setting)
+            except ValidationError:
+                # Assume feature job setting is already non-cron based and valid
+                return values
+            except TypeError:
+                raise
+            values["feature_job_setting"] = cron_job_setting.to_feature_job_setting()
+
+        return values
 
     @property
     def timestamp_schema(self) -> Optional[TimestampSchema]:

@@ -23,7 +23,9 @@ from featurebyte.exception import RecordRetrievalException
 from featurebyte.models.base import FeatureByteBaseDocumentModel, PydanticObjectId
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.query_graph.graph import GlobalQueryGraph
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.table import AllTableDataT, ItemTableData
 from featurebyte.query_graph.node.cleaning_operation import ColumnCleaningOperation
 from featurebyte.query_graph.node.input import InputNode
@@ -331,7 +333,7 @@ class ItemTable(TableApiObject):
 
     @property
     @cachedmethod(cache=operator.attrgetter("_cache"), key=get_default_job_setting_cache_key)
-    def default_feature_job_setting(self) -> Optional[FeatureJobSetting]:
+    def default_feature_job_setting(self) -> Optional[FeatureJobSettingUnion]:
         """
         Returns the default feature job setting for the table.
 
@@ -343,7 +345,7 @@ class ItemTable(TableApiObject):
 
         Returns
         -------
-        Optional[FeatureJobSetting]
+        Optional[FeatureJobSettingUnion]
         """
         try:
             return EventTable.get_by_id(self.event_table_id).default_feature_job_setting

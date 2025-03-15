@@ -448,7 +448,7 @@ def test_non_time_series_view_aggregate_over__only_str_window__non_cron_feature_
         )
     assert (
         str(exc_info.value)
-        == "feature_job_setting must be FeatureJobSetting for non-calendar aggregation"
+        == "feature_job_setting cannot be used for non-calendar aggregation (blind_spot is not specified)"
     )
 
 
@@ -501,4 +501,28 @@ def test_event_view_calendar_window_aggregate(snowflake_event_view_with_entity):
     }
 
     # check feature can be saved
+    feature.save()
+
+
+def test_aggregate_over__default_cron_feature_job_setting(
+    event_table_with_cron_feature_job_setting,
+):
+    """
+    Test default cron feature job setting is automatically converted when doing non-calendar aggregation
+    """
+    event_view = event_table_with_cron_feature_job_setting.get_view()
+    feature = event_view.groupby("cust_id").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["1d"],
+        feature_names=["count_1d"],
+    )["count_1d"]
+    feature_dict = feature.model_dump()
+    node = get_node(feature_dict["graph"], "groupby_1")
+    assert node["parameters"]["feature_job_setting"] == {
+        "blind_spot": "600s",
+        "period": "86400s",
+        "offset": "0s",
+        "execution_buffer": "0s",
+    }
     feature.save()

@@ -12,7 +12,10 @@ from featurebyte.common.model_util import validate_timezone_offset_string
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_table import EventTableModel
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.table import TableCreate, TableServiceUpdate, TableUpdate
@@ -72,7 +75,7 @@ class EventTableUpdateMixin(FeatureByteBaseModel):
     EventTable specific update schema
     """
 
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    default_feature_job_setting: Optional[FeatureJobSettingUnion] = Field(default=None)
 
 
 class EventTableUpdate(EventTableUpdateMixin, TableUpdate):
