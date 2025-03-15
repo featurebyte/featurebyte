@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 from dateutil import tz
 
-from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.enum import SpecialColumnName
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel, TargetInput
 from featurebyte.query_graph.node.schema import TableDetails
@@ -103,26 +103,6 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             table_with_missing_data = missing_data_table_details
         return table_with_missing_data
 
-    async def add_row_index_column_if_not_exists(
-        self, db_session: BaseSession, table_details: TableDetails
-    ) -> None:
-        """
-        Add a row index column if it does not exist
-
-        Parameters
-        ----------
-        db_session: BaseSession
-            Database session
-        table_details: TableDetails
-            Table details
-        """
-        columns_specs = await db_session.list_table_schema(**table_details.json_dict())
-        has_row_index = InternalName.TABLE_ROW_INDEX in columns_specs
-        if not has_row_index:
-            await self.observation_table_service.add_row_index_column(
-                session=db_session, table_details=table_details
-            )
-
     async def create_observation_table(
         self,
         payload: ObservationTableTaskPayload,
@@ -185,9 +165,14 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
         )
 
         # check if the table has row index column
-        await self.add_row_index_column_if_not_exists(db_session, location.table_details)
-        if missing_data_table_details:
-            await self.add_row_index_column_if_not_exists(db_session, missing_data_table_details)
+        if payload.to_add_row_index:
+            await self.observation_table_service.add_row_index_column(
+                session=db_session, table_details=location.table_details
+            )
+            if missing_data_table_details:
+                await self.observation_table_service.add_row_index_column(
+                    session=db_session, table_details=missing_data_table_details
+                )
 
         # get the table with missing data if it has data
         table_with_missing_data = await self.get_table_with_missing_data(

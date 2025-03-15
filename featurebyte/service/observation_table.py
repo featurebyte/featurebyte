@@ -337,7 +337,7 @@ class ObservationTableService(
         return target_namespace_id
 
     async def get_observation_table_task_payload(
-        self, data: ObservationTableCreate
+        self, data: ObservationTableCreate, to_add_row_index: bool = True
     ) -> ObservationTableTaskPayload:
         """
         Validate and convert a ObservationTableCreate schema to a ObservationTableTaskPayload schema
@@ -347,6 +347,8 @@ class ObservationTableService(
         ----------
         data: ObservationTableCreate
             ObservationTable creation payload
+        to_add_row_index: bool
+            Whether to add row index to the observation table
 
         Returns
         -------
@@ -397,6 +399,7 @@ class ObservationTableService(
 
         return ObservationTableTaskPayload(
             **data.model_dump(by_alias=True),
+            to_add_row_index=to_add_row_index,
             user_id=self.user.id,
             catalog_id=self.catalog_id,
             output_document_id=output_document_id,

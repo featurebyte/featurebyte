@@ -110,9 +110,13 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
                         purpose=payload.purpose,
                         primary_entity_ids=payload.primary_entity_ids,
                         target_column=payload.target_column,
-                    )
+                    ),
+                    # set to_add_row_index to False since the row index is already added
+                    to_add_row_index=False,
                 )
             )
+
+            # create observation table by calling the observation table task
             await self.observation_table_task.create_observation_table(
                 payload=obs_task_payload,
                 override_model_params={
