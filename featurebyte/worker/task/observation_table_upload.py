@@ -90,9 +90,9 @@ class ObservationTableUploadTask(DataWarehouseMixin, BaseTask[ObservationTableUp
         await db_session.register_table(location.table_details.table_name, uploaded_dataframe)
 
         async with self.drop_table_on_error(
-            db_session,
-            location.table_details,
-            payload,
+            db_session=db_session,
+            list_of_table_details=[location.table_details],
+            payload=payload,
         ):
             # trigger observation table creation
             obs_task_payload = (

@@ -195,11 +195,14 @@ class ObservationTableTask(DataWarehouseMixin, BaseTask[ObservationTableTaskPayl
             missing_data_table_details=missing_data_table_details,
         )
 
+        list_of_table_details = [location.table_details]
+        if table_with_missing_data:
+            list_of_table_details.append(table_with_missing_data)
+
         async with self.drop_table_on_error(
-            db_session,
-            location.table_details,
-            payload,
-            additional_table_details=[table_with_missing_data] if table_with_missing_data else None,
+            db_session=db_session,
+            list_of_table_details=list_of_table_details,
+            payload=payload,
         ):
             payload_input = payload.request_input
             assert not isinstance(payload_input, TargetInput)

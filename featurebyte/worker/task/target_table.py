@@ -162,11 +162,11 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         missing_data_table_details = location.table_details.model_copy(
             update={"table_name": f"missing_data_{location.table_details.table_name}"}
         )
+        list_of_table_details = [location.table_details, missing_data_table_details]
         async with self.drop_table_on_error(
             db_session=db_session,
-            table_details=location.table_details,
+            list_of_table_details=list_of_table_details,
             payload=payload,
-            additional_table_details=[missing_data_table_details],
         ):
             # Graphs and nodes being processed in this task should not be None anymore.
             graph = payload.graph
