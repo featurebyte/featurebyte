@@ -146,6 +146,11 @@ class TestTargetTableApi(BaseMaterializedTableTestSuite):
             "sample_from_timestamp": None,
             "sample_rows": None,
             "sample_to_timestamp": None,
+            "table_with_missing_data": {
+                **json_dict["location"]["table_details"],
+                "table_name": f"missing_data_{json_dict['location']['table_details']['table_name']}",
+            },
+            "is_valid": False,
         }
 
     @pytest.mark.parametrize(

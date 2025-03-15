@@ -24,7 +24,7 @@ class DataWarehouseMixin:
     async def drop_table_on_error(
         self,
         db_session: BaseSession,
-        table_details: TableDetails,
+        list_of_table_details: list[TableDetails],
         payload: BaseTaskPayload,
     ) -> AsyncIterator[None]:
         """
@@ -34,7 +34,7 @@ class DataWarehouseMixin:
         ----------
         db_session: BaseSession
             The database session
-        table_details: TableDetails
+        list_of_table_details: list[TableDetails]
             The table details
         payload: BaseTaskPayload
             The task payload
@@ -56,12 +56,15 @@ class DataWarehouseMixin:
                 "Failed to create request table. Dropping table.",
                 extra={"error": str(exc), "task_payload": payload.model_dump()},
             )
-            assert table_details.schema_name is not None
-            assert table_details.database_name is not None
-            await db_session.drop_table(
-                table_name=table_details.table_name,
-                schema_name=table_details.schema_name,
-                database_name=table_details.database_name,
-                if_exists=True,
-            )
+
+            for tab_details in list_of_table_details:
+                assert tab_details.schema_name is not None
+                assert tab_details.database_name is not None
+                await db_session.drop_table(
+                    table_name=tab_details.table_name,
+                    schema_name=tab_details.schema_name,
+                    database_name=tab_details.database_name,
+                    if_exists=True,
+                )
+
             raise exc

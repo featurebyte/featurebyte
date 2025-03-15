@@ -22,7 +22,10 @@ from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import quoted_identifier
+from featurebyte.query_graph.sql.common import (
+    get_non_missing_and_missing_condition_pair,
+    quoted_identifier,
+)
 from featurebyte.query_graph.sql.materialisation import (
     get_row_count_sql,
     get_source_expr,
@@ -132,6 +135,7 @@ class BaseRequestInput(FeatureByteBaseModel):
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
         columns_to_exclude_missing_values: Optional[List[str]] = None,
+        missing_data_table_details: Optional[TableDetails] = None,
     ) -> None:
         """
         Materialize the request input table
@@ -150,10 +154,13 @@ class BaseRequestInput(FeatureByteBaseModel):
             The timestamp to sample to
         columns_to_exclude_missing_values: Optional[List[str]
             The columns to exclude missing values from
+        missing_data_table_details: Optional[TableDetails]
+            Missing data table details
         """
+        # Get the base query and column info
         query_expr = self.get_query_expr(source_info=session.get_source_info())
 
-        # derive output column names and dtypes
+        # Derive output column names and dtypes
         column_names_and_dtypes = await self.get_column_names_and_dtypes(session=session)
         available_columns = list(column_names_and_dtypes.keys())
         self._validate_columns_and_rename_mapping(available_columns)
@@ -168,25 +175,25 @@ class BaseRequestInput(FeatureByteBaseModel):
             output_column_names_and_dtypes = column_names_and_dtypes
             output_columns = input_columns
 
-        # always perform explicit column selection and renaming
+        # Always perform explicit column selection and renaming
         query_expr = select_and_rename_columns(
             query_expr, input_columns, self.columns_rename_mapping
         )
 
-        # add filter conditions to the query if necessary
-        filter_conditions: list[expressions.Expression] = []
+        # Build base filter conditions (e.g. time filters)
+        base_filter_conditions: list[expressions.Expression] = []
         adapter = get_sql_adapter(session.get_source_info())
 
         if SpecialColumnName.POINT_IN_TIME in output_columns and output_column_names_and_dtypes.get(
             SpecialColumnName.POINT_IN_TIME
         ) in {DBVarType.TIMESTAMP, DBVarType.TIMESTAMP_TZ}:
-            # add filter to exclude rows that are too old
+            # Filter to exclude rows that are too old
             if sample_from_timestamp is not None:
                 if sample_from_timestamp.tzinfo is not None:
                     sample_from_timestamp = sample_from_timestamp.astimezone(tz.UTC).replace(
                         tzinfo=None
                     )
-                filter_conditions.append(
+                base_filter_conditions.append(
                     expressions.GTE(
                         this=adapter.normalize_timestamp_before_comparison(
                             quoted_identifier(SpecialColumnName.POINT_IN_TIME)
@@ -197,13 +204,13 @@ class BaseRequestInput(FeatureByteBaseModel):
                     )
                 )
 
-            # add filter to exclude rows that are too recent
+            # Filter to exclude rows that are too recent
             if sample_to_timestamp is not None:
                 if sample_to_timestamp.tzinfo is not None:
                     sample_to_timestamp = sample_to_timestamp.astimezone(tz.UTC).replace(
                         tzinfo=None
                     )
-                filter_conditions.append(
+                base_filter_conditions.append(
                     expressions.LT(
                         this=adapter.normalize_timestamp_before_comparison(
                             quoted_identifier(SpecialColumnName.POINT_IN_TIME)
@@ -214,46 +221,72 @@ class BaseRequestInput(FeatureByteBaseModel):
                     )
                 )
 
-        # add filter to exclude rows with missing values in specified columns
+        # Build missing/non-missing conditions if columns are provided.
+        # If a missing_data_table_details is provided, we will split into two queries.
+        non_missing_condition = None
+        missing_condition = None
+
         if columns_to_exclude_missing_values:
-            # select only rows where renamed columns are not null
-            for col_name in columns_to_exclude_missing_values:
-                if col_name in output_columns:
-                    filter_conditions.append(
-                        expressions.Is(
-                            this=quoted_identifier(col_name),
-                            expression=expressions.Not(this=expressions.Null()),
-                        )
-                    )
-
-        if filter_conditions:
-            query_expr = (
-                expressions.Select(
-                    expressions=[
-                        quoted_identifier(col_expr.alias or col_expr.name)
-                        for (column_idx, col_expr) in enumerate(query_expr.expressions)
-                    ]
+            valid_columns = [
+                col for col in columns_to_exclude_missing_values if col in output_columns
+            ]
+            if valid_columns:
+                non_missing_condition, missing_condition = (
+                    get_non_missing_and_missing_condition_pair(columns=valid_columns)
                 )
-                .from_(query_expr.subquery())
-                .where(expressions.And(expressions=filter_conditions))
-            )
 
+        # Create a helper function to apply conditions to the base query
+        def apply_conditions(
+            base_query: expressions.Select,
+            additional_condition: Optional[expressions.Expression],
+        ) -> expressions.Select:
+            all_conditions = base_filter_conditions.copy()
+            if additional_condition is not None:
+                all_conditions.append(additional_condition)
+            if all_conditions:
+                return (
+                    expressions.Select(
+                        expressions=[
+                            quoted_identifier(col_expr.alias or col_expr.name)
+                            for (column_idx, col_expr) in enumerate(base_query.expressions)
+                        ]
+                    )
+                    .from_(base_query.subquery())
+                    .where(expressions.And(expressions=all_conditions))
+                )
+            return base_query
+
+        # Create the main query (for destination) using non-missing condition if applicable
+        main_query_expr = apply_conditions(query_expr, non_missing_condition)
+
+        # If sampling is requested, apply it only to the main query
         if sample_rows is not None:
-            num_rows = await self.get_row_count(session=session, query_expr=query_expr)
+            num_rows = await self.get_row_count(session=session, query_expr=main_query_expr)
             if num_rows > sample_rows:
                 if adapter.TABLESAMPLE_SUPPORTS_VIEW:
                     num_percent = self.get_sample_percentage_from_row_count(num_rows, sample_rows)
-                    query_expr = (
-                        adapter.tablesample(query_expr, num_percent)
+                    main_query_expr = (
+                        adapter.tablesample(main_query_expr, num_percent)
                         .order_by(expressions.Anonymous(this="RANDOM"))
                         .limit(sample_rows)
                     )
                 else:
-                    query_expr = adapter.random_sample(
-                        query_expr, desired_row_count=sample_rows, total_row_count=num_rows, seed=0
+                    main_query_expr = adapter.random_sample(
+                        main_query_expr,
+                        desired_row_count=sample_rows,
+                        total_row_count=num_rows,
+                        seed=0,
                     )
 
-        await session.create_table_as(table_details=destination, select_expr=query_expr)
+        # Materialize the destination table
+        await session.create_table_as(table_details=destination, select_expr=main_query_expr)
+
+        # If missing_data_table_details is provided, materialize the missing data table
+        if missing_data_table_details and missing_condition is not None:
+            missing_query_expr = apply_conditions(query_expr, missing_condition)
+            await session.create_table_as(
+                table_details=missing_data_table_details, select_expr=missing_query_expr
+            )
 
     def _validate_columns_and_rename_mapping(self, available_columns: list[str]) -> None:
         referenced_columns = list(self.columns or [])

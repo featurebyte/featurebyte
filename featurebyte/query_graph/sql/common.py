@@ -201,6 +201,41 @@ def sql_to_string(sql_expr: Expression, source_type: SourceType) -> str:
     return sql_expr.sql(dialect=get_dialect_from_source_type(source_type), pretty=True)
 
 
+def get_non_missing_and_missing_condition_pair(columns: list[str]) -> Tuple[Expression, Expression]:
+    """
+    Get conditions for non-missing and missing values for a set of columns
+
+    Parameters
+    ----------
+    columns: list[str]
+        List of column names for which missing values should be excluded
+
+    Returns
+    -------
+    Tuple[Expression, Expression]
+    """
+    # only keep rows where all valid columns are not null.
+    non_missing_expressions = [
+        expressions.Is(
+            this=quoted_identifier(col),
+            expression=expressions.Not(this=expressions.Null()),
+        )
+        for col in columns
+    ]
+    non_missing_condition = expressions.And(expressions=non_missing_expressions)
+
+    # select rows where at least one of the valid columns is null.
+    missing_expressions = [
+        expressions.Is(
+            this=quoted_identifier(col),
+            expression=expressions.Null(),
+        )
+        for col in columns
+    ]
+    missing_condition = expressions.Or(expressions=missing_expressions)
+    return non_missing_condition, missing_condition
+
+
 def apply_serving_names_mapping(serving_names: list[str], mapping: dict[str, str]) -> list[str]:
     """Apply user provided mapping to transform the default serving names
 

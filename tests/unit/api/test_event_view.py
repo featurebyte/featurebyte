@@ -858,7 +858,7 @@ def test_create_observation_table_from_event_view__no_sample(
     assert observation_table.request_input.definition is not None
 
     # Check that the correct query was executed
-    _, kwargs = snowflake_execute_query.call_args_list[-2]
+    _, kwargs = snowflake_execute_query.call_args_list[-6]
     check_observation_table_creation_query(
         kwargs["query"],
         """
@@ -885,11 +885,11 @@ def test_create_observation_table_from_event_view__no_sample(
         )
         WHERE
             "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
-            "POINT_IN_TIME" IS NOT NULL AND
-            "cust_id" IS NOT NULL
+              "POINT_IN_TIME" IS NOT NULL AND
+              "cust_id" IS NOT NULL
         """,
     )
-    _, kwargs = snowflake_execute_query.call_args_list[-1]
+    _, kwargs = snowflake_execute_query.call_args_list[-4]
     check_observation_table_creation_query(
         kwargs["query"],
         """
@@ -927,7 +927,7 @@ def test_create_observation_table_from_event_view__with_sample(
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
-    _, kwargs = snowflake_execute_query.call_args_list[-2]
+    _, kwargs = snowflake_execute_query.call_args_list[-6]
     check_observation_table_creation_query(
         kwargs["query"],
         """
@@ -957,15 +957,15 @@ def test_create_observation_table_from_event_view__with_sample(
           )
           WHERE
               "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
-              "POINT_IN_TIME" IS NOT NULL AND
-              "cust_id" IS NOT NULL
+                "POINT_IN_TIME" IS NOT NULL AND
+                "cust_id" IS NOT NULL
         ) TABLESAMPLE (14)
         ORDER BY
           RANDOM()
         LIMIT 100
         """,
     )
-    _, kwargs = snowflake_execute_query.call_args_list[-1]
+    _, kwargs = snowflake_execute_query.call_args_list[-4]
     check_observation_table_creation_query(
         kwargs["query"],
         """

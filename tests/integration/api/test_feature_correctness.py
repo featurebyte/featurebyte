@@ -352,7 +352,9 @@ async def observation_table_fixture(session, data_source, observation_set):
     )
 
 
-def test_feature_with_target(event_table, observation_set, transaction_data_upper_case):
+def test_feature_with_target(
+    event_table, observation_set, transaction_data_upper_case, data_source
+):
     """
     Test that feature with target works
     """
@@ -392,6 +394,19 @@ def test_feature_with_target(event_table, observation_set, transaction_data_uppe
     target_observation_table = target.compute_target_table(
         observation_set, observation_table_name, serving_names_mapping={"üser id": "ÜSER ID"}
     )
+
+    # check existence of table with missing data
+    table_with_missing_data = target_observation_table.cached_model.table_with_missing_data
+    assert table_with_missing_data is not None
+
+    missing_data_table = data_source.get_source_table(
+        database_name=table_with_missing_data.database_name,
+        schema_name=table_with_missing_data.schema_name,
+        table_name=table_with_missing_data.table_name,
+    )
+    assert missing_data_table.shape() == (8, 3)
+    missing_data_table_df = missing_data_table.preview()
+    assert missing_data_table_df["target_next_amount_2h"].isnull().all()
 
     # Compute historical feature table
     historical_features_table = feature_list.compute_historical_feature_table(

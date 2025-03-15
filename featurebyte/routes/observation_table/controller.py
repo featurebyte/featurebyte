@@ -21,6 +21,7 @@ from featurebyte.schema.info import ObservationTableInfo
 from featurebyte.schema.observation_table import (
     ObservationTableCreate,
     ObservationTableList,
+    ObservationTableModelResponse,
     ObservationTableServiceUpdate,
     ObservationTableUpdate,
     ObservationTableUpload,
@@ -96,6 +97,24 @@ class ObservationTableController(
         payload = await self.service.get_observation_table_task_payload(data=data)
         task_id = await self.task_manager.submit(payload=payload)
         return await self.task_controller.get_task(task_id=str(task_id))
+
+    async def get_observable_table(self, document_id: ObjectId) -> ObservationTableModelResponse:
+        """
+        Get ObservationTable
+
+        Parameters
+        ----------
+        document_id: ObjectId
+            ObservationTable document ID
+
+        Returns
+        -------
+        ObservationTableModelResponse
+        """
+        observation_table: ObservationTableModel = await self.get(document_id=document_id)
+        return ObservationTableModelResponse(
+            **observation_table.model_dump(by_alias=True), is_valid=observation_table.is_valid
+        )
 
     async def upload_observation_table(
         self, data: ObservationTableUpload, observation_set_file: UploadFile

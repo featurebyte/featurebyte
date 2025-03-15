@@ -4,13 +4,15 @@ Integration tests for ObservationTable
 
 import os
 
+import numpy as np
 import pandas as pd
 import pytest
 
+from featurebyte import TargetNamespace
 from featurebyte.api.entity import Entity
 from featurebyte.api.observation_table import ObservationTable
-from featurebyte.enum import SpecialColumnName
-from featurebyte.exception import RecordCreationException
+from featurebyte.enum import DBVarType, SpecialColumnName
+from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.models.observation_table import UploadedFileInput
 from featurebyte.models.request_input import RequestInputType
 from tests.integration.api.materialized_table.utils import (
@@ -95,16 +97,51 @@ async def test_observation_table_min_interval_between_entities(
     table_name = "observation_table_time_interval"
     await session.register_table(table_name, df)
 
+    # prepare the observation table
     database_table = data_source.get_source_table(
         database_name=session.database_name,
         schema_name=session.schema_name,
         table_name=table_name,
     )
     sample_rows = 123
+
+    # create a target namespace
+    target_name = "Target"
+    target_namespace = TargetNamespace.create(
+        name=target_name, primary_entity=[], dtype=DBVarType.FLOAT
+    )
+
+    # create the observation table with target column
     observation_table = database_table.create_observation_table(
-        "MY_OBSERVATION_TABLE_FOR_INTERVALS", sample_rows=sample_rows
+        "MY_OBSERVATION_TABLE_FOR_INTERVALS", sample_rows=sample_rows, target_column=target_name
     )
     assert observation_table.min_interval_secs_between_entities == 3600
+
+    # check missing data table
+    table_with_missing_data = observation_table.cached_model.table_with_missing_data
+    missing_data_table = data_source.get_source_table(
+        database_name=table_with_missing_data.database_name,
+        schema_name=table_with_missing_data.schema_name,
+        table_name=table_with_missing_data.table_name,
+    )
+    missing_data_table_df = missing_data_table.preview()
+    assert missing_data_table_df.shape[0] == 1
+    pd.testing.assert_frame_equal(
+        missing_data_table_df,
+        pd.DataFrame({
+            "POINT_IN_TIME": [pd.Timestamp("2022-06-23 00:58:00")],
+            "User ID": [2],
+            "Target": [np.nan],
+        }),
+    )
+
+    # delete the observation table & target
+    observation_table.delete()
+    target_namespace.delete()
+
+    # attempt to preview the missing data table should raise an error
+    with pytest.raises(RecordRetrievalException):
+        missing_data_table.preview()
 
 
 @pytest.mark.asyncio
@@ -134,6 +171,9 @@ async def test_observation_table_from_view(
         observation_table,
         expected_columns=["POINT_IN_TIME", "üser id"],
     )
+
+    # check missing data table is None
+    assert observation_table.cached_model.table_with_missing_data is None
 
 
 @pytest.mark.asyncio
@@ -187,11 +227,32 @@ async def test_observation_table_upload(
         df = pd.read_parquet(file_path)
     else:
         raise ValueError(f"Unsupported file type: {file_type}")
-    number_of_rows = df.shape[0]
+
+    target_name = "Target"
+    target_namespace = TargetNamespace.create(
+        name=target_name, primary_entity=[], dtype=DBVarType.FLOAT
+    )
+
+    number_of_rows = df[target_name].dropna().shape[0]
     observation_table = ObservationTable.upload(
         file_path=file_path,
         name=f"uploaded_observation_table_{file_type}",
+        target_column=target_name,
     )
+
+    # check existence of table with missing data
+    table_with_missing_data = observation_table.cached_model.table_with_missing_data
+    assert table_with_missing_data is not None
+
+    data_source = feature_store.get_data_source()
+    missing_data_table = data_source.get_source_table(
+        database_name=table_with_missing_data.database_name,
+        schema_name=table_with_missing_data.schema_name,
+        table_name=table_with_missing_data.table_name,
+    )
+    missing_data_table_df = missing_data_table.preview()
+    assert missing_data_table_df[target_name].isna().all()
+    assert missing_data_table_df.shape[0] == 1
 
     # Assert response
     assert observation_table.name == f"uploaded_observation_table_{file_type}"
@@ -199,7 +260,7 @@ async def test_observation_table_upload(
         type=RequestInputType.UPLOADED_FILE,
         file_name=file_name,
     )
-    expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id"}
+    expected_columns = {SpecialColumnName.POINT_IN_TIME, "cust_id", target_name}
     actual_columns = {column.name for column in observation_table.columns_info}
     assert expected_columns == actual_columns
 
@@ -208,8 +269,12 @@ async def test_observation_table_upload(
         observation_table.location.table_details, session, source_type, number_of_rows
     )
     check_materialized_table_preview_methods(
-        observation_table, [SpecialColumnName.POINT_IN_TIME, "cust_id"], number_of_rows
+        observation_table, [SpecialColumnName.POINT_IN_TIME, "cust_id", target_name], number_of_rows
     )
+
+    # delete the observation table & target
+    observation_table.delete()
+    target_namespace.delete()
 
 
 @pytest.mark.asyncio

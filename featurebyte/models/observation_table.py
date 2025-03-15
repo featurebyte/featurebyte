@@ -53,6 +53,7 @@ class NoOpMaterializeMixin:
         sample_from_timestamp: Optional[datetime] = None,
         sample_to_timestamp: Optional[datetime] = None,
         columns_to_exclude_missing_values: Optional[List[str]] = None,
+        missing_data_table_details: Optional[TableDetails] = None,
     ) -> None:
         """
         No-op materialize. This method isn't needed for TargetInput since we materialize the target separately.
@@ -74,6 +75,8 @@ class NoOpMaterializeMixin:
             The timestamp to sample to
         columns_to_exclude_missing_values: Optional[List[str]
             The columns to exclude missing values from
+        missing_data_table_details: Optional[TableDetails]
+            Missing data table details
         """
 
 
@@ -146,10 +149,18 @@ class ObservationTableModel(MaterializedTableModel):
     sample_rows: Optional[int] = Field(default=None)
     sample_from_timestamp: Optional[datetime] = Field(default=None)
     sample_to_timestamp: Optional[datetime] = Field(default=None)
+    table_with_missing_data: Optional[TableDetails] = Field(default=None)
 
     _sort_primary_entity_ids_validator = field_validator("primary_entity_ids")(
         construct_sort_validator()
     )
+
+    @property
+    def warehouse_tables(self) -> list[TableDetails]:
+        tables = super().warehouse_tables
+        if self.table_with_missing_data:
+            tables.append(self.table_with_missing_data)
+        return tables
 
     @property
     def target_id(self) -> Optional[ObjectId]:
@@ -164,6 +175,22 @@ class ObservationTableModel(MaterializedTableModel):
         if isinstance(self.request_input, TargetInput):
             return self.request_input.target_id
         return None
+
+    @property
+    def is_valid(self) -> bool:
+        """
+        Check if the observation table is valid
+
+        Returns
+        -------
+        bool
+            True if the observation table is valid, False otherwise
+        """
+        if isinstance(self.request_input, TargetInput):
+            # NOTE: since the target table does not filter out missing data, we need to check if the table with
+            # missing data exists or not. If it does exist, then the observation table is not valid.
+            return self.table_with_missing_data is None
+        return True
 
     @field_validator("most_recent_point_in_time", "least_recent_point_in_time")
     @classmethod

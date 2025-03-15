@@ -109,6 +109,7 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         response_dict = response.json()
         assert response_dict["purpose"] == "other"
+        assert response_dict["is_valid"] is True
 
     def test_update_context(self, test_api_client_persistent, create_success_response):
         """Test update context"""

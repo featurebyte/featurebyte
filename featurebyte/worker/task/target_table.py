@@ -6,10 +6,19 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from sqlglot import expressions
+
 from featurebyte.exception import DocumentNotFoundError
 from featurebyte.logging import get_logger
 from featurebyte.models.observation_table import ObservationTableModel, Purpose, TargetInput
 from featurebyte.models.request_input import RequestInputType
+from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.common import (
+    get_fully_qualified_table_name,
+    get_non_missing_and_missing_condition_pair,
+    sql_to_string,
+)
+from featurebyte.query_graph.sql.materialisation import get_source_count_expr
 from featurebyte.routes.common.derive_primary_entity_helper import DerivePrimaryEntityHelper
 from featurebyte.schema.target import ComputeTargetRequest
 from featurebyte.schema.worker.task.target_table import TargetTableTaskPayload
@@ -19,6 +28,7 @@ from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.target import TargetService
 from featurebyte.service.target_helper.compute_target import TargetComputer
 from featurebyte.service.task_manager import TaskManager
+from featurebyte.session.base import BaseSession
 from featurebyte.worker.task.base import BaseTask
 from featurebyte.worker.task.mixin import DataWarehouseMixin
 from featurebyte.worker.util.observation_set_helper import ObservationSetHelper
@@ -56,6 +66,74 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
     async def get_task_description(self, payload: TargetTableTaskPayload) -> str:
         return f'Save target table "{payload.name}"'
 
+    @staticmethod
+    async def get_table_with_missing_data(
+        db_session: BaseSession,
+        table_details: TableDetails,
+        missing_data_table_details: TableDetails,
+        filter_columns: list[str],
+    ) -> Optional[TableDetails]:
+        """
+        Get the table with missing data by creating a new table with missing data
+
+        Parameters
+        ----------
+        db_session: BaseSession
+            The database session
+        table_details: TableDetails
+            Source table details
+        missing_data_table_details: TableDetails
+            Table details for the table with missing data
+        filter_columns: list[str]
+            Columns to filter missing
+
+        Returns
+        -------
+        Optional[TableDetails]
+            The table with missing data
+        """
+        table_with_missing_data: Optional[TableDetails] = None
+        if filter_columns:
+            _, missing_condition = get_non_missing_and_missing_condition_pair(
+                columns=filter_columns
+            )
+            missing_table_expr = (
+                expressions.select(expressions.Star())
+                .from_(get_fully_qualified_table_name(table_details.model_dump()))
+                .where(missing_condition)
+            )
+            await db_session.create_table_as(
+                missing_data_table_details,
+                missing_table_expr,
+                replace=True,
+            )
+            # check missing data table whether it has data
+            missing_data_table_row_count = await db_session.execute_query_long_running(
+                sql_to_string(
+                    get_source_count_expr(missing_data_table_details),
+                    db_session.source_type,
+                )
+            )
+            if (
+                missing_data_table_row_count is None
+                or missing_data_table_row_count.iloc[0]["row_count"] == 0
+            ):
+                logger.debug(
+                    "Drop the table with missing data as it has no data",
+                    extra=missing_data_table_details.model_dump(),
+                )
+
+                # drop the table if it has no data & set it to None
+                await db_session.drop_table(
+                    table_name=missing_data_table_details.table_name,
+                    schema_name=missing_data_table_details.schema_name,  # type: ignore
+                    database_name=missing_data_table_details.database_name,  # type: ignore
+                    if_exists=True,
+                )
+            else:
+                table_with_missing_data = missing_data_table_details
+        return table_with_missing_data
+
     async def execute(self, payload: TargetTableTaskPayload) -> Any:
         feature_store = await self.feature_store_service.get_document(
             document_id=payload.feature_store_id
@@ -80,9 +158,14 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
         else:
             target_id = payload.target_id
 
+        # create a new table location for missing data
+        missing_data_table_details = location.table_details.model_copy(
+            update={"table_name": f"missing_data_{location.table_details.table_name}"}
+        )
+        list_of_table_details = [location.table_details, missing_data_table_details]
         async with self.drop_table_on_error(
             db_session=db_session,
-            table_details=location.table_details,
+            list_of_table_details=list_of_table_details,
             payload=payload,
         ):
             # Graphs and nodes being processed in this task should not be None anymore.
@@ -116,6 +199,17 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 entity_ids
             )
 
+            # get the table with missing data
+            op_struct_target = graph.extract_operation_structure(
+                node=graph.get_node_by_name(node_names[0])
+            )
+            table_with_missing_data = await self.get_table_with_missing_data(
+                db_session=db_session,
+                table_details=location.table_details,
+                missing_data_table_details=missing_data_table_details,
+                filter_columns=op_struct_target.output_column_names,
+            )
+
             if not has_row_index:
                 # Note: For now, a new row index column is added to this newly created observation
                 # table. It is independent of the row index column of the input observation table. We
@@ -125,6 +219,11 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                     db_session,
                     location.table_details,
                 )
+                if table_with_missing_data:
+                    await self.observation_table_service.add_row_index_column(
+                        db_session,
+                        table_with_missing_data,
+                    )
 
             additional_metadata = (
                 await self.observation_table_service.validate_materialized_table_and_get_metadata(
@@ -161,6 +260,7 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                 has_row_index=True,
                 is_view=result.is_output_view,
                 target_namespace_id=target_namespace_id,
+                table_with_missing_data=table_with_missing_data,
                 **additional_metadata,
             )
             await self.observation_table_service.create_document(observation_table)
