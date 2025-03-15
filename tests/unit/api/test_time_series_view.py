@@ -339,7 +339,7 @@ def test_create_observation_table_from_time_series_view__no_sample(
     assert observation_table.request_input.definition is not None
 
     # Check that the correct query was executed
-    _, kwargs = snowflake_execute_query.call_args_list[-8]
+    _, kwargs = snowflake_execute_query.call_args_list[-6]
     check_observation_table_creation_query(
         kwargs["query"],
         """
@@ -370,7 +370,7 @@ def test_create_observation_table_from_time_series_view__no_sample(
               "cust_id" IS NOT NULL
         """,
     )
-    _, kwargs = snowflake_execute_query.call_args_list[-5]
+    _, kwargs = snowflake_execute_query.call_args_list[-4]
     check_observation_table_creation_query(
         kwargs["query"],
         """
@@ -410,7 +410,7 @@ def test_create_observation_table_from_time_series_view__with_sample(
     assert observation_table.primary_entity_ids == [cust_id_entity.id]
 
     # Check that the correct query was executed
-    _, kwargs = snowflake_execute_query.call_args_list[-8]
+    _, kwargs = snowflake_execute_query.call_args_list[-6]
     check_observation_table_creation_query(
         kwargs["query"],
         """
@@ -448,7 +448,7 @@ def test_create_observation_table_from_time_series_view__with_sample(
         LIMIT 100
         """,
     )
-    _, kwargs = snowflake_execute_query.call_args_list[-5]
+    _, kwargs = snowflake_execute_query.call_args_list[-4]
     check_observation_table_creation_query(
         kwargs["query"],
         """
