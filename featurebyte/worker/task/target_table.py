@@ -219,6 +219,11 @@ class TargetTableTask(DataWarehouseMixin, BaseTask[TargetTableTaskPayload]):
                     db_session,
                     location.table_details,
                 )
+                if table_with_missing_data:
+                    await self.observation_table_service.add_row_index_column(
+                        db_session,
+                        table_with_missing_data,
+                    )
 
             additional_metadata = (
                 await self.observation_table_service.validate_materialized_table_and_get_metadata(
