@@ -342,6 +342,32 @@ class DBVarType(StrEnum):
         return {cls.TIMESTAMP_TZ_TUPLE}
 
 
+class FeatureType(StrEnum):
+    """
+    The FeatureType enum class provides a way to represent different types of feature for modeling.
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureType")
+
+    CATEGORICAL = "categorical"
+    NUMERIC = "numeric"
+    TEXT = "text"
+    DICT = "dictionary"
+    EMBEDDING = "embedding"
+    OTHERS = "others"
+
+    @classmethod
+    def all_types(cls) -> set[str]:
+        """
+        Get all feature types
+
+        Returns
+        -------
+        set[FeatureType]
+        """
+        return {cls.NUMERIC, cls.CATEGORICAL, cls.DICT, cls.EMBEDDING, cls.TEXT, cls.OTHERS}
+
+
 class TargetType(StrEnum):
     """
     The TargetType enum class provides a way to represent different types of modeling. It can be used to specify the
