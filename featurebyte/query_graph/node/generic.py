@@ -710,7 +710,7 @@ class BaseWindowAggregateParameters(BaseGroupbyParameters):
 
     @model_validator(mode="before")
     @classmethod
-    def _convert_node_parameters_format(cls, values: Any) -> Any:
+    def _convert_feature_job_setting(cls, values: Any) -> Any:
         if isinstance(values, BaseModel):
             values = values.model_dump(by_alias=True)
 
@@ -724,8 +724,6 @@ class BaseWindowAggregateParameters(BaseGroupbyParameters):
             except ValidationError:
                 # Assume feature job setting is already non-cron based and valid
                 return values
-            except TypeError:
-                raise
             values["feature_job_setting"] = cron_job_setting.to_feature_job_setting()
 
         return values
