@@ -9,6 +9,7 @@ from bson import ObjectId
 from featurebyte.exception import (
     DocumentCreationError,
     DocumentDeletionError,
+    DocumentUpdateError,
     ObservationTableInvalidUseCaseError,
 )
 from featurebyte.models.persistent import QueryFilter
@@ -127,6 +128,9 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
             if use case is not associated with the observation table to remove
         ObservationTableInvalidUseCaseError
             if observation table to remove is the default EDA or preview table
+        DocumentUpdateError
+            if observation table to set as default EDA table is invalid
+
 
         Returns
         -------
@@ -137,6 +141,15 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
                 observation_table = await self.observation_table_service.get_document(
                     document_id=obs_id
                 )
+                if not observation_table.is_valid:
+                    reason = ""
+                    if observation_table.invalid_reason:
+                        reason += observation_table.invalid_reason
+                    raise DocumentUpdateError(
+                        f"Cannot set observation table {obs_id} as default EDA table as it is invalid. "
+                        f"{reason}"
+                    )
+
                 if use_case_id not in observation_table.use_case_ids:
                     await self.observation_table_service.update_observation_table(
                         observation_table_id=obs_id,

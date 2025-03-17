@@ -120,6 +120,7 @@ def create_observation_table_fixture(
         context_id=None,
         context_empty=False,
         entity_id=None,
+        table_with_missing_data=None,
     ):
         ob_table_id = ObjectId(ob_table_id)
 
@@ -171,6 +172,7 @@ def create_observation_table_fixture(
                 ],
                 "num_rows": 1000,
                 "most_recent_point_in_time": "2023-01-15T10:00:00",
+                "table_with_missing_data": table_with_missing_data,
                 "context_id": context_id,
                 "use_case_ids": use_case_ids,
                 "primary_entity_ids": primary_entity_ids,
