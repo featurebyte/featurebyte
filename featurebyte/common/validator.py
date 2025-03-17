@@ -181,7 +181,7 @@ def construct_sort_validator(field: Optional[str] = None) -> Any:
         _ = cls
         if field:
             return sorted(value, key=_extract_key)
-        return sorted(value)
+        return sorted(value or [])
 
     return _sort_validator
 

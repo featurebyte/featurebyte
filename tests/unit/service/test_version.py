@@ -899,3 +899,45 @@ async def test_feature_create_new_version_without_save(app_container, feature, e
     )
     with pytest.raises(DocumentNotFoundError):
         await app_container.feature_service.get_document(document_id=new_feat_version.id)
+
+
+@pytest.mark.asyncio
+async def test_feature_version(app_container, feature, event_table):
+    """Test feature version"""
+    assert feature.version.suffix is None
+
+    # create a new version
+    facade_service = app_container.feature_facade_service
+    new_feat_version = await facade_service.create_new_version(
+        data=FeatureNewVersionCreate(
+            source_feature_id=feature.id,
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name=event_table.name,
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="1d", period="1d", offset="1h"
+                    ),
+                )
+            ],
+        ),
+    )
+    assert new_feat_version.version.suffix == 1
+
+    # delete original feature
+    await facade_service.delete_feature(feature_id=feature.id)
+
+    # create another version
+    another_feat_version = await facade_service.create_new_version(
+        data=FeatureNewVersionCreate(
+            source_feature_id=new_feat_version.id,
+            table_feature_job_settings=[
+                TableFeatureJobSetting(
+                    table_name=event_table.name,
+                    feature_job_setting=FeatureJobSetting(
+                        blind_spot="2d", period="1d", offset="1h"
+                    ),
+                )
+            ],
+        ),
+    )
+    assert another_feat_version.version.suffix == 2
