@@ -78,11 +78,15 @@ class BaseFeatureService(
         VersionIdentifier
         """
         version_name = get_version()
-        query_result = await self.list_documents_as_dict(
+        max_suffix_num = -1
+        async for feature_dict in self.list_documents_as_dict_iterator(
             query_filter={"name": name, "version.name": version_name}
-        )
-        count = query_result["total"]
-        return VersionIdentifier(name=version_name, suffix=count or None)
+        ):
+            feat_suffix_num = feature_dict["version"].get("suffix", None) or 0
+            max_suffix_num = max(max_suffix_num, feat_suffix_num)
+
+        suffix = None if max_suffix_num == -1 else max_suffix_num + 1
+        return VersionIdentifier(name=version_name, suffix=suffix)
 
     async def extract_derived_data(
         self, graph: QueryGraphModel, node_name: str
