@@ -184,7 +184,6 @@ async def test_catalog_cleanup(
         "FEATURE_TABLE_CACHE",
         "HISTORICAL_FEATURE_TABLE",
         "OBSERVATION_TABLE",
-        "missing_data_OBSERVATION_TABLE",
     ]
 
     # check for remote files
