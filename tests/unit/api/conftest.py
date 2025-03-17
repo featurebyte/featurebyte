@@ -3,6 +3,7 @@ Common test fixtures used across api test directories
 """
 
 import textwrap
+import time
 from datetime import datetime
 from unittest.mock import Mock, patch
 
@@ -27,6 +28,7 @@ from featurebyte.api.item_table import ItemTable
 from featurebyte.api.source_table import SourceTable
 from featurebyte.config import Configurations
 from featurebyte.models.feature_store import TableStatus
+from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting
 from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
 
 
@@ -306,6 +308,42 @@ def snowflake_item_table_fixture(
         _id=snowflake_item_table_id,
     )
     yield item_table
+
+
+@pytest.fixture(name="event_table_with_cron_feature_job_setting")
+def event_table_with_cron_feature_job_setting_fixture(saved_event_table, cust_id_entity):
+    """
+    Fixture for an EventTable with a CronFeatureJobSetting as the default feature job setting
+    """
+    saved_event_table.update_default_feature_job_setting(
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 0 * * *",
+            reference_timezone="Etc/UTC",
+            blind_spot="600s",
+        )
+    )
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+    yield saved_event_table
+
+
+@pytest.fixture(name="item_table_with_cron_feature_job_setting")
+def item_table_with_cron_feature_job_setting_fixture(
+    snowflake_item_table,
+    saved_event_table,
+):
+    """
+    Fixture for an ItemTable whose EventTable has a CronFeatureJobSetting as the default feature job
+    setting.
+    """
+    saved_event_table.update_default_feature_job_setting(
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 0 * * *",
+            reference_timezone="Etc/UTC",
+            blind_spot="600s",
+        )
+    )
+    time.sleep(1)
+    yield snowflake_item_table
 
 
 @pytest.fixture()

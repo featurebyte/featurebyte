@@ -14,7 +14,9 @@ from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.enum import TableDataType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import GraphNodeType
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.table import ItemTableData
 from featurebyte.query_graph.node.metadata.operation import DerivedDataColumn
 
@@ -66,7 +68,7 @@ class ItemView(View, GroupByMixin, RawMixin):
         "of the Event Table related to the Item "
         "view.",
     )
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(
+    default_feature_job_setting: Optional[FeatureJobSettingUnion] = Field(
         frozen=True,
         description="Returns the default feature job setting for the view.\n\n"
         "The Default Feature Job Setting establishes the default setting used "

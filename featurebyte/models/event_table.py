@@ -15,7 +15,10 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.feature_store import TableModel
 from featurebyte.query_graph.graph_node.base import GraphNode
 from featurebyte.query_graph.model.column_info import ColumnInfo
-from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.feature_job_setting import (
+    FeatureJobSetting,
+    FeatureJobSettingUnion,
+)
 from featurebyte.query_graph.model.table import EventTableData
 from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.nested import ViewMetadata
@@ -61,7 +64,7 @@ class EventTableModel(EventTableData, TableModel):
         Datetime when the EventTable object was last updated
     """
 
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    default_feature_job_setting: Optional[FeatureJobSettingUnion] = Field(default=None)
     _table_data_class: ClassVar[Type[EventTableData]] = EventTableData
 
     # pydantic validators
