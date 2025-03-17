@@ -7,6 +7,7 @@ from http import HTTPStatus
 import pytest
 from bson import ObjectId
 
+from featurebyte.query_graph.node.schema import TableDetails
 from tests.unit.routes.base import BaseCatalogApiTestSuite
 
 
@@ -735,3 +736,47 @@ class TestUseCaseApi(BaseCatalogApiTestSuite):
         response = test_api_client.get(f"{self.base_route}/{doc_id}")
         assert response.status_code == HTTPStatus.OK
         assert response.json()["name"] == "some other name"
+
+    @pytest.mark.asyncio
+    async def test_update_eda_table_with_invalid_observation_table(
+        self,
+        api_client_persistent,
+        create_success_response,
+        create_observation_table,
+    ):
+        """Test update eda table with invalid observation table"""
+        test_api_client, _ = api_client_persistent
+        use_case = create_success_response.json()
+
+        # create an observation table
+        observation_table_id = ObjectId()
+        await create_observation_table(
+            ob_table_id=observation_table_id,
+            use_case_id=use_case["_id"],
+            context_id=use_case["context_id"],
+            table_with_missing_data=TableDetails(
+                database_name="test_db",
+                schema_name="test_schema",
+                table_name="test_table",
+            ).model_dump(),
+        )
+
+        # check table created with missing data
+        response = test_api_client.get(f"/observation_table/{observation_table_id}")
+        assert response.status_code == HTTPStatus.OK
+        observation_table = response.json()
+        assert observation_table["table_with_missing_data"] is not None
+
+        # attempt to use the observation table as eda table
+        response = test_api_client.patch(
+            f"{self.base_route}/{use_case['_id']}",
+            json={"default_eda_table_id": str(observation_table_id)},
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {
+            "detail": (
+                f"Cannot set observation table {observation_table['_id']} as default EDA table as it is invalid. "
+                "The table has missing data. Please check the table with missing data for more details. "
+                "Please review the table for details and create a new table with all required data filled in."
+            )
+        }

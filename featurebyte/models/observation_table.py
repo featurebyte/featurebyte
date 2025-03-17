@@ -176,8 +176,7 @@ class ObservationTableModel(MaterializedTableModel):
             return self.request_input.target_id
         return None
 
-    @property
-    def is_valid(self) -> bool:
+    def check_table_is_valid(self) -> bool:
         """
         Check if the observation table is valid
 
@@ -191,6 +190,27 @@ class ObservationTableModel(MaterializedTableModel):
             # missing data exists or not. If it does exist, then the observation table is not valid.
             return self.table_with_missing_data is None
         return True
+
+    @property
+    def invalid_reason(self) -> Optional[str]:
+        """
+        Get the reason why the observation table is invalid
+
+        Returns
+        -------
+        Optional[str]
+            The reason why the observation table is invalid
+        """
+        if self.check_table_is_valid():
+            return None
+
+        if isinstance(self.request_input, TargetInput):
+            reason = (
+                "The table has missing data. Please check the table with missing data for more details. "
+                "Please review the table for details and create a new table with all required data filled in."
+            )
+            return reason
+        return ""
 
     @field_validator("most_recent_point_in_time", "least_recent_point_in_time")
     @classmethod
