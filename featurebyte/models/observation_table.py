@@ -176,8 +176,7 @@ class ObservationTableModel(MaterializedTableModel):
             return self.request_input.target_id
         return None
 
-    @property
-    def is_valid(self) -> bool:
+    def check_table_is_valid(self) -> bool:
         """
         Check if the observation table is valid
 
@@ -202,7 +201,7 @@ class ObservationTableModel(MaterializedTableModel):
         Optional[str]
             The reason why the observation table is invalid
         """
-        if self.is_valid:
+        if self.check_table_is_valid():
             return None
 
         if isinstance(self.request_input, TargetInput):

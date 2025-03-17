@@ -113,7 +113,8 @@ class ObservationTableController(
         """
         observation_table: ObservationTableModel = await self.get(document_id=document_id)
         return ObservationTableModelResponse(
-            **observation_table.model_dump(by_alias=True), is_valid=observation_table.is_valid
+            **observation_table.model_dump(by_alias=True),
+            is_valid=observation_table.check_table_is_valid(),
         )
 
     async def upload_observation_table(

@@ -1688,6 +1688,22 @@ def freeze_time_observation_table_task_fixture():
         yield
 
 
+@pytest.fixture(name="patch_observation_table_task_get_table_with_missing_data", autouse=True)
+def patch_observation_table_task_get_table_with_missing_data_fixture():
+    """Patch ObservationTableTask.get_table_with_missing_data to return None"""
+    with (
+        patch(
+            "featurebyte.worker.task.observation_table.ObservationTableTask.get_table_with_missing_data"
+        ) as mock_observation_table_task_get_table_with_missing_data,
+        patch(
+            "featurebyte.worker.task.target_table.TargetTableTask.get_table_with_missing_data"
+        ) as mock_target_table_task_get_table_with_missing_data,
+    ):
+        mock_observation_table_task_get_table_with_missing_data.return_value = None
+        mock_target_table_task_get_table_with_missing_data.return_value = None
+        yield
+
+
 @pytest.fixture(name="patched_observation_table_service")
 def patched_observation_table_service_fixture(freeze_time_observation_table_task):
     """

@@ -141,7 +141,7 @@ class UseCaseController(BaseDocumentController[UseCaseModel, UseCaseService, Use
                 observation_table = await self.observation_table_service.get_document(
                     document_id=obs_id
                 )
-                if not observation_table.is_valid:
+                if not observation_table.check_table_is_valid():
                     reason = ""
                     if observation_table.invalid_reason:
                         reason += observation_table.invalid_reason
