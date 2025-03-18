@@ -19,6 +19,8 @@ from featurebyte.models.feature_list import FeatureListModel
 from featurebyte.models.proxy_table import ProxyTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.feature_job_setting import (
+    CronFeatureJobSetting,
+    FeatureJobSetting,
     FeatureJobSettingUnion,
     TableFeatureJobSetting,
 )
@@ -119,6 +121,12 @@ class VersionService:
                             raise NoFeatureJobSettingInSourceError(
                                 f"No feature job setting found in source id {table_id}"
                             )
+                        # Replacing CronFeatureJobSetting with unconstrained FeatureJobSetting is
+                        # not supported
+                        if isinstance(
+                            agg_node.parameters.feature_job_setting, CronFeatureJobSetting
+                        ) and isinstance(feature_job_setting, FeatureJobSetting):
+                            feature_job_setting = None
                 else:
                     # use the provided feature job setting
                     assert table.name is not None, "Table name should not be None."

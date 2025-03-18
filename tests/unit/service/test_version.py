@@ -766,6 +766,61 @@ async def test_create_new_feature_version_using_source_settings_ts_window_agg_fe
 
 
 @pytest.mark.asyncio
+async def test_create_new_feature_version_using_source_settings_ts_window_agg_feature_from_event_table(
+    event_table_service,
+    version_service,
+    snowflake_event_table_with_entity,
+    ts_window_aggregate_feature_from_event_table,
+):
+    """
+    Test create new feature version using source settings for time series aggregate from EventTable.
+
+    The feature is a time series window aggregate derived from an EventTable. When the source
+    settings are used, the feature job setting should not be replaced because changing the feature
+    job setting from CronFeatureJobSetting to FeatureJobSetting is not supported.
+    """
+    event_table = snowflake_event_table_with_entity
+    ts_window_aggregate_feature_from_event_table.save()
+
+    assert ts_window_aggregate_feature_from_event_table.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=event_table.id,
+            feature_job_setting=CronFeatureJobSetting(crontab="0 8 1 * *"),
+        )
+    ]
+
+    # prepare event table before create new version from source settings
+    columns_info_with_cdi = []
+    for col in event_table.columns_info:
+        if col.name == "col_float":
+            col.critical_data_info = CriticalDataInfo(
+                cleaning_operations=[MissingValueImputation(imputed_value=0.0)]
+            )
+        columns_info_with_cdi.append(col)
+
+    await event_table_service.update_document(
+        document_id=event_table.id,
+        data=EventTableServiceUpdate(
+            default_feature_job_setting=FeatureJobSetting(
+                blind_spot="1h", period="2h", offset="30m"
+            ),
+            columns_info=columns_info_with_cdi,
+        ),
+    )
+
+    # check create new version using source settings (FeatureJobSetting and not cron based)
+    new_version = await version_service.create_new_feature_version_using_source_settings(
+        document_id=ts_window_aggregate_feature_from_event_table.id
+    )
+    assert new_version.table_id_feature_job_settings == [
+        TableIdFeatureJobSetting(
+            table_id=event_table.id,
+            feature_job_setting=CronFeatureJobSetting(crontab="0 8 1 * *"),
+        )
+    ]
+
+
+@pytest.mark.asyncio
 async def test_create_new_feature_version_using_source_settings__no_changes_throws_error(
     version_service,
     feature,
