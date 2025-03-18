@@ -28,6 +28,7 @@ from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
+    FeatureJobSettingUnion,
 )
 from featurebyte.query_graph.model.time_series_table import TimeInterval
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
@@ -199,7 +200,7 @@ class EventTableInfo(TableInfo):
 
     event_timestamp_column: str
     event_id_column: Optional[str]
-    default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
+    default_feature_job_setting: Optional[FeatureJobSettingUnion] = Field(default=None)
 
 
 class ItemTableInfo(TableInfo):

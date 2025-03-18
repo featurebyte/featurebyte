@@ -354,6 +354,15 @@ def test_info__event_table_without_record_creation_date(
     _ = event_table.info()
 
 
+def test_info__cron_default_feature_job_setting(event_table_with_cron_feature_job_setting):
+    """
+    Test info on event table with cron default feature job setting
+    """
+    event_table = event_table_with_cron_feature_job_setting
+    info = event_table.info()
+    assert "crontab" in info["default_feature_job_setting"]
+
+
 def test_info(saved_event_table, cust_id_entity):
     """
     Test info
