@@ -2547,6 +2547,23 @@ def ts_window_aggregate_feature_fixture(snowflake_time_series_view_with_entity):
     return feature
 
 
+@pytest.fixture(name="ts_window_aggregate_feature_from_event_table")
+def ts_window_aggregate_feature_from_event_table_fixture(snowflake_event_view_with_entity):
+    """
+    Fixture for a time series aggregate feature derived from an EventTable
+    """
+    feature = snowflake_event_view_with_entity.groupby(by_keys="cust_id").aggregate_over(
+        value_column="col_float",
+        method="sum",
+        windows=[CalendarWindow(unit="MONTH", size=3)],
+        feature_names=["sum_3month"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 1 * *",
+        ),
+    )["sum_3month"]
+    return feature
+
+
 @pytest.fixture(name="request_column_point_in_time")
 def request_column_point_in_time():
     """
