@@ -64,6 +64,7 @@ def get_entity_lookup_graph(
     additional_params: Dict[str, Any]
     if relation_table.type == TableDataType.SCD_TABLE:
         assert isinstance(relation_table, SCDTableModel)
+        # TODO: share logic with featurebyte/query_graph/sql/parent_serving.py
         effective_timestamp_metadata = (
             DBVarTypeMetadata(timestamp_schema=relation_table.effective_timestamp_schema)
             if relation_table.effective_timestamp_schema
