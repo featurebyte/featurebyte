@@ -21,6 +21,7 @@ from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_readiness import FeatureReadinessService
+from featurebyte.service.feature_type import FeatureTypeService
 from featurebyte.service.version import VersionService
 
 
@@ -35,12 +36,14 @@ class FeatureFacadeService:
         feature_service: FeatureService,
         feature_namespace_service: FeatureNamespaceService,
         feature_readiness_service: FeatureReadinessService,
+        feature_type_service: FeatureTypeService,
         version_service: VersionService,
         feature_list_service: FeatureListService,
     ):
         self.feature_service = feature_service
         self.feature_namespace_service = feature_namespace_service
         self.feature_readiness_service = feature_readiness_service
+        self.feature_type_service = feature_type_service
         self.version_service = version_service
         self.feature_list_service = feature_list_service
 
@@ -61,6 +64,16 @@ class FeatureFacadeService:
         await self.feature_readiness_service.update_feature_namespace(
             feature_namespace_id=document.feature_namespace_id,
         )
+        feature_namespace = await self.feature_namespace_service.get_document(
+            document_id=document.feature_namespace_id
+        )
+        if feature_namespace.feature_type is None:
+            feature_type = await self.feature_type_service.detect_feature_type(feature=document)
+            await self.feature_namespace_service.update_document(
+                document_id=document.feature_namespace_id,
+                data=FeatureNamespaceServiceUpdate(feature_type=feature_type),
+            )
+
         output = await self.feature_service.get_document(document_id=document.id)
         return output
 

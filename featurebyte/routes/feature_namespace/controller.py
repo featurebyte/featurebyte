@@ -16,6 +16,7 @@ from featurebyte.routes.common.feature_or_target_helper import FeatureOrTargetHe
 from featurebyte.schema.feature_namespace import (
     FeatureNamespaceList,
     FeatureNamespaceModelResponse,
+    FeatureNamespaceServiceUpdate,
     FeatureNamespaceUpdate,
 )
 from featurebyte.schema.info import EntityBriefInfoList, FeatureNamespaceInfo, TableBriefInfoList
@@ -23,6 +24,7 @@ from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_facade import FeatureFacadeService
 from featurebyte.service.feature_namespace import FeatureNamespaceService
+from featurebyte.service.feature_type import FeatureTypeService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
 from featurebyte.service.table import TableService
 
@@ -47,6 +49,7 @@ class FeatureNamespaceController(
         table_service: TableService,
         catalog_name_injector: CatalogNameInjector,
         feature_or_target_helper: FeatureOrTargetHelper,
+        feature_type_service: FeatureTypeService,
     ):
         super().__init__(feature_namespace_service)
         self.feature_facade_service = feature_facade_service
@@ -55,6 +58,7 @@ class FeatureNamespaceController(
         self.table_service = table_service
         self.catalog_name_injector = catalog_name_injector
         self.feature_or_target_helper = feature_or_target_helper
+        self.feature_type_service = feature_type_service
 
     async def get(
         self,
@@ -152,6 +156,19 @@ class FeatureNamespaceController(
                 feature_id=data.default_feature_id
             )
 
+        if data.feature_type:
+            namespace = await self.service.get_document(document_id=feature_namespace_id)
+            default_feature = await self.feature_service.get_document(
+                document_id=namespace.default_feature_id
+            )
+            self.feature_type_service.validate_feature_type(
+                feature=default_feature, feature_type=data.feature_type
+            )
+            await self.service.update_document(
+                document_id=feature_namespace_id,
+                data=FeatureNamespaceServiceUpdate(feature_type=data.feature_type),
+            )
+
         return await self.get(document_id=feature_namespace_id)
 
     async def get_info(
@@ -216,4 +233,5 @@ class FeatureNamespaceController(
             version_count=len(namespace.feature_ids),
             catalog_name=catalog_name,
             description=namespace.description,
+            feature_type=namespace.feature_type,
         )

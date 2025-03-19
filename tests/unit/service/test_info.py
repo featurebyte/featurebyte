@@ -352,6 +352,7 @@ async def test_get_feature_info(app_container, production_ready_feature, feature
         created_at=feature_namespace.created_at,
         updated_at=info.updated_at,
         catalog_name="grocery",
+        feature_type=None,
     )
     assert info == expected_info
 
@@ -467,6 +468,7 @@ def expected_feature_iet_info_fixture(feature_iet):
         created_at=feature_iet.created_at,
         updated_at=feature_iet.updated_at,
         catalog_name="grocery",
+        feature_type=None,
     )
 
 
@@ -564,6 +566,7 @@ async def test_get_feature_namespace_info(app_container, feature_namespace):
         created_at=feature_namespace.created_at,
         updated_at=None,
         catalog_name="grocery",
+        feature_type=None,
     )
     assert info == expected_info
 

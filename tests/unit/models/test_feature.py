@@ -41,6 +41,7 @@ def feature_name_space_dict_fixture():
         "block_modification_by": [],
         "description": None,
         "is_deleted": False,
+        "feature_type": None,
     }
 
 

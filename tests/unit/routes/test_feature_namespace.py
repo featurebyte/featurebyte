@@ -207,7 +207,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
         assert response_dict == {
             "name": "sum_30m",
             "created_at": response_dict["created_at"],
-            "updated_at": None,
+            "updated_at": response_dict["updated_at"],
             "entities": [
                 {"name": "customer", "serving_names": ["cust_id"], "catalog_name": "grocery"}
             ],
@@ -226,6 +226,7 @@ class TestFeatureNamespaceApi(BaseCatalogApiTestSuite):
             "version_count": 1,
             "catalog_name": "grocery",
             "description": None,
+            "feature_type": "numeric",
         }
 
         verbose_response = test_api_client.get(

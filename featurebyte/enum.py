@@ -367,6 +367,61 @@ class FeatureType(StrEnum):
         """
         return {cls.NUMERIC, cls.CATEGORICAL, cls.DICT, cls.EMBEDDING, cls.TEXT, cls.OTHERS}
 
+    @classmethod
+    def valid_categorical_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for categorical features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.CHAR, DBVarType.VARCHAR, DBVarType.INT, DBVarType.BOOL}
+
+    @classmethod
+    def valid_numeric_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for numeric features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.FLOAT, DBVarType.INT, DBVarType.BOOL, DBVarType.TIMEDELTA}
+
+    @classmethod
+    def valid_text_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for text features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.VARCHAR, DBVarType.CHAR}
+
+    @classmethod
+    def valid_dict_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for dictionary features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.DICT, DBVarType.MAP, DBVarType.OBJECT, DBVarType.STRUCT}
+
+    @classmethod
+    def valid_embedding_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for embedding features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.EMBEDDING, DBVarType.ARRAY}
+
 
 class TargetType(StrEnum):
     """
