@@ -13,6 +13,7 @@ from sqlglot.expressions import Select, select
 from featurebyte.enum import SpecialColumnName, TableDataType
 from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.sql.aggregator.lookup import LookupAggregator
@@ -139,7 +140,17 @@ def _get_lookup_spec_from_join_step(
 ) -> LookupSpec:
     # Set up data specific parameters
     if join_step.table.type == TableDataType.SCD_TABLE:
-        scd_parameters = SCDLookupParameters(**join_step.table.model_dump())
+        scd_table_params = join_step.table.model_dump()
+        effective_timestamp_schema = scd_table_params.get("effective_timestamp_schema")
+        if effective_timestamp_schema is not None:
+            effective_timestamp_metadata = DBVarTypeMetadata(
+                timestamp_schema=scd_table_params["effective_timestamp_schema"],
+            )
+        else:
+            effective_timestamp_metadata = None
+        scd_parameters = SCDLookupParameters(
+            **scd_table_params, effective_timestamp_metadata=effective_timestamp_metadata
+        )
     else:
         scd_parameters = None
 

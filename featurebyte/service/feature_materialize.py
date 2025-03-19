@@ -484,7 +484,10 @@ class FeatureMaterializeService:
             ),
             source_type=session.source_type,
         )
-        await session.execute_query_long_running(create_entity_universe_table_query)
+        try:
+            await session.execute_query_long_running(create_entity_universe_table_query)
+        except:
+            raise
         lookup_feature_table_details = TableDetails(
             database_name=session.database_name,
             schema_name=session.schema_name,

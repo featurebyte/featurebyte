@@ -16,6 +16,7 @@ from featurebyte import (
     Relationship,
     Table,
     TargetNamespace,
+    TimestampSchema,
     UseCase,
 )
 from featurebyte.enum import DBVarType
@@ -46,7 +47,9 @@ def event_entity_fixture():
 
 
 @pytest_asyncio.fixture(name="tables", scope="session")
-async def tables_fixture(session, data_source, customer_entity, event_entity):
+async def tables_fixture(
+    session, data_source, customer_entity, event_entity, timestamp_format_string_with_time
+):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
     """
@@ -64,7 +67,7 @@ async def tables_fixture(session, data_source, customer_entity, event_entity):
             "2020-01-01 10:00:00",
             "2022-04-12 10:00:00",
             "2022-04-20 10:00:00",
-        ]),
+        ]).strftime("%Y|%m|%d|%H:%M:%S"),
         "scd_cust_id": [1000, 1000, 1000],
         "scd_city": ["tokyo", "paris", "tokyo"],
     })
@@ -112,6 +115,7 @@ async def tables_fixture(session, data_source, customer_entity, event_entity):
         name=f"{table_prefix}_scd_table_1",
         natural_key_column="scd_cust_id",
         effective_timestamp_column="effective_ts",
+        effective_timestamp_schema=TimestampSchema(format_string=timestamp_format_string_with_time),
     )
     scd_table_1["scd_cust_id"].as_entity(customer_entity.name)
     scd_table_1["scd_city"].as_entity(city_entity.name)
