@@ -53,7 +53,7 @@ WITH ENTITY_UNIVERSE AS (
           "__FB_EFFECTIVE_TS_COL"
         FROM (
           SELECT
-            CAST(CONVERT_TIMEZONE('UTC', "POINT_IN_TIME") AS TIMESTAMP) AS "__FB_TS_COL",
+            CONVERT_TIMEZONE('UTC', "POINT_IN_TIME") AS "__FB_TS_COL",
             "cust_id" AS "__FB_KEY_COL_0",
             NULL AS "__FB_EFFECTIVE_TS_COL",
             2 AS "__FB_TS_TIE_BREAKER_COL",
@@ -67,7 +67,7 @@ WITH ENTITY_UNIVERSE AS (
           )
           UNION ALL
           SELECT
-            CAST(CONVERT_TIMEZONE('UTC', "effective_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
+            CONVERT_TIMEZONE('UTC', "effective_timestamp") AS "__FB_TS_COL",
             "col_text" AS "__FB_KEY_COL_0",
             "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
             1 AS "__FB_TS_TIE_BREAKER_COL",
@@ -132,7 +132,7 @@ WITH ENTITY_UNIVERSE AS (
       ON L."__FB_LAST_TS" = R."effective_timestamp"
       AND L."__FB_KEY_COL_0" = R."col_text"
       AND (
-        L."__FB_TS_COL" < CAST(CONVERT_TIMEZONE('UTC', R."end_timestamp") AS TIMESTAMP)
+        L."__FB_TS_COL" < CONVERT_TIMEZONE('UTC', R."end_timestamp")
         OR R."end_timestamp" IS NULL
       )
   ) AS REQ
