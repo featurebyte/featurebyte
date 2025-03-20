@@ -5,6 +5,7 @@ Feature Namespace module.
 from typing import Any, ClassVar, List, Optional, Union
 
 import pandas as pd
+from typeguard import typechecked
 
 from featurebyte.api.api_handler.base import ListHandler
 from featurebyte.api.api_handler.feature_namespace import FeatureNamespaceListHandler
@@ -15,6 +16,7 @@ from featurebyte.api.feature_util import (
     FEATURE_LIST_FOREIGN_KEYS,
     filter_feature_list,
 )
+from featurebyte.enum import FeatureType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.schema.feature_namespace import (
@@ -84,6 +86,17 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
         """
         return self.cached_model.default_feature_id
 
+    @property
+    def feature_type(self) -> FeatureType:
+        """
+        Feature type of the default feature of this feature namespace
+
+        Returns
+        -------
+        FeatureType
+        """
+        return self.cached_model.feature_type
+
     @classmethod
     def _list_handler(cls) -> ListHandler:
         return FeatureNamespaceListHandler(
@@ -121,3 +134,19 @@ class FeatureNamespace(FeatureOrTargetNamespaceMixin):
         """
         feature_list = super().list(include_id=include_id)
         return filter_feature_list(feature_list, primary_entity, primary_table)
+
+    @typechecked
+    def update_feature_type(self, feature_type: Union[FeatureType, str]) -> None:
+        """
+        Update feature type of the default feature of this feature.
+
+        Parameters
+        ----------
+        feature_type: Union[FeatureType, str]
+            Feature type to update
+        """
+        feature_type_value = FeatureType(feature_type).value
+        self.update(
+            update_payload={"feature_type": feature_type_value},
+            allow_update_local=False,
+        )
