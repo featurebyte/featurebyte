@@ -83,8 +83,8 @@ class S3Storage(Storage):
                 },
             )
             with open(local_path, "rb") as file_obj:
-                await client.put_object(
-                    Bucket=self.bucket_name, Key=str(remote_path), Body=file_obj
+                await client.upload_fileobj(
+                    Bucket=self.bucket_name, Key=str(remote_path), Fileobj=file_obj
                 )
 
     async def delete(self, remote_path: Path) -> None:
