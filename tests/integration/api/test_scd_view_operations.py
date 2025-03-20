@@ -793,10 +793,12 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type, 
     """
     scd_view = scd_table_custom_date_format.get_view()
     feature_lookup = scd_view["User Status"].as_feature(
-        "Current User Status",
+        "Current User Status (custom date format)",
     )
     feature_asat = scd_view.groupby("User Status").aggregate_asat(
-        value_column=None, method="count", feature_name="Current Number of Users With This Status"
+        value_column=None,
+        method="count",
+        feature_name="Current Number of Users With This Status (custom date format)",
     )
     feature_list = FeatureList(
         [feature_lookup, feature_asat], name="test_scd_view_custom_date_format"
@@ -806,8 +808,8 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type, 
         "üser id": [1] * 10,
     })
     expected = observations_set.copy()
-    expected["Current User Status"] = ["STÀTUS_CODE_0"] * 10
-    expected["Current Number of Users With This Status"] = [
+    expected["Current User Status (custom date format)"] = ["STÀTUS_CODE_0"] * 10
+    expected["Current Number of Users With This Status (custom date format)"] = [
         1,
         1,
         1,
@@ -837,8 +839,8 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type, 
         assert online_result_dict["features"] == [
             {
                 "üser id": 1,
-                "Current User Status": "STÀTUS_CODE_0",
-                "Current Number of Users With This Status": 1,
+                "Current User Status (custom date format)": "STÀTUS_CODE_0",
+                "Current Number of Users With This Status (custom date format)": 1,
             }
         ]
     finally:
