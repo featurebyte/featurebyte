@@ -9,10 +9,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
 
-from aiobotocore.client import AioBaseClient
-from aiobotocore.session import get_session
+import aioboto3
 from azure.core.credentials import AzureNamedKeyCredential
 from azure.storage.blob.aio import ContainerClient
+from botocore.client import BaseClient
 
 from featurebyte.config import Configurations
 from featurebyte.storage import AzureBlobStorage, LocalStorage, LocalTempStorage, S3Storage, Storage
@@ -30,17 +30,17 @@ AZURE_STORAGE_CONTAINER_NAME = os.environ.get("AZURE_STORAGE_CONTAINER_NAME", "f
 
 
 @asynccontextmanager
-async def get_client() -> AsyncIterator[AioBaseClient]:
+async def get_client() -> AsyncIterator[BaseClient]:
     """
     Get an s3 client generated from settings.MinioSettings
 
     Yields
     ------
-    AsyncIterator[AioBaseClient]
+    AsyncIterator[BaseClient]
         s3 client
     """
-    session = get_session()
-    async with session.create_client(
+    session = aioboto3.Session()
+    async with session.client(
         service_name="s3",
         region_name=S3_REGION_NAME,
         endpoint_url=S3_URL,

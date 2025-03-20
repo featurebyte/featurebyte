@@ -78,8 +78,6 @@ version = "3.0.0"
 
 [tool.poetry.dependencies]
 PyYAML = "^6.0"
-aiobotocore = { version = "^2.4.0", extras = ["boto3"] }
-aiofiles = "^22.1.0"
 alive-progress = "^3.1.1"
 asyncache = "^0.3.1"
 black = "^24.3.0"
@@ -130,6 +128,7 @@ wheel = "0.40.0"
 google-cloud-bigquery-storage = "^2.25.0"
 pydantic-extra-types = "^2.10.0"
 croniter = "^6.0.0"
+aioboto3 = "^14.1.0"
 
 [tool.poetry.extras]
 server = ["cachetools", "databricks-sdk", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "thrift-sasl", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "requests-kerberos", "feast"]
