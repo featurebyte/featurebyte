@@ -29,6 +29,7 @@ import redis
 import yaml
 from bson import ObjectId
 from databricks import sql as databricks_sql
+from databricks.sdk.core import Config, oauth_service_principal
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import ValidationError
@@ -55,9 +56,9 @@ from featurebyte.enum import InternalName, SourceType, StorageType, TimeInterval
 from featurebyte.logging import get_logger
 from featurebyte.models.base import DEFAULT_CATALOG_ID, User
 from featurebyte.models.credential import (
-    AccessTokenCredential,
     CredentialModel,
     GoogleCredential,
+    OAuthCredential,
     PrivateKeyCredential,
     UsernamePasswordCredential,
 )
@@ -246,15 +247,17 @@ def credentials_mapping():
         "databricks_featurestore": CredentialModel(
             name="databricks_featurestore",
             feature_store_id=ObjectId(),
-            database_credential=AccessTokenCredential(
-                access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
+            database_credential=OAuthCredential(
+                client_id=os.getenv("DATABRICKS_CLIENT_ID", ""),
+                client_secret=os.getenv("DATABRICKS_CLIENT_SECRET", ""),
             ),
         ),
         "databricks_unity_featurestore": CredentialModel(
             name="databricks_unity_featurestore",
             feature_store_id=ObjectId(),
-            database_credential=AccessTokenCredential(
-                access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
+            database_credential=OAuthCredential(
+                client_id=os.getenv("DATABRICKS_CLIENT_ID", ""),
+                client_secret=os.getenv("DATABRICKS_CLIENT_SECRET", ""),
             ),
         ),
         "spark_featurestore": CredentialModel(
@@ -537,12 +540,22 @@ def data_warehouse_initialization_fixture(
     if source_type in {SourceType.DATABRICKS, SourceType.DATABRICKS_UNITY}:
         # wait for databricks compute cluster to be ready
         databricks_details = cast(DatabricksDetails, feature_store_details)
+        os.environ.pop("GOOGLE_CREDENTIALS", None)
+
+        def credentials_provider():
+            config = Config(
+                host=f"https://{databricks_details.host}",
+                client_id=feature_store_credential.database_credential.client_id,
+                client_secret=feature_store_credential.database_credential.client_secret,
+            )
+            return oauth_service_principal(config)
+
         databricks_sql.connect(
             server_hostname=databricks_details.host,
             http_path=databricks_details.http_path,
-            access_token=feature_store_credential.database_credential.access_token,
             catalog=databricks_details.catalog_name,
             schema=databricks_details.schema_name,
+            credentials_provider=credentials_provider,
         )
 
 
