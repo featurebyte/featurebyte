@@ -804,7 +804,6 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type, 
     observations_set = pd.DataFrame({
         "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
         "üser id": [1] * 10,
-        "user_status_2": ["STÀTUS_CODE_37"] * 10,
     })
     expected = observations_set.copy()
     expected["Current User Status"] = ["STÀTUS_CODE_0"] * 10
@@ -830,12 +829,18 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type, 
     try:
         deployment = feature_list.deploy(make_production_ready=True)
         deployment.enable()
-        online_params = [{"üser id": 1, "user_status_2": "STÀTUS_CODE_37"}]
+        online_params = [{"üser id": 1}]
         online_result = make_online_request(config.get_client(), deployment, online_params)
         online_result_dict = online_result.json()
         if online_result.status_code != 200:
             raise AssertionError(f"Online request failed: {online_result_dict}")
-        assert online_result_dict["features"] == []
+        assert online_result_dict["features"] == [
+            {
+                "üser id": 1,
+                "Current User Status": "STÀTUS_CODE_0",
+                "Current Number of Users With This Status": 1,
+            }
+        ]
     finally:
         if deployment:
             deployment.disable()
