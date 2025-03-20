@@ -97,6 +97,34 @@ def get_dummy_entity_universe() -> Select:
     )
 
 
+def get_timestamp_expr_from_scd_lookup_parameters(
+    scd_parameters: SCDBaseParameters, adapter: BaseAdapter
+) -> Expression:
+    """
+    Get the timestamp expression from SCD lookup parameters
+
+    Parameters
+    ----------
+    scd_parameters: SCDBaseParameters
+        SCD parameters
+    adapter: BaseAdapter
+        SQL adapter
+
+    Returns
+    -------
+    Expression
+    """
+    ts_col = quoted_identifier(scd_parameters.effective_timestamp_column)
+    timestamp_schema = scd_parameters.effective_timestamp_schema
+    if timestamp_schema is not None:
+        ts_col = convert_timestamp_to_utc(
+            column_expr=ts_col,
+            timestamp_schema=timestamp_schema,
+            adapter=adapter,
+        )
+    return ts_col
+
+
 DUMMY_ENTITY_UNIVERSE = get_dummy_entity_universe()
 
 
@@ -214,34 +242,6 @@ class BaseEntityUniverseConstructor:
                 quoted=True,
             )
         return expr
-
-
-def get_timestamp_expr_from_scd_lookup_parameters(
-    scd_parameters: SCDBaseParameters, adapter: BaseAdapter
-) -> Expression:
-    """
-    Get the timestamp expression from SCD lookup parameters
-
-    Parameters
-    ----------
-    scd_parameters: SCDBaseParameters
-        SCD parameters
-    adapter: BaseAdapter
-        SQL adapter
-
-    Returns
-    -------
-    Expression
-    """
-    ts_col = quoted_identifier(scd_parameters.effective_timestamp_column)
-    timestamp_schema = scd_parameters.effective_timestamp_schema
-    if timestamp_schema is not None:
-        ts_col = convert_timestamp_to_utc(
-            column_expr=ts_col,
-            timestamp_schema=timestamp_schema,
-            adapter=adapter,
-        )
-    return ts_col
 
 
 class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
