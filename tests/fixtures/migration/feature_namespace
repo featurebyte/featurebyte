@@ -1,0 +1,144 @@
+[{
+  "_id": {
+    "$oid": "67da9979cc4cb7cba2d5d25e"
+  },
+  "user_id": {
+    "$oid": "64645f76cfc8e397f762c868"
+  },
+  "name": "city_state",
+  "created_at": {
+    "$date": "2023-05-31T15:50:36.585Z"
+  },
+  "updated_at": {
+    "$date": "2023-06-29T07:56:16.456Z"
+  },
+  "block_modification_by": [],
+  "description": "",
+  "is_deleted": false,
+  "catalog_id": {
+    "$oid": "64708919ea4c4876a77d2b80"
+  },
+  "default_version_mode": "AUTO",
+  "entity_ids": [
+    {
+      "$oid": "64708932ea4c4876a77d2b85"
+    }
+  ],
+  "dtype": "FLOAT",
+  "readiness": "PRODUCTION_READY",
+  "feature_type": "numeric",
+  "feature_ids": [
+    {
+      "$oid": "64776b0e5c0291fd4ffbea35"
+    }
+  ],
+  "default_feature_id": {
+    "$oid": "64776b0e5c0291fd4ffbea35"
+  },
+  "online_enabled_feature_ids": [],
+  "table_ids": [
+    {
+      "$oid": "64708925ea4c4876a77d2b83"
+    }
+  ],
+  "feature_theme_id": {
+    "$oid": "67da997acc4cb7cba2d5d267"
+  },
+  "ideation_metadata": null
+},
+{
+  "_id": {
+    "$oid": "67da997acc4cb7cba2d5d270"
+  },
+  "user_id": {
+    "$oid": "64645f76cfc8e397f762c868"
+  },
+  "name": "PostalCode_state",
+  "created_at": {
+    "$date": "2023-05-31T15:50:41.631Z"
+  },
+  "updated_at": {
+    "$date": "2023-06-29T07:56:16.206Z"
+  },
+  "block_modification_by": [],
+  "description": "",
+  "is_deleted": false,
+  "catalog_id": {
+    "$oid": "64708919ea4c4876a77d2b80"
+  },
+  "default_version_mode": "AUTO",
+  "entity_ids": [
+    {
+      "$oid": "64708932ea4c4876a77d2b85"
+    }
+  ],
+  "dtype": "FLOAT",
+  "readiness": "PRODUCTION_READY",
+  "feature_type": "numeric",
+  "feature_ids": [
+    {
+      "$oid": "64776b0f5c0291fd4ffbea36"
+    }
+  ],
+  "default_feature_id": {
+    "$oid": "64776b0f5c0291fd4ffbea36"
+  },
+  "online_enabled_feature_ids": [],
+  "table_ids": [
+    {
+      "$oid": "64708925ea4c4876a77d2b83"
+    }
+  ],
+  "feature_theme_id": {
+    "$oid": "67da997acc4cb7cba2d5d267"
+  },
+  "ideation_metadata": null
+},
+{
+  "_id": {
+    "$oid": "67da997acc4cb7cba2d5d280"
+  },
+  "user_id": {
+    "$oid": "64645f76cfc8e397f762c868"
+  },
+  "name": "Customer_gender",
+  "created_at": {
+    "$date": "2023-05-31T15:50:45.756Z"
+  },
+  "updated_at": {
+    "$date": "2023-06-29T07:56:15.969Z"
+  },
+  "block_modification_by": [],
+  "description": "",
+  "is_deleted": false,
+  "catalog_id": {
+    "$oid": "64708919ea4c4876a77d2b80"
+  },
+  "default_version_mode": "AUTO",
+  "entity_ids": [
+    {
+      "$oid": "64708932ea4c4876a77d2b85"
+    }
+  ],
+  "dtype": "FLOAT",
+  "readiness": "PRODUCTION_READY",
+  "feature_type": "numeric",
+  "feature_ids": [
+    {
+      "$oid": "64776b105c0291fd4ffbea37"
+    }
+  ],
+  "default_feature_id": {
+    "$oid": "64776b105c0291fd4ffbea37"
+  },
+  "online_enabled_feature_ids": [],
+  "table_ids": [
+    {
+      "$oid": "64708925ea4c4876a77d2b83"
+    }
+  ],
+  "feature_theme_id": {
+    "$oid": "67da997acc4cb7cba2d5d267"
+  },
+  "ideation_metadata": null
+}]
