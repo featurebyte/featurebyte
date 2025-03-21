@@ -9,7 +9,7 @@ from typing import List, Optional
 from bson import ObjectId
 from pydantic import Field
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, FeatureType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.feature_namespace import (
     DefaultVersionMode,
@@ -27,6 +27,7 @@ class FeatureNamespaceCreate(FeatureByteBaseModel):
     id: Optional[PydanticObjectId] = Field(default_factory=ObjectId, alias="_id")
     name: NameStr
     dtype: DBVarType
+    feature_type: FeatureType = Field(default=None)
     feature_ids: List[PydanticObjectId] = Field(default_factory=list)
     readiness: FeatureReadiness
     default_feature_id: PydanticObjectId
@@ -59,6 +60,7 @@ class FeatureNamespaceUpdate(BaseDocumentServiceUpdateSchema, FeatureByteBaseMod
 
     default_version_mode: Optional[DefaultVersionMode] = Field(default=None)
     default_feature_id: Optional[PydanticObjectId] = Field(default=None)
+    feature_type: Optional[FeatureType] = Field(default=None)
 
 
 class FeatureNamespaceServiceUpdate(FeatureNamespaceUpdate):

@@ -2054,3 +2054,27 @@ def test_create_new_version_for_non_tile_window_aggregate(
         "non_tile_window_aggregate_1",
         "project_1",
     }
+
+
+def test_update_feature_type(
+    saved_feature, snowflake_dimension_table, cust_id_entity, mock_api_object_cache
+):
+    """Test feature type"""
+    _ = mock_api_object_cache
+
+    assert saved_feature.feature_type == "numeric"
+    with pytest.raises(RecordUpdateException) as exc:
+        saved_feature.feature_namespace.update_feature_type("categorical")
+
+    expected_error = "Feature sum_1d has dtype FLOAT which is not valid for categorical"
+    assert expected_error in str(exc.value)
+
+    # update feature type
+    snowflake_dimension_table["col_int"].as_entity(cust_id_entity.name)
+    view = snowflake_dimension_table.get_view()
+    feature = view["col_int"].as_feature("IntFeature")
+    feature.save()
+
+    assert feature.feature_type == "categorical"
+    feature.update_feature_type("numeric")
+    assert feature.feature_type == "numeric"

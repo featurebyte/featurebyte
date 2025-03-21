@@ -47,7 +47,7 @@ from featurebyte.core.accessor.count_dict import CdAccessorMixin
 from featurebyte.core.accessor.feature_datetime import FeatureDtAccessorMixin
 from featurebyte.core.accessor.feature_string import FeatureStrAccessorMixin
 from featurebyte.core.series import FrozenSeries, FrozenSeriesT, Series
-from featurebyte.enum import ConflictResolution, DBVarType
+from featurebyte.enum import ConflictResolution, DBVarType, FeatureType
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
@@ -228,6 +228,17 @@ class Feature(
     )
     def definition(self) -> str:
         return self._generate_definition()
+
+    @property
+    def feature_type(self) -> FeatureType:
+        """
+        Returns the feature type of the Feature object.
+
+        Returns
+        -------
+        FeatureType
+        """
+        return self.feature_namespace.feature_type
 
     @typechecked
     def isin(self: FrozenSeriesT, other: Union[FrozenSeries, ScalarSequence]) -> FrozenSeriesT:
@@ -1051,6 +1062,24 @@ class Feature(
             update_payload={"default_version_mode": mode_value},
             allow_update_local=False,
         )
+
+    @typechecked
+    def update_feature_type(self, feature_type: Union[FeatureType, str]) -> None:
+        """
+        Update feature type of feature.
+
+        Parameters
+        ----------
+        feature_type: Union[FeatureType, str]
+            Feature type to be updated.
+
+        Examples
+        --------
+
+        >>> feature = catalog.get_feature("InvoiceCount_60days")
+        >>> feature.update_feature_type("numeric")
+        """
+        self.feature_namespace.update_feature_type(feature_type=feature_type)
 
     def as_default_version(self) -> None:
         """

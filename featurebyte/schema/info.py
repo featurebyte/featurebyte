@@ -9,7 +9,7 @@ from typing import Any, List, Optional
 
 from pydantic import Field, RootModel, field_validator, model_validator
 
-from featurebyte.enum import DBVarType, SourceType
+from featurebyte.enum import DBVarType, FeatureType, SourceType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     NameStr,
@@ -266,6 +266,7 @@ class FeatureNamespaceInfo(NamespaceInfo):
     primary_table: TableBriefInfoList
     default_version_mode: DefaultVersionMode
     default_feature_id: PydanticObjectId
+    feature_type: Optional[FeatureType]
 
 
 class FeatureInfo(FeatureNamespaceInfo):

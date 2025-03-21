@@ -26,6 +26,9 @@ from featurebyte.migration.service.feature_list import (
     FeatureListMigrationServiceV6,
     FeatureListMigrationServiceV7,
 )
+from featurebyte.migration.service.feature_namespace import (
+    FeatureNamespaceMigrationServiceV19,
+)
 from featurebyte.migration.service.mixin import DataWarehouseMigrationMixin
 from featurebyte.migration.service.offline_store_feature_table import (
     OfflineStoreFeatureTableMigrationServiceV9,
@@ -124,6 +127,7 @@ from featurebyte.service.feature_store_warehouse import (
 )
 from featurebyte.service.feature_table_cache import FeatureTableCacheService
 from featurebyte.service.feature_table_cache_metadata import FeatureTableCacheMetadataService
+from featurebyte.service.feature_type import FeatureTypeService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.historical_features import (
     HistoricalFeatureExecutor,
@@ -315,6 +319,7 @@ app_container_config.register_class(FeatureOrTargetHelper)
 app_container_config.register_class(FeatureOrTargetMetadataExtractor)
 app_container_config.register_class(FeatureNamespaceController)
 app_container_config.register_class(FeatureNamespaceService)
+app_container_config.register_class(FeatureTypeService)
 app_container_config.register_class(FeaturePreviewService)
 app_container_config.register_class(FeatureReadinessService)
 app_container_config.register_class(FeatureStoreController)
@@ -494,6 +499,7 @@ app_container_config.register_class(OfflineStoreFeatureTableMigrationServiceV9)
 app_container_config.register_class(EventTableMigrationServiceV12)
 app_container_config.register_class(FeatureJobSettingAnalysisMigrationServiceV13)
 app_container_config.register_class(DeploymentMigrationServiceV14)
+app_container_config.register_class(FeatureNamespaceMigrationServiceV19)
 
 app_container_config.register_factory_method(get_storage)
 app_container_config.register_factory_method(get_redis, name_override="redis")

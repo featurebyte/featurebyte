@@ -342,6 +342,87 @@ class DBVarType(StrEnum):
         return {cls.TIMESTAMP_TZ_TUPLE}
 
 
+class FeatureType(StrEnum):
+    """
+    The FeatureType enum class provides a way to represent different types of feature for modeling.
+    """
+
+    __fbautodoc__ = FBAutoDoc(proxy_class="featurebyte.FeatureType")
+
+    CATEGORICAL = "categorical"
+    NUMERIC = "numeric"
+    TEXT = "text"
+    DICT = "dictionary"
+    EMBEDDING = "embedding"
+    OTHERS = "others"
+
+    @classmethod
+    def all_types(cls) -> set[str]:
+        """
+        Get all feature types
+
+        Returns
+        -------
+        set[FeatureType]
+        """
+        return {cls.NUMERIC, cls.CATEGORICAL, cls.DICT, cls.EMBEDDING, cls.TEXT, cls.OTHERS}
+
+    @classmethod
+    def valid_categorical_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for categorical features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.CHAR, DBVarType.VARCHAR, DBVarType.INT, DBVarType.BOOL}
+
+    @classmethod
+    def valid_numeric_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for numeric features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.FLOAT, DBVarType.INT, DBVarType.BOOL, DBVarType.TIMEDELTA}
+
+    @classmethod
+    def valid_text_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for text features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.VARCHAR, DBVarType.CHAR}
+
+    @classmethod
+    def valid_dict_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for dictionary features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.DICT, DBVarType.MAP, DBVarType.OBJECT, DBVarType.STRUCT}
+
+    @classmethod
+    def valid_embedding_dtypes(cls) -> set[DBVarType]:
+        """
+        Get valid data types for embedding features
+
+        Returns
+        -------
+        set[DBVarType]
+        """
+        return {DBVarType.EMBEDDING, DBVarType.ARRAY}
+
+
 class TargetType(StrEnum):
     """
     The TargetType enum class provides a way to represent different types of modeling. It can be used to specify the

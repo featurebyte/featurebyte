@@ -211,7 +211,8 @@ class TestFeatureApi(BaseCatalogApiTestSuite):
         assert feat_namespace_docs[0]["created_at"] >= datetime.fromisoformat(
             response_dict["created_at"]
         )
-        assert feat_namespace_docs[0]["updated_at"] is None
+        assert feat_namespace_docs[0]["updated_at"] is not None
+        assert feat_namespace_docs[0]["feature_type"] == "numeric"
 
     def test_create_201__create_new_version(
         self, test_api_client_persistent, create_success_response

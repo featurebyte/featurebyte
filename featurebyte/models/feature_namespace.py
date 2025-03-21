@@ -4,14 +4,14 @@ This module contains FeatureNamespace related models
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 import pymongo
 from pydantic import Field, field_validator
 
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.validator import construct_sort_validator
-from featurebyte.enum import DBVarType, OrderedStrEnum, StrEnum
+from featurebyte.enum import DBVarType, FeatureType, OrderedStrEnum, StrEnum
 from featurebyte.models.base import (
     FeatureByteCatalogBaseDocumentModel,
     PydanticObjectId,
@@ -108,6 +108,7 @@ class FeatureNamespaceModel(BaseFeatureNamespaceModel):
 
     dtype: DBVarType = Field(frozen=True, description="database variable type for the feature")
     readiness: FeatureReadiness = Field(frozen=True)
+    feature_type: Optional[FeatureType] = Field(frozen=True, default=None)
 
     # list of IDs attached to this feature namespace or target namespace
     feature_ids: List[PydanticObjectId] = Field(frozen=True)
