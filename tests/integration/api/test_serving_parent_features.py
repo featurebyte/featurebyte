@@ -48,7 +48,7 @@ def event_entity_fixture():
 
 @pytest_asyncio.fixture(name="tables", scope="session")
 async def tables_fixture(
-    session, data_source, customer_entity, event_entity, timestamp_format_string_with_time
+    session, data_source, customer_entity, event_entity, scd_table_timestamp_format_string_with_time
 ):
     """
     Fixture for a feature that can be obtained from a child entity using one or more joins
@@ -115,7 +115,9 @@ async def tables_fixture(
         name=f"{table_prefix}_scd_table_1",
         natural_key_column="scd_cust_id",
         effective_timestamp_column="effective_ts",
-        effective_timestamp_schema=TimestampSchema(format_string=timestamp_format_string_with_time),
+        effective_timestamp_schema=TimestampSchema(
+            format_string=scd_table_timestamp_format_string_with_time
+        ),
     )
     scd_table_1["scd_cust_id"].as_entity(customer_entity.name)
     scd_table_1["scd_city"].as_entity(city_entity.name)
