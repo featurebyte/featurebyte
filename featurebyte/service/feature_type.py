@@ -252,6 +252,8 @@ class FeatureTypeService:
         op_struct, metadata = await self.feature_or_target_metadata_extractor.extract_from_object(
             obj=feature
         )
-        return self.detect_feature_type_from(
+        feature_type = self.detect_feature_type_from(
             dtype=feature.dtype, op_struct=op_struct, metadata=metadata
         )
+        self.validate_feature_type(feature=feature, feature_type=feature_type)
+        return feature_type
