@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Optional, cast
 
-from sqlglot import expressions, parse_one
+from sqlglot import expressions
 from sqlglot.expressions import Expression, Identifier, Select, alias_, select
 
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
@@ -304,8 +304,7 @@ def _convert_to_utc_ntz(
     expressions.Expression
     """
     if timestamp_schema is None:
-        utc_ts_expr = adapter.convert_to_utc_timestamp(col_expr)
-        return expressions.Cast(this=utc_ts_expr, to=parse_one("TIMESTAMP"))
+        return adapter.convert_to_utc_timestamp(col_expr)
     return convert_timestamp_to_utc(
         column_expr=col_expr,
         timestamp_schema=timestamp_schema,

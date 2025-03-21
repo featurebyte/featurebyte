@@ -14,6 +14,7 @@ from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
     FeatureJobSettingUnion,
 )
@@ -34,6 +35,39 @@ class EntityLookupGraphResult:
     feature_node_name: str
     feature_dtype: DBVarType
     feature_job_setting: Optional[FeatureJobSettingUnion]
+
+
+def get_scd_parameters_from_scd_relation_table(relation_table: SCDTableModel) -> SCDBaseParameters:
+    """
+    Get SCD parameters from SCD relation table
+
+    Parameters
+    ----------
+    relation_table: SCDTableModel
+        SCD table model
+
+    Returns
+    -------
+    SCDBaseParameters
+    """
+    effective_timestamp_metadata = (
+        DBVarTypeMetadata(timestamp_schema=relation_table.effective_timestamp_schema)
+        if relation_table.effective_timestamp_schema
+        else None
+    )
+    end_timestamp_schema = (
+        DBVarTypeMetadata(timestamp_schema=relation_table.end_timestamp_schema)
+        if relation_table.end_timestamp_schema
+        else None
+    )
+    return SCDBaseParameters(
+        effective_timestamp_column=relation_table.effective_timestamp_column,
+        natural_key_column=relation_table.natural_key_column,
+        current_flag_column=relation_table.current_flag_column,
+        end_timestamp_column=relation_table.end_timestamp_column,
+        effective_timestamp_metadata=effective_timestamp_metadata,
+        end_timestamp_metadata=end_timestamp_schema,
+    )
 
 
 def get_entity_lookup_graph(
@@ -64,12 +98,9 @@ def get_entity_lookup_graph(
     if relation_table.type == TableDataType.SCD_TABLE:
         assert isinstance(relation_table, SCDTableModel)
         additional_params = {
-            "scd_parameters": SCDBaseParameters(
-                effective_timestamp_column=relation_table.effective_timestamp_column,
-                natural_key_column=relation_table.natural_key_column,
-                current_flag_column=relation_table.current_flag_column,
-                end_timestamp_column=relation_table.end_timestamp_column,
-            ).model_dump(by_alias=True)
+            "scd_parameters": get_scd_parameters_from_scd_relation_table(relation_table).model_dump(
+                by_alias=True
+            )
         }
     elif relation_table.type == TableDataType.EVENT_TABLE:
         assert isinstance(relation_table, EventTableModel)

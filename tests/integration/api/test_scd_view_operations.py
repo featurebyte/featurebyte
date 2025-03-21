@@ -787,21 +787,29 @@ def test_columns_joined_from_scd_view_as_groupby_keys(event_table, scd_table, so
     assert df.iloc[0].to_dict() == expected
 
 
-def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
+def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type, config):
     """
     Test SCDView with custom date format
     """
     scd_view = scd_table_custom_date_format.get_view()
-    feature = scd_view.groupby("User Status").aggregate_asat(
-        value_column=None, method="count", feature_name="Current Number of Users With This Status"
+    feature_lookup = scd_view["User Status"].as_feature(
+        "Current User Status - custom date format",
     )
-    feature_list = FeatureList([feature], name="test_scd_view_custom_date_format")
+    feature_asat = scd_view.groupby("User Status").aggregate_asat(
+        value_column=None,
+        method="count",
+        feature_name="Current Number of Users With This Status - custom date format",
+    )
+    feature_list = FeatureList(
+        [feature_lookup, feature_asat], name="test_scd_view_custom_date_format"
+    )
     observations_set = pd.DataFrame({
         "POINT_IN_TIME": pd.date_range("2001-01-10 10:00:00", periods=10, freq="1d"),
-        "user_status_2": ["STÀTUS_CODE_37"] * 10,
+        "üser id": [1] * 10,
     })
     expected = observations_set.copy()
-    expected["Current Number of Users With This Status"] = [
+    expected["Current User Status - custom date format"] = ["STÀTUS_CODE_0"] * 10
+    expected["Current Number of Users With This Status - custom date format"] = [
         1,
         1,
         1,
@@ -817,6 +825,27 @@ def test_scd_view_custom_date_format(scd_table_custom_date_format, source_type):
     # databricks return POINT_IN_TIME with "Etc/UTC" timezone
     tz_localize_if_needed(df, source_type)
     pd.testing.assert_frame_equal(df, expected, check_dtype=False)
+
+    feature_list.save()
+    deployment = None
+    try:
+        deployment = feature_list.deploy(make_production_ready=True)
+        deployment.enable()
+        online_params = [{"üser id": 1}]
+        online_result = make_online_request(config.get_client(), deployment, online_params)
+        online_result_dict = online_result.json()
+        if online_result.status_code != 200:
+            raise AssertionError(f"Online request failed: {online_result_dict}")
+        assert online_result_dict["features"] == [
+            {
+                "üser id": 1,
+                "Current User Status - custom date format": "STÀTUS_CODE_0",
+                "Current Number of Users With This Status - custom date format": 1,
+            }
+        ]
+    finally:
+        if deployment:
+            deployment.disable()
 
 
 @pytest.mark.parametrize(
