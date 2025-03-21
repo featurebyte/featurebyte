@@ -284,9 +284,6 @@ async def test_task_cancellation_cancels_query(config, test_session):
     await check_table_does_not_exist_or_empty(session, "job_cancel_test_output")
 
 
-@pytest.mark.parametrize(
-    "source_type", ["spark", "databricks_unity", "snowflake", "bigquery"], indirect=True
-)
 @pytest.mark.asyncio
 async def test_timestamp_with_large_date(config, session_without_datasets):
     _ = config
