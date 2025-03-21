@@ -515,6 +515,7 @@ def test_get_feature_list(
     def _get_new_value_from_audit_history(field_name):
         return audit_history[audit_history["field_name"] == field_name].iloc[0]["new_value"]
 
+    feature_id = str(saved_feature_list.feature_ids[0])
     expected_audit_history = pd.DataFrame(
         [
             ("aggregation_ids", ["sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"]),
@@ -528,12 +529,13 @@ def test_get_feature_list(
             ("feast_enabled", False),
             ("feature_clusters", _get_new_value_from_audit_history("feature_clusters")),
             ("feature_clusters_path", _get_new_value_from_audit_history("feature_clusters_path")),
-            ("feature_ids", [str(saved_feature_list.feature_ids[0])]),
+            ("feature_ids", [feature_id]),
             ("feature_list_namespace_id", str(saved_feature_list.feature_list_namespace.id)),
             (
                 "features_entity_lookup_info",
                 _get_new_value_from_audit_history("features_entity_lookup_info"),
             ),
+            ("features_metadata", [{"feature_id": feature_id, "feature_type": "numeric"}]),
             ("features_primary_entity_ids", [[str(cust_id_entity.id)]]),
             ("is_deleted", False),
             ("name", "my_feature_list"),
@@ -989,8 +991,9 @@ def test_list_filter(saved_feature_list):
     assert feature_lists.shape[0] == 0
 
 
-def test_save_feature_group(saved_feature_list):
-    """Test feature group saving"""
+@pytest.fixture(name="feature_group_with_conflict")
+def feature_group_fixture(saved_feature_list):
+    """Feature group fixture"""
     float_feature = saved_feature_list["sum_1d"]
     feature_group = FeatureGroup([])
     for idx in range(5):
@@ -1006,10 +1009,15 @@ def test_save_feature_group(saved_feature_list):
     for feature in feature_group.feature_objects.values():
         assert feature.saved is True
 
-    # update feature group & expect record conflict error while saving the feature group
     feature_group["feat_0"] = feature_group["feat_0"] + 1
+    return feature_group
+
+
+def test_save_feature_group(feature_group_with_conflict):
+    """Test feature group saving"""
+    # update feature group & expect record conflict error while saving the feature group
     with pytest.raises(RecordCreationException) as exc:
-        feature_group.save()
+        feature_group_with_conflict.save()
 
     expected_msg = (
         'FeatureNamespace (name: "feat_0") already exists. '
@@ -1017,8 +1025,11 @@ def test_save_feature_group(saved_feature_list):
     )
     assert expected_msg in str(exc.value)
 
-    # check that "retrieve" conflict resolution works properly
-    feature_group.save(conflict_resolution="retrieve")
+
+def test_save_feature_group_with_conflict_resolution(feature_group_with_conflict):
+    """Test feature group saving with conflict resolution"""
+    # check that "retrieve" conflict resolution works properly without any error
+    feature_group_with_conflict.save(conflict_resolution="retrieve")
 
 
 def test_feature_list_constructor():

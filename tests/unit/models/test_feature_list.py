@@ -85,6 +85,7 @@ def test_feature_list_model(feature_list_model_dict):
     feature_list_dict_sorted_ids["table_ids"] = []
     feature_list_dict_sorted_ids["feature_clusters_path"] = None
     feature_list_dict_sorted_ids["store_info"] = None
+    feature_list_dict_sorted_ids["features_metadata"] = []
     assert serialized_feature_list == feature_list_dict_sorted_ids
 
     feature_list_json = feature_list.model_dump_json(by_alias=True)
