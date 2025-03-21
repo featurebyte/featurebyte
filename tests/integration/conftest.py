@@ -82,6 +82,7 @@ from featurebyte.storage import LocalStorage
 from featurebyte.worker import get_celery
 from featurebyte.worker.registry import TASK_REGISTRY_MAP
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY_BIGQUERY
+from tests.util.helper import truncate_timestamps
 
 # Override the default max duration for pytest-split plugin for legitimately expensive fixtures
 pytest_split_plugin.STORE_DURATIONS_SETUP_AND_TEARDOWN_THRESHOLD = 2000
@@ -1025,12 +1026,7 @@ async def datasets_registration_helper_fixture(
             df: DataFrame
                 Pandas DataFrame
             """
-            df = df.copy()
-            # convert datetime64[ns] to datetime64[us]
-            for column in df.columns:
-                if df[column].dtype.name == "datetime64[ns]":
-                    df[column] = df[column].astype("datetime64[us]")
-            self.datasets[table_name] = df
+            self.datasets[table_name] = truncate_timestamps(df)
 
         async def register_datasets(self, session):
             """

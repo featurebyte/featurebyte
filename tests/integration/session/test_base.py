@@ -17,6 +17,7 @@ from featurebyte.exception import (
     DataWarehouseOperationError,
     QueryExecutionTimeOut,
 )
+from tests.util.helper import truncate_timestamps
 
 
 def sample_dataframe():
@@ -37,10 +38,7 @@ def sample_dataframe():
         "string_list": [None] * 10 + [["a", "b"], ["c", "d"]],
         "dict": [None] * 10 + [{"x": 3, "y": 4}, {"x": 5, "y": 6}],
     })
-    for column in df.columns:
-        if df[column].dtype.name == "datetime64[ns]":
-            df[column] = df[column].astype("datetime64[us]")
-    return df
+    return truncate_timestamps(df)
 
 
 @pytest_asyncio.fixture(name="test_session", scope="session")
