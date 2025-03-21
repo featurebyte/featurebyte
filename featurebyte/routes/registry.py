@@ -25,6 +25,7 @@ from featurebyte.migration.service.feature_list import (
     FeatureListMigrationServiceV5,
     FeatureListMigrationServiceV6,
     FeatureListMigrationServiceV7,
+    FeatureListMigrationServiceV20,
 )
 from featurebyte.migration.service.feature_namespace import (
     FeatureNamespaceMigrationServiceV19,
@@ -494,6 +495,7 @@ app_container_config.register_class(FeatureMigrationServiceV4)
 app_container_config.register_class(FeatureListMigrationServiceV5)
 app_container_config.register_class(FeatureListMigrationServiceV6)
 app_container_config.register_class(FeatureListMigrationServiceV7)
+app_container_config.register_class(FeatureListMigrationServiceV20)
 app_container_config.register_class(FeatureMigrationServiceV8)
 app_container_config.register_class(OfflineStoreFeatureTableMigrationServiceV9)
 app_container_config.register_class(EventTableMigrationServiceV12)
