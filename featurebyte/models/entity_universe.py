@@ -28,6 +28,7 @@ from featurebyte.query_graph.node.generic import (
     ItemGroupbyNode,
     LookupNode,
     NonTileWindowAggregateNode,
+    SCDBaseParameters,
     TimeSeriesWindowAggregateNode,
 )
 from featurebyte.query_graph.node.input import EventTableInputNodeParameters
@@ -50,6 +51,7 @@ from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
 from featurebyte.query_graph.sql.timestamp_helper import (
     convert_timestamp_to_local,
+    convert_timestamp_to_utc,
 )
 from featurebyte.query_graph.transform.flattening import GraphFlatteningTransformer
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
@@ -93,6 +95,34 @@ def get_dummy_entity_universe() -> Select:
     return expressions.select(
         expressions.alias_(make_literal_value(1), "dummy_entity", quoted=True)
     )
+
+
+def get_timestamp_expr_from_scd_lookup_parameters(
+    scd_parameters: SCDBaseParameters, adapter: BaseAdapter
+) -> Expression:
+    """
+    Get the timestamp expression from SCD lookup parameters
+
+    Parameters
+    ----------
+    scd_parameters: SCDBaseParameters
+        SCD parameters
+    adapter: BaseAdapter
+        SQL adapter
+
+    Returns
+    -------
+    Expression
+    """
+    ts_col = quoted_identifier(scd_parameters.effective_timestamp_column)
+    timestamp_schema = scd_parameters.effective_timestamp_schema
+    if timestamp_schema is not None:
+        ts_col = convert_timestamp_to_utc(
+            column_expr=ts_col,
+            timestamp_schema=timestamp_schema,
+            adapter=adapter,
+        )
+    return ts_col
 
 
 DUMMY_ENTITY_UNIVERSE = get_dummy_entity_universe()
@@ -227,16 +257,17 @@ class LookupNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         node = cast(LookupNode, self.node)
 
         if node.parameters.scd_parameters is not None:
-            ts_col = node.parameters.scd_parameters.effective_timestamp_column
+            ts_col = get_timestamp_expr_from_scd_lookup_parameters(
+                node.parameters.scd_parameters,
+                self.adapter,
+            )
         elif node.parameters.event_parameters is not None:
-            ts_col = node.parameters.event_parameters.event_timestamp_column
+            ts_col = quoted_identifier(node.parameters.event_parameters.event_timestamp_column)
         else:
             ts_col = None
 
         if ts_col:
-            ts_col_expr = self.adapter.normalize_timestamp_before_comparison(
-                quoted_identifier(ts_col)
-            )
+            ts_col_expr = self.adapter.normalize_timestamp_before_comparison(ts_col)
             aggregate_input_expr = self.aggregate_input_expr.where(
                 expressions.and_(
                     expressions.GTE(
@@ -282,9 +313,11 @@ class AggregateAsAtNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
         if not node.parameters.serving_names:
             return [DUMMY_ENTITY_UNIVERSE]
 
-        ts_col_expr = self.adapter.normalize_timestamp_before_comparison(
-            quoted_identifier(node.parameters.effective_timestamp_column)
+        ts_col_expr = get_timestamp_expr_from_scd_lookup_parameters(
+            node.parameters,
+            self.adapter,
         )
+        ts_col_expr = self.adapter.normalize_timestamp_before_comparison(ts_col_expr)
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
             expressions.and_(
                 expressions.GTE(

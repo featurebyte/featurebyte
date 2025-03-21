@@ -11,7 +11,11 @@ from sqlglot import expressions
 from sqlglot.expressions import Select, select
 
 from featurebyte.enum import SpecialColumnName, TableDataType
+from featurebyte.models.entity_lookup_feature_table import (
+    get_scd_parameters_from_scd_relation_table,
+)
 from featurebyte.models.parent_serving import EntityLookupStep
+from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.generic import EventLookupParameters, SCDLookupParameters
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
@@ -139,7 +143,11 @@ def _get_lookup_spec_from_join_step(
 ) -> LookupSpec:
     # Set up data specific parameters
     if join_step.table.type == TableDataType.SCD_TABLE:
-        scd_parameters = SCDLookupParameters(**join_step.table.model_dump())
+        assert isinstance(join_step.table, SCDTableModel)
+        scd_base_params = get_scd_parameters_from_scd_relation_table(join_step.table).model_dump(
+            by_alias=True
+        )
+        scd_parameters = SCDLookupParameters(**scd_base_params)
     else:
         scd_parameters = None
 

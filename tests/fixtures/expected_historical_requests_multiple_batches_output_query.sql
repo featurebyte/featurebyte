@@ -226,7 +226,7 @@ WITH "REQUEST_TABLE_W7776000_F3600_BS900_M1800_CUSTOMER_ID" AS (
           "__FB_EFFECTIVE_TS_COL"
         FROM (
           SELECT
-            CAST(CONVERT_TIMEZONE('UTC', "POINT_IN_TIME") AS TIMESTAMP) AS "__FB_TS_COL",
+            CONVERT_TIMEZONE('UTC', "POINT_IN_TIME") AS "__FB_TS_COL",
             "CUSTOMER_ID" AS "__FB_KEY_COL_0",
             NULL AS "__FB_EFFECTIVE_TS_COL",
             2 AS "__FB_TS_TIE_BREAKER_COL",
@@ -242,7 +242,7 @@ WITH "REQUEST_TABLE_W7776000_F3600_BS900_M1800_CUSTOMER_ID" AS (
           )
           UNION ALL
           SELECT
-            CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
+            CONVERT_TIMEZONE('UTC', "event_timestamp") AS "__FB_TS_COL",
             "cust_id" AS "__FB_KEY_COL_0",
             "event_timestamp" AS "__FB_EFFECTIVE_TS_COL",
             1 AS "__FB_TS_TIE_BREAKER_COL",
