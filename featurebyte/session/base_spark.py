@@ -64,7 +64,7 @@ pa_type_mapping = {
     "DECIMAL": pa.decimal128(38, 18),
     "INTERVAL": pa.duration("ns"),
     "NULL": pa.null(),
-    "TIMESTAMP": pa.timestamp("ns", tz=None),
+    "TIMESTAMP": pa.timestamp("us", tz=None),
     "ARRAY": pa.string(),
     "MAP": pa.string(),
     "STRUCT": pa.string(),

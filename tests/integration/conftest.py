@@ -1025,7 +1025,12 @@ async def datasets_registration_helper_fixture(
             df: DataFrame
                 Pandas DataFrame
             """
-            self.datasets[table_name] = df.copy()
+            df = df.copy()
+            # convert datetime64[ns] to datetime64[us]
+            for column in df.columns:
+                if df[column].dtype.name == "datetime64[ns]":
+                    df[column] = df[column].astype("datetime64[us]")
+            self.datasets[table_name] = df
 
         async def register_datasets(self, session):
             """
