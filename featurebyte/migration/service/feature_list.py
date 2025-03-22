@@ -254,3 +254,64 @@ class FeatureListMigrationServiceV7(FeatureListMigrationServiceV6):
             assert not feature_list_dict.get("store_info"), feature_list_dict
 
         logger.info("Migrated all records successfully (total: %d)", total)
+
+
+class FeatureListMigrationServiceV20(BaseFeatureListMigrationService):
+    """
+    FeatureListMigrationService class
+
+    This class is used to migrate the feature list records to add features_metadata field.
+    """
+
+    async def batch_preprocess_document(self, documents: List[Document]) -> List[Document]:
+        """
+        Preprocess the documents before migration
+
+        Parameters
+        ----------
+        documents: List[Document]
+            List of documents to be migrated
+
+        Returns
+        -------
+        List[Document]
+        """
+        for document in documents:
+            features_metadata = await self.feature_list_service.extract_features_metadata(
+                feature_ids=document["feature_ids"],
+            )
+            document["features_metadata"] = [
+                feature_metadata.model_dump(by_alias=True) for feature_metadata in features_metadata
+            ]
+
+        return documents
+
+    @migrate(
+        version=20,
+        description="Add features_metadata to feature list record",
+    )
+    async def add_features_metadata_to_feature_list(self) -> None:
+        """Add features_metadata to feature list record"""
+        sanity_check_sample_size = 10
+
+        # use the normal query filter (contains catalog ID filter)
+        query_filter = await self.delegate_service.construct_list_query_filter()
+        total_before = await self.get_total_record(query_filter=query_filter)
+
+        # migrate all records and audit records
+        await self.migrate_all_records(
+            query_filter=query_filter,
+            batch_preprocess_document_func=self.batch_preprocess_document,
+        )
+
+        # check the sample records after migration
+        sample_docs_after, total_after = await self.persistent.find(
+            collection_name=self.collection_name,
+            query_filter=query_filter,
+            page_size=sanity_check_sample_size,
+        )
+        assert total_before == total_after, (total_before, total_after)
+        for doc in sample_docs_after:
+            assert len(doc["features_metadata"]) > 0, doc["features_metadata"]
+
+        logger.info("Migrated all records successfully (total: %d)", total_after)

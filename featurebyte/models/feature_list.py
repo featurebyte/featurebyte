@@ -24,7 +24,7 @@ from pydantic import (
 from typeguard import typechecked
 
 from featurebyte.common.validator import construct_sort_validator, version_validator
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, FeatureType
 from featurebyte.models.base import (
     FeatureByteBaseModel,
     FeatureByteCatalogBaseDocumentModel,
@@ -292,6 +292,15 @@ class FeatureCluster(FeatureByteBaseModel):
 ServingEntity = List[PydanticObjectId]
 
 
+class FeatureMetadata(FeatureByteBaseModel):
+    """
+    Feature metadata
+    """
+
+    feature_id: PydanticObjectId
+    feature_type: Optional[FeatureType]
+
+
 class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     """
     Model for feature list entity
@@ -355,6 +364,7 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
     feature_list_namespace_id: PydanticObjectId = Field(frozen=True, default_factory=ObjectId)
     online_enabled_feature_ids: List[PydanticObjectId] = Field(frozen=True, default_factory=list)
     aggregation_ids: List[str] = Field(frozen=True, default_factory=list)
+    features_metadata: List[FeatureMetadata] = Field(frozen=True, default_factory=list)
 
     # store info contains the warehouse specific info for the feature list
     feast_enabled: bool = Field(default=False)
@@ -438,6 +448,14 @@ class FeatureListModel(FeatureByteCatalogBaseDocumentModel):
                     "readiness_distribution total count is different from total feature ids."
                 )
         return values
+
+    @model_validator(mode="after")
+    def _validate_model_consistency(self) -> FeatureListModel:
+        if self.features_metadata:
+            feature_ids_from_metadata = [metadata.feature_id for metadata in self.features_metadata]
+            if self.feature_ids != feature_ids_from_metadata:
+                raise ValueError("Feature IDs from metadata do not match feature IDs.")
+        return self
 
     @staticmethod
     def derive_readiness_distribution(features: List[FeatureModel]) -> FeatureReadinessDistribution:

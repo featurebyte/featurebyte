@@ -22,6 +22,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import (
     FeatureCluster,
     FeatureListModel,
+    FeatureMetadata,
     FeatureReadinessDistribution,
 )
 from featurebyte.models.feature_list_namespace import FeatureListNamespaceModel
@@ -44,6 +45,7 @@ from featurebyte.service.entity_relationship_extractor import (
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_list_namespace import FeatureListNamespaceService
+from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_offline_store_info import OfflineStoreInfoInitializationService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.relationship_info import RelationshipInfoService
@@ -123,6 +125,7 @@ class FeatureListService(
         entity_service: EntityService,
         relationship_info_service: RelationshipInfoService,
         feature_service: FeatureService,
+        feature_namespace_service: FeatureNamespaceService,
         feature_list_namespace_service: FeatureListNamespaceService,
         block_modification_handler: BlockModificationHandler,
         entity_serving_names_service: EntityServingNamesService,
@@ -144,6 +147,7 @@ class FeatureListService(
         self.entity_service = entity_service
         self.relationship_info_service = relationship_info_service
         self.feature_service = feature_service
+        self.feature_namespace_service = feature_namespace_service
         self.feature_list_namespace_service = feature_list_namespace_service
         self.entity_serving_names_service = entity_serving_names_service
         self.entity_relationship_extractor_service = entity_relationship_extractor_service
@@ -192,6 +196,48 @@ class FeatureListService(
         document.internal_feature_clusters = None
         return document
 
+    async def extract_features_metadata(
+        self,
+        feature_ids: List[ObjectId],
+        feature_id_to_namespace_id: Optional[Dict[ObjectId, ObjectId]] = None,
+    ) -> List[FeatureMetadata]:
+        """
+        Extract features metadata given the feature ids
+
+        Parameters
+        ----------
+        feature_ids: List[ObjectId]
+            List of feature ids
+        feature_id_to_namespace_id: Optional[Dict[ObjectId, ObjectId]]
+            Mapping of feature id to feature namespace id
+
+        Returns
+        -------
+        List[FeatureMetadata]
+        """
+        if feature_id_to_namespace_id is None:
+            feature_id_to_namespace_id = {
+                feature.id: feature.feature_namespace_id
+                async for feature in self.feature_service.list_documents_iterator(
+                    query_filter={"_id": {"$in": feature_ids}}
+                )
+            }
+
+        # extract features metadata
+        namespace_to_feature_type = {}
+        async for feature_namespace in self.feature_namespace_service.list_documents_iterator(
+            query_filter={"_id": {"$in": list(feature_id_to_namespace_id.values())}}
+        ):
+            namespace_to_feature_type[feature_namespace.id] = feature_namespace.feature_type
+
+        return [
+            FeatureMetadata(
+                feature_id=feature_id,
+                feature_type=namespace_to_feature_type[feature_id_to_namespace_id[feature_id]],
+            )
+            for feature_id in feature_ids
+        ]
+
     async def _extract_feature_data(self, document: FeatureListModel) -> Dict[str, Any]:
         feature_store_id: Optional[ObjectId] = None
         feature_namespace_ids = set()
@@ -233,9 +279,18 @@ class FeatureListService(
         # validate entity relationships
         await self.feature_list_entity_relationship_validator.validate(features=features)
 
+        # construct features metadata
+        features_metadata = await self.extract_features_metadata(
+            feature_ids=document.feature_ids,
+            feature_id_to_namespace_id={
+                feature.id: feature.feature_namespace_id for feature in features
+            },
+        )
+
         derived_output = {
             "feature_store_id": feature_store_id,
             "features": features,
+            "features_metadata": features_metadata,
         }
         return derived_output
 
@@ -475,6 +530,7 @@ class FeatureListService(
             "relationships_info": entity_relationship_data.relationships_info,
             "supported_serving_entity_ids": entity_relationship_data.supported_serving_entity_ids,
             "features_entity_lookup_info": entity_relationship_data.features_entity_lookup_info,
+            "features_metadata": feature_data["features_metadata"],
         })
 
         if progress_callback:

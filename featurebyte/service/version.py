@@ -346,11 +346,17 @@ class VersionService:
 
             raise DocumentError("No change detected on the new feature list version.")
 
+        # extract features metadata
+        features_metadata = await self.feature_list_service.extract_features_metadata(
+            feature_ids=feature_ids
+        )
+
         return FeatureListModel(**{
             **feature_list.model_dump(),
             "_id": ObjectId(),
             "feature_ids": feature_ids,
             "features": features,
+            "features_metadata": features_metadata,
         })
 
     async def create_new_feature_list_version(
