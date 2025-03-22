@@ -322,6 +322,26 @@ def assert_dict_equal(s1, s2):
     pd.testing.assert_series_equal(s1, s2)
 
 
+def truncate_timestamps(df):
+    """
+    Truncate datetime64[ns] dtype columns to datetime64[us] dtype
+
+    Parameters
+    ----------
+    df: DataFrame
+        DataFrame to truncate timestamps for
+
+    Returns
+    -------
+    DataFrame
+    """
+    df = df.copy()
+    for column in df.columns:
+        if df[column].dtype.name == "datetime64[ns]":
+            df[column] = df[column].astype("datetime64[us]")
+    return df
+
+
 def fb_assert_frame_equal(
     df,
     df_expected,
@@ -345,6 +365,8 @@ def fb_assert_frame_equal(
     ignore_columns : list | None
         Exclude these columns from comparison
     """
+    df = truncate_timestamps(df)
+    df_expected = truncate_timestamps(df_expected)
     assert df.columns.tolist() == df_expected.columns.tolist()
 
     if sort_by_columns is not None:

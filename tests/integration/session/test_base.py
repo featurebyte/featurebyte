@@ -17,13 +17,14 @@ from featurebyte.exception import (
     DataWarehouseOperationError,
     QueryExecutionTimeOut,
 )
+from tests.util.helper import truncate_timestamps
 
 
 def sample_dataframe():
     """
     Test dataframe
     """
-    return pd.DataFrame({
+    df = pd.DataFrame({
         "bool": [False, True] * 6,
         "int": [1] * 10 + [2, 3],
         "float": [1.1] * 10 + [2.2, 3.3],
@@ -37,6 +38,7 @@ def sample_dataframe():
         "string_list": [None] * 10 + [["a", "b"], ["c", "d"]],
         "dict": [None] * 10 + [{"x": 3, "y": 4}, {"x": 5, "y": 6}],
     })
+    return truncate_timestamps(df)
 
 
 @pytest_asyncio.fixture(name="test_session", scope="session")
@@ -99,8 +101,8 @@ async def test_arrow_schema(test_session):
         pa.field("int", pa.int64()),
         pa.field("float", pa.float64()),
         pa.field("string", pa.string()),
-        pa.field("date", pa.timestamp("ns", tz=None)),
-        pa.field("timestamp", pa.timestamp("ns", tz=None)),
+        pa.field("date", pa.timestamp("us", tz=None)),
+        pa.field("timestamp", pa.timestamp("us", tz=None)),
         pa.field("int_list", pa.string()),
         pa.field("float_list", pa.string()),
         pa.field("string_list", pa.string()),
@@ -280,3 +282,12 @@ async def test_task_cancellation_cancels_query(config, test_session):
         task.cancel()
         await task
     await check_table_does_not_exist_or_empty(session, "job_cancel_test_output")
+
+
+@pytest.mark.asyncio
+async def test_timestamp_with_large_date(config, session_without_datasets):
+    _ = config
+    session = session_without_datasets
+    query = "SELECT CAST('9999-12-31T05:00:00.123456' AS TIMESTAMP) AS TIMESTAMP"
+    result = await session.execute_query(query)
+    assert result.TIMESTAMP.tolist()[0] == pd.Timestamp("9999-12-31 05:00:00.123456")
