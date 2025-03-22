@@ -2,9 +2,9 @@
 DataBricks offline store
 """
 
-from typing import Literal
+from typing import Literal, Union
 
-from featurebyte import AccessTokenCredential
+from featurebyte import AccessTokenCredential, OAuthCredential
 from featurebyte.feast.infra.offline_stores.spark_thrift import (
     BaseSparkThriftOfflineStoreConfig,
     SparkThriftOfflineStore,
@@ -21,7 +21,7 @@ class DataBricksOfflineStoreConfig(BaseSparkThriftOfflineStoreConfig):
     """ Offline store type selector"""
 
     storage_path: str
-    database_credential: AccessTokenCredential
+    database_credential: Union[AccessTokenCredential, OAuthCredential]
 
     def get_db_session(self) -> BaseSparkSession:
         return DatabricksSession(**self.model_dump())
@@ -34,7 +34,7 @@ class DataBricksUnityOfflineStoreConfig(BaseSparkThriftOfflineStoreConfig):
     """ Offline store type selector"""
 
     group_name: str
-    database_credential: AccessTokenCredential
+    database_credential: Union[AccessTokenCredential, OAuthCredential]
 
     def get_db_session(self) -> BaseSparkSession:
         return DatabricksUnitySession(**self.model_dump())

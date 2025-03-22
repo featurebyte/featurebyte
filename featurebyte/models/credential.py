@@ -121,6 +121,7 @@ class DatabaseCredentialType(StrEnum):
 
     USERNAME_PASSWORD = "USERNAME_PASSWORD"
     ACCESS_TOKEN = "ACCESS_TOKEN"
+    OAUTH = "OAUTH"
     PRIVATE_KEY = "PRIVATE_KEY"
     KERBEROS_KEYTAB = "KERBEROS_KEYTAB"
     GOOGLE = "GOOGLE"
@@ -174,6 +175,24 @@ class AccessTokenCredential(BaseDatabaseCredential):
     # instance variables
     type: Literal[DatabaseCredentialType.ACCESS_TOKEN] = DatabaseCredentialType.ACCESS_TOKEN
     access_token: StrictStr = Field(description="The access token used to connect.")
+
+
+class OAuthCredential(BaseDatabaseCredential):
+    """
+    Data class for an OAuth credential.
+
+    Examples
+    --------
+    >>> oauth_token_credential = OAuthCredential(client_id="client_id", client_secret="client_id")
+    """
+
+    # class variables
+    __fbautodoc__: ClassVar[FBAutoDoc] = FBAutoDoc(proxy_class="featurebyte.OAuthCredential")
+
+    # instance variables
+    type: Literal[DatabaseCredentialType.OAUTH] = DatabaseCredentialType.OAUTH
+    client_id: StrictStr = Field(description="The client ID used to connect.")
+    client_secret: StrictStr = Field(description="The client secret used to connect.")
 
 
 class PrivateKeyCredential(BaseDatabaseCredential):
@@ -358,6 +377,7 @@ DatabaseCredential = Annotated[
     Union[
         UsernamePasswordCredential,
         AccessTokenCredential,
+        OAuthCredential,
         PrivateKeyCredential,
         KerberosKeytabCredential,
         GoogleCredential,

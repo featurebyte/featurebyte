@@ -145,6 +145,9 @@ async def test_databricks_session(databricks_session_dict):
     """
     Test DatabricksSession
     """
+    os.environ.pop("DATABRICKS_CLIENT_ID", None)
+    os.environ.pop("DATABRICKS_CLIENT_SECRET", None)
+
     session = DatabricksSession(**databricks_session_dict)
 
     assert session.host == "some-databricks-hostname"
