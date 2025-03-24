@@ -103,6 +103,7 @@
                             "name": "cust_id"
                         }
                     ],
+                    "event_timestamp_schema": null,
                     "event_timestamp_timezone_offset": null,
                     "event_timestamp_timezone_offset_column": null,
                     "feature_store_details": {

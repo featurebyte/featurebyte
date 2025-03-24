@@ -927,7 +927,7 @@ async def test_feast_registry(
         f"Most Frequent Item Type by Order_{version}": ["type_24"],
         f"User Status Feature_{version}": ["STÀTUS_CODE_26"],
         f"Complex Feature by User_{version}": ["STÀTUS_CODE_26_1"],
-        f"Relative Frequency 7d_{version}": [0.5652173757553101],
+        f"Relative Frequency 7d_{version}": [0.6086956262588501],
         f"Latest Amount by User_{version}": [91.31999969482422],
         f"Latest Amount by User Offset 1d_{version}": [10.229999542236328],
         f"Number of Distinct Product Action 48h_{version}": [5],
@@ -1126,7 +1126,7 @@ def expected_features_order_id_T3850(source_type):
         "Most Frequent Item Type by Order": "type_24",
         "User Status Feature": "STÀTUS_CODE_26",
         "order_id": "T3850",
-        "Relative Frequency 7d": 0.5652173757553101,
+        "Relative Frequency 7d": 0.6086956262588501,
         "Number of Distinct Product Action 48h": 5,
     }
     if source_type == SourceType.DATABRICKS_UNITY:

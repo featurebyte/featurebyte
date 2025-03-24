@@ -13,6 +13,7 @@ from featurebyte.enum import TableDataType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.event_table import EventTableModel
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.schema.common.base import PaginationMixin
 from featurebyte.schema.table import TableCreate, TableServiceUpdate, TableUpdate
 
@@ -27,6 +28,7 @@ class EventTableCreate(TableCreate):
     event_timestamp_column: StrictStr
     event_timestamp_timezone_offset: Optional[StrictStr] = Field(default=None)
     event_timestamp_timezone_offset_column: Optional[StrictStr] = Field(default=None)
+    event_timestamp_schema: Optional[TimestampSchema] = Field(default=None)
     default_feature_job_setting: Optional[FeatureJobSetting] = Field(default=None)
 
     # pydantic validators

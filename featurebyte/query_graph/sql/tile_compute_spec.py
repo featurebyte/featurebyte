@@ -17,6 +17,7 @@ from featurebyte.models.tile_compute_query import (
     QueryModel,
     TileComputeQuery,
 )
+from featurebyte.query_graph.model.dtype import DBVarTypeMetadata
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
@@ -28,6 +29,7 @@ from featurebyte.query_graph.sql.groupby_helper import (
 )
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tiling import TileSpec
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 
 @dataclass(frozen=True)
@@ -54,6 +56,7 @@ class TileComputeSpec:
     source_expr: Select  # input_node.sql without selecting any columns
     entity_table_expr: Optional[Expression]
     timestamp_column: TileTableInputColumn
+    timestamp_metadata: Optional[DBVarTypeMetadata]
     key_columns: List[TileTableInputColumn]
     value_by_column: Optional[TileTableInputColumn]
     value_columns: List[TileTableInputColumn]
@@ -147,9 +150,19 @@ class TileComputeSpec:
         """
         adapter = self.adapter
         select_expr = select("*").from_(input_expr.subquery())
-        timestamp_expr = adapter.normalize_timestamp_before_comparison(
-            quoted_identifier(self.timestamp_column.name)
-        )
+        if (
+            self.timestamp_metadata is not None
+            and self.timestamp_metadata.timestamp_schema is not None
+        ):
+            timestamp_expr = convert_timestamp_to_utc(
+                quoted_identifier(self.timestamp_column.name),
+                self.timestamp_metadata.timestamp_schema,
+                adapter,
+            )
+        else:
+            timestamp_expr = adapter.normalize_timestamp_before_comparison(
+                quoted_identifier(self.timestamp_column.name)
+            )
         start_expr = expressions.Cast(
             this=expressions.Identifier(this=InternalName.TILE_START_DATE_SQL_PLACEHOLDER),
             to=expressions.DataType.build("TIMESTAMP"),
@@ -180,6 +193,7 @@ class TileComputeSpec:
             input_expr=input_expr,
             entity_column_names=[col.name for col in self.key_columns],
             timestamp_column=self.timestamp_column.name,
+            timestamp_metadata=self.timestamp_metadata,
             adapter=self.adapter,
         )
 

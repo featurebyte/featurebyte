@@ -365,18 +365,21 @@ class ItemAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstructor):
 
         # Get the EventTable's event timestamp column
         event_timestamp_column = None
+        event_timestamp_schema = None
         for input_node in graph.iterate_nodes(graph_node, NodeType.INPUT):
             if (
                 isinstance(input_node.parameters, EventTableInputNodeParameters)
                 and input_node.parameters.id == event_table_id
             ):
                 event_timestamp_column = input_node.parameters.timestamp_column
+                event_timestamp_schema = input_node.parameters.event_timestamp_schema
                 break
         assert event_timestamp_column is not None
 
         # Construct a filter to be applied to the EventTable
         event_table_timestamp_filter = EventTableTimestampFilter(
             timestamp_column_name=event_timestamp_column,
+            timestamp_schema=event_timestamp_schema,
             event_table_id=event_table_id,
             start_timestamp_placeholder_name=LAST_MATERIALIZED_TIMESTAMP_PLACEHOLDER,
             end_timestamp_placeholder_name=CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER,
@@ -631,13 +634,14 @@ class TimeSeriesWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseC
                     window.to_months(),
                 )
 
-            timestamp_expr = self.adapter.normalize_timestamp_before_comparison(
-                convert_timestamp_to_local(
-                    quoted_identifier(node.parameters.reference_datetime_column),
+            timestamp_expr = quoted_identifier(node.parameters.reference_datetime_column)
+            if node.parameters.reference_datetime_schema is not None:
+                timestamp_expr = convert_timestamp_to_local(
+                    timestamp_expr,
                     node.parameters.reference_datetime_schema,
                     self.adapter,
-                ),
-            )
+                )
+            timestamp_expr = self.adapter.normalize_timestamp_before_comparison(timestamp_expr)
             filtered_aggregate_input_expr = self.aggregate_input_expr.where(
                 expressions.and_(
                     expressions.GTE(

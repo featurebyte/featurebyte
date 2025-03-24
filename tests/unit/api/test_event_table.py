@@ -148,6 +148,7 @@ def event_table_dict_fixture(snowflake_database_table, user_id):
         "user_id": user_id,
         "event_timestamp_timezone_offset": None,
         "event_timestamp_timezone_offset_column": None,
+        "event_timestamp_schema": None,
         "is_deleted": False,
     }
 
@@ -911,6 +912,7 @@ def test_default_feature_job_setting_history(saved_event_table):
         "catalog_id",
         "event_timestamp_timezone_offset",
         "event_timestamp_timezone_offset_column",
+        "event_timestamp_schema",
         "block_modification_by",
         "is_deleted",
         "validation",
@@ -1422,3 +1424,15 @@ def test_add_timestamp_schema_validation(saved_event_table):
         'Timestamp schema timezone offset column "col_text" cannot be the same as the column name'
     )
     assert expected in str(exc.value)
+
+
+def test_event_table_with_event_timestamp_schema(snowflake_event_table_with_timestamp_schema):
+    """
+    Test creating EventTable with event timestamp schema
+    """
+    event_table = snowflake_event_table_with_timestamp_schema
+    assert event_table.event_timestamp_schema.model_dump() == {
+        "format_string": None,
+        "is_utc_time": False,
+        "timezone": {"column_name": "tz_offset", "type": "offset"},
+    }
