@@ -25,7 +25,9 @@ from featurebyte.models.time_series_table import TimeSeriesTableModel
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.timestamp_schema import TimeZoneColumn
-from featurebyte.query_graph.node.cleaning_operation import AddTimestampSchema
+from featurebyte.query_graph.node.cleaning_operation import (
+    AddTimestampSchema,
+)
 from featurebyte.routes.common.base import BaseDocumentController, PaginatedDocument
 from featurebyte.routes.task.controller import TaskController
 from featurebyte.schema.table import TableServiceUpdate, TableUpdate
@@ -442,13 +444,15 @@ class BaseTableDocumentController(
         TableDocumentT
             Table object with updated critical data info
         """
-        return await self.update_table_columns_info(
+        table = await self.update_table_columns_info(
             document_id=document_id,
             column_name=column_name,
             field="critical_data_info",
             data=critical_data_info,
             skip_semantic_check=True,
         )
+        await self._start_table_validation_task(table)
+        return await self.get(document_id=document_id)
 
     async def update_column_description(
         self, document_id: ObjectId, column_name: str, description: Optional[str]

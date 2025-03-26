@@ -15,7 +15,11 @@ from featurebyte.enum import DBVarType
 from featurebyte.exception import TableValidationError
 from featurebyte.models.entity_universe import columns_not_null
 from featurebyte.models.feature_store import TableModel, TableValidation, TableValidationStatus
-from featurebyte.query_graph.model.column_info import ColumnInfo
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
+from featurebyte.query_graph.node.cleaning_operation import (
+    AddTimestampSchema,
+    CleaningOperationType,
+)
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
@@ -106,17 +110,22 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                 and col_info.dtype_metadata.timestamp_schema
             ):
                 return True
+
+            if col_info.critical_data_info:
+                for clean_op in col_info.critical_data_info.cleaning_operations:
+                    if clean_op.type == CleaningOperationType.ADD_TIMESTAMP_SCHEMA:
+                        return True
         return False
 
     @staticmethod
     async def _validate_timestamp_format_string(
-        col_info: ColumnInfo, session: BaseSession, table_model: TableModel, num_records: int
+        column_name: str,
+        timestamp_schema: TimestampSchema,
+        session: BaseSession,
+        table_model: TableModel,
+        num_records: int,
     ) -> None:
-        assert col_info.dtype_metadata is not None
-        assert col_info.dtype_metadata.timestamp_schema is not None
-
         adapter = session.adapter
-        timestamp_schema = col_info.dtype_metadata.timestamp_schema
         assert timestamp_schema.format_string is not None
 
         source_table_expr = get_fully_qualified_table_name(
@@ -126,15 +135,15 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             select(
                 expressions.alias_(
                     adapter.to_timestamp_from_string(
-                        quoted_identifier(col_info.name),
+                        quoted_identifier(column_name),
                         timestamp_schema.format_string,
                     ),
-                    alias=col_info.name,
+                    alias=column_name,
                     quoted=True,
                 )
             )
             .from_(source_table_expr)
-            .where(columns_not_null([col_info.name]))
+            .where(columns_not_null([column_name]))
             .limit(num_records)
         )
         query = sql_to_string(query_expr, source_type=adapter.source_type)
@@ -143,7 +152,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             await session.execute_query_long_running(query)
         except Exception as exc:
             raise TableValidationError(
-                f"Timestamp column '{col_info.name}' has invalid format string ({timestamp_schema.format_string}). "
+                f"Timestamp column '{column_name}' has invalid format string ({timestamp_schema.format_string}). "
                 f"Error: {str(exc)}"
             )
 
@@ -154,14 +163,12 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                 timezone_obj=timestamp_schema.timezone,
                 adapter=adapter,
                 column_expr=adapter.to_timestamp_from_string(
-                    quoted_identifier(col_info.name),
+                    quoted_identifier(column_name),
                     timestamp_schema.format_string,
                 ),
             )
             query_expr = (
-                select(column_expr)
-                .from_(source_table_expr)
-                .where(columns_not_null([col_info.name]))
+                select(column_expr).from_(source_table_expr).where(columns_not_null([column_name]))
             )
             query = sql_to_string(query_expr, source_type=adapter.source_type)
             # check that the offset is valid for the first num_records
@@ -169,7 +176,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                 await session.execute_query_long_running(query)
             except Exception as exc:
                 raise TableValidationError(
-                    f"Timestamp column '{col_info.name}' has invalid timezone ({timestamp_schema.timezone}). "
+                    f"Timestamp column '{column_name}' has invalid timezone ({timestamp_schema.timezone}). "
                     f"Error: {str(exc)}"
                 )
 
@@ -200,11 +207,24 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                 and col_info.dtype_metadata.timestamp_schema
             ):
                 await self._validate_timestamp_format_string(
-                    col_info=col_info,
+                    column_name=col_info.name,
+                    timestamp_schema=col_info.dtype_metadata.timestamp_schema,
                     session=session,
                     table_model=table_model,
                     num_records=num_records,
                 )
+
+            if col_info.critical_data_info:
+                for clean_op in col_info.critical_data_info.cleaning_operations:
+                    if clean_op.type == CleaningOperationType.ADD_TIMESTAMP_SCHEMA:
+                        assert isinstance(clean_op, AddTimestampSchema)
+                        await self._validate_timestamp_format_string(
+                            column_name=col_info.name,
+                            timestamp_schema=clean_op.timestamp_schema,
+                            session=session,
+                            table_model=table_model,
+                            num_records=num_records,
+                        )
 
         await self._validate_table(
             session=session,

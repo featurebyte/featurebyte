@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte import AggFunc, FeatureList
+from featurebyte import AddTimestampSchema, AggFunc, FeatureList, TimestampSchema
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -36,6 +36,28 @@ def test_expected_rows_and_columns(item_table, expected_joined_event_item_datafr
     )
     df_expected_subset = df_expected_subset[expected_columns]
     pd.testing.assert_frame_equal(df_preview, df_expected_subset)
+    assert item_table.cached_model.validation.status == "PASSED"
+
+    # check table validation
+    item_table.item_type.update_critical_data_info(
+        cleaning_operations=[
+            AddTimestampSchema(
+                timestamp_schema=TimestampSchema(
+                    is_utc_time=False,
+                    format_string="%Y-%m-%d %H:%M:%S",
+                    timezone="America/New_York",
+                )
+            )
+        ]
+    )
+    validation = item_table.cached_model.validation
+    assert validation.status == "FAILED"
+    expected_msg = "Can't parse 'type_26' as timestamp with format '%Y-%m-%d %H:%M:%S'"
+    assert expected_msg in validation.validation_message
+
+    # check table validation
+    item_table.item_type.update_critical_data_info(cleaning_operations=[])
+    assert item_table.cached_model.validation.status == "PASSED"
 
 
 @pytest.fixture
