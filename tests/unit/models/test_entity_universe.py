@@ -387,14 +387,14 @@ def test_item_aggregate_with_timestamp_schema_universe(
                 "tz_offset" AS "tz_offset"
               FROM "sf_database"."sf_schema"."sf_table_no_tz"
               WHERE
-                CONVERT_TIMEZONE(
+                CAST(CONVERT_TIMEZONE(
                   'UTC',
                   TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
-                ) >= __fb_last_materialized_timestamp
-                AND CONVERT_TIMEZONE(
+                ) AS TIMESTAMP) >= __fb_last_materialized_timestamp
+                AND CAST(CONVERT_TIMEZONE(
                   'UTC',
                   TO_TIMESTAMP_TZ(CONCAT(TO_CHAR("event_timestamp", 'YYYY-MM-DD HH24:MI:SS'), ' ', "tz_offset"))
-                ) < __fb_current_feature_timestamp
+                ) AS TIMESTAMP) < __fb_current_feature_timestamp
             )
             GROUP BY
               "col_int"
