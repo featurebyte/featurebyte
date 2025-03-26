@@ -49,7 +49,7 @@ SELECT
 FROM (
   SELECT
     *,
-    F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "new_effective_timestamp"), 0, 0, 1440) AS index
+    F_TIMESTAMP_TO_INDEX(CAST(CONVERT_TIMEZONE('UTC', "new_effective_timestamp") AS TIMESTAMP), 0, 0, 1440) AS index
   FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
 )
 GROUP BY

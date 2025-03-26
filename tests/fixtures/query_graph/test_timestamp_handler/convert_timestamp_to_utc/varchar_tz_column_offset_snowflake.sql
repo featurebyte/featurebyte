@@ -1,4 +1,4 @@
-CONVERT_TIMEZONE(
+CAST(CONVERT_TIMEZONE(
   'UTC',
   TO_TIMESTAMP_TZ(
     CONCAT(
@@ -7,4 +7,4 @@ CONVERT_TIMEZONE(
       "tz_col"
     )
   )
-)
+) AS TIMESTAMP)
