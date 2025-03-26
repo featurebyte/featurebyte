@@ -155,8 +155,11 @@ class SnowflakeAdapter(BaseAdapter):
 
     @classmethod
     def convert_to_utc_timestamp(cls, timestamp_expr: Expression) -> Expression:
-        return expressions.Anonymous(
-            this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), timestamp_expr]
+        return expressions.Cast(
+            this=expressions.Anonymous(
+                this="CONVERT_TIMEZONE", expressions=[make_literal_value("UTC"), timestamp_expr]
+            ),
+            to=expressions.DataType.build("TIMESTAMP"),
         )
 
     @classmethod
@@ -526,10 +529,7 @@ class SnowflakeAdapter(BaseAdapter):
         timestamp_tz = expressions.Anonymous(
             this="TO_TIMESTAMP_TZ", expressions=[timestamp_str_with_tz]
         )
-        return expressions.Anonymous(
-            this="CONVERT_TIMEZONE",
-            expressions=[make_literal_value("UTC"), timestamp_tz],
-        )
+        return cls.convert_to_utc_timestamp(timestamp_tz)
 
     @classmethod
     def convert_utc_to_timezone(

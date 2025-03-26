@@ -318,3 +318,15 @@ def test_deployment(config, time_series_window_aggregate_feature):
     df_feat = pd.DataFrame(res.json()["features"])
     df_expected = pd.DataFrame([{"series_id": "S0", "value_col_sum_7d": np.nan}])
     fb_assert_frame_equal(df_feat, df_expected)
+
+
+def test_time_series_view_join_scd_view(time_series_table, scd_table):
+    """
+    Test joining TimeSeriesView with an SCDView
+    """
+    time_series_view = time_series_table.get_view()
+    scd_view = scd_table.get_view()
+    joined_view = time_series_view.join(scd_view)
+    # Preview should work without errors
+    df = joined_view[joined_view["series_id_col"] == "S1"].preview()
+    assert df["User Status"].nunique() > 0
