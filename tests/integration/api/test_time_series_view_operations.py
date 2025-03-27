@@ -330,3 +330,36 @@ def test_time_series_view_join_scd_view(time_series_table, scd_table):
     # Preview should work without errors
     df = joined_view[joined_view["series_id_col"] == "S1"].preview()
     assert df["User Status"].nunique() > 0
+
+
+def test_multiple_features(time_series_table):
+    """
+    Test TimeSeriesView
+    """
+    view = time_series_table.get_view()
+
+    features = []
+    for method in ["sum", "min", "max"]:
+        feature = view.groupby("series_id_col").aggregate_over(
+            value_column="value_col",
+            method=method,
+            windows=[CalendarWindow(unit="MONTH", size=3)],
+            feature_names=[f"value_col_{method}_3m"],
+            feature_job_setting=CronFeatureJobSetting(
+                crontab="0 8 * * *",
+                timezone="Asia/Singapore",
+            ),
+        )[f"value_col_{method}_3m"]
+        features.append(feature)
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": pd.Timestamp("2001-02-10 10:00:00"),
+            "series_id": "S0",
+        }
+    ])
+    feature_list = FeatureList(features, "test_feature_list")
+    expected = preview_params.copy()
+    expected["value_col_sum_3m"] = [4.65]
+    expected["value_col_min_3m"] = [0.0]
+    expected["value_col_max_3m"] = [0.3]
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
