@@ -70,10 +70,10 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
         # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)
         if self.parameters.value_by is None:
             parameters_dict = self.parameters.model_dump(
-                exclude={"parent", "agg_func", "name", "windows", "offset"}
+                exclude={"parent", "agg_func", "names", "windows", "offset"}
             )
         else:
-            parameters_dict = self.parameters.model_dump(exclude={"name", "windows", "offset"})
+            parameters_dict = self.parameters.model_dump(exclude={"names", "windows", "offset"})
         if parameters_dict.get("timestamp_metadata") is None:
             parameters_dict.pop("timestamp_metadata", None)
         if parameters_dict.get("entity_ids") is not None:

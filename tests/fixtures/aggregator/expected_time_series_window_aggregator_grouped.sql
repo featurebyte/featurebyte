@@ -16,13 +16,10 @@ WITH "REQUEST_TABLE_TIME_SERIES_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_CUSTOMER
       "__FB_CRON_JOB_SCHEDULE_DATETIME"
     FROM "REQUEST_TABLE_0 0 * * *_Etc/UTC_Asia/Singapore"
   )
-), "VIEW_0f53489d81f84aef" AS (
+), "VIEW_766f9c7f2e570d1a" AS (
   SELECT
     *,
-    DATE_PART(
-      EPOCH_SECOND,
-      CONVERT_TIMEZONE('UTC', 'Asia/Singapore', TO_TIMESTAMP("snapshot_date", 'YYYYMMDD'))
-    ) AS "__FB_VIEW_TIMESTAMP_EPOCH"
+    DATE_PART(EPOCH_SECOND, TO_TIMESTAMP("snapshot_date", 'YYYYMMDD')) AS "__FB_VIEW_TIMESTAMP_EPOCH"
   FROM (
     SELECT
       "snapshot_date" AS "snapshot_date",
@@ -34,19 +31,25 @@ WITH "REQUEST_TABLE_TIME_SERIES_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_CUSTOMER
 SELECT
   POINT_IN_TIME,
   cust_id,
+  "T0"."_fb_internal_CUSTOMER_ID_time_series_max_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1" AS "_fb_internal_CUSTOMER_ID_time_series_max_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1",
+  "T0"."_fb_internal_CUSTOMER_ID_time_series_min_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1" AS "_fb_internal_CUSTOMER_ID_time_series_min_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1",
   "T0"."_fb_internal_CUSTOMER_ID_time_series_sum_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1" AS "_fb_internal_CUSTOMER_ID_time_series_sum_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1"
 FROM REQUEST_TABLE
 LEFT JOIN (
   SELECT
     DISTINCT_POINT_IN_TIME."POINT_IN_TIME",
     DISTINCT_POINT_IN_TIME."CUSTOMER_ID",
+    AGGREGATED."_fb_internal_CUSTOMER_ID_time_series_max_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1",
+    AGGREGATED."_fb_internal_CUSTOMER_ID_time_series_min_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1",
     AGGREGATED."_fb_internal_CUSTOMER_ID_time_series_sum_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1"
   FROM "REQUEST_TABLE_TIME_SERIES_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_CUSTOMER_ID_DISTINCT_BY_POINT_IN_TIME" AS DISTINCT_POINT_IN_TIME
   LEFT JOIN (
     SELECT
       "__FB_CRON_JOB_SCHEDULE_DATETIME" AS "__FB_CRON_JOB_SCHEDULE_DATETIME",
       "CUSTOMER_ID" AS "CUSTOMER_ID",
-      SUM("a") AS "_fb_internal_CUSTOMER_ID_time_series_sum_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1"
+      SUM("a") AS "_fb_internal_CUSTOMER_ID_time_series_sum_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1",
+      MIN("a") AS "_fb_internal_CUSTOMER_ID_time_series_min_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1",
+      MAX("a") AS "_fb_internal_CUSTOMER_ID_time_series_max_a_cust_id_None_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_input_1"
     FROM (
       SELECT
         REQ."__FB_CRON_JOB_SCHEDULE_DATETIME",
@@ -54,7 +57,7 @@ LEFT JOIN (
         VIEW."__FB_VIEW_TIMESTAMP_EPOCH",
         VIEW."a"
       FROM "REQUEST_TABLE_TIME_SERIES_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_CUSTOMER_ID_DISTINCT_BY_SCHEDULED_JOB_TIME" AS REQ
-      INNER JOIN "VIEW_0f53489d81f84aef" AS VIEW
+      INNER JOIN "VIEW_766f9c7f2e570d1a" AS VIEW
         ON FLOOR(REQ."__FB_WINDOW_END_EPOCH" / 604800) = FLOOR(VIEW."__FB_VIEW_TIMESTAMP_EPOCH" / 604800)
         AND REQ."CUSTOMER_ID" = VIEW."cust_id"
       WHERE
@@ -67,7 +70,7 @@ LEFT JOIN (
         VIEW."__FB_VIEW_TIMESTAMP_EPOCH",
         VIEW."a"
       FROM "REQUEST_TABLE_TIME_SERIES_W7_DAY_0 0 * * *_Etc/UTC_Asia/Singapore_CUSTOMER_ID_DISTINCT_BY_SCHEDULED_JOB_TIME" AS REQ
-      INNER JOIN "VIEW_0f53489d81f84aef" AS VIEW
+      INNER JOIN "VIEW_766f9c7f2e570d1a" AS VIEW
         ON FLOOR(REQ."__FB_WINDOW_END_EPOCH" / 604800) - 1 = FLOOR(VIEW."__FB_VIEW_TIMESTAMP_EPOCH" / 604800)
         AND REQ."CUSTOMER_ID" = VIEW."cust_id"
       WHERE
