@@ -23,7 +23,7 @@ FROM (
       "__FB_EFFECTIVE_TS_COL"
     FROM (
       SELECT
-        CONVERT_TIMEZONE('UTC', "Timestamp") AS "__FB_TS_COL",
+        CAST(CONVERT_TIMEZONE('UTC', "Timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
         "GroceryCustomerGuid" AS "__FB_KEY_COL_0",
         NULL AS "__FB_EFFECTIVE_TS_COL",
         2 AS "__FB_TS_TIE_BREAKER_COL",
@@ -71,7 +71,7 @@ FROM (
       )
       UNION ALL
       SELECT
-        CONVERT_TIMEZONE('UTC', "ValidFrom") AS "__FB_TS_COL",
+        CAST(CONVERT_TIMEZONE('UTC', "ValidFrom") AS TIMESTAMP) AS "__FB_TS_COL",
         "GroceryCustomerGuid" AS "__FB_KEY_COL_0",
         "ValidFrom" AS "__FB_EFFECTIVE_TS_COL",
         1 AS "__FB_TS_TIE_BREAKER_COL",

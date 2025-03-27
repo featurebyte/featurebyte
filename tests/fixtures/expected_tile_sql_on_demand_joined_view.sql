@@ -28,7 +28,7 @@ WITH __FB_ENTITY_TABLE_NAME AS (
           "__FB_EFFECTIVE_TS_COL"
         FROM (
           SELECT
-            CONVERT_TIMEZONE('UTC', "event_timestamp") AS "__FB_TS_COL",
+            CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
             "cust_id" AS "__FB_KEY_COL_0",
             NULL AS "__FB_EFFECTIVE_TS_COL",
             2 AS "__FB_TS_TIE_BREAKER_COL",
@@ -59,7 +59,7 @@ WITH __FB_ENTITY_TABLE_NAME AS (
           )
           UNION ALL
           SELECT
-            CONVERT_TIMEZONE('UTC', "effective_timestamp") AS "__FB_TS_COL",
+            CAST(CONVERT_TIMEZONE('UTC', "effective_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
             "cust_id" AS "__FB_KEY_COL_0",
             "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
             1 AS "__FB_TS_TIE_BREAKER_COL",
@@ -138,7 +138,7 @@ SELECT
 FROM (
   SELECT
     *,
-    F_TIMESTAMP_TO_INDEX(CONVERT_TIMEZONE('UTC', "ts"), 1800, 900, 60) AS index
+    F_TIMESTAMP_TO_INDEX(CAST(CONVERT_TIMEZONE('UTC', "ts") AS TIMESTAMP), 1800, 900, 60) AS index
   FROM __FB_TILE_COMPUTE_INPUT_TABLE_NAME
 )
 GROUP BY

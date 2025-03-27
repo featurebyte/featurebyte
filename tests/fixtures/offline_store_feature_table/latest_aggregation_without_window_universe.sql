@@ -13,7 +13,7 @@ FROM (
   FROM "sf_database"."sf_schema"."sf_table"
   WHERE
     "event_timestamp" >= __fb_last_materialized_timestamp
-    AND "event_timestamp" < CONVERT_TIMEZONE(
+    AND "event_timestamp" < CAST(CONVERT_TIMEZONE(
       'UTC',
       F_INDEX_TO_TIMESTAMP(
         CAST(FLOOR((
@@ -23,7 +23,7 @@ FROM (
         600,
         30
       )
-    )
+    ) AS TIMESTAMP)
 )
 WHERE
   "cust_id" IS NOT NULL
