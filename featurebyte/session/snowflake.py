@@ -264,7 +264,7 @@ class SnowflakeSession(BaseSession):
         try:
             schema = self._get_schema_from_cursor(cursor)
             for table in cursor.fetch_arrow_batches():
-                for batch in table.cast(schema).to_batches():
+                for batch in table.cast(schema, safe=False).to_batches():
                     yield batch
             # return empty table to ensure correct schema is returned
             yield pa.record_batch(

@@ -291,3 +291,13 @@ async def test_timestamp_with_large_date(config, session_without_datasets):
     query = "SELECT CAST('9999-12-31T05:00:00.123456' AS TIMESTAMP) AS TIMESTAMP"
     result = await session.execute_query(query)
     assert result.TIMESTAMP.tolist()[0] == pd.Timestamp("9999-12-31 05:00:00.123456")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
+async def test_timestamp_with_high_precision_date(config, session_without_datasets):
+    _ = config
+    session = session_without_datasets
+    query = "SELECT CAST('2012-12-31T05:00:00.123456123' AS TIMESTAMP) AS TIMESTAMP"
+    result = await session.execute_query(query)
+    assert result.TIMESTAMP.tolist()[0] == pd.Timestamp("2012-12-31 05:00:00.123456")
