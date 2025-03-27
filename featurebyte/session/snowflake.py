@@ -216,11 +216,6 @@ class SnowflakeSession(BaseSession):
                 pa_type = pa.decimal128(field.precision, field.scale)
             else:
                 pa_type = field_type.pa_type(field)
-
-            # truncate nanoseconds to microseconds to support large date values (e.g. 9999-12-31)
-            if pa_type == pa.timestamp("ns"):
-                pa_type = pa.timestamp("us")
-
             db_var_type = self._convert_to_internal_variable_type({
                 "type": field_type.name,
                 "length": field.internal_size,
