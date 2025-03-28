@@ -4,7 +4,7 @@ Test TableStatusService
 
 import pytest
 
-from featurebyte.exception import DocumentConflictError, DocumentUpdateError
+from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.schema.event_table import EventTableCreate, EventTableServiceUpdate
 
@@ -52,7 +52,7 @@ async def test_update_table_status(
 
 
 @pytest.mark.asyncio
-async def test_tabular_source_uniqueness_check_excludes_deprecated_tables(
+async def test_register_another_table_with_the_same_tabular_source(
     event_table, event_table_service, table_status_service
 ):
     """Test tabular source uniqueness check excludes deprecated tables"""
@@ -60,19 +60,6 @@ async def test_tabular_source_uniqueness_check_excludes_deprecated_tables(
     new_table_payload = EventTableCreate(
         **event_table.model_dump(exclude={"_id": True, "name": True}), name="new_table"
     )
-    with pytest.raises(DocumentConflictError) as exc:
-        await event_table_service.create_document(data=new_table_payload)
-    expected_msg = (
-        'already exists. Get the existing object by `EventTable.get(name="sf_event_table")`.'
-    )
-    assert expected_msg in str(exc.value)
-
-    # deprecate the existing event table
-    await table_status_service.update_status(
-        service=event_table_service, document_id=event_table.id, status=TableStatus.DEPRECATED
-    )
-    updated_event_table = await event_table_service.get_document(document_id=event_table.id)
-    assert updated_event_table.status == TableStatus.DEPRECATED
 
     # create a new table with the same tabular source
     new_event_table = await event_table_service.create_document(data=new_table_payload)

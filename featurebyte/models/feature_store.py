@@ -301,12 +301,6 @@ class TableModel(BaseTableData, ConstructGraphMixin, FeatureByteCatalogBaseDocum
                 conflict_fields_signature={"name": ["name"]},
                 resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
             ),
-            UniqueValuesConstraint(
-                fields=("tabular_source",),
-                conflict_fields_signature={"tabular_source": ["tabular_source"]},
-                resolution_signature=UniqueConstraintResolutionSignature.GET_NAME,
-                extra_query_params={"status": {"$ne": TableStatus.DEPRECATED.value}},
-            ),
         ]
 
         indexes = FeatureByteCatalogBaseDocumentModel.Settings.indexes + [
