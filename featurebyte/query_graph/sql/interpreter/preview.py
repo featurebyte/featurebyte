@@ -420,6 +420,67 @@ class PreviewMixin(BaseGraphInterpreter):
             type_conversions,
         )
 
+    def construct_sample_sql_tree(
+        self,
+        node_name: str,
+        num_rows: int = 10,
+        seed: int = 1234,
+        from_timestamp: Optional[datetime] = None,
+        to_timestamp: Optional[datetime] = None,
+        timestamp_column: Optional[str] = None,
+        skip_conversion: bool = False,
+        total_num_rows: Optional[int] = None,
+        clip_timestamp_columns: bool = False,
+        sample_on_primary_table: bool = False,
+        sort_by_prob: bool = True,
+    ) -> Tuple[expressions.Select, dict[Optional[str], DBVarType]]:
+        """Construct SQL to sample data from a given node
+
+        Parameters
+        ----------
+        node_name : str
+            Query graph node name
+        num_rows : int
+            Number of rows to include in the preview
+        seed: int
+            Random seed to use for sampling
+        from_timestamp: Optional[datetime]
+            Start of date range to filter on
+        to_timestamp: Optional[datetime]
+            End of date range to filter on
+        timestamp_column: Optional[str]
+            Column to apply date range filtering on
+        skip_conversion: bool
+            Whether to skip data conversion
+        total_num_rows: int
+            Total number of rows before sampling
+        clip_timestamp_columns: bool
+            Clip timestamp columns to valid range
+        sample_on_primary_table: bool
+            Whether to sample on primary table
+        sort_by_prob: bool
+            Whether to sort sampled result by the random probability to correct for oversampling
+
+        Returns
+        -------
+        Tuple[str, dict[Optional[str], DBVarType]]:
+            Select expression for sample and type conversions to apply on results
+        """
+        sql_tree, type_conversions = self._construct_sample_sql(
+            node_name=node_name,
+            num_rows=num_rows,
+            seed=seed,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
+            timestamp_column=timestamp_column,
+            skip_conversion=skip_conversion,
+            total_num_rows=total_num_rows,
+            clip_timestamp_columns=clip_timestamp_columns,
+            sample_on_primary_table=sample_on_primary_table,
+            sort_by_prob=sort_by_prob,
+        )
+        return sql_tree, type_conversions
+
     def construct_sample_sql(
         self,
         node_name: str,
@@ -429,6 +490,7 @@ class PreviewMixin(BaseGraphInterpreter):
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
         total_num_rows: Optional[int] = None,
+        sample_on_primary_table: bool = True,
     ) -> Tuple[str, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
@@ -448,13 +510,14 @@ class PreviewMixin(BaseGraphInterpreter):
             Column to apply date range filtering on
         total_num_rows: int
             Total number of rows before sampling
+        sample_on_primary_table: bool
+            Whether to sample on primary table
 
         Returns
         -------
         Tuple[str, dict[Optional[str], DBVarType]]:
             SQL code for sample and type conversions to apply on results
         """
-
         sql_tree, type_conversions = self._construct_sample_sql(
             node_name=node_name,
             num_rows=num_rows,
@@ -463,6 +526,7 @@ class PreviewMixin(BaseGraphInterpreter):
             to_timestamp=to_timestamp,
             timestamp_column=timestamp_column,
             total_num_rows=total_num_rows,
+            sample_on_primary_table=sample_on_primary_table,
             clip_timestamp_columns=True,
         )
         return sql_to_string(sql_tree, source_type=self.source_info.source_type), type_conversions
@@ -1316,3 +1380,29 @@ class PreviewMixin(BaseGraphInterpreter):
             )[0].subquery()
         )
         return sql_to_string(expr, source_type=self.adapter.source_type)
+
+    def construct_materialize_expr_with_type_conversions(
+        self, node_name: str
+    ) -> Tuple[str, dict[Optional[str], DBVarType]]:
+        """
+        Construct SQL to materialize data from a given node with type conversions
+
+        Parameters
+        ----------
+        node_name: str
+            Node name to materialize
+
+        Returns
+        -------
+        Tuple[str, dict[Optional[str], DBVarType]]
+            SQL code for materialization and type conversions to apply on results
+        """
+        operation_structure = self.extract_operation_structure_for_node(
+            node_name=node_name,
+        )
+        sample_sql_tree = self.construct_materialize_expr(node_name=node_name)
+        sample_sql_tree, type_conversions = self._apply_type_conversions(
+            sql_tree=sample_sql_tree, columns=operation_structure.columns
+        )
+        sample_sql = sql_to_string(sample_sql_tree, source_type=self.source_info.source_type)
+        return sample_sql, type_conversions

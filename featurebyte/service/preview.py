@@ -19,7 +19,9 @@ from featurebyte.exception import DescribeQueryExecutionError
 from featurebyte.logging import get_logger, truncate_query
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.node.input import InputNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.interpreter.preview import DescribeQueries
@@ -239,6 +241,42 @@ class PreviewService:
         result = await self._execute_query(session, preview_sql, allow_long_running)
         return dataframe_to_json(result, type_conversions)
 
+    async def _get_graph_using_sampled_primary_table(
+        self,
+        feature_store: FeatureStoreModel,
+        session: BaseSession,
+        sample: FeatureStoreSample,
+        num_rows: int,
+        seed: int,
+        total_num_rows: Optional[int],
+    ) -> QueryGraph:
+        primary_table_input_node = sample.graph.get_sample_table_node(node_name=sample.node_name)
+        graph = QueryGraph()
+        inserted_input_node = graph.add_node(primary_table_input_node, input_nodes=[])
+
+        sample_sql_tree, _ = GraphInterpreter(
+            query_graph=graph, source_info=feature_store.get_source_info()
+        ).construct_sample_sql_tree(
+            node_name=inserted_input_node.name,
+            num_rows=num_rows,
+            seed=seed,
+            from_timestamp=sample.from_timestamp,
+            to_timestamp=sample.to_timestamp,
+            timestamp_column=sample.timestamp_column,
+            total_num_rows=total_num_rows,
+        )
+        sampled_table_name, _ = await self._get_or_cache_table(
+            session=session,
+            params=sample,
+            table_expr=sample_sql_tree,
+        )
+        output = sample.graph
+        for node in output.nodes:
+            if node.name == primary_table_input_node.name:
+                assert isinstance(node, InputNode)
+                node.parameters.table_details = TableDetails(table_name=sampled_table_name)
+        return output
+
     async def sample(
         self,
         sample: FeatureStoreSample,
@@ -289,18 +327,24 @@ class PreviewService:
             )
             total_num_rows = None
 
-        sample_sql, type_conversions = GraphInterpreter(
-            sample.graph, source_info=feature_store.get_source_info()
-        ).construct_sample_sql(
-            node_name=sample.node_name,
+        query_graph = await self._get_graph_using_sampled_primary_table(
+            feature_store=feature_store,
+            session=session,
+            sample=sample,
             num_rows=size,
             seed=seed,
-            from_timestamp=sample.from_timestamp,
-            to_timestamp=sample.to_timestamp,
-            timestamp_column=sample.timestamp_column,
             total_num_rows=total_num_rows,
         )
-        result = await self._execute_query(session, sample_sql, allow_long_running)
+
+        graph_interpreter = GraphInterpreter(
+            query_graph, source_info=feature_store.get_source_info()
+        )
+        sql_query, type_conversions = (
+            graph_interpreter.construct_materialize_expr_with_type_conversions(
+                node_name=sample.node_name
+            )
+        )
+        result = await self._execute_query(session, sql_query, allow_long_running)
         return dataframe_to_json(result, type_conversions)
 
     async def describe(  # pylint: disable=too-many-locals
@@ -375,7 +419,7 @@ class PreviewService:
         operation_structure = graph_interpreter.extract_operation_structure_for_node(
             sample.node_name
         )
-        sample_sql_tree, type_conversions = graph_interpreter._construct_sample_sql(
+        sample_sql_tree, type_conversions = graph_interpreter.construct_sample_sql_tree(
             node_name=sample.node_name,
             num_rows=size,
             seed=seed,
