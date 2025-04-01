@@ -4,7 +4,7 @@ Base class for SQL interpreter.
 
 from __future__ import annotations
 
-from typing import Tuple, cast
+from typing import Tuple
 
 from sqlglot import expressions
 
@@ -105,5 +105,11 @@ class BaseGraphInterpreter:
             self.query_graph, sql_type=SQLType.MATERIALIZE, source_info=self.source_info
         )
         sql_node = sql_graph.build(flat_node)
-        assert isinstance(sql_node, TableNode)
-        return cast(expressions.Select, sql_node.sql)
+        assert isinstance(sql_node, (TableNode, ExpressionNode))
+        if isinstance(sql_node, TableNode):
+            sql_tree = sql_node.sql
+        else:
+            sql_tree = sql_node.sql_standalone
+
+        assert isinstance(sql_tree, expressions.Select)
+        return sql_tree

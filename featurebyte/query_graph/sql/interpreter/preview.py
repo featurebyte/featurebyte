@@ -247,7 +247,7 @@ class PreviewMixin(BaseGraphInterpreter):
             sample_parameters = SampleParameters(
                 seed=seed,
                 total_num_rows=total_num_rows,
-                num_rows=sample_row_num * graph_info.get_oversampling_factor(),
+                num_rows=int(sample_row_num * graph_info.get_oversampling_factor()),
                 sort_by_prob=sort_by_prob,
             )
 
@@ -1382,7 +1382,7 @@ class PreviewMixin(BaseGraphInterpreter):
         return sql_to_string(expr, source_type=self.adapter.source_type)
 
     def construct_materialize_expr_with_type_conversions(
-        self, node_name: str
+        self, node_name: str, final_row_limit: Optional[int] = 0
     ) -> Tuple[str, dict[Optional[str], DBVarType]]:
         """
         Construct SQL to materialize data from a given node with type conversions
@@ -1391,6 +1391,8 @@ class PreviewMixin(BaseGraphInterpreter):
         ----------
         node_name: str
             Node name to materialize
+        final_row_limit: Optional[int]
+            Final row limit to apply
 
         Returns
         -------
@@ -1404,5 +1406,8 @@ class PreviewMixin(BaseGraphInterpreter):
         sample_sql_tree, type_conversions = self._apply_type_conversions(
             sql_tree=sample_sql_tree, columns=operation_structure.columns
         )
+        if final_row_limit:
+            sample_sql_tree = sample_sql_tree.limit(final_row_limit)
+
         sample_sql = sql_to_string(sample_sql_tree, source_type=self.source_info.source_type)
         return sample_sql, type_conversions

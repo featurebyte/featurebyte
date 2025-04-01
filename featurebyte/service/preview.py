@@ -253,10 +253,10 @@ class PreviewService:
         primary_table_input_node = sample.graph.get_sample_table_node(node_name=sample.node_name)
         graph = QueryGraph()
         inserted_input_node = graph.add_node(primary_table_input_node, input_nodes=[])
-
-        sample_sql_tree, _ = GraphInterpreter(
+        graph_interpreter = GraphInterpreter(
             query_graph=graph, source_info=feature_store.get_source_info()
-        ).construct_sample_sql_tree(
+        )
+        sample_sql_tree, _ = graph_interpreter.construct_sample_sql_tree(
             node_name=inserted_input_node.name,
             num_rows=num_rows,
             seed=seed,
@@ -327,11 +327,16 @@ class PreviewService:
             )
             total_num_rows = None
 
+        graph_info = GraphInterpreter.extract_graph_info_for_sampling(
+            query_graph=sample.graph,
+            target_node_name=sample.node_name,
+        )
+        num_rows = int(size * graph_info.get_oversampling_factor())
         query_graph = await self._get_graph_using_sampled_primary_table(
             feature_store=feature_store,
             session=session,
             sample=sample,
-            num_rows=size,
+            num_rows=num_rows,
             seed=seed,
             total_num_rows=total_num_rows,
         )
@@ -341,7 +346,8 @@ class PreviewService:
         )
         sql_query, type_conversions = (
             graph_interpreter.construct_materialize_expr_with_type_conversions(
-                node_name=sample.node_name
+                node_name=sample.node_name,
+                final_row_limit=num_rows,
             )
         )
         result = await self._execute_query(session, sql_query, allow_long_running)
