@@ -545,10 +545,20 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
         input_nodes=[node_join, node_eq],
     )
 
+    # identify primary table node & update the table details
+    target_node_name = filter_node.name
+    query_graph, node_name_map = global_graph.quick_prune(target_node_names=[target_node_name])
+    mapped_node_name = node_name_map[target_node_name]
+
+    primary_table_node = query_graph.get_sample_table_node(node_name=mapped_node_name)
+    for node in query_graph.nodes:
+        if node.name == primary_table_node.name:
+            node.parameters.table_details = TableDetails(table_name="cached_sampled_primary_table")
+
     # check describe query with query graph containing filter node & join operation
-    interpreter = GraphInterpreter(global_graph, source_info)
+    interpreter = GraphInterpreter(query_graph, source_info)
     sample_sql_tree, _ = interpreter._construct_sample_sql(
-        node_name=filter_node.name,
+        node_name=mapped_node_name,
         num_rows=10,
         seed=1234,
         total_num_rows=1000,
