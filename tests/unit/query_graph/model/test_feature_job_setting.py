@@ -5,7 +5,7 @@ Test module for feature job setting
 import pytest
 from bson import ObjectId
 
-from featurebyte import FeatureJobSetting
+from featurebyte import CalendarWindow, FeatureJobSetting
 from featurebyte.exception import CronFeatureJobSettingConversionError
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
@@ -231,6 +231,12 @@ def test_extract_offline_store_feature_table_name_postfix(crontab_expr, expected
             "1000s",
             FeatureJobSetting(period="604800s", offset="352800s", blind_spot="1000s"),
         ),
+        # CalendarWindow blind spot
+        (
+            "10 * * * *",
+            CalendarWindow(unit="MINUTE", size=5),
+            FeatureJobSetting(period="3600s", offset="600s", blind_spot="300s"),
+        ),
     ],
 )
 def test_to_feature_job_setting(crontab_expr, blind_spot, expected):
@@ -286,6 +292,18 @@ def test_to_feature_job_setting_missing_blind_spot():
         cron_job.to_feature_job_setting()
 
 
+def test_to_feature_job_setting_non_fixed_size_blind_spot():
+    """Test that missing blind_spot raises an error when creating CronFeatureJobSetting"""
+    cron_job = CronFeatureJobSetting(
+        crontab="10 * * * *", blind_spot=CalendarWindow(unit="MONTH", size=1), timezone="Etc/UTC"
+    )
+    with pytest.raises(
+        CronFeatureJobSettingConversionError,
+        match="blind_spot is not a fixed size window",
+    ):
+        cron_job.to_feature_job_setting()
+
+
 @pytest.mark.parametrize(
     "setting_1,setting_2,expected",
     [
@@ -316,3 +334,26 @@ def test_feature_job_setting_comparison(setting_1, setting_2, expected):
     else:
         assert setting_1 != setting_2
         assert setting_2 != setting_1
+
+
+@pytest.mark.parametrize(
+    "setting,expected",
+    [
+        (
+            CronFeatureJobSetting(crontab="10 * * * *", blind_spot="300s"),
+            CalendarWindow(unit="MINUTE", size=5),
+        ),
+        (
+            CronFeatureJobSetting(
+                crontab="10 * * * *", blind_spot=CalendarWindow(unit="DAY", size=3)
+            ),
+            CalendarWindow(unit="DAY", size=3),
+        ),
+    ],
+)
+def test_get_calendar_window_blind_spot(setting, expected):
+    """
+    Test get_calendar_window_blind_spot
+    """
+    actual = setting.get_blind_spot_calendar_window()
+    assert actual == expected

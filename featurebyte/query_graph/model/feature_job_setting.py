@@ -17,9 +17,11 @@ from featurebyte.common.model_util import (
     parse_duration_string,
     validate_job_setting_parameters,
 )
+from featurebyte.enum import TimeIntervalUnit
 from featurebyte.exception import CronFeatureJobSettingConversionError
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.periodic_task import Crontab
+from featurebyte.query_graph.model.window import CalendarWindow
 
 
 class BaseFeatureJobSetting(FeatureByteBaseModel):
@@ -365,11 +367,11 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
             "If not provided, the timezone parameter is used as the reference timezone."
         ),
     )
-    blind_spot: Optional[str] = Field(
+    blind_spot: Optional[str | CalendarWindow] = Field(
         default=None,
         description=(
             "Establishes the time difference between when the feature is calculated and the most "
-            "recent event timestamp to be processed. Used for non-calendar based feature jobs."
+            "recent event timestamp to be processed."
         ),
     )
 
@@ -394,6 +396,22 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         str
         """
         return f"{self.get_cron_expression()}_{self.timezone}_{self.reference_timezone}"
+
+    def get_blind_spot_calendar_window(self) -> Optional[CalendarWindow]:
+        """
+        Get blind spot as CalendarWindow
+
+        Returns
+        -------
+        Optional[CalendarWindow]
+        """
+        if self.blind_spot is not None and isinstance(self.blind_spot, str):
+            blind_spot_minute = parse_duration_string(self.blind_spot) // 60
+            return CalendarWindow(
+                unit=TimeIntervalUnit.MINUTE,
+                size=blind_spot_minute,
+            )
+        return self.blind_spot
 
     @model_validator(mode="after")
     def _validate_cron_expression(self) -> "CronFeatureJobSetting":
@@ -509,6 +527,14 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         if self.blind_spot is None:
             raise CronFeatureJobSettingConversionError("blind_spot is not specified")
 
+        blind_spot = self.blind_spot
+        if isinstance(blind_spot, CalendarWindow):
+            if not blind_spot.is_fixed_size():
+                raise CronFeatureJobSettingConversionError("blind_spot is not a fixed size window")
+            blind_spot_str = f"{blind_spot.to_seconds()}s"
+        else:
+            blind_spot_str = blind_spot
+
         # Define the Unix epoch start time
         epoch_time = datetime(1970, 1, 1)
 
@@ -554,7 +580,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         return FeatureJobSetting(
             period=f"{period}s",
             offset=f"{offset}s",
-            blind_spot=self.blind_spot,
+            blind_spot=blind_spot_str,
         )
 
     def __hash__(self) -> int:
