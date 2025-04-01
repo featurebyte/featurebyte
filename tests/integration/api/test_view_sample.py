@@ -170,8 +170,8 @@ def test_event_view_sample_with_date_range(event_table, expected_min, expected_m
     [
         (
             "snowflake",
-            pd.Timestamp("2001-01-10 11:42:05.000464+1700"),
-            pd.Timestamp("2001-11-28 05:08:41.000417-0300"),
+            pd.Timestamp("2001-02-14 11:42:07.000848-1000"),
+            pd.Timestamp("2001-04-05 11:36:38.000227-1200"),
         ),
         (
             "spark",
@@ -210,8 +210,8 @@ def test_item_view_sample(item_table, expected_min, expected_max):
     [
         (
             "snowflake",
-            pd.Timestamp("2001-10-10 14:52:49.000447+1100"),
-            pd.Timestamp("2001-10-14 04:08:02.000346+1000"),
+            pd.Timestamp("2001-10-10 00:44:07.000193-0700"),
+            pd.Timestamp("2001-10-12 23:58:39.000579-1200"),
         ),
         (
             "spark",

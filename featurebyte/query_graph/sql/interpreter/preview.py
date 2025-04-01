@@ -17,7 +17,6 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.generic import JoinNode
-from featurebyte.query_graph.node.input import SampleParameters
 from featurebyte.query_graph.node.metadata.operation import OperationStructure, ViewDataColumn
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -241,21 +240,7 @@ class PreviewMixin(BaseGraphInterpreter):
         input_node_sampled = False
         if not sample_on_primary_table:
             return query_graph, input_node_sampled
-
-        graph_info = self.extract_graph_info_for_sampling(query_graph, target_node_name)
-        if graph_info.has_join_node and sample_row_num is not None and total_num_rows is not None:
-            sample_parameters = SampleParameters(
-                seed=seed,
-                total_num_rows=total_num_rows,
-                num_rows=sample_row_num * graph_info.get_oversampling_factor(),
-                sort_by_prob=sort_by_prob,
-            )
-
-            # override sample parameters for sampling table
-            input_node = query_graph.get_sample_table_node(node_name=target_node_name)
-            input_node.parameters.sample_parameters = sample_parameters
-            input_node_sampled = True
-        return query_graph, input_node_sampled
+        return query_graph, True
 
     def _construct_sample_sql(  # pylint: disable=too-many-arguments,too-many-locals
         self,
@@ -305,16 +290,8 @@ class PreviewMixin(BaseGraphInterpreter):
             SQL expression for data sample, column to apply conversion on resulting dataframe
         """
         flat_node = self.get_flattened_node(node_name)
-        query_graph, input_node_sampled = self._get_query_graph_with_sample_on_primary_input_nodes(
-            sample_on_primary_table=sample_on_primary_table,
-            target_node_name=flat_node.name,
-            seed=seed,
-            sort_by_prob=sort_by_prob,
-            sample_row_num=num_rows,
-            total_num_rows=total_num_rows,
-        )
         sql_graph = SQLOperationGraph(
-            query_graph=query_graph,
+            query_graph=self.query_graph,
             sql_type=SQLType.MATERIALIZE,
             source_info=self.source_info,
         )
@@ -371,7 +348,7 @@ class PreviewMixin(BaseGraphInterpreter):
             if filter_conditions:
                 sql_tree = sql_tree.where(expressions.and_(*filter_conditions))
 
-        if num_rows > 0 and not input_node_sampled:
+        if num_rows > 0 and not sample_on_primary_table:
             if total_num_rows is None:
                 # apply random sampling
                 sql_tree = sql_tree.order_by(
@@ -387,7 +364,7 @@ class PreviewMixin(BaseGraphInterpreter):
                     sort_by_prob=sort_by_prob,
                 )
 
-        if input_node_sampled:
+        if sample_on_primary_table:
             # limit the number of rows to sample to account for oversampling
             sql_tree = sql_tree.limit(num_rows)
 
@@ -429,6 +406,7 @@ class PreviewMixin(BaseGraphInterpreter):
         to_timestamp: Optional[datetime] = None,
         timestamp_column: Optional[str] = None,
         total_num_rows: Optional[int] = None,
+        sample_on_primary_table: bool = False,
     ) -> Tuple[str, dict[Optional[str], DBVarType]]:
         """Construct SQL to sample data from a given node
 
@@ -448,6 +426,8 @@ class PreviewMixin(BaseGraphInterpreter):
             Column to apply date range filtering on
         total_num_rows: int
             Total number of rows before sampling
+        sample_on_primary_table: bool
+            Whether to sample on primary table
 
         Returns
         -------
@@ -464,6 +444,7 @@ class PreviewMixin(BaseGraphInterpreter):
             timestamp_column=timestamp_column,
             total_num_rows=total_num_rows,
             clip_timestamp_columns=True,
+            sample_on_primary_table=sample_on_primary_table,
         )
         return sql_to_string(sql_tree, source_type=self.source_info.source_type), type_conversions
 

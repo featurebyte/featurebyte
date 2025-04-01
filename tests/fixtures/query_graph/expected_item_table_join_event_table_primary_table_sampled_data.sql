@@ -12,34 +12,7 @@ FROM (
     "cust_id" AS "cust_id",
     "order_id" AS "order_id",
     "order_method" AS "order_method"
-  FROM (
-    SELECT
-      "ts",
-      "cust_id",
-      "order_id",
-      "order_method"
-    FROM (
-      SELECT
-        CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
-        "ts",
-        "cust_id",
-        "order_id",
-        "order_method"
-      FROM (
-        SELECT
-          "ts",
-          "cust_id",
-          "order_id",
-          "order_method"
-        FROM "db"."public"."event_table"
-      )
-    )
-    WHERE
-      "prob" <= 0.30000000000000004
-    ORDER BY
-      "prob"
-    LIMIT 200
-  )
+  FROM "db"."public"."event_table"
 ) AS L
 INNER JOIN (
   SELECT

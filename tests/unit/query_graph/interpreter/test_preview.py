@@ -504,7 +504,7 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
         total_num_rows=1000,
         sample_on_primary_table=True,
     )
-    assert "LIMIT 10\n" in sample_sql_tree.sql(pretty=True)  # no over sampling
+    assert "LIMIT 10" in sample_sql_tree.sql(pretty=True)  # no over sampling
 
     # add a filter operation
     node_proj_oder_id = global_graph.add_operation(
