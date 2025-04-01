@@ -1,6 +1,6 @@
 # Changelog
 
-## v3.0.0 (2025-03-17)
+## v3.0.0 (2025-04-01)
 
 ### 🛑 Breaking Changes
 
@@ -8,6 +8,11 @@
 
 ### 💡 Enhancements
 
++ `service` Updates observation table construction logic to store invalidate rows from the observation table.
++ `service` Support timestamp schema for event timestamp column
++ `service` Support cron based default feature job setting for EventTable
++ `service` Introduce feature type to feature namespace.
++ `dependencies` Bump cryptography package >44.0.1
 + `service` fillna operation on a Target object now preserves the original target name automatically
 + `credential` Add support for key-pair authentication for Snowflake feature store
 + `api` Support creating batch feature tables from source tables and views without creating batch request tables.
@@ -16,8 +21,17 @@
 + `target` Introduce a target_type attribute to the target object, allowing explicit specification and updates of target prediction types.
 + `session` Sort database object listings in lexical order
 
+### ⚠️ Deprecations
+
++ `python` Deprecating python version 3.9
+
 ### 🐛 Bug Fixes
 
++ `service` Fix an error when joining TimeSeriesView with SCDView in Snowflake due to timezone handling
++ `service` Fix feature version number generation bug when a previous version is deleted in the same day
++ `service` Fix grouping of calendar aggregation features when materializing in batch
++ `service` Fix handling of effective timestamp schema when serving parent features and deployment
++ `session` Fix large dates (e.g. 9999-01-01) causing source table preview to fail
 + `service` Fix concurrent materialization of feature lists with overlapping features
 + `service` Fix syntax error due to malformed DATEDIFF expressions
 + `session` Fix fallback calls for table and schema listing when user has not access to catalog INFORMATION_SCHEMA
