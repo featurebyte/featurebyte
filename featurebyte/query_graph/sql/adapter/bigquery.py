@@ -199,6 +199,15 @@ class BigQueryAdapter(BaseAdapter):
         return cls._dateadd_helper(quantity_expr, timestamp_expr, "MICROSECOND")
 
     @classmethod
+    def dateadd_time_interval(
+        cls,
+        quantity_expr: Expression,
+        unit: TimeIntervalUnit,
+        timestamp_expr: Expression,
+    ) -> Expression:
+        return cls._dateadd_helper(quantity_expr, timestamp_expr, str(unit))
+
+    @classmethod
     def dateadd_second(cls, quantity_expr: Expression, timestamp_expr: Expression) -> Expression:
         return cls._dateadd_helper(quantity_expr, timestamp_expr, "SECOND")
 

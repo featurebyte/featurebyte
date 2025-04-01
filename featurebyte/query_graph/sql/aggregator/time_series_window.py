@@ -93,6 +93,8 @@ class TimeSeriesRequestTablePlan:
             window_spec = f"W{aggregation_spec.window.to_string()}"
             if aggregation_spec.offset is not None:
                 window_spec += f"_O{aggregation_spec.offset.to_string()}"
+            if aggregation_spec.blind_spot is not None:
+                window_spec += f"_BS{aggregation_spec.blind_spot.to_string()}"
             feature_job_setting = aggregation_spec.parameters.feature_job_setting
             job_settings_str = feature_job_setting.get_cron_expression_with_timezone()
             table_name = "_".join([
@@ -187,8 +189,17 @@ class TimeSeriesRequestTablePlan:
         aggregation_spec = processed_request_table_pair.aggregation_spec
 
         window_unit = aggregation_spec.window.unit
+
+        job_datetime_expr = quoted_identifier(InternalName.CRON_JOB_SCHEDULE_DATETIME)
+        if aggregation_spec.blind_spot is not None:
+            job_datetime_expr = self.adapter.dateadd_time_interval(
+                make_literal_value(-1 * aggregation_spec.blind_spot.size),
+                aggregation_spec.blind_spot.unit,
+                job_datetime_expr,
+            )
+
         job_datetime_rounded_to_window_unit = self.adapter.timestamp_truncate(
-            quoted_identifier(InternalName.CRON_JOB_SCHEDULE_DATETIME),
+            job_datetime_expr,
             window_unit,
         )
 

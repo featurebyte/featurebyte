@@ -584,7 +584,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         )
 
     def __hash__(self) -> int:
-        return hash((self.crontab, self.timezone, self.reference_timezone))
+        return hash((self.crontab, self.timezone, self.reference_timezone, self.blind_spot))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CronFeatureJobSetting):
@@ -599,6 +599,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
             self.crontab == other.crontab
             and self.timezone == other.timezone
             and self.reference_timezone == other.reference_timezone
+            and self.blind_spot == other.blind_spot
         )
 
 
