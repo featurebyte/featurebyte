@@ -1187,13 +1187,13 @@ class FrozenSeries(
 
         >>> view = catalog.get_table("GROCERYPRODUCT").get_view()
         >>> condition = view["ProductGroup"].isin(["Sauces", "Fromages", "Fruits"])
-        >>> view[condition].sample(5, seed=0)
+        >>> view[condition].sample(5, seed=20)
                              GroceryProductGuid ProductGroup
-        0  45cd58ba-efec-463a-9107-0633168a215e     Fromages
-        1  97e6afc9-1033-4fb3-b2a2-3d62261e1d17     Fromages
-        2  fb26ed22-524e-4c9e-9ea2-03c266e7f9b9     Fromages
-        3  a817d904-bc58-4048-978d-c13857969a69       Fruits
-        4  00abe6d0-e3f7-4f29-b0ab-69ea5581ab02       Sauces
+        0  5724912f-f95d-465a-bfc3-c87b0ca9e207       Fruits
+        1  9b6192cc-67de-4631-bc66-42bc66e44191       Sauces
+        2  d2d95887-7484-4bbd-a5b4-62ca5b5d4da4     Fromages
+        3  88c6c2b2-66fb-4a92-8cc9-41491a4b98e7     Fromages
+        4  b40e8f4e-817b-4f1e-a2e2-db37676a18d4     Fromages
 
         Create a new feature that checks whether a lookup feature is contained in the keys of a
         dictionary feature:
