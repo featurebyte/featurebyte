@@ -203,45 +203,6 @@ class PreviewMixin(BaseGraphInterpreter):
             ),
         )
 
-    def _get_query_graph_with_sample_on_primary_input_nodes(
-        self,
-        sample_on_primary_table: bool,
-        target_node_name: str,
-        seed: int,
-        sort_by_prob: bool,
-        sample_row_num: Optional[int] = None,
-        total_num_rows: Optional[int] = None,
-    ) -> tuple[QueryGraph, bool]:
-        """
-        Get query graph with sample row number set on primary input nodes
-
-        Parameters
-        ----------
-        sample_on_primary_table: bool
-            Whether to sample on primary table
-        target_node_name: str
-            Target node name
-        seed: int
-            Random seed
-        sort_by_prob: bool
-            Whether to sort sampled result by the random probability to correct for oversampling
-            bias. Can be expensive on large samples.
-        sample_row_num: Optional[int]
-            Number of rows to sample
-        total_num_rows: Optional[int]
-            Total number of rows before sampling
-
-        Returns
-        -------
-        Tuple[QueryGraph, bool]
-            Query graph with sample row number set on primary input nodes, whether input node is sampled
-        """
-        query_graph = QueryGraph(**self.query_graph.model_dump(by_alias=True))
-        input_node_sampled = False
-        if not sample_on_primary_table:
-            return query_graph, input_node_sampled
-        return query_graph, True
-
     def _construct_sample_sql(  # pylint: disable=too-many-arguments,too-many-locals
         self,
         node_name: str,

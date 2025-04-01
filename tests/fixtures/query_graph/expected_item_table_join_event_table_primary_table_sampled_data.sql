@@ -12,7 +12,7 @@ FROM (
     "cust_id" AS "cust_id",
     "order_id" AS "order_id",
     "order_method" AS "order_method"
-  FROM "db"."public"."event_table"
+  FROM "cached_sampled_primary_table"
 ) AS L
 INNER JOIN (
   SELECT

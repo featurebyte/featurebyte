@@ -10,6 +10,7 @@ from bson import ObjectId
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -440,6 +441,13 @@ def test_graph_interpreter_describe_event_join_scd_view(update_fixtures, source_
         input_nodes=[event_graph_node, scd_graph_node],
     )
 
+    # identify primary table node & update the table details
+    primary_table_node = query_graph.get_sample_table_node(node_name=join_node.name)
+    assert primary_table_node.parameters.type == "event_table"
+    for node in query_graph.nodes:
+        if node.name == primary_table_node.name:
+            node.parameters.table_details = TableDetails(table_name="cached_sampled_primary_table")
+
     interpreter = GraphInterpreter(query_graph, source_info)
     sample_sql_tree, _ = interpreter._construct_sample_sql(
         node_name=join_node.name,
@@ -462,9 +470,20 @@ def test_describe__with_primary_table_sampling_on_graph_containing_inner_join(
     source_info,
 ):
     """Test describe queries with primary table sampling on graph containing inner join or filter"""
-    interpreter = GraphInterpreter(global_graph, source_info)
+    target_node_name = item_table_join_event_table_node.name
+    query_graph, node_name_map = global_graph.quick_prune(target_node_names=[target_node_name])
+    mapped_node_name = node_name_map[target_node_name]
+
+    # identify primary table node & update the table details
+    primary_table_node = query_graph.get_sample_table_node(node_name=mapped_node_name)
+    assert primary_table_node.parameters.type == "event_table"
+    for node in query_graph.nodes:
+        if node.name == primary_table_node.name:
+            node.parameters.table_details = TableDetails(table_name="cached_sampled_primary_table")
+
+    interpreter = GraphInterpreter(query_graph, source_info)
     sample_sql_tree, _ = interpreter._construct_sample_sql(
-        node_name=item_table_join_event_table_node.name,
+        node_name=mapped_node_name,
         num_rows=10,
         seed=1234,
         total_num_rows=1000,
@@ -556,7 +575,7 @@ def test_construct_sample_sql(simple_graph, update_fixtures, source_info):
             num_rows=1000,
             total_num_rows=10000,
             seed=1234,
-            sample_on_primary_table=True,
+            sample_on_primary_table=False,
             sort_by_prob=False,
         )[0],
         source_info.source_type,

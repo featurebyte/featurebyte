@@ -37,7 +37,7 @@ FROM (
           "GroceryCustomerGuid" AS "GroceryCustomerGuid",
           "Timestamp" AS "Timestamp",
           "Amount" AS "Amount"
-        FROM "FEATUREBYTE_TESTING"."GROCERY"."GROCERYINVOICE"
+        FROM "cached_sampled_primary_table"
       )
       UNION ALL
       SELECT
