@@ -10,6 +10,7 @@ from bson import ObjectId
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -40,6 +41,24 @@ def sample_on_primary_table_fixture():
     Default value for the sample_on_primary_table fixture
     """
     return False
+
+
+def get_graph_with_updated_primary_table_details(query_graph, node_name, to_prune):
+    """
+    Return graph with updated primary table details to simulate the case where the primary table
+    is sampled and cached
+    """
+    if to_prune:
+        query_graph, node_name_map = query_graph.quick_prune(target_node_names=[node_name])
+        node_name = node_name_map[node_name]
+
+    # identify primary table node & update the table details
+    primary_table_node = query_graph.get_sample_table_node(node_name=node_name)
+    assert primary_table_node.parameters.type == "event_table"
+    for node in query_graph.nodes:
+        if node.name == primary_table_node.name:
+            node.parameters.table_details = TableDetails(table_name="cached_sampled_primary_table")
+    return query_graph, node_name
 
 
 @pytest.fixture(name="operation_structure_and_sample_sql")
@@ -440,9 +459,13 @@ def test_graph_interpreter_describe_event_join_scd_view(update_fixtures, source_
         input_nodes=[event_graph_node, scd_graph_node],
     )
 
+    # identify primary table node & update the table details
+    query_graph, node_name = get_graph_with_updated_primary_table_details(
+        query_graph, join_node.name, to_prune=False
+    )
     interpreter = GraphInterpreter(query_graph, source_info)
     sample_sql_tree, _ = interpreter._construct_sample_sql(
-        node_name=join_node.name,
+        node_name=node_name,
         num_rows=10,
         seed=1234,
         total_num_rows=1000,
@@ -462,9 +485,14 @@ def test_describe__with_primary_table_sampling_on_graph_containing_inner_join(
     source_info,
 ):
     """Test describe queries with primary table sampling on graph containing inner join or filter"""
-    interpreter = GraphInterpreter(global_graph, source_info)
-    sample_sql_tree, _ = interpreter._construct_sample_sql(
+    query_graph, mapped_node_name = get_graph_with_updated_primary_table_details(
+        query_graph=global_graph,
         node_name=item_table_join_event_table_node.name,
+        to_prune=True,
+    )
+    interpreter = GraphInterpreter(query_graph, source_info)
+    sample_sql_tree, _ = interpreter._construct_sample_sql(
+        node_name=mapped_node_name,
         num_rows=10,
         seed=1234,
         total_num_rows=1000,
@@ -504,7 +532,7 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
         total_num_rows=1000,
         sample_on_primary_table=True,
     )
-    assert "LIMIT 10\n" in sample_sql_tree.sql(pretty=True)  # no over sampling
+    assert "LIMIT 10" in sample_sql_tree.sql(pretty=True)  # no over sampling
 
     # add a filter operation
     node_proj_oder_id = global_graph.add_operation(
@@ -526,10 +554,15 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
         input_nodes=[node_join, node_eq],
     )
 
+    # identify primary table node & update the table details
+    query_graph, mapped_node_name = get_graph_with_updated_primary_table_details(
+        query_graph=global_graph, node_name=filter_node.name, to_prune=True
+    )
+
     # check describe query with query graph containing filter node & join operation
-    interpreter = GraphInterpreter(global_graph, source_info)
+    interpreter = GraphInterpreter(query_graph, source_info)
     sample_sql_tree, _ = interpreter._construct_sample_sql(
-        node_name=filter_node.name,
+        node_name=mapped_node_name,
         num_rows=10,
         seed=1234,
         total_num_rows=1000,
@@ -556,7 +589,7 @@ def test_construct_sample_sql(simple_graph, update_fixtures, source_info):
             num_rows=1000,
             total_num_rows=10000,
             seed=1234,
-            sample_on_primary_table=True,
+            sample_on_primary_table=False,
             sort_by_prob=False,
         )[0],
         source_info.source_type,
