@@ -43,6 +43,24 @@ def sample_on_primary_table_fixture():
     return False
 
 
+def get_graph_with_updated_primary_table_details(query_graph, node_name, to_prune):
+    """
+    Return graph with updated primary table details to simulate the case where the primary table
+    is sampled and cached
+    """
+    if to_prune:
+        query_graph, node_name_map = query_graph.quick_prune(target_node_names=[node_name])
+        node_name = node_name_map[node_name]
+
+    # identify primary table node & update the table details
+    primary_table_node = query_graph.get_sample_table_node(node_name=node_name)
+    assert primary_table_node.parameters.type == "event_table"
+    for node in query_graph.nodes:
+        if node.name == primary_table_node.name:
+            node.parameters.table_details = TableDetails(table_name="cached_sampled_primary_table")
+    return query_graph, node_name
+
+
 @pytest.fixture(name="operation_structure_and_sample_sql")
 def operation_structure_and_sample_sql_fixture(
     simple_graph, source_type, source_info, sample_on_primary_table
@@ -442,15 +460,12 @@ def test_graph_interpreter_describe_event_join_scd_view(update_fixtures, source_
     )
 
     # identify primary table node & update the table details
-    primary_table_node = query_graph.get_sample_table_node(node_name=join_node.name)
-    assert primary_table_node.parameters.type == "event_table"
-    for node in query_graph.nodes:
-        if node.name == primary_table_node.name:
-            node.parameters.table_details = TableDetails(table_name="cached_sampled_primary_table")
-
+    query_graph, node_name = get_graph_with_updated_primary_table_details(
+        query_graph, join_node.name, to_prune=False
+    )
     interpreter = GraphInterpreter(query_graph, source_info)
     sample_sql_tree, _ = interpreter._construct_sample_sql(
-        node_name=join_node.name,
+        node_name=node_name,
         num_rows=10,
         seed=1234,
         total_num_rows=1000,
@@ -470,17 +485,11 @@ def test_describe__with_primary_table_sampling_on_graph_containing_inner_join(
     source_info,
 ):
     """Test describe queries with primary table sampling on graph containing inner join or filter"""
-    target_node_name = item_table_join_event_table_node.name
-    query_graph, node_name_map = global_graph.quick_prune(target_node_names=[target_node_name])
-    mapped_node_name = node_name_map[target_node_name]
-
-    # identify primary table node & update the table details
-    primary_table_node = query_graph.get_sample_table_node(node_name=mapped_node_name)
-    assert primary_table_node.parameters.type == "event_table"
-    for node in query_graph.nodes:
-        if node.name == primary_table_node.name:
-            node.parameters.table_details = TableDetails(table_name="cached_sampled_primary_table")
-
+    query_graph, mapped_node_name = get_graph_with_updated_primary_table_details(
+        query_graph=global_graph,
+        node_name=item_table_join_event_table_node.name,
+        to_prune=True,
+    )
     interpreter = GraphInterpreter(query_graph, source_info)
     sample_sql_tree, _ = interpreter._construct_sample_sql(
         node_name=mapped_node_name,
@@ -546,14 +555,9 @@ def test_describe__with_primary_table_sampling_on_graph_containing_filter(
     )
 
     # identify primary table node & update the table details
-    target_node_name = filter_node.name
-    query_graph, node_name_map = global_graph.quick_prune(target_node_names=[target_node_name])
-    mapped_node_name = node_name_map[target_node_name]
-
-    primary_table_node = query_graph.get_sample_table_node(node_name=mapped_node_name)
-    for node in query_graph.nodes:
-        if node.name == primary_table_node.name:
-            node.parameters.table_details = TableDetails(table_name="cached_sampled_primary_table")
+    query_graph, mapped_node_name = get_graph_with_updated_primary_table_details(
+        query_graph=global_graph, node_name=filter_node.name, to_prune=True
+    )
 
     # check describe query with query graph containing filter node & join operation
     interpreter = GraphInterpreter(query_graph, source_info)

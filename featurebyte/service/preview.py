@@ -5,6 +5,7 @@ PreviewService class
 from __future__ import annotations
 
 import warnings
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, Coroutine, Optional, Tuple, Type, cast
 
@@ -46,6 +47,18 @@ DEFAULT_COLUMNS_BATCH_SIZE = 15
 
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class GraphWithSampledPrimaryTable:
+    """
+    GraphWithSampledPrimaryTable contains a query graph with a sampled primary table
+    and a flag indicating whether the table is cached
+    """
+
+    graph: QueryGraph
+    sampled_table_name: str
+    is_table_cached: bool
 
 
 class PreviewService:
@@ -162,7 +175,7 @@ class PreviewService:
         num_rows: int,
         seed: int,
         total_num_rows: Optional[int],
-    ) -> QueryGraph:
+    ) -> GraphWithSampledPrimaryTable:
         # get primary table node & construct a new graph for sampling
         primary_table_input_node = sample.graph.get_sample_table_node(node_name=sample.node_name)
         graph = QueryGraph()
@@ -186,7 +199,7 @@ class PreviewService:
             skip_conversion=True,  # skip conversion to keep original table column types
             sample_on_primary_table=False,  # go through normal sampling process with single table
         )
-        sampled_table_name, _ = await self._get_or_cache_table(
+        sampled_table_name, is_table_cached = await self._get_or_cache_table(
             session=session,
             params=sample,
             table_expr=sample_sql_tree,
@@ -196,7 +209,12 @@ class PreviewService:
             if node.name == primary_table_input_node.name:
                 assert isinstance(node, InputNode)
                 node.parameters.table_details = TableDetails(table_name=sampled_table_name)
-        return output
+
+        return GraphWithSampledPrimaryTable(
+            graph=output,
+            sampled_table_name=sampled_table_name,
+            is_table_cached=is_table_cached,
+        )
 
     async def shape(
         self, preview: FeatureStorePreview, allow_long_running: bool = True
@@ -291,6 +309,7 @@ class PreviewService:
         size: int,
         seed: int,
         allow_long_running: bool = True,
+        sample_on_primary_table: bool = True,
     ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
@@ -305,6 +324,9 @@ class PreviewService:
             Random seed to use for sampling
         allow_long_running: bool
             Whether to allow a longer timeout for non-interactive queries
+        sample_on_primary_table: bool
+            Whether to perform sampling on the primary table. This has an effect only when the
+            QueryObject is a join of multiple tables.
 
         Returns
         -------
@@ -335,7 +357,7 @@ class PreviewService:
             )
             total_num_rows = None
 
-        graph = await self._get_graph_using_sampled_primary_table(
+        graph_info = await self._get_graph_using_sampled_primary_table(
             feature_store=feature_store,
             session=session,
             sample=sample,
@@ -344,7 +366,7 @@ class PreviewService:
             total_num_rows=total_num_rows,
         )
         sample_sql, type_conversions = GraphInterpreter(
-            graph, source_info=feature_store.get_source_info()
+            graph_info.graph, source_info=feature_store.get_source_info()
         ).construct_sample_sql(
             node_name=sample.node_name,
             num_rows=size,
@@ -353,10 +375,20 @@ class PreviewService:
             to_timestamp=sample.to_timestamp,
             timestamp_column=sample.timestamp_column,
             total_num_rows=total_num_rows,
-            sample_on_primary_table=True,
+            sample_on_primary_table=sample_on_primary_table,
         )
-        result = await self._execute_query(session, sample_sql, allow_long_running)
-        return dataframe_to_json(result, type_conversions)
+
+        try:
+            result = await self._execute_query(session, sample_sql, allow_long_running)
+            return dataframe_to_json(result, type_conversions)
+        finally:
+            if not graph_info.is_table_cached:
+                # Need to cleanup as the table is not managed by query cache
+                await session.drop_table(
+                    table_name=graph_info.sampled_table_name,
+                    schema_name=session.schema_name,
+                    database_name=session.database_name,
+                )
 
     async def describe(  # pylint: disable=too-many-locals
         self,
@@ -424,9 +456,9 @@ class PreviewService:
             )
             total_num_rows = None
 
-        graph = sample.graph
+        graph_info = None
         if sample_on_primary_table:
-            graph = await self._get_graph_using_sampled_primary_table(
+            graph_info = await self._get_graph_using_sampled_primary_table(
                 feature_store=feature_store,
                 session=session,
                 sample=sample,
@@ -436,7 +468,8 @@ class PreviewService:
             )
 
         graph_interpreter = GraphInterpreter(
-            query_graph=graph, source_info=feature_store.get_source_info()
+            query_graph=graph_info.graph if graph_info else sample.graph,
+            source_info=feature_store.get_source_info(),
         )
         operation_structure = graph_interpreter.extract_operation_structure_for_node(
             sample.node_name
@@ -471,10 +504,17 @@ class PreviewService:
                 allow_long_running=allow_long_running,
             )
         finally:
+            # Need to cleanup as the table is not managed by query cache
+            table_names_to_drop = []
             if not is_table_cached:
-                # Need to cleanup as the table is not managed by query cache
-                await session.drop_table(
-                    table_name=input_table_name,
+                table_names_to_drop.append(input_table_name)
+
+            if graph_info and not graph_info.is_table_cached:
+                table_names_to_drop.append(graph_info.sampled_table_name)
+
+            if table_names_to_drop:
+                await session.drop_tables(
+                    table_names=table_names_to_drop,
                     schema_name=session.schema_name,
                     database_name=session.database_name,
                 )

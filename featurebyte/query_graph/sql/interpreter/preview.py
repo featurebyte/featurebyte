@@ -243,7 +243,7 @@ class PreviewMixin(BaseGraphInterpreter):
         clip_timestamp_columns: bool
             Whether to apply clipping to all the timestamp columns
         sample_on_primary_table: bool
-            Whether to sample on primary table
+            Whether the graph is already sampled on primary table
 
         Returns
         -------
@@ -388,7 +388,7 @@ class PreviewMixin(BaseGraphInterpreter):
         total_num_rows: int
             Total number of rows before sampling
         sample_on_primary_table: bool
-            Whether to sample on primary table
+            Whether the graph is already sampled on primary table
 
         Returns
         -------
