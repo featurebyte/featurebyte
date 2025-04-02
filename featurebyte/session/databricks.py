@@ -5,19 +5,21 @@ DatabricksSession class
 import os
 import time
 from io import BytesIO
-from typing import Any, AsyncGenerator, BinaryIO, Optional
+from typing import Any, AsyncGenerator, BinaryIO, Optional, Union
 from unittest.mock import patch
 
 import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
+from databricks.sdk.core import Config, oauth_service_principal
 from databricks.sql.thrift_api.TCLIService.ttypes import TOperationHandle
 from pydantic import PrivateAttr
 from TCLIService import ttypes
 
-from featurebyte import AccessTokenCredential, logging
+from featurebyte import logging
 from featurebyte.common.utils import ARROW_METADATA_DB_VAR_TYPE
 from featurebyte.enum import SourceType
+from featurebyte.models.credential import AccessTokenCredential, OAuthCredential
 from featurebyte.session.base import APPLICATION_NAME
 from featurebyte.session.base_spark import BaseSparkSession
 
@@ -65,22 +67,39 @@ class DatabricksSession(BaseSparkSession):
     _dbfs_client: DbfsExt = PrivateAttr()
 
     source_type: SourceType = SourceType.DATABRICKS
-    database_credential: AccessTokenCredential
+    database_credential: Union[AccessTokenCredential, OAuthCredential]
 
     def _initialize_connection(self) -> None:
         if not HAS_DATABRICKS_SQL_CONNECTOR:
             raise RuntimeError("databricks-sql-connector is not available")
 
+        additional_connection_params: dict[str, Any] = {}
         # This patch is necessary for the query execution to be cancellable while the cursor is polling for results
         with patch("databricks.sql.client.ThriftBackend", ThriftBackend):
+            if isinstance(self.database_credential, AccessTokenCredential):
+                additional_connection_params["access_token"] = self.database_credential.access_token
+            else:
+
+                def credentials_provider() -> Any:
+                    # ensure google credentials not in environment variables to avoid conflict
+                    os.environ.pop("GOOGLE_CREDENTIALS", None)
+                    assert isinstance(self.database_credential, OAuthCredential)
+                    config = Config(
+                        host=f"https://{self.host}",
+                        client_id=self.database_credential.client_id,
+                        client_secret=self.database_credential.client_secret,
+                    )
+                    return oauth_service_principal(config)
+
+                additional_connection_params["credentials_provider"] = credentials_provider
             self._connection = databricks_sql.connect(
                 server_hostname=self.host,
                 http_path=self.http_path,
-                access_token=self.database_credential.access_token,
                 catalog=self.catalog_name,
                 schema=self.schema_name,
                 _user_agent_entry=APPLICATION_NAME,
                 _use_arrow_native_complex_types=False,
+                **additional_connection_params,
             )
 
     async def _cancel_query(self, cursor: Any, query: str) -> bool:
@@ -93,10 +112,18 @@ class DatabricksSession(BaseSparkSession):
     def _workspace_client(self) -> WorkspaceClient:
         # ensure google credentials not in environment variables to avoid conflict
         os.environ.pop("GOOGLE_CREDENTIALS", None)
-        return WorkspaceClient(
-            host=self.host,
-            token=self.database_credential.access_token,
-        )
+        if isinstance(self.database_credential, AccessTokenCredential):
+            return WorkspaceClient(
+                host=self.host,
+                token=self.database_credential.access_token,
+            )
+        else:
+            assert isinstance(self.database_credential, OAuthCredential)
+            return WorkspaceClient(
+                host=self.host,
+                client_id=self.database_credential.client_id,
+                client_secret=self.database_credential.client_secret,
+            )
 
     def _initialize_storage(self) -> None:
         self.storage_path = self.storage_path.rstrip("/")
