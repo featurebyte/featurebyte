@@ -889,6 +889,58 @@ class BaseSession(BaseModel):
                     raise DataWarehouseOperationError(msg) from exc_view
             raise DataWarehouseOperationError(msg) from exc
 
+    async def drop_tables(
+        self,
+        table_names: list[str],
+        schema_name: str,
+        database_name: str,
+        if_exists: bool = False,
+        timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+    ) -> None:
+        """
+        Drop multiple tables
+
+        Parameters
+        ----------
+        table_names: list[str]
+            List of table names
+        schema_name: str
+            Schema name
+        database_name: str
+            Database name
+        if_exists: bool
+            If True, drop the table only if it exists
+        timeout: float
+            Timeout in seconds
+
+        Raises
+        ------
+        Exception
+            If multiple errors occurred
+        """
+        # Create tasks for all drop operations
+        tasks = [
+            self.drop_table(
+                table_name=table_name,
+                schema_name=schema_name,
+                database_name=database_name,
+                if_exists=if_exists,
+                timeout=timeout,
+            )
+            for table_name in table_names
+        ]
+
+        # Run all tasks concurrently and collect results/exceptions
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Filter out exceptions from the results
+        errors = [result for result in results if isinstance(result, Exception)]
+
+        # If there are any errors, raise an aggregated exception
+        if errors:
+            error_messages = "; ".join(str(e) for e in errors)
+            raise Exception(f"Errors occurred: {error_messages}")
+
     def format_quoted_identifier(self, identifier_name: str) -> str:
         """
         Quote an identifier using the session's convention and return the result as a string

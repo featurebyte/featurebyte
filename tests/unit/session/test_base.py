@@ -296,3 +296,61 @@ async def test_to_thread__exception():
 
     # expect exception to be raised inside thread
     assert "This is an exception from the thread!" in str(exc.value)
+
+
+@pytest.mark.asyncio
+@patch("featurebyte.session.base.BaseSession.drop_table")
+async def test_drop_tables(mock_drop_table, base_session_test):
+    """Test drop_tables method"""
+    session = base_session_test()
+    await session.drop_tables(
+        table_names=["table1", "table2"], schema_name="schema", database_name="database"
+    )
+    expected_call_args_list = [
+        (
+            (),
+            {
+                "database_name": "database",
+                "schema_name": "schema",
+                "table_name": "table1",
+                "if_exists": False,
+                "timeout": 86400,
+            },
+        ),
+        (
+            (),
+            {
+                "database_name": "database",
+                "schema_name": "schema",
+                "table_name": "table2",
+                "if_exists": False,
+                "timeout": 86400,
+            },
+        ),
+    ]
+    assert mock_drop_table.call_args_list == expected_call_args_list
+
+    # simulate error happening on the first table
+    mock_drop_table.reset_mock()
+    mock_drop_table.side_effect = [Exception("Error dropping table"), None]
+    with pytest.raises(Exception) as exc:
+        await session.drop_tables(
+            table_names=["table1", "table2"], schema_name="schema", database_name="database"
+        )
+
+    assert "Errors occurred: Error dropping table" in str(exc.value)
+    assert mock_drop_table.call_args_list == expected_call_args_list
+
+    # simulate error happening on both tables
+    mock_drop_table.reset_mock()
+    mock_drop_table.side_effect = [
+        Exception("Error dropping table1"),
+        Exception("Error dropping table2"),
+    ]
+    with pytest.raises(Exception) as exc:
+        await session.drop_tables(
+            table_names=["table1", "table2"], schema_name="schema", database_name="database"
+        )
+
+    assert "Errors occurred: Error dropping table1; Error dropping table2" in str(exc.value)
+    assert mock_drop_table.call_args_list == expected_call_args_list
