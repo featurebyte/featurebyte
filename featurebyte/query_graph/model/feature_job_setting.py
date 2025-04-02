@@ -365,7 +365,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
             "If not provided, the timezone parameter is used as the reference timezone."
         ),
     )
-    blind_spot: Optional[str | CalendarWindow] = Field(
+    blind_spot: Optional[Union[str, CalendarWindow]] = Field(
         default=None,
         description=(
             "Establishes the time difference between when the feature is calculated and the most "
