@@ -100,6 +100,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
             },
             "timezone": "Etc/UTC",
             "reference_timezone": None,
+            "blind_spot": None,
         },
         "columns_info": columns_info,
         "series_id_column": "series_id",

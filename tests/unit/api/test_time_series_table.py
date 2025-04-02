@@ -603,6 +603,7 @@ def test_update_default_job_setting__saved_time_series_table(
         },
         "timezone": "Etc/UTC",
         "reference_timezone": "Etc/UTC",
+        "blind_spot": None,
     }
 
 
@@ -743,6 +744,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
             },
             "timezone": "Etc/UTC",
             "reference_timezone": "Etc/UTC",
+            "blind_spot": None,
         }
     }
     assert len(history) == 2
@@ -776,6 +778,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
             },
             "timezone": "Etc/UTC",
             "reference_timezone": "Etc/UTC",
+            "blind_spot": None,
         }
     }
     assert len(history) == 3
