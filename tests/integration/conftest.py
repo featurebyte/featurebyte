@@ -483,7 +483,6 @@ def feature_store_details_fixture(source_type, sqlite_filename):  # pylint: disa
             http_path=os.getenv("DATABRICKS_UNITY_HTTP_PATH"),
             catalog_name=os.getenv("DATABRICKS_UNITY_CATALOG"),
             schema_name=temp_schema_name,
-            group_name="developers",
         )
 
     if source_type == "spark":

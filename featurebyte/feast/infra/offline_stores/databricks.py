@@ -33,7 +33,6 @@ class DataBricksUnityOfflineStoreConfig(BaseSparkThriftOfflineStoreConfig):
     type: Literal["databricks_unity.offline"] = "databricks_unity.offline"
     """ Offline store type selector"""
 
-    group_name: str
     database_credential: AccessTokenCredential
 
     def get_db_session(self) -> BaseSparkSession:
