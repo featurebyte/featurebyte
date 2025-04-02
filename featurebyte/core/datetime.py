@@ -19,7 +19,17 @@ def to_timestamp_from_epoch(values: Series) -> Series:
     Returns
     -------
     Series
+
+    Raises
+    ------
+    ValueError
+        if input is not numeric
     """
+    if not values.is_numeric:
+        raise ValueError(
+            f"to_timestamp_from_epoch requires input to be numeric, got {values.dtype}"
+        )
+
     node = values.graph.add_operation(
         node_type=NodeType.TO_TIMESTAMP_FROM_EPOCH,
         node_params={},
