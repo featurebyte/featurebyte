@@ -474,12 +474,8 @@ class TestFeatureStoreApi(BaseApiTestSuite):
         response = test_api_client.post("/feature_store/sample", json=data_sample_payload)
         assert response.status_code == HTTPStatus.OK
         assert_frame_equal(dataframe_from_json(response.json()), expected_df)
-        create_table_expr = mock_session.create_table_as.call_args_list[0][1]["select_expr"].sql(
-            pretty=True
-        )
-        execute_query = mock_session.execute_query.call_args[0][0]
         assert (
-            create_table_expr
+            mock_session.execute_query.call_args[0][0]
             == textwrap.dedent(
                 """
                 SELECT
@@ -512,8 +508,18 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                       CAST("col_text" AS VARCHAR) AS "col_text",
                       "col_binary" AS "col_binary",
                       "col_boolean" AS "col_boolean",
-                      "event_timestamp" AS "event_timestamp",
-                      "created_at" AS "created_at",
+                      IFF(
+                        CAST("event_timestamp" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
+                        OR CAST("event_timestamp" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
+                        NULL,
+                        "event_timestamp"
+                      ) AS "event_timestamp",
+                      IFF(
+                        CAST("created_at" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
+                        OR CAST("created_at" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
+                        NULL,
+                        "created_at"
+                      ) AS "created_at",
                       CAST("cust_id" AS VARCHAR) AS "cust_id"
                     FROM "sf_database"."sf_schema"."sf_table"
                     WHERE
@@ -525,38 +531,6 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                   "prob" <= 0.15000000000000002
                 ORDER BY
                   "prob"
-                LIMIT 10
-                """
-            ).strip()
-        )
-        assert (
-            execute_query
-            == textwrap.dedent(
-                """
-                SELECT
-                  "col_int" AS "col_int",
-                  "col_float" AS "col_float",
-                  "col_char" AS "col_char",
-                  CAST("col_text" AS VARCHAR) AS "col_text",
-                  "col_binary" AS "col_binary",
-                  "col_boolean" AS "col_boolean",
-                  IFF(
-                    CAST("event_timestamp" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
-                    OR CAST("event_timestamp" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
-                    NULL,
-                    "event_timestamp"
-                  ) AS "event_timestamp",
-                  IFF(
-                    CAST("created_at" AS TIMESTAMP) < CAST('1900-01-01' AS TIMESTAMP)
-                    OR CAST("created_at" AS TIMESTAMP) > CAST('2200-01-01' AS TIMESTAMP),
-                    NULL,
-                    "created_at"
-                  ) AS "created_at",
-                  CAST("cust_id" AS VARCHAR) AS "cust_id"
-                FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
-                WHERE
-                  "event_timestamp" >= CAST('2012-11-24T11:00:00' AS TIMESTAMP)
-                  AND "event_timestamp" < CAST('2019-11-24T11:00:00' AS TIMESTAMP)
                 LIMIT 10
                 """
             ).strip()

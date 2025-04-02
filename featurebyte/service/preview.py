@@ -309,7 +309,7 @@ class PreviewService:
         size: int,
         seed: int,
         allow_long_running: bool = True,
-        sample_on_primary_table: bool = True,
+        sample_on_primary_table: bool = False,
     ) -> dict[str, Any]:
         """
         Sample a QueryObject that is not a Feature (e.g. SourceTable, EventTable, EventView, etc)
@@ -357,16 +357,20 @@ class PreviewService:
             )
             total_num_rows = None
 
-        graph_info = await self._get_graph_using_sampled_primary_table(
-            feature_store=feature_store,
-            session=session,
-            sample=sample,
-            num_rows=size,
-            seed=seed,
-            total_num_rows=total_num_rows,
-        )
+        graph_info = None
+        if sample_on_primary_table:
+            graph_info = await self._get_graph_using_sampled_primary_table(
+                feature_store=feature_store,
+                session=session,
+                sample=sample,
+                num_rows=size,
+                seed=seed,
+                total_num_rows=total_num_rows,
+            )
+
         sample_sql, type_conversions = GraphInterpreter(
-            graph_info.graph, source_info=feature_store.get_source_info()
+            query_graph=graph_info.graph if graph_info else sample.graph,
+            source_info=feature_store.get_source_info(),
         ).construct_sample_sql(
             node_name=sample.node_name,
             num_rows=size,
@@ -382,7 +386,7 @@ class PreviewService:
             result = await self._execute_query(session, sample_sql, allow_long_running)
             return dataframe_to_json(result, type_conversions)
         finally:
-            if not graph_info.is_table_cached:
+            if graph_info and not graph_info.is_table_cached:
                 # Need to cleanup as the table is not managed by query cache
                 await session.drop_table(
                     table_name=graph_info.sampled_table_name,

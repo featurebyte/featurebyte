@@ -166,25 +166,23 @@ def test_event_view_sample_with_date_range(event_table, expected_min, expected_m
 
 
 @pytest.mark.parametrize(
-    "source_type, expected_min, expected_max, expected_row_num",
+    "source_type, expected_min, expected_max",
     [
         (
             "snowflake",
-            pd.Timestamp("2001-02-14 11:42:07.000848-1000"),
-            pd.Timestamp("2001-04-05 11:36:38.000227-1200"),
-            10,
+            pd.Timestamp("2001-01-10 11:42:05.000464+1700"),
+            pd.Timestamp("2001-11-28 05:08:41.000417-0300"),
         ),
         (
             "spark",
-            pd.Timestamp("2001-01-24 07:34:32.000383"),
-            pd.Timestamp("2001-12-25 20:06:37.000928"),
-            8,
+            pd.Timestamp("2001-01-03 16:15:36.000703"),
+            pd.Timestamp("2001-12-22 03:26:43.000232"),
         ),
     ],
     indirect=["source_type"],
     scope="session",
 )
-def test_item_view_sample(item_table, expected_min, expected_max, expected_row_num):
+def test_item_view_sample(item_table, expected_min, expected_max):
     """
     Test sample for ItemView
     """
@@ -201,32 +199,30 @@ def test_item_view_sample(item_table, expected_min, expected_max, expected_row_n
         "TZ_OFFSET",
     ]
 
-    assert sample_df.shape == (expected_row_num, 8)
+    assert sample_df.shape == (10, 8)
     actual_min = sample_df["ËVENT_TIMESTAMP"].min()
     actual_max = sample_df["ËVENT_TIMESTAMP"].max()
     assert (actual_min, actual_max) == (expected_min, expected_max)
 
 
 @pytest.mark.parametrize(
-    "source_type, expected_min, expected_max, expected_row_num",
+    "source_type, expected_min, expected_max",
     [
         (
             "snowflake",
-            pd.Timestamp("2001-10-10 00:44:07.000193-0700"),
-            pd.Timestamp("2001-10-12 23:58:39.000579-1200"),
-            15,
+            pd.Timestamp("2001-10-10 14:52:49.000447+1100"),
+            pd.Timestamp("2001-10-14 04:08:02.000346+1000"),
         ),
         (
             "spark",
-            pd.Timestamp("2001-10-10 03:52:49.000447"),
-            pd.Timestamp("2001-10-12 04:50:19.000719"),
-            14,
+            pd.Timestamp("2001-10-10 00:15:16.000751"),
+            pd.Timestamp("2001-10-13 12:04:24.000171"),
         ),
     ],
     indirect=["source_type"],
     scope="session",
 )
-def test_item_view_sample_with_date_range(item_table, expected_min, expected_max, expected_row_num):
+def test_item_view_sample_with_date_range(item_table, expected_min, expected_max):
     """
     Test sample for ItemView with date range
     """
@@ -238,13 +234,13 @@ def test_item_view_sample_with_date_range(item_table, expected_min, expected_max
         "to_timestamp": "2001-10-14",
     }
     sample_df = item_view.sample(**sample_params)
-    assert sample_df.shape == (expected_row_num, 8)
+    assert sample_df.shape == (15, 8)
     actual_min = sample_df["ËVENT_TIMESTAMP"].min()
     actual_max = sample_df["ËVENT_TIMESTAMP"].max()
     assert (actual_min, actual_max) == (expected_min, expected_max)
 
     col_sample_df = item_view["item_id"].sample(**sample_params)
-    assert col_sample_df.shape[0] == expected_row_num
+    assert col_sample_df.shape[0] == 15
     assert col_sample_df.columns.tolist() == ["item_id"]
 
 
