@@ -171,6 +171,19 @@ class DatabricksAdapter(BaseAdapter):
         return cls._dateadd_by_casting_to_seconds(quantity_expr, timestamp_expr, quantity_scale=1e6)
 
     @classmethod
+    def dateadd_time_interval(
+        cls,
+        quantity_expr: Expression,
+        unit: TimeIntervalUnit,
+        timestamp_expr: Expression,
+    ) -> Expression:
+        return expressions.DateAdd(
+            this=timestamp_expr,
+            expression=quantity_expr,
+            unit=expressions.Var(this=str(unit)),
+        )
+
+    @classmethod
     def get_physical_type_from_dtype(cls, dtype: DBVarType) -> str:
         mapping = {
             DBVarType.INT: cls.DataType.FLOAT,

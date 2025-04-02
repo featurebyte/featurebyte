@@ -124,6 +124,24 @@ def grouped_agg_specs_fixture(base_agg_spec):
     return [agg_spec_1, agg_spec_2, agg_spec_3]
 
 
+@pytest.fixture(name="blind_spot_agg_specs")
+def blind_spot_agg_specs_fixture(base_agg_spec):
+    """
+    Fixture of TimeSeriesAggregateSpec objects that can be grouped in sql query
+    """
+    agg_spec_1 = copy.deepcopy(base_agg_spec)
+    agg_spec_1.blind_spot = None
+    agg_spec_1.parameters.feature_job_setting.blind_spot = None
+    agg_spec_1.parameters.names = ["feature_no_blind_spot"]
+
+    agg_spec_2 = copy.deepcopy(base_agg_spec)
+    agg_spec_2.blind_spot = CalendarWindow(unit="DAY", size=3)
+    agg_spec_2.parameters.feature_job_setting.blind_spot = CalendarWindow(unit="DAY", size=3)
+    agg_spec_2.parameters.names = ["feature_blind_spot_3d"]
+
+    return [agg_spec_1, agg_spec_2]
+
+
 @pytest.mark.parametrize(
     "test_case_name",
     [
@@ -135,6 +153,7 @@ def grouped_agg_specs_fixture(base_agg_spec):
         "mixed_order_dependency",
         "is_utc_time",
         "grouped",
+        "blind_spot",
     ],
 )
 def test_aggregator(request, test_case_name, update_fixtures, source_info):
@@ -150,6 +169,7 @@ def test_aggregator(request, test_case_name, update_fixtures, source_info):
         "mixed_order_dependency": "mixed_order_dependency_agg_specs",
         "is_utc_time": "reference_datetime_is_utc_time_agg_spec",
         "grouped": "grouped_agg_specs",
+        "blind_spot": "blind_spot_agg_specs",
     }
     fixture_name = test_case_mapping[test_case_name]
     fixture_obj = request.getfixturevalue(fixture_name)

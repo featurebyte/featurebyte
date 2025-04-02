@@ -20,6 +20,7 @@ from featurebyte.exception import (
 )
 from featurebyte.query_graph.model.critical_data_info import CriticalDataInfo
 from featurebyte.query_graph.model.feature_job_setting import (
+    CalendarWindow,
     FeatureJobSetting,
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
@@ -742,7 +743,9 @@ async def test_create_new_feature_version_using_source_settings_ts_window_agg_fe
     assert ts_window_aggregate_feature.table_id_feature_job_settings == [
         TableIdFeatureJobSetting(
             table_id=snowflake_time_series_table_with_entity.id,
-            feature_job_setting=CronFeatureJobSetting(crontab="0 8 1 * *"),
+            feature_job_setting=CronFeatureJobSetting(
+                crontab="0 8 1 * *", blind_spot=CalendarWindow(unit="MONTH", size=1)
+            ),
         )
     ]
 

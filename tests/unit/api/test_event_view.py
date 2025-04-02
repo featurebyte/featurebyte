@@ -1141,4 +1141,5 @@ def test_event_view_cron_feature_job_setting(event_table_with_cron_feature_job_s
     assert event_view.default_feature_job_setting == CronFeatureJobSetting(
         crontab="0 0 * * *",
         reference_timezone="Etc/UTC",
+        blind_spot="600s",
     )

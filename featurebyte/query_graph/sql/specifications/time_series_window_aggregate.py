@@ -34,6 +34,7 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
     parent_dtype: Optional[DBVarType]
     window: CalendarWindow
     offset: Optional[CalendarWindow]
+    blind_spot: Optional[CalendarWindow]
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -54,7 +55,9 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
     def _get_additional_agg_result_name_params(self) -> list[Any]:
         args = [f"W{self.window.to_string()}"]
         if self.parameters is not None and self.parameters.offset is not None:
-            args.append(self.parameters.offset.to_string())
+            args.append("O" + self.parameters.offset.to_string())
+        if self.blind_spot is not None:
+            args.append("BS" + self.blind_spot.to_string())
         args.append(self.parameters.feature_job_setting.get_cron_expression_with_timezone())
         return args
 
@@ -64,16 +67,19 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
             "source_expr": self.source_expr.sql(),
             "window": self.window.model_dump(),
             "offset": self.offset.model_dump() if self.offset is not None else None,
+            "blind_spot": self.blind_spot.model_dump() if self.blind_spot is not None else None,
             "is_order_dependent": AggFunc(self.parameters.agg_func).is_order_dependent,
         }
 
         # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)
         if self.parameters.value_by is None:
             parameters_dict = self.parameters.model_dump(
-                exclude={"parent", "agg_func", "names", "windows", "offset"}
+                exclude={"parent", "agg_func", "names", "windows", "offset", "blind_spot"}
             )
         else:
-            parameters_dict = self.parameters.model_dump(exclude={"names", "windows", "offset"})
+            parameters_dict = self.parameters.model_dump(
+                exclude={"names", "windows", "offset", "blind_spot"}
+            )
         if parameters_dict.get("timestamp_metadata") is None:
             parameters_dict.pop("timestamp_metadata", None)
         if parameters_dict.get("entity_ids") is not None:
@@ -112,6 +118,7 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
                     agg_result_name_include_serving_names=agg_result_name_include_serving_names,
                     window=window,
                     offset=node.parameters.offset,
+                    blind_spot=node.parameters.feature_job_setting.get_blind_spot_calendar_window(),
                 )
             )
         return specs

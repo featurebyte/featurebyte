@@ -69,10 +69,10 @@ def check_preview_and_compute_historical_features(feature_list, preview_params, 
     Helper function to check preview and compute historical features
     """
     df_features = feature_list.preview(preview_params)
-    fb_assert_frame_equal(df_features, expected)
+    fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
 
     df_features = feature_list.compute_historical_features(preview_params)
-    fb_assert_frame_equal(df_features, expected)
+    fb_assert_frame_equal(df_features, expected, sort_by_columns=["POINT_IN_TIME"])
 
 
 def test_aggregate_over(time_series_window_aggregate_feature):
@@ -362,4 +362,69 @@ def test_multiple_features(time_series_table):
     expected["value_col_sum_3m"] = [4.65]
     expected["value_col_min_3m"] = [0.0]
     expected["value_col_max_3m"] = [0.3]
+    check_preview_and_compute_historical_features(feature_list, preview_params, expected)
+
+
+def test_blind_spot(time_series_table):
+    """
+    Test blind spot in calendar aggregation
+    """
+    view = time_series_table.get_view()
+    feature_1 = view.groupby("series_id_col").aggregate_over(
+        value_column="value_col",
+        method="sum",
+        windows=[CalendarWindow(unit="DAY", size=7)],
+        feature_names=["feature_blind_spot_none"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+        ),
+    )["feature_blind_spot_none"]
+    feature_2 = view.groupby("series_id_col").aggregate_over(
+        value_column="value_col",
+        method="sum",
+        windows=[CalendarWindow(unit="DAY", size=7)],
+        feature_names=["feature_blind_spot_3d"],
+        feature_job_setting=CronFeatureJobSetting(
+            crontab="0 8 * * *",
+            timezone="Asia/Singapore",
+            blind_spot=CalendarWindow(unit="DAY", size=3),
+        ),
+    )["feature_blind_spot_3d"]
+    features = [feature_1, feature_2]
+    preview_params = pd.DataFrame([
+        {
+            "POINT_IN_TIME": dt,
+            "series_id": "S0",
+        }
+        for dt in pd.date_range("2001-02-10 10:00:00", "2001-02-20 10:00:00")
+    ])
+    feature_list = FeatureList(features, "test_feature_list")
+    expected = preview_params.copy()
+    expected["feature_blind_spot_none"] = [
+        2.52,
+        2.59,
+        2.66,
+        2.73,
+        2.8,
+        2.87,
+        2.94,
+        3.01,
+        3.08,
+        3.15,
+        3.22,
+    ]
+    expected["feature_blind_spot_3d"] = [
+        2.31,
+        2.38,
+        2.45,
+        2.52,
+        2.59,
+        2.66,
+        2.73,
+        2.8,
+        2.87,
+        2.94,
+        3.01,
+    ]
     check_preview_and_compute_historical_features(feature_list, preview_params, expected)
