@@ -550,7 +550,6 @@ class FeatureManagerService:
             )
             await session.execute_query(f"DROP FUNCTION IF EXISTS {udf_info.sql_function_name}")
             await session.execute_query(udf_info.codes)
-            await session.set_owner("FUNCTION", udf_info.sql_function_name)
 
     @staticmethod
     async def remove_databricks_udf_for_on_demand_feature_if_exists(
