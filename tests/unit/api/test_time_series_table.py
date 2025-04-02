@@ -29,6 +29,7 @@ from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.time_series_table import TimeSeriesTableModel
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
+    CalendarWindow,
     CronFeatureJobSetting,
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
@@ -1372,6 +1373,7 @@ def test_create_new_version(snowflake_time_series_table, ts_window_aggregate_fea
                     month_of_year="*",
                 ),
                 timezone="Etc/UTC",
+                blind_spot=CalendarWindow(unit="MONTH", size=1),
             ),
         )
     ]
