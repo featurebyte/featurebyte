@@ -217,7 +217,6 @@ class DatabricksUnityDetails(BaseDatabricksDetails):
     ...     http_path="<http_path>",
     ...     catalog_name="hive_metastore",
     ...     schema_name="<schema_name>",
-    ...     group_name="<group_name>",
     ... )
     """
 
@@ -234,9 +233,6 @@ class DatabricksUnityDetails(BaseDatabricksDetails):
     )
     schema_name: StrictStr = Field(
         description="The name of the schema to use for creation of output tables."
-    )
-    group_name: StrictStr = Field(
-        description="The name of the group to use for creation of output tables."
     )
 
     def get_source_info(self) -> SourceInfo:
