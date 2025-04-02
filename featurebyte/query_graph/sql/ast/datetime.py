@@ -359,3 +359,26 @@ class DateAddNode(ExpressionNode):
             timedelta_node=resolved_timedelta_node,
         )
         return output_node
+
+
+@dataclass
+class ToTimestampFromEpochNode(ExpressionNode):
+    """Node to represent ToTimestampFromEpoch operation"""
+
+    epoch_expr: ExpressionNode
+    query_node_type = NodeType.TO_TIMESTAMP_FROM_EPOCH
+
+    @property
+    def sql(self) -> Expression:
+        return self.context.adapter.from_epoch_seconds(self.epoch_expr.sql)
+
+    @classmethod
+    def build(cls, context: SQLNodeContext) -> ToTimestampFromEpochNode:
+        input_expr_node = cast(ExpressionNode, context.input_sql_nodes[0])
+        table_node = input_expr_node.table_node
+        sql_node = ToTimestampFromEpochNode(
+            context=context,
+            table_node=table_node,
+            epoch_expr=input_expr_node,
+        )
+        return sql_node
