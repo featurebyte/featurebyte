@@ -552,6 +552,7 @@ def _add_pure_methods_to_doc_groups(
     methods = [
         ("featurebyte.core.timedelta", "to_timedelta"),
         ("featurebyte.core.distance", "haversine"),
+        ("featurebyte.core.datetime", "to_timestamp_from_epoch"),
         ("featurebyte.list_utility", "list_unsaved_features"),
         ("featurebyte.list_utility", "list_deployments"),
     ]

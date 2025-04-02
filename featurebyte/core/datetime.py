@@ -24,6 +24,15 @@ def to_timestamp_from_epoch(values: Series) -> Series:
     ------
     ValueError
         if input is not numeric
+
+    Examples
+    --------
+    Create a new column in the GROCERYINVOICE view that represents the timestamp from epoch seconds.
+
+    >>> view = catalog.get_view("GROCERYINVOICE")
+    >>> view["CONVERTED_TIMESTAMP"] = fb.to_timestamp_from_epoch(
+    ...     view["EPOCH_SECOND"]
+    ... )  # doctest: +SKIP
     """
     if not values.is_numeric:
         raise ValueError(
