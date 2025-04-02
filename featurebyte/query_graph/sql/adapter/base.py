@@ -219,6 +219,27 @@ class BaseAdapter(ABC):
         """
 
     @classmethod
+    @abstractmethod
+    def dateadd_time_interval(
+        cls,
+        quantity_expr: Expression,
+        unit: TimeIntervalUnit,
+        timestamp_expr: Expression,
+    ) -> Expression:
+        """
+        Expression to perform DATEADD using a time interval
+
+        Parameters
+        ----------
+        quantity_expr : Expression
+            Number of time intervals to add to the timestamp
+        unit : TimeIntervalUnit
+            Time interval unit
+        timestamp_expr : Expression
+            Expression for the timestamp
+        """
+
+    @classmethod
     def datediff_microsecond(
         cls, timestamp_expr_1: Expression, timestamp_expr_2: Expression
     ) -> Expression:

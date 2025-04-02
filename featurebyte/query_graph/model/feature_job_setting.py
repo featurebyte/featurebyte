@@ -16,8 +16,10 @@ from featurebyte.common.model_util import (
     parse_duration_string,
     validate_job_setting_parameters,
 )
+from featurebyte.enum import TimeIntervalUnit
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.periodic_task import Crontab
+from featurebyte.query_graph.model.window import CalendarWindow
 
 
 class BaseFeatureJobSetting(FeatureByteBaseModel):
@@ -363,6 +365,13 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
             "If not provided, the timezone parameter is used as the reference timezone."
         ),
     )
+    blind_spot: Optional[str | CalendarWindow] = Field(
+        default=None,
+        description=(
+            "Establishes the time difference between when the feature is calculated and the most "
+            "recent event timestamp to be processed."
+        ),
+    )
 
     def get_cron_expression(self) -> str:
         """
@@ -385,6 +394,22 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         str
         """
         return f"{self.get_cron_expression()}_{self.timezone}_{self.reference_timezone}"
+
+    def get_blind_spot_calendar_window(self) -> Optional[CalendarWindow]:
+        """
+        Get blind spot as CalendarWindow
+
+        Returns
+        -------
+        Optional[CalendarWindow]
+        """
+        if self.blind_spot is not None and isinstance(self.blind_spot, str):
+            blind_spot_minute = parse_duration_string(self.blind_spot) // 60
+            return CalendarWindow(
+                unit=TimeIntervalUnit.MINUTE,
+                size=blind_spot_minute,
+            )
+        return self.blind_spot
 
     @model_validator(mode="after")
     def _validate_cron_expression(self) -> "CronFeatureJobSetting":
@@ -480,7 +505,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         return 30 * 24 * 60 * 60  # 30 days
 
     def __hash__(self) -> int:
-        return hash((self.crontab, self.timezone, self.reference_timezone))
+        return hash((self.crontab, self.timezone, self.reference_timezone, self.blind_spot))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CronFeatureJobSetting):
@@ -489,6 +514,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
             self.crontab == other.crontab
             and self.timezone == other.timezone
             and self.reference_timezone == other.reference_timezone
+            and self.blind_spot == other.blind_spot
         )
 
 

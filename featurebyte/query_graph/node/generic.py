@@ -2182,10 +2182,21 @@ class TimeSeriesWindowAggregateNode(AggregationOpStructMixin):
         keys = ValueStr.create(self.parameters.keys)
         category = ValueStr.create(self.parameters.value_by)
         fjs = self.parameters.feature_job_setting
+        fjs_blind_spot = fjs.blind_spot
+        blind_spot: Optional[Union[str, ObjectClass]]
+        if fjs_blind_spot is not None and isinstance(fjs_blind_spot, CalendarWindow):
+            blind_spot = ClassEnum.CALENDAR_WINDOW(
+                unit=fjs_blind_spot.unit,
+                size=fjs_blind_spot.size,
+            )
+        else:
+            blind_spot = fjs_blind_spot
+
         feature_job_setting: ObjectClass = ClassEnum.CRON_FEATURE_JOB_SETTING(
             crontab=fjs.get_cron_expression(),
             timezone=fjs.timezone,
             reference_timezone=fjs.reference_timezone,
+            blind_spot=blind_spot,
         )
         windows = [
             ClassEnum.CALENDAR_WINDOW(

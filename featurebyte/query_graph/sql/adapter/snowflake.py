@@ -102,6 +102,19 @@ class SnowflakeAdapter(BaseAdapter):
         return output_expr
 
     @classmethod
+    def dateadd_time_interval(
+        cls,
+        quantity_expr: Expression,
+        unit: TimeIntervalUnit,
+        timestamp_expr: Expression,
+    ) -> Expression:
+        return expressions.DateAdd(
+            this=timestamp_expr,
+            expression=quantity_expr,
+            unit=expressions.Var(this=str(unit)),
+        )
+
+    @classmethod
     def object_agg(cls, key_column: str | Expression, value_column: str | Expression) -> Expression:
         value_column = expressions.Anonymous(this="TO_VARIANT", expressions=[value_column])
         return expressions.Anonymous(this="OBJECT_AGG", expressions=[key_column, value_column])

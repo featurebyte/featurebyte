@@ -2526,6 +2526,7 @@ def ts_window_aggregate_feature_fixture(snowflake_time_series_view_with_entity):
         feature_names=["col_float_sum_3month"],
         feature_job_setting=CronFeatureJobSetting(
             crontab="0 8 1 * *",
+            blind_spot=CalendarWindow(unit="MONTH", size=1),
         ),
     )["col_float_sum_3month"]
     return feature
