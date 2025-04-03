@@ -805,6 +805,11 @@ def _get_utility_methods_layout() -> List[DocLayoutItem]:
             is_pure_method=True,
         ),
         DocLayoutItem(
+            [UTILITY_METHODS, TRANSFORM, "to_timestamp_from_epoch"],
+            doc_path_override="core.datetime.to_timestamp_from_epoch.md",
+            is_pure_method=True,
+        ),
+        DocLayoutItem(
             [UTILITY_METHODS, LIST, "list_unsaved_features"],
             doc_path_override="list_utility.list_unsaved_features.md",
             is_pure_method=True,

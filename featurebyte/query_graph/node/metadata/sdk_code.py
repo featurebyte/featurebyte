@@ -249,6 +249,7 @@ class ClassEnum(Enum):
     FEATURE_JOB_SETTING = ("featurebyte", "FeatureJobSetting")
     CRON_FEATURE_JOB_SETTING = ("featurebyte", "CronFeatureJobSetting")
     TO_TIMEDELTA = ("featurebyte", "to_timedelta")
+    TO_TIMESTAMP_FROM_EPOCH = ("featurebyte", "to_timestamp_from_epoch")
     COLUMN_CLEANING_OPERATION = ("featurebyte", "ColumnCleaningOperation")
     REQUEST_COLUMN = ("featurebyte.api.request_column", "RequestColumn")
     USER_DEFINED_FUNCTION = ("featurebyte", "UserDefinedFunction")
