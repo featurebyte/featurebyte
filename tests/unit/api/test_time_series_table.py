@@ -29,6 +29,7 @@ from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.time_series_table import TimeSeriesTableModel
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
+    CalendarWindow,
     CronFeatureJobSetting,
     TableFeatureJobSetting,
     TableIdFeatureJobSetting,
@@ -602,6 +603,7 @@ def test_update_default_job_setting__saved_time_series_table(
         },
         "timezone": "Etc/UTC",
         "reference_timezone": "Etc/UTC",
+        "blind_spot": None,
     }
 
 
@@ -742,6 +744,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
             },
             "timezone": "Etc/UTC",
             "reference_timezone": "Etc/UTC",
+            "blind_spot": None,
         }
     }
     assert len(history) == 2
@@ -775,6 +778,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
             },
             "timezone": "Etc/UTC",
             "reference_timezone": "Etc/UTC",
+            "blind_spot": None,
         }
     }
     assert len(history) == 3
@@ -1372,6 +1376,7 @@ def test_create_new_version(snowflake_time_series_table, ts_window_aggregate_fea
                     month_of_year="*",
                 ),
                 timezone="Etc/UTC",
+                blind_spot=CalendarWindow(unit="MONTH", size=1),
             ),
         )
     ]

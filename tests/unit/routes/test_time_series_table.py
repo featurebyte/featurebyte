@@ -172,6 +172,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 },
                 "timezone": "Etc/UTC",
                 "reference_timezone": "Etc/UTC",
+                "blind_spot": None,
             },
             "record_creation_timestamp_column": "created_at",
         }
@@ -235,6 +236,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 },
                 "timezone": "Etc/UTC",
                 "reference_timezone": None,
+                "blind_spot": None,
             },
             None,
             None,
@@ -258,6 +260,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 },
                 "timezone": "Etc/UTC",
                 "reference_timezone": "Etc/UTC",
+                "blind_spot": None,
             },
             {
                 "crontab": {
@@ -269,6 +272,7 @@ class TestTimeSeriesTableApi(BaseTableApiTestSuite):
                 },
                 "timezone": "Etc/UTC",
                 "reference_timezone": None,
+                "blind_spot": None,
             },
         ]
 

@@ -5,7 +5,7 @@ Test module for feature job setting
 import pytest
 from bson import ObjectId
 
-from featurebyte import FeatureJobSetting
+from featurebyte import CalendarWindow, FeatureJobSetting
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     TableFeatureJobSetting,
@@ -213,3 +213,26 @@ def test_extract_offline_store_feature_table_name_postfix(crontab_expr, expected
     """Test extracting offline store feature table name postfix"""
     fjs = CronFeatureJobSetting(crontab=crontab_expr)
     assert fjs.extract_offline_store_feature_table_name_postfix(10) == expected
+
+
+@pytest.mark.parametrize(
+    "setting,expected",
+    [
+        (
+            CronFeatureJobSetting(crontab="10 * * * *", blind_spot="300s"),
+            CalendarWindow(unit="MINUTE", size=5),
+        ),
+        (
+            CronFeatureJobSetting(
+                crontab="10 * * * *", blind_spot=CalendarWindow(unit="DAY", size=3)
+            ),
+            CalendarWindow(unit="DAY", size=3),
+        ),
+    ],
+)
+def test_get_calendar_window_blind_spot(setting, expected):
+    """
+    Test get_calendar_window_blind_spot
+    """
+    actual = setting.get_blind_spot_calendar_window()
+    assert actual == expected

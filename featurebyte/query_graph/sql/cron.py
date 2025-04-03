@@ -62,7 +62,10 @@ def get_cron_feature_job_settings(
             node, NodeType.TIME_SERIES_WINDOW_AGGREGATE
         ):
             assert isinstance(time_series_agg_node, TimeSeriesWindowAggregateNode)
-            cron_feature_job_setting = time_series_agg_node.parameters.feature_job_setting
+            cron_feature_job_setting = time_series_agg_node.parameters.feature_job_setting.copy()
+            # Blind spot doesn't affect looking up scheduled feature job time given point in time,
+            # normalize the field to None.
+            cron_feature_job_setting.blind_spot = None
             cron_feature_job_settings.add(cron_feature_job_setting)
     return list(cron_feature_job_settings)
 
