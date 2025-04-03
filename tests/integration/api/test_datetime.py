@@ -2,6 +2,8 @@
 Integration tests for datetime operations
 """
 
+from datetime import datetime
+
 import pandas as pd
 import pytest
 from sqlglot import expressions
@@ -10,6 +12,8 @@ from sqlglot.expressions import alias_
 from featurebyte import FeatureList, to_timestamp_from_epoch
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from tests.util.deployment import deploy_and_get_online_features
+from tests.util.helper import fb_assert_frame_equal
 
 
 @pytest.mark.asyncio
@@ -83,7 +87,7 @@ async def test_datetime_timestamp_difference(catalog, session, data_source, sour
     assert df.to_dict(orient="records") == expected
 
 
-def test_to_timestamp_from_epoch(event_table):
+def test_to_timestamp_from_epoch(event_table, config, session):
     """
     Test to_timestamp_from_epoch
     """
@@ -93,22 +97,44 @@ def test_to_timestamp_from_epoch(event_table):
     df = view.preview()
     assert (df["converted_timestamp"] == pd.Timestamp("2024-04-01 21:20:00")).all()
 
+    feature_name = "test_to_timestamp_from_epoch_feature"
     view["timestamp_hour"] = view["converted_timestamp"].dt.hour
     feature = view.groupby("ÜSER ID", category="timestamp_hour").aggregate_over(
         value_column=None,
         method="count",
         windows=["14d"],
-        feature_names=["hour_counts_14d"],
+        feature_names=[feature_name],
     )
+
+    # Test preview
     preview_param = {
         "POINT_IN_TIME": "2001-01-02 10:00:00",
         "üser id": 1,
     }
-    feature_list = FeatureList([feature], name="my_list")
+    feature_list = FeatureList([feature], name=f"{feature_name}_list")
     df = feature_list.preview(pd.DataFrame([preview_param]))
     expected = {
         "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
         "üser id": 1,
-        "hour_counts_14d": {"21": 24},
+        feature_name: {"21": 24},
     }
     assert df.iloc[0].to_dict() == expected
+
+    # Test online serving
+    df_feat = deploy_and_get_online_features(
+        config.get_client(),
+        feature_list,
+        datetime(2001, 1, 2, 10),
+        [{"üser id": 1}],
+    )
+    df_expected = pd.DataFrame([
+        {
+            "üser id": 1,
+            "test_to_timestamp_from_epoch_feature": '{\n  "21": 2.300000000000000e+01\n}',
+        }
+    ])
+    fb_assert_frame_equal(
+        df_feat,
+        df_expected,
+        dict_like_columns=["test_to_timestamp_from_epoch_feature"],
+    )
