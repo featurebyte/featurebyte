@@ -439,7 +439,6 @@ async def test_query_no_limit_warning_is_raised(
 async def test_sample_does_not_change_underlying_graph(
     preview_service,
     feature_store_sample,
-    feature_store_preview,
     mock_snowflake_session,
 ):
     """Test sample does not change underlying graph"""
