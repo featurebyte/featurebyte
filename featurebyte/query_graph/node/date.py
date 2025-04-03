@@ -3,6 +3,7 @@ This module contains datetime operation related node classes
 """
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
+import textwrap
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from pydantic import Field
@@ -27,6 +28,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
     ExpressionStr,
+    StatementStr,
     StatementT,
     ValueStr,
     VariableNameGenerator,
@@ -564,3 +566,83 @@ class DateAddNode(BaseSeriesOutputNode):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
         return self._derive_python_code(node_inputs, sdk_code=False)
+
+
+class ToTimestampFromEpochNode(BaseSeriesOutputNode):
+    """ToTimestampFromEpochNode class"""
+
+    class Parameters(FeatureByteBaseModel):
+        """Parameters"""
+
+    type: Literal[NodeType.TO_TIMESTAMP_FROM_EPOCH] = NodeType.TO_TIMESTAMP_FROM_EPOCH
+    parameters: Parameters
+
+    @property
+    def max_input_count(self) -> int:
+        return 1
+
+    def _get_required_input_columns(
+        self, input_index: int, available_column_names: List[str]
+    ) -> Sequence[str]:
+        return self._assert_empty_required_input_columns()
+
+    def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
+        return DBVarTypeInfo(dtype=DBVarType.TIMESTAMP)
+
+    def _derive_sdk_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        operation_structure: OperationStructure,
+        config: SDKCodeGenConfig,
+        context: CodeGenerationContext,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        var_name_expressions = self._assert_no_info_dict(node_inputs)
+        statements: List[StatementT] = []
+        var_name = var_name_generator.generate_variable_name(
+            node_output_type=operation_structure.output_type,
+            node_output_category=operation_structure.output_category,
+            node_name=self.name,
+        )
+        obj = ClassEnum.TO_TIMESTAMP_FROM_EPOCH(var_name_expressions[0])
+        statements.append((var_name, obj))
+        return statements, var_name
+
+    def _derive_on_demand_view_or_function_code_helper(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        statements: List[StatementT] = []
+        input_var_name_expressions = self._assert_no_info_dict(node_inputs)
+        func_name = "to_datetime_from_epoch"
+        if var_name_generator.should_insert_function(function_name=func_name):
+            func_string = f"""
+            def {func_name}(values):
+                return pd.to_datetime(values, unit='s')
+            """
+            statements.append(StatementStr(textwrap.dedent(func_string)))
+
+        values = input_var_name_expressions[0]
+        dist_expr = ExpressionStr(f"{func_name}({values})")
+        return statements, dist_expr
+
+    def _derive_on_demand_view_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandViewCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        return self._derive_on_demand_view_or_function_code_helper(
+            node_inputs=node_inputs, var_name_generator=var_name_generator
+        )
+
+    def _derive_user_defined_function_code(
+        self,
+        node_inputs: List[VarNameExpressionInfo],
+        var_name_generator: VariableNameGenerator,
+        config: OnDemandFunctionCodeGenConfig,
+    ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        return self._derive_on_demand_view_or_function_code_helper(
+            node_inputs=node_inputs, var_name_generator=var_name_generator
+        )

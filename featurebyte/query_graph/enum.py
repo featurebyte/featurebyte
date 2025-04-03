@@ -91,6 +91,7 @@ class NodeType(StrEnum):
     DATE_ADD = "date_add"
     ZIP_TIMESTAMP_TZ_TUPLE = "zip_timestamp_tz_tuple"
     ADD_TIMESTAMP_SCHEMA = "add_timestamp_schema"
+    TO_TIMESTAMP_FROM_EPOCH = "to_timestamp_from_epoch"
 
     # count dict related operations
     COUNT_DICT_TRANSFORM = "count_dict_transform"
