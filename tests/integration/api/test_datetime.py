@@ -7,6 +7,7 @@ import pytest
 from sqlglot import expressions
 from sqlglot.expressions import alias_
 
+from featurebyte import FeatureList, to_timestamp_from_epoch
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 
@@ -80,3 +81,34 @@ async def test_datetime_timestamp_difference(catalog, session, data_source, sour
         }
     ]
     assert df.to_dict(orient="records") == expected
+
+
+def test_to_timestamp_from_epoch(event_table):
+    """
+    Test to_timestamp_from_epoch
+    """
+    view = event_table.get_view()
+    view["epoch_second"] = 1712006400
+    view["converted_timestamp"] = to_timestamp_from_epoch(view["epoch_second"])
+    df = view.preview()
+    assert (df["converted_timestamp"] == pd.Timestamp("2024-04-01 21:20:00")).all()
+
+    view["timestamp_hour"] = view["converted_timestamp"].dt.hour
+    feature = view.groupby("ÜSER ID", category="timestamp_hour").aggregate_over(
+        value_column=None,
+        method="count",
+        windows=["14d"],
+        feature_names=["hour_counts_14d"],
+    )
+    preview_param = {
+        "POINT_IN_TIME": "2001-01-02 10:00:00",
+        "üser id": 1,
+    }
+    feature_list = FeatureList([feature], name="my_list")
+    df = feature_list.preview(pd.DataFrame([preview_param]))
+    expected = {
+        "POINT_IN_TIME": pd.Timestamp("2001-01-02 10:00:00"),
+        "üser id": 1,
+        "hour_counts_14d": {"21": 24},
+    }
+    assert df.iloc[0].to_dict() == expected
