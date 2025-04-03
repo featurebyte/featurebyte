@@ -204,7 +204,7 @@ class PreviewService:
             params=sample,
             table_expr=sample_sql_tree,
         )
-        output = sample.graph
+        output = sample.graph.model_copy(deep=True)
         for node in output.nodes:
             if node.name == primary_table_input_node.name:
                 assert isinstance(node, InputNode)

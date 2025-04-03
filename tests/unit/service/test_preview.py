@@ -17,6 +17,7 @@ from featurebyte.exception import (
 )
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster
+from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.feature_list import FeatureListPreview
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.schema.preview import FeatureOrTargetPreview
@@ -432,3 +433,25 @@ async def test_query_no_limit_warning_is_raised(
 
     with pytest.warns(QueryNoLimitWarning):
         await preview_service.preview(feature_store_preview, limit=0)
+
+
+@pytest.mark.asyncio
+async def test_sample_does_not_change_underlying_graph(
+    preview_service,
+    feature_store_sample,
+    feature_store_preview,
+    mock_snowflake_session,
+):
+    """Test sample does not change underlying graph"""
+
+    payload_dict = feature_store_sample.model_dump(by_alias=True)
+    graph = QueryGraph(**payload_dict["graph"])
+    payload = FeatureStoreSample(**{**payload_dict, "graph": graph})
+    before_sample = graph.model_dump_json(by_alias=True)
+
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+
+    await preview_service.sample(payload, size=0, seed=0, sample_on_primary_table=True)
+    after_sample = graph.model_dump_json(by_alias=True)
+    assert before_sample == after_sample
