@@ -37,37 +37,7 @@ FROM (
           "GroceryCustomerGuid" AS "GroceryCustomerGuid",
           "Timestamp" AS "Timestamp",
           "Amount" AS "Amount"
-        FROM (
-          SELECT
-            "GroceryInvoiceGuid",
-            "GroceryCustomerGuid",
-            "Timestamp",
-            "record_available_at",
-            "Amount"
-          FROM (
-            SELECT
-              CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
-              "GroceryInvoiceGuid",
-              "GroceryCustomerGuid",
-              "Timestamp",
-              "record_available_at",
-              "Amount"
-            FROM (
-              SELECT
-                "GroceryInvoiceGuid",
-                "GroceryCustomerGuid",
-                "Timestamp",
-                "record_available_at",
-                "Amount"
-              FROM "FEATUREBYTE_TESTING"."GROCERY"."GROCERYINVOICE"
-            )
-          )
-          WHERE
-            "prob" <= 0.015
-          ORDER BY
-            "prob"
-          LIMIT 10
-        )
+        FROM "cached_sampled_primary_table"
       )
       UNION ALL
       SELECT
