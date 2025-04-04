@@ -33,7 +33,7 @@ def test_date_add(odfv_config, udf_config):
         config=odfv_config,
     )
     assert odfv_stats == []
-    assert odfv_expr == "pd.to_datetime(feat1) + pd.to_timedelta(feat2)"
+    assert odfv_expr == "pd.to_datetime(feat1, utc=True) + pd.to_timedelta(feat2)"
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
         node_inputs=node_inputs,
@@ -41,7 +41,7 @@ def test_date_add(odfv_config, udf_config):
         config=udf_config,
     )
     assert odfv_stats == []
-    assert udf_expr == "pd.to_datetime(feat1) + pd.to_timedelta(feat2)"
+    assert udf_expr == "pd.to_datetime(feat1, utc=True) + pd.to_timedelta(feat2)"
 
     feat1 = pd.Series(pd.date_range("2020-10-01", freq="d", periods=10).to_list() + [np.nan])
     feat2 = pd.Series([np.nan] + list(pd.Timedelta(seconds=1) * np.random.randint(0, 100, 10)))
@@ -67,7 +67,7 @@ def test_date_difference(odfv_config, udf_config):
         config=odfv_config,
     )
     assert odfv_stats == []
-    assert odfv_expr == "pd.to_datetime(feat1) - pd.to_datetime(feat2)"
+    assert odfv_expr == "pd.to_datetime(feat1, utc=True) - pd.to_datetime(feat2, utc=True)"
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
         node_inputs=node_inputs,
@@ -75,7 +75,7 @@ def test_date_difference(odfv_config, udf_config):
         config=udf_config,
     )
     assert odfv_stats == []
-    assert udf_expr == "pd.to_datetime(feat1) - pd.to_datetime(feat2)"
+    assert udf_expr == "pd.to_datetime(feat1, utc=True) - pd.to_datetime(feat2, utc=True)"
 
     feat1 = pd.Series(pd.date_range("2020-10-01", freq="d", periods=10).to_list() + [np.nan])
     feat2 = pd.Series([np.nan] + pd.date_range("2020-10-01", freq="d", periods=10).to_list())
@@ -107,9 +107,9 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         config=odfv_config,
     )
     assert odfv_stats == []
-    expected_odfv_expr = f"pd.to_datetime(feat).dt.{dt_property}"
+    expected_odfv_expr = f"pd.to_datetime(feat, utc=True).dt.{dt_property}"
     if dt_property == "week":
-        expected_odfv_expr = "pd.to_datetime(feat).dt.isocalendar().week"
+        expected_odfv_expr = "pd.to_datetime(feat, utc=True).dt.isocalendar().week"
     assert odfv_expr == expected_odfv_expr
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
@@ -118,7 +118,7 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         config=udf_config,
     )
     assert udf_stats == []
-    assert udf_expr == f"pd.to_datetime(feat).{dt_property}"
+    assert udf_expr == f"pd.to_datetime(feat, utc=True).{dt_property}"
 
     feat = pd.Series(pd.date_range("2020-10-01", freq="d", periods=10).to_list() + [np.nan])
     evaluate_and_compare_odfv_and_udf_results(
@@ -135,10 +135,10 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         var_name_generator=VariableNameGenerator(),
         config=odfv_config,
     )
-    assert odfv_stats == [("feat_dt", "pd.to_datetime(feat) + pd.to_timedelta(feat1)")]
-    expected_odfv_expr = f"pd.to_datetime(feat_dt).dt.{dt_property}"
+    assert odfv_stats == [("feat_dt", "pd.to_datetime(feat, utc=True) + pd.to_timedelta(feat1)")]
+    expected_odfv_expr = f"pd.to_datetime(feat_dt, utc=True).dt.{dt_property}"
     if dt_property == "week":
-        expected_odfv_expr = "pd.to_datetime(feat_dt).dt.isocalendar().week"
+        expected_odfv_expr = "pd.to_datetime(feat_dt, utc=True).dt.isocalendar().week"
     assert odfv_expr == expected_odfv_expr
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
@@ -146,8 +146,8 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         var_name_generator=VariableNameGenerator(),
         config=udf_config,
     )
-    assert udf_stats == [("feat", "pd.to_datetime(feat) + pd.to_timedelta(feat1)")]
-    assert udf_expr == f"pd.to_datetime(feat).{dt_property}"
+    assert udf_stats == [("feat", "pd.to_datetime(feat, utc=True) + pd.to_timedelta(feat1)")]
+    assert udf_expr == f"pd.to_datetime(feat, utc=True).{dt_property}"
 
     # offset as a timedelta
     node = DatetimeExtractNode(
@@ -163,8 +163,8 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
     dt_prop = "isocalendar().week" if dt_property == "week" else dt_property
     assert codes == (
         'tz_offset = pd.to_timedelta("+06:00:00")\n'
-        "feat_dt = pd.to_datetime(feat) + tz_offset\n"
-        f"output = pd.to_datetime(feat_dt).dt.{dt_prop}"
+        "feat_dt = pd.to_datetime(feat, utc=True) + tz_offset\n"
+        f"output = pd.to_datetime(feat_dt, utc=True).dt.{dt_prop}"
     )
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
@@ -176,8 +176,8 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
     codes = code_gen.generate().strip()
     assert codes == (
         'tz_offset = pd.to_timedelta("+06:00:00")\n'
-        "feat = pd.to_datetime(feat) + tz_offset\n"
-        f"output = pd.to_datetime(feat).{dt_property}"
+        "feat = pd.to_datetime(feat, utc=True) + tz_offset\n"
+        f"output = pd.to_datetime(feat, utc=True).{dt_property}"
     )
 
 

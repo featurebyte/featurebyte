@@ -153,7 +153,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             dt_var_name = var_name_generator.convert_to_variable_name(
                 variable_name_prefix=offset_adj_var_name_prefix, node_name=None
             )
-            expr = ExpressionStr(f"pd.to_datetime({ts_operand}) + {offset_operand}")
+            expr = ExpressionStr(f"pd.to_datetime({ts_operand}, utc=True) + {offset_operand}")
             statements.append((dt_var_name, expr))
         else:
             dt_var_name = ts_operand
@@ -169,8 +169,8 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         def _datetime_proper_expr(dt_var_name: str, prop: str) -> str:
             if prop == "week":
-                return f"pd.to_datetime({dt_var_name}).dt.isocalendar().week"
-            return f"pd.to_datetime({dt_var_name}).dt.{prop}"
+                return f"pd.to_datetime({dt_var_name}, utc=True).dt.isocalendar().week"
+            return f"pd.to_datetime({dt_var_name}, utc=True).dt.{prop}"
 
         return self._derive_on_demand_view_or_user_defined_function_helper(
             node_inputs,
@@ -189,7 +189,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             node_inputs,
             var_name_generator,
             offset_adj_var_name_prefix="feat",
-            expr_func=lambda dt_var_name, prop: f"pd.to_datetime({dt_var_name}).{prop}",
+            expr_func=lambda dt_var_name, prop: f"pd.to_datetime({dt_var_name}, utc=True).{prop}",
         )
 
 
@@ -345,7 +345,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
             expr = ExpressionStr(f"{left_operand} - {right_operand}")
         else:
             expr = ExpressionStr(
-                f"pd.to_datetime({left_operand}) - pd.to_datetime({right_operand})"
+                f"pd.to_datetime({left_operand}, utc=True) - pd.to_datetime({right_operand}, utc=True)"
             )
         return statements, expr
 
@@ -534,7 +534,7 @@ class DateAddNode(BaseSeriesOutputNode):
             expr = ExpressionStr(f"{left_operand} + {right_operand}")
         else:
             expr = ExpressionStr(
-                f"pd.to_datetime({left_operand}) + pd.to_timedelta({right_operand})"
+                f"pd.to_datetime({left_operand}, utc=True) + pd.to_timedelta({right_operand})"
             )
         return statements, expr
 
@@ -619,7 +619,7 @@ class ToTimestampFromEpochNode(BaseSeriesOutputNode):
         if var_name_generator.should_insert_function(function_name=func_name):
             func_string = f"""
             def {func_name}(values):
-                return pd.to_datetime(values, unit='s')
+                return pd.to_datetime(values, unit='s', utc=True)
             """
             statements.append(StatementStr(textwrap.dedent(func_string)))
 
