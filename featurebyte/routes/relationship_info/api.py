@@ -4,7 +4,7 @@ RelationshipInfo API routes
 
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Request
@@ -97,10 +97,11 @@ async def update_relationship_info(
     controller: RelationshipInfoController = (
         request.state.app_container.relationship_info_controller
     )
-    relationship_info = await controller.relationship_info_service.update_document(
-        ObjectId(relationship_info_id), data
+    relationship_info = await controller.update_relationship_info(
+        relationship_info_id=ObjectId(relationship_info_id),
+        data=data,
     )
-    return cast(RelationshipInfoModel, relationship_info)
+    return relationship_info
 
 
 @router.get("/{relationship_info_id}/info", response_model=RelationshipInfoInfo)

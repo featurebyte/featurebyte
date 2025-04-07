@@ -220,3 +220,52 @@ def test_entity_relationship(
 
     # check no change in relationship
     pd.testing.assert_frame_equal(relationships, Relationship.list())
+
+
+def test_update_relationship_type(saved_event_table, transaction_entity, cust_id_entity):
+    """
+    Test update relationship type
+    """
+    # Establish a child parent relationship in event table
+    assert saved_event_table.event_id_column == "col_int"
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+
+    def check_relationship(expected_relationship_type, expected_ancestor_ids):
+        # Check the relationship can be listed under the correct type
+        relationships = Relationship.list(relationship_type=expected_relationship_type)
+        relationship = relationships.iloc[0]
+        assert relationships.shape[0] == 1
+        assert relationship.relationship_type == expected_relationship_type
+        assert relationship.entity == "transaction"
+        assert relationship.related_entity == "customer"
+
+        # Check listing using the other relationship type returns no results
+        other_relationship_type = (
+            RelationshipType.ONE_TO_ONE
+            if expected_relationship_type == RelationshipType.CHILD_PARENT
+            else RelationshipType.CHILD_PARENT
+        )
+        relationships = Relationship.list(relationship_type=other_relationship_type)
+        assert relationships.shape[0] == 0
+
+        # Check ancestor_ids are set correctly
+        Entity._cache.clear()
+        _transaction_entity = Entity.get_by_id(transaction_entity.id)
+        _cust_id_entity = Entity.get_by_id(cust_id_entity.id)
+        assert _transaction_entity.ancestor_ids == expected_ancestor_ids
+        assert _cust_id_entity.ancestor_ids == []
+
+        relationship_obj = Relationship.get_by_id(relationship.id)
+        return relationship_obj
+
+    # Check the initial relationship type (child-parent)
+    relationship = check_relationship(RelationshipType.CHILD_PARENT, [cust_id_entity.id])
+
+    # Update the relationship type to one-to-one
+    relationship.update_relationship_type(RelationshipType.ONE_TO_ONE)
+    check_relationship(RelationshipType.ONE_TO_ONE, [])
+
+    # Update the relationship type back to child-parent
+    relationship.update_relationship_type(RelationshipType.CHILD_PARENT)
+    check_relationship(RelationshipType.CHILD_PARENT, [cust_id_entity.id])
