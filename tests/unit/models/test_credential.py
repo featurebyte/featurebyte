@@ -17,6 +17,7 @@ from featurebyte.models.credential import (
     GCSStorageCredential,
     GoogleCredential,
     KerberosKeytabCredential,
+    OAuthCredential,
     PrivateKeyCredential,
     S3StorageCredential,
     StorageCredentialType,
@@ -68,6 +69,8 @@ def database_credential_fixture(request):
         return None
     if request.param == DatabaseCredentialType.ACCESS_TOKEN:
         credential = AccessTokenCredential(access_token="access_token")
+    elif request.param == DatabaseCredentialType.OAUTH:
+        credential = OAuthCredential(client_id="client_id", client_secret="client_secret")
     elif request.param == DatabaseCredentialType.USERNAME_PASSWORD:
         credential = UsernamePasswordCredential(username="test", password="password")
     elif request.param == DatabaseCredentialType.KERBEROS_KEYTAB:

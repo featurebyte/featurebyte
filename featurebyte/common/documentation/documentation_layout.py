@@ -887,6 +887,7 @@ def _get_utility_classes_layout() -> List[DocLayoutItem]:
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "AzureBlobStorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "GoogleCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "GCSStorageCredential"]),
+        DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "OAuthCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "S3StorageCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREDENTIAL, "UsernamePasswordCredential"]),
         DocLayoutItem([UTILITY_CLASSES, CREATE_TABLE, "TimestampSchema"]),
