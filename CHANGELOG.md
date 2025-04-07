@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.0.1 (2025-04-07)
+
+### 💡 Enhancements
+
++ `session` Support using M2M Oauth for authentication with DataBricks
++ `service` Add support for blind spot in calendar aggregation
++ `session` Remove group_name for setting up DataBricks Unity feature store
++ `service` Add to_timestamp_from_epoch function to convert epoch time to timestamp
+
 ## v3.0.0 (2025-04-01)
 
 ### 🛑 Breaking Changes
