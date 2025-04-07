@@ -222,16 +222,13 @@ def test_entity_relationship(
     pd.testing.assert_frame_equal(relationships, Relationship.list())
 
 
-def test_update_relationship_type(saved_event_table, transaction_entity, cust_id_entity):
+@pytest.fixture(name="check_relationship", scope="function")
+def check_relationship_fixture(transaction_entity, cust_id_entity):
     """
-    Test update relationship type
+    Helper fixture to check relationship
     """
-    # Establish a child parent relationship in event table
-    assert saved_event_table.event_id_column == "col_int"
-    saved_event_table.col_int.as_entity(transaction_entity.name)
-    saved_event_table.cust_id.as_entity(cust_id_entity.name)
 
-    def check_relationship(expected_relationship_type, expected_ancestor_ids):
+    def check_func(expected_relationship_type, expected_ancestor_ids):
         # Check the relationship can be listed under the correct type
         relationships = Relationship.list(relationship_type=expected_relationship_type)
         relationship = relationships.iloc[0]
@@ -259,6 +256,20 @@ def test_update_relationship_type(saved_event_table, transaction_entity, cust_id
         relationship_obj = Relationship.get_by_id(relationship.id)
         return relationship_obj
 
+    return check_func
+
+
+def test_update_relationship_type(
+    saved_event_table, transaction_entity, cust_id_entity, check_relationship
+):
+    """
+    Test update relationship type
+    """
+    # Establish a child parent relationship in event table
+    assert saved_event_table.event_id_column == "col_int"
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+
     # Check the initial relationship type (child-parent)
     relationship = check_relationship(RelationshipType.CHILD_PARENT, [cust_id_entity.id])
 
@@ -269,3 +280,53 @@ def test_update_relationship_type(saved_event_table, transaction_entity, cust_id
     # Update the relationship type back to child-parent
     relationship.update_relationship_type(RelationshipType.CHILD_PARENT)
     check_relationship(RelationshipType.CHILD_PARENT, [cust_id_entity.id])
+
+
+def test_update_relationship_type_and_retag_primary_entity(
+    saved_event_table, transaction_entity, cust_id_entity, check_relationship
+):
+    """
+    Test update relationship type and re-tag primary entity
+    """
+    # Establish a child parent relationship in event table
+    assert saved_event_table.event_id_column == "col_int"
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+
+    # Update the relationship type to one-to-one
+    relationships = Relationship.list()
+    relationship = Relationship.get_by_id(relationships.iloc[0].id)
+    relationship.update_relationship_type(RelationshipType.ONE_TO_ONE)
+
+    # Untag primary entity
+    saved_event_table.col_int.as_entity(None)
+    check_relationship(RelationshipType.ONE_TO_ONE, [])
+
+    # Retag primary entity
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    check_relationship(RelationshipType.ONE_TO_ONE, [])
+
+
+def test_update_relationship_type_and_retag_parent_entity(
+    saved_event_table, transaction_entity, cust_id_entity, check_relationship
+):
+    """
+    Test update relationship type and re-tag parent entity
+    """
+    # Establish a child parent relationship in event table
+    assert saved_event_table.event_id_column == "col_int"
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+
+    # Update the relationship type to one-to-one
+    relationships = Relationship.list()
+    relationship = Relationship.get_by_id(relationships.iloc[0].id)
+    relationship.update_relationship_type(RelationshipType.ONE_TO_ONE)
+
+    # Untag parent entity
+    saved_event_table.cust_id.as_entity(None)
+    check_relationship(RelationshipType.ONE_TO_ONE, [])
+
+    # Retag parent entity
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
+    check_relationship(RelationshipType.ONE_TO_ONE, [])
