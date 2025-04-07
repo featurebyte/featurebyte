@@ -415,7 +415,8 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
 
     @model_validator(mode="after")
     def _validate_cron_expression(self) -> "CronFeatureJobSetting":
-        """Validate cron expression
+        """
+        Validate cron expression
 
         Raises
         ------
@@ -448,6 +449,27 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         if isinstance(self.crontab.minute, str) and not self.crontab.minute.isdigit():
             raise ValueError("Cron schedule more frequent than hourly is not supported.")
 
+        return self
+
+    @model_validator(mode="after")
+    def _validate_blind_spot(self) -> "CronFeatureJobSetting":
+        """
+        Validate blind spot
+
+        Raises
+        ------
+        ValueError
+            If the blind spot is invalid
+
+        Returns
+        -------
+        CronFeatureJobSetting
+        """
+        if isinstance(self.blind_spot, str):
+            try:
+                parse_duration_string(self.blind_spot)
+            except ValueError as e:
+                raise ValueError(f"Invalid blind spot: {self.blind_spot} ({str(e)})")
         return self
 
     def extract_offline_store_feature_table_name_postfix(self, max_length: int) -> str:
