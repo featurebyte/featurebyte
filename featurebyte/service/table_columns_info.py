@@ -468,28 +468,29 @@ class TableColumnsInfoService(OpsServiceMixin):
         updated_columns_info: List[ColumnInfo],
     ) -> None:
         for parent_id in new_parent_entity_ids:
-            existing_relationships = await self.relationship_info_service.list_documents_as_dict(
-                query_filter={
-                    "relationship_type": RelationshipType.ONE_TO_ONE,
-                    "entity_id": entity_id,
-                    "related_entity_id": parent_id,
-                    "relation_table_id": document.id,
-                },
-            )
-            if existing_relationships["data"]:
-                # Skip adding child parent relationship if there is already a one-to-one
-                # relationship between the two entities via the table
-                continue
-
+            # Update ancestor ids and parents
             await self.entity_relationship_service.add_relationship(
                 parent=ParentEntity(id=parent_id, table_id=document.id, table_type=document.type),
                 child_id=entity_id,
             )
+        # Add relationship info links for new parent entity relationships
+        await self._add_new_child_parent_relationships(
+            entity_id, document.id, updated_columns_info, new_parent_entity_ids
+        )
 
-            # Add relationship info links for new parent entity relationships
-            await self._add_new_child_parent_relationships(
-                entity_id, document.id, updated_columns_info, [parent_id]
+    async def _update_ancestor_ids_and_remove_relationships(
+        self,
+        removed_parent_entity_ids: List[ObjectId],
+        entity_id: ObjectId,
+    ) -> None:
+        for parent_id in removed_parent_entity_ids:
+            # Update ancestor ids and parents
+            await self.entity_relationship_service.remove_relationship(
+                parent_id=parent_id,
+                child_id=entity_id,
             )
+        # Remove relationship info links for old parent entity relationships
+        await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
 
     async def _update_entity_relationship(
         self,
@@ -530,13 +531,10 @@ class TableColumnsInfoService(OpsServiceMixin):
                     table_type=document.type,
                     parent_entity_ids=list(old_parent_entities),
                 )
-                for parent_id in removed_parent_entity_ids:
-                    await self.entity_relationship_service.remove_relationship(
-                        parent_id=parent_id,
-                        child_id=entity_id,
-                    )
-                # Remove relationship info links for old parent entity relationships
-                await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
+                await self._update_ancestor_ids_and_remove_relationships(
+                    removed_parent_entity_ids=removed_parent_entity_ids,
+                    entity_id=entity_id,
+                )
                 # Remove one-to-one relationship info links
                 await self.relationship_info_service.remove_one_to_one_relationships(
                     primary_entity_id=entity_id,
@@ -561,19 +559,16 @@ class TableColumnsInfoService(OpsServiceMixin):
                     parent_entity_ids=list(new_parent_entities.difference(old_parent_entities)),
                 )
                 if parents != primary_entity.parents:
-                    for parent_id in removed_parent_entity_ids:
-                        await self.entity_relationship_service.remove_relationship(
-                            parent_id=parent_id,
-                            child_id=entity_id,
-                        )
                     await self._update_ancestor_ids_and_add_relationships(
                         new_parent_entity_ids=new_parent_entity_ids,
                         entity_id=entity_id,
                         document=document,
                         updated_columns_info=updated_columns_info,
                     )
-                    # Remove relationship info links for old parent entity relationships
-                    await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
+                    await self._update_ancestor_ids_and_remove_relationships(
+                        removed_parent_entity_ids=removed_parent_entity_ids,
+                        entity_id=entity_id,
+                    )
                 # Remove one-to-one relationship info links
                 untagged_entities = old_parent_entities.difference(new_parent_entities)
                 for untagged_entity in untagged_entities:

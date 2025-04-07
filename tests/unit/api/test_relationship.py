@@ -310,6 +310,9 @@ def test_update_relationship_type_and_retag_primary_entity(
     relationship = Relationship.get_by_id(relationships.iloc[0].id)
     relationship.update_relationship_type(RelationshipType.ONE_TO_ONE)
 
+    # Tag primary entity without untagging yet
+    saved_event_table.col_int.as_entity(transaction_entity.name)
+
     # Untag primary entity
     saved_event_table.col_int.as_entity(None)
     check_no_relationships()
@@ -334,6 +337,9 @@ def test_update_relationship_type_and_retag_parent_entity(
     relationships = Relationship.list()
     relationship = Relationship.get_by_id(relationships.iloc[0].id)
     relationship.update_relationship_type(RelationshipType.ONE_TO_ONE)
+
+    # Tag primary entity without untagging yet
+    saved_event_table.cust_id.as_entity(cust_id_entity.name)
 
     # Untag parent entity
     saved_event_table.cust_id.as_entity(None)
