@@ -3,6 +3,7 @@ This module contains session to DataBricks Unity integration tests.
 """
 
 import os
+from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
@@ -120,8 +121,6 @@ async def test_access_token_credential(
     Access feature store using access token credential.
     """
     _ = config
-    os.environ.pop("DATABRICKS_CLIENT_ID", None)
-    os.environ.pop("DATABRICKS_CLIENT_SECRET", None)
 
     feature_store_credential = CredentialModel(
         name="databricks_featurestore",
@@ -130,6 +129,11 @@ async def test_access_token_credential(
             access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
         ),
     )
-    db_session = await session_manager_service.get_session(feature_store, feature_store_credential)
+    with patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("DATABRICKS_CLIENT_ID", None)
+        os.environ.pop("DATABRICKS_CLIENT_SECRET", None)
+        db_session = await session_manager_service.get_session(
+            feature_store, feature_store_credential
+        )
     results = await db_session.execute_query("SHOW DATABASES")
     assert results is not None
