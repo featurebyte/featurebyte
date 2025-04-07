@@ -259,6 +259,18 @@ def check_relationship_fixture(transaction_entity, cust_id_entity):
     return check_func
 
 
+def check_no_relationships():
+    """
+    Check no relationships exist
+    """
+    for relationship_type in [
+        RelationshipType.CHILD_PARENT,
+        RelationshipType.ONE_TO_ONE,
+    ]:
+        relationships = Relationship.list(relationship_type=relationship_type)
+        assert relationships.shape[0] == 0
+
+
 def test_update_relationship_type(
     saved_event_table, transaction_entity, cust_id_entity, check_relationship
 ):
@@ -300,11 +312,11 @@ def test_update_relationship_type_and_retag_primary_entity(
 
     # Untag primary entity
     saved_event_table.col_int.as_entity(None)
-    check_relationship(RelationshipType.ONE_TO_ONE, [])
+    check_no_relationships()
 
     # Retag primary entity
     saved_event_table.col_int.as_entity(transaction_entity.name)
-    check_relationship(RelationshipType.ONE_TO_ONE, [])
+    check_relationship(RelationshipType.CHILD_PARENT, [cust_id_entity.id])
 
 
 def test_update_relationship_type_and_retag_parent_entity(
@@ -325,8 +337,8 @@ def test_update_relationship_type_and_retag_parent_entity(
 
     # Untag parent entity
     saved_event_table.cust_id.as_entity(None)
-    check_relationship(RelationshipType.ONE_TO_ONE, [])
+    check_no_relationships()
 
     # Retag parent entity
     saved_event_table.cust_id.as_entity(cust_id_entity.name)
-    check_relationship(RelationshipType.ONE_TO_ONE, [])
+    check_relationship(RelationshipType.CHILD_PARENT, [cust_id_entity.id])

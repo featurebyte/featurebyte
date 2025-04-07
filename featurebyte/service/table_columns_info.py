@@ -537,6 +537,12 @@ class TableColumnsInfoService(OpsServiceMixin):
                     )
                 # Remove relationship info links for old parent entity relationships
                 await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
+                # Remove one-to-one relationship info links
+                await self.relationship_info_service.remove_one_to_one_relationships(
+                    primary_entity_id=entity_id,
+                    related_entity_id=None,
+                    relation_table_id=document.id,
+                )
 
         if common_primary_entities:
             # change of non-primary entities
@@ -568,6 +574,14 @@ class TableColumnsInfoService(OpsServiceMixin):
                     )
                     # Remove relationship info links for old parent entity relationships
                     await self._remove_parent_entity_ids(entity_id, removed_parent_entity_ids)
+                # Remove one-to-one relationship info links
+                untagged_entities = old_parent_entities.difference(new_parent_entities)
+                for untagged_entity in untagged_entities:
+                    await self.relationship_info_service.remove_one_to_one_relationships(
+                        primary_entity_id=entity_id,
+                        related_entity_id=untagged_entity,
+                        relation_table_id=document.id,
+                    )
 
     async def update_entity_table_references(
         self, document: TableModel, columns_info: List[ColumnInfo]
