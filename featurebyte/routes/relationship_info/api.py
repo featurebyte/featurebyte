@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Optional, cast
 
+from bson import ObjectId
 from fastapi import APIRouter, Request
 
 from featurebyte.models.persistent import AuditDocumentList
@@ -22,6 +23,7 @@ from featurebyte.routes.common.schema import (
     SortByQuery,
     SortDirQuery,
 )
+from featurebyte.routes.relationship_info.controller import RelationshipInfoController
 from featurebyte.schema.common.base import DescriptionUpdate
 from featurebyte.schema.relationship_info import (
     RelationshipInfoInfo,
@@ -54,8 +56,10 @@ async def list_relationship_info(
     """
     List RelationshipInfo's
     """
-    controller = request.state.app_container.relationship_info_controller
-    relationship_info_list: RelationshipInfoList = await controller.list_relationship_info(
+    controller: RelationshipInfoController = (
+        request.state.app_container.relationship_info_controller
+    )
+    relationship_info_list = await controller.list_relationship_info(
         page=page,
         page_size=page_size,
         sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
@@ -72,9 +76,11 @@ async def get_relationship_info(
     """
     Retrieve relationship info
     """
-    controller = request.state.app_container.relationship_info_controller
-    relationship_info: RelationshipInfoModel = await controller.get(
-        document_id=relationship_info_id,
+    controller: RelationshipInfoController = (
+        request.state.app_container.relationship_info_controller
+    )
+    relationship_info = await controller.get(
+        document_id=ObjectId(relationship_info_id),
     )
     return relationship_info
 
@@ -88,9 +94,11 @@ async def update_relationship_info(
     """
     Update RelationshipInfo
     """
-    controller = request.state.app_container.relationship_info_controller
+    controller: RelationshipInfoController = (
+        request.state.app_container.relationship_info_controller
+    )
     relationship_info = await controller.relationship_info_service.update_document(
-        relationship_info_id, data
+        ObjectId(relationship_info_id), data
     )
     return cast(RelationshipInfoModel, relationship_info)
 
@@ -103,11 +111,13 @@ async def get_relationship_info_info(
     """
     Retrieve RelationshipInfo info
     """
-    controller = request.state.app_container.relationship_info_controller
-    info = await controller.get_info(
-        document_id=relationship_info_id,
+    controller: RelationshipInfoController = (
+        request.state.app_container.relationship_info_controller
     )
-    return cast(RelationshipInfoInfo, info)
+    info = await controller.get_info(
+        document_id=ObjectId(relationship_info_id),
+    )
+    return info
 
 
 @router.get("/audit/{relationship_info_id}", response_model=AuditDocumentList)
@@ -123,9 +133,11 @@ async def list_relationship_info_audit_logs(
     """
     List relationship_info audit logs
     """
-    controller = request.state.app_container.relationship_info_controller
+    controller: RelationshipInfoController = (
+        request.state.app_container.relationship_info_controller
+    )
     audit_doc_list: AuditDocumentList = await controller.list_audit(
-        document_id=relationship_info_id,
+        document_id=ObjectId(relationship_info_id),
         page=page,
         page_size=page_size,
         sort_by=[(sort_by, sort_dir)] if sort_by and sort_dir else None,
@@ -143,9 +155,11 @@ async def update_relationship_info_description(
     """
     Update relationship_info description
     """
-    controller = request.state.app_container.relationship_info_controller
-    relationship_info: RelationshipInfoModel = await controller.update_description(
-        document_id=relationship_info_id,
+    controller: RelationshipInfoController = (
+        request.state.app_container.relationship_info_controller
+    )
+    relationship_info = await controller.update_description(
+        document_id=ObjectId(relationship_info_id),
         description=data.description,
     )
     return relationship_info
