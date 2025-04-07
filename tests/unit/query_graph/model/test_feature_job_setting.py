@@ -115,6 +115,15 @@ def test_cron_feature_job_setting__too_frequent_crontab(invalid_crontab):
     assert expected_msg in str(exc_info.value)
 
 
+def test_cron_feature_job_setting__invalid_blind_spot():
+    """Test cron feature job setting with invalid crontab expression"""
+    with pytest.raises(ValueError) as exc_info:
+        CronFeatureJobSetting(crontab="0 * * * *", blind_spot="NaNs")
+
+    expected_msg = "Invalid blind spot: NaNs (unit abbreviation w/o a number)"
+    assert expected_msg in str(exc_info.value)
+
+
 def test_table_feature_job_setting_deserialization():
     """Test feature job setting deserialization"""
     data_1 = {
