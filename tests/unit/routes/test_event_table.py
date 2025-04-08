@@ -2,6 +2,7 @@
 Tests for EventTable routes
 """
 
+import copy
 from http import HTTPStatus
 
 import pytest
@@ -634,3 +635,29 @@ class TestEventTableApi(BaseTableApiTestSuite):
             f"['col_int', 'cust_id'] in the table."
         )
         assert response.json()["detail"] == expected_error
+
+    def test_cron_default_feature_job_setting(self, test_api_client_persistent):
+        """Post route success response object"""
+        test_api_client, _ = test_api_client_persistent
+        self.setup_creation_route(test_api_client)
+        payload = copy.deepcopy(self.payload)
+        payload["default_feature_job_setting"] = {
+            "crontab": "0 0 * * *",  # daily at midnight
+            "timezone": "Etc/UTC",
+            "reference_timezone": "Asia/Singapore",
+        }
+        response = self.post(test_api_client, payload)
+        response_dict = response.json()
+        assert response.status_code == HTTPStatus.CREATED, response_dict
+        assert response_dict["default_feature_job_setting"] == {
+            "crontab": {
+                "minute": 0,
+                "hour": 0,
+                "day_of_month": "*",
+                "month_of_year": "*",
+                "day_of_week": "*",
+            },
+            "timezone": "Etc/UTC",
+            "reference_timezone": "Asia/Singapore",
+            "blind_spot": None,
+        }
