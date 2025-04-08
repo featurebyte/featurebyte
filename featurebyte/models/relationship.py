@@ -74,6 +74,7 @@ class RelationshipType(StrEnum):
     """
 
     CHILD_PARENT = "child_parent"
+    ONE_TO_ONE = "one_to_one"
 
 
 class RelationshipInfoModel(FeatureByteCatalogBaseDocumentModel):
