@@ -309,7 +309,11 @@ class SparkSession(BaseSparkSession):
         records = cursor.fetchall()
         if not records:
             return pa.record_batch([[]] * len(schema), schema=schema).to_pandas()
-        return pa.table(list(zip(*records)), schema=schema).to_pandas()
+        return (
+            pa.table(list(zip(*records)), names=[field.name for field in schema])
+            .cast(schema, safe=False)
+            .to_pandas()
+        )
 
     async def fetch_query_stream_impl(self, cursor: Any) -> AsyncGenerator[pa.RecordBatch, None]:
         # fetch results in batches
