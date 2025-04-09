@@ -15,6 +15,7 @@ from datetime import datetime
 from decimal import Decimal
 from importlib import metadata as importlib_metadata
 from io import StringIO
+from json import JSONDecodeError
 from typing import Any, Generator, Iterator, List, Optional, Union
 
 import numpy as np
@@ -117,6 +118,28 @@ def dataframe_to_arrow_bytes(dataframe: pd.DataFrame) -> bytes:
     return data
 
 
+def try_json_decode(value: Any) -> Any:
+    """
+    Try to decode a value as JSON, if it fails, return None
+
+    Parameters
+    ----------
+    value: Any
+        Value to decode
+
+    Returns
+    -------
+    Any
+        Decoded value or None if decoding fails
+    """
+    if isinstance(value, str):
+        try:
+            return json.loads(value, strict=False)
+        except JSONDecodeError:
+            return None
+    return None
+
+
 def dataframe_from_arrow_table(arrow_table: pa.Table) -> pd.DataFrame:
     """
     Convert arrow table to pandas dataframe, handling list and map types
@@ -138,9 +161,7 @@ def dataframe_from_arrow_table(arrow_table: pa.Table) -> pd.DataFrame:
         if field.metadata and ARROW_METADATA_DB_VAR_TYPE in field.metadata:
             db_var_type = field.metadata[ARROW_METADATA_DB_VAR_TYPE].decode()
             if db_var_type in encoded_types:
-                dataframe[field.name] = dataframe[field.name].apply(
-                    lambda x: json.loads(x) if x else None
-                )
+                dataframe[field.name] = dataframe[field.name].apply(try_json_decode)
     return dataframe
 
 
