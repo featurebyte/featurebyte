@@ -321,7 +321,11 @@ class SparkSession(BaseSparkSession):
                     # return empty table to ensure correct schema is returned
                     yield pa.record_batch([[]] * len(schema), schema=schema)
                     break
-                yield pa.record_batch(list(zip(*records)), schema=schema)
+                # Transpose rows -> columns
+                columns = list(zip(*records))
+                table = pa.table(columns, names=[field.name for field in schema])
+                for batch in table.cast(schema, safe=False).to_batches():
+                    yield batch
             except TypeError as exc:
                 if isinstance(exc, ArrowTypeError):
                     raise
