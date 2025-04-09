@@ -175,7 +175,7 @@ class DatabricksSession(BaseSparkSession):
             schema = self._get_schema_from_cursor(cursor)
 
         if schema:
-            return cursor.fetchall_arrow().cast(schema).to_pandas()
+            return cursor.fetchall_arrow().cast(schema, safe=False).to_pandas()
 
         return None
 
@@ -192,5 +192,5 @@ class DatabricksSession(BaseSparkSession):
                     # return empty table to ensure correct schema is returned
                     yield pa.record_batch([[]] * len(schema), schema=schema)
                     break
-                for batch in table.cast(schema).to_batches():
+                for batch in table.cast(schema, safe=False).to_batches():
                     yield batch

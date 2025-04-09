@@ -3,11 +3,27 @@ This module contains session to DataBricks Unity integration tests.
 """
 
 import pytest
+from numpy.testing import assert_allclose
 
 from featurebyte.session.databricks_unity import (
     DatabricksUnitySchemaInitializer,
     DatabricksUnitySession,
 )
+
+
+@pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_decimal_casting(session_without_datasets):
+    """
+    Test large decimal without scale information
+    """
+    session = session_without_datasets
+    # In this case, the cursor's description doesn't provide the scale information for the decimal.
+    # Make sure the conversion via pyarrow doesn't fail.
+    df = await session.execute_query(
+        "SELECT CAST(123456789012345678901234567890123456.90 AS DECIMAL(38, 2)) AS result"
+    )
+    assert_allclose(df["result"].iloc[0], 1.2345678901234568e35)
 
 
 @pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
