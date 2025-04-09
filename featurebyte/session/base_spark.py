@@ -61,7 +61,7 @@ pa_type_mapping = {
     "DOUBLE": pa.float64(),
     "FLOAT": pa.float32(),
     # https://spark.apache.org/docs/3.5.0/api/python/reference/pyspark.sql/api/pyspark.sql.types.DecimalType.html
-    "DECIMAL": pa.decimal128(38, 18),
+    "DECIMAL": pa.float64(),  # this is used when scale information is not available
     "INTERVAL": pa.duration("ns"),
     "NULL": pa.null(),
     "TIMESTAMP": pa.timestamp("us", tz=None),

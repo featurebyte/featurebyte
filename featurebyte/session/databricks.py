@@ -219,5 +219,5 @@ class DatabricksSession(BaseSparkSession):
                     # return empty table to ensure correct schema is returned
                     yield pa.record_batch([[]] * len(schema), schema=schema)
                     break
-                for batch in table.cast(schema).to_batches():
+                for batch in table.cast(schema, safe=False).to_batches():
                     yield batch
