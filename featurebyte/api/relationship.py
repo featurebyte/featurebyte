@@ -214,6 +214,27 @@ class Relationship(ApiObject):
         """
         self.update({"enabled": False}, allow_update_local=True, add_internal_prefix=True)
 
+    def update_relationship_type(self, relationship_type: RelationshipType) -> None:
+        """
+        Updates the relationship type of a Relationship object.
+
+        Parameters
+        ----------
+        relationship_type: RelationshipType
+            The new relationship type to set for the Relationship object.
+
+        Examples
+        --------
+        >>> import featurebyte as fb  # doctest: +SKIP
+        >>> relationship = fb.Relationship.get_by_id(<relationship_id>)  # doctest: +SKIP
+        >>> relationship.update_relationship_type(RelationshipType.ONE_TO_ONE)  # doctest: +SKIP
+        """
+        self.update(
+            {"relationship_type": relationship_type},
+            allow_update_local=True,
+            add_internal_prefix=True,
+        )
+
     def info(self, verbose: bool = False) -> Dict[str, Any]:
         """
         Returns a dictionary that summarizes the essential information of the relationship represented by the

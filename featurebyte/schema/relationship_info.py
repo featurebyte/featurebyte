@@ -43,7 +43,8 @@ class RelationshipInfoUpdate(BaseDocumentServiceUpdateSchema):
     RelationshipInfo update payload schema
     """
 
-    enabled: bool
+    enabled: Optional[bool] = Field(default=None)
+    relationship_type: Optional[RelationshipType] = Field(default=None)
 
 
 class RelationshipInfoInfo(FeatureByteBaseModel):

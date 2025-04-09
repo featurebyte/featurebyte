@@ -71,6 +71,7 @@ from featurebyte.models.credential import (
     GCSStorageCredential,
     GoogleCredential,
     KerberosKeytabCredential,
+    OAuthCredential,
     S3StorageCredential,
     UsernamePasswordCredential,
 )
@@ -531,6 +532,7 @@ __all__ = [
     "Credential",
     "GoogleCredential",
     "GCSStorageCredential",
+    "OAuthCredential",
     "S3StorageCredential",
     "UsernamePasswordCredential",
     # enums

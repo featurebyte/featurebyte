@@ -2,8 +2,13 @@
 This module contains session to DataBricks Unity integration tests.
 """
 
-import pytest
+import os
+from unittest.mock import patch
 
+import pytest
+from bson import ObjectId
+
+from featurebyte.models.credential import AccessTokenCredential, CredentialModel
 from featurebyte.session.databricks_unity import (
     DatabricksUnitySchemaInitializer,
     DatabricksUnitySession,
@@ -103,3 +108,32 @@ async def test_list_tables(config, session_without_datasets):
             "description": "Customer details, including their name, address, and date of birth.",
         },
     ])
+
+
+@pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_access_token_credential(
+    config,
+    feature_store,
+    session_manager_service,
+):
+    """
+    Access feature store using access token credential.
+    """
+    _ = config
+
+    feature_store_credential = CredentialModel(
+        name="databricks_featurestore",
+        feature_store_id=ObjectId(),
+        database_credential=AccessTokenCredential(
+            access_token=os.getenv("DATABRICKS_ACCESS_TOKEN", ""),
+        ),
+    )
+    with patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("DATABRICKS_CLIENT_ID", None)
+        os.environ.pop("DATABRICKS_CLIENT_SECRET", None)
+        db_session = await session_manager_service.get_session(
+            feature_store, feature_store_credential
+        )
+    results = await db_session.execute_query("SHOW DATABASES")
+    assert results is not None
