@@ -4,12 +4,15 @@ Test helper functions in featurebyte.common.utils
 
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 import pytest
 import toml
 from pandas.testing import assert_frame_equal
 
 from featurebyte.common.utils import (
+    ARROW_METADATA_DB_VAR_TYPE,
     dataframe_from_arrow_stream,
+    dataframe_from_arrow_table,
     dataframe_from_json,
     dataframe_to_arrow_bytes,
     dataframe_to_json,
@@ -125,3 +128,23 @@ def create_feature_list_batch_feature_create(
         graph=query_graph,
         features=feature_items,
     )
+
+
+def test_dataframe_from_arrow_table():
+    """
+    Test dataframe_from_arrow_table for single column without name in conversion
+    """
+    schema = pa.schema([
+        pa.field("value", pa.string(), metadata={ARROW_METADATA_DB_VAR_TYPE: "DICT"}),
+    ])
+    table = pa.Table.from_pandas(
+        pd.DataFrame({
+            "value": [
+                '{"a": "\n", "b": null}',  # control character
+                '{"a": nan, "b": 1}',  # invalid json
+                None,
+            ]
+        }),
+        schema=schema,
+    )
+    assert dataframe_from_arrow_table(table).value.tolist() == [{"a": "\n", "b": None}, None, None]
