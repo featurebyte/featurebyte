@@ -78,8 +78,8 @@ async def test_materialize__with_columns_only(session, snowflake_database_table,
         """
         CREATE TABLE "sf_database"."sf_schema"."my_materialized_table" AS
         SELECT
-          "a",
-          "b"
+          "a" AS "a",
+          "b" AS "b"
         FROM (
           SELECT
             *
@@ -407,14 +407,14 @@ async def test_materialize__with_sample_timestamp_no_columns_rename(
         """
         CREATE TABLE "sf_database"."sf_schema"."my_materialized_table" AS
         SELECT
-          "col_int",
-          "col_float",
-          "col_char",
-          "col_text",
-          "col_binary",
-          "col_boolean",
-          "event_timestamp",
-          "cust_id"
+          "col_int" AS "col_int",
+          "col_float" AS "col_float",
+          "col_char" AS "col_char",
+          "col_text" AS "col_text",
+          "col_binary" AS "col_binary",
+          "col_boolean" AS "col_boolean",
+          "event_timestamp" AS "event_timestamp",
+          "cust_id" AS "cust_id"
         FROM (
           SELECT
             "col_int" AS "col_int",
