@@ -9,9 +9,10 @@ from typing import List, Optional
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
 
-from featurebyte.enum import InternalName, SourceType
+from featurebyte.enum import DBVarType, InternalName, SourceType, SpecialColumnName
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_table_name,
     quoted_identifier,
@@ -122,6 +123,8 @@ def select_and_rename_columns(
     table_expr: Select,
     columns: list[str],
     columns_rename_mapping: Optional[dict[str, str]],
+    output_column_dtypes: dict[str, str],
+    adapter: BaseAdapter,
 ) -> Select:
     """
     Select columns from a table expression
@@ -134,18 +137,37 @@ def select_and_rename_columns(
         List of column names
     columns_rename_mapping: dict[str, str]
         Mapping from column names to new column names
+    output_column_dtypes: dict[str, str]
+        Mapping from column names to their data types
+    adapter: BaseAdapter
+        SQL adapter
 
     Returns
     -------
     Select
     """
     if columns_rename_mapping:
-        column_exprs = [
-            alias_(quoted_identifier(col), columns_rename_mapping.get(col, col), quoted=True)
-            for col in columns
-        ]
+        output_columns = [columns_rename_mapping.get(col, col) for col in columns]
     else:
-        column_exprs = [quoted_identifier(col) for col in columns]
+        output_columns = columns
+
+    column_exprs = []
+    for input_column, output_column in zip(columns, output_columns):
+        input_column_expr = quoted_identifier(input_column)
+        # Handle timezone in POINT_IN_TIME column by normalizing it to UTC
+        if (
+            output_column == SpecialColumnName.POINT_IN_TIME
+            and output_column_dtypes.get(output_column) == DBVarType.TIMESTAMP_TZ
+        ):
+            input_column_expr = adapter.convert_to_utc_timestamp(input_column_expr)
+        column_exprs.append(
+            alias_(
+                input_column_expr,
+                output_column,
+                quoted=True,
+            )
+        )
+
     return select(*column_exprs).from_(table_expr.subquery())
 
 

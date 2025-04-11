@@ -234,7 +234,7 @@ async def test_materialize__from_view_with_columns_and_renames(
           "col_int"
         FROM (
           SELECT
-            "event_timestamp" AS "POINT_IN_TIME",
+            CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "POINT_IN_TIME",
             "col_int" AS "col_int"
           FROM (
             SELECT
@@ -314,7 +314,7 @@ async def test_materialize__with_sample_timestamp(
           "col_int"
         FROM (
           SELECT
-            "event_timestamp" AS "POINT_IN_TIME",
+            CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "POINT_IN_TIME",
             "col_int" AS "col_int"
           FROM (
             SELECT
@@ -480,7 +480,7 @@ async def test_materialize__with_sample_timestamp_with_tz(
             "col_text" AS "col_text",
             "col_binary" AS "col_binary",
             "col_boolean" AS "col_boolean",
-            "event_timestamp" AS "POINT_IN_TIME",
+            CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "POINT_IN_TIME",
             "cust_id" AS "CUST_ID"
           FROM (
             SELECT

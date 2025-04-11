@@ -2,7 +2,7 @@ SELECT
   COUNT(*) AS `row_count`
 FROM (
   SELECT
-    `event_timestamp` AS `POINT_IN_TIME`,
+    CAST(CAST(`event_timestamp` AS TIMESTAMP) AS DATETIME) AS `POINT_IN_TIME`,
     `col_int` AS `col_int`
   FROM (
     SELECT
@@ -29,7 +29,7 @@ FROM (
     `col_int`
   FROM (
     SELECT
-      `event_timestamp` AS `POINT_IN_TIME`,
+      CAST(CAST(`event_timestamp` AS TIMESTAMP) AS DATETIME) AS `POINT_IN_TIME`,
       `col_int` AS `col_int`
     FROM (
       SELECT
