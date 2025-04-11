@@ -123,7 +123,7 @@ def select_and_rename_columns(
     table_expr: Select,
     columns: list[str],
     columns_rename_mapping: Optional[dict[str, str]],
-    output_column_dtypes: dict[str, str],
+    output_column_dtypes: dict[str, DBVarType],
     adapter: BaseAdapter,
 ) -> Select:
     """
