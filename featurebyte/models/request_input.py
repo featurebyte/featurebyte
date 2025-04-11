@@ -176,13 +176,17 @@ class BaseRequestInput(FeatureByteBaseModel):
             output_columns = input_columns
 
         # Always perform explicit column selection and renaming
+        adapter = get_sql_adapter(session.get_source_info())
         query_expr = select_and_rename_columns(
-            query_expr, input_columns, self.columns_rename_mapping
+            query_expr,
+            input_columns,
+            self.columns_rename_mapping,
+            output_column_names_and_dtypes,
+            adapter,
         )
 
         # Build base filter conditions (e.g. time filters)
         base_filter_conditions: list[expressions.Expression] = []
-        adapter = get_sql_adapter(session.get_source_info())
 
         if SpecialColumnName.POINT_IN_TIME in output_columns and output_column_names_and_dtypes.get(
             SpecialColumnName.POINT_IN_TIME

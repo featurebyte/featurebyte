@@ -871,7 +871,7 @@ def test_create_observation_table_from_event_view__no_sample(
           "cust_id"
         FROM (
           SELECT
-            "event_timestamp" AS "POINT_IN_TIME",
+            CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "POINT_IN_TIME",
             "cust_id" AS "cust_id"
           FROM (
             SELECT
@@ -943,7 +943,7 @@ def test_create_observation_table_from_event_view__with_sample(
             "cust_id"
           FROM (
             SELECT
-              "event_timestamp" AS "POINT_IN_TIME",
+              CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "POINT_IN_TIME",
               "cust_id" AS "cust_id"
             FROM (
               SELECT

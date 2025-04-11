@@ -222,7 +222,7 @@ def test_create_observation_table(
           "cust_id"
         FROM (
           SELECT
-            "event_timestamp" AS "POINT_IN_TIME",
+            CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "POINT_IN_TIME",
             "cust_id" AS "cust_id"
           FROM (
             SELECT
@@ -297,7 +297,7 @@ def test_create_observation_table_with_sample_rows(
               "col_text" AS "col_text",
               "col_binary" AS "col_binary",
               "col_boolean" AS "col_boolean",
-              "event_timestamp" AS "POINT_IN_TIME",
+              CAST(CONVERT_TIMEZONE('UTC', "event_timestamp") AS TIMESTAMP) AS "POINT_IN_TIME",
               "created_at" AS "created_at",
               "cust_id" AS "cust_id"
             FROM (
