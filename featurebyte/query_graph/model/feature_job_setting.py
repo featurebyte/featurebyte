@@ -4,7 +4,7 @@ Feature Job Setting Model
 
 from abc import abstractmethod
 from datetime import datetime, timedelta
-from typing import Any, ClassVar, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, Optional, Union, cast
 
 from croniter import croniter
 from pydantic import BaseModel, Discriminator, Field, Tag, model_validator
@@ -565,7 +565,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
 
         # Collect execution times over a large window (up to 2 years max)
         max_check_period = timedelta(days=730)
-        prev_time = cron.get_next(datetime)
+        prev_time = cast(datetime, cron.get_next(datetime))
         execution_times = [prev_time]
 
         # Track interval consistency
@@ -573,7 +573,7 @@ class CronFeatureJobSetting(BaseFeatureJobSetting):
         check_limit = 1000  # Allow more checks for long-cycle cron jobs
 
         for _ in range(check_limit):
-            next_time = cron.get_next(datetime)
+            next_time = cast(datetime, cron.get_next(datetime))
             execution_times.append(next_time)
 
             # Compute interval from the last execution

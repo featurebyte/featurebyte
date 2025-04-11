@@ -69,6 +69,13 @@ class DatabricksSession(BaseSparkSession):
     source_type: SourceType = SourceType.DATABRICKS
     database_credential: Union[AccessTokenCredential, OAuthCredential]
 
+    def __init__(self, **data: Any) -> None:
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("GOOGLE_CREDENTIALS", None)
+            os.environ.pop("DATABRICKS_CLIENT_ID", None)
+            os.environ.pop("DATABRICKS_CLIENT_SECRET", None)
+            super().__init__(**data)
+
     def _initialize_connection(self) -> None:
         if not HAS_DATABRICKS_SQL_CONNECTOR:
             raise RuntimeError("databricks-sql-connector is not available")
@@ -81,8 +88,6 @@ class DatabricksSession(BaseSparkSession):
             else:
 
                 def credentials_provider() -> Any:
-                    # ensure google credentials not in environment variables to avoid conflict
-                    os.environ.pop("GOOGLE_CREDENTIALS", None)
                     assert isinstance(self.database_credential, OAuthCredential)
                     config = Config(
                         host=f"https://{self.host}",
@@ -110,8 +115,6 @@ class DatabricksSession(BaseSparkSession):
 
     @property
     def _workspace_client(self) -> WorkspaceClient:
-        # ensure google credentials not in environment variables to avoid conflict
-        os.environ.pop("GOOGLE_CREDENTIALS", None)
         if isinstance(self.database_credential, AccessTokenCredential):
             return WorkspaceClient(
                 host=self.host,

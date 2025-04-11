@@ -145,11 +145,7 @@ async def test_databricks_session(databricks_session_dict):
     """
     Test DatabricksSession
     """
-    with patch.dict(os.environ, {}, clear=False):
-        os.environ.pop("DATABRICKS_CLIENT_ID", None)
-        os.environ.pop("DATABRICKS_CLIENT_SECRET", None)
-        session = DatabricksSession(**databricks_session_dict)
-
+    session = DatabricksSession(**databricks_session_dict)
     assert session.host == "some-databricks-hostname"
     assert session.http_path == "some-databricks-http-endpoint"
     assert session.database_credential.access_token == "some-databricks-access-token"

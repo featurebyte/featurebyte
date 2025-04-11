@@ -250,9 +250,9 @@ class CronHelper:
         cron = croniter(
             expr_format=cron_feature_job_setting.get_cron_expression(), start_time=local_time
         )
-        next_time = cron.get_next(datetime)
+        next_time = cast(datetime, cron.get_next(datetime))
         next_utc_time = next_time.astimezone(pytz.utc).replace(tzinfo=None)
-        return cast(datetime, next_utc_time)
+        return next_utc_time
 
     @classmethod
     async def register_cron_job_schedule(
