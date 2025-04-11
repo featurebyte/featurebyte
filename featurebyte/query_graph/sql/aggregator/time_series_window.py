@@ -387,12 +387,18 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         else:
             bucket_expr = self.adapter.to_epoch_months(reference_datetime_expr)
         source_view_table_name = self.get_source_view_table_name(aggregation_spec)
-        # TODO: remove null values from the reference datetime column
         distinct_reference_datetime_expr = (
             select(quoted_reference_datetime_column)
             .distinct()
             .from_(
                 quoted_identifier(source_view_table_name),
+            )
+            .where(
+                expressions.Not(
+                    this=expressions.Is(
+                        this=quoted_reference_datetime_column, expression=expressions.Null()
+                    )
+                ),
             )
         )
         return select(
@@ -451,16 +457,11 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
             window_size = spec.window.to_seconds()
         else:
             window_size = spec.window.to_months()
-        # TODO: maybe can simplify with as_subquery=False
         range_joined_table_expr = range_join_tables(
             left_table=left_table,
             right_table=right_table,
             window_size=window_size,
-        ).select(
-            quoted_identifier(InternalName.CRON_JOB_SCHEDULE_DATETIME),
-            *[quoted_identifier(col) for col in spec.serving_names],
-            quoted_identifier(InternalName.VIEW_REFERENCE_DATETIME),
-            quoted_identifier(InternalName.VIEW_TIMESTAMP_EPOCH),
+            as_subquery=False,
         )
 
         # Join with source using exact match on reference datetime
@@ -518,44 +519,6 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
             )
         )
         groupby_input_expr = select().from_(joined_source_expr.subquery(copy=False))
-        # groupby_input_expr = select(range_joined_table_expr.join(
-        #     quoted_identifier(self.get_source_view_table_name(spec)),
-        #     join_type="VIEW",
-        #     on=expressions.EQ(
-        #         left=quoted_identifier(InternalName.VIEW_REFERENCE_DATETIME),
-        #         right=quoted_identifier(InternalName.VIEW_REFERENCE_DATETIME),
-        #     ),
-        # ).select(
-        #     *[quoted_identifier(col) for col in left_table.columns],
-        #     quoted_identifier(InternalName.VIEW_TIMESTAMP_EPOCH),
-        # )
-
-        # # Right table: source view
-        # source_view_table_name = self.get_source_view_table_name(spec)
-        # right_columns = set(
-        #     agg_spec.parameters.parent
-        #     for agg_spec in specs
-        #     if agg_spec.parameters.parent is not None
-        # )
-        # if spec.parameters.value_by is not None:
-        #     right_columns.add(spec.parameters.value_by)
-        # right_columns.add(InternalName.VIEW_TIMESTAMP_EPOCH.value)
-        # right_table = RightTable(
-        #     name=quoted_identifier(source_view_table_name),
-        #     alias="VIEW",
-        #     join_keys=spec.parameters.keys[:],
-        #     range_column=InternalName.VIEW_TIMESTAMP_EPOCH,
-        #     columns=sorted(right_columns),
-        # )
-        # if spec.window.is_fixed_size():
-        #     window_size = spec.window.to_seconds()
-        # else:
-        #     window_size = spec.window.to_months()
-        # groupby_input_expr = range_join_tables(
-        #     left_table=left_table,
-        #     right_table=right_table,
-        #     window_size=window_size,
-        # )
 
         # Aggregation
         groupby_keys = [
