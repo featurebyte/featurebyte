@@ -180,9 +180,30 @@ class BaseRequestInput(FeatureByteBaseModel):
             query_expr, input_columns, self.columns_rename_mapping
         )
 
+        adapter = get_sql_adapter(session.get_source_info())
+
+        # Handle timezone in POINT_IN_TIME column by normalizing it to UTC
+        if (
+            SpecialColumnName.POINT_IN_TIME in output_columns
+            and output_column_names_and_dtypes.get(SpecialColumnName.POINT_IN_TIME)
+            == DBVarType.TIMESTAMP_TZ
+        ):
+            new_exprs = []
+            for col_expr in query_expr.expressions:
+                col_name = col_expr.alias_or_name
+                if col_name == SpecialColumnName.POINT_IN_TIME:
+                    col_expr = expressions.alias_(
+                        adapter.convert_to_utc_timestamp(quoted_identifier(col_name)),
+                        alias=col_name,
+                        quoted=True,
+                    )
+                else:
+                    col_expr = quoted_identifier(col_name)
+                new_exprs.append(col_expr)
+            query_expr = expressions.select(*new_exprs).from_(query_expr.subquery())
+
         # Build base filter conditions (e.g. time filters)
         base_filter_conditions: list[expressions.Expression] = []
-        adapter = get_sql_adapter(session.get_source_info())
 
         if SpecialColumnName.POINT_IN_TIME in output_columns and output_column_names_and_dtypes.get(
             SpecialColumnName.POINT_IN_TIME
