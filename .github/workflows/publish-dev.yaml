@@ -66,7 +66,7 @@ jobs:
           else
             export SUFFIX="post"
           fi
-          export DEV_VERSION=$(gcloud artifacts versions list --project ${GCR_PYPI_PROJECT_ID} --repository=${GCR_PYPI_REPO} --location=${GCR_PYPI_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' | \
+          export DEV_VERSION=$(gcloud artifacts versions list --project ${GCR_PYPI_PROJECT_ID} --repository=${GCR_PYPI_REPO} --location=${GCR_PYPI_LOCATION} --package=${PACKAGE} --format='csv[no-heading](VERSION)' --limit=100 --sort-by=~CREATE_TIME | \
             sort --version-sort -r | \
             grep -P "${VERSION}.${SUFFIX}" | \
             head -n 1 | \
