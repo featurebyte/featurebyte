@@ -388,7 +388,16 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
             bucket_expr = self.adapter.to_epoch_months(reference_datetime_expr)
         source_view_table_name = self.get_source_view_table_name(aggregation_spec)
         distinct_reference_datetime_expr = (
-            select(quoted_reference_datetime_column)
+            select(
+                quoted_reference_datetime_column,
+                *(
+                    [
+                        quoted_identifier(aggregation_spec.timezone_offset_column_name),
+                    ]
+                    if aggregation_spec.timezone_offset_column_name
+                    else []
+                ),
+            )
             .distinct()
             .from_(
                 quoted_identifier(source_view_table_name),
@@ -406,6 +415,17 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
                 quoted_reference_datetime_column,
                 alias=InternalName.VIEW_REFERENCE_DATETIME,
                 quoted=True,
+            ),
+            *(
+                [
+                    alias_(
+                        quoted_identifier(aggregation_spec.timezone_offset_column_name),
+                        alias=InternalName.VIEW_REFERENCE_DATETIME_TZ,
+                        quoted=True,
+                    ),
+                ]
+                if aggregation_spec.timezone_offset_column_name
+                else []
             ),
             alias_(bucket_expr, alias=InternalName.VIEW_TIMESTAMP_EPOCH, quoted=True),
         ).from_(distinct_reference_datetime_expr.subquery())
@@ -451,7 +471,12 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
             alias="BUCKETED_REFERENCE_DATETIME",
             join_keys=[],
             range_column=InternalName.VIEW_TIMESTAMP_EPOCH,
-            columns=[InternalName.VIEW_REFERENCE_DATETIME, InternalName.VIEW_TIMESTAMP_EPOCH],
+            columns=[InternalName.VIEW_REFERENCE_DATETIME, InternalName.VIEW_TIMESTAMP_EPOCH]
+            + (
+                [InternalName.VIEW_REFERENCE_DATETIME_TZ]
+                if spec.timezone_offset_column_name
+                else []
+            ),
         )
         if spec.window.is_fixed_size():
             window_size = spec.window.to_seconds()
@@ -490,6 +515,20 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
                 expression=get_qualified_column_identifier(
                     spec.parameters.reference_datetime_column, "VIEW"
                 ),
+            ),
+            *(
+                [
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(
+                            InternalName.VIEW_REFERENCE_DATETIME_TZ, "RANGE_JOINED"
+                        ),
+                        expression=get_qualified_column_identifier(
+                            spec.timezone_offset_column_name, "VIEW"
+                        ),
+                    )
+                ]
+                if spec.timezone_offset_column_name
+                else []
             ),
             *[
                 expressions.EQ(
