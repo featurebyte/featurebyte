@@ -444,7 +444,7 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
             columns=[InternalName.CRON_JOB_SCHEDULE_DATETIME] + (spec.serving_names or []),
         )
 
-        # Right table: distinct point in time
+        # Right table: distinct snapshot dates (reference datetimes)
         distinct_reference_datetime_table = self.get_distinct_reference_datetime_table_name(spec)
         right_table = RightTable(
             name=quoted_identifier(distinct_reference_datetime_table),
@@ -464,7 +464,8 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
             as_subquery=False,
         )
 
-        # Join with source using exact match on reference datetime
+        # Now range_joined_table_expr is the request table expanded with reference datetime within
+        # calendar window. Join with source using exact match on reference datetime
         groupby_input_columns = [
             get_qualified_column_identifier(
                 InternalName.CRON_JOB_SCHEDULE_DATETIME, "RANGE_JOINED"
