@@ -5,7 +5,11 @@ Test on-demand view code generation of vector related nodes.
 import numpy as np
 import pandas as pd
 
-from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    NodeCodeGenOutput,
+    VariableNameGenerator,
+    VariableNameStr,
+)
 from featurebyte.query_graph.node.vector import VectorCosineSimilarityNode
 from tests.unit.query_graph.util import evaluate_and_compare_odfv_and_udf_results
 
@@ -18,6 +22,7 @@ def test_derive_on_demand_view_code__haversine_distance(odfv_config):
 
     node = VectorCosineSimilarityNode(name="node_name", parameters={})
     node_inputs = [VariableNameStr("vec1"), VariableNameStr("vec2")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,

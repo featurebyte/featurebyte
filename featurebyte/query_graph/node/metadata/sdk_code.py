@@ -315,6 +315,14 @@ RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
 StatementT = Union[StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]]
 
 
+class NodeCodeGenOutput(FeatureByteBaseModel):
+    """
+    Node code generation output
+    """
+
+    var_name_or_expr: VarNameExpressionInfo
+
+
 class CodeGenerationContext(FeatureByteBaseModel):
     """
     CodeGenerationContext is used to store the context information during code generation. Code generation context

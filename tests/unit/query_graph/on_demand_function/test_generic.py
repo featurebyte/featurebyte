@@ -3,12 +3,17 @@ Test node's demand feature view related methods
 """
 
 from featurebyte.query_graph.node.generic import AliasNode, ConditionalNode, FilterNode
-from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    NodeCodeGenOutput,
+    VariableNameGenerator,
+    VariableNameStr,
+)
 
 
 def test_alias_node(odfv_config, udf_config):
     """Test AliasNode derive_on_demand_view_code"""
     node_inputs = [VariableNameStr("feat")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
     node = AliasNode(name="node_name", parameters={"name": "feat"})
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
@@ -36,6 +41,9 @@ def test_conditional_node(odfv_config, udf_config):
         VariableNameStr("mask"),
         VariableNameStr("feat2"),
     ]
+    three_node_inputs = [
+        NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in three_node_inputs
+    ]
     odfv_stats, odfv_out_var = node.derive_on_demand_view_code(
         node_inputs=three_node_inputs,
         var_name_generator=VariableNameGenerator(),
@@ -54,6 +62,9 @@ def test_conditional_node(odfv_config, udf_config):
 
     # check on 2 inputs
     two_node_inputs = [VariableNameStr("feat1"), VariableNameStr("mask")]
+    two_node_inputs = [
+        NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in two_node_inputs
+    ]
     odfv_stats, odfv_out_var = node.derive_on_demand_view_code(
         node_inputs=two_node_inputs,
         var_name_generator=VariableNameGenerator(),
@@ -75,6 +86,7 @@ def test_filter_node(odfv_config, udf_config):
     """Test FilterNode derive_on_demand_view_code"""
     node = FilterNode(name="node_name", output_type="series")
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("mask")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
     odfv_stats, odfv_out_var = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),

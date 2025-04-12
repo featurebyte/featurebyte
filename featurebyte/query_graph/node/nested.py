@@ -52,6 +52,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     CommentStr,
     ExpressionStr,
+    NodeCodeGenOutput,
     ObjectClass,
     StatementStr,
     StatementT,
@@ -119,7 +120,7 @@ class BaseGraphNodeParameters(FeatureByteBaseModel):
     @abstractmethod
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -130,7 +131,7 @@ class BaseGraphNodeParameters(FeatureByteBaseModel):
 
         Parameters
         ----------
-        input_var_name_expressions: List[VarNameExpressionStr]
+        input_var_name_expressions: List[NodeCodeGenOutput]
             Input variables name
         var_name_generator: VariableNameGenerator
             Variable name generator
@@ -155,7 +156,7 @@ class CleaningGraphNodeParameters(BaseGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -201,7 +202,7 @@ class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraph
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -320,7 +321,7 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -331,7 +332,7 @@ class EventViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="event_view", node_name=node_name
         )
         assert len(input_var_name_expressions) == 1
-        table_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0].var_name_or_expr
         expression = get_object_class_from_function_call(
             callable_name=f"{table_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
@@ -361,7 +362,7 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -372,7 +373,7 @@ class ItemViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="item_view", node_name=node_name
         )
         assert len(input_var_name_expressions) == 1
-        table_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0].var_name_or_expr
         expression = get_object_class_from_function_call(
             callable_name=f"{table_var_name}.get_view",
             event_suffix=self.metadata.event_suffix,
@@ -412,7 +413,7 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -423,7 +424,7 @@ class DimensionViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="dimension_view", node_name=node_name
         )
         assert len(input_var_name_expressions) == 1
-        table_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0].var_name_or_expr
         expression = get_object_class_from_function_call(
             f"{table_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
@@ -442,7 +443,7 @@ class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -453,7 +454,7 @@ class SCDViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="scd_view", node_name=node_name
         )
         assert len(input_var_name_expressions) == 1
-        table_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0].var_name_or_expr
         expression = get_object_class_from_function_call(
             f"{table_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
@@ -481,7 +482,7 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -499,7 +500,7 @@ class ChangeViewGraphNodeParameters(BaseViewGraphNodeParameters):
             )
 
         assert len(input_var_name_expressions) == 1
-        table_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0].var_name_or_expr
         expression = get_object_class_from_function_call(
             f"{table_var_name}.get_change_view",
             track_changes_column=self.metadata.track_changes_column,
@@ -521,7 +522,7 @@ class TimeSeriesViewGraphNodeParameters(BaseViewGraphNodeParameters):
 
     def derive_sdk_code(
         self,
-        input_var_name_expressions: List[VarNameExpressionInfo],
+        input_var_name_expressions: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -532,7 +533,7 @@ class TimeSeriesViewGraphNodeParameters(BaseViewGraphNodeParameters):
             variable_name_prefix="time_series_view", node_name=node_name
         )
         assert len(input_var_name_expressions) == 1
-        table_var_name = input_var_name_expressions[0]
+        table_var_name = input_var_name_expressions[0].var_name_or_expr
         expression = get_object_class_from_function_call(
             callable_name=f"{table_var_name}.get_view",
             view_mode=ViewMode.MANUAL,
@@ -656,7 +657,7 @@ class BaseGraphNode(BasePrunableNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -877,7 +878,7 @@ class BaseGraphNode(BasePrunableNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -918,7 +919,7 @@ class BaseGraphNode(BasePrunableNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:

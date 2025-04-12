@@ -46,6 +46,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     ExpressionStr,
     InfoDict,
+    NodeCodeGenOutput,
     StatementT,
     ValueStr,
     VariableNameGenerator,
@@ -153,23 +154,23 @@ class BaseNode(FeatureByteBaseModel):
         return False
 
     @staticmethod
-    def _assert_no_info_dict(inputs: List[VarNameExpressionInfo]) -> List[VarNameExpressionStr]:
+    def _assert_no_info_dict(inputs: List[NodeCodeGenOutput]) -> List[VarNameExpressionStr]:
         """
         Assert there is no info dict in the given inputs & convert the type to VarNameExpressionStr
 
         Parameters
         ----------
-        inputs: List[VarNameExpressionInfoStr]
+        inputs: List[NodeCodeGenOutput]
             List of inputs
 
         Returns
         -------
         List[VarNameExpressionStr]
         """
-        out = []
+        out: List[VarNameExpressionStr] = []
         for input_ in inputs:
-            assert not isinstance(input_, InfoDict)
-            out.append(input_)
+            assert not isinstance(input_.var_name_or_expr, InfoDict)
+            out.append(input_.var_name_or_expr)
         return out
 
     @classmethod
@@ -332,7 +333,7 @@ class BaseNode(FeatureByteBaseModel):
 
     def derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -343,7 +344,7 @@ class BaseNode(FeatureByteBaseModel):
 
         Parameters
         ----------
-        node_inputs: List[VarNameExpressionStr]
+        node_inputs: List[NodeCodeGenOutput]
             Node inputs to derive SDK code
         var_name_generator: VariableNameGenerator
             Variable name generator
@@ -376,7 +377,7 @@ class BaseNode(FeatureByteBaseModel):
 
     def derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -385,7 +386,7 @@ class BaseNode(FeatureByteBaseModel):
 
         Parameters
         ----------
-        node_inputs: List[VarNameExpressionStr]
+        node_inputs: List[NodeCodeGenOutput]
             Node inputs to derive on demand view code
         var_name_generator: VariableNameGenerator
             Variable name generator
@@ -412,7 +413,7 @@ class BaseNode(FeatureByteBaseModel):
 
     def derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -421,7 +422,7 @@ class BaseNode(FeatureByteBaseModel):
 
         Parameters
         ----------
-        node_inputs: List[VarNameExpressionStr]
+        node_inputs: List[NodeCodeGenOutput]
             Node inputs to derive on demand function code
         var_name_generator: VariableNameGenerator
             Variable name generator
@@ -602,7 +603,7 @@ class BaseNode(FeatureByteBaseModel):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -637,7 +638,7 @@ class BaseNode(FeatureByteBaseModel):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -668,7 +669,7 @@ class BaseNode(FeatureByteBaseModel):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -1040,7 +1041,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     def _derive_python_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         to_timestamp_func: Union[ClassEnum, str],
         generate_expression_func: Callable[[str, str], str],
@@ -1073,7 +1074,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -1100,7 +1101,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -1131,7 +1132,7 @@ class BaseSeriesOutputWithAScalarParamNode(SeriesOutputNodeOpStructMixin, BaseNo
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -1255,7 +1256,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -1272,7 +1273,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -1289,7 +1290,7 @@ class BaseSeriesOutputWithSingleOperandNode(BaseSeriesOutputNode, ABC):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:

@@ -15,11 +15,11 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerator,
+    NodeCodeGenOutput,
     StatementStr,
     ValueStr,
     VariableNameGenerator,
     VariableNameStr,
-    VarNameExpressionInfo,
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
@@ -31,7 +31,7 @@ class OnDemandFeatureViewGlobalState(FeatureByteBaseModel):
     On demand feature view global state
     """
 
-    node_name_to_post_compute_output: Dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
+    node_name_to_post_compute_output: Dict[str, NodeCodeGenOutput] = Field(default_factory=dict)
     code_generation_config: OnDemandViewCodeGenConfig = Field(
         default_factory=OnDemandViewCodeGenConfig
     )
@@ -73,9 +73,9 @@ class OnDemandFeatureViewExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureViewGlobalState,
         node: Node,
-        inputs: List[Any],
+        inputs: List[NodeCodeGenOutput],
         skip_post: bool,
-    ) -> VarNameExpressionInfo:
+    ) -> NodeCodeGenOutput:
         if node.name in global_state.node_name_to_post_compute_output:
             return global_state.node_name_to_post_compute_output[node.name]
 
@@ -86,12 +86,13 @@ class OnDemandFeatureViewExtractor(
         )
 
         # update global state
+        post_compute_output = NodeCodeGenOutput(var_name_or_expr=var_name_or_expr)
         global_state.code_generator.add_statements(statements=statements)
-        global_state.node_name_to_post_compute_output[node.name] = var_name_or_expr
+        global_state.node_name_to_post_compute_output[node.name] = post_compute_output
 
         # return the output variable name or expression of current operation so that
         # it can be passed as `inputs` to the next node's post compute operation
-        return var_name_or_expr
+        return post_compute_output
 
     @staticmethod
     def generate_ttl_handling_statements(
@@ -238,12 +239,13 @@ class OnDemandFeatureViewExtractor(
         global_state = OnDemandFeatureViewGlobalState(
             code_generation_config=OnDemandViewCodeGenConfig(**kwargs),
         )
-        var_name_or_expr = self._extract(
+        node_codegen_output = self._extract(
             node=node,
             branch_state=FeatureByteBaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )
+        var_name_or_expr = node_codegen_output.var_name_or_expr
         output_df_name = global_state.code_generation_config.output_df_name
         output_var = VariableNameStr(subset_frame_column_expr(output_df_name, feature_name_version))
         global_state.code_generator.add_statements(statements=[(output_var, var_name_or_expr)])

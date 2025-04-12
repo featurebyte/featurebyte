@@ -15,6 +15,7 @@ from featurebyte.query_graph.node.date import (
 )
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerator,
+    NodeCodeGenOutput,
     VariableNameGenerator,
     VariableNameStr,
 )
@@ -26,6 +27,7 @@ def test_date_add(odfv_config, udf_config):
     """Test DateAddNode derive_on_demand_view_code"""
     node = DateAddNode(name="node_name", parameters={"value": None})
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
@@ -60,6 +62,7 @@ def test_date_difference(odfv_config, udf_config):
     """Test DateDifferenceNode derive_on_demand_view_code"""
     node = DateDifferenceNode(name="node_name", parameters={"value": None})
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
@@ -100,9 +103,10 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         name="node_name", parameters={"property": dt_property, "timezone_offset": None}
     )
     node_inputs = [VariableNameStr("feat")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr("feat")],
+        node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
         config=odfv_config,
     )
@@ -130,8 +134,10 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
     )
 
     # second input as timezone offset
+    node_inputs = [VariableNameStr("feat"), VariableNameStr("feat1")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr("feat"), VariableNameStr("feat1")],
+        node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
         config=odfv_config,
     )
@@ -142,7 +148,7 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
     assert odfv_expr == expected_odfv_expr
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
-        node_inputs=[VariableNameStr("feat"), VariableNameStr("feat1")],
+        node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
         config=udf_config,
     )
@@ -154,7 +160,7 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
         name="node_name", parameters={"property": dt_property, "timezone_offset": "+06:00"}
     )
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
-        node_inputs=[VariableNameStr("feat")],
+        node_inputs=node_inputs[:1],
         var_name_generator=VariableNameGenerator(),
         config=odfv_config,
     )
@@ -168,7 +174,7 @@ def test_datetime_extract(odfv_config, udf_config, dt_property):
     )
 
     udf_stats, udf_expr = node.derive_user_defined_function_code(
-        node_inputs=[VariableNameStr("feat")],
+        node_inputs=node_inputs[:1],
         var_name_generator=VariableNameGenerator(),
         config=udf_config,
     )
@@ -229,6 +235,7 @@ def test_time_delta_extract(
     # single input with no timezone offset
     node = TimeDeltaExtractNode(name="node_name", parameters={"property": td_property})
     node_inputs = [VariableNameStr("feat")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
@@ -270,6 +277,7 @@ def test_time_delta(odfv_config, udf_config, unit):
     """Test TimeDeltaNode derive_on_demand_view_code"""
     node = TimeDeltaNode(name="node_name", parameters={"unit": unit})
     node_inputs = [VariableNameStr("val")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,

@@ -6,7 +6,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    NodeCodeGenOutput,
+    VariableNameGenerator,
+    VariableNameStr,
+)
 from featurebyte.query_graph.node.string import (
     ConcatNode,
     LengthNode,
@@ -104,6 +108,7 @@ def test_derive_on_demand_view_code(
 ):
     """Test derive_on_demand_view_code"""
     node_inputs = [VariableNameStr("feat")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,

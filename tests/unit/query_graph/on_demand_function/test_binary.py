@@ -24,7 +24,11 @@ from featurebyte.query_graph.node.binary import (
     PowerNode,
     SubtractNode,
 )
-from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    NodeCodeGenOutput,
+    VariableNameGenerator,
+    VariableNameStr,
+)
 from tests.unit.query_graph.util import evaluate_and_compare_odfv_and_udf_results
 
 NODE_PARAMS = {"name": "node_name", "parameters": {"value": None}}
@@ -54,6 +58,7 @@ def test_derive_on_demand_function(
 ):
     """Test derive_on_demand_view_code"""
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
@@ -88,6 +93,7 @@ def test_derive_on_demand_function__isin_node(odfv_config, udf_config):
     """Test derive_on_demand_view_code (isin node)"""
     node = IsInNode(**NODE_PARAMS)
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
@@ -101,8 +107,10 @@ def test_derive_on_demand_function__isin_node(odfv_config, udf_config):
     assert odfv_stats == []
     assert odfv_expr == expected_odfv_expr
 
+    node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
+    node_inputs = [NodeCodeGenOutput(var_name_or_expr=node_input) for node_input in node_inputs]
     udf_stats, udf_expr = node.derive_user_defined_function_code(
-        node_inputs=[VariableNameStr("feat1"), VariableNameStr("feat2")],
+        node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
         config=udf_config,
     )

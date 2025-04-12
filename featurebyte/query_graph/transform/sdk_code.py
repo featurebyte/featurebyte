@@ -18,10 +18,10 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     CodeGenerator,
     ExpressionStr,
+    NodeCodeGenOutput,
     StatementStr,
     StatementT,
     VariableNameGenerator,
-    VarNameExpressionInfo,
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.schema import DatabaseDetails
@@ -45,7 +45,7 @@ class SDKCodeGlobalState(FeatureByteBaseModel):
         Code generator is used to generate final SDK codes from a list of statements & imports
     """
 
-    node_name_to_post_compute_output: Dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
+    node_name_to_post_compute_output: Dict[str, NodeCodeGenOutput] = Field(default_factory=dict)
     node_name_to_operation_structure: Dict[str, OperationStructure] = Field(default_factory=dict)
     code_generation_config: SDKCodeGenConfig = Field(default_factory=SDKCodeGenConfig)
     var_name_generator: VariableNameGenerator = Field(default_factory=VariableNameGenerator)
@@ -223,9 +223,9 @@ class SDKCodeExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: SDKCodeGlobalState,
         node: Node,
-        inputs: List[VarNameExpressionInfo],
+        inputs: List[NodeCodeGenOutput],
         skip_post: bool,
-    ) -> VarNameExpressionInfo:
+    ) -> NodeCodeGenOutput:
         if node.name in global_state.node_name_to_post_compute_output:
             return global_state.node_name_to_post_compute_output[node.name]
 
@@ -234,7 +234,7 @@ class SDKCodeExtractor(
 
         statements: List[StatementT]
         if node.name in global_state.no_op_node_names:
-            var_name_or_expr = inputs[0]
+            var_name_or_expr = inputs[0].var_name_or_expr
             statements = []
             if isinstance(var_name_or_expr, ExpressionStr):
                 new_var_name = global_state.var_name_generator.generate_variable_name(
@@ -257,12 +257,13 @@ class SDKCodeExtractor(
             )
 
         # update global state
+        post_compute_output = NodeCodeGenOutput(var_name_or_expr=var_name_or_expr)
         global_state.code_generator.add_statements(statements=statements)
-        global_state.node_name_to_post_compute_output[node.name] = var_name_or_expr
+        global_state.node_name_to_post_compute_output[node.name] = post_compute_output
 
         # return the output variable name or expression of current operation so that
         # it can be passed as `inputs` to the next node's post compute operation
-        return var_name_or_expr
+        return post_compute_output
 
     def extract(
         self,
@@ -296,12 +297,13 @@ class SDKCodeExtractor(
             query_graph=self.graph,
             node_name_to_operation_structure=op_struct_info.operation_structure_map,
         )
-        var_name_or_expr = self._extract(
+        node_codegen_output = self._extract(
             node=node,
             branch_state=FeatureByteBaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )
+        var_name_or_expr = node_codegen_output.var_name_or_expr
         final_output_name = global_state.code_generation_config.final_output_name
         output_var = global_state.var_name_generator.convert_to_variable_name(
             final_output_name, node_name=None
