@@ -175,6 +175,12 @@ async def test_observation_table_from_view(
     # check missing data table is None
     assert observation_table.cached_model.table_with_missing_data is None
 
+    # check point in time column is converted to timestamp type
+    point_in_time_info = next(
+        col for col in observation_table.columns_info if col.name == "POINT_IN_TIME"
+    )
+    assert point_in_time_info.dtype == DBVarType.TIMESTAMP
+
 
 @pytest.mark.asyncio
 async def test_observation_table_cleanup(scd_table, session, source_type):
