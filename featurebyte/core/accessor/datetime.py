@@ -419,11 +419,11 @@ class DatetimeAccessor:
         >>> view["TimestampSecond"] = view["Timestamp"].dt.second
         >>> view.preview(5).filter(regex="Timestamp")
                     Timestamp  TimestampSecond
-        0 2022-01-03 12:28:58               58
-        1 2022-01-03 16:32:15               15
-        2 2022-01-07 16:20:04                4
-        3 2022-01-10 16:18:32               32
-        4 2022-01-12 17:36:23               23
+        0 2022-01-03 12:28:58             58.0
+        1 2022-01-03 16:32:15             15.0
+        2 2022-01-07 16:20:04              4.0
+        3 2022-01-10 16:18:32             32.0
+        4 2022-01-12 17:36:23             23.0
         """
         return self._make_operation("second")
 
