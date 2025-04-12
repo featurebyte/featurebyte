@@ -23,7 +23,7 @@ from typing import (
 from pydantic import Field
 from typing_extensions import Annotated, Literal
 
-from featurebyte.enum import DBVarType, SpecialColumnName, ViewMode
+from featurebyte.enum import DBVarType, SourceType, SpecialColumnName, ViewMode
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import (
     FEAST_TIMESTAMP_POSTFIX,
@@ -31,6 +31,7 @@ from featurebyte.query_graph.enum import (
     NodeOutputType,
     NodeType,
 )
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
@@ -63,6 +64,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
+from featurebyte.session.time_formatter import convert_time_format
 from featurebyte.typing import Scalar
 
 
@@ -187,6 +189,7 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     output_dtype: DBVarType
     primary_entity_dtypes: List[DBVarType]
     null_filling_value: Optional[Scalar] = Field(default=None)
+    dtype_info: Optional[DBVarTypeInfo] = Field(default=None)
 
 
 class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraphNodeParameters):
@@ -680,6 +683,8 @@ class BaseGraphNode(BasePrunableNode):
         ttl_handling_column: str,
         ttl_seconds: int,
         is_databricks_udf: bool,
+        dtype_info: Optional[DBVarTypeInfo],
+        source_type: Optional[SourceType],
     ) -> List[StatementT]:
         # need to apply TTL handling on the input column
         var_name_map = {}
@@ -690,6 +695,20 @@ class BaseGraphNode(BasePrunableNode):
 
         # add comments
         statements.append(CommentStr(f"TTL handling for {ttl_handling_column} column"))
+
+        # check additional arguments for to_datetime
+        to_datetime_kwargs = {}
+        if (
+            source_type
+            and dtype_info
+            and dtype_info.timestamp_schema
+            and dtype_info.timestamp_schema.format_string
+        ):
+            # if the timestamp format is provided, use it to convert the timestamp to datetime
+            to_datetime_kwargs["format"] = convert_time_format(
+                source_type=source_type,
+                format_string=dtype_info.timestamp_schema.format_string,
+            )
 
         statements.append(  # request_time = pd.to_datetime(input_df_name["POINT_IN_TIME"])
             (
@@ -702,6 +721,7 @@ class BaseGraphNode(BasePrunableNode):
                         )
                     ),
                     to_handle_none=is_databricks_udf,
+                    **to_datetime_kwargs,
                 ),
             )
         )
@@ -750,6 +770,8 @@ class BaseGraphNode(BasePrunableNode):
         ttl_handling_column: str,
         cron_expression: str,
         cron_timezone: str,
+        dtype_info: Optional[DBVarTypeInfo],
+        source_type: Optional[SourceType],
     ) -> List[StatementT]:
         var_name_map = {}
         for var_name in ["cron", "prev_time", "feat_ts", "mask"]:
@@ -819,6 +841,8 @@ class BaseGraphNode(BasePrunableNode):
         config_for_ttl: Optional[OnDemandViewCodeGenConfig] = None,
         ttl_handling_column: Optional[str] = None,
         ttl_seconds: Optional[int] = None,
+        dtype_info: Optional[DBVarTypeInfo] = None,
+        source_type: Optional[SourceType] = None,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if self.parameters.type != GraphNodeType.OFFLINE_STORE_INGEST_QUERY:
             raise RuntimeError("BaseGroupNode._derive_on_demand_view_code should not be called!")
@@ -848,6 +872,8 @@ class BaseGraphNode(BasePrunableNode):
                     ttl_handling_column=ttl_handling_column,
                     ttl_seconds=ttl_seconds,
                     is_databricks_udf=is_databricks_udf,
+                    dtype_info=dtype_info,
+                    source_type=source_type,
                 )
 
             if isinstance(node_params.feature_job_setting, CronFeatureJobSetting):
@@ -859,13 +885,33 @@ class BaseGraphNode(BasePrunableNode):
                     ttl_handling_column=ttl_handling_column,
                     cron_expression=node_params.feature_job_setting.get_cron_expression(),
                     cron_timezone=node_params.feature_job_setting.timezone,
+                    dtype_info=dtype_info,
+                    source_type=source_type,
                 )
 
         if node_params.output_dtype in DBVarType.supported_timestamp_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
+            # check additional arguments for to_datetime
+            to_datetime_kwargs = {}
+            if (
+                source_type
+                and dtype_info
+                and dtype_info.timestamp_schema
+                and dtype_info.timestamp_schema.format_string
+            ):
+                # if the timestamp format is provided, use it to convert the timestamp to datetime
+                to_datetime_kwargs["format"] = convert_time_format(
+                    source_type=source_type,
+                    format_string=dtype_info.timestamp_schema.format_string,
+                )
+
             statements.append((
                 var_name,
-                self._to_datetime_expr(input_var_name_expr, to_handle_none=is_databricks_udf),
+                self._to_datetime_expr(
+                    input_var_name_expr,
+                    to_handle_none=is_databricks_udf,
+                    **to_datetime_kwargs,
+                ),
             ))
             return statements, var_name
 
@@ -915,6 +961,8 @@ class BaseGraphNode(BasePrunableNode):
             ttl_handling_column=ttl_handling_column,
             ttl_seconds=ttl_seconds,
             is_databricks_udf=False,
+            dtype_info=self.parameters.dtype_info,
+            source_type=config.source_type,
         )
 
     def _derive_user_defined_function_code(
@@ -923,9 +971,8 @@ class BaseGraphNode(BasePrunableNode):
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        output_dtype = cast(
-            OfflineStoreIngestQueryGraphNodeParameters, self.parameters
-        ).output_dtype
+        parameters = cast(OfflineStoreIngestQueryGraphNodeParameters, self.parameters)
+        output_dtype = parameters.output_dtype
         associated_node_name = None
         if (
             output_dtype not in DBVarType.supported_timestamp_types()
@@ -947,4 +994,6 @@ class BaseGraphNode(BasePrunableNode):
                 f"{val.as_input()} if pd.isna({expr}) else {expr}"
             ),
             is_databricks_udf=True,
+            dtype_info=parameters.dtype_info,
+            source_type=config.source_type,
         )

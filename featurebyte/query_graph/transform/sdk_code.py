@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from bson import ObjectId
 from pydantic import Field
 
+from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
@@ -278,6 +279,7 @@ class SDKCodeExtractor(
         table_id_to_info: Optional[Dict[ObjectId, Dict[str, Any]]] = None,
         output_id: Optional[ObjectId] = None,
         last_statement_callback: Optional[Any] = None,
+        source_type: Optional[SourceType] = None,
         **kwargs: Any,
     ) -> SDKCodeGlobalState:
         op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
@@ -291,6 +293,8 @@ class SDKCodeExtractor(
             code_generation_config["database_details"] = database_details
         if table_id_to_info:
             code_generation_config["table_id_to_info"] = table_id_to_info
+        if source_type:
+            code_generation_config["source_type"] = source_type
 
         global_state = SDKCodeGlobalState(
             node_name_to_operation_structure=op_struct_info.operation_structure_map,

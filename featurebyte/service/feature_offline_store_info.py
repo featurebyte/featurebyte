@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from bson import ObjectId
 
+from featurebyte.enum import SourceType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.offline_store_ingest_query import (
@@ -30,6 +31,7 @@ from featurebyte.query_graph.transform.offline_store_ingest import (
 )
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.offline_store_feature_table_construction import (
     OfflineStoreFeatureTableConstructionService,
@@ -47,6 +49,7 @@ class OfflineStoreInfoInitializationService:
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         offline_store_feature_table_construction_service: OfflineStoreFeatureTableConstructionService,
         entity_serving_names_service: EntityServingNamesService,
+        feature_store_service: FeatureStoreService,
     ) -> None:
         self.catalog_service = catalog_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
@@ -54,6 +57,7 @@ class OfflineStoreInfoInitializationService:
             offline_store_feature_table_construction_service
         )
         self.entity_serving_names_service = entity_serving_names_service
+        self.feature_store_service = feature_store_service
 
     async def offline_store_feature_table_creator(
         self,
@@ -108,6 +112,7 @@ class OfflineStoreInfoInitializationService:
         node_name: str,
         catalog_id: ObjectId,
         table_name_prefix: str,
+        source_type: SourceType,
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]] = None,
         dry_run: bool = False,
     ) -> Tuple[QueryGraphModel, str]:
@@ -124,6 +129,8 @@ class OfflineStoreInfoInitializationService:
             Catalog id
         table_name_prefix: str
             Registry project name
+        source_type: SourceType
+            Source type
         entity_id_to_serving_name: Optional[Dict[ObjectId, str]]
             Entity id to serving name mapping
         dry_run: bool
@@ -155,7 +162,8 @@ class OfflineStoreInfoInitializationService:
                 node_params = node.parameters
                 extractor = NullFillingValueExtractor(graph=node_params.graph)
                 state = extractor.extract(
-                    node=node_params.graph.get_node_by_name(node_params.output_node_name)
+                    node=node_params.graph.get_node_by_name(node_params.output_node_name),
+                    source_type=source_type,
                 )
                 node.parameters.null_filling_value = state.fill_value
 
@@ -233,6 +241,12 @@ class OfflineStoreInfoInitializationService:
                 )
             )
 
+        catalog = await self.catalog_service.get_document(feature.catalog_id)
+        feature_store = await self.feature_store_service.get_document(
+            catalog.default_feature_store_ids[0]
+        )
+        source_type = feature_store.get_source_info().source_type
+
         transformer = OfflineStoreIngestQueryGraphTransformer(graph=feature.graph)
         assert feature.name is not None
         result = transformer.transform(
@@ -245,7 +259,9 @@ class OfflineStoreInfoInitializationService:
         null_filling_value = None
         if not dry_run:
             null_filling_value = (
-                NullFillingValueExtractor(graph=feature.graph).extract(node=feature.node).fill_value
+                NullFillingValueExtractor(graph=feature.graph)
+                .extract(node=feature.node, source_type=source_type)
+                .fill_value
             )
 
         has_ttl = feature.has_bounded_window_aggregated_node
@@ -255,6 +271,7 @@ class OfflineStoreInfoInitializationService:
                 node_name=result.node_name_map[feature.node.name],
                 catalog_id=feature.catalog_id,
                 table_name_prefix=table_name_prefix,
+                source_type=source_type,
                 entity_id_to_serving_name=entity_id_to_serving_name,
                 dry_run=dry_run,
             )
@@ -316,6 +333,7 @@ class OfflineStoreInfoInitializationService:
                 feature_id=feature.id,
                 has_ttl=has_ttl,
                 null_filling_value=null_filling_value,
+                source_type=source_type,
             )
 
         return offline_store_info

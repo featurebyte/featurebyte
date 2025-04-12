@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 from pydantic import Field
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
@@ -37,6 +37,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VarNameExpressionInfo,
     get_object_class_from_function_call,
 )
+from featurebyte.session.time_formatter import convert_time_format
 from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 
 
@@ -333,6 +334,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         self,
         node_inputs: List[NodeCodeGenOutput],
         sdk_code: bool,
+        source_type: Optional[SourceType],
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if len(node_inputs) == 1:
             # we don't allow subtracting timestamp with a scalar timedelta through SDK
@@ -344,10 +346,29 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         statements: List[StatementT] = []
         if sdk_code:
             expr = ExpressionStr(f"{left_operand} - {right_operand}")
-        else:
-            expr = ExpressionStr(
-                f"pd.to_datetime({left_operand}, utc=True) - pd.to_datetime({right_operand}, utc=True)"
+            return statements, expr
+
+        left_timestamp_schema = self.parameters.left_timestamp_schema
+        if left_timestamp_schema and left_timestamp_schema.format_string and source_type:
+            py_format_string = convert_time_format(
+                source_type=source_type, format_string=left_timestamp_schema.format_string
             )
+            left_operand = f"pd.to_datetime({left_operand}, utc=True, format='{py_format_string}')"
+        else:
+            left_operand = f"pd.to_datetime({left_operand}, utc=True)"
+
+        right_timestamp_schema = self.parameters.right_timestamp_schema
+        if right_timestamp_schema and right_timestamp_schema.format_string and source_type:
+            py_format_string = convert_time_format(
+                source_type=source_type, format_string=right_timestamp_schema.format_string
+            )
+            right_operand = (
+                f"pd.to_datetime({right_operand}, utc=True, format='{py_format_string}')"
+            )
+        else:
+            right_operand = f"pd.to_datetime({right_operand}, utc=True)"
+
+        expr = ExpressionStr(f"{left_operand} - {right_operand}")
         return statements, expr
 
     def _derive_sdk_code(
@@ -359,7 +380,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, operation_structure, config, context
-        return self._derive_python_code(node_inputs, sdk_code=True)
+        return self._derive_python_code(node_inputs, sdk_code=True, source_type=config.source_type)
 
     def _derive_on_demand_view_code(
         self,
@@ -368,7 +389,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
-        return self._derive_python_code(node_inputs, sdk_code=False)
+        return self._derive_python_code(node_inputs, sdk_code=False, source_type=config.source_type)
 
     def _derive_user_defined_function_code(
         self,
@@ -377,7 +398,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
-        return self._derive_python_code(node_inputs, sdk_code=False)
+        return self._derive_python_code(node_inputs, sdk_code=False, source_type=config.source_type)
 
 
 class TimeDeltaNode(BaseSeriesOutputNode):

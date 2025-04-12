@@ -13,7 +13,7 @@ from pydantic_extra_types.timezone_name import TimeZoneName
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.validator import construct_sort_validator
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.mixin import QueryGraphMixin
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
@@ -308,6 +308,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         feature_id: ObjectId,
         has_ttl: bool,
         null_filling_value: Optional[Scalar] = None,
+        source_type: Optional[SourceType] = None,
     ) -> None:
         """
         Initialize offline store info by populating the on demand feature view info and user defined function info
@@ -326,6 +327,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             Whether the feature has time-to-live (TTL) component
         null_filling_value: Optional[Scalar]
             Null filling value
+        source_type: Optional[SourceType]
+            Source type of the feature
         """
         self.time_to_live_in_secs = None
         self.null_filling_value = null_filling_value
@@ -354,6 +357,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                 output_df_name=odfv_info.output_df_name,
                 function_name=odfv_info.function_name,
                 ttl_seconds=self.time_to_live_in_secs,
+                source_type=source_type,
             )
             self.odfv_info = odfv_info
 
@@ -420,6 +424,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         output_df_name: str = "df",
         function_name: str = "on_demand_feature_view",
         ttl_seconds: Optional[int] = None,
+        source_type: Optional[SourceType] = None,
     ) -> str:
         """
         Extract on demand view graphs from the feature or target query graph
@@ -436,20 +441,25 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             Function name
         ttl_seconds: Optional[int]
             Time-to-live (TTL) in seconds
+        source_type: Optional[SourceType]
+            Source type of the feature
 
         Returns
         -------
         str
             Generated code
         """
+        node = self.graph.get_node_by_name(self.node_name)
+        operation_structure_info = self.graph.extract_operation_structure_info(node=node)
         if self.is_decomposed:
-            node = self.graph.get_node_by_name(self.node_name)
             codegen_state = OnDemandFeatureViewExtractor(graph=self.graph).extract(
                 node=node,
                 input_df_name=input_df_name,
                 output_df_name=output_df_name,
                 on_demand_function_name=function_name,
                 feature_name_version=feature_versioned_name,
+                source_type=source_type,
+                operation_structure_map=operation_structure_info.operation_structure_map,
             )
             code_generator = codegen_state.code_generator
         else:
@@ -508,6 +518,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             "input_var_prefix": input_var_prefix,
             "request_input_var_prefix": request_input_var_prefix,
             "output_dtype": output_dtype,
+            "source_type": SourceType.DATABRICKS,
         }
         if self.is_decomposed:
             node = self.graph.get_node_by_name(self.node_name)

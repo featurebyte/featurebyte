@@ -235,6 +235,7 @@ class OfflineStoreIngestQueryGraphTransformer(
             "has_ttl": aggregation_info.has_ttl_agg_type,
             "offline_store_table_name": "",  # will be set later
             "output_dtype": output_dtype,
+            "dtype_info": operation_structure.series_output_dtype_info,
         }
         return parameters
 
@@ -247,15 +248,14 @@ class OfflineStoreIngestQueryGraphTransformer(
         aggregation_info = global_state.decompose_point_info.node_name_to_aggregation_info[
             node_name
         ]
+        operation_structure = global_state.decompose_point_info.operation_structure_map[node_name]
         other_params = self._prepare_offline_store_ingest_query_specific_node_parameters(
             subgraph=subgraph,
             subgraph_output_node=subgraph_output_node,
             node_name_to_subgraph_node_name=node_name_map,
             aggregation_node_names=global_state.decompose_point_info.aggregation_node_names,
             aggregation_info=aggregation_info,
-            operation_structure=global_state.decompose_point_info.operation_structure_map[
-                node_name
-            ],
+            operation_structure=operation_structure,
         )
         part_num = global_state.ingest_graph_node_counter
         column_name = (

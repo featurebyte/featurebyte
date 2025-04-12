@@ -8,6 +8,7 @@ import textwrap
 import pytest
 from bson import ObjectId
 
+from featurebyte import SourceType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.node.distance import HaversineNode
@@ -95,7 +96,7 @@ def test_alias_node(
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=tuple(),
         ),
-        config=SDKCodeGenConfig(),
+        config=SDKCodeGenConfig(source_type=SourceType.SNOWFLAKE),
         context=CodeGenerationContext(as_info_dict=False, required_copy=required_copy),
     )
     assert statements == expected_statements
@@ -163,7 +164,7 @@ def test_assign_node(
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=tuple(),
         ),
-        config=SDKCodeGenConfig(),
+        config=SDKCodeGenConfig(source_type=SourceType.SNOWFLAKE),
         context=CodeGenerationContext(as_info_dict=False, required_copy=required_copy),
     )
     assert statements == expected_statements
@@ -190,7 +191,7 @@ def test_vector_node(node_code_gen_output_factory):
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=tuple(),
         ),
-        config=SDKCodeGenConfig(),
+        config=SDKCodeGenConfig(source_type=SourceType.SNOWFLAKE),
         context=CodeGenerationContext(as_info_dict=False, required_copy=False),
     )
     assert statements == []
@@ -220,7 +221,7 @@ def test_lookup_target_node(node_code_gen_output_factory):
             output_category=NodeOutputCategory.TARGET,
             row_index_lineage=tuple(),
         ),
-        config=SDKCodeGenConfig(),
+        config=SDKCodeGenConfig(source_type=SourceType.SNOWFLAKE),
         context=CodeGenerationContext(as_info_dict=False, required_copy=False),
     )
     assert (
@@ -251,7 +252,7 @@ def test_haversine_node(node_code_gen_output_factory):
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=tuple(),
         ),
-        config=SDKCodeGenConfig(),
+        config=SDKCodeGenConfig(source_type=SourceType.SNOWFLAKE),
         context=CodeGenerationContext(as_info_dict=False, required_copy=False),
     )
     assert len(statements) == 1
@@ -375,7 +376,7 @@ def test_conditional(
             output_category=NodeOutputCategory.VIEW,
             row_index_lineage=tuple(),
         ),
-        config=SDKCodeGenConfig(),
+        config=SDKCodeGenConfig(source_type=SourceType.SNOWFLAKE),
         context=CodeGenerationContext(as_info_dict=as_info_dict, required_copy=required_copy),
     )
     assert statements == expected_statements

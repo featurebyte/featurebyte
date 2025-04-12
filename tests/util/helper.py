@@ -1025,10 +1025,10 @@ async def get_relationship_info(app_container, child_entity_id, parent_entity_id
     raise AssertionError("Relationship not found")
 
 
-def check_null_filling_value(graph, node_name, expected_value):
+def check_null_filling_value(graph, node_name, expected_value, source_type=SourceType.SNOWFLAKE):
     """Check that the null filling value is correctly extracted from the graph"""
     node = graph.get_node_by_name(node_name)
-    state = NullFillingValueExtractor(graph=graph).extract(node=node)
+    state = NullFillingValueExtractor(graph=graph).extract(node=node, source_type=source_type)
     assert state.fill_value == expected_value, state
 
 

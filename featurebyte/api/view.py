@@ -1895,6 +1895,7 @@ class View(ProtectedColumnsQueryObject, Frame, SampleMixin, ABC):
             primary_entities,
             sample_from_timestamp,
             sample_to_timestamp,
+            source_type=self.feature_store.get_source_info().source_type,
         )
 
         payload = ObservationTableCreate(

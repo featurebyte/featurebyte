@@ -233,6 +233,7 @@ class QueryObject(FeatureByteBaseModel):
             "feature_store_id": self.feature_store.id,
             "database_details": self.feature_store.get_feature_store_details().details,
             "table_id_to_info": table_id_to_info or {},
+            "source_type": self.feature_store.get_source_info().source_type,
         }
         state = SDKCodeExtractor(graph=pruned_graph).extract(node=node, **extract_kwargs)
         return state.code_generator.generate(

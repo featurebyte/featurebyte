@@ -1504,7 +1504,9 @@ async def test_new_deployment_when_all_features_already_deployed(
 
 
 @pytest.mark.asyncio
-async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
+async def test_multiple_parts_in_same_feature_table(
+    test_dir, persistent, user, snowflake_feature_store
+):
     """
     Test feature table creation when a feature has multiple parts in the same table
     """
@@ -1530,7 +1532,7 @@ async def test_multiple_parts_in_same_feature_table(test_dir, persistent, user):
         data=CatalogCreate(
             _id=catalog_id,
             name="test_catalog",
-            default_feature_store_ids=["6597cfcb357720b529a10196"],
+            default_feature_store_ids=[snowflake_feature_store.id],
         )
     )
 

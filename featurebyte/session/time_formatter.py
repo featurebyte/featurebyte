@@ -5,6 +5,8 @@ Time formatter for converting different time formats to a standard python format
 import re
 from typing import Any
 
+from featurebyte.enum import SourceType
+
 
 def _generic_format_converter(
     format_str: str, token_map: list[tuple[str, str]], to_strip_quote: bool
@@ -215,3 +217,29 @@ def convert_bigquery_time_format_to_python(bigquery_format: str) -> str:
         ("%B", "%B"),
     ]
     return _generic_format_converter(bigquery_format, bigquery_tokens, to_strip_quote=False)
+
+
+def convert_time_format(source_type: SourceType, format_string: str) -> str:
+    """
+    Converts a time format string from a specific source type to a standard Python format.
+
+    Parameters
+    ----------
+    source_type : SourceType
+        The source type (e.g., Java, Snowflake, BigQuery).
+    format_string : str
+        The original format string.
+
+    Returns
+    -------
+    str
+        The converted Python-compatible format string.
+    """
+    if source_type in SourceType.java_time_format_types():
+        return convert_java_time_format_to_python(format_string)
+    elif source_type == SourceType.SNOWFLAKE:
+        return convert_snowflake_time_format_to_python(format_string)
+    elif source_type == SourceType.BIGQUERY:
+        return convert_bigquery_time_format_to_python(format_string)
+    else:
+        raise ValueError(f"Unsupported source type: {source_type}")

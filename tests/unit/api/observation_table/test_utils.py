@@ -4,7 +4,7 @@ Test observation table utils
 
 import textwrap
 
-from featurebyte import Context, get_version
+from featurebyte import Context, SourceType, get_version
 from featurebyte.api.obs_table.utils import get_definition_for_obs_table_creation_from_view
 
 
@@ -35,6 +35,7 @@ def test_get_definition_for_obs_table_creation_from_view(
         skip_entity_validation_checks=True,
         primary_entities=[cust_id_entity.name],
         sample_from_timestamp="2021-01-01T13:15:00",
+        source_type=SourceType.SNOWFLAKE,
     )
     version = get_version()
     expected_definition = f"""

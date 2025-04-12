@@ -524,6 +524,17 @@ class SourceType(StrEnum):
     TEST = "test", "For testing only."
 
     @classmethod
+    def java_time_format_types(cls) -> set[str]:
+        """
+        Java time format source types
+
+        Returns
+        -------
+        set[str]
+        """
+        return {cls.DATABRICKS, cls.DATABRICKS_UNITY, cls.SPARK}
+
+    @classmethod
     def credential_required_types(cls) -> list[str]:
         """
         List all types that require credential

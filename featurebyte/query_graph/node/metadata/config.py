@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.node.schema import DatabaseDetails
 
@@ -21,9 +21,12 @@ class BaseCodeGenConfig(BaseModel):
     max_expression_length: int
         Maximum expression length used to decide whether to assign the expression into a variable
         to reduce overall statement's line width.
+    source_type: Optional[SourceType]
+        Source type (feature store)
     """
 
     max_expression_length: int = Field(default=40)
+    source_type: SourceType
 
 
 class OnDemandViewCodeGenConfig(BaseCodeGenConfig):
@@ -37,6 +40,7 @@ class OnDemandViewCodeGenConfig(BaseCodeGenConfig):
     input_df_name: str = Field(default="inputs")
     output_df_name: str = Field(default="df")
     on_demand_function_name: str = Field(default="on_demand_feature_view")
+    operation_structure_map: dict[str, Any] = Field(default_factory=dict)
 
 
 class OnDemandFunctionCodeGenConfig(BaseCodeGenConfig):
