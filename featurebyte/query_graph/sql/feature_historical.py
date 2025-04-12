@@ -224,7 +224,7 @@ def validate_historical_requests_point_in_time(observation_set: ObservationSet) 
     """
     # Latest point in time must be older than 48 hours
     latest_point_in_time = observation_set.most_recent_point_in_time
-    recency = datetime.datetime.now() - latest_point_in_time
+    recency = datetime.datetime.utcnow() - latest_point_in_time
     if recency <= pd.Timedelta(HISTORICAL_REQUESTS_POINT_IN_TIME_RECENCY_HOUR, unit="h"):
         raise TooRecentPointInTimeError(
             f"The latest point in time ({latest_point_in_time}) should not be more recent than "
