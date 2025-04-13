@@ -21,7 +21,7 @@ from featurebyte.query_graph.enum import NodeType
         (DBVarType.TIMESTAMP, FeatureType.OTHERS),
         (DBVarType.TIMESTAMP_TZ, FeatureType.OTHERS),
         # (DBVarType.VARCHAR, FeatureType.TEXT),
-        (DBVarType.ARRAY, FeatureType.EMBEDDING),
+        (DBVarType.ARRAY, FeatureType.OTHERS),
         (DBVarType.DICT, FeatureType.DICT),
         (DBVarType.TIMEDELTA, FeatureType.NUMERIC),
         (DBVarType.EMBEDDING, FeatureType.EMBEDDING),

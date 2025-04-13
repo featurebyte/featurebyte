@@ -420,7 +420,7 @@ class FeatureType(StrEnum):
         -------
         set[DBVarType]
         """
-        return {DBVarType.EMBEDDING, DBVarType.ARRAY}
+        return {DBVarType.EMBEDDING}
 
 
 class TargetType(StrEnum):
