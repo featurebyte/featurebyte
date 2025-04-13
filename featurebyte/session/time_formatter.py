@@ -132,6 +132,12 @@ def convert_snowflake_time_format_to_python(snowflake_format: str) -> str:
     # Note: For some cases like Day of week, Snowflake uses "DY" for full name & abbreviated name.
     # When mapping to Python, we only map to abbreviated name.
     snowflake_tokens = [
+        # Time‑zone offsets (must come before shorter tokens)
+        ("TZH:TZM", "%z"),  # e.g. +05:30 or -07:00
+        ("TZHTZM", "%z"),  # e.g. +0530 or -0700
+        ("TZH", "%z"),  # e.g. +05 or -07 (minutes assumed 00)
+        # Time‑zone region name
+        ("TZR", "%Z"),  # e.g. America/Chicago
         # Year
         ("YYYY", "%Y"),
         ("YYY", "%Y"),  # fallback

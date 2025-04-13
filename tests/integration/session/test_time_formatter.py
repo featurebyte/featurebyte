@@ -7,6 +7,7 @@ import pytest
 from sqlglot import expressions
 
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.session.time_formatter import (
     convert_bigquery_time_format_to_python,
     convert_java_time_format_to_python,
@@ -29,6 +30,8 @@ def test_cases_map_fixture():
         ("YYYY-MM-DD HH24:MI:SS.FF6", "2022-12-31 23:59:59.123456"),
         ("YY-MM-DD HH24:MI", "22-12-31 23:59"),
         ("YYYY-MM-DDTHH24:MI:SS", "2022-12-31T23:59:59"),
+        ("YYYY-MM-DD HH24:MI:SS TZHTZM", "2022-12-31 23:59:59 +0530"),
+        ("YYYY-MM-DD HH24:MI:SS TZH:TZM", "2022-12-31 23:59:59 -07:00"),
     ]
     spark_test_cases = [
         ("yyyy-MM-dd", "2025-04-07"),
@@ -85,7 +88,7 @@ async def test_convert_time_format_to_python(
                 alias=column_name,
             )
         )
-        union_queries.append(sql_stat.sql())
+        union_queries.append(sql_to_string(sql_stat, source_type))
 
     sql_query = "\n UNION ALL \n".join(union_queries)
     results = await db_session.execute_query(sql_query)
@@ -104,7 +107,13 @@ async def test_convert_time_format_to_python(
     time_format_pairs = []
     for time_format, time_string in test_cases_map[source_type]:
         py_time_format = converter(time_format)
-        values.append(datetime.strptime(time_string, py_time_format))
+        dt = datetime.strptime(time_string, py_time_format)
+
+        # ─── STRIP OFF tzinfo FOR SNOWFLAKE OFFSET TOKENS ────────────────────
+        if source_type == SNOWFLAKE and "%z" in py_time_format:
+            dt = dt.replace(tzinfo=None)
+
+        values.append(dt)
         time_format_pairs.append((time_format, py_time_format))
 
     # for debugging only
