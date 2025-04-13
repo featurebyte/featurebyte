@@ -13,6 +13,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import FEAST_TIMESTAMP_POSTFIX
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandViewCodeGenConfig
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerator,
     NodeCodeGenOutput,
@@ -23,6 +24,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
 )
 from featurebyte.query_graph.node.utils import subset_frame_column_expr
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.typing import Scalar
 
 
@@ -31,6 +33,7 @@ class OnDemandFeatureViewGlobalState(FeatureByteBaseModel):
     On demand feature view global state
     """
 
+    node_name_to_operation_structure: Dict[str, OperationStructure]
     node_name_to_post_compute_output: Dict[str, NodeCodeGenOutput] = Field(default_factory=dict)
     code_generation_config: OnDemandViewCodeGenConfig = Field(
         default_factory=OnDemandViewCodeGenConfig
@@ -86,7 +89,10 @@ class OnDemandFeatureViewExtractor(
         )
 
         # update global state
-        post_compute_output = NodeCodeGenOutput(var_name_or_expr=var_name_or_expr)
+        post_compute_output = NodeCodeGenOutput(
+            var_name_or_expr=var_name_or_expr,
+            operation_structure=global_state.node_name_to_operation_structure[node.name],
+        )
         global_state.code_generator.add_statements(statements=statements)
         global_state.node_name_to_post_compute_output[node.name] = post_compute_output
 
@@ -236,7 +242,9 @@ class OnDemandFeatureViewExtractor(
     def extract(self, node: Node, **kwargs: Any) -> OnDemandFeatureViewGlobalState:
         feature_name_version = kwargs.get("feature_name_version", None)
         assert feature_name_version is not None, "feature_name_version must be provided"
+        op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
         global_state = OnDemandFeatureViewGlobalState(
+            node_name_to_operation_structure=op_struct_info.operation_structure_map,
             code_generation_config=OnDemandViewCodeGenConfig(**kwargs),
         )
         node_codegen_output = self._extract(

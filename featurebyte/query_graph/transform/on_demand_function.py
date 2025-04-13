@@ -11,6 +11,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandFunctionCodeGenConfig
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerator,
     NodeCodeGenOutput,
@@ -23,6 +24,7 @@ from featurebyte.query_graph.node.nested import (
 )
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
 class InputArgumentInfo(FeatureByteBaseModel):
@@ -48,6 +50,7 @@ class OnDemandFeatureFunctionGlobalState(FeatureByteBaseModel):
     On demand feature function global state
     """
 
+    node_name_to_operation_structure: Dict[str, OperationStructure]
     node_name_to_post_compute_output: Dict[str, NodeCodeGenOutput] = Field(default_factory=dict)
     input_var_name_to_info: Dict[str, InputArgumentInfo] = Field(default_factory=dict)
     code_generation_config: OnDemandFunctionCodeGenConfig = Field(
@@ -230,7 +233,10 @@ class OnDemandFeatureFunctionExtractor(
         )
 
         # update global state
-        post_compute_output = NodeCodeGenOutput(var_name_or_expr=var_name_or_expr)
+        post_compute_output = NodeCodeGenOutput(
+            var_name_or_expr=var_name_or_expr,
+            operation_structure=global_state.node_name_to_operation_structure[node.name],
+        )
         global_state.code_generator.add_statements(statements=statements)
         global_state.node_name_to_post_compute_output[node.name] = post_compute_output
         self._check_for_input_argument_registration(node=node, global_state=global_state)
@@ -255,8 +261,10 @@ class OnDemandFeatureFunctionExtractor(
         OnDemandFeatureFunctionGlobalState
             On demand function global state
         """
+        op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
         code_generation_config = OnDemandFunctionCodeGenConfig(**kwargs)
         global_state = OnDemandFeatureFunctionGlobalState(
+            node_name_to_operation_structure=op_struct_info.operation_structure_map,
             code_generation_config=code_generation_config,
             var_name_generator=VariableNameGenerator(one_based=True),
         )

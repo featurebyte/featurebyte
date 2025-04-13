@@ -257,7 +257,10 @@ class SDKCodeExtractor(
             )
 
         # update global state
-        post_compute_output = NodeCodeGenOutput(var_name_or_expr=var_name_or_expr)
+        post_compute_output = NodeCodeGenOutput(
+            var_name_or_expr=var_name_or_expr,
+            operation_structure=global_state.node_name_to_operation_structure[node.name],
+        )
         global_state.code_generator.add_statements(statements=statements)
         global_state.node_name_to_post_compute_output[node.name] = post_compute_output
 
