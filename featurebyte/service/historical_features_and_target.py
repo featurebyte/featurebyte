@@ -11,6 +11,7 @@ import pandas as pd
 from bson import ObjectId
 from redis import Redis
 
+from featurebyte.common.env_util import is_feature_query_debug_enabled
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.logging import get_logger
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -23,7 +24,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
-from featurebyte.query_graph.sql.cron import get_cron_feature_job_settings
+from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
 from featurebyte.query_graph.sql.feature_historical import (
     PROGRESS_MESSAGE_COMPUTING_FEATURES,
     PROGRESS_MESSAGE_COMPUTING_TARGET,
@@ -123,7 +124,7 @@ async def compute_tiles_on_demand(
         )
     finally:
         logger.info("Cleaning up tables in historical_features_and_target.compute_tiles_on_demand")
-        if parent_serving_preparation is not None:
+        if parent_serving_preparation is not None and not is_feature_query_debug_enabled():
             logger.info("Dropping parent serving table")
             await session.drop_table(
                 table_name=effective_request_table_name,
@@ -285,30 +286,14 @@ async def get_historical_features(
         feature_compute_seconds = time.time() - tic
         logger.debug(f"compute_historical_features in total took {feature_compute_seconds:.2f}s")
     finally:
-        logger.info("Cleaning up tables in get_historical_features")
-        await session.drop_table(
-            table_name=request_table_name,
-            schema_name=session.schema_name,
-            database_name=session.database_name,
-            if_exists=True,
-        )
-        async for warehouse_table in warehouse_table_service.list_warehouse_tables_by_tag(
-            temp_tile_tables_tag
-        ):
-            await warehouse_table_service.drop_table_with_session(
+        if not is_feature_query_debug_enabled():
+            await cleanup_historical_features_temp_tables(
                 session=session,
-                feature_store_id=feature_store.id,
-                table_name=warehouse_table.location.table_details.table_name,
-                schema_name=warehouse_table.location.table_details.schema_name,
-                database_name=warehouse_table.location.table_details.database_name,
-                if_exists=True,
-            )
-        for job_schedule_table in job_schedule_table_set.tables:
-            await session.drop_table(
-                table_name=job_schedule_table.table_name,
-                schema_name=session.schema_name,
-                database_name=session.database_name,
-                if_exists=True,
+                feature_store=feature_store,
+                warehouse_table_service=warehouse_table_service,
+                request_table_name=request_table_name,
+                temp_tile_tables_tag=temp_tile_tables_tag,
+                job_schedule_table_set=job_schedule_table_set,
             )
 
     return HistoricalFeaturesMetrics(
@@ -316,6 +301,59 @@ async def get_historical_features(
         tile_compute_metrics=tile_compute_result.tile_compute_metrics,
         feature_compute_seconds=feature_compute_seconds,
     )
+
+
+async def cleanup_historical_features_temp_tables(
+    session: BaseSession,
+    feature_store: FeatureStoreModel,
+    warehouse_table_service: WarehouseTableService,
+    request_table_name: str,
+    temp_tile_tables_tag: str,
+    job_schedule_table_set: JobScheduleTableSet,
+) -> None:
+    """
+    Cleanup historical features temporary tables
+
+    Parameters
+    ----------
+    session: BaseSession
+        Session to use to make queries
+    feature_store: FeatureStoreModel
+        Feature store
+    warehouse_table_service: WarehouseTableService
+        Warehouse table service
+    request_table_name: str
+        Name of request table
+    temp_tile_tables_tag: str
+        Tag to identify the temporary tile tables for cleanup purpose
+    job_schedule_table_set: JobScheduleTableSet
+        Job schedule table set
+    """
+    logger.info("Cleaning up tables in get_historical_features")
+    await session.drop_table(
+        table_name=request_table_name,
+        schema_name=session.schema_name,
+        database_name=session.database_name,
+        if_exists=True,
+    )
+    async for warehouse_table in warehouse_table_service.list_warehouse_tables_by_tag(
+        temp_tile_tables_tag
+    ):
+        await warehouse_table_service.drop_table_with_session(
+            session=session,
+            feature_store_id=feature_store.id,
+            table_name=warehouse_table.location.table_details.table_name,
+            schema_name=warehouse_table.location.table_details.schema_name,
+            database_name=warehouse_table.location.table_details.database_name,
+            if_exists=True,
+        )
+    for job_schedule_table in job_schedule_table_set.tables:
+        await session.drop_table(
+            table_name=job_schedule_table.table_name,
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+            if_exists=True,
+        )
 
 
 async def get_target(
