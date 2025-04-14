@@ -156,6 +156,10 @@ class DBVarType(StrEnum):
     TIMEDELTA = "TIMEDELTA", "Time delta column"
     EMBEDDING = "EMBEDDING", "Embedding column"
     FLAT_DICT = "FLAT_DICT", "Flat dictionary column"
+    OBJECT = (
+        "OBJECT",
+        "Mixed-type column",
+    )  # used by aggregate features created from groupby with category parameter
 
     # specialized composite type
     TIMESTAMP_TZ_TUPLE = "TIMESTAMP_TZ_TUPLE", "Tuple of (timestamp, timezone offset)"
@@ -167,7 +171,6 @@ class DBVarType(StrEnum):
     BINARY = "BINARY", "Binary column"
     VOID = "VOID", "Void column"
     MAP = "MAP", "Map column"
-    OBJECT = "OBJECT", "Mixed-type column"
     STRUCT = "STRUCT", "Struct column"
 
     @classmethod
@@ -409,7 +412,10 @@ class FeatureType(StrEnum):
         -------
         set[DBVarType]
         """
-        return {DBVarType.DICT, DBVarType.MAP, DBVarType.OBJECT, DBVarType.STRUCT}
+        # DICT features are expected to be flat, contains only string keys and numeric values
+        # Only features created from groupby with category parameter with a dtype of OBJECT
+        # are certain to be of such type
+        return {DBVarType.OBJECT}
 
     @classmethod
     def valid_embedding_dtypes(cls) -> set[DBVarType]:
@@ -420,7 +426,7 @@ class FeatureType(StrEnum):
         -------
         set[DBVarType]
         """
-        return {DBVarType.EMBEDDING, DBVarType.ARRAY}
+        return {DBVarType.EMBEDDING}
 
 
 class TargetType(StrEnum):
