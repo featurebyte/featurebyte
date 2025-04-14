@@ -138,9 +138,21 @@ class TimestampSchema(FeatureByteBaseModel):
         -------
         bool
         """
+        return self.timezone_offset_column_name is not None
+
+    @property
+    def timezone_offset_column_name(self) -> Optional[str]:
+        """
+        Name of the timezone offset column if it exists
+
+        Returns
+        -------
+        Optional[str]
+            Name of the timezone offset column
+        """
         if self.timezone and isinstance(self.timezone, TimeZoneColumn):
-            return True
-        return False
+            return self.timezone.column_name
+        return None
 
 
 class ExtendedTimestampSchema(TimestampSchema):

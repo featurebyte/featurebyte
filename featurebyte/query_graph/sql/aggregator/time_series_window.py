@@ -33,6 +33,7 @@ from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     CteStatement,
     CteStatements,
+    get_qualified_column_identifier,
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.cron import get_request_table_with_job_schedule_name
@@ -283,13 +284,20 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         super().__init__(*args, **kwargs)
         self.request_table_plan = TimeSeriesRequestTablePlan(self.source_info)
         self.aggregation_source_views: Dict[str, Select] = {}
+        self.distinct_reference_datetime_views: Dict[str, Select] = {}
 
     def additional_update(self, aggregation_spec: TimeSeriesWindowAggregateSpec) -> None:
         self.request_table_plan.add_aggregation_spec(aggregation_spec)
         source_view_table_name = self.get_source_view_table_name(aggregation_spec)
         if source_view_table_name not in self.aggregation_source_views:
-            self.aggregation_source_views[source_view_table_name] = (
-                self.get_source_view_with_bucket_column(aggregation_spec)
+            self.aggregation_source_views[source_view_table_name] = self.get_source_view(
+                aggregation_spec
+            )
+            distinct_reference_datetime_table_name = (
+                self.get_distinct_reference_datetime_table_name(aggregation_spec)
+            )
+            self.distinct_reference_datetime_views[distinct_reference_datetime_table_name] = (
+                self.get_distinct_reference_datetime_with_bucket_column(aggregation_spec)
             )
 
     @staticmethod
@@ -308,9 +316,26 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         """
         return f"VIEW_{aggregation_spec.source_hash}"
 
-    def get_source_view_with_bucket_column(
-        self, aggregation_spec: TimeSeriesWindowAggregateSpec
-    ) -> Select:
+    @staticmethod
+    def get_distinct_reference_datetime_table_name(
+        aggregation_spec: TimeSeriesWindowAggregateSpec,
+    ) -> str:
+        """
+        Get the table name for distinct reference datetime
+
+        Parameters
+        ----------
+        aggregation_spec: TimeSeriesWindowAggregateSpec
+            Aggregation spec
+
+        Returns
+        -------
+        str
+        """
+        return f"VIEW_{aggregation_spec.source_hash}_DISTINCT_REFERENCE_DATETIME"
+
+    @classmethod
+    def get_source_view(cls, aggregation_spec: TimeSeriesWindowAggregateSpec) -> Select:
         """
         Get the source view augmented with timestamp converted to epoch seconds
 
@@ -323,9 +348,34 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         -------
         Select
         """
-        reference_datetime_expr = quoted_identifier(
-            aggregation_spec.parameters.reference_datetime_column
+        return select(
+            expressions.Star(),
+        ).from_(aggregation_spec.source_expr.subquery())
+
+    def get_distinct_reference_datetime_with_bucket_column(
+        self, aggregation_spec: TimeSeriesWindowAggregateSpec
+    ) -> Select:
+        """
+        Get a mapping from distinct reference datetime values to bucketed values
+
+        The output is a view with the following columns:
+
+        - VIEW_REFERENCE_DATETIME: reference datetime
+        - VIEW_TIMESTAMP_EPOCH: bucketed reference datetime
+
+        Parameters
+        ----------
+        aggregation_spec: TimeSeriesWindowAggregateSpec
+            Aggregation spec
+
+        Returns
+        -------
+        Select
+        """
+        quoted_reference_datetime_column = quoted_identifier(
+            aggregation_spec.parameters.reference_datetime_column,
         )
+        reference_datetime_expr = quoted_reference_datetime_column
         if aggregation_spec.parameters.reference_datetime_schema is not None:
             reference_datetime_expr = convert_timestamp_to_local(
                 reference_datetime_expr,
@@ -336,10 +386,49 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
             bucket_expr = self.adapter.to_epoch_seconds(reference_datetime_expr)
         else:
             bucket_expr = self.adapter.to_epoch_months(reference_datetime_expr)
+        source_view_table_name = self.get_source_view_table_name(aggregation_spec)
+        distinct_reference_datetime_expr = (
+            select(
+                quoted_reference_datetime_column,
+                *(
+                    [
+                        quoted_identifier(aggregation_spec.timezone_offset_column_name),
+                    ]
+                    if aggregation_spec.timezone_offset_column_name
+                    else []
+                ),
+            )
+            .distinct()
+            .from_(
+                quoted_identifier(source_view_table_name),
+            )
+            .where(
+                expressions.Not(
+                    this=expressions.Is(
+                        this=quoted_reference_datetime_column, expression=expressions.Null()
+                    )
+                ),
+            )
+        )
         return select(
-            expressions.Star(),
+            alias_(
+                quoted_reference_datetime_column,
+                alias=InternalName.VIEW_REFERENCE_DATETIME,
+                quoted=True,
+            ),
+            *(
+                [
+                    alias_(
+                        quoted_identifier(aggregation_spec.timezone_offset_column_name),
+                        alias=InternalName.VIEW_REFERENCE_DATETIME_TZ,
+                        quoted=True,
+                    ),
+                ]
+                if aggregation_spec.timezone_offset_column_name
+                else []
+            ),
             alias_(bucket_expr, alias=InternalName.VIEW_TIMESTAMP_EPOCH, quoted=True),
-        ).from_(aggregation_spec.source_expr.subquery())
+        ).from_(distinct_reference_datetime_expr.subquery())
 
     def update_aggregation_table_expr(
         self,
@@ -369,38 +458,107 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         left_table = LeftTable(
             name=quoted_identifier(processed_request_tables.distinct_by_scheduled_job_time.name),
             alias="REQ",
-            join_keys=spec.serving_names,
+            join_keys=[],
             range_start=InternalName.WINDOW_START_EPOCH,
             range_end=InternalName.WINDOW_END_EPOCH,
             columns=[InternalName.CRON_JOB_SCHEDULE_DATETIME] + (spec.serving_names or []),
         )
 
-        # Right table: source view
-        source_view_table_name = self.get_source_view_table_name(spec)
-        right_columns = set(
-            agg_spec.parameters.parent
-            for agg_spec in specs
-            if agg_spec.parameters.parent is not None
-        )
-        if spec.parameters.value_by is not None:
-            right_columns.add(spec.parameters.value_by)
-        right_columns.add(InternalName.VIEW_TIMESTAMP_EPOCH.value)
+        # Right table: distinct snapshot dates (reference datetimes)
+        distinct_reference_datetime_table = self.get_distinct_reference_datetime_table_name(spec)
         right_table = RightTable(
-            name=quoted_identifier(source_view_table_name),
-            alias="VIEW",
-            join_keys=spec.parameters.keys[:],
+            name=quoted_identifier(distinct_reference_datetime_table),
+            alias="BUCKETED_REFERENCE_DATETIME",
+            join_keys=[],
             range_column=InternalName.VIEW_TIMESTAMP_EPOCH,
-            columns=sorted(right_columns),
+            columns=[InternalName.VIEW_REFERENCE_DATETIME, InternalName.VIEW_TIMESTAMP_EPOCH]
+            + (
+                [InternalName.VIEW_REFERENCE_DATETIME_TZ]
+                if spec.timezone_offset_column_name
+                else []
+            ),
         )
         if spec.window.is_fixed_size():
             window_size = spec.window.to_seconds()
         else:
             window_size = spec.window.to_months()
-        groupby_input_expr = range_join_tables(
+        range_joined_table_expr = range_join_tables(
             left_table=left_table,
             right_table=right_table,
             window_size=window_size,
+            as_subquery=False,
         )
+
+        # Now range_joined_table_expr is the request table expanded with reference datetime within
+        # calendar window. Join with source using exact match on reference datetime
+        groupby_input_columns = [
+            get_qualified_column_identifier(
+                InternalName.CRON_JOB_SCHEDULE_DATETIME, "RANGE_JOINED"
+            ),
+            get_qualified_column_identifier(InternalName.VIEW_TIMESTAMP_EPOCH, "RANGE_JOINED"),
+        ] + [get_qualified_column_identifier(col, "RANGE_JOINED") for col in spec.serving_names]
+        source_columns = set(
+            agg_spec.parameters.parent
+            for agg_spec in specs
+            if agg_spec.parameters.parent is not None
+        )
+        if spec.parameters.value_by is not None:
+            source_columns.add(spec.parameters.value_by)
+        groupby_input_columns.extend([
+            get_qualified_column_identifier(col, "VIEW") for col in source_columns
+        ])
+        join_condition = expressions.and_(
+            expressions.EQ(
+                this=get_qualified_column_identifier(
+                    InternalName.VIEW_REFERENCE_DATETIME, "RANGE_JOINED"
+                ),
+                expression=get_qualified_column_identifier(
+                    spec.parameters.reference_datetime_column, "VIEW"
+                ),
+            ),
+            *(
+                [
+                    expressions.EQ(
+                        this=get_qualified_column_identifier(
+                            InternalName.VIEW_REFERENCE_DATETIME_TZ, "RANGE_JOINED"
+                        ),
+                        expression=get_qualified_column_identifier(
+                            spec.timezone_offset_column_name, "VIEW"
+                        ),
+                    )
+                ]
+                if spec.timezone_offset_column_name
+                else []
+            ),
+            *[
+                expressions.EQ(
+                    this=get_qualified_column_identifier(serving_name, "RANGE_JOINED"),
+                    expression=get_qualified_column_identifier(key, "VIEW"),
+                )
+                for (serving_name, key) in zip(
+                    spec.serving_names,
+                    spec.parameters.keys,
+                )
+            ],
+        )
+        joined_source_expr = (
+            select(*groupby_input_columns)
+            .from_(
+                expressions.Table(
+                    this=range_joined_table_expr.subquery(),
+                    alias="RANGE_JOINED",
+                )
+            )
+            .join(
+                expressions.Table(
+                    this=quoted_identifier(self.get_source_view_table_name(spec)),
+                    alias="VIEW",
+                ),
+                join_type="inner",
+                on=join_condition,
+            )
+        )
+        groupby_input_expr = select().from_(joined_source_expr.subquery(copy=False))
 
         # Aggregation
         groupby_keys = [
@@ -477,5 +635,7 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
         out: list[CteStatement] = []
         out.extend(self.request_table_plan.construct_request_table_ctes(request_table_name))
         for table_name, view_expr in self.aggregation_source_views.items():
+            out.append((quoted_identifier(table_name), view_expr))
+        for table_name, view_expr in self.distinct_reference_datetime_views.items():
             out.append((quoted_identifier(table_name), view_expr))
         return out
