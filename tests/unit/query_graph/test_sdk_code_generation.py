@@ -74,8 +74,13 @@ from featurebyte.query_graph.node.vector import VectorCosineSimilarityNode
         ),
     ],
 )
-def test_alias_node(node_inputs, required_copy, expected_statements, expected_info):
+def test_alias_node(
+    node_inputs, required_copy, expected_statements, expected_info, node_code_gen_output_factory
+):
     """Test AliasNode"""
+    node_inputs = [
+        node_code_gen_output_factory(var_name_or_expr=node_input) for node_input in node_inputs
+    ]
     node = AliasNode(
         name="alias_1", parameters={"name": "new_col"}, output_type=NodeOutputType.SERIES
     )
@@ -142,8 +147,13 @@ def test_alias_node(node_inputs, required_copy, expected_statements, expected_in
         ),
     ],
 )
-def test_assign_node(node_inputs, required_copy, expected_statements, expected_info):
+def test_assign_node(
+    node_inputs, required_copy, expected_statements, expected_info, node_code_gen_output_factory
+):
     """Test AssignNode"""
+    node_inputs = [
+        node_code_gen_output_factory(var_name_or_expr=node_input) for node_input in node_inputs
+    ]
     node = AssignNode(name="assign_1", parameters={"name": "col", "value": None})
     statements, info = node.derive_sdk_code(
         node_inputs=node_inputs,
@@ -160,16 +170,20 @@ def test_assign_node(node_inputs, required_copy, expected_statements, expected_i
     assert info == expected_info
 
 
-def test_vector_node():
+def test_vector_node(node_code_gen_output_factory):
     """
     Test vector cosine similarity node
     """
+    node_inputs = [
+        VariableNameStr("col1"),
+        VariableNameStr("col2"),
+    ]
+    node_inputs = [
+        node_code_gen_output_factory(var_name_or_expr=node_input) for node_input in node_inputs
+    ]
     node = VectorCosineSimilarityNode(name="vector_cosine_similarity_1", parameters={})
     statements, info = node.derive_sdk_code(
-        node_inputs=[
-            VariableNameStr("col1"),
-            VariableNameStr("col2"),
-        ],
+        node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
         operation_structure=OperationStructure(
             output_type=NodeOutputType.FRAME,
@@ -183,7 +197,7 @@ def test_vector_node():
     assert info == "col1.vec.cosine_similarity(other=col2)"
 
 
-def test_lookup_target_node():
+def test_lookup_target_node(node_code_gen_output_factory):
     """
     Test lookup target node
     """
@@ -199,9 +213,7 @@ def test_lookup_target_node():
         ),
     )
     statements, info = lookup_target_node.derive_sdk_code(
-        node_inputs=[
-            VariableNameStr("view"),
-        ],
+        node_inputs=[node_code_gen_output_factory(var_name_or_expr=VariableNameStr("view"))],
         var_name_generator=VariableNameGenerator(),
         operation_structure=OperationStructure(
             output_type=NodeOutputType.FRAME,
@@ -217,18 +229,22 @@ def test_lookup_target_node():
     assert statements == []
 
 
-def test_haversine_node():
+def test_haversine_node(node_code_gen_output_factory):
     """
     Test haversine node
     """
     node = HaversineNode(name="haversine_1", parameters={})
+    node_inputs = [
+        VariableNameStr("col1"),
+        VariableNameStr("col2"),
+        VariableNameStr("col3"),
+        VariableNameStr("col4"),
+    ]
+    node_inputs = [
+        node_code_gen_output_factory(var_name_or_expr=node_input) for node_input in node_inputs
+    ]
     statements, info = node.derive_sdk_code(
-        node_inputs=[
-            VariableNameStr("col1"),
-            VariableNameStr("col2"),
-            VariableNameStr("col3"),
-            VariableNameStr("col4"),
-        ],
+        node_inputs=node_inputs,
         var_name_generator=VariableNameGenerator(),
         operation_structure=OperationStructure(
             output_type=NodeOutputType.SERIES,
@@ -330,11 +346,23 @@ def test_haversine_node():
         ),
     ],
 )
-def test_conditional(node_inputs, required_copy, as_info_dict, expected_statements, expected_info):
+def test_conditional(
+    node_inputs,
+    required_copy,
+    as_info_dict,
+    expected_statements,
+    expected_info,
+    node_code_gen_output_factory,
+):
     """Test ConditionalNode"""
+    node_inputs = [
+        node_code_gen_output_factory(var_name_or_expr=node_input) for node_input in node_inputs
+    ]
     node = ConditionalNode(name="conditional_1", parameters={"value": 1234})
     output_type = (
-        NodeOutputType.SERIES if node_inputs[0].startswith("col") else NodeOutputType.FRAME
+        NodeOutputType.SERIES
+        if node_inputs[0].var_name_or_expr.startswith("col")
+        else NodeOutputType.FRAME
     )
     var_name_generator = VariableNameGenerator()
     # simulate a case where col has been defined

@@ -14,7 +14,10 @@ from featurebyte.query_graph.node.count_dict import (
     GetRelativeFrequencyFromDictionaryNode,
     GetValueFromDictionaryNode,
 )
-from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    VariableNameGenerator,
+    VariableNameStr,
+)
 from tests.unit.query_graph.util import evaluate_and_compare_odfv_and_udf_results
 
 NODE_PARAMS = {"name": "node_name"}
@@ -124,11 +127,17 @@ def fixture_rank_key_feat():
     ],
 )
 def test_derive_on_demand_view_code__count_dict_transform(
-    node_params, odfv_config, udf_config, expected_values, count_dict_feature1
+    node_params,
+    odfv_config,
+    udf_config,
+    expected_values,
+    count_dict_feature1,
+    node_code_gen_output_factory,
 ):
     """Test derive_on_demand_view_code"""
     node = CountDictTransformNode(**NODE_PARAMS, **node_params)
     node_inputs = [VariableNameStr("feat")]
+    node_inputs = [node_code_gen_output_factory(node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
@@ -153,11 +162,12 @@ def test_derive_on_demand_view_code__count_dict_transform(
 
 
 def test_derive_on_demand_view_code__cosine_similarity(
-    count_dict_feature1, count_dict_feature2, odfv_config, udf_config
+    count_dict_feature1, count_dict_feature2, odfv_config, udf_config, node_code_gen_output_factory
 ):
     """Test derive_on_demand_view_code"""
     node = CosineSimilarityNode(**NODE_PARAMS)
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
+    node_inputs = [node_code_gen_output_factory(node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
@@ -181,10 +191,13 @@ def test_derive_on_demand_view_code__cosine_similarity(
     )
 
 
-def test_derive_on_demand_view_code__dictionary_keys(count_dict_feature1, odfv_config, udf_config):
+def test_derive_on_demand_view_code__dictionary_keys(
+    count_dict_feature1, odfv_config, udf_config, node_code_gen_output_factory
+):
     """Test derive_on_demand_view_code"""
     node = DictionaryKeysNode(**NODE_PARAMS)
     node_inputs = [VariableNameStr("feat")]
+    node_inputs = [node_code_gen_output_factory(node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
@@ -217,12 +230,13 @@ def test_derive_on_demand_view_code__dictionary_keys(count_dict_feature1, odfv_c
 
 
 def test_derive_on_demand_view_code__dictionary_get_value(
-    count_dict_feature1, item_feature, odfv_config, udf_config
+    count_dict_feature1, item_feature, odfv_config, udf_config, node_code_gen_output_factory
 ):
     """Test derive_on_demand_view_code"""
     # test on two operands
     node = GetValueFromDictionaryNode(**NODE_PARAMS, parameters={})
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
+    node_inputs = [node_code_gen_output_factory(node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
@@ -322,11 +336,13 @@ def test_derive_on_demand_view_code__dictionary_get_rank(
     udf_config,
     series_param_expected_values,
     scalar_param_expected_values,
+    node_code_gen_output_factory,
 ):
     """Test derive_on_demand_view_code"""
     # test on two operands
     node = node_class(**NODE_PARAMS, parameters=node_params)
     node_inputs = [VariableNameStr("feat1"), VariableNameStr("feat2")]
+    node_inputs = [node_code_gen_output_factory(node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,

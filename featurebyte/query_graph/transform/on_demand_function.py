@@ -11,11 +11,12 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import GraphNodeType, NodeType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.metadata.config import OnDemandFunctionCodeGenConfig
+from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerator,
+    NodeCodeGenOutput,
     StatementStr,
     VariableNameGenerator,
-    VarNameExpressionInfo,
 )
 from featurebyte.query_graph.node.nested import (
     BaseGraphNodeParameters,
@@ -23,6 +24,7 @@ from featurebyte.query_graph.node.nested import (
 )
 from featurebyte.query_graph.node.request import RequestColumnNode
 from featurebyte.query_graph.transform.base import BaseGraphExtractor
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
 class InputArgumentInfo(FeatureByteBaseModel):
@@ -48,7 +50,8 @@ class OnDemandFeatureFunctionGlobalState(FeatureByteBaseModel):
     On demand feature function global state
     """
 
-    node_name_to_post_compute_output: Dict[str, VarNameExpressionInfo] = Field(default_factory=dict)
+    node_name_to_operation_structure: Dict[str, OperationStructure]
+    node_name_to_post_compute_output: Dict[str, NodeCodeGenOutput] = Field(default_factory=dict)
     input_var_name_to_info: Dict[str, InputArgumentInfo] = Field(default_factory=dict)
     code_generation_config: OnDemandFunctionCodeGenConfig = Field(
         default_factory=OnDemandFunctionCodeGenConfig
@@ -217,9 +220,9 @@ class OnDemandFeatureFunctionExtractor(
         branch_state: FeatureByteBaseModel,
         global_state: OnDemandFeatureFunctionGlobalState,
         node: Node,
-        inputs: List[Any],
+        inputs: List[NodeCodeGenOutput],
         skip_post: bool,
-    ) -> VarNameExpressionInfo:
+    ) -> NodeCodeGenOutput:
         if node.name in global_state.node_name_to_post_compute_output:
             return global_state.node_name_to_post_compute_output[node.name]
 
@@ -230,13 +233,17 @@ class OnDemandFeatureFunctionExtractor(
         )
 
         # update global state
+        post_compute_output = NodeCodeGenOutput(
+            var_name_or_expr=var_name_or_expr,
+            operation_structure=global_state.node_name_to_operation_structure[node.name],
+        )
         global_state.code_generator.add_statements(statements=statements)
-        global_state.node_name_to_post_compute_output[node.name] = var_name_or_expr
+        global_state.node_name_to_post_compute_output[node.name] = post_compute_output
         self._check_for_input_argument_registration(node=node, global_state=global_state)
 
         # return the output variable name or expression of current operation so that
         # it can be passed as `inputs` to the next node's post compute operation
-        return var_name_or_expr
+        return post_compute_output
 
     def extract(self, node: Node, **kwargs: Any) -> OnDemandFeatureFunctionGlobalState:
         """
@@ -254,18 +261,20 @@ class OnDemandFeatureFunctionExtractor(
         OnDemandFeatureFunctionGlobalState
             On demand function global state
         """
+        op_struct_info = OperationStructureExtractor(graph=self.graph).extract(node=node)
         code_generation_config = OnDemandFunctionCodeGenConfig(**kwargs)
         global_state = OnDemandFeatureFunctionGlobalState(
+            node_name_to_operation_structure=op_struct_info.operation_structure_map,
             code_generation_config=code_generation_config,
             var_name_generator=VariableNameGenerator(one_based=True),
         )
-        output_expr = self._extract(
+        node_code_gen_output = self._extract(
             node=node,
             branch_state=FeatureByteBaseModel(),
             global_state=global_state,
             topological_order_map=self.graph.node_topological_order_map,
         )
         global_state.code_generator.add_statements(
-            statements=[StatementStr(f"return {output_expr}")]
+            statements=[StatementStr(f"return {node_code_gen_output.var_name_or_expr}")],
         )
         return global_state

@@ -5,11 +5,16 @@ Test on-demand view code generation of distance related nodes.
 import pandas as pd
 
 from featurebyte.query_graph.node.distance import HaversineNode
-from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    VariableNameGenerator,
+    VariableNameStr,
+)
 from tests.unit.query_graph.util import evaluate_and_compare_odfv_and_udf_results
 
 
-def test_derive_on_demand_view_code__haversine_distance(odfv_config, udf_config):
+def test_derive_on_demand_view_code__haversine_distance(
+    odfv_config, udf_config, node_code_gen_output_factory
+):
     """Test derive_on_demand_view_code"""
     lat1 = pd.Series([40.7128, 51.5074, None, 40.7128, 40.7128, 40.7128])
     lon1 = pd.Series([-74.0060, -0.1278, 74.0060, None, -74.0060, -74.0060])
@@ -24,6 +29,7 @@ def test_derive_on_demand_view_code__haversine_distance(odfv_config, udf_config)
         VariableNameStr("lat2"),
         VariableNameStr("lon2"),
     ]
+    node_inputs = [node_code_gen_output_factory(node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
