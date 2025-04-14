@@ -113,6 +113,7 @@ def test_date_difference(odfv_config, udf_config, node_code_gen_output_factory):
     first_node_input.var_name_or_expr = VariableNameStr("feat1")
     first_node_input.operation_structure.series_output_dtype_info.dtype = DBVarType.VARCHAR
 
+    # test it on a time format conversion with timezone
     node_inputs = [first_node_input, node_inputs[1]]
     odfv_stats, odfv_expr = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
@@ -244,6 +245,71 @@ def test_datetime_extract(odfv_config, udf_config, dt_property, node_code_gen_ou
         'tz_offset = pd.to_timedelta("+06:00:00")\n'
         "feat = pd.to_datetime(feat, utc=True) + tz_offset\n"
         f"output = pd.to_datetime(feat, utc=True).{dt_property}"
+    )
+
+
+def test_datetime_extract_with_timestamp_schema(
+    odfv_config, udf_config, node_code_gen_output_factory
+):
+    """Test DatetimeExtractNode derive_on_demand_view_code with timestamp schema"""
+    node = DatetimeExtractNode(
+        name="node_name",
+        parameters={
+            "property": "day",
+            "timezone_offset": None,
+            "timestamp_metadata": DBVarTypeMetadata(
+                timestamp_schema=TimestampSchema(
+                    format_string="YY-MM-DD HH24:MI",
+                    is_utc_time=False,
+                    timezone="Asia/Singapore",
+                )
+            ),
+        },
+    )
+    first_node_input = Mock()
+    first_node_input.var_name_or_expr = VariableNameStr("feat1")
+    first_node_input.operation_structure.series_output_dtype_info.dtype = DBVarType.VARCHAR
+    node_inputs = [first_node_input]
+
+    # check odfv expression
+    odfv_stats, odfv_expr = node.derive_on_demand_view_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=odfv_config,
+    )
+    expected_odfv_stats = []
+    expected_odfv_expr = (
+        'pd.to_datetime(pd.to_datetime(feat1, format="%y-%m-%d %H:%M")'
+        '.dt.tz_localize("Asia/Singapore")'
+        '.dt.tz_convert("UTC"), utc=True).dt.day'
+    )
+    assert odfv_stats == expected_odfv_stats
+    assert odfv_expr == expected_odfv_expr
+
+    # check udf expression
+    udf_config.source_type = odfv_config.source_type
+    udf_stats, udf_expr = node.derive_user_defined_function_code(
+        node_inputs=node_inputs,
+        var_name_generator=VariableNameGenerator(),
+        config=udf_config,
+    )
+    expected_udf_stats = []
+    expected_udf_expr = (
+        'pd.to_datetime(pd.to_datetime(feat1, format="%y-%m-%d %H:%M")'
+        '.tz_localize("Asia/Singapore")'
+        '.tz_convert("UTC"), utc=True).day'
+    )
+    assert udf_stats == expected_udf_stats
+    assert udf_expr == expected_udf_expr
+
+    # check the expression can be evaluated & matches expected
+    feat = pd.Series(["20-10-01 00:12", "20-10-01 01:12", np.nan])
+    evaluate_and_compare_odfv_and_udf_results(
+        input_map={"feat1": feat},
+        odfv_expr=expected_odfv_expr,
+        udf_expr=expected_udf_expr,
+        odfv_stats=expected_odfv_stats,
+        udf_stats=expected_udf_stats,
     )
 
 

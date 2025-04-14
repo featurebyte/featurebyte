@@ -41,6 +41,58 @@ from featurebyte.session.time_formatter import convert_time_format
 from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 
 
+def generate_to_datetime_expression(
+    operand_expr: str,
+    operation_structure: OperationStructure,
+    timestamp_schema: Optional[TimestampSchema],
+    source_type: SourceType,
+    mode: Literal["odfv", "udf"],
+) -> str:
+    """
+    Generate to_datetime expression for the given operand expression.
+
+    Parameters
+    ----------
+    operand_expr: str
+        Operand expression
+    operation_structure: OperationStructure
+        Operation structure
+    timestamp_schema: Optional[TimestampSchema]
+        Timestamp schema
+    source_type: SourceType
+        Source type
+    mode: Literal["odfv", "udf"]
+        Mode of operation, either "odfv" or "udf"
+
+    Returns
+    -------
+    str
+        to_datetime expression
+    """
+    to_datetime_params = ""
+    tz_conversion = ""
+    dt_acc = ".dt" if mode == "odfv" else ""
+    if timestamp_schema:
+        if operation_structure.series_output_dtype_info.dtype == DBVarType.VARCHAR:
+            assert timestamp_schema.format_string is not None
+            py_format_string = convert_time_format(
+                source_type=source_type, format_string=timestamp_schema.format_string
+            )
+            to_datetime_params = f', format="{py_format_string}"'
+
+        if timestamp_schema.timezone and timestamp_schema.timezone_offset_column_name is None:
+            tz_conversion += (
+                f'{dt_acc}.tz_localize("{timestamp_schema.timezone}"){dt_acc}.tz_convert("UTC")'
+            )
+
+    if tz_conversion:
+        # utc=True should not be used in to_datetime
+        output_expr = f"pd.to_datetime({operand_expr}{to_datetime_params}){tz_conversion}"
+    else:
+        output_expr = f"pd.to_datetime({operand_expr}{to_datetime_params}, utc=True)"
+    return output_expr
+
+
 class DatetimeExtractNodeParameters(FeatureByteBaseModel):
     """Parameters"""
 
@@ -132,9 +184,10 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
         var_name_generator: VariableNameGenerator,
         offset_adj_var_name_prefix: str,
         expr_func: Callable[[str, str], str],
+        source_type: SourceType,
+        mode: Literal["odfv", "udf"],
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
-        ts_operand: str = var_name_expressions[0].as_input()
 
         statements: List[StatementT] = []
         offset_operand: Optional[Union[str, VariableNameStr]]
@@ -151,14 +204,25 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             offset_operand = None
 
         dt_var_name: Union[str, VariableNameStr]
+        ts_operand: str = var_name_expressions[0].as_input()
+        dt_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix=offset_adj_var_name_prefix, node_name=None
+        )
+        to_datetime_expr = generate_to_datetime_expression(
+            operand_expr=ts_operand,
+            operation_structure=node_inputs[0].operation_structure,
+            timestamp_schema=self.parameters.timestamp_schema,
+            source_type=source_type,
+            mode=mode,
+        )
         if offset_operand:
-            dt_var_name = var_name_generator.convert_to_variable_name(
-                variable_name_prefix=offset_adj_var_name_prefix, node_name=None
-            )
-            expr = ExpressionStr(f"pd.to_datetime({ts_operand}, utc=True) + {offset_operand}")
+            expr = ExpressionStr(f"{to_datetime_expr} + {offset_operand}")
             statements.append((dt_var_name, expr))
         else:
-            dt_var_name = ts_operand
+            if self.parameters.timestamp_schema:
+                dt_var_name = ExpressionStr(to_datetime_expr)
+            else:
+                dt_var_name = ts_operand
 
         output = ExpressionStr(expr_func(dt_var_name, self.parameters.property))
         return statements, output
@@ -179,6 +243,8 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             var_name_generator,
             offset_adj_var_name_prefix="feat_dt",
             expr_func=_datetime_proper_expr,
+            source_type=config.source_type,
+            mode="odfv",
         )
 
     def _derive_user_defined_function_code(
@@ -192,6 +258,8 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             var_name_generator,
             offset_adj_var_name_prefix="feat",
             expr_func=lambda dt_var_name, prop: f"pd.to_datetime({dt_var_name}, utc=True).{prop}",
+            source_type=config.source_type,
+            mode="udf",
         )
 
 
@@ -330,37 +398,6 @@ class DateDifferenceNode(BaseSeriesOutputNode):
     def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return DBVarTypeInfo(dtype=DBVarType.TIMEDELTA)
 
-    @staticmethod
-    def _generate_to_datetime_expression(
-        operand_expr: str,
-        operation_structure: OperationStructure,
-        timestamp_schema: Optional[TimestampSchema],
-        source_type: SourceType,
-        mode: Literal["odfv", "udf"],
-    ) -> str:
-        to_datetime_params = ""
-        tz_conversion = ""
-        dt_acc = ".dt" if mode == "odfv" else ""
-        if timestamp_schema:
-            if operation_structure.series_output_dtype_info.dtype == DBVarType.VARCHAR:
-                assert timestamp_schema.format_string is not None
-                py_format_string = convert_time_format(
-                    source_type=source_type, format_string=timestamp_schema.format_string
-                )
-                to_datetime_params = f', format="{py_format_string}"'
-
-            if timestamp_schema.timezone and timestamp_schema.timezone_offset_column_name is None:
-                tz_conversion += (
-                    f'{dt_acc}.tz_localize("{timestamp_schema.timezone}"){dt_acc}.tz_convert("UTC")'
-                )
-
-        if tz_conversion:
-            # utc=True should not be used in to_datetime
-            output_expr = f"pd.to_datetime({operand_expr}{to_datetime_params}){tz_conversion}"
-        else:
-            output_expr = f"pd.to_datetime({operand_expr}{to_datetime_params}, utc=True)"
-        return output_expr
-
     def _derive_python_code(
         self,
         node_inputs: List[NodeCodeGenOutput],
@@ -379,14 +416,14 @@ class DateDifferenceNode(BaseSeriesOutputNode):
             expr = ExpressionStr(f"{left_operand} - {right_operand}")
         else:
             assert source_type is not None
-            left_expr = self._generate_to_datetime_expression(
+            left_expr = generate_to_datetime_expression(
                 operand_expr=left_operand,
                 operation_structure=node_inputs[0].operation_structure,
                 timestamp_schema=self.parameters.left_timestamp_schema,
                 source_type=source_type,
                 mode=mode,
             )
-            right_expr = self._generate_to_datetime_expression(
+            right_expr = generate_to_datetime_expression(
                 operand_expr=right_operand,
                 operation_structure=node_inputs[1].operation_structure,
                 timestamp_schema=self.parameters.right_timestamp_schema,
