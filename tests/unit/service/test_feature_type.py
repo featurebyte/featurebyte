@@ -22,7 +22,7 @@ from featurebyte.query_graph.enum import NodeType
         (DBVarType.TIMESTAMP_TZ, FeatureType.OTHERS),
         # (DBVarType.VARCHAR, FeatureType.TEXT),
         (DBVarType.ARRAY, FeatureType.OTHERS),
-        (DBVarType.DICT, FeatureType.DICT),
+        (DBVarType.DICT, FeatureType.OTHERS),
         (DBVarType.TIMEDELTA, FeatureType.NUMERIC),
         (DBVarType.EMBEDDING, FeatureType.EMBEDDING),
         (DBVarType.FLAT_DICT, FeatureType.OTHERS),
@@ -30,9 +30,9 @@ from featurebyte.query_graph.enum import NodeType
         (DBVarType.UNKNOWN, FeatureType.OTHERS),
         (DBVarType.BINARY, FeatureType.OTHERS),
         (DBVarType.VOID, FeatureType.OTHERS),
-        (DBVarType.MAP, FeatureType.DICT),
+        (DBVarType.MAP, FeatureType.OTHERS),
         (DBVarType.OBJECT, FeatureType.DICT),
-        (DBVarType.STRUCT, FeatureType.DICT),
+        (DBVarType.STRUCT, FeatureType.OTHERS),
     ],
 )
 def test_detect_feature_type(app_container, dtype, expected):
