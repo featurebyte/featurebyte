@@ -30,6 +30,7 @@ from featurebyte.query_graph.transform.offline_store_ingest import (
 )
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.offline_store_feature_table_construction import (
     OfflineStoreFeatureTableConstructionService,
@@ -47,6 +48,7 @@ class OfflineStoreInfoInitializationService:
         offline_store_feature_table_service: OfflineStoreFeatureTableService,
         offline_store_feature_table_construction_service: OfflineStoreFeatureTableConstructionService,
         entity_serving_names_service: EntityServingNamesService,
+        feature_store_service: FeatureStoreService,
     ) -> None:
         self.catalog_service = catalog_service
         self.offline_store_feature_table_service = offline_store_feature_table_service
@@ -54,6 +56,7 @@ class OfflineStoreInfoInitializationService:
             offline_store_feature_table_construction_service
         )
         self.entity_serving_names_service = entity_serving_names_service
+        self.feature_store_service = feature_store_service
 
     async def offline_store_feature_table_creator(
         self,
@@ -306,6 +309,12 @@ class OfflineStoreInfoInitializationService:
             ],
         )
         if not dry_run:
+            # retrieve the source type and extract feature job settings to initialize offline store info
+            catalog = await self.catalog_service.get_document(feature.catalog_id)
+            feature_store = await self.feature_store_service.get_document(
+                catalog.default_feature_store_ids[0]
+            )
+            source_type = feature_store.get_source_info().source_type
             feature_job_settings = [
                 setting.feature_job_setting for setting in feature.table_id_feature_job_settings
             ]
@@ -315,6 +324,7 @@ class OfflineStoreInfoInitializationService:
                 feature_job_settings=feature_job_settings,
                 feature_id=feature.id,
                 has_ttl=has_ttl,
+                source_type=source_type,
                 null_filling_value=null_filling_value,
             )
 
