@@ -133,3 +133,15 @@ def is_io_worker() -> bool:
     bool
     """
     return "worker-io" in os.environ.get("HOSTNAME", "")
+
+
+def is_feature_query_debug_enabled() -> bool:
+    """
+    Check whether the feature query debugging is enabled
+
+    Returns
+    -------
+    bool
+        True if debugging is enabled, False otherwise
+    """
+    return os.environ.get("FEATUREBYTE_FEATURE_QUERY_DEBUG") == "1"
