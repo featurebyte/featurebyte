@@ -38,7 +38,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'poetry'
+      - name: Setup cache
+        uses: actions/cache@v4
+        with:
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          path: .venv
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
       - name: Install Poetry + Configure
         run: |-
           pip install poetry==2.1.2
