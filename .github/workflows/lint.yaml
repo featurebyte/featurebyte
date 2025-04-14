@@ -23,17 +23,15 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v3
-        with:
-          poetry-version: 1.8.2
-      - name: Configure Poetry
-        run: poetry config virtualenvs.in-project true
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'poetry'
+      - name: Install Poetry + Configure
+        run: |-
+          pip install poetry==2.1.2
+          poetry config virtualenvs.in-project true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
