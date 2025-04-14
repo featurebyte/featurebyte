@@ -623,7 +623,7 @@ def test_feature_entity_dtypes(
 
 @pytest.mark.asyncio
 async def test_on_demand_feature_view_code_generation__card_transaction_description_feature(
-    test_dir, persistent, user
+    test_dir, persistent, user, snowflake_feature_store
 ):
     """Test on-demand feature view code generation for card_transaction_description feature."""
     fixture_path = os.path.join(
@@ -647,7 +647,7 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         data=CatalogCreate(
             _id=catalog_id,
             name="test_catalog",
-            default_feature_store_ids=["6597cfcb357720b529a10196"],
+            default_feature_store_ids=[snowflake_feature_store.id],
         )
     )
 
