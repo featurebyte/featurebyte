@@ -26,6 +26,7 @@ from featurebyte.query_graph.node.metadata.operation import AggregationColumn, O
 from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     ExpressionStr,
+    NodeCodeGenOutput,
     ObjectClass,
     StatementStr,
     StatementT,
@@ -53,7 +54,7 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
 
     def _get_count_dict_and_mask_variables(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
     ) -> Tuple[List[StatementT], VariableNameStr, VariableNameStr]:
         statements: List[StatementT] = []
@@ -72,7 +73,7 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
 
     def _derive_python_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         generate_expression_func: Callable[..., str],
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
@@ -85,7 +86,7 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -96,7 +97,7 @@ class BaseCountDictOpNode(BaseSeriesOutputNode, ABC):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -255,7 +256,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -285,7 +286,7 @@ class CountDictTransformNode(BaseCountDictOpNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -360,7 +361,7 @@ class CosineSimilarityNode(BaseCountDictOpNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -377,7 +378,7 @@ class CosineSimilarityNode(BaseCountDictOpNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -410,7 +411,7 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -418,11 +419,11 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # This node is introduced when IS_IN is used on a dictionary feature. There is no need to
         # generate any code for this node and the actual code generation will be done by the IS_IN node.
-        return [], node_inputs[0]
+        return [], node_inputs[0].var_name_or_expr
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -437,7 +438,7 @@ class DictionaryKeysNode(BaseSeriesOutputNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -530,7 +531,7 @@ class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -556,7 +557,7 @@ class GetValueFromDictionaryNode(BaseCountDictWithKeyOpNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -620,7 +621,7 @@ class GetRankFromDictionaryNode(BaseCountDictWithKeyOpNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -650,7 +651,7 @@ class GetRankFromDictionaryNode(BaseCountDictWithKeyOpNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -710,7 +711,7 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictWithKeyOpNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -735,7 +736,7 @@ class GetRelativeFrequencyFromDictionaryNode(BaseCountDictWithKeyOpNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:

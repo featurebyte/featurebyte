@@ -19,7 +19,7 @@ from pydantic import Field
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.query_graph.enum import NodeOutputType
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, TimeZoneColumn
-from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory
+from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
 
 
 class ValueStr(str):
@@ -313,6 +313,15 @@ VarNameExpressionStr = Union[VariableNameStr, ExpressionStr]
 VarNameExpressionInfo = Union[VariableNameStr, ExpressionStr, InfoDict]
 RightHandSide = Union[ValueStr, VariableNameStr, ExpressionStr, ObjectClass]
 StatementT = Union[StatementStr, CommentStr, Tuple[VariableNameStr, RightHandSide]]
+
+
+class NodeCodeGenOutput(FeatureByteBaseModel):
+    """
+    Node code generation output
+    """
+
+    var_name_or_expr: VarNameExpressionInfo
+    operation_structure: OperationStructure
 
 
 class CodeGenerationContext(FeatureByteBaseModel):

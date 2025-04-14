@@ -520,6 +520,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             codegen_state = OnDemandFeatureFunctionGlobalState(
                 code_generation_config=OnDemandFunctionCodeGenConfig(**codegen_kwargs),
                 var_name_generator=VariableNameGenerator(one_based=True),
+                # this is a dummy value, it should not be used by the following code
+                node_name_to_operation_structure={},
             )
             col = codegen_state.var_name_generator.convert_to_variable_name(
                 variable_name_prefix=codegen_state.code_generation_config.input_var_prefix,

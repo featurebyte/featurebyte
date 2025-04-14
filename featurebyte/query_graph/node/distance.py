@@ -22,6 +22,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
     ExpressionStr,
+    NodeCodeGenOutput,
     StatementStr,
     StatementT,
     VariableNameGenerator,
@@ -52,7 +53,7 @@ class HaversineNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -76,7 +77,7 @@ class HaversineNode(BaseSeriesOutputNode):
 
     def _derive_on_demand_view_or_function_code_helper(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements: List[StatementT] = []
@@ -106,7 +107,7 @@ class HaversineNode(BaseSeriesOutputNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -116,7 +117,7 @@ class HaversineNode(BaseSeriesOutputNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:

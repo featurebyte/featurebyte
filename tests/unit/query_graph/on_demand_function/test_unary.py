@@ -7,7 +7,10 @@ import pandas as pd
 import pytest
 
 from featurebyte.enum import DBVarType
-from featurebyte.query_graph.node.metadata.sdk_code import VariableNameGenerator, VariableNameStr
+from featurebyte.query_graph.node.metadata.sdk_code import (
+    VariableNameGenerator,
+    VariableNameStr,
+)
 from featurebyte.query_graph.node.unary import (
     AbsoluteNode,
     AcosNode,
@@ -65,10 +68,16 @@ NODE_PARAMS = {"name": "node_name"}
     ],
 )
 def test_derive_on_demand_view_code(
-    node, odfv_config, udf_config, expected_odfv_expr, expected_udf_expr
+    node,
+    odfv_config,
+    udf_config,
+    expected_odfv_expr,
+    expected_udf_expr,
+    node_code_gen_output_factory,
 ):
     """Test derive_on_demand_view_code"""
     node_inputs = [VariableNameStr("feat")]
+    node_inputs = [node_code_gen_output_factory(node_input) for node_input in node_inputs]
 
     odfv_stats, odfv_out_var = node.derive_on_demand_view_code(
         node_inputs=node_inputs,
