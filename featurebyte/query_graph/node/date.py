@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 from pydantic import Field
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
@@ -37,6 +37,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VarNameExpressionInfo,
     get_object_class_from_function_call,
 )
+from featurebyte.session.time_formatter import convert_time_format
 from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
 
 
@@ -329,10 +330,42 @@ class DateDifferenceNode(BaseSeriesOutputNode):
     def derive_dtype_info(self, inputs: List[OperationStructure]) -> DBVarTypeInfo:
         return DBVarTypeInfo(dtype=DBVarType.TIMEDELTA)
 
+    @staticmethod
+    def _generate_to_datetime_expression(
+        operand_expr: str,
+        operation_structure: OperationStructure,
+        timestamp_schema: Optional[TimestampSchema],
+        source_type: SourceType,
+        mode: Literal["odfv", "udf"],
+    ) -> str:
+        to_datetime_params = ""
+        tz_conversion = ""
+        dt_acc = ".dt" if mode == "odfv" else ""
+        if timestamp_schema:
+            if operation_structure.series_output_dtype_info.dtype == DBVarType.VARCHAR:
+                assert timestamp_schema.format_string is not None
+                py_format_string = convert_time_format(
+                    source_type=source_type, format_string=timestamp_schema.format_string
+                )
+                to_datetime_params = f', format="{py_format_string}"'
+
+            if timestamp_schema.timezone and timestamp_schema.timezone_offset_column_name is None:
+                tz_conversion += (
+                    f'{dt_acc}.tz_localize("{timestamp_schema.timezone}"){dt_acc}.tz_convert("UTC")'
+                )
+
+        if tz_conversion:
+            # utc=True should not be used in to_datetime
+            output_expr = f"pd.to_datetime({operand_expr}{to_datetime_params}){tz_conversion}"
+        else:
+            output_expr = f"pd.to_datetime({operand_expr}{to_datetime_params}, utc=True)"
+        return output_expr
+
     def _derive_python_code(
         self,
         node_inputs: List[NodeCodeGenOutput],
-        sdk_code: bool,
+        mode: Literal["sdk", "odfv", "udf"],
+        source_type: Optional[SourceType] = None,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if len(node_inputs) == 1:
             # we don't allow subtracting timestamp with a scalar timedelta through SDK
@@ -342,12 +375,25 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         left_operand = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
         statements: List[StatementT] = []
-        if sdk_code:
+        if mode == "sdk":
             expr = ExpressionStr(f"{left_operand} - {right_operand}")
         else:
-            expr = ExpressionStr(
-                f"pd.to_datetime({left_operand}, utc=True) - pd.to_datetime({right_operand}, utc=True)"
+            assert source_type is not None
+            left_expr = self._generate_to_datetime_expression(
+                operand_expr=left_operand,
+                operation_structure=node_inputs[0].operation_structure,
+                timestamp_schema=self.parameters.left_timestamp_schema,
+                source_type=source_type,
+                mode=mode,
             )
+            right_expr = self._generate_to_datetime_expression(
+                operand_expr=right_operand,
+                operation_structure=node_inputs[1].operation_structure,
+                timestamp_schema=self.parameters.right_timestamp_schema,
+                source_type=source_type,
+                mode=mode,
+            )
+            expr = ExpressionStr(f"{left_expr} - {right_expr}")
         return statements, expr
 
     def _derive_sdk_code(
@@ -359,7 +405,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, operation_structure, config, context
-        return self._derive_python_code(node_inputs, sdk_code=True)
+        return self._derive_python_code(node_inputs, mode="sdk")
 
     def _derive_on_demand_view_code(
         self,
@@ -368,7 +414,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
-        return self._derive_python_code(node_inputs, sdk_code=False)
+        return self._derive_python_code(node_inputs, mode="odfv", source_type=config.source_type)
 
     def _derive_user_defined_function_code(
         self,
@@ -377,7 +423,7 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
-        return self._derive_python_code(node_inputs, sdk_code=False)
+        return self._derive_python_code(node_inputs, mode="udf", source_type=config.source_type)
 
 
 class TimeDeltaNode(BaseSeriesOutputNode):

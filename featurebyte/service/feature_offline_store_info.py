@@ -246,9 +246,18 @@ class OfflineStoreInfoInitializationService:
         )
 
         null_filling_value = None
+        source_type = None
         if not dry_run:
+            # retrieve the source type and extract feature job settings to initialize offline store info
+            catalog = await self.catalog_service.get_document(feature.catalog_id)
+            feature_store = await self.feature_store_service.get_document(
+                catalog.default_feature_store_ids[0]
+            )
+            source_type = feature_store.get_source_info().source_type
             null_filling_value = (
-                NullFillingValueExtractor(graph=feature.graph).extract(node=feature.node).fill_value
+                NullFillingValueExtractor(graph=feature.graph)
+                .extract(node=feature.node, source_type=source_type)
+                .fill_value
             )
 
         has_ttl = feature.has_bounded_window_aggregated_node
@@ -309,12 +318,7 @@ class OfflineStoreInfoInitializationService:
             ],
         )
         if not dry_run:
-            # retrieve the source type and extract feature job settings to initialize offline store info
-            catalog = await self.catalog_service.get_document(feature.catalog_id)
-            feature_store = await self.feature_store_service.get_document(
-                catalog.default_feature_store_ids[0]
-            )
-            source_type = feature_store.get_source_info().source_type
+            assert source_type is not None, "Source type should be set in previous statement"
             feature_job_settings = [
                 setting.feature_job_setting for setting in feature.table_id_feature_job_settings
             ]
