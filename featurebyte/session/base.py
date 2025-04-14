@@ -27,7 +27,10 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
 from featurebyte.common.path_util import get_package_root
-from featurebyte.common.utils import create_new_arrow_stream_writer, dataframe_from_arrow_stream
+from featurebyte.common.utils import (
+    create_new_arrow_stream_writer,
+    dataframe_from_arrow_table,
+)
 from featurebyte.enum import InternalName, MaterializedTableNamePrefix, SourceType, StrEnum
 from featurebyte.exception import (
     DataWarehouseOperationError,
@@ -548,11 +551,11 @@ class BaseSession(BaseModel):
     def _execute_query(cursor: Any, query: str, **kwargs: Any) -> Any:
         return cursor.execute(query, **kwargs)
 
-    async def get_async_query_stream(
+    async def get_async_query_generator(
         self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
-    ) -> AsyncGenerator[bytes, None]:
+    ) -> AsyncGenerator[pa.RecordBatch, None]:
         """
-        Stream results from asynchronous query as compressed arrow bytestream
+        Generate results from asynchronous query as pyarrow record batches
 
         Parameters
         ----------
@@ -573,8 +576,6 @@ class BaseSession(BaseModel):
         """
         start_time = time.time()
         cursor = self.connection.cursor()
-        buffer = BytesIO()
-        writer = None
         try:
             # execute in separate thread
             await to_thread(
@@ -590,6 +591,47 @@ class BaseSession(BaseModel):
 
             batches = self.fetch_query_stream_impl(cursor)
             async for batch in batches:
+                yield batch
+                # check for timeout
+                if timeout and time.time() - start_time > timeout:
+                    raise QueryExecutionTimeOut(f"Execution timeout {timeout}s exceeded.")
+
+        except asyncio.exceptions.TimeoutError as exc:
+            # raise timeout error
+            raise QueryExecutionTimeOut(f"Execution timeout {timeout}s exceeded.") from exc
+        finally:
+            cursor.close()
+            logger.debug(
+                "Query completed",
+                extra={
+                    "duration": time.time() - start_time,
+                    "query": query.strip()[:50].replace("\n", " "),
+                },
+            )
+
+    async def get_async_query_stream(
+        self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
+    ) -> AsyncGenerator[bytes, None]:
+        """
+        Stream results from asynchronous query as compressed arrow bytestream
+
+        Parameters
+        ----------
+        query: str
+            sql query to execute
+        timeout: float
+            timeout in seconds
+
+        Yields
+        ------
+        bytes
+            Byte chunk
+        """
+        buffer = BytesIO()
+        writer = None
+        batches = self.get_async_query_generator(query=query, timeout=timeout)
+        try:
+            async for batch in batches:
                 if not writer:
                     writer = create_new_arrow_stream_writer(buffer, batch.schema)
                 writer.write_batch(batch)
@@ -600,28 +642,10 @@ class BaseSession(BaseModel):
                     yield chunk
                     buffer.seek(0)
                     buffer.truncate(0)
-
-                # check for timeout
-                if timeout and time.time() - start_time > timeout:
-                    raise QueryExecutionTimeOut(f"Execution timeout {timeout}s exceeded.")
-
-                await asyncio.sleep(0.1)
-
-        except asyncio.exceptions.TimeoutError as exc:
-            # raise timeout error
-            raise QueryExecutionTimeOut(f"Execution timeout {timeout}s exceeded.") from exc
         finally:
             if writer:
                 writer.close()
             buffer.close()
-            cursor.close()
-            logger.debug(
-                "Query completed",
-                extra={
-                    "duration": time.time() - start_time,
-                    "query": query.strip()[:50].replace("\n", " "),
-                },
-            )
 
     async def get_working_schema_metadata(self) -> dict[str, Any]:
         """Retrieves the working schema version from the table registered in the
@@ -681,16 +705,11 @@ class BaseSession(BaseModel):
             If query execution fails
         """
         try:
-            bytestream = self.get_async_query_stream(query=query, timeout=timeout)
-
-            buffer = BytesIO()
-            async for chunk in bytestream:
-                buffer.write(chunk)
-            buffer.flush()
-            if buffer.tell() == 0:
+            batch_records = self.get_async_query_generator(query=query, timeout=timeout)
+            batches = [batch_record async for batch_record in batch_records]
+            if not batches:
                 return None
-            buffer.seek(0)
-            return dataframe_from_arrow_stream(buffer)
+            return dataframe_from_arrow_table(pa.Table.from_batches(batches))
         except Exception as exc:
             if to_log_error:
                 logger.error(

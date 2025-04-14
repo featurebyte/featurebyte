@@ -2,10 +2,13 @@
 Integration test for feature table cache
 """
 
+import tempfile
 import time
 
+import pandas as pd
 import pytest
 from bson import ObjectId
+from pyarrow.parquet import ParquetWriter
 from sqlglot import parse_one
 
 from featurebyte import FeatureList
@@ -410,5 +413,22 @@ async def test_read_from_cache(
         graph=feature_cluster.graph,
         nodes=feature_cluster.nodes,
     )
+    assert df.shape[0] == observation_table.num_rows
+    assert set(df.columns.tolist()) == set([InternalName.TABLE_ROW_INDEX] + features)
+
+    batch_records = await feature_table_cache_service.stream_from_cache(
+        feature_store=feature_store_model,
+        observation_table=observation_table_model,
+        graph=feature_cluster.graph,
+        nodes=feature_cluster.nodes,
+    )
+    with tempfile.NamedTemporaryFile(suffix=".parquet") as temp_file:
+        writer = None
+        async for batch_record in batch_records:
+            if not writer:
+                writer = ParquetWriter(temp_file.name, batch_record.schema)
+            writer.write_batch(batch_record)
+        writer.close()
+        df = pd.read_parquet(temp_file.name)
     assert df.shape[0] == observation_table.num_rows
     assert set(df.columns.tolist()) == set([InternalName.TABLE_ROW_INDEX] + features)
