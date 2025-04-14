@@ -89,12 +89,6 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v3
-        with:
-          poetry-version: 1.8.2
-      - name: Configure Poetry
-        run: poetry config virtualenvs.in-project true
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -105,14 +99,14 @@ jobs:
           key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
           path: .venv
           restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+      - name: Install Poetry + Configure
+        run: |-
+          pip install poetry==2.1.2
+          poetry config virtualenvs.in-project true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-      - name: Install wkhtmltopdf
-        run: |-
-          sudo apt-get update
-          sudo apt-get install wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Download hive-udf
         uses: actions/download-artifact@v4
         with:
@@ -156,12 +150,6 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v3
-        with:
-          poetry-version: 1.8.2
-      - name: Configure Poetry
-        run: poetry config virtualenvs.in-project true
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -172,14 +160,14 @@ jobs:
           key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
           path: .venv
           restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+      - name: Install Poetry + Configure
+        run: |-
+          pip install poetry==2.1.2
+          poetry config virtualenvs.in-project true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-      - name: Install wkhtmltopdf
-        run: |-
-          sudo apt-get update
-          sudo apt-get install wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Download hive-udf
         uses: actions/download-artifact@v4
         with:
@@ -238,12 +226,6 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v3
-        with:
-          poetry-version: 1.8.2
-      - name: Configure Poetry
-        run: poetry config virtualenvs.in-project true
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -254,14 +236,14 @@ jobs:
           key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
           path: .venv
           restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+      - name: Install Poetry + Configure
+        run: |-
+          pip install poetry==2.1.2
+          poetry config virtualenvs.in-project true
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-      - name: Install wkhtmltopdf
-        run: |-
-          sudo apt-get update
-          sudo apt-get install wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Download hive-udf
         uses: actions/download-artifact@v4
         with:
@@ -367,11 +349,7 @@ jobs:
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-      - name: Install wkhtmltopdf
-        run: |-
-          sudo apt-get update
-          sudo apt-get install wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Run tests
         env:
           PYTEST_GROUP: ${{ matrix.pytest-group }}
@@ -439,11 +417,7 @@ jobs:
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-      - name: Install wkhtmltopdf
-        run: |-
-          sudo apt-get update
-          sudo apt-get install wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Download hive-udf
         uses: actions/download-artifact@v4
         with:
@@ -511,11 +485,7 @@ jobs:
       - name: Install packages needed for build
         run: |-
           sudo apt-get update
-          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
-      - name: Install wkhtmltopdf
-        run: |-
-          sudo apt-get update
-          sudo apt-get install wkhtmltopdf
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc wkhtmltopdf
       - name: Download hive-udf
         uses: actions/download-artifact@v4
         with:
