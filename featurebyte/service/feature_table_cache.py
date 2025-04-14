@@ -404,54 +404,143 @@ class FeatureTableCacheService:
                 progress_callback=progress_callback,
             )
 
+    @classmethod
     async def _ensure_feature_cache_table_columns(
-        self,
+        cls,
         db_session: BaseSession,
         cache_metadata: FeatureTableCacheMetadataModel,
         graph: QueryGraph,
         non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
     ) -> None:
-        async with acquire_lock(
-            self.redis,
-            f"feature_table_cache_update:{cache_metadata.table_name}",
-            timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
-        ):
-            # Only insert non-existing columns to the table. We need to acquire a lock to handle the
-            # case where multiple requests are trying to add the same feature to the cache table at
-            # the same time.
-            adapter = db_session.adapter
-            table_expr = expressions.Table(
-                this=quoted_identifier(cache_metadata.table_name),
-                db=quoted_identifier(db_session.schema_name),
-                catalog=quoted_identifier(db_session.database_name),
+        # Only insert non-existing columns to the table
+        adapter = db_session.adapter
+        table_expr = expressions.Table(
+            this=quoted_identifier(cache_metadata.table_name),
+            db=quoted_identifier(db_session.schema_name),
+            catalog=quoted_identifier(db_session.database_name),
+        )
+        existing_columns = set(
+            col.upper()
+            for col in (
+                await db_session.list_table_schema(
+                    table_name=cache_metadata.table_name,
+                    database_name=db_session.database_name,
+                    schema_name=db_session.schema_name,
+                    timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+                )
+            ).keys()
+        )
+        columns_expr = [
+            expressions.ColumnDef(
+                this=quoted_identifier(definition.feature_name),
+                kind=adapter.get_physical_type_from_dtype(extract_dtype_from_graph(graph, node)),
             )
-            existing_columns = set(
-                col.upper()
-                for col in (
-                    await db_session.list_table_schema(
-                        table_name=cache_metadata.table_name,
-                        database_name=db_session.database_name,
-                        schema_name=db_session.schema_name,
-                        timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
-                    )
-                ).keys()
+            for node, definition in non_cached_nodes
+            if definition.feature_name is not None
+            and definition.feature_name.upper() not in existing_columns
+        ]
+        # While "column already exist" error is not expected, still retry to handle other errors
+        # such as rate limiting (occurring in tests for BigQuery)
+        await db_session.retry_sql(
+            adapter.alter_table_add_columns(table_expr, columns_expr),
+        )
+
+    async def _insert_features_into_cache(
+        self,
+        db_session: BaseSession,
+        observation_table: ObservationTableModel,
+        non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
+        graph: QueryGraph,
+        intermediate_table_name: str,
+        historical_features_metrics: HistoricalFeaturesMetrics,
+    ) -> None:
+        cache_metadata = (
+            await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
+                observation_table_id=observation_table.id,
+                num_columns_to_insert=len(non_cached_nodes),
             )
-            columns_expr = [
-                expressions.ColumnDef(
-                    this=quoted_identifier(definition.feature_name),
-                    kind=adapter.get_physical_type_from_dtype(
-                        extract_dtype_from_graph(graph, node)
+        )
+        feature_table_cache_exists = await self._feature_table_cache_exists(
+            cache_metadata, db_session
+        )
+        if not feature_table_cache_exists:
+            # If cache table doesn't exist yet, create one by cloning from the observation table
+            request_column_names = [col.name for col in observation_table.columns_info]
+            await db_session.create_table_as(
+                table_details=TableDetails(
+                    database_name=db_session.database_name,
+                    schema_name=db_session.schema_name,
+                    table_name=cache_metadata.table_name,
+                ),
+                select_expr=get_source_expr(
+                    observation_table.location.table_details,
+                    column_names=[InternalName.TABLE_ROW_INDEX.value] + request_column_names,
+                ),
+                exists=True,
+                retry=True,
+            )
+
+        # alter cached tables adding columns for new features
+        await self._ensure_feature_cache_table_columns(
+            db_session=db_session,
+            cache_metadata=cache_metadata,
+            graph=graph,
+            non_cached_nodes=non_cached_nodes,
+        )
+
+        # merge temp table into cache table
+        merge_target_table_alias = "feature_table_cache"
+        merge_source_table_alias = "partial_features"
+
+        tic = time.time()
+        merge_conditions = [
+            expressions.EQ(
+                this=get_qualified_column_identifier(
+                    InternalName.TABLE_ROW_INDEX, merge_target_table_alias
+                ),
+                expression=get_qualified_column_identifier(
+                    InternalName.TABLE_ROW_INDEX, merge_source_table_alias
+                ),
+            )
+        ]
+        update_expr = expressions.Update(
+            expressions=[
+                expressions.EQ(
+                    this=get_qualified_column_identifier(
+                        cast(str, definition.feature_name), merge_target_table_alias
+                    ),
+                    expression=get_qualified_column_identifier(
+                        cast(str, graph.get_node_output_column_name(node.name)),
+                        merge_source_table_alias,
                     ),
                 )
                 for node, definition in non_cached_nodes
-                if definition.feature_name is not None
-                and definition.feature_name.upper() not in existing_columns
             ]
-            # While "column already exist" error is not expected, still retry to handle other errors
-            # such as rate limiting (occurring in tests for BigQuery)
-            await db_session.retry_sql(
-                adapter.alter_table_add_columns(table_expr, columns_expr),
-            )
+        )
+        merge_expr = expressions.Merge(
+            this=expressions.Table(
+                this=quoted_identifier(cache_metadata.table_name),
+                db=quoted_identifier(db_session.schema_name),
+                catalog=quoted_identifier(db_session.database_name),
+                alias=expressions.TableAlias(this=merge_target_table_alias),
+            ),
+            using=expressions.Table(
+                this=quoted_identifier(intermediate_table_name),
+                db=quoted_identifier(db_session.schema_name),
+                catalog=quoted_identifier(db_session.database_name),
+                alias=expressions.TableAlias(this=merge_source_table_alias),
+            ),
+            on=expressions.and_(*merge_conditions),
+            expressions=[expressions.When(matched=True, then=update_expr)],
+        )
+        await db_session.retry_sql(sql_to_string(merge_expr, source_type=db_session.source_type))
+        historical_features_metrics.feature_cache_update_seconds = time.time() - tic
+
+        # Update feature table cache metadata
+        await self.feature_table_cache_metadata_service.update_feature_table_cache(
+            cache_metadata_id=cache_metadata.id,
+            feature_definitions=[definition for _, definition in non_cached_nodes],
+        )
 
     async def _materialize_and_update_cache(  # pylint: disable=too-many-arguments
         self,
@@ -471,9 +560,6 @@ class FeatureTableCacheService:
             f"__TEMP__{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{ObjectId()}"
         )
 
-        merge_target_table_alias = "feature_table_cache"
-        merge_source_table_alias = "partial_features"
-
         try:
             historical_features_metrics = await self._populate_intermediate_table(
                 feature_store=feature_store,
@@ -486,87 +572,21 @@ class FeatureTableCacheService:
                 serving_names_mapping=serving_names_mapping,
                 progress_callback=progress_callback,
             )
-
-            cache_metadata = (
-                await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-                    observation_table_id=observation_table.id,
-                    num_columns_to_insert=len(non_cached_nodes),
+            async with acquire_lock(
+                self.redis,
+                f"feature_table_cache_update:obs:{observation_table.id}",
+                timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+            ):
+                # We need to acquire a lock to handle the case where multiple requests are trying to
+                # add the features to the cache at the same time.
+                await self._insert_features_into_cache(
+                    db_session=db_session,
+                    observation_table=observation_table,
+                    non_cached_nodes=non_cached_nodes,
+                    graph=graph,
+                    intermediate_table_name=intermediate_table_name,
+                    historical_features_metrics=historical_features_metrics,
                 )
-            )
-            feature_table_cache_exists = await self._feature_table_cache_exists(
-                cache_metadata, db_session
-            )
-            if not feature_table_cache_exists:
-                # If cache table doesn't exist yet, create one by cloning from the observation table
-                request_column_names = [col.name for col in observation_table.columns_info]
-                await db_session.create_table_as(
-                    table_details=TableDetails(
-                        database_name=db_session.database_name,
-                        schema_name=db_session.schema_name,
-                        table_name=cache_metadata.table_name,
-                    ),
-                    select_expr=get_source_expr(
-                        observation_table.location.table_details,
-                        column_names=[InternalName.TABLE_ROW_INDEX.value] + request_column_names,
-                    ),
-                    exists=True,
-                    retry=True,
-                )
-
-            # alter cached tables adding columns for new features
-            await self._ensure_feature_cache_table_columns(
-                db_session=db_session,
-                cache_metadata=cache_metadata,
-                graph=graph,
-                non_cached_nodes=non_cached_nodes,
-            )
-
-            # merge temp table into cache table
-            tic = time.time()
-            merge_conditions = [
-                expressions.EQ(
-                    this=get_qualified_column_identifier(
-                        InternalName.TABLE_ROW_INDEX, merge_target_table_alias
-                    ),
-                    expression=get_qualified_column_identifier(
-                        InternalName.TABLE_ROW_INDEX, merge_source_table_alias
-                    ),
-                )
-            ]
-            update_expr = expressions.Update(
-                expressions=[
-                    expressions.EQ(
-                        this=get_qualified_column_identifier(
-                            cast(str, definition.feature_name), merge_target_table_alias
-                        ),
-                        expression=get_qualified_column_identifier(
-                            cast(str, graph.get_node_output_column_name(node.name)),
-                            merge_source_table_alias,
-                        ),
-                    )
-                    for node, definition in non_cached_nodes
-                ]
-            )
-            merge_expr = expressions.Merge(
-                this=expressions.Table(
-                    this=quoted_identifier(cache_metadata.table_name),
-                    db=quoted_identifier(db_session.schema_name),
-                    catalog=quoted_identifier(db_session.database_name),
-                    alias=expressions.TableAlias(this=merge_target_table_alias),
-                ),
-                using=expressions.Table(
-                    this=quoted_identifier(intermediate_table_name),
-                    db=quoted_identifier(db_session.schema_name),
-                    catalog=quoted_identifier(db_session.database_name),
-                    alias=expressions.TableAlias(this=merge_source_table_alias),
-                ),
-                on=expressions.and_(*merge_conditions),
-                expressions=[expressions.When(matched=True, then=update_expr)],
-            )
-            await db_session.retry_sql(
-                sql_to_string(merge_expr, source_type=db_session.source_type)
-            )
-            historical_features_metrics.feature_cache_update_seconds = time.time() - tic
         finally:
             await db_session.drop_table(
                 database_name=db_session.database_name,
@@ -574,10 +594,6 @@ class FeatureTableCacheService:
                 table_name=intermediate_table_name,
                 if_exists=True,
             )
-        await self.feature_table_cache_metadata_service.update_feature_table_cache(
-            cache_metadata_id=cache_metadata.id,
-            feature_definitions=[definition for _, definition in non_cached_nodes],
-        )
         return historical_features_metrics
 
     @staticmethod
