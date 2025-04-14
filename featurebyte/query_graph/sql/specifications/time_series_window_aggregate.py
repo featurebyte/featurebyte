@@ -22,6 +22,7 @@ from featurebyte.query_graph.sql.specs import (
     AggregationType,
     NonTileBasedAggregationSpec,
 )
+from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 
 
 @dataclass
@@ -35,6 +36,7 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
     window: CalendarWindow
     offset: Optional[CalendarWindow]
     blind_spot: Optional[CalendarWindow]
+    timezone_offset_column_name: Optional[str]
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -100,6 +102,26 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
         agg_result_name_include_serving_names: bool,
     ) -> list[TimeSeriesWindowAggregateSpec]:
         assert isinstance(node, TimeSeriesWindowAggregateNode)
+
+        # Timezone offset column is used to convert reference datetime to local time for aggregation
+        timezone_offset_column_name = None
+        if graph is not None:
+            op_struct = (
+                OperationStructureExtractor(graph=graph)
+                .extract(node=node)
+                .operation_structure_map[node.name]
+            )
+            reference_datetime_schema = None
+            for column in op_struct.columns:
+                if column.name == node.parameters.reference_datetime_column:
+                    reference_datetime_schema = column.dtype_info.timestamp_schema
+            if (
+                reference_datetime_schema is not None
+                and reference_datetime_schema.timezone_offset_column_name is not None
+                and reference_datetime_schema.is_utc_time
+            ):
+                timezone_offset_column_name = reference_datetime_schema.timezone_offset_column_name
+
         specs = []
         for feature_name, window in zip(node.parameters.names, node.parameters.windows):
             assert window is not None
@@ -119,6 +141,7 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
                     window=window,
                     offset=node.parameters.offset,
                     blind_spot=node.parameters.feature_job_setting.get_blind_spot_calendar_window(),
+                    timezone_offset_column_name=timezone_offset_column_name,
                 )
             )
         return specs
