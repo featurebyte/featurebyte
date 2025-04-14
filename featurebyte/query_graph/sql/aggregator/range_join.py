@@ -125,6 +125,7 @@ def range_join_tables(
     left_table: LeftTable,
     right_table: RightTable,
     window_size: int,
+    as_subquery: bool = True,
 ) -> Select:
     """
     Join two tables with range join.
@@ -141,6 +142,9 @@ def range_join_tables(
         Right table in the range join, e.g. the tile table
     window_size: int
         Window size of the range join
+    as_subquery: bool
+        Whether to return the result as a subquery or not. If True, the result will be returned
+        as a subquery. Otherwise, it will be returned as a table.
 
     Returns
     -------
@@ -226,4 +230,6 @@ def range_join_tables(
                 expression=joined_expr,
             )
     assert req_joined_with_tiles is not None
-    return select().from_(req_joined_with_tiles.subquery(copy=False))
+    if as_subquery:
+        return select().from_(req_joined_with_tiles.subquery(copy=False))
+    return req_joined_with_tiles
