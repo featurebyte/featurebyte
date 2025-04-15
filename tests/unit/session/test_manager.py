@@ -172,10 +172,10 @@ async def test_session_manager__invalidate_cache_when_execute_query_failed(
     # simulate exception during query execution
     assert session_cache_key in session_cache
     with mock.patch(
-        "featurebyte.session.base.BaseSession.get_async_query_stream"
-    ) as mock_get_async_query_stream:
+        "featurebyte.session.base.BaseSession.get_async_query_generator"
+    ) as mock_get_async_query_generator:
         exc_message = "Some error"
-        mock_get_async_query_stream.side_effect = Exception(exc_message)
+        mock_get_async_query_generator.side_effect = Exception(exc_message)
         with pytest.raises(Exception, match=exc_message):
             base_session = cast(BaseSession, session)
             await base_session.execute_query("SELECT * FROM some_table")

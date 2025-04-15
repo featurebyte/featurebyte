@@ -5,10 +5,11 @@ Module for managing physical feature table cache as well as metadata storage.
 from __future__ import annotations
 
 import time
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple, cast
+from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, List, Optional, Tuple, cast
 
 import pandas as pd
 from bson import ObjectId
+from pyarrow import RecordBatch
 from redis import Redis
 from sqlglot import expressions
 
@@ -711,6 +712,59 @@ class FeatureTableCacheService:
 
         return hashes, db_session, historical_features_metrics
 
+    async def _construct_read_from_cache_query(
+        self,
+        feature_store: FeatureStoreModel,
+        observation_table: ObservationTableModel,
+        graph: QueryGraph,
+        nodes: List[Node],
+        definition_hashes_mapping: Optional[Dict[str, str]] = None,
+        columns: Optional[List[str]] = None,
+        sample_size: Optional[int] = None,
+    ) -> tuple[BaseSession, str]:
+        """
+        Given the graph and set of nodes, get database session and SQL to read respective cached features from feature table cache.
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            Feature Store object
+        observation_table: ObservationTableModel
+            Observation table object
+        graph: QueryGraph
+            Graph definition
+        nodes: List[Node]
+            Node names
+        definition_hashes_mapping: Optional[Dict[str, str]]
+            Optional definition hashes. If specified, the hashes will be used instead of being
+            computed from the graph
+        columns: Optional[List[str]]
+            Optional list of columns to read from the cache table
+        sample_size: Optional[int]
+            Optional sample size to read from the cache table
+
+        Returns
+        -------
+        tuple[BaseSession, str]
+            Tuple of database session and SQL query string
+        """
+        hashes = await self.get_feature_definition_hashes(graph, nodes, definition_hashes_mapping)
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store
+        )
+        select_expr = await self.get_feature_query(
+            db_session=db_session,
+            observation_table=observation_table,
+            hashes=hashes,
+            output_column_names=[
+                cast(str, graph.get_node_output_column_name(node.name)) for node in nodes
+            ],
+            additional_columns=columns or [],
+            sample_size=sample_size,
+        )
+        sql = sql_to_string(select_expr, source_type=db_session.source_type)
+        return db_session, sql
+
     async def read_from_cache(
         self,
         feature_store: FeatureStoreModel,
@@ -747,22 +801,63 @@ class FeatureTableCacheService:
         pd.DataFrame
             Result data
         """
-        hashes = await self.get_feature_definition_hashes(graph, nodes, definition_hashes_mapping)
-        db_session = await self.session_manager_service.get_feature_store_session(
-            feature_store=feature_store
-        )
-        select_expr = await self.get_feature_query(
-            db_session=db_session,
+        db_session, sql = await self._construct_read_from_cache_query(
+            feature_store=feature_store,
             observation_table=observation_table,
-            hashes=hashes,
-            output_column_names=[
-                cast(str, graph.get_node_output_column_name(node.name)) for node in nodes
-            ],
-            additional_columns=columns or [],
+            graph=graph,
+            nodes=nodes,
+            definition_hashes_mapping=definition_hashes_mapping,
+            columns=columns,
             sample_size=sample_size,
         )
-        sql = sql_to_string(select_expr, source_type=db_session.source_type)
         return await db_session.execute_query_long_running(sql)
+
+    async def stream_from_cache(
+        self,
+        feature_store: FeatureStoreModel,
+        observation_table: ObservationTableModel,
+        graph: QueryGraph,
+        nodes: List[Node],
+        definition_hashes_mapping: Optional[Dict[str, str]] = None,
+        columns: Optional[List[str]] = None,
+        sample_size: Optional[int] = None,
+    ) -> AsyncGenerator[RecordBatch, None]:
+        """
+        Given the graph and set of nodes, get respective cached features from feature table cache.
+
+        Parameters
+        ----------
+        feature_store: FeatureStoreModel
+            Feature Store object
+        observation_table: ObservationTableModel
+            Observation table object
+        graph: QueryGraph
+            Graph definition
+        nodes: List[Node]
+            Node names
+        definition_hashes_mapping: Optional[Dict[str, str]]
+            Optional definition hashes. If specified, the hashes will be used instead of being
+            computed from the graph
+        columns: Optional[List[str]]
+            Optional list of columns to read from the cache table
+        sample_size: Optional[int]
+            Optional sample size to read from the cache table
+
+        Returns
+        -------
+        AsyncGenerator[RecordBatch, None]
+            Result data
+        """
+        db_session, sql = await self._construct_read_from_cache_query(
+            feature_store=feature_store,
+            observation_table=observation_table,
+            graph=graph,
+            nodes=nodes,
+            definition_hashes_mapping=definition_hashes_mapping,
+            columns=columns,
+            sample_size=sample_size,
+        )
+        return db_session.get_async_query_generator(sql)
 
     async def create_view_or_table_from_cache(
         self,
