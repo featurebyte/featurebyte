@@ -12,6 +12,7 @@ from typing import Any, AsyncGenerator, Callable, Iterator, Optional, Set, cast
 from celery import Celery
 from redis import Redis
 
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.common.path_util import import_submodules
 from featurebyte.logging import get_logger
 from featurebyte.migration.migration_data_service import SchemaMetadataService
@@ -27,7 +28,7 @@ from featurebyte.migration.service.mixin import (
     BaseMongoCollectionMigration,
     DataWarehouseMigrationMixin,
 )
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import User
 from featurebyte.persistent.base import Persistent
 from featurebyte.persistent.mongo import MongoDB
 from featurebyte.routes.app_container_config import AppContainerConfig, _get_class_name

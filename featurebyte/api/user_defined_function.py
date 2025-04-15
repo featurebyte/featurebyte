@@ -25,12 +25,13 @@ from featurebyte.api.user_defined_function_injector import (
     UserDefinedFunctionInjector,
 )
 from featurebyte.api.view import ViewColumn
+from featurebyte.common import get_active_catalog_id
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.config import Configurations
 from featurebyte.enum import DBVarType
 from featurebyte.exception import InvalidSettingsError
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.user_defined_function import FunctionParameter, UserDefinedFunctionModel
 from featurebyte.schema.user_defined_function import (
     UserDefinedFunctionCreate,

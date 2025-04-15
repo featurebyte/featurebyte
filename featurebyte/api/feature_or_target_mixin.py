@@ -14,13 +14,14 @@ from typeguard import typechecked
 
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.primary_entity_mixin import PrimaryEntityMixin
+from featurebyte.common import get_active_catalog_id
 from featurebyte.common.formatting_util import CodeStr
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.config import Configurations
 from featurebyte.core.generic import QueryObject
 from featurebyte.exception import RecordRetrievalException
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import BaseFeatureModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph

@@ -7,7 +7,8 @@ from typing import Any, List
 import pytest
 from bson import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.common import DEFAULT_CATALOG_ID
+from featurebyte.models.base import User
 from featurebyte.routes.app_container_config import AppContainerConfig, ClassDefinition
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.utils.persistent import MongoDBImpl

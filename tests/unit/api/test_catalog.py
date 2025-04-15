@@ -60,12 +60,12 @@ from featurebyte.api.target_namespace import TargetNamespace
 from featurebyte.api.use_case import UseCase
 from featurebyte.api.use_case_or_context_mixin import UseCaseOrContextMixin
 from featurebyte.api.user_defined_function import UserDefinedFunction
+from featurebyte.common import activate_catalog, get_active_catalog_id
 from featurebyte.exception import (
     DuplicatedRecordException,
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.base import activate_catalog, get_active_catalog_id
 
 
 @pytest.fixture(autouse=True)

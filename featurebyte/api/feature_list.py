@@ -39,6 +39,7 @@ from featurebyte.api.savable_api_object import DeletableApiObject, SavableApiObj
 from featurebyte.api.templates.doc_util import substitute_docstring
 from featurebyte.api.templates.entity_doc import PRIMARY_ENTITY_DOC
 from featurebyte.api.use_case import UseCase
+from featurebyte.common import get_active_catalog_id
 from featurebyte.common.descriptor import ClassInstanceMethodDescriptor
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import (
@@ -50,7 +51,7 @@ from featurebyte.config import Configurations
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import RecordCreationException, RecordRetrievalException
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.base import PydanticObjectId, get_active_catalog_id
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureListModel, FeatureReadinessDistribution
 from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.tile import TileSpec

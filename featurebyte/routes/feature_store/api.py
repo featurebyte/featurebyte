@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from fastapi import Query, Request
 
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.models.persistent import AuditDocumentList
 from featurebyte.persistent.base import SortDir
