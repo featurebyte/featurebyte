@@ -86,7 +86,7 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 progress_callback=executor_params.progress_callback,
             )
         else:
-            historical_features_metrics = await get_historical_features(
+            features_computation_result = await get_historical_features(
                 session=executor_params.session,
                 tile_cache_service=self.tile_cache_service,
                 warehouse_table_service=self.warehouse_table_service,
@@ -100,6 +100,7 @@ class HistoricalFeatureExecutor(QueryExecutor[HistoricalFeatureExecutorParams]):
                 output_table_details=executor_params.output_table_details,
                 progress_callback=executor_params.progress_callback,
             )
+            historical_features_metrics = features_computation_result.historical_features_metrics
             is_output_view = False
         return ExecutionResult(
             is_output_view=is_output_view,

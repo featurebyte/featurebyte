@@ -5,6 +5,7 @@ Module with utility functions to compute historical features
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, Optional, Union
 
 import pandas as pd
@@ -42,6 +43,15 @@ from featurebyte.session.base import BaseSession
 from featurebyte.session.session_helper import SessionHandler, execute_feature_query_set
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class FeaturesComputationResult:
+    """
+    Features computation result
+    """
+
+    historical_features_metrics: HistoricalFeaturesMetrics
 
 
 async def compute_tiles_on_demand(
@@ -149,7 +159,8 @@ async def get_historical_features(
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-) -> HistoricalFeaturesMetrics:
+    raise_on_error: bool = True,
+) -> FeaturesComputationResult:
     """Get historical features
 
     Parameters
@@ -179,6 +190,10 @@ async def get_historical_features(
         Output table details to write the results to
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
+    raise_on_error: bool
+        Whether to raise an error if the computation fails. If True, any query error will be raised
+        immediately. If False, computation will be done on a best effort basis with errors
+        suppressed and logged in the result.
 
     Returns
     -------
@@ -296,11 +311,12 @@ async def get_historical_features(
                 job_schedule_table_set=job_schedule_table_set,
             )
 
-    return HistoricalFeaturesMetrics(
+    metrics = HistoricalFeaturesMetrics(
         tile_compute_seconds=tile_compute_seconds,
         tile_compute_metrics=tile_compute_result.tile_compute_metrics,
         feature_compute_seconds=feature_compute_seconds,
     )
+    return FeaturesComputationResult(historical_features_metrics=metrics)
 
 
 async def cleanup_historical_features_temp_tables(
@@ -367,7 +383,7 @@ async def get_target(
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-) -> HistoricalFeaturesMetrics:
+) -> FeaturesComputationResult:
     """Get target
 
     Parameters
@@ -460,7 +476,9 @@ async def get_target(
             database_name=session.database_name,
             if_exists=True,
         )
-    return HistoricalFeaturesMetrics(
-        tile_compute_seconds=0,
-        feature_compute_seconds=feature_compute_seconds,
+    return FeaturesComputationResult(
+        historical_features_metrics=HistoricalFeaturesMetrics(
+            tile_compute_seconds=0,
+            feature_compute_seconds=feature_compute_seconds,
+        )
     )

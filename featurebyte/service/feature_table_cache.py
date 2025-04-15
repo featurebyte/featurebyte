@@ -42,7 +42,11 @@ from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
 from featurebyte.service.feature_table_cache_metadata import FeatureTableCacheMetadataService
-from featurebyte.service.historical_features_and_target import get_historical_features, get_target
+from featurebyte.service.historical_features_and_target import (
+    FeaturesComputationResult,
+    get_historical_features,
+    get_target,
+)
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.tile_cache import TileCacheService
@@ -63,7 +67,18 @@ class UpdateFeatureTableCacheResult:
 
     hashes: List[str]
     session: BaseSession
-    historical_features_metrics: HistoricalFeaturesMetrics
+    features_computation_result: FeaturesComputationResult
+
+    @property
+    def historical_features_metrics(self) -> HistoricalFeaturesMetrics:
+        """
+        Get historical features metrics
+
+        Returns
+        -------
+        HistoricalFeaturesMetrics
+        """
+        return self.features_computation_result.historical_features_metrics
 
 
 class FeatureTableCacheService:
@@ -372,7 +387,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
-    ) -> HistoricalFeaturesMetrics:
+    ) -> FeaturesComputationResult:
         request_column_names = {col.name for col in observation_table.columns_info}
         nodes_only = [node for node, _ in nodes]
         parent_serving_preparation = (
@@ -567,14 +582,14 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
-    ) -> HistoricalFeaturesMetrics:
+    ) -> FeaturesComputationResult:
         # create temporary table with features
         intermediate_table_name = (
             f"__TEMP__{MaterializedTableNamePrefix.FEATURE_TABLE_CACHE}_{ObjectId()}"
         )
 
         try:
-            historical_features_metrics = await self._populate_intermediate_table(
+            features_computation_result = await self._populate_intermediate_table(
                 feature_store=feature_store,
                 observation_table=observation_table,
                 db_session=db_session,
@@ -598,7 +613,7 @@ class FeatureTableCacheService:
                     non_cached_nodes=non_cached_nodes,
                     graph=graph,
                     intermediate_table_name=intermediate_table_name,
-                    historical_features_metrics=historical_features_metrics,
+                    historical_features_metrics=features_computation_result.historical_features_metrics,
                 )
         finally:
             await db_session.drop_table(
@@ -607,7 +622,7 @@ class FeatureTableCacheService:
                 table_name=intermediate_table_name,
                 if_exists=True,
             )
-        return historical_features_metrics
+        return features_computation_result
 
     @staticmethod
     async def _feature_table_cache_exists(
@@ -704,7 +719,7 @@ class FeatureTableCacheService:
             remaining_progress_callback = None
 
         if non_cached_nodes:
-            historical_features_metrics = await self._materialize_and_update_cache(
+            features_computation_result = await self._materialize_and_update_cache(
                 feature_store=feature_store,
                 observation_table=observation_table,
                 db_session=db_session,
@@ -715,16 +730,18 @@ class FeatureTableCacheService:
                 progress_callback=remaining_progress_callback,
             )
         else:
-            historical_features_metrics = HistoricalFeaturesMetrics(
-                tile_compute_seconds=0,
-                feature_compute_seconds=0,
-                feature_cache_update_seconds=0,
+            features_computation_result = FeaturesComputationResult(
+                historical_features_metrics=HistoricalFeaturesMetrics(
+                    tile_compute_seconds=0,
+                    feature_compute_seconds=0,
+                    feature_cache_update_seconds=0,
+                )
             )
 
         return UpdateFeatureTableCacheResult(
             hashes=hashes,
             session=db_session,
-            historical_features_metrics=historical_features_metrics,
+            features_computation_result=features_computation_result,
         )
 
     async def _construct_read_from_cache_query(
