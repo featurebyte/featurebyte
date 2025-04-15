@@ -51,9 +51,10 @@ from featurebyte import (
 from featurebyte.api.entity import Entity
 from featurebyte.api.feature_store import FeatureStore
 from featurebyte.app import app
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.enum import InternalName, SourceType, StorageType, TimeIntervalUnit
 from featurebyte.logging import get_logger
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import User
 from featurebyte.models.credential import (
     AccessTokenCredential,
     CredentialModel,

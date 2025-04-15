@@ -14,8 +14,8 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte import Catalog
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.enum import SemanticType, SourceType
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.online_store import OnlineStoreModel, RedisOnlineStoreDetails
 from featurebyte.models.relationship import RelationshipType
 from featurebyte.query_graph.model.column_info import ColumnInfo

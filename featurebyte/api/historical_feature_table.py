@@ -16,9 +16,9 @@ from featurebyte.api.feature_store import FeatureStore
 from featurebyte.api.materialized_table import MaterializedTableMixin
 from featurebyte.api.observation_table import ObservationTable
 from featurebyte.api.target import Target
+from featurebyte.common import get_active_catalog_id
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.logging import get_logger
-from featurebyte.models.base import get_active_catalog_id
 from featurebyte.models.historical_feature_table import HistoricalFeatureTableModel
 from featurebyte.schema.historical_feature_table import HistoricalFeatureTableListRecord
 

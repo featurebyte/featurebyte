@@ -5,8 +5,8 @@ Catalog decorator.
 from functools import wraps
 from typing import Any
 
+from featurebyte.common import activate_catalog, get_active_catalog_id
 from featurebyte.logging import get_logger
-from featurebyte.models.base import activate_catalog, get_active_catalog_id
 
 logger = get_logger(__name__)
 

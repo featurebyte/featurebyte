@@ -14,6 +14,7 @@ from cachetools import TTLCache
 from requests import Session
 
 from featurebyte.api.api_object import ApiObject
+from featurebyte.common import activate_catalog
 from featurebyte.common.env_util import set_environment_variable, set_environment_variables
 from featurebyte.common.progress import get_ranged_progress_callback
 from featurebyte.common.utils import timer
@@ -21,7 +22,7 @@ from featurebyte.core.generic import QueryObject
 from featurebyte.enum import ConflictResolution
 from featurebyte.exception import DocumentInconsistencyError
 from featurebyte.logging import get_logger
-from featurebyte.models.base import PydanticObjectId, activate_catalog
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
 from featurebyte.query_graph.graph import GlobalQueryGraph, QueryGraph
 from featurebyte.query_graph.node.generic import GroupByNode

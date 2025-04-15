@@ -7,8 +7,8 @@ import datetime
 import pytest
 from pydantic import ValidationError
 
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.models import DimensionTableModel
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.query_graph.node.schema import TableDetails
 

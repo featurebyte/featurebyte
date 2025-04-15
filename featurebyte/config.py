@@ -20,11 +20,11 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from websocket import WebSocketConnectionClosedException
 
+from featurebyte.common import activate_catalog, get_active_catalog_id
 from featurebyte.common.doc_util import FBAutoDoc
 from featurebyte.common.utils import get_version, is_server_mode
 from featurebyte.enum import StrEnum
 from featurebyte.exception import InvalidSettingsError
-from featurebyte.models.base import activate_catalog, get_active_catalog_id
 
 # http request settings
 HTTP_REQUEST_TIMEOUT: int = 180

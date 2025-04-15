@@ -7,7 +7,7 @@ import datetime
 import pytest
 from pydantic import ValidationError
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.scd_table import SCDTableModel
 from featurebyte.query_graph.node.schema import TableDetails

@@ -8,7 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from featurebyte import TimeInterval
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_store import TableStatus
 from featurebyte.models.time_series_table import TimeSeriesTableModel
 from featurebyte.query_graph.model.feature_job_setting import CronFeatureJobSetting

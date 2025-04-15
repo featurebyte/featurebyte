@@ -8,9 +8,9 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte import Feature, FeatureJobSetting, FeatureList
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.enum import InternalName
 from featurebyte.migration.service.data_warehouse import DataWarehouseMigrationServiceV1
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 
 
 @pytest.fixture(scope="session")

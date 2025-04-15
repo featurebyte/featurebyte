@@ -9,8 +9,8 @@ import time
 import pytest
 import pytz
 
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.exception import DocumentNotFoundError
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.periodic_task import Crontab, Interval
 from featurebyte.models.task import LogMessage, ProgressHistory, Task
 from featurebyte.schema.task import TaskId, TaskStatus

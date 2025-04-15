@@ -5,7 +5,7 @@ Catalog list handler
 import pandas as pd
 
 from featurebyte.api.api_handler.base import ListHandler
-from featurebyte.models.base import get_active_catalog_id
+from featurebyte.common import get_active_catalog_id
 
 
 class CatalogListHandler(ListHandler):
