@@ -152,11 +152,11 @@ def test_date_difference_of_varchar_timestamp_with_timezone(event_table, config,
     """
     source_type = session.source_type
     if source_type in SourceType.java_time_format_types():
-        format_string = "yyyy-MM-dd HH:mm:ss"
+        format_string = "yyyy-dd-MM HHmmss"
     elif source_type == SourceType.BIGQUERY:
-        format_string = "%Y-%m-%d %H:%M:%S"
+        format_string = "%Y-%d-%m %H%M%S"
     elif source_type == SourceType.SNOWFLAKE:
-        format_string = "YYYY-MM-DD HH24:MI:SS"
+        format_string = "YYYY-DD-MM HH24MISS"
     else:
         raise ValueError("Unexpected source type")
 
@@ -194,7 +194,7 @@ def test_date_difference_of_varchar_timestamp_with_timezone(event_table, config,
         "POINT_IN_TIME": pd.Timestamp(preview_param["POINT_IN_TIME"]),
         "üser id": preview_param["üser id"],
         "diff_in_day": -80.125,
-        "min_timestamp_string_2d": "2001-09-03 21:00:00",
+        "min_timestamp_string_2d": "2001-03-09 210000",
     }
     assert preview_df.iloc[0].to_dict() == expected
 
@@ -209,5 +209,5 @@ def test_date_difference_of_varchar_timestamp_with_timezone(event_table, config,
     assert df_feat.iloc[0].to_dict() == {
         **request_row,
         "diff_in_day": -81,
-        "min_timestamp_string_2d": "2001-09-03 21:00:00",
+        "min_timestamp_string_2d": "2001-03-09 210000",
     }

@@ -664,7 +664,7 @@ def transaction_dataframe(source_type):
     )
     data["tz_offset"] = formatted_offsets
     data["transaction_id"] = [f"T{i}" for i in range(data.shape[0])]
-    data["timestamp_string"] = timestamps.astype(str).values
+    data["timestamp_string"] = timestamps.dt.strftime("%Y-%d-%m %H%M%S").values
 
     if source_type != "sqlite":
         data["embedding_array"] = [rng.random(10).tolist() for _ in range(row_number)]
@@ -1466,7 +1466,7 @@ def create_transactions_event_table_from_data_source(
             cleaning_operations=[
                 AddTimestampSchema(
                     timestamp_schema=TimestampSchema(
-                        format_string="YYYY-MM-DD HH24:MI:SS",
+                        format_string="YYYY-DD-MM HH24MISS",
                         is_utc_time=True,
                         timezone=TimeZoneColumn(type="offset", column_name="TZ_OFFSET"),
                     )
