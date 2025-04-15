@@ -4,6 +4,7 @@ Base class for SQL adapters
 
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -28,7 +29,9 @@ from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.typing import DatetimeSupportedPropertyType
 
 FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
-MAX_ROW_COUNT_FOR_DETERMINISTIC_SAMPLING = 10000000
+MAX_ROW_COUNT_FOR_DETERMINISTIC_SAMPLING = int(
+    os.environ.get("MAX_ROW_COUNT_FOR_DETERMINISTIC_SAMPLING", 10000000)
+)
 
 
 logger = get_logger(__name__)
