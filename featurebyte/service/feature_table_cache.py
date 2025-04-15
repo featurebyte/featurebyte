@@ -382,6 +382,7 @@ class FeatureTableCacheService:
         intermediate_table_name: str,
         graph: QueryGraph,
         nodes: List[Tuple[Node, CachedFeatureDefinition]],
+        raise_on_error: bool,
         is_target: bool = False,
         serving_names_mapping: Optional[Dict[str, str]] = None,
         progress_callback: Optional[
@@ -430,6 +431,7 @@ class FeatureTableCacheService:
                 serving_names_mapping=serving_names_mapping,
                 parent_serving_preparation=parent_serving_preparation,
                 progress_callback=progress_callback,
+                raise_on_error=raise_on_error,
             )
 
     @classmethod
@@ -587,6 +589,7 @@ class FeatureTableCacheService:
         db_session: BaseSession,
         graph: QueryGraph,
         non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
+        raise_on_error: bool,
         is_target: bool = False,
         serving_names_mapping: Optional[Dict[str, str]] = None,
         progress_callback: Optional[
@@ -609,6 +612,7 @@ class FeatureTableCacheService:
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
                 progress_callback=progress_callback,
+                raise_on_error=raise_on_error,
             )
             async with acquire_lock(
                 self.redis,
@@ -663,6 +667,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
+        raise_on_error: bool = True,
     ) -> UpdateFeatureTableCacheResult:
         """
         Create or update feature table cache
@@ -738,6 +743,7 @@ class FeatureTableCacheService:
                 is_target=is_target,
                 serving_names_mapping=serving_names_mapping,
                 progress_callback=remaining_progress_callback,
+                raise_on_error=raise_on_error,
             )
         else:
             features_computation_result = FeaturesComputationResult(
