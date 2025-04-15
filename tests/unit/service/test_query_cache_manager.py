@@ -10,7 +10,7 @@ import pytest
 from freezegun import freeze_time
 from sqlglot import parse_one
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.models.query_cache import QueryCacheType
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 

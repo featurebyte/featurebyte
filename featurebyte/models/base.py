@@ -24,13 +24,12 @@ from pydantic_core import core_schema
 from pymongo.operations import IndexModel
 from typing_extensions import Annotated
 
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.common.model_util import get_version
 from featurebyte.enum import StrEnum
 
 Model = TypeVar("Model", bound="FeatureByteBaseModel")
 
-DEFAULT_CATALOG_ID = ObjectId("23eda344d0313fb925f7883a")
-ACTIVE_CATALOG_ID: Optional[ObjectId] = None
 CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0-9])[A-Z])")
 
 
@@ -43,30 +42,6 @@ CAMEL_CASE_TO_SNAKE_CASE_PATTERN = re.compile("((?!^)(?<!_)[A-Z][a-z]+|(?<=[a-z0
 # - component name: _part{suffix}
 # - catalog prefix: cat{suffix}_
 NameStr = Annotated[str, StringConstraints(min_length=0, max_length=230)]
-
-
-def get_active_catalog_id() -> Optional[ObjectId]:
-    """
-    Get active catalog id
-
-    Returns
-    -------
-    Optional[ObjectId]
-    """
-    return ACTIVE_CATALOG_ID
-
-
-def activate_catalog(catalog_id: Optional[ObjectId]) -> None:
-    """
-    Set active catalog
-
-    Parameters
-    ----------
-    catalog_id: Optional[ObjectId]
-        Catalog ID to set as active, or None to set no active catalog
-    """
-    global ACTIVE_CATALOG_ID
-    ACTIVE_CATALOG_ID = catalog_id
 
 
 class _ObjectIdPydanticAnnotation:

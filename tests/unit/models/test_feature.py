@@ -9,8 +9,8 @@ from datetime import datetime
 import pytest
 from bson import ObjectId
 
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.common.model_util import get_version
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_namespace import FeatureNamespaceModel, FeatureReadiness
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
