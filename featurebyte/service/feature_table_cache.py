@@ -480,8 +480,17 @@ class FeatureTableCacheService:
         non_cached_nodes: List[Tuple[Node, CachedFeatureDefinition]],
         graph: QueryGraph,
         intermediate_table_name: str,
-        historical_features_metrics: HistoricalFeaturesMetrics,
+        features_computation_result: FeaturesComputationResult,
     ) -> None:
+        # Skip inserting features if there are any failed nodes
+        failed_node_names_set = set(features_computation_result.failed_node_names)
+        non_cached_nodes = [
+            node_and_def
+            for node_and_def in non_cached_nodes
+            if node_and_def[0].name not in failed_node_names_set
+        ]
+
+        # Get the feature table cache to insert to
         cache_metadata = (
             await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
                 observation_table_id=observation_table.id,
@@ -562,7 +571,8 @@ class FeatureTableCacheService:
             expressions=[expressions.When(matched=True, then=update_expr)],
         )
         await db_session.retry_sql(sql_to_string(merge_expr, source_type=db_session.source_type))
-        historical_features_metrics.feature_cache_update_seconds = time.time() - tic
+        metrics = features_computation_result.historical_features_metrics
+        metrics.feature_cache_update_seconds = time.time() - tic
 
         # Update feature table cache metadata
         await self.feature_table_cache_metadata_service.update_feature_table_cache(
@@ -613,7 +623,7 @@ class FeatureTableCacheService:
                     non_cached_nodes=non_cached_nodes,
                     graph=graph,
                     intermediate_table_name=intermediate_table_name,
-                    historical_features_metrics=features_computation_result.historical_features_metrics,
+                    features_computation_result=features_computation_result,
                 )
         finally:
             await db_session.drop_table(
