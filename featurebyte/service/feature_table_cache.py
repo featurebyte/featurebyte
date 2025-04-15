@@ -5,6 +5,7 @@ Module for managing physical feature table cache as well as metadata storage.
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass
 from typing import Any, AsyncGenerator, Callable, Coroutine, Dict, List, Optional, Tuple, cast
 
 import pandas as pd
@@ -52,6 +53,17 @@ from featurebyte.utils.redis import acquire_lock
 FEATURE_TABLE_CACHE_CHECK_PROGRESS_PERCENTAGE = 10
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class UpdateFeatureTableCacheResult:
+    """
+    Result of updating feature table cache
+    """
+
+    hashes: List[str]
+    session: BaseSession
+    historical_features_metrics: HistoricalFeaturesMetrics
 
 
 class FeatureTableCacheService:
@@ -626,7 +638,7 @@ class FeatureTableCacheService:
         progress_callback: Optional[
             Callable[[int, Optional[str]], Coroutine[Any, Any, None]]
         ] = None,
-    ) -> Tuple[List[str], BaseSession, HistoricalFeaturesMetrics]:
+    ) -> UpdateFeatureTableCacheResult:
         """
         Create or update feature table cache
 
@@ -655,8 +667,7 @@ class FeatureTableCacheService:
 
         Returns
         -------
-        Tuple[List[str], BaseSession]
-            Tuple of feature definitions corresponding to nodes, session object
+        UpdateFeatureTableCacheResult
         """
         if progress_callback:
             await progress_callback(1, "Checking feature table cache status")
@@ -710,7 +721,11 @@ class FeatureTableCacheService:
                 feature_cache_update_seconds=0,
             )
 
-        return hashes, db_session, historical_features_metrics
+        return UpdateFeatureTableCacheResult(
+            hashes=hashes,
+            session=db_session,
+            historical_features_metrics=historical_features_metrics,
+        )
 
     async def _construct_read_from_cache_query(
         self,
@@ -909,11 +924,7 @@ class FeatureTableCacheService:
             logger,
             extra={"catalog_id": str(observation_table.catalog_id)},
         ):
-            (
-                hashes,
-                db_session,
-                historical_features_metrics,
-            ) = await self.create_or_update_feature_table_cache(
+            update_result = await self.create_or_update_feature_table_cache(
                 feature_store=feature_store,
                 observation_table=observation_table,
                 graph=graph,
@@ -924,6 +935,9 @@ class FeatureTableCacheService:
                 progress_callback=progress_callback,
             )
 
+        hashes = update_result.hashes
+        db_session = update_result.session
+        historical_features_metrics = update_result.historical_features_metrics
         request_column_names = [col.name for col in observation_table.columns_info]
         select_expr = await self.get_feature_query(
             db_session=db_session,
