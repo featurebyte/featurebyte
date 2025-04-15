@@ -146,20 +146,19 @@ def test_to_timestamp_from_epoch(event_table, config, session):
     )
 
 
-@pytest.mark.parametrize("source_type", [SourceType.SPARK], indirect=True)
-def test_date_difference_of_varchar_timestamp_with_timezone(
-    event_table, config, session, source_type
-):
+def test_date_difference_of_varchar_timestamp_with_timezone(event_table, config, session):
     """
     Test date difference of varchar timestamp with timezone
     """
-    format_string = ""
+    source_type = session.source_type
     if source_type in SourceType.java_time_format_types():
         format_string = "yyyy-MM-dd HH:mm:ss"
     elif source_type == SourceType.BIGQUERY:
         format_string = "%Y-%m-%d %H:%M:%S"
     elif source_type == SourceType.SNOWFLAKE:
-        format_string = "YY-MM-DD HH24:MI"
+        format_string = "YYYY-MM-DD HH24:MI:SS"
+    else:
+        raise ValueError("Unexpected source type")
 
     event_table.TIMESTAMP_STRING.update_critical_data_info(
         cleaning_operations=[
