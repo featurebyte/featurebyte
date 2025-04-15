@@ -5,7 +5,7 @@ Module with utility functions to compute historical features
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Coroutine, Optional, Union
 
 import pandas as pd
@@ -52,6 +52,7 @@ class FeaturesComputationResult:
     """
 
     historical_features_metrics: HistoricalFeaturesMetrics
+    failed_node_names: list[str] = field(default_factory=list)
 
 
 async def compute_tiles_on_demand(
@@ -281,7 +282,7 @@ async def get_historical_features(
             output_include_row_index=output_include_row_index,
             progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
         )
-        await execute_feature_query_set(
+        feature_query_set_result = await execute_feature_query_set(
             session_handler=SessionHandler(
                 session=session,
                 redis=tile_cache_service.tile_manager_service.redis,
@@ -297,6 +298,7 @@ async def get_historical_features(
                 if progress_callback
                 else None
             ),
+            raise_on_error=raise_on_error,
         )
         feature_compute_seconds = time.time() - tic
         logger.debug(f"compute_historical_features in total took {feature_compute_seconds:.2f}s")
@@ -316,7 +318,10 @@ async def get_historical_features(
         tile_compute_metrics=tile_compute_result.tile_compute_metrics,
         feature_compute_seconds=feature_compute_seconds,
     )
-    return FeaturesComputationResult(historical_features_metrics=metrics)
+    return FeaturesComputationResult(
+        historical_features_metrics=metrics,
+        failed_node_names=feature_query_set_result.failed_node_names,
+    )
 
 
 async def cleanup_historical_features_temp_tables(
