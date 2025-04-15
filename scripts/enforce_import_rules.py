@@ -218,6 +218,7 @@ if __name__ == "__main__":
                 {
                     "featurebyte.session.base",  # query_graph/sql/{online_serving.py, feature_historical.py}
                     "featurebyte.session.session_helper",  # query_graph/sql/online_serving.py
+                    "featurebyte.session.time_formatter",  # featurebyte/query_graph/node/date.py
                     "featurebyte.service.online_store_table_version",  # query_graph/sql/online_serving.py
                     "featurebyte.service.cron_helper",  # query_graph/sql/online_serving.py
                 }
