@@ -9,7 +9,13 @@ import pytest
 from sqlglot import expressions
 from sqlglot.expressions import alias_
 
-from featurebyte import FeatureList, to_timestamp_from_epoch
+from featurebyte import (
+    AddTimestampSchema,
+    FeatureList,
+    RequestColumn,
+    TimestampSchema,
+    to_timestamp_from_epoch,
+)
 from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from tests.util.deployment import deploy_and_get_online_features
@@ -138,3 +144,71 @@ def test_to_timestamp_from_epoch(event_table, config, session):
         df_expected,
         dict_like_columns=["test_to_timestamp_from_epoch_feature"],
     )
+
+
+@pytest.mark.parametrize("source_type", [SourceType.SPARK], indirect=True)
+def test_date_difference_of_varchar_timestamp_with_timezone(
+    event_table, config, session, source_type
+):
+    """
+    Test date difference of varchar timestamp with timezone
+    """
+    format_string = ""
+    if source_type in SourceType.java_time_format_types():
+        format_string = "yyyy-MM-dd HH:mm:ss"
+    elif source_type == SourceType.BIGQUERY:
+        format_string = "%Y-%m-%d %H:%M:%S"
+    elif source_type == SourceType.SNOWFLAKE:
+        format_string = "YY-MM-DD HH24:MI"
+
+    event_table.TIMESTAMP_STRING.update_critical_data_info(
+        cleaning_operations=[
+            AddTimestampSchema(
+                timestamp_schema=TimestampSchema(
+                    is_utc_time=False,
+                    format_string=format_string,
+                    timezone="Asia/Singapore",
+                )
+            )
+        ]
+    )
+    view = event_table.get_view()
+    feat = view.groupby(by_keys=["ÜSER ID"]).aggregate_over(
+        value_column="TIMESTAMP_STRING",
+        method="min",
+        windows=["2d"],
+        feature_names=["min_timestamp_string_2d"],
+    )["min_timestamp_string_2d"]
+
+    diff_in_day = (RequestColumn.point_in_time() - feat).dt.day
+    diff_in_day.name = "diff_in_day"
+
+    # Test preview
+    preview_param = {
+        "POINT_IN_TIME": "2001-06-15 10:00:00",
+        "üser id": 1,
+    }
+
+    feature_list = FeatureList([diff_in_day, feat], name="test_timestamp_schema_list")
+    preview_df = feature_list.preview(pd.DataFrame([preview_param]))
+    expected = {
+        "POINT_IN_TIME": pd.Timestamp(preview_param["POINT_IN_TIME"]),
+        "üser id": preview_param["üser id"],
+        "diff_in_day": -80.125,
+        "min_timestamp_string_2d": "2001-09-03 21:00:00",
+    }
+    assert preview_df.iloc[0].to_dict() == expected
+
+    # Test online serving
+    request_row = {"üser id": 1}
+    df_feat = deploy_and_get_online_features(
+        config.get_client(),
+        feature_list,
+        datetime(2001, 6, 15, 10),
+        [request_row],
+    )
+    assert df_feat.iloc[0].to_dict() == {
+        **request_row,
+        "diff_in_day": -81,
+        "min_timestamp_string_2d": "2001-09-03 21:00:00",
+    }
