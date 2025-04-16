@@ -6,8 +6,9 @@ from __future__ import annotations
 
 from bson import ObjectId
 
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.logging import get_logger
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.models.base import User
 from featurebyte.models.periodic_task import Interval
 from featurebyte.persistent import DuplicateDocumentError
 from featurebyte.schema.worker.task.query_cache_cleanup import QueryCacheCleanupTaskPayload

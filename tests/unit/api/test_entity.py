@@ -14,6 +14,7 @@ from typeguard import TypeCheckError
 
 from featurebyte.api.catalog import Catalog
 from featurebyte.api.entity import Entity
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.enum import DBVarType, TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
@@ -21,7 +22,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
     RecordUpdateException,
 )
-from featurebyte.models.base import DEFAULT_CATALOG_ID, PydanticObjectId
+from featurebyte.models.base import PydanticObjectId
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails

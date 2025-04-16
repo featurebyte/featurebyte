@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 from bson.objectid import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.schema.worker.task.test import TestIOTaskPayload
 from featurebyte.worker.test_util.random_task import LongRunningPayload
 

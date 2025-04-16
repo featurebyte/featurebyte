@@ -10,7 +10,8 @@ import gevent
 import pytest
 from bson import ObjectId
 
-from featurebyte.models.base import DEFAULT_CATALOG_ID, User
+from featurebyte.common import DEFAULT_CATALOG_ID
+from featurebyte.models.base import User
 from featurebyte.schema.worker.task.base import TaskType
 from featurebyte.worker import initialize_asyncio_event_loop
 from featurebyte.worker.registry import TASK_REGISTRY_MAP

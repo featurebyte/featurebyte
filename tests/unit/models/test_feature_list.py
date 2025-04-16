@@ -7,7 +7,7 @@ from bson.objectid import ObjectId
 from typeguard import TypeCheckError
 
 from featurebyte import FeatureListStatus
-from featurebyte.models.base import DEFAULT_CATALOG_ID
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.models.feature_list import (
     FeatureListModel,
     FeatureReadinessDistribution,

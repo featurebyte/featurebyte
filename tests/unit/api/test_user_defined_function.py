@@ -11,12 +11,12 @@ from featurebyte.api.catalog import Catalog
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.api.request_column import RequestColumn
 from featurebyte.api.user_defined_function import UDF, UserDefinedFunction
+from featurebyte.common import activate_catalog
 from featurebyte.exception import (
     RecordCreationException,
     RecordDeletionException,
     RecordUpdateException,
 )
-from featurebyte.models.base import activate_catalog
 from featurebyte.models.user_defined_function import FunctionParameter
 from tests.util.helper import check_sdk_code_generation
 

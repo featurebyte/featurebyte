@@ -4,6 +4,7 @@ Base class for SQL adapters
 
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -14,6 +15,7 @@ from sqlglot.expressions import Expression, Select, alias_, select
 from typing_extensions import Literal
 
 from featurebyte.enum import DBVarType, InternalName, TimeIntervalUnit
+from featurebyte.logging import get_logger
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
@@ -27,6 +29,12 @@ from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.typing import DatetimeSupportedPropertyType
 
 FB_QUALIFY_CONDITION_COLUMN = "__fb_qualify_condition_column"
+MAX_ROW_COUNT_FOR_DETERMINISTIC_SAMPLING = int(
+    os.environ.get("MAX_ROW_COUNT_FOR_DETERMINISTIC_SAMPLING", 10000000)
+)
+
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -671,6 +679,9 @@ class BaseAdapter(ABC):
         """
         if total_row_count == 0:
             return select_expr
+        if sort_by_prob and total_row_count > MAX_ROW_COUNT_FOR_DETERMINISTIC_SAMPLING:
+            logger.warning("Ignoring sort_by_prob for large table.")
+            sort_by_prob = False
         probability = desired_row_count / total_row_count * 1.5
         original_cols = [
             quoted_identifier(col_expr.alias or col_expr.name)

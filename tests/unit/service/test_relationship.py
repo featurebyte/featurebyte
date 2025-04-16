@@ -7,8 +7,8 @@ from unittest.mock import Mock
 import pytest
 import pytest_asyncio
 
+from featurebyte.common import DEFAULT_CATALOG_ID
 from featurebyte.exception import DocumentUpdateError
-from featurebyte.models.base import DEFAULT_CATALOG_ID
 from featurebyte.models.relationship import Parent, Relationship
 from featurebyte.persistent import Persistent
 from featurebyte.routes.block_modification_handler import BlockModificationHandler

@@ -15,6 +15,7 @@ from requests import Response
 from typeguard import typechecked
 
 from featurebyte.api.api_object_util import ProgressThread
+from featurebyte.common import get_active_catalog_id
 from featurebyte.common.env_util import get_alive_bar_additional_params
 from featurebyte.common.utils import dataframe_from_json, validate_datetime_input
 from featurebyte.config import Configurations
@@ -26,7 +27,7 @@ from featurebyte.exception import (
     ResponseException,
 )
 from featurebyte.logging import get_logger
-from featurebyte.models.base import FeatureByteBaseModel, get_active_catalog_id
+from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.schema.feature_store import (
     FeatureStorePreview,
