@@ -218,9 +218,11 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         inputs.loc[~mask, "__feature_V231227__part0"] = np.nan
         feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_1 = pd.to_datetime(request_col) - pd.to_datetime(request_col)
-        feat_2 = pd.to_datetime(request_col) + pd.to_timedelta(feat_1)
-        feat_3 = pd.to_datetime(feat_2) - pd.to_datetime(feat)
+        feat_1 = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
+            request_col, utc=True
+        )
+        feat_2 = pd.to_datetime(request_col, utc=True) + pd.to_timedelta(feat_1)
+        feat_3 = pd.to_datetime(feat_2, utc=True) - pd.to_datetime(feat, utc=True)
         feat_4 = pd.to_timedelta(feat_3).dt.total_seconds() // 86400
         feat_5 = pd.Series(
             np.where(
@@ -324,7 +326,9 @@ def test_feature__ttl_item_aggregate_request_column(
             inputs["__composite_feature_V231227__part0"], utc=True
         )
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_1 = pd.to_datetime(request_col) - pd.to_datetime(feat)
+        feat_1 = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
+            feat, utc=True
+        )
         feat_2 = pd.to_timedelta(feat_1).dt.total_seconds() // 86400
 
         # TTL handling for __composite_feature_V231227__part1 column
@@ -619,7 +623,7 @@ def test_feature_entity_dtypes(
 
 @pytest.mark.asyncio
 async def test_on_demand_feature_view_code_generation__card_transaction_description_feature(
-    test_dir, persistent, user
+    test_dir, persistent, user, snowflake_feature_store
 ):
     """Test on-demand feature view code generation for card_transaction_description feature."""
     fixture_path = os.path.join(
@@ -643,7 +647,7 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         data=CatalogCreate(
             _id=catalog_id,
             name="test_catalog",
-            default_feature_store_ids=["6597cfcb357720b529a10196"],
+            default_feature_store_ids=[snowflake_feature_store.id],
         )
     )
 
@@ -890,8 +894,10 @@ def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feat
     ) -> pd.DataFrame:
         df = pd.DataFrame()
         request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat = pd.to_datetime(request_col) - pd.to_datetime(request_col)
-        feat_1 = pd.to_datetime(request_col) + pd.to_timedelta(feat)
+        feat = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
+            request_col, utc=True
+        )
+        feat_1 = pd.to_datetime(request_col, utc=True) + pd.to_timedelta(feat)
 
         # TTL handling for __{version_name}__part0 column with cron expression 0 8 1 * *
         cron = croniter.croniter("0 8 1 * *")
@@ -907,10 +913,10 @@ def test_time_series_feature_offline_ingest_query_graph(ts_window_aggregate_feat
         feat_2 = pd.Series(
             np.where(
                 pd.isna(inputs["__{version_name}__part0"])
-                | pd.isna((pd.to_datetime(feat_1).dt.day)),
+                | pd.isna((pd.to_datetime(feat_1, utc=True).dt.day)),
                 np.nan,
                 inputs["__{version_name}__part0"]
-                + (pd.to_datetime(feat_1).dt.day),
+                + (pd.to_datetime(feat_1, utc=True).dt.day),
             ),
             index=inputs["__{version_name}__part0"].index,
         )

@@ -47,6 +47,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CodeGenerationContext,
     ExpressionStr,
     InfoDict,
+    NodeCodeGenOutput,
     ObjectClass,
     RightHandSide,
     StatementT,
@@ -140,7 +141,7 @@ class ProjectNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -259,7 +260,7 @@ class FilterNode(BaseNode):
 
     def _derive_python_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         node_output_type: NodeOutputType,
         node_output_category: NodeOutputCategory,
@@ -284,7 +285,7 @@ class FilterNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -300,7 +301,7 @@ class FilterNode(BaseNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -315,7 +316,7 @@ class FilterNode(BaseNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -468,13 +469,14 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
-        var_name_expr = node_inputs[0]
+        node_inps = [node_inp.var_name_or_expr for node_inp in node_inputs]
+        var_name_expr = node_inps[0]
         assert not isinstance(var_name_expr, InfoDict)
         column_name = self.parameters.name
         statements, var_name = self._convert_expression_to_variable(
@@ -485,8 +487,8 @@ class AssignNode(AssignColumnMixin, BasePrunableNode):
             to_associate_with_node_name=False,
         )
         second_input = None
-        if len(node_inputs) == 2:
-            second_input = node_inputs[1]
+        if len(node_inps) == 2:
+            second_input = node_inps[1]
 
         output_var_name = var_name
         if context.required_copy:
@@ -555,7 +557,7 @@ class LagNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -663,7 +665,7 @@ class ForwardAggregateNode(AggregationOpStructMixin, BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -822,7 +824,7 @@ class BaseWindowAggregateNode(AggregationOpStructMixin, BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -979,7 +981,7 @@ class ItemGroupbyNode(AggregationOpStructMixin, BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -1232,7 +1234,7 @@ class LookupNode(BaseLookupNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -1282,7 +1284,7 @@ class LookupTargetNode(BaseLookupNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -1531,7 +1533,7 @@ class JoinNode(BasePrunableNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -1736,7 +1738,7 @@ class JoinFeatureNode(AssignColumnMixin, BasePrunableNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -1861,7 +1863,7 @@ class TrackChangesNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -1971,7 +1973,7 @@ class AggregateAsAtNode(BaseAggregateAsAtNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -2016,7 +2018,7 @@ class ForwardAggregateAsAtNode(BaseAggregateAsAtNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -2165,7 +2167,7 @@ class TimeSeriesWindowAggregateNode(AggregationOpStructMixin):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -2296,7 +2298,7 @@ class AliasNode(BaseNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -2327,21 +2329,21 @@ class AliasNode(BaseNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # this is a no-op node for on-demand view, it should appear on the last node of the graph
-        return [], node_inputs[0]
+        return [], node_inputs[0].var_name_or_expr
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         # this is a no-op node for on-demand function, it should appear on the last node of the graph
-        return [], node_inputs[0]
+        return [], node_inputs[0].var_name_or_expr
 
 
 class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
@@ -2367,7 +2369,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     def _prepare_var_name_and_mask_var_name(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         node_output_category: NodeOutputCategory,
         mask_var_name_prefix: str = "mask",
@@ -2393,7 +2395,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -2418,8 +2420,8 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         value: RightHandSide = ValueStr.create(self.parameters.value)
         is_series_assignment = len(node_inputs) == 3
         if is_series_assignment:
-            assert not isinstance(node_inputs[2], InfoDict)
-            value = node_inputs[2]
+            assert not isinstance(node_inputs[2].var_name_or_expr, InfoDict)
+            value = node_inputs[2].var_name_or_expr
 
         if context.as_info_dict:
             # This is to handle the case where `View[<column>][<condition>] = <value>` is used.
@@ -2442,7 +2444,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -2454,9 +2456,10 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         value: RightHandSide = ValueStr.create(self.parameters.value)
         is_series_assignment = len(node_inputs) == 3
         if is_series_assignment:
-            assert not isinstance(node_inputs[2], InfoDict)
+            assert not isinstance(node_inputs[2].var_name_or_expr, InfoDict)
             expr = filter_series_or_frame_expr(
-                series_or_frame_name=node_inputs[2], filter_expression=mask_var_name
+                series_or_frame_name=node_inputs[2].var_name_or_expr,
+                filter_expression=mask_var_name,
             )
             value = ExpressionStr(expr)
 
@@ -2468,7 +2471,7 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -2480,8 +2483,8 @@ class ConditionalNode(BaseSeriesOutputWithAScalarParamNode):
         )
         value: RightHandSide = ValueStr.create(self.parameters.value)
         if len(node_inputs) == 3:
-            assert not isinstance(node_inputs[2], InfoDict)
-            value = node_inputs[2]
+            assert not isinstance(node_inputs[2].var_name_or_expr, InfoDict)
+            value = node_inputs[2].var_name_or_expr
 
         expr_statements, var_name = self._convert_expression_to_variable(
             var_name_expression=ExpressionStr(f"{value} if {flag_var_name} else {var_name}"),

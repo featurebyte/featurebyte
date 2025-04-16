@@ -23,6 +23,8 @@ from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import construct_node
+from featurebyte.query_graph.node.metadata.operation import NodeOutputCategory, OperationStructure
+from featurebyte.query_graph.node.metadata.sdk_code import NodeCodeGenOutput
 from featurebyte.query_graph.node.schema import FeatureStoreDetails, SnowflakeDetails, TableDetails
 from tests.util.helper import add_groupby_operation, reset_global_graph
 
@@ -85,6 +87,28 @@ def input_details_fixture(request):
             },
         }
     return input_details
+
+
+@pytest.fixture(name="node_code_gen_output_factory")
+def node_code_gen_output_factory_fixture():
+    """
+    Fixture for node code generation output
+    """
+
+    def _generate_node_code_gen_output(var_name_or_expr):
+        """
+        Generate node code generation output
+        """
+        return NodeCodeGenOutput(
+            var_name_or_expr=var_name_or_expr,
+            operation_structure=OperationStructure(
+                output_type=NodeOutputType.SERIES,
+                output_category=NodeOutputCategory.VIEW,
+                row_index_lineage=tuple(),
+            ),
+        )
+
+    return _generate_node_code_gen_output
 
 
 @pytest.fixture(name="snowflake_feature_store_details")

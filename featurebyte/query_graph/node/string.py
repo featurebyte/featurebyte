@@ -23,6 +23,7 @@ from featurebyte.query_graph.node.metadata.config import OnDemandFunctionCodeGen
 from featurebyte.query_graph.node.metadata.operation import OperationStructure
 from featurebyte.query_graph.node.metadata.sdk_code import (
     ExpressionStr,
+    NodeCodeGenOutput,
     StatementStr,
     StatementT,
     ValueStr,
@@ -194,7 +195,7 @@ class PadNode(BaseStringAccessorOpNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:

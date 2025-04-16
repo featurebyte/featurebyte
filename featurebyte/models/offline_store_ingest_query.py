@@ -13,7 +13,7 @@ from pydantic_extra_types.timezone_name import TimeZoneName
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.common.validator import construct_sort_validator
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
 from featurebyte.models.mixin import QueryGraphMixin
 from featurebyte.query_graph.enum import GraphNodeType, NodeOutputType, NodeType
@@ -307,6 +307,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         feature_job_settings: List[FeatureJobSettingUnion],
         feature_id: ObjectId,
         has_ttl: bool,
+        source_type: SourceType,
         null_filling_value: Optional[Scalar] = None,
     ) -> None:
         """
@@ -324,6 +325,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             Feature ID
         has_ttl: bool
             Whether the feature has time-to-live (TTL) component
+        source_type: SourceType
+            Source type of the feature
         null_filling_value: Optional[Scalar]
             Null filling value
         """
@@ -350,6 +353,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             )
             odfv_info.codes = self.generate_on_demand_feature_view_code(
                 feature_versioned_name=feature_versioned_name,
+                source_type=source_type,
                 input_df_name=odfv_info.input_df_name,
                 output_df_name=odfv_info.output_df_name,
                 function_name=odfv_info.function_name,
@@ -416,6 +420,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
     def generate_on_demand_feature_view_code(
         self,
         feature_versioned_name: str,
+        source_type: SourceType,
         input_df_name: str = "inputs",
         output_df_name: str = "df",
         function_name: str = "on_demand_feature_view",
@@ -428,6 +433,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
         ----------
         feature_versioned_name: str
             Feature name
+        source_type: SourceType
+            Source type of the feature
         input_df_name: str
             Input dataframe name
         output_df_name: str
@@ -450,6 +457,7 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
                 output_df_name=output_df_name,
                 on_demand_function_name=function_name,
                 feature_name_version=feature_versioned_name,
+                source_type=source_type,
             )
             code_generator = codegen_state.code_generator
         else:
@@ -520,6 +528,8 @@ class OfflineStoreInfo(QueryGraphMixin, FeatureByteBaseModel):
             codegen_state = OnDemandFeatureFunctionGlobalState(
                 code_generation_config=OnDemandFunctionCodeGenConfig(**codegen_kwargs),
                 var_name_generator=VariableNameGenerator(one_based=True),
+                # this is a dummy value, it should not be used by the following code
+                node_name_to_operation_structure={},
             )
             col = codegen_state.var_name_generator.convert_to_variable_name(
                 variable_name_prefix=codegen_state.code_generation_config.input_var_prefix,

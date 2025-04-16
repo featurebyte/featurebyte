@@ -9,7 +9,7 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 from pydantic import Field
 from typing_extensions import Literal
 
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
@@ -28,6 +28,7 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     ClassEnum,
     CodeGenerationContext,
     ExpressionStr,
+    NodeCodeGenOutput,
     StatementStr,
     StatementT,
     ValueStr,
@@ -36,7 +37,60 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VarNameExpressionInfo,
     get_object_class_from_function_call,
 )
+from featurebyte.session.time_formatter import convert_time_format
 from featurebyte.typing import DatetimeSupportedPropertyType, TimedeltaSupportedUnitType
+
+
+def generate_to_datetime_expression(
+    operand_expr: str,
+    operation_structure: OperationStructure,
+    timestamp_schema: Optional[TimestampSchema],
+    source_type: SourceType,
+    mode: Literal["odfv", "udf"],
+) -> str:
+    """
+    Generate to_datetime expression for the given operand expression.
+
+    Parameters
+    ----------
+    operand_expr: str
+        Operand expression
+    operation_structure: OperationStructure
+        Operation structure
+    timestamp_schema: Optional[TimestampSchema]
+        Timestamp schema
+    source_type: SourceType
+        Source type
+    mode: Literal["odfv", "udf"]
+        Mode of operation, either "odfv" or "udf"
+
+    Returns
+    -------
+    str
+        to_datetime expression
+    """
+    to_datetime_params = ""
+    tz_conversion = ""
+    dt_acc = ".dt" if mode == "odfv" else ""
+    if timestamp_schema:
+        if operation_structure.series_output_dtype_info.dtype == DBVarType.VARCHAR:
+            assert timestamp_schema.format_string is not None
+            py_format_string = convert_time_format(
+                source_type=source_type, format_string=timestamp_schema.format_string
+            )
+            to_datetime_params = f', format="{py_format_string}"'
+
+        if timestamp_schema.timezone and timestamp_schema.timezone_offset_column_name is None:
+            tz_conversion += (
+                f'{dt_acc}.tz_localize("{timestamp_schema.timezone}"){dt_acc}.tz_convert("UTC")'
+            )
+
+    if tz_conversion:
+        # utc=True should not be used in to_datetime
+        output_expr = f"pd.to_datetime({operand_expr}{to_datetime_params}){tz_conversion}"
+    else:
+        output_expr = f"pd.to_datetime({operand_expr}{to_datetime_params}, utc=True)"
+    return output_expr
 
 
 class DatetimeExtractNodeParameters(FeatureByteBaseModel):
@@ -95,7 +149,7 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -126,13 +180,14 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
 
     def _derive_on_demand_view_or_user_defined_function_helper(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         offset_adj_var_name_prefix: str,
         expr_func: Callable[[str, str], str],
+        source_type: SourceType,
+        mode: Literal["odfv", "udf"],
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         var_name_expressions = self._assert_no_info_dict(node_inputs)
-        ts_operand: str = var_name_expressions[0].as_input()
 
         statements: List[StatementT] = []
         offset_operand: Optional[Union[str, VariableNameStr]]
@@ -149,39 +204,52 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             offset_operand = None
 
         dt_var_name: Union[str, VariableNameStr]
+        ts_operand: str = var_name_expressions[0].as_input()
+        dt_var_name = var_name_generator.convert_to_variable_name(
+            variable_name_prefix=offset_adj_var_name_prefix, node_name=None
+        )
+        to_datetime_expr = generate_to_datetime_expression(
+            operand_expr=ts_operand,
+            operation_structure=node_inputs[0].operation_structure,
+            timestamp_schema=self.parameters.timestamp_schema,
+            source_type=source_type,
+            mode=mode,
+        )
         if offset_operand:
-            dt_var_name = var_name_generator.convert_to_variable_name(
-                variable_name_prefix=offset_adj_var_name_prefix, node_name=None
-            )
-            expr = ExpressionStr(f"pd.to_datetime({ts_operand}) + {offset_operand}")
+            expr = ExpressionStr(f"{to_datetime_expr} + {offset_operand}")
             statements.append((dt_var_name, expr))
         else:
-            dt_var_name = ts_operand
+            if self.parameters.timestamp_schema:
+                dt_var_name = ExpressionStr(to_datetime_expr)
+            else:
+                dt_var_name = ts_operand
 
         output = ExpressionStr(expr_func(dt_var_name, self.parameters.property))
         return statements, output
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         def _datetime_proper_expr(dt_var_name: str, prop: str) -> str:
             if prop == "week":
-                return f"pd.to_datetime({dt_var_name}).dt.isocalendar().week"
-            return f"pd.to_datetime({dt_var_name}).dt.{prop}"
+                return f"pd.to_datetime({dt_var_name}, utc=True).dt.isocalendar().week"
+            return f"pd.to_datetime({dt_var_name}, utc=True).dt.{prop}"
 
         return self._derive_on_demand_view_or_user_defined_function_helper(
             node_inputs,
             var_name_generator,
             offset_adj_var_name_prefix="feat_dt",
             expr_func=_datetime_proper_expr,
+            source_type=config.source_type,
+            mode="odfv",
         )
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -189,7 +257,9 @@ class DatetimeExtractNode(BaseSeriesOutputNode):
             node_inputs,
             var_name_generator,
             offset_adj_var_name_prefix="feat",
-            expr_func=lambda dt_var_name, prop: f"pd.to_datetime({dt_var_name}).{prop}",
+            expr_func=lambda dt_var_name, prop: f"pd.to_datetime({dt_var_name}, utc=True).{prop}",
+            source_type=config.source_type,
+            mode="udf",
         )
 
 
@@ -330,8 +400,9 @@ class DateDifferenceNode(BaseSeriesOutputNode):
 
     def _derive_python_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
-        sdk_code: bool,
+        node_inputs: List[NodeCodeGenOutput],
+        mode: Literal["sdk", "odfv", "udf"],
+        source_type: Optional[SourceType] = None,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if len(node_inputs) == 1:
             # we don't allow subtracting timestamp with a scalar timedelta through SDK
@@ -341,42 +412,55 @@ class DateDifferenceNode(BaseSeriesOutputNode):
         left_operand = var_name_expressions[0].as_input()
         right_operand = var_name_expressions[1].as_input()
         statements: List[StatementT] = []
-        if sdk_code:
+        if mode == "sdk":
             expr = ExpressionStr(f"{left_operand} - {right_operand}")
         else:
-            expr = ExpressionStr(
-                f"pd.to_datetime({left_operand}) - pd.to_datetime({right_operand})"
+            assert source_type is not None
+            left_expr = generate_to_datetime_expression(
+                operand_expr=left_operand,
+                operation_structure=node_inputs[0].operation_structure,
+                timestamp_schema=self.parameters.left_timestamp_schema,
+                source_type=source_type,
+                mode=mode,
             )
+            right_expr = generate_to_datetime_expression(
+                operand_expr=right_operand,
+                operation_structure=node_inputs[1].operation_structure,
+                timestamp_schema=self.parameters.right_timestamp_schema,
+                source_type=source_type,
+                mode=mode,
+            )
+            expr = ExpressionStr(f"{left_expr} - {right_expr}")
         return statements, expr
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, operation_structure, config, context
-        return self._derive_python_code(node_inputs, sdk_code=True)
+        return self._derive_python_code(node_inputs, mode="sdk")
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
-        return self._derive_python_code(node_inputs, sdk_code=False)
+        return self._derive_python_code(node_inputs, mode="odfv", source_type=config.source_type)
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         _ = var_name_generator, config
-        return self._derive_python_code(node_inputs, sdk_code=False)
+        return self._derive_python_code(node_inputs, mode="udf", source_type=config.source_type)
 
 
 class TimeDeltaNode(BaseSeriesOutputNode):
@@ -404,7 +488,7 @@ class TimeDeltaNode(BaseSeriesOutputNode):
 
     def _derive_python_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         node_output_type: NodeOutputType,
         node_output_category: NodeOutputCategory,
@@ -429,7 +513,7 @@ class TimeDeltaNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -446,7 +530,7 @@ class TimeDeltaNode(BaseSeriesOutputNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -461,7 +545,7 @@ class TimeDeltaNode(BaseSeriesOutputNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -519,7 +603,7 @@ class DateAddNode(BaseSeriesOutputNode):
 
     def _derive_python_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         sdk_code: bool,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         if len(node_inputs) == 1:
@@ -534,13 +618,13 @@ class DateAddNode(BaseSeriesOutputNode):
             expr = ExpressionStr(f"{left_operand} + {right_operand}")
         else:
             expr = ExpressionStr(
-                f"pd.to_datetime({left_operand}) + pd.to_timedelta({right_operand})"
+                f"pd.to_datetime({left_operand}, utc=True) + pd.to_timedelta({right_operand})"
             )
         return statements, expr
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -551,7 +635,7 @@ class DateAddNode(BaseSeriesOutputNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -560,7 +644,7 @@ class DateAddNode(BaseSeriesOutputNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -591,7 +675,7 @@ class ToTimestampFromEpochNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
@@ -610,7 +694,7 @@ class ToTimestampFromEpochNode(BaseSeriesOutputNode):
 
     def _derive_on_demand_view_or_function_code_helper(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
         statements: List[StatementT] = []
@@ -619,7 +703,7 @@ class ToTimestampFromEpochNode(BaseSeriesOutputNode):
         if var_name_generator.should_insert_function(function_name=func_name):
             func_string = f"""
             def {func_name}(values):
-                return pd.to_datetime(values, unit='s')
+                return pd.to_datetime(values, unit='s', utc=True)
             """
             statements.append(StatementStr(textwrap.dedent(func_string)))
 
@@ -629,7 +713,7 @@ class ToTimestampFromEpochNode(BaseSeriesOutputNode):
 
     def _derive_on_demand_view_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandViewCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -639,7 +723,7 @@ class ToTimestampFromEpochNode(BaseSeriesOutputNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:

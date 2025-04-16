@@ -31,10 +31,12 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     CommentStr,
     ExpressionStr,
     InfoDict,
+    NodeCodeGenOutput,
     ObjectClass,
     StatementT,
     VariableNameGenerator,
     VarNameExpressionInfo,
+    VarNameExpressionStr,
     get_object_class_from_function_call,
 )
 from featurebyte.query_graph.node.scalar import TimestampValue, ValueParameterType
@@ -61,14 +63,14 @@ class BaseFunctionParameterInput(FeatureByteBaseModel):
 
     @abstractmethod
     def get_sdk_function_argument(
-        self, node_inputs: List[VarNameExpressionInfo], node_input_index: int
+        self, node_inputs: List[VarNameExpressionStr], node_input_index: int
     ) -> Tuple[SDKFunctionArgument, int]:
         """
         Get SDK function argument for the function parameter input.
 
         Parameters
         ----------
-        node_inputs : List[VarNameExpressionInfo]
+        node_inputs : List[VarNameExpressionStr]
             List of node inputs.
         node_input_index : int
             The index of the node input that the function parameter input is associated with.
@@ -90,7 +92,7 @@ class ValueFunctionParameterInput(BaseFunctionParameterInput):
         return []
 
     def get_sdk_function_argument(
-        self, node_inputs: List[VarNameExpressionInfo], node_input_index: int
+        self, node_inputs: List[VarNameExpressionStr], node_input_index: int
     ) -> Tuple[SDKFunctionArgument, int]:
         # do not increment node_input_index as this is a value input, it should not increment the node_input_index
         if isinstance(self.value, TimestampValue):
@@ -110,7 +112,7 @@ class ColumnFunctionParameterInput(BaseFunctionParameterInput):
         return [self.column_name]
 
     def get_sdk_function_argument(
-        self, node_inputs: List[VarNameExpressionInfo], node_input_index: int
+        self, node_inputs: List[VarNameExpressionStr], node_input_index: int
     ) -> Tuple[SDKFunctionArgument, int]:
         # InfoDict is not expected here as it should be used only in (ConditionNode - AssignNode) structure
         value = node_inputs[node_input_index]
@@ -220,17 +222,18 @@ class GenericFunctionNode(BaseSeriesOutputNode):
 
     def _derive_sdk_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         operation_structure: OperationStructure,
         config: SDKCodeGenConfig,
         context: CodeGenerationContext,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
+        node_inps = self._assert_no_info_dict(node_inputs)
         function_parameters: List[Any] = []
         node_input_index = 0
         for func_param in self.parameters.function_parameters:
             func_param_val, node_input_index = func_param.get_sdk_function_argument(
-                node_inputs, node_input_index
+                node_inps, node_input_index
             )
             function_parameters.append(func_param_val)
 
@@ -265,7 +268,7 @@ class GenericFunctionNode(BaseSeriesOutputNode):
 
     def _derive_user_defined_function_code(
         self,
-        node_inputs: List[VarNameExpressionInfo],
+        node_inputs: List[NodeCodeGenOutput],
         var_name_generator: VariableNameGenerator,
         config: OnDemandFunctionCodeGenConfig,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:

@@ -75,17 +75,18 @@ def _get_odfv_output(input_map, odfv_expr, odfv_stats=None):
 def _get_udf_output(input_map, udf_expr, udf_stats=None):
     # check the udf expression can be evaluated
     locals = {"np": np, "pd": pd, "sp": sp}
-    if udf_stats:
-        for stat in udf_stats:
-            if isinstance(stat, tuple):
-                stat = f"{stat[0]} = {stat[1]}"
-            exec(stat, locals)
 
     out_vals = []
     input_param_names = list(input_map.keys())
     for input_vals in zip(*input_map.values()):
         for param_name, param_val in zip(input_param_names, input_vals):
             locals[param_name] = param_val
+
+        if udf_stats:
+            for stat in udf_stats:
+                if isinstance(stat, tuple):
+                    stat = f"{stat[0]} = {stat[1]}"
+                exec(stat, locals, locals)
         out_vals.append(eval(udf_expr, locals))
     out_udf = pd.Series(out_vals)
     return out_udf
