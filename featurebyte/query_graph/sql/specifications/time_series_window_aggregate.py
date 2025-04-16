@@ -9,7 +9,7 @@ from typing import Any, List, Optional, cast
 
 from bson import ObjectId
 
-from featurebyte.enum import AggFunc, DBVarType
+from featurebyte.enum import AggFunc, DBVarType, TableDataType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node import Node
@@ -37,6 +37,7 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
     offset: Optional[CalendarWindow]
     blind_spot: Optional[CalendarWindow]
     timezone_offset_column_name: Optional[str]
+    is_time_series_table: bool
 
     @property
     def aggregation_type(self) -> AggregationType:
@@ -122,6 +123,13 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
             ):
                 timezone_offset_column_name = reference_datetime_schema.timezone_offset_column_name
 
+        # Determine if the feature is derived from a time series table
+        is_time_series_table = False
+        if graph is not None:
+            input_node = graph.get_input_node(node.name)
+            if input_node is not None:
+                is_time_series_table = input_node.parameters.type == TableDataType.TIME_SERIES_TABLE
+
         specs = []
         for feature_name, window in zip(node.parameters.names, node.parameters.windows):
             assert window is not None
@@ -142,6 +150,7 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
                     offset=node.parameters.offset,
                     blind_spot=node.parameters.feature_job_setting.get_blind_spot_calendar_window(),
                     timezone_offset_column_name=timezone_offset_column_name,
+                    is_time_series_table=is_time_series_table,
                 )
             )
         return specs

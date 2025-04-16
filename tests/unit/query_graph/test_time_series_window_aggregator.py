@@ -142,6 +142,15 @@ def blind_spot_agg_specs_fixture(base_agg_spec):
     return [agg_spec_1, agg_spec_2]
 
 
+@pytest.fixture(name="event_table_agg_spec")
+def event_table_agg_spec_fixture(base_agg_spec):
+    """
+    Fixture of TimeSeriesAggregateSpec derived from event table (EventView calendar aggregation)
+    """
+    base_agg_spec.is_time_series_table = False
+    return base_agg_spec
+
+
 @pytest.mark.parametrize(
     "test_case_name",
     [
@@ -154,6 +163,7 @@ def blind_spot_agg_specs_fixture(base_agg_spec):
         "is_utc_time",
         "grouped",
         "blind_spot",
+        "event_table",
     ],
 )
 def test_aggregator(request, test_case_name, update_fixtures, source_info):
@@ -170,6 +180,7 @@ def test_aggregator(request, test_case_name, update_fixtures, source_info):
         "is_utc_time": "reference_datetime_is_utc_time_agg_spec",
         "grouped": "grouped_agg_specs",
         "blind_spot": "blind_spot_agg_specs",
+        "event_table": "event_table_agg_spec",
     }
     fixture_name = test_case_mapping[test_case_name]
     fixture_obj = request.getfixturevalue(fixture_name)
