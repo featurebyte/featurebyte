@@ -72,6 +72,7 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
             "offset": self.offset.model_dump() if self.offset is not None else None,
             "blind_spot": self.blind_spot.model_dump() if self.blind_spot is not None else None,
             "is_order_dependent": AggFunc(self.parameters.agg_func).is_order_dependent,
+            "is_time_series_table": self.is_time_series_table,
         }
 
         # Parameters that affect whether aggregation can be done together (e.g. same groupby keys)
