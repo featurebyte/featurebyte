@@ -491,6 +491,9 @@ class FeatureTableCacheService:
             for node_and_def in non_cached_nodes
             if node_and_def[0].name not in failed_node_names_set
         ]
+        if not non_cached_nodes:
+            # No features to insert
+            return
 
         # Get the feature table cache to insert to
         cache_metadata = (

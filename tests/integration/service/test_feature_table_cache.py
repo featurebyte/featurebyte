@@ -4,6 +4,7 @@ Integration test for feature table cache
 
 import tempfile
 import time
+from contextlib import asynccontextmanager
 
 import pandas as pd
 import pytest
@@ -396,13 +397,14 @@ async def test_read_from_cache(
     )
     feature_list_model = await feature_list_service.get_document(document_id=feature_list.id)
     feature_cluster = feature_list_model.feature_clusters[0]
-    await feature_table_cache_service.create_or_update_feature_table_cache(
+    result = await feature_table_cache_service.create_or_update_feature_table_cache(
         feature_store=feature_store_model,
         observation_table=observation_table_model,
         graph=feature_cluster.graph,
         nodes=feature_cluster.nodes,
         feature_list_id=feature_list_model.id,
     )
+    assert result.features_computation_result.failed_node_names == []
 
     features = [
         feature_cluster.graph.get_node_output_column_name(node.name)
@@ -435,14 +437,11 @@ async def test_read_from_cache(
     assert set(df.columns.tolist()) == set([InternalName.TABLE_ROW_INDEX] + features)
 
 
-@pytest_asyncio.fixture(name="drop_product_action_column")
-async def drop_product_action_column_fixture(observation_table, session):
+@asynccontextmanager
+async def backup_and_restore_event_table(session):
     """
-    Drop product action column fixture
+    Backup and restore event table
     """
-    # Make sure observation table is created first before dropping the column
-    _ = observation_table
-
     await session.create_table_as(
         TableDetails(
             database_name=session.database_name,
@@ -452,21 +451,6 @@ async def drop_product_action_column_fixture(observation_table, session):
         parse_one('SELECT * FROM "TEST_TABLE"'),
         replace=True,
     )
-
-    # Drop product action column
-    query = sql_to_string(
-        expressions.Alter(
-            this=expressions.Table(this=quoted_identifier("TEST_TABLE")),
-            kind="TABLE",
-            actions=[
-                expressions.Drop(
-                    this=quoted_identifier("PRODUCT_ACTION"), kind="COLUMN", exists=True
-                )
-            ],
-        ),
-        source_type=session.source_type,
-    )
-    await session.execute_query_long_running(query)
 
     yield
 
@@ -482,9 +466,51 @@ async def drop_product_action_column_fixture(observation_table, session):
     )
 
 
+@pytest_asyncio.fixture(name="drop_product_action_column")
+async def drop_product_action_column_fixture(observation_table, session):
+    """
+    Drop product action column fixture
+    """
+    # Make sure observation table is created first before dropping the column
+    _ = observation_table
+    async with backup_and_restore_event_table(session):
+        # Drop product action column
+        query = sql_to_string(
+            expressions.Alter(
+                this=expressions.Table(this=quoted_identifier("TEST_TABLE")),
+                kind="TABLE",
+                actions=[
+                    expressions.Drop(
+                        this=quoted_identifier("PRODUCT_ACTION"), kind="COLUMN", exists=True
+                    )
+                ],
+            ),
+            source_type=session.source_type,
+        )
+        await session.execute_query_long_running(query)
+        yield
+
+
+@pytest_asyncio.fixture(name="drop_event_table")
+async def drop_event_table_fixture(observation_table, session):
+    """
+    Drop product action column fixture
+    """
+    # Make sure observation table is created first before dropping the column
+    _ = observation_table
+    async with backup_and_restore_event_table(session):
+        # Drop event table
+        await session.drop_table(
+            table_name="TEST_TABLE",
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+        )
+        yield
+
+
 @pytest.mark.usefixtures("drop_product_action_column")
 @pytest.mark.asyncio
-async def test_not_raise_on_error(
+async def test_not_raise_on_error__dropped_column(
     feature_table_cache_service,
     feature_table_cache_metadata_service,
     feature_store,
@@ -542,3 +568,39 @@ async def test_not_raise_on_error(
         "COUNT_2h DIV COUNT_24h",
         "COUNT_2h_DUPLICATE",
     ]
+
+
+@pytest.mark.usefixtures("drop_event_table")
+@pytest.mark.asyncio
+async def test_not_raise_on_error__dropped_table(
+    feature_table_cache_service,
+    feature_table_cache_metadata_service,
+    feature_store,
+    observation_table,
+    feature_list,
+):
+    """
+    Test create_or_update_feature_table_cache when raise_on_error=False
+    """
+    feature_store_model = feature_store.cached_model
+    feature_list_model = feature_list.cached_model
+    feature_cluster = feature_list_model.feature_clusters[0]
+
+    # Try to create feature table cache with missing column
+    result = await feature_table_cache_service.create_or_update_feature_table_cache(
+        feature_store=feature_store_model,
+        observation_table=observation_table.cached_model,
+        graph=feature_cluster.graph,
+        nodes=feature_cluster.nodes,
+        feature_list_id=feature_list_model.id,
+        raise_on_error=False,
+    )
+
+    # Check result
+    assert len(result.features_computation_result.failed_node_names) > 0
+
+    # Check failed nodes are not cached
+    cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
+        observation_table_id=observation_table.id,
+    )
+    assert len(cached_definitions) == 0

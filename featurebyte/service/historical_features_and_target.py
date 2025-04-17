@@ -320,7 +320,6 @@ async def get_historical_features(
         else:
             failed_node_names = []
 
-        # TODO: handle when nodes is empty?
         # Generate SQL code that computes the features
         tic = time.time()
         historical_feature_query_set = get_historical_features_query_set(
