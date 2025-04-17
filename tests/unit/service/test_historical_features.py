@@ -14,9 +14,11 @@ from featurebyte.models.tile import OnDemandTileComputeResult, OnDemandTileTable
 from featurebyte.models.warehouse_table import WarehouseTableModel
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
+from featurebyte.query_graph.pruning_util import get_combined_graph_and_nodes
 from featurebyte.query_graph.sql.cron import JobScheduleTable, JobScheduleTableSet
 from featurebyte.schema.feature_list import FeatureListGetHistoricalFeatures
 from featurebyte.service.historical_features import get_historical_features
+from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
 
 
 @pytest.fixture
@@ -415,3 +417,120 @@ async def test_get_historical_features__tile_tables_dropped(
             if_exists=True,
         ),
     ]
+
+
+@pytest.mark.asyncio
+async def test_not_raise_on_error__tile_compute_error(
+    float_feature,
+    scd_lookup_feature,
+    mock_snowflake_session,
+    output_table_details,
+    tile_cache_service,
+    warehouse_table_service,
+    snowflake_feature_store,
+    cron_helper,
+    update_fixtures,
+):
+    """
+    Test raise_on_error=False when compute_tiles_on_demand raises an error
+    """
+    float_feature.save()
+    scd_lookup_feature.save()
+
+    async def patched_execute_query(query):
+        # Simulate an error in tile SQL query
+        if 'CREATE TABLE "__TEMP_TILE_TABLE' in query:
+            raise RuntimeError("Fail on purpose!")
+
+    df_request = pd.DataFrame({
+        "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
+        "cust_id": ["C1", "C2"],
+    })
+    mock_snowflake_session.generate_session_unique_id.return_value = "1"
+    mock_snowflake_session.execute_query_long_running.side_effect = patched_execute_query
+
+    graph, nodes = get_combined_graph_and_nodes([
+        float_feature.cached_model,
+        scd_lookup_feature.cached_model,
+    ])
+    with patch("featurebyte.session.session_helper.validate_output_row_index"):
+        result = await get_historical_features(
+            session=mock_snowflake_session,
+            tile_cache_service=tile_cache_service,
+            warehouse_table_service=warehouse_table_service,
+            cron_helper=cron_helper,
+            graph=graph,
+            nodes=nodes,
+            observation_set=df_request,
+            feature_store=snowflake_feature_store,
+            output_table_details=output_table_details,
+            raise_on_error=False,
+        )
+    assert result.failed_node_names == [nodes[0].name]
+
+    # Check expected queries. Main feature query only materialize "some_lookup_feature" and skip
+    # "some_float_feature" due to the tile compute error
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/get_historical_features/tile_compute_error.sql",
+        update_fixtures,
+    )
+
+
+@pytest.mark.asyncio
+async def test_not_raise_on_error__feature_compute_error(
+    float_feature,
+    scd_lookup_feature,
+    mock_snowflake_session,
+    output_table_details,
+    tile_cache_service,
+    warehouse_table_service,
+    snowflake_feature_store,
+    cron_helper,
+    update_fixtures,
+):
+    """
+    Test raise_on_error=False when compute_tiles_on_demand raises an error
+    """
+    float_feature.save()
+    scd_lookup_feature.save()
+
+    async def patched_execute_query(query):
+        # Simulate an error in feature compute query for "some_lookup_feature"
+        if ' AS "some_lookup_feature"' in query:
+            raise RuntimeError("Fail on purpose!")
+
+    df_request = pd.DataFrame({
+        "POINT_IN_TIME": ["2022-01-01", "2022-02-01"],
+        "cust_id": ["C1", "C2"],
+    })
+    mock_snowflake_session.generate_session_unique_id.return_value = "1"
+    mock_snowflake_session.execute_query_long_running.side_effect = patched_execute_query
+
+    graph, nodes = get_combined_graph_and_nodes([
+        float_feature.cached_model,
+        scd_lookup_feature.cached_model,
+    ])
+    with patch("featurebyte.session.session_helper.validate_output_row_index"):
+        result = await get_historical_features(
+            session=mock_snowflake_session,
+            tile_cache_service=tile_cache_service,
+            warehouse_table_service=warehouse_table_service,
+            cron_helper=cron_helper,
+            graph=graph,
+            nodes=nodes,
+            observation_set=df_request,
+            feature_store=snowflake_feature_store,
+            output_table_details=output_table_details,
+            raise_on_error=False,
+        )
+    assert result.failed_node_names == [nodes[1].name]
+
+    # Check expected queries. Main feature query will retry once with smaller batch size
+    queries = extract_session_executed_queries(mock_snowflake_session)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/get_historical_features/feature_compute_error.sql",
+        update_fixtures,
+    )

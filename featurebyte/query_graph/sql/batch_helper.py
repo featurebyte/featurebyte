@@ -157,9 +157,12 @@ def construct_join_feature_sets_query(
         for feature_name in feature_set.feature_names:
             table_alias_by_feature[feature_name] = table_alias
 
+    # Select the output columns based on ordering defined in output_feature_names. A feature name
+    # might not exist in table_alias_by_feature if it is not part of any successful feature queries.
     return expr.select(*[
         get_qualified_column_identifier(name, table_alias_by_feature[name])
         for name in output_feature_names
+        if name in table_alias_by_feature
     ])
 
 

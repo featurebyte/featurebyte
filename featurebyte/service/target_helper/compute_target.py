@@ -63,7 +63,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
                 serving_names_mapping=executor_params.serving_names_mapping,
             )
         else:
-            historical_features_metrics = await get_target(
+            features_computation_result = await get_target(
                 session=executor_params.session,
                 redis=self.feature_table_cache_service.tile_cache_service.tile_manager_service.redis,
                 graph=executor_params.graph,
@@ -75,6 +75,7 @@ class TargetExecutor(QueryExecutor[ExecutorParams]):
                 parent_serving_preparation=executor_params.parent_serving_preparation,
                 progress_callback=executor_params.progress_callback,
             )
+            historical_features_metrics = features_computation_result.historical_features_metrics
             is_output_view = False
         return ExecutionResult(
             is_output_view=is_output_view, historical_features_metrics=historical_features_metrics

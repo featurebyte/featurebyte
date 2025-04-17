@@ -5,7 +5,8 @@ Module with utility functions to compute historical features
 from __future__ import annotations
 
 import time
-from typing import Any, Callable, Coroutine, Optional, Union
+from dataclasses import dataclass, field
+from typing import Any, Callable, Coroutine, Optional, Tuple, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -19,8 +20,10 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.models.system_metrics import HistoricalFeaturesMetrics
 from featurebyte.models.tile import OnDemandTileComputeResult
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
@@ -44,6 +47,16 @@ from featurebyte.session.session_helper import SessionHandler, execute_feature_q
 logger = get_logger(__name__)
 
 
+@dataclass
+class FeaturesComputationResult:
+    """
+    Features computation result
+    """
+
+    historical_features_metrics: HistoricalFeaturesMetrics
+    failed_node_names: list[str] = field(default_factory=list)
+
+
 async def compute_tiles_on_demand(
     session: BaseSession,
     tile_cache_service: TileCacheService,
@@ -57,6 +70,7 @@ async def compute_tiles_on_demand(
     temp_tile_tables_tag: str,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+    raise_on_error: bool = True,
 ) -> OnDemandTileComputeResult:
     """
     Compute tiles on demand
@@ -88,6 +102,8 @@ async def compute_tiles_on_demand(
         Preparation required for serving parent features
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
+    raise_on_error: bool
+        Whether to raise an error if the computation fails
 
     Returns
     -------
@@ -121,6 +137,7 @@ async def compute_tiles_on_demand(
             serving_names_mapping=serving_names_mapping,
             temp_tile_tables_tag=temp_tile_tables_tag,
             progress_callback=progress_callback,
+            raise_on_error=raise_on_error,
         )
     finally:
         logger.info("Cleaning up tables in historical_features_and_target.compute_tiles_on_demand")
@@ -136,6 +153,43 @@ async def compute_tiles_on_demand(
     return tile_compute_result
 
 
+def filter_failed_tile_nodes(
+    graph: QueryGraph, nodes: list[Node], failed_tile_table_ids: list[str]
+) -> Tuple[list[Node], list[Node]]:
+    """
+    Filter out nodes that are associated with failed tile tables
+
+    Parameters
+    ----------
+    graph: QueryGraph
+        Query graph
+    nodes: list[Node]
+        List of query graph node
+    failed_tile_table_ids: list[str]
+        List of failed tile table ids
+
+    Returns
+    -------
+    Tuple[list[Node], list[Node]]
+        Filtered nodes and failed tile nodes
+    """
+    failed_tile_table_ids_set = set(failed_tile_table_ids)
+    filtered_nodes = []
+    failed_tile_nodes = []
+    for node in nodes:
+        is_failed_tile_node = False
+        for groupby_node in graph.iterate_nodes(node, NodeType.GROUPBY):
+            assert isinstance(groupby_node, GroupByNode)
+            if groupby_node.parameters.tile_id in failed_tile_table_ids_set:
+                is_failed_tile_node = True
+                break
+        if is_failed_tile_node:
+            failed_tile_nodes.append(node)
+        else:
+            filtered_nodes.append(node)
+    return filtered_nodes, failed_tile_nodes
+
+
 async def get_historical_features(
     session: BaseSession,
     tile_cache_service: TileCacheService,
@@ -149,7 +203,8 @@ async def get_historical_features(
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-) -> HistoricalFeaturesMetrics:
+    raise_on_error: bool = True,
+) -> FeaturesComputationResult:
     """Get historical features
 
     Parameters
@@ -179,6 +234,10 @@ async def get_historical_features(
         Output table details to write the results to
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
+    raise_on_error: bool
+        Whether to raise an error if the computation fails. If True, any query error will be raised
+        immediately. If False, computation will be done on a best effort basis with errors
+        suppressed and logged in the result.
 
     Returns
     -------
@@ -237,6 +296,7 @@ async def get_historical_features(
             progress_callback=(
                 tile_cache_progress_callback if tile_cache_progress_callback else None
             ),
+            raise_on_error=raise_on_error,
         )
 
         tile_compute_seconds = time.time() - tic
@@ -248,6 +308,19 @@ async def get_historical_features(
             await progress_callback(
                 TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES
             )
+
+        # Skip computing features associated with failed tile tables since they are bound to fail
+        if tile_compute_result.failed_tile_table_ids:
+            logger.warning(
+                "Some tiles failed to compute: %s",
+                tile_compute_result.failed_tile_table_ids,
+            )
+            nodes, failed_tile_nodes = filter_failed_tile_nodes(
+                graph, nodes, tile_compute_result.failed_tile_table_ids
+            )
+            failed_node_names = [node.name for node in failed_tile_nodes]
+        else:
+            failed_node_names = []
 
         # Generate SQL code that computes the features
         tic = time.time()
@@ -266,7 +339,7 @@ async def get_historical_features(
             output_include_row_index=output_include_row_index,
             progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
         )
-        await execute_feature_query_set(
+        feature_query_set_result = await execute_feature_query_set(
             session_handler=SessionHandler(
                 session=session,
                 redis=tile_cache_service.tile_manager_service.redis,
@@ -282,6 +355,7 @@ async def get_historical_features(
                 if progress_callback
                 else None
             ),
+            raise_on_error=raise_on_error,
         )
         feature_compute_seconds = time.time() - tic
         logger.debug(f"compute_historical_features in total took {feature_compute_seconds:.2f}s")
@@ -296,10 +370,15 @@ async def get_historical_features(
                 job_schedule_table_set=job_schedule_table_set,
             )
 
-    return HistoricalFeaturesMetrics(
+    failed_node_names.extend(feature_query_set_result.failed_node_names)
+    metrics = HistoricalFeaturesMetrics(
         tile_compute_seconds=tile_compute_seconds,
         tile_compute_metrics=tile_compute_result.tile_compute_metrics,
         feature_compute_seconds=feature_compute_seconds,
+    )
+    return FeaturesComputationResult(
+        historical_features_metrics=metrics,
+        failed_node_names=failed_node_names,
     )
 
 
@@ -367,7 +446,7 @@ async def get_target(
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-) -> HistoricalFeaturesMetrics:
+) -> FeaturesComputationResult:
     """Get target
 
     Parameters
@@ -460,7 +539,9 @@ async def get_target(
             database_name=session.database_name,
             if_exists=True,
         )
-    return HistoricalFeaturesMetrics(
-        tile_compute_seconds=0,
-        feature_compute_seconds=feature_compute_seconds,
+    return FeaturesComputationResult(
+        historical_features_metrics=HistoricalFeaturesMetrics(
+            tile_compute_seconds=0,
+            feature_compute_seconds=feature_compute_seconds,
+        )
     )

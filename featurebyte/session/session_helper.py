@@ -5,6 +5,7 @@ Session related helper functions
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, List, Optional
 
 import pandas as pd
@@ -162,11 +163,22 @@ class SessionHandler:
         self.feature_store = feature_store
 
 
+@dataclass
+class FeatureQuerySetResult:
+    """
+    FeatureQuerySetResult is used to store the result of executing a feature query set.
+    """
+
+    dataframe: Optional[pd.DataFrame]
+    failed_node_names: List[str]
+
+
 async def execute_feature_query_set(
     session_handler: SessionHandler,
     feature_query_set: FeatureQuerySet,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
-) -> Optional[pd.DataFrame]:
+    raise_on_error: bool = True,
+) -> FeatureQuerySetResult:
     """
     Execute the feature queries to materialize features
 
@@ -178,10 +190,12 @@ async def execute_feature_query_set(
         FeatureQuerySet object
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
+    raise_on_error: bool
+        Whether to raise an error if any of the feature queries fail to materialize
 
     Returns
     -------
-    Optional[pd.DataFrame]
+    FeatureQuerySetResult
 
     Raises
     ------
@@ -249,9 +263,10 @@ async def execute_feature_query_set(
                 if isinstance(feature_query_result, Exception):
                     exception_result = feature_query_result
             assert exception_result is not None
-            raise FeatureQueryExecutionError(
-                f"Failed to materialize {len(failed_node_names)} features: {failed_feature_names}"
-            ) from exception_result
+            if raise_on_error:
+                raise FeatureQueryExecutionError(
+                    f"Failed to materialize {len(failed_node_names)} features: {failed_feature_names}"
+                ) from exception_result
 
         output_query = feature_query_set.construct_output_query(session.get_source_info())
         result = await session.execute_query_long_running(output_query)
@@ -262,7 +277,7 @@ async def execute_feature_query_set(
             await validate_output_row_index(session, feature_query_set.output_table_name)
         if output_query_progress_callback:
             await output_query_progress_callback(100, feature_query_set.progress_message)
-        return result
+        return FeatureQuerySetResult(dataframe=result, failed_node_names=failed_node_names)
 
     finally:
         for table_name in materialized_feature_table:
