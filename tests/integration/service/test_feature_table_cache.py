@@ -7,14 +7,15 @@ import time
 
 import pandas as pd
 import pytest
+import pytest_asyncio
 from bson import ObjectId
 from pyarrow.parquet import ParquetWriter
-from sqlglot import parse_one
+from sqlglot import expressions, parse_one
 
 from featurebyte import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 
 
 @pytest.fixture(name="feature_list")
@@ -432,3 +433,112 @@ async def test_read_from_cache(
         df = pd.read_parquet(temp_file.name)
     assert df.shape[0] == observation_table.num_rows
     assert set(df.columns.tolist()) == set([InternalName.TABLE_ROW_INDEX] + features)
+
+
+@pytest_asyncio.fixture(name="drop_product_action_column")
+async def drop_product_action_column_fixture(observation_table, session):
+    """
+    Drop product action column fixture
+    """
+    # Make sure observation table is created first before dropping the column
+    _ = observation_table
+
+    await session.create_table_as(
+        TableDetails(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+            table_name="__EVENT_TABLE_BACKUP",
+        ),
+        parse_one('SELECT * FROM "TEST_TABLE"'),
+        replace=True,
+    )
+
+    # Drop product action column
+    query = sql_to_string(
+        expressions.Alter(
+            this=expressions.Table(this=quoted_identifier("TEST_TABLE")),
+            kind="TABLE",
+            actions=[
+                expressions.Drop(
+                    this=quoted_identifier("PRODUCT_ACTION"), kind="COLUMN", exists=True
+                )
+            ],
+        ),
+        source_type=session.source_type,
+    )
+    await session.execute_query_long_running(query)
+
+    yield
+
+    # Restore original table
+    await session.create_table_as(
+        TableDetails(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+            table_name="TEST_TABLE",
+        ),
+        parse_one('SELECT * FROM "__EVENT_TABLE_BACKUP"'),
+        replace=True,
+    )
+
+
+@pytest.mark.usefixtures("drop_product_action_column")
+@pytest.mark.asyncio
+async def test_not_raise_on_error(
+    feature_table_cache_service,
+    feature_table_cache_metadata_service,
+    feature_store,
+    observation_table,
+    feature_list,
+):
+    """
+    Test create_or_update_feature_table_cache when raise_on_error=False
+    """
+    feature_store_model = feature_store.cached_model
+    feature_list_model = feature_list.cached_model
+    feature_cluster = feature_list_model.feature_clusters[0]
+
+    # Try to create feature table cache with missing column
+    result = await feature_table_cache_service.create_or_update_feature_table_cache(
+        feature_store=feature_store_model,
+        observation_table=observation_table.cached_model,
+        graph=feature_cluster.graph,
+        nodes=feature_cluster.nodes,
+        feature_list_id=feature_list_model.id,
+        raise_on_error=False,
+    )
+
+    # Check result
+    assert len(result.features_computation_result.failed_node_names) > 0
+
+    # Check failed nodes are not cached
+    cached_definitions = await feature_table_cache_metadata_service.get_cached_definitions(
+        observation_table_id=observation_table.id,
+    )
+    assert (
+        len(cached_definitions)
+        == len(feature_list_model.feature_ids)
+        - len(result.features_computation_result.failed_node_names)
+        - 1
+    )  # -1 for duplicate feature
+
+    # Try to read succeeded features from cache
+    filtered_nodes = [
+        node
+        for node in feature_cluster.nodes
+        if node.name not in result.features_computation_result.failed_node_names
+    ]
+    df = await feature_table_cache_service.read_from_cache(
+        feature_store=feature_store_model,
+        observation_table=observation_table.cached_model,
+        graph=feature_cluster.graph,
+        nodes=filtered_nodes,
+    )
+    assert df.shape[0] == observation_table.num_rows
+    assert df.columns.tolist() == [
+        "__FB_TABLE_ROW_INDEX",
+        "COUNT_2h",
+        "COUNT_24h",
+        "COUNT_2h DIV COUNT_24h",
+        "COUNT_2h_DUPLICATE",
+    ]
