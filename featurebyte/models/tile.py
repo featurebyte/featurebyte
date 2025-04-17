@@ -169,6 +169,7 @@ class OnDemandTileComputeResult(FeatureByteBaseModel):
 
     tile_compute_metrics: TileComputeMetrics
     on_demand_tile_tables: List[OnDemandTileTable]
+    failed_tile_table_ids: List[str] = Field(default_factory=list)
 
     @property
     def materialized_on_demand_tile_table_names(self) -> List[str]:

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Coroutine, Optional, Union
+from typing import Any, Callable, Coroutine, Optional, Tuple, Union
 
 import pandas as pd
 from bson import ObjectId
@@ -20,8 +20,10 @@ from featurebyte.models.observation_table import ObservationTableModel
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.models.system_metrics import HistoricalFeaturesMetrics
 from featurebyte.models.tile import OnDemandTileComputeResult
+from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
+from featurebyte.query_graph.node.generic import GroupByNode
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.batch_helper import get_feature_names
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME
@@ -68,6 +70,7 @@ async def compute_tiles_on_demand(
     temp_tile_tables_tag: str,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+    raise_on_error: bool = True,
 ) -> OnDemandTileComputeResult:
     """
     Compute tiles on demand
@@ -132,6 +135,7 @@ async def compute_tiles_on_demand(
             serving_names_mapping=serving_names_mapping,
             temp_tile_tables_tag=temp_tile_tables_tag,
             progress_callback=progress_callback,
+            raise_on_error=raise_on_error,
         )
     finally:
         logger.info("Cleaning up tables in historical_features_and_target.compute_tiles_on_demand")
@@ -145,6 +149,43 @@ async def compute_tiles_on_demand(
             )
             logger.info("Done dropping parent serving table")
     return tile_compute_result
+
+
+def filter_failed_tile_nodes(
+    graph: QueryGraph, nodes: list[Node], failed_tile_table_ids: list[str]
+) -> Tuple[list[Node], list[Node]]:
+    """
+    Filter out nodes that are associated with failed tile tables
+
+    Parameters
+    ----------
+    graph: QueryGraph
+        Query graph
+    nodes: list[Node]
+        List of query graph node
+    failed_tile_table_ids: list[str]
+        List of failed tile table ids
+
+    Returns
+    -------
+    Tuple[list[Node], list[Node]]
+        Filtered nodes and failed tile nodes
+    """
+    failed_tile_table_ids_set = set(failed_tile_table_ids)
+    filtered_nodes = []
+    failed_tile_nodes = []
+    for node in nodes:
+        is_failed_tile_node = False
+        for groupby_node in graph.iterate_nodes(node, NodeType.GROUPBY):
+            assert isinstance(groupby_node, GroupByNode)
+            if groupby_node.parameters.tile_id in failed_tile_table_ids_set:
+                is_failed_tile_node = True
+                break
+        if is_failed_tile_node:
+            failed_tile_nodes.append(node)
+        else:
+            filtered_nodes.append(node)
+    return filtered_nodes, failed_tile_nodes
 
 
 async def get_historical_features(
@@ -253,6 +294,7 @@ async def get_historical_features(
             progress_callback=(
                 tile_cache_progress_callback if tile_cache_progress_callback else None
             ),
+            raise_on_error=raise_on_error,
         )
 
         tile_compute_seconds = time.time() - tic
@@ -265,6 +307,20 @@ async def get_historical_features(
                 TILE_COMPUTE_PROGRESS_MAX_PERCENT, PROGRESS_MESSAGE_COMPUTING_FEATURES
             )
 
+        # Skip computing features associated with failed tile tables since they are bound to fail
+        if tile_compute_result.failed_tile_table_ids:
+            logger.warning(
+                "Some tiles failed to compute: %s",
+                tile_compute_result.failed_tile_table_ids,
+            )
+            nodes, failed_tile_nodes = filter_failed_tile_nodes(
+                graph, nodes, tile_compute_result.failed_tile_table_ids
+            )
+            failed_node_names = [node.name for node in failed_tile_nodes]
+        else:
+            failed_node_names = []
+
+        # TODO: handle when nodes is empty?
         # Generate SQL code that computes the features
         tic = time.time()
         historical_feature_query_set = get_historical_features_query_set(
@@ -313,6 +369,7 @@ async def get_historical_features(
                 job_schedule_table_set=job_schedule_table_set,
             )
 
+    failed_node_names.extend(feature_query_set_result.failed_node_names)
     metrics = HistoricalFeaturesMetrics(
         tile_compute_seconds=tile_compute_seconds,
         tile_compute_metrics=tile_compute_result.tile_compute_metrics,
@@ -320,7 +377,7 @@ async def get_historical_features(
     )
     return FeaturesComputationResult(
         historical_features_metrics=metrics,
-        failed_node_names=feature_query_set_result.failed_node_names,
+        failed_node_names=failed_node_names,
     )
 
 

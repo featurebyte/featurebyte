@@ -57,6 +57,7 @@ class TileCacheService:
         temp_tile_tables_tag: str,
         serving_names_mapping: dict[str, str] | None = None,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        raise_on_error: bool = True,
     ) -> OnDemandTileComputeResult:
         """
         Compute tiles on demand for the given graph and nodes.
@@ -123,6 +124,7 @@ class TileCacheService:
                         feature_store=feature_store,
                         temp_tile_tables_tag=temp_tile_tables_tag,
                         progress_callback=tile_compute_progress_callback,
+                        raise_on_error=raise_on_error,
                     )
             else:
                 logger.debug("All required tiles can be reused")
@@ -142,6 +144,7 @@ class TileCacheService:
         feature_store: FeatureStoreModel,
         temp_tile_tables_tag: str,
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
+        raise_on_error: bool = True,
     ) -> OnDemandTileComputeResult:
         """Interacts with FeatureListManager to compute tiles and update cache
 
@@ -171,6 +174,7 @@ class TileCacheService:
             tile_inputs=tile_inputs,
             temp_tile_tables_tag=temp_tile_tables_tag,
             progress_callback=progress_callback,
+            raise_on_error=raise_on_error,
         )
 
     @classmethod
