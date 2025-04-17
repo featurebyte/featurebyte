@@ -83,6 +83,8 @@ class TileManagerService:
             Tag to use when creating temporary tile tables
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
+        raise_on_error: bool
+            Whether to raise an error if tile generation fails
 
         Returns
         -------

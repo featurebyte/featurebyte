@@ -586,7 +586,7 @@ async def test_not_raise_on_error__dropped_table(
     feature_list_model = feature_list.cached_model
     feature_cluster = feature_list_model.feature_clusters[0]
 
-    # Try to create feature table cache with missing column
+    # Try to create feature table cache when all features are expected to fail
     result = await feature_table_cache_service.create_or_update_feature_table_cache(
         feature_store=feature_store_model,
         observation_table=observation_table.cached_model,

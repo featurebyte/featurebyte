@@ -82,6 +82,8 @@ class TileCacheService:
             Optional mapping from original serving name to new serving name
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
+        raise_on_error: bool
+            Whether to raise an error if tile generation fails
 
         Returns
         -------
@@ -160,6 +162,8 @@ class TileCacheService:
             Tag to identify the temporary tile tables for cleanup purpose
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
+        raise_on_error: bool
+            Whether to raise an error if tile generation fails
 
         Returns
         -------

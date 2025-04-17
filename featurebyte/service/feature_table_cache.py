@@ -697,6 +697,8 @@ class FeatureTableCacheService:
             than those defined in Entities
         progress_callback: Optional[Callable[[int, Optional[str]], Coroutine[Any, Any, None]]]
             Optional progress callback function
+        raise_on_error: bool
+            Whether to raise an error if the computation fails
 
         Returns
         -------

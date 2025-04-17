@@ -99,10 +99,17 @@ class TileGenerate(TileCommon):
         ----------
         temp_tile_tables_tag: Optional[str]
             Tag for temporary tile tables
+        raise_on_error: bool
+            Whether to raise an error if tile generation fails
 
         Returns
         -------
         TileComputeResult
+
+        Raises
+        ------
+        Exception
+            If tile generation fails and raise_on_error is True
         """
 
         # Get the final SQL query

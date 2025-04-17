@@ -190,6 +190,8 @@ async def execute_feature_query_set(
         FeatureQuerySet object
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
+    raise_on_error: bool
+        Whether to raise an error if any of the feature queries fail to materialize
 
     Returns
     -------

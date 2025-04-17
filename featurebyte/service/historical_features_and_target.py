@@ -102,6 +102,8 @@ async def compute_tiles_on_demand(
         Preparation required for serving parent features
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
         Optional progress callback function
+    raise_on_error: bool
+        Whether to raise an error if the computation fails
 
     Returns
     -------
