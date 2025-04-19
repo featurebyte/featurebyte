@@ -817,7 +817,9 @@ async def test_get_feature_query(
     async def _insert_definitions(definitions):
         cache_metadata = (
             await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-                observation_table_id=observation_table.id, num_columns_to_insert=len(definitions)
+                observation_table_id=observation_table.id,
+                num_columns_to_insert=len(definitions),
+                session=mock_snowflake_session,
             )
         )
         await feature_table_cache_metadata_service.update_feature_table_cache(

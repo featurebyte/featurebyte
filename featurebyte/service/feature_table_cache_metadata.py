@@ -23,8 +23,8 @@ from featurebyte.routes.block_modification_handler import BlockModificationHandl
 from featurebyte.schema.feature_table_cache_metadata import FeatureTableCacheMetadataUpdate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.observation_table import ObservationTableService
+from featurebyte.session.base import LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS, BaseSession
 from featurebyte.storage import Storage
-from featurebyte.utils.redis import acquire_lock
 
 logger = get_logger(__name__)
 
@@ -102,6 +102,7 @@ class FeatureTableCacheMetadataService(
         self,
         observation_table_id: PydanticObjectId,
         num_columns_to_insert: int,
+        session: BaseSession,
     ) -> FeatureTableCacheMetadataModel:
         """Get or create feature table cache document for observation table.
 
@@ -111,36 +112,34 @@ class FeatureTableCacheMetadataService(
             Observation table id
         num_columns_to_insert: int
             Number of columns to insert
+        session: BaseSession
+            Session to use for database operations
 
         Returns
         -------
         FeatureTableCacheMetadataModel
             Feature Table Cache model
         """
-        async with acquire_lock(
-            self.redis,
-            f"get_or_create_feature_table_cache:{observation_table_id}",
-            timeout=REDIS_LOCK_TIMEOUT,
-        ):
-            return await self._get_or_create_feature_table_cache(
-                observation_table_id, num_columns_to_insert
-            )
-
-    async def _get_or_create_feature_table_cache(
-        self,
-        observation_table_id: PydanticObjectId,
-        num_columns_to_insert: int,
-    ) -> FeatureTableCacheMetadataModel:
         query_filter = {"observation_table_id": observation_table_id}
 
         eligible_cache_metadata = None
-        num_cache_tables = 0
         async for cache_metadata in self.list_documents_iterator(query_filter=query_filter):
             if (
                 len(cache_metadata.feature_definitions) + num_columns_to_insert
             ) <= FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS:
-                eligible_cache_metadata = cache_metadata
-            num_cache_tables += 1
+                # Double check that the actual table has not exceeded the max columns
+                table_columns = await session.list_table_schema(
+                    table_name=cache_metadata.table_name,
+                    database_name=session.database_name,
+                    schema_name=session.schema_name,
+                    timeout=LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+                )
+                if (
+                    len(table_columns) + num_columns_to_insert
+                    <= FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS
+                ):
+                    eligible_cache_metadata = cache_metadata
+                    break
 
         if eligible_cache_metadata is None:
             observation_table = await self.observation_table_service.get_document(
