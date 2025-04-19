@@ -351,7 +351,7 @@ async def test_update_feature_table_cache_updates_feature_id(
 
 @patch(
     "featurebyte.service.feature_table_cache_metadata.FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS",
-    2,
+    6,
 )
 @pytest.mark.asyncio
 async def test_get_or_create_feature_table_cache_exceed_limit(

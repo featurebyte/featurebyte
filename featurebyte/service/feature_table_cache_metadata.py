@@ -120,13 +120,20 @@ class FeatureTableCacheMetadataService(
         FeatureTableCacheMetadataModel
             Feature Table Cache model
         """
+        observation_table = await self.observation_table_service.get_document(
+            document_id=observation_table_id
+        )
         query_filter = {"observation_table_id": observation_table_id}
 
         eligible_cache_metadata = None
         async for cache_metadata in self.list_documents_iterator(query_filter=query_filter):
-            if (
-                len(cache_metadata.feature_definitions) + num_columns_to_insert
-            ) <= FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS:
+            num_columns_after_insert = (
+                1  # row index column
+                + len(observation_table.columns_info)  # observation table columns
+                + len(cache_metadata.feature_definitions)  # existing feature definitions
+                + num_columns_to_insert  # new feature definitions
+            )
+            if num_columns_after_insert <= FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS:
                 # Double check that the actual table has not exceeded the max columns
                 table_columns = await session.list_table_schema(
                     table_name=cache_metadata.table_name,
@@ -142,9 +149,6 @@ class FeatureTableCacheMetadataService(
                     break
 
         if eligible_cache_metadata is None:
-            observation_table = await self.observation_table_service.get_document(
-                document_id=observation_table_id
-            )
             document = FeatureTableCacheMetadataModel(
                 observation_table_id=observation_table.id,
                 table_name=self._get_feature_cache_table_name(),
