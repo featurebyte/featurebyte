@@ -3,10 +3,10 @@ FeatureStore API payload schema
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from bson import ObjectId
-from pydantic import Field, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 from featurebyte.enum import SourceType
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
@@ -49,6 +49,23 @@ class FeatureStorePreview(FeatureByteBaseModel):
     node_name: str
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
     enable_query_cache: bool = Field(default=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _quick_prune_input_graph(cls, values: Any) -> Any:
+        if isinstance(values, BaseModel):
+            values = values.model_dump(by_alias=True)
+
+        if "graph" in values and "node_name" in values:
+            graph = values["graph"]
+            if isinstance(graph, QueryGraph):
+                # prune the graph to only include the node_name and its inputs
+                sub_graph, node_name_map = graph.quick_prune(
+                    target_node_names=[values["node_name"]]
+                )
+                values["graph"] = QueryGraph(**sub_graph.model_dump(by_alias=True))
+                values["node_name"] = node_name_map[values["node_name"]]
+        return values
 
 
 class FeatureStoreSample(FeatureStorePreview):
