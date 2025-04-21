@@ -183,11 +183,6 @@ class PreviewService:
         graph_interpreter = GraphInterpreter(
             query_graph=graph, source_info=feature_store.get_source_info()
         )
-        graph_info = graph_interpreter.extract_graph_info_for_sampling(
-            query_graph=sample.graph,
-            target_node_name=sample.node_name,
-        )
-        num_rows = int(num_rows * graph_info.get_oversampling_factor())
         sample_sql_tree, _ = graph_interpreter._construct_sample_sql(
             node_name=inserted_input_node.name,
             num_rows=num_rows,
