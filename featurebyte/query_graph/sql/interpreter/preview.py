@@ -13,10 +13,7 @@ from typing import OrderedDict as OrderedDictT
 from sqlglot import expressions
 
 from featurebyte.enum import DBVarType, InternalName
-from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
-from featurebyte.query_graph.model.graph import QueryGraphModel
-from featurebyte.query_graph.node.generic import JoinNode
 from featurebyte.query_graph.node.metadata.operation import OperationStructure, ViewDataColumn
 from featurebyte.query_graph.sql.ast.base import ExpressionNode, TableNode
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
@@ -86,31 +83,6 @@ class ValueCountsQueries:
     queries: List[ValueCountsQuery]
 
 
-@dataclass
-class QueryGraphStructureInfo:
-    """
-    Structure information for a query graph used for sampling purposes
-    """
-
-    has_join_node: bool
-    has_inner_join: bool
-    has_filter_node: bool
-
-    def get_oversampling_factor(self) -> float:
-        """
-        Get oversampling factor for sampling
-
-        Returns
-        -------
-        float
-        """
-        if self.has_inner_join or self.has_filter_node:
-            # if there are inner joins or filter nodes, we need to sample more data to circumvent
-            # the problem of having too few rows after filtering/joining
-            return 20
-        return 1.0
-
-
 class PreviewMixin(BaseGraphInterpreter):
     """
     Preview mixin for Graph Interpreter
@@ -163,45 +135,6 @@ class PreviewMixin(BaseGraphInterpreter):
                     sql_tree.expressions[idx] = casted_col_expr
 
         return sql_tree, type_conversions
-
-    @staticmethod
-    def extract_graph_info_for_sampling(
-        query_graph: QueryGraphModel, target_node_name: str
-    ) -> QueryGraphStructureInfo:
-        """
-        Extract graph structure information for sampling purposes
-
-        Parameters
-        ----------
-        query_graph: QueryGraphModel
-            Query graph model
-        target_node_name: str
-            Target node name
-
-        Returns
-        -------
-        QueryGraphStructureInfo
-        """
-        target_node = query_graph.get_node_by_name(node_name=target_node_name)
-
-        has_join_node = False
-        has_inner_join = False
-        for node in query_graph.iterate_nodes(
-            target_node=target_node,
-            node_type=NodeType.JOIN,
-        ):
-            has_join_node = True
-            assert isinstance(node, JoinNode)
-            if node.parameters.join_type == "inner":
-                has_inner_join = True
-
-        return QueryGraphStructureInfo(
-            has_join_node=has_join_node,
-            has_inner_join=has_inner_join,
-            has_filter_node=query_graph.has_node_type(
-                target_node=target_node, node_type=NodeType.FILTER
-            ),
-        )
 
     def _construct_sample_sql(  # pylint: disable=too-many-arguments,too-many-locals
         self,
