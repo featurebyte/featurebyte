@@ -298,6 +298,35 @@ class PreviewService:
         result = await self._execute_query(session, preview_sql, allow_long_running)
         return dataframe_to_json(result, type_conversions)
 
+    @staticmethod
+    def _get_row_count_graph_and_node(
+        graph: QueryGraph, node_name: str, sample_on_primary_table: bool
+    ) -> Tuple[QueryGraph, str]:
+        """
+        Get the graph and node name for row count query
+
+        Parameters
+        ----------
+        graph: QueryGraph
+            Query graph to use
+        node_name: str
+            Name of node to use
+        sample_on_primary_table: bool
+            Whether to perform sampling on the primary table. If sample_on_primary_table is True,
+            the row count graph will be pruned to only include the sample table node.
+
+        Returns
+        -------
+        Tuple[QueryGraph, str]
+            Graph and node name for row count query
+        """
+        if sample_on_primary_table:
+            sample_table_node = graph.get_sample_table_node(node_name=node_name)
+            sub_graph, node_name_map = graph.quick_prune(target_node_names=[sample_table_node.name])
+            node_name = node_name_map[sample_table_node.name]
+            graph = QueryGraph(**sub_graph.model_dump(by_alias=True))
+        return graph, node_name
+
     async def sample(
         self,
         sample: FeatureStoreSample,
@@ -334,10 +363,15 @@ class PreviewService:
             feature_store_id=sample.feature_store_id,
         )
         if size > 0:
-            total_num_rows = await self._get_row_count(
-                session,
+            graph, node_name = self._get_row_count_graph_and_node(
                 graph=sample.graph,
                 node_name=sample.node_name,
+                sample_on_primary_table=sample_on_primary_table,
+            )
+            total_num_rows = await self._get_row_count(
+                session,
+                graph=graph,
+                node_name=node_name,
                 feature_store_id=sample.feature_store_id,
                 enable_query_cache=sample.enable_query_cache,
                 from_timestamp=sample.from_timestamp,
@@ -437,10 +471,15 @@ class PreviewService:
         )
 
         if size > 0:
-            total_num_rows = await self._get_row_count(
-                session,
+            graph, node_name = self._get_row_count_graph_and_node(
                 graph=sample.graph,
                 node_name=sample.node_name,
+                sample_on_primary_table=sample_on_primary_table,
+            )
+            total_num_rows = await self._get_row_count(
+                session,
+                graph=graph,
+                node_name=node_name,
                 feature_store_id=sample.feature_store_id,
                 enable_query_cache=sample.enable_query_cache,
                 from_timestamp=sample.from_timestamp,
