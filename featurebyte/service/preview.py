@@ -7,7 +7,7 @@ from __future__ import annotations
 import warnings
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Coroutine, Optional, Tuple, Type, cast
+from typing import Any, Callable, Coroutine, Optional, Tuple, Type, Union, cast
 
 import pandas as pd
 from bson import ObjectId
@@ -171,35 +171,41 @@ class PreviewService:
         self,
         feature_store: FeatureStoreModel,
         session: BaseSession,
-        sample: FeatureStoreSample,
+        payload: Union[FeatureStoreSample, FeatureStorePreview],
         num_rows: int,
         seed: int,
         total_num_rows: Optional[int],
     ) -> GraphWithSampledPrimaryTable:
         # get primary table node & construct a new graph for sampling
-        primary_table_input_node = sample.graph.get_sample_table_node(node_name=sample.node_name)
+        primary_table_input_node = payload.graph.get_sample_table_node(node_name=payload.node_name)
         graph = QueryGraph()
         inserted_input_node = graph.add_node(primary_table_input_node, input_nodes=[])
         graph_interpreter = GraphInterpreter(
             query_graph=graph, source_info=feature_store.get_source_info()
         )
+        other_kwargs = {}
+        if isinstance(payload, FeatureStoreSample):
+            other_kwargs = {
+                "from_timestamp": payload.from_timestamp,
+                "to_timestamp": payload.to_timestamp,
+                "timestamp_column": payload.timestamp_column,
+            }
+
         sample_sql_tree, _ = graph_interpreter._construct_sample_sql(
             node_name=inserted_input_node.name,
             num_rows=num_rows,
             seed=seed,
-            from_timestamp=sample.from_timestamp,
-            to_timestamp=sample.to_timestamp,
-            timestamp_column=sample.timestamp_column,
             total_num_rows=total_num_rows,
             skip_conversion=True,  # skip conversion to keep original table column types
             sample_on_primary_table=False,  # go through normal sampling process with single table
+            **other_kwargs,  # type: ignore
         )
         sampled_table_name, is_table_cached = await self._get_or_cache_table(
             session=session,
-            params=sample,
+            params=payload,
             table_expr=sample_sql_tree,
         )
-        output = sample.graph.model_copy(deep=True)
+        output = payload.graph.model_copy(deep=True)
         for node in output.nodes:
             if node.name == primary_table_input_node.name:
                 assert isinstance(node, InputNode)
@@ -387,7 +393,7 @@ class PreviewService:
             graph_info = await self._get_graph_using_sampled_primary_table(
                 feature_store=feature_store,
                 session=session,
-                sample=sample,
+                payload=sample,
                 num_rows=size,
                 seed=seed,
                 total_num_rows=total_num_rows,
@@ -491,7 +497,7 @@ class PreviewService:
             graph_info = await self._get_graph_using_sampled_primary_table(
                 feature_store=feature_store,
                 session=session,
-                sample=sample,
+                payload=sample,
                 num_rows=size,
                 seed=seed,
                 total_num_rows=total_num_rows,
@@ -668,6 +674,7 @@ class PreviewService:
         num_rows: int,
         num_categories_limit: int,
         seed: int = 1234,
+        sample_on_primary_table: bool = False,
         completion_callback: Optional[Callable[[int], Coroutine[Any, Any, None]]] = None,
     ) -> dict[str, dict[Any, int]]:
         """
@@ -686,6 +693,8 @@ class PreviewService:
             the data, the result will include the most frequent categories up to this number.
         seed: int
             Random seed to use for sampling
+        sample_on_primary_table: bool
+            Whether to perform sampling on the primary table. This has an effect only when the
         completion_callback: Optional[Callable[int], None]
             Callback to call when a column is processed. The callback will be called with the number
             of columns processed so far.
@@ -699,9 +708,6 @@ class PreviewService:
             node_name=preview.node_name,
             feature_store_id=preview.feature_store_id,
         )
-        interpreter = GraphInterpreter(preview.graph, source_info=feature_store.get_source_info())
-        op_struct = interpreter.extract_operation_structure_for_node(preview.node_name)
-        column_dtype_mapping = {col.name: col.dtype for col in op_struct.columns}
 
         if num_rows > 0:
             total_num_rows = await self._get_row_count(
@@ -710,9 +716,28 @@ class PreviewService:
                 node_name=preview.node_name,
                 feature_store_id=preview.feature_store_id,
                 enable_query_cache=preview.enable_query_cache,
+                sample_on_primary_table=sample_on_primary_table,
             )
         else:
             total_num_rows = None
+
+        graph_info = None
+        if sample_on_primary_table:
+            graph_info = await self._get_graph_using_sampled_primary_table(
+                feature_store=feature_store,
+                session=session,
+                payload=preview,
+                num_rows=num_rows,
+                seed=seed,
+                total_num_rows=total_num_rows,
+            )
+
+        interpreter = GraphInterpreter(
+            query_graph=graph_info.graph if graph_info else preview.graph,
+            source_info=feature_store.get_source_info(),
+        )
+        op_struct = interpreter.extract_operation_structure_for_node(preview.node_name)
+        column_dtype_mapping = {col.name: col.dtype for col in op_struct.columns}
 
         value_counts_queries = interpreter.construct_value_counts_sql(
             node_name=preview.node_name,
@@ -770,13 +795,21 @@ class PreviewService:
                 feature_store.max_query_concurrency,
             )
         finally:
+            # Need to cleanup as the table is not managed by query cache
+            table_names_to_drop = []
             if not is_table_cached:
-                # Need to cleanup as the table is not managed by query cache
-                await session.drop_table(
-                    table_name=input_table_name,
+                table_names_to_drop.append(input_table_name)
+
+            if graph_info and not graph_info.is_table_cached:
+                table_names_to_drop.append(graph_info.sampled_table_name)
+
+            if table_names_to_drop:
+                await session.drop_tables(
+                    table_names=table_names_to_drop,
                     schema_name=session.schema_name,
                     database_name=session.database_name,
                 )
+
         return dict(results)
 
     async def _process_value_counts_column(
