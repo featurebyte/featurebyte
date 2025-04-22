@@ -2,13 +2,15 @@
 Test preview service module
 """
 
+import textwrap
+
 import numpy as np
 import pandas as pd
 import pytest
 from bson import ObjectId
 from sqlglot import parse_one
 
-from featurebyte import FeatureStore
+from featurebyte import FeatureStore, SourceType
 from featurebyte.common.utils import dataframe_from_json
 from featurebyte.exception import (
     DescribeQueryExecutionError,
@@ -17,7 +19,9 @@ from featurebyte.exception import (
 )
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature_list import FeatureCluster
+from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.schema.feature_list import FeatureListPreview
 from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
 from featurebyte.schema.preview import FeatureOrTargetPreview
@@ -454,3 +458,321 @@ async def test_sample_does_not_change_underlying_graph(
     await preview_service.sample(payload, size=0, seed=0, sample_on_primary_table=True)
     after_sample = graph.model_dump_json(by_alias=True)
     assert before_sample == after_sample
+
+
+@pytest.fixture(name="feature_store_sample_with_filter_graph")
+def feature_store_sample_with_filter_graph_fixture(feature_store_sample):
+    """Fixture for a FeatureStoreSample with a filter graph"""
+    # construct another graph with filtering
+    graph = QueryGraph()
+    input_node = graph.add_operation_node(
+        node=feature_store_sample.graph.nodes_map["input_1"], input_nodes=[]
+    )
+    project_node = graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["col_int"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[input_node],
+    )
+    equal_node = graph.add_operation(
+        node_type=NodeType.EQ,
+        node_params={"value": 1},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[project_node],
+    )
+    filter_node = graph.add_operation(
+        node_type=NodeType.FILTER,
+        node_params={},
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[input_node, equal_node],
+    )
+    new_feature_store_sample = FeatureStoreSample(**{
+        **feature_store_sample.model_dump(by_alias=True),
+        "graph": graph,
+        "node_name": filter_node.name,
+    })
+    assert new_feature_store_sample.graph.edges_map == {
+        "input_1": ["project_1", "filter_1"],
+        "project_1": ["eq_1"],
+        "eq_1": ["filter_1"],
+    }
+    assert new_feature_store_sample.node_name == "filter_1"
+    return new_feature_store_sample
+
+
+@pytest.fixture(name="expected_create_sample_table_sql")
+def expected_create_sample_table_sql_fixture():
+    """Expected create sample table SQL"""
+    expected = textwrap.dedent(
+        """
+        SELECT
+          "col_int",
+          "col_float",
+          "col_char",
+          "col_text",
+          "col_binary",
+          "col_boolean",
+          "event_timestamp",
+          "created_at",
+          "cust_id"
+        FROM (
+          SELECT
+            CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
+            "col_int",
+            "col_float",
+            "col_char",
+            "col_text",
+            "col_binary",
+            "col_boolean",
+            "event_timestamp",
+            "created_at",
+            "cust_id"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              CAST("col_text" AS VARCHAR) AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "event_timestamp",
+              "created_at" AS "created_at",
+              CAST("cust_id" AS VARCHAR) AS "cust_id"
+            FROM "sf_database"."sf_schema"."sf_table"
+          )
+        )
+        WHERE
+          "prob" <= 0.15000000000000002
+        ORDER BY
+          "prob"
+        LIMIT 10
+        """
+    ).strip()
+    return expected
+
+
+@pytest.mark.asyncio
+async def test_sample_with_sample_on_primary_table_enable(
+    preview_service,
+    feature_store_sample,
+    feature_store_sample_with_filter_graph,
+    mock_snowflake_session,
+    expected_create_sample_table_sql,
+):
+    """Test sample with sample_on_primary_table enabled"""
+
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    seed = 1234
+
+    await preview_service.sample(
+        feature_store_sample, size=10, seed=seed, sample_on_primary_table=True
+    )
+    create_sample_table_sql = sql_to_string(
+        mock_snowflake_session.create_table_as.call_args_list[0][1]["select_expr"],
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert create_sample_table_sql == expected_create_sample_table_sql
+
+    # check filtered graph
+    sample_size_equal_pair = [(10, True), (11, False)]
+    for sample_size, is_equal in sample_size_equal_pair:
+        # clear the mock
+        mock_snowflake_session.reset_mock()
+
+        # try to sample the filtered graph with the same size and seed
+        await preview_service.sample(
+            feature_store_sample_with_filter_graph,
+            size=sample_size,
+            seed=seed,
+            sample_on_primary_table=True,
+        )
+        create_sample_table_sql = sql_to_string(
+            mock_snowflake_session.create_table_as.call_args_list[0][1]["select_expr"],
+            source_type=SourceType.SNOWFLAKE,
+        )
+        if is_equal:
+            assert create_sample_table_sql == expected_create_sample_table_sql
+        else:
+            assert create_sample_table_sql != expected_create_sample_table_sql
+
+
+@pytest.mark.asyncio
+async def test_describe_with_sample_on_primary_table_enable(
+    preview_service,
+    feature_store_sample,
+    feature_store_sample_with_filter_graph,
+    mock_snowflake_session,
+    expected_create_sample_table_sql,
+):
+    """Test describe with sample_on_primary_table enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.side_effect = mock_execute_query
+    seed = 1234
+
+    await preview_service.describe(
+        feature_store_sample,
+        size=10,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    create_sample_table_sql = sql_to_string(
+        mock_snowflake_session.create_table_as.call_args_list[0][1]["select_expr"],
+        source_type=SourceType.SNOWFLAKE,
+    )
+    assert create_sample_table_sql == expected_create_sample_table_sql
+
+    # check filtered graph
+    sample_size_equal_pair = [(10, True), (11, False)]
+    for sample_size, is_equal in sample_size_equal_pair:
+        # clear the mock
+        mock_snowflake_session.reset_mock()
+
+        # try to sample the filtered graph with the same size and seed
+        await preview_service.describe(
+            feature_store_sample_with_filter_graph,
+            size=sample_size,
+            seed=seed,
+            sample_on_primary_table=True,
+        )
+        create_sample_table_sql = sql_to_string(
+            mock_snowflake_session.create_table_as.call_args_list[0][1]["select_expr"],
+            source_type=SourceType.SNOWFLAKE,
+        )
+        if is_equal:
+            assert create_sample_table_sql == expected_create_sample_table_sql
+        else:
+            assert create_sample_table_sql != expected_create_sample_table_sql
+
+
+@pytest.mark.asyncio
+async def test_value_counts_with_sample_on_primary_table_enable(
+    preview_service,
+    feature_store_sample,
+    feature_store_sample_with_filter_graph,
+    mock_snowflake_session,
+    expected_create_sample_table_sql,
+):
+    """Test describe with sample_on_primary_table enabled"""
+    mock_snowflake_session.execute_query.side_effect = mock_execute_query
+    mock_snowflake_session.execute_query_long_running.return_value = pd.DataFrame({
+        "key": ["1", "2", None],
+        "count": [100, 50, 3],
+    })
+    seed = 1234
+
+    await preview_service.value_counts(
+        feature_store_sample,
+        column_names=["col_char"],
+        num_rows=10,
+        num_categories_limit=5,
+        seed=seed,
+        sample_on_primary_table=True,
+    )
+    create_sample_table_sql = sql_to_string(
+        mock_snowflake_session.create_table_as.call_args_list[0][1]["select_expr"],
+        source_type=SourceType.SNOWFLAKE,
+    )
+    cached_table_name = mock_snowflake_session.create_table_as.call_args_list[0][1]["table_details"]
+    assert cached_table_name == "__FB_TEMPORARY_TABLE_000000000000000000000000"
+    assert create_sample_table_sql == expected_create_sample_table_sql
+
+    # check another create table SQL
+    expected_another_create_sample_table_sql = textwrap.dedent(
+        """
+        CREATE TABLE "__FB_TEMPORARY_TABLE_000000000000000000000001" AS
+        SELECT
+          "col_int",
+          "col_float",
+          "col_char",
+          "col_text",
+          "col_binary",
+          "col_boolean",
+          "event_timestamp",
+          "created_at",
+          "cust_id"
+        FROM (
+          SELECT
+            CAST(BITAND(RANDOM(1234), 2147483647) AS DOUBLE) / 2147483647.0 AS "prob",
+            "col_int",
+            "col_float",
+            "col_char",
+            "col_text",
+            "col_binary",
+            "col_boolean",
+            "event_timestamp",
+            "created_at",
+            "cust_id"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_char" AS "col_char",
+              CAST("col_text" AS VARCHAR) AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "event_timestamp" AS "event_timestamp",
+              "created_at" AS "created_at",
+              CAST("cust_id" AS VARCHAR) AS "cust_id"
+            FROM "__FB_TEMPORARY_TABLE_000000000000000000000000"
+          )
+        )
+        WHERE
+          "prob" <= 0.15000000000000002
+        ORDER BY
+          "prob"
+        LIMIT 10
+        """
+    ).strip()
+    assert (
+        mock_snowflake_session.execute_query_long_running.call_args_list[-2][0][0]
+        == expected_another_create_sample_table_sql
+    )
+
+    # check value counts SQL
+    expected_value_count_sql = textwrap.dedent(
+        """
+        SELECT
+          "col_char" AS "key",
+          "__FB_COUNTS" AS "count"
+        FROM (
+          SELECT
+            "col_char",
+            COUNT(*) AS "__FB_COUNTS"
+          FROM "__FB_TEMPORARY_TABLE_000000000000000000000001"
+          GROUP BY
+            "col_char"
+          ORDER BY
+            "__FB_COUNTS" DESC NULLS LAST
+          LIMIT 5
+        )
+        """
+    ).strip()
+    assert (
+        mock_snowflake_session.execute_query_long_running.call_args_list[-1][0][0]
+        == expected_value_count_sql
+    )
+
+    # check filtered graph
+    sample_size_equal_pair = [(10, True), (11, False)]
+    for sample_size, is_equal in sample_size_equal_pair:
+        # clear the mock
+        mock_snowflake_session.reset_mock()
+
+        # try to sample the filtered graph with the same size and seed
+        await preview_service.value_counts(
+            feature_store_sample_with_filter_graph,
+            column_names=["col_char"],
+            num_rows=sample_size,
+            num_categories_limit=5,
+            seed=seed,
+            sample_on_primary_table=True,
+        )
+        create_sample_table_sql = sql_to_string(
+            mock_snowflake_session.create_table_as.call_args_list[0][1]["select_expr"],
+            source_type=SourceType.SNOWFLAKE,
+        )
+        if is_equal:
+            assert create_sample_table_sql == expected_create_sample_table_sql
+        else:
+            assert create_sample_table_sql != expected_create_sample_table_sql
