@@ -500,6 +500,7 @@ class FeatureTableCacheService:
             await self.feature_table_cache_metadata_service.get_or_create_feature_table_cache(
                 observation_table_id=observation_table.id,
                 num_columns_to_insert=len(non_cached_nodes),
+                session=db_session,
             )
         )
         feature_table_cache_exists = await self._feature_table_cache_exists(

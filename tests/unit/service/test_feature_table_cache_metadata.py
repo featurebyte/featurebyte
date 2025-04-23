@@ -50,6 +50,7 @@ async def test_get_or_create_feature_table_cache_creates_from_scratch(
     feature_table_cache_metadata_service,
     observation_table_service,
     observation_table,
+    mock_snowflake_session,
 ):
     """test get_or_create_feature_table_cache method"""
     observation_table_doc = await observation_table_service.create_document(observation_table)
@@ -57,6 +58,7 @@ async def test_get_or_create_feature_table_cache_creates_from_scratch(
     document = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
         num_columns_to_insert=1,
+        session=mock_snowflake_session,
     )
     assert document.id
     assert document.observation_table_id == observation_table_doc.id
@@ -72,6 +74,7 @@ async def test_get_or_create_feature_table_cache_returns_existing(
     feature_table_cache_metadata_service,
     observation_table_service,
     observation_table,
+    mock_snowflake_session,
 ):
     """test get_or_create_feature_table_cache method"""
     observation_table_doc = await observation_table_service.create_document(observation_table)
@@ -97,6 +100,7 @@ async def test_get_or_create_feature_table_cache_returns_existing(
     get_document = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
         num_columns_to_insert=1,
+        session=mock_snowflake_session,
     )
     assert document == get_document
 
@@ -106,6 +110,7 @@ async def test_update_feature_table_cache_from_scratch(
     feature_table_cache_metadata_service,
     observation_table_service,
     observation_table,
+    mock_snowflake_session,
 ):
     """test update_feature_table_cache method"""
     observation_table_doc = await observation_table_service.create_document(observation_table)
@@ -113,6 +118,7 @@ async def test_update_feature_table_cache_from_scratch(
     document = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
         num_columns_to_insert=1,
+        session=mock_snowflake_session,
     )
     assert document.observation_table_id == observation_table_doc.id
     assert document.table_name.startswith(MaterializedTableNamePrefix.FEATURE_TABLE_CACHE)
@@ -138,6 +144,7 @@ async def test_update_feature_table_cache_from_scratch(
     document = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
         observation_table_id=observation_table_doc.id,
         num_columns_to_insert=1,
+        session=mock_snowflake_session,
     )
     assert document.observation_table_id == observation_table_doc.id
     assert document.table_name.startswith(MaterializedTableNamePrefix.FEATURE_TABLE_CACHE)
@@ -160,6 +167,7 @@ async def test_update_feature_table_cache_add_features(
     feature_table_cache_metadata_service,
     observation_table_service,
     observation_table,
+    mock_snowflake_session,
 ):
     """test update_feature_table_cache method"""
     observation_table_doc = await observation_table_service.create_document(observation_table)
@@ -177,7 +185,9 @@ async def test_update_feature_table_cache_add_features(
         ),
     ]
     document = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-        observation_table_id=observation_table_doc.id, num_columns_to_insert=2
+        observation_table_id=observation_table_doc.id,
+        num_columns_to_insert=2,
+        session=mock_snowflake_session,
     )
     await feature_table_cache_metadata_service.update_feature_table_cache(
         cache_metadata_id=document.id,
@@ -246,6 +256,7 @@ async def test_update_feature_table_cache_updates_feature_id(
     feature_table_cache_metadata_service,
     observation_table_service,
     observation_table,
+    mock_snowflake_session,
 ):
     """test update_feature_table_cache method"""
     observation_table_doc = await observation_table_service.create_document(observation_table)
@@ -262,7 +273,9 @@ async def test_update_feature_table_cache_updates_feature_id(
         ),
     ]
     document = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-        observation_table_id=observation_table_doc.id, num_columns_to_insert=2
+        observation_table_id=observation_table_doc.id,
+        num_columns_to_insert=2,
+        session=mock_snowflake_session,
     )
     await feature_table_cache_metadata_service.update_feature_table_cache(
         cache_metadata_id=document.id,
@@ -338,13 +351,14 @@ async def test_update_feature_table_cache_updates_feature_id(
 
 @patch(
     "featurebyte.service.feature_table_cache_metadata.FEATUREBYTE_FEATURE_TABLE_CACHE_MAX_COLUMNS",
-    2,
+    6,
 )
 @pytest.mark.asyncio
 async def test_get_or_create_feature_table_cache_exceed_limit(
     feature_table_cache_metadata_service,
     observation_table_service,
     observation_table,
+    mock_snowflake_session,
 ):
     """
     Test get_or_create_feature_table_cache to create multiple tables when column limit is exceeded
@@ -364,7 +378,9 @@ async def test_get_or_create_feature_table_cache_exceed_limit(
         ),
     ]
     cache_metadata = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-        observation_table_id=observation_table_doc.id, num_columns_to_insert=len(definitions)
+        observation_table_id=observation_table_doc.id,
+        num_columns_to_insert=len(definitions),
+        session=mock_snowflake_session,
     )
     await feature_table_cache_metadata_service.update_feature_table_cache(
         cache_metadata_id=cache_metadata.id,
@@ -384,7 +400,9 @@ async def test_get_or_create_feature_table_cache_exceed_limit(
         ),
     ]
     cache_metadata = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-        observation_table_id=observation_table_doc.id, num_columns_to_insert=len(definitions)
+        observation_table_id=observation_table_doc.id,
+        num_columns_to_insert=len(definitions),
+        session=mock_snowflake_session,
     )
     await feature_table_cache_metadata_service.update_feature_table_cache(
         cache_metadata_id=cache_metadata.id,
@@ -422,7 +440,9 @@ async def test_get_or_create_feature_table_cache_exceed_limit(
         ),
     ]
     cache_metadata = await feature_table_cache_metadata_service.get_or_create_feature_table_cache(
-        observation_table_id=observation_table_doc.id, num_columns_to_insert=len(definitions)
+        observation_table_id=observation_table_doc.id,
+        num_columns_to_insert=len(definitions),
+        session=mock_snowflake_session,
     )
     await feature_table_cache_metadata_service.update_feature_table_cache(
         cache_metadata_id=cache_metadata.id,
