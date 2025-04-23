@@ -601,7 +601,9 @@ async def test_create_view_from_cache__create_cache(
         '  T0."POINT_IN_TIME",\n'
         '  T0."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
         '  T0."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
-        f'FROM "{feature_table_cache_name}" AS T0'
+        f'FROM "{feature_table_cache_name}" AS T0\n'
+        "ORDER BY\n"
+        '  "__FB_TABLE_ROW_INDEX" ASC'
     )
 
 
@@ -693,7 +695,9 @@ async def test_create_view_from_cache__update_cache(
         '  T0."POINT_IN_TIME",\n'
         '  T0."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
         '  T0."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
-        f'FROM "{feature_table_cache_name}" AS T0'
+        f'FROM "{feature_table_cache_name}" AS T0\n'
+        "ORDER BY\n"
+        '  "__FB_TABLE_ROW_INDEX" ASC'
     )
 
 
@@ -793,7 +797,9 @@ async def test_read_from_cache(
         '  T0."cust_id",\n'
         '  T0."FEATURE_1032f6901100176e575f87c44398a81f0d5db5c5" AS "sum_30m",\n'
         '  T0."FEATURE_ada88371db4be31a4e9c0538fb675d8e573aed24" AS "sum_2h"\n'
-        f'FROM "{feature_table_cache_name}" AS T0'
+        f'FROM "{feature_table_cache_name}" AS T0\n'
+        "ORDER BY\n"
+        '  "__FB_TABLE_ROW_INDEX" ASC'
     )
 
 

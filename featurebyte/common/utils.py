@@ -26,6 +26,7 @@ from dateutil import parser
 from featurebyte.enum import DBVarType, InternalName
 
 ARROW_METADATA_DB_VAR_TYPE = b"db_var_type"
+PYARROW_JSON_ENCODED_TYPES = DBVarType.dictionary_types().union(DBVarType.array_types())
 
 
 class ResponseStream:
@@ -156,11 +157,10 @@ def dataframe_from_arrow_table(arrow_table: pa.Table) -> pd.DataFrame:
     """
     # handle conversion of list and map types
     dataframe = arrow_table.to_pandas()
-    encoded_types = DBVarType.dictionary_types().union(DBVarType.array_types())
     for field in arrow_table.schema:
         if field.metadata and ARROW_METADATA_DB_VAR_TYPE in field.metadata:
             db_var_type = field.metadata[ARROW_METADATA_DB_VAR_TYPE].decode()
-            if db_var_type in encoded_types:
+            if db_var_type in PYARROW_JSON_ENCODED_TYPES:
                 dataframe[field.name] = dataframe[field.name].apply(try_json_decode)
     return dataframe
 
