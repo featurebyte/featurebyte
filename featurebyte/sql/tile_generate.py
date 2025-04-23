@@ -3,6 +3,7 @@ Databricks Tile Generate Job Script
 """
 
 import time
+import traceback
 from dataclasses import dataclass
 from typing import Optional
 
@@ -29,14 +30,26 @@ TEMP_TILE_TABLE_TTL_SECONDS = 86400 * 7
 
 
 @dataclass
-class TileComputeResult:
+class TileComputeError:
     """
-    Result for tile computation
+    Tile compute error
+    """
+
+    traceback: str
+
+
+@dataclass
+class TileComputeSuccess:
+    """
+    Tile compute success
     """
 
     computed_tiles_table_name: str
     tile_sql: str
     tile_compute_metrics: TileComputeMetrics
+
+
+TileComputeResult = TileComputeSuccess | TileComputeError
 
 
 class TileGenerate(TileCommon):
@@ -60,6 +73,7 @@ class TileGenerate(TileCommon):
         TileComputeMetrics
         """
         tile_compute_result = await self.compute_tiles(None)
+        assert isinstance(tile_compute_result, TileComputeSuccess)
         try:
             await self.insert_tiles_and_update_metadata(
                 computed_tiles_table_name=tile_compute_result.computed_tiles_table_name,
@@ -74,7 +88,9 @@ class TileGenerate(TileCommon):
             )
         return tile_compute_result.tile_compute_metrics
 
-    async def compute_tiles(self, temp_tile_tables_tag: Optional[str]) -> TileComputeResult:
+    async def compute_tiles(
+        self, temp_tile_tables_tag: Optional[str], raise_on_error: bool = True
+    ) -> TileComputeResult:
         """
         Compute tiles and store the result in a table for further processing. Caller is responsible
         for cleaning up the table.
@@ -83,10 +99,17 @@ class TileGenerate(TileCommon):
         ----------
         temp_tile_tables_tag: Optional[str]
             Tag for temporary tile tables
+        raise_on_error: bool
+            Whether to raise an error if tile generation fails
 
         Returns
         -------
         TileComputeResult
+
+        Raises
+        ------
+        Exception
+            If tile generation fails and raise_on_error is True
         """
 
         # Get the final SQL query
@@ -112,24 +135,37 @@ class TileGenerate(TileCommon):
         # Compute the tiles
         tic = time.time()
         computed_tiles_table_name = f"__TEMP_TILE_TABLE_{ObjectId()}".upper()
-        await self.warehouse_table_service.create_table_as_with_session(
-            session=self._session,
-            feature_store_id=self.feature_store_id,
-            tag=temp_tile_tables_tag,
-            table_details=computed_tiles_table_name,
-            select_expr=tile_sql,
-            time_to_live_seconds=TEMP_TILE_TABLE_TTL_SECONDS,
-        )
-        compute_seconds = time.time() - tic
-
-        return TileComputeResult(
-            computed_tiles_table_name=computed_tiles_table_name,
-            tile_sql=final_sql,
-            tile_compute_metrics=TileComputeMetrics(
-                view_cache_seconds=view_cache_seconds,
-                compute_seconds=compute_seconds,
-            ),
-        )
+        try:
+            await self.warehouse_table_service.create_table_as_with_session(
+                session=self._session,
+                feature_store_id=self.feature_store_id,
+                tag=temp_tile_tables_tag,
+                table_details=computed_tiles_table_name,
+                select_expr=tile_sql,
+                time_to_live_seconds=TEMP_TILE_TABLE_TTL_SECONDS,
+            )
+            compute_seconds = time.time() - tic
+            return TileComputeSuccess(
+                computed_tiles_table_name=computed_tiles_table_name,
+                tile_sql=final_sql,
+                tile_compute_metrics=TileComputeMetrics(
+                    view_cache_seconds=view_cache_seconds,
+                    compute_seconds=compute_seconds,
+                ),
+            )
+        except Exception:
+            if raise_on_error:
+                raise
+            logger.exception(
+                "Tile compute failed but raise_on_error=False, proceeding anyway",
+                extra={
+                    "tile_sql": tile_sql,
+                    "tile_id": self.tile_id,
+                    "aggregation_id": self.aggregation_id,
+                    "feature_store_id": self.feature_store_id,
+                },
+            )
+            return TileComputeError(traceback=traceback.format_exc())
 
     async def insert_tiles_and_update_metadata(
         self,
