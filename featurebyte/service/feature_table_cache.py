@@ -306,7 +306,11 @@ class FeatureTableCacheService:
             *feature_exprs,
         ).order_by(
             expressions.Order(
-                expressions=[expressions.Ordered(this=InternalName.TABLE_ROW_INDEX, desc=False)]
+                expressions=[
+                    expressions.Ordered(
+                        this=quoted_identifier(InternalName.TABLE_ROW_INDEX), desc=False
+                    )
+                ]
             )
         )
         return select_expr
