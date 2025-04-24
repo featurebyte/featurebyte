@@ -5,7 +5,7 @@ Test module for feature job setting
 import pytest
 from bson import ObjectId
 
-from featurebyte import CalendarWindow, FeatureJobSetting
+from featurebyte import CalendarWindow, Crontab, FeatureJobSetting
 from featurebyte.exception import CronFeatureJobSettingConversionError
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
@@ -319,6 +319,19 @@ def test_to_feature_job_setting_non_fixed_size_blind_spot():
         (
             CronFeatureJobSetting(crontab="10 * * * *"),
             CronFeatureJobSetting(crontab="10 * * * *"),
+            True,
+        ),
+        (
+            CronFeatureJobSetting(
+                crontab=Crontab(
+                    minute=0, hour=0, day_of_month="*", month_of_year="*", day_of_week="*"
+                )
+            ),
+            CronFeatureJobSetting(
+                crontab=Crontab(
+                    minute="0", hour="0", day_of_month="*", month_of_year="*", day_of_week="*"
+                )
+            ),
             True,
         ),
         (

@@ -8,7 +8,7 @@ import json
 import pytest
 from bson import ObjectId
 
-from featurebyte import MissingValueImputation
+from featurebyte import Crontab, MissingValueImputation
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.models import DimensionTableModel, EntityModel
@@ -1744,6 +1744,55 @@ def time_series_window_aggregate_feature_node_fixture(global_graph, time_series_
     feature_node = global_graph.add_operation(
         node_type=NodeType.PROJECT,
         node_params={"columns": ["a_7d_sum"]},
+        node_output_type=NodeOutputType.SERIES,
+        input_nodes=[global_graph.get_node_by_name(aggregate_node.name)],
+    )
+    return feature_node
+
+
+@pytest.fixture(name="time_series_window_aggregate_with_blind_spot_feature_node")
+def time_series_window_aggregate_with_blind_spot_feature_node_fixture(
+    global_graph, time_series_table_input_node
+):
+    """
+    Fixture for a time series window aggregate feature node with a cron feature job setting with
+    blind spot and all-string crontab fields (otherwise equivalent)
+    """
+    node_params = {
+        "keys": ["cust_id"],
+        "serving_names": ["CUSTOMER_ID"],
+        "value_by": None,
+        "parent": "a",
+        "agg_func": "sum",
+        "feature_job_setting": {
+            "crontab": Crontab(
+                minute="0", hour="0", day_of_month="*", month_of_year="*", day_of_week="*"
+            ),  # daily at midnight
+            "timezone": "Etc/UTC",
+            "reference_timezone": "Asia/Singapore",
+            "blind_spot": "3d",
+        },
+        "names": ["a_7d_sum_bs3d"],
+        "windows": [{"unit": "DAY", "size": 7}],
+        "entity_ids": [ObjectId("637516ebc9c18f5a277a78db")],
+        "reference_datetime_column": "snapshot_date",
+        "reference_datetime_metadata": {
+            "timestamp_schema": {
+                "format_string": "YYYYMMDD",
+                "timezone": "Asia/Singapore",
+            },
+        },
+        "time_interval": {"unit": "DAY", "value": 1},
+    }
+    aggregate_node = global_graph.add_operation(
+        node_type=NodeType.TIME_SERIES_WINDOW_AGGREGATE,
+        node_params=node_params,
+        node_output_type=NodeOutputType.FRAME,
+        input_nodes=[time_series_table_input_node],
+    )
+    feature_node = global_graph.add_operation(
+        node_type=NodeType.PROJECT,
+        node_params={"columns": ["a_7d_sum_bs3d"]},
         node_output_type=NodeOutputType.SERIES,
         input_nodes=[global_graph.get_node_by_name(aggregate_node.name)],
     )

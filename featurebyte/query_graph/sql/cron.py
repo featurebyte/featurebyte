@@ -56,18 +56,20 @@ def get_cron_feature_job_settings(
     -------
     list[CronFeatureJobSetting]
     """
-    cron_feature_job_settings = set()
+    cron_feature_job_settings = {}
     for node in nodes:
         for time_series_agg_node in graph.iterate_nodes(
             node, NodeType.TIME_SERIES_WINDOW_AGGREGATE
         ):
             assert isinstance(time_series_agg_node, TimeSeriesWindowAggregateNode)
             cron_feature_job_setting = time_series_agg_node.parameters.feature_job_setting.copy()
-            # Blind spot doesn't affect looking up scheduled feature job time given point in time,
-            # normalize the field to None.
-            cron_feature_job_setting.blind_spot = None
-            cron_feature_job_settings.add(cron_feature_job_setting)
-    return list(cron_feature_job_settings)
+            # Deduplicate cron feature job settings. The actual request table name is not important.
+            key = get_request_table_with_job_schedule_name(
+                "request_table", cron_feature_job_setting
+            )
+            if key not in cron_feature_job_settings:
+                cron_feature_job_settings[key] = cron_feature_job_setting
+    return list(cron_feature_job_settings.values())
 
 
 def get_request_table_with_job_schedule_name(

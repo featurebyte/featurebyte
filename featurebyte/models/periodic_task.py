@@ -98,22 +98,22 @@ class Crontab(FeatureByteBaseModel):
 
     def __hash__(self) -> int:
         return hash((
-            self.minute,
-            self.hour,
-            self.day_of_month,
-            self.month_of_year,
-            self.day_of_week,
+            str(self.minute),
+            str(self.hour),
+            str(self.day_of_month),
+            str(self.month_of_year),
+            str(self.day_of_week),
         ))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Crontab):
             return False
         return (
-            self.minute == other.minute
-            and self.hour == other.hour
-            and self.day_of_month == other.day_of_month
-            and self.month_of_year == other.month_of_year
-            and self.day_of_week == other.day_of_week
+            str(self.minute) == str(other.minute)
+            and str(self.hour) == str(other.hour)
+            and str(self.day_of_month) == str(other.day_of_month)
+            and str(self.month_of_year) == str(other.month_of_year)
+            and str(self.day_of_week) == str(other.day_of_week)
         )
 
     def to_string_crontab(self) -> "Crontab":
