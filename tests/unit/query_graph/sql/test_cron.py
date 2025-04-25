@@ -48,3 +48,27 @@ def test_get_request_table_with_job_schedule_name_with_reference_tz():
         ),
     )
     assert table_name == "request_table_0 0 * * *_Asia/Singapore_Asia/Tokyo"
+
+
+def test_get_cron_feature_job_settings__blind_spot_handling(
+    global_graph,
+    time_series_window_aggregate_feature_node,
+    time_series_window_aggregate_with_blind_spot_feature_node,
+):
+    """
+    Test get_cron_feature_job_settings
+    """
+    cron_feature_job_settings = get_cron_feature_job_settings(
+        global_graph,
+        [
+            time_series_window_aggregate_feature_node,
+            time_series_window_aggregate_with_blind_spot_feature_node,
+        ],
+    )
+    assert cron_feature_job_settings == [
+        CronFeatureJobSetting(
+            crontab=Crontab(minute=0, hour=0, day_of_month="*", month_of_year="*", day_of_week="*"),
+            timezone="Etc/UTC",
+            reference_timezone="Asia/Singapore",
+        )
+    ]
