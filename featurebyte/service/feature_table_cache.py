@@ -448,6 +448,8 @@ class FeatureTableCacheService:
             if definition.feature_name is not None
             and definition.feature_name.upper() not in existing_columns
         ]
+        if not columns_expr:
+            return
         # While "column already exist" error is not expected, still retry to handle other errors
         # such as rate limiting (occurring in tests for BigQuery)
         await db_session.retry_sql(
