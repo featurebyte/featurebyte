@@ -122,11 +122,12 @@ def make_expected_tile_spec(tile_expr, tile_column_name, tile_column_type=None):
             None,
             [
                 make_expected_tile_spec(
-                    tile_expr='SUM("a_column" * "a_column")',
+                    tile_expr='SUM(CAST("a_column" AS DOUBLE) * CAST("a_column" AS DOUBLE))',
                     tile_column_name="sum_value_squared_1234beef",
                 ),
                 make_expected_tile_spec(
-                    tile_expr='SUM("a_column")', tile_column_name="sum_value_1234beef"
+                    tile_expr='SUM(CAST("a_column" AS DOUBLE))',
+                    tile_column_name="sum_value_1234beef",
                 ),
                 make_expected_tile_spec(
                     tile_expr='COUNT("a_column")', tile_column_name="count_value_1234beef"

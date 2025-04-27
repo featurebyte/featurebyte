@@ -320,10 +320,11 @@ class StdAggregator(OrderIndependentAggregator):
     def tile(self, col: Optional[InputColumn], agg_id: str) -> list[TileSpec]:
         assert col is not None
         col_expr = quoted_identifier(col.name)
+        cast_as_double = expressions.Cast(this=col_expr, to=expressions.DataType.build("DOUBLE"))
         sum_value_squared = expressions.Sum(
-            this=expressions.Mul(this=col_expr, expression=col_expr)
+            this=expressions.Mul(this=cast_as_double, expression=cast_as_double)
         )
-        sum_value = expressions.Sum(this=col_expr)
+        sum_value = expressions.Sum(this=cast_as_double)
         count_value = expressions.Count(this=col_expr)
         return [
             self.construct_numeric_tile_spec(
