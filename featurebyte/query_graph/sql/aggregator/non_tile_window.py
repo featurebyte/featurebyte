@@ -34,6 +34,7 @@ from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specifications.non_tile_window_aggregate import (
     NonTileWindowAggregateSpec,
 )
+from featurebyte.query_graph.sql.timestamp_helper import convert_timestamp_to_utc
 
 WindowType = int
 OffsetType = Optional[int]
@@ -295,8 +296,17 @@ class NonTileWindowAggregator(NonTileBasedAggregator[NonTileWindowAggregateSpec]
         -------
         Select
         """
-        timestamp_column = aggregation_spec.parameters.timestamp
-        timestamp_epoch_expr = self.adapter.to_epoch_seconds(quoted_identifier(timestamp_column))
+        timestamp_expr = quoted_identifier(aggregation_spec.parameters.timestamp)
+
+        if aggregation_spec.parameters.timestamp_schema is not None:
+            timestamp_expr = convert_timestamp_to_utc(
+                column_expr=timestamp_expr,
+                timestamp_schema=aggregation_spec.parameters.timestamp_schema,
+                adapter=self.adapter,
+            )
+
+        timestamp_epoch_expr = self.adapter.to_epoch_seconds(timestamp_expr)
+
         return select(
             expressions.Star(),
             alias_(timestamp_epoch_expr, alias=InternalName.VIEW_TIMESTAMP_EPOCH, quoted=True),
