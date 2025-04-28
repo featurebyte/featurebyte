@@ -1635,15 +1635,28 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     """
     Test features on EventView with timestamp schema
     """
-    feature_name = "event_table_with_timestamp_schema_count_7d"
     event_view = event_table_with_timestamp_schema.get_view()
-    feature = event_view.groupby("ÜSER ID").aggregate_over(
+
+    feature_name = "event_table_with_timestamp_schema_count_7d"
+    feature_1 = event_view.groupby("ÜSER ID").aggregate_over(
         value_column=None,
         method="count",
         windows=["7d"],
         feature_names=[feature_name],
     )[feature_name]
-    feature_list = FeatureList([feature], name=f"{feature_name}_list")
+
+    feature_name = "event_table_with_timestamp_schema_count_distinct_action_7d"
+    feature_2 = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="PRODUCT_ACTION",
+        method="count_distinct",
+        windows=["7d"],
+        feature_names=[feature_name],
+    )[feature_name]
+
+    feature_list = FeatureList(
+        [feature_1, feature_2],
+        name="test_event_view_with_timestamp_schema_list",
+    )
 
     # test historical feature computation
     df_training_events = pd.DataFrame({
@@ -1652,7 +1665,8 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     })
     df_features = feature_list.compute_historical_features(observation_set=df_training_events)
     df_expected = df_training_events.copy()
-    df_expected[feature_name] = [124, 93, 106, 89, 95]
+    df_expected["event_table_with_timestamp_schema_count_7d"] = [124, 93, 106, 89, 95]
+    df_expected["event_table_with_timestamp_schema_count_distinct_action_7d"] = [5, 5, 5, 5, 5]
     fb_assert_frame_equal(
         df_features,
         df_expected,
@@ -1690,5 +1704,6 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     assert res.status_code == 200
     df_features = pd.DataFrame(res.json()["features"])
     df_expected = pd.DataFrame(entity_serving_names)
-    df_expected[feature_name] = 107
+    df_expected["event_table_with_timestamp_schema_count_distinct_action_7d"] = 5
+    df_expected["event_table_with_timestamp_schema_count_7d"] = 107
     fb_assert_frame_equal(df_features, df_expected)

@@ -547,9 +547,14 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
         )
         window_end_timestamp_expr = self.adapter.from_epoch_seconds(range_end_expr)
         window_start_timestamp_expr = self.adapter.from_epoch_seconds(range_start_expr)
-        timestamp_expr = self.adapter.normalize_timestamp_before_comparison(
-            quoted_identifier(node.parameters.timestamp),
-        )
+        timestamp_expr = quoted_identifier(node.parameters.timestamp)
+        if node.parameters.timestamp_schema is not None:
+            timestamp_expr = convert_timestamp_to_utc(
+                column_expr=timestamp_expr,
+                timestamp_schema=node.parameters.timestamp_schema,
+                adapter=self.adapter,
+            )
+        timestamp_expr = self.adapter.normalize_timestamp_before_comparison(timestamp_expr)
         filtered_aggregate_input_expr = self.aggregate_input_expr.where(
             expressions.and_(
                 expressions.GTE(
