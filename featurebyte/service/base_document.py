@@ -19,6 +19,7 @@ from redis import Redis
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.common.dict_util import get_field_path_value
+from featurebyte.common.string import sanitize_search_term
 from featurebyte.exception import (
     CatalogNotSpecifiedError,
     DocumentConflictError,
@@ -606,16 +607,18 @@ class BaseDocumentService(
             return output
 
         include_soft_deleted = kwargs.get("include_soft_deleted", False)
+        search_term = sanitize_search_term(kwargs.get("search"))
         if not include_soft_deleted:
             output["is_deleted"] = {"$ne": True}  # exclude soft-deleted documents
         if kwargs.get("name"):
             output["name"] = kwargs["name"]
         if kwargs.get("version"):
             output["version"] = kwargs["version"]
-        if kwargs.get("search"):
+        if search_term:
+            # sanitize the search term to prevent regex expression attack
             output["$or"] = [
-                {"$text": {"$search": kwargs["search"]}},
-                {"name": {"$regex": kwargs["search"], "$options": "i"}},
+                {"$text": {"$search": search_term}},
+                {"name": {"$regex": search_term, "$options": "i"}},
             ]
         # inject catalog_id into filter if document is catalog specific
         if self.is_catalog_specific:

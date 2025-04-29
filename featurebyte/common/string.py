@@ -2,7 +2,9 @@
 String utilities.
 """
 
+import re
 import unicodedata
+from typing import Optional
 
 
 def sanitize_identifier(string: str) -> str:
@@ -37,3 +39,22 @@ def sanitize_identifier(string: str) -> str:
     sanitized = sanitized.lower()
 
     return sanitized
+
+
+def sanitize_search_term(search_term: Optional[str]) -> Optional[str]:
+    """
+    Sanitizes a search term for use in a mongo query.
+
+    Parameters
+    ----------
+    search_term: Optional[str]
+        Search term to be sanitized.
+
+    Returns
+    -------
+    Optional[str]
+        A sanitized version of the search term.
+    """
+    if not search_term:
+        return search_term
+    return re.escape(search_term)
