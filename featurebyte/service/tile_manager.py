@@ -30,7 +30,7 @@ from featurebyte.service.tile_scheduler import TileSchedulerService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.session_helper import run_coroutines
-from featurebyte.sql.tile_generate import TileComputeResult, TileGenerate
+from featurebyte.sql.tile_generate import TileComputeResult, TileComputeSuccess, TileGenerate
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 logger = get_logger(__name__)
@@ -68,6 +68,7 @@ class TileManagerService:
         tile_inputs: List[OnDemandTileSpec],
         temp_tile_tables_tag: str,
         progress_callback: Optional[Callable[[int, str], Coroutine[Any, Any, None]]] = None,
+        raise_on_error: bool = True,
     ) -> OnDemandTileComputeResult:
         """
         Generate Tiles and update tile entity checking table
@@ -82,6 +83,8 @@ class TileManagerService:
             Tag to use when creating temporary tile tables
         progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]]
             Optional progress callback function
+        raise_on_error: bool
+            Whether to raise an error if tile generation fails
 
         Returns
         -------
@@ -114,6 +117,7 @@ class TileManagerService:
                     on_demand_tile_spec=on_demand_tile_spec,
                     temp_tile_tables_tag=temp_tile_tables_tag,
                     progress_callback=_compute_tiles_progress_callback,
+                    raise_on_error=raise_on_error,
                 )
             )
         tile_compute_results: List[TileComputeResult] = await run_coroutines(
@@ -121,20 +125,26 @@ class TileManagerService:
         )
 
         on_demand_tile_tables = []
+        failed_tile_table_ids = []
         for on_demand_tile_spec, tile_compute_result in zip(tile_inputs, tile_compute_results):
             # Do not update permanent tile tables but use the computed tile table directly
             # in feature query.
             for grouping in on_demand_tile_spec.tile_table_groupings:
-                on_demand_tile_tables.append(
-                    OnDemandTileTable(
-                        tile_table_id=grouping.tile_id,
-                        on_demand_table_name=tile_compute_result.computed_tiles_table_name,
+                if isinstance(tile_compute_result, TileComputeSuccess):
+                    on_demand_tile_tables.append(
+                        OnDemandTileTable(
+                            tile_table_id=grouping.tile_id,
+                            on_demand_table_name=tile_compute_result.computed_tiles_table_name,
+                        )
                     )
-                )
+                else:
+                    failed_tile_table_ids.append(grouping.tile_id)
 
         # Aggregate metrics from the tasks
         tile_compute_metrics_list: List[TileComputeMetrics] = [
-            result.tile_compute_metrics for result in tile_compute_results
+            result.tile_compute_metrics
+            for result in tile_compute_results
+            if isinstance(result, TileComputeSuccess)
         ]
         view_cache_seconds = 0.0
         compute_seconds = 0.0
@@ -151,6 +161,7 @@ class TileManagerService:
         return OnDemandTileComputeResult(
             tile_compute_metrics=metrics,
             on_demand_tile_tables=on_demand_tile_tables,
+            failed_tile_table_ids=failed_tile_table_ids,
         )
 
     @classmethod
@@ -180,6 +191,7 @@ class TileManagerService:
         on_demand_tile_spec: OnDemandTileSpec,
         temp_tile_tables_tag: str,
         progress_callback: Optional[Callable[[], Coroutine[Any, Any, None]]] = None,
+        raise_on_error: bool = True,
     ) -> TileComputeResult:
         session = await session.clone_if_not_threadsafe()
         tile_generate_obj = self._get_tile_generate_object_from_tile_spec(
@@ -189,7 +201,9 @@ class TileManagerService:
             start_ts_str=None,
             end_ts_str=None,
         )
-        result = await tile_generate_obj.compute_tiles(temp_tile_tables_tag=temp_tile_tables_tag)
+        result = await tile_generate_obj.compute_tiles(
+            temp_tile_tables_tag=temp_tile_tables_tag, raise_on_error=raise_on_error
+        )
         if progress_callback:
             await progress_callback()
         return result
