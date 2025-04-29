@@ -25,6 +25,7 @@ from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.batch_helper import (
+    CreateTableQuery,
     FeatureQuery,
     get_feature_names,
 )
@@ -357,10 +358,13 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
             self.source_info.source_type,
         )
         return FeatureQuery(
-            sql=query,
+            temp_table_queries=[],
+            feature_table_query=CreateTableQuery(
+                sql=query,
+                table_name=table_name,
+            ),
             feature_names=feature_names,
             node_names=node_names,
-            table_name=table_name,
         )
 
 

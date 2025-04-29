@@ -24,13 +24,23 @@ NUM_FEATURES_PER_QUERY = 20
 
 
 @dataclass
+class CreateTableQuery:
+    """
+    Query to create a temporary table
+    """
+
+    sql: str
+    table_name: str
+
+
+@dataclass
 class FeatureQuery:
     """
     FeatureQuery represents a sql query that materializes a temporary table for a set of features
     """
 
-    sql: str
-    table_name: str
+    temp_table_queries: list[CreateTableQuery]
+    feature_table_query: CreateTableQuery
     feature_names: list[str]
     node_names: list[str]
 
@@ -143,7 +153,7 @@ def construct_join_feature_sets_query(
         table_alias = f"T{i}"
         expr = expr.join(
             expressions.Table(
-                this=quoted_identifier(feature_set.table_name),
+                this=quoted_identifier(feature_set.feature_table_query.table_name),
                 alias=expressions.TableAlias(this=expressions.Identifier(this=table_alias)),
             ),
             join_type="left",

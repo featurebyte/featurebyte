@@ -142,15 +142,32 @@ async def execute_feature_query(
         If the row index column is not unique in the intermediate feature table
     """
     session = await session.clone_if_not_threadsafe()
-    await session.execute_query_long_running(feature_query.sql)
+
+    materialized_temp_tables = []
     try:
-        await validate_output_row_index(session, feature_query.table_name)
-    except InvalidOutputRowIndexError:
-        formatted_feature_names = ", ".join(sorted(feature_query.feature_names))
-        raise InvalidOutputRowIndexError(
-            f"Row index column is invalid in the intermediate feature table: {feature_query.table_name}."
-            f" Feature names: {formatted_feature_names}"
-        )
+        for temp_table_query in feature_query.temp_table_queries:
+            await session.execute_query_long_running(temp_table_query.sql)
+            materialized_temp_tables.append(temp_table_query.table_name)
+
+        feature_sql = feature_query.feature_table_query.sql
+        feature_table_name = feature_query.feature_table_query.table_name
+        await session.execute_query_long_running(feature_sql)
+        try:
+            await validate_output_row_index(session, feature_table_name)
+        except InvalidOutputRowIndexError:
+            formatted_feature_names = ", ".join(sorted(feature_query.feature_names))
+            raise InvalidOutputRowIndexError(
+                f"Row index column is invalid in the intermediate feature table: {feature_table_name}."
+                f" Feature names: {formatted_feature_names}"
+            )
+    finally:
+        for temp_table_name in materialized_temp_tables:
+            await session.drop_table(
+                database_name=session.database_name,
+                schema_name=session.schema_name,
+                table_name=temp_table_name,
+                if_exists=True,
+            )
 
     await done_callback(len(feature_query.node_names))
     return feature_query
@@ -343,7 +360,7 @@ async def execute_queries_for_node_groups(
                 done_callback=progress_callback,
             )
         )
-        materialized_feature_table.append(feature_query.table_name)
+        materialized_feature_table.append(feature_query.feature_table_query.table_name)
         all_node_names.extend([node.name for node in nodes_group])
 
     if coroutines:
