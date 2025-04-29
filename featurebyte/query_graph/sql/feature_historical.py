@@ -10,6 +10,7 @@ from typing import List, Optional, Tuple, cast
 
 import numpy as np
 import pandas as pd
+from bson import ObjectId
 from pandas.api.types import is_datetime64_any_dtype
 from sqlglot import expressions
 
@@ -362,15 +363,77 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
             on_demand_tile_tables=self.on_demand_tile_tables,
             job_schedule_table_set=self.job_schedule_table_set,
         )
+
+        table_alias_mapping: dict[expressions.Expression, expressions.Identifier] = {}
+
+        def _replace_table_name(node: expressions.Expression) -> expressions.Expression:
+            if isinstance(node, expressions.Identifier):
+                if node in table_alias_mapping:
+                    return table_alias_mapping[node]
+                if not node.quoted:
+                    # In some cases, the table name may not be quoted in the SQL expression for
+                    # legacy reasons (e.g. when referencing the original request table)
+                    try_quote = expressions.Identifier(this=node.this, quoted=True)
+                    if try_quote in table_alias_mapping:
+                        return table_alias_mapping[try_quote]
+            return node
+
+        adapter = get_sql_adapter(self.source_info)
+        temp_table_queries = []
+        with_expr = feature_set_expr.args.get("with")
+        temp_id = f"__TEMP_FEATURE_QUERY_{ObjectId()}".upper()
+
+        if with_expr is not None:
+            # Build mapping
+            for cte_expr in with_expr.args["expressions"]:
+                cte_table_alias = cte_expr.args["alias"]
+                cte_table_name = cte_expr.alias
+                if "REQUEST_TABLE" in cte_table_name:
+                    table_alias_mapping[cte_table_alias] = expressions.Identifier(
+                        this=f"{temp_id}_{cte_table_name}",
+                        quoted=True,
+                    )
+
+            # Construct temp table queries by applying mapping
+            new_with_expressions = []
+            for cte_expr in with_expr.args["expressions"]:
+                cte_table_alias = cte_expr.args["alias"]
+                cte_table_name = cte_expr.alias
+                if "REQUEST_TABLE" in cte_table_name:
+                    # CTE that should be materialized as a temp table
+                    new_table_name = table_alias_mapping[cte_table_alias].alias_or_name
+                    temp_table_queries.append(
+                        CreateTableQuery(
+                            sql=sql_to_string(
+                                adapter.create_table_as(
+                                    table_details=TableDetails(table_name=new_table_name),
+                                    select_expr=cte_expr.this.transform(_replace_table_name),
+                                ),
+                                source_type=self.source_info.source_type,
+                            ),
+                            table_name=new_table_name,
+                        ),
+                    )
+                else:
+                    # CTE that should be kept as is but rewritten to reference temp tables
+                    new_with_expressions.append(cte_expr.transform(_replace_table_name))
+
+            # Rewrite main query to reference temp tables
+            feature_set_expr = cast(
+                expressions.Select, feature_set_expr.transform(_replace_table_name)
+            )
+
+            feature_set_expr.args["with"].args["expressions"] = new_with_expressions
+
         query = sql_to_string(
-            get_sql_adapter(self.source_info).create_table_as(
+            adapter.create_table_as(
                 table_details=TableDetails(table_name=table_name),
                 select_expr=feature_set_expr,
             ),
             self.source_info.source_type,
         )
         return FeatureQuery(
-            temp_table_queries=[],
+            temp_table_queries=temp_table_queries,
             feature_table_query=CreateTableQuery(
                 sql=query,
                 table_name=table_name,
