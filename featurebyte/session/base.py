@@ -547,8 +547,7 @@ class BaseSession(BaseModel):
         dataframe = self.fetch_query_result_impl(cursor)
         yield pa.record_batch(dataframe)
 
-    @staticmethod
-    def _execute_query(cursor: Any, query: str, **kwargs: Any) -> Any:
+    def _execute_query(self, cursor: Any, query: str, **kwargs: Any) -> Any:
         return cursor.execute(query, **kwargs)
 
     async def get_async_query_generator(
