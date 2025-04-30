@@ -4,6 +4,7 @@ This module contains session to DataBricks Unity integration tests.
 
 import os
 from unittest.mock import patch
+from uuid import uuid4
 
 import pytest
 from bson import ObjectId
@@ -152,3 +153,16 @@ async def test_oauth_credential(
         )
     results = await db_session.execute_query("SHOW DATABASES")
     assert results is not None
+
+
+@pytest.mark.parametrize("source_type", ["databricks_unity"], indirect=True)
+@pytest.mark.asyncio
+async def test_session_lost(config, session_without_datasets):
+    """
+    Test the session lost and re-initialization
+    """
+    _ = config
+    session = session_without_datasets
+    # simulate the session handle has an invalid session id
+    session.connection._session_handle.sessionId.guid = uuid4().bytes
+    await session.list_tables(database_name="demo_datasets", schema_name="grocery")

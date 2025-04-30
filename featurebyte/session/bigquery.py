@@ -304,8 +304,7 @@ class BigQuerySession(BaseSession):
     def dataset_ref(self) -> DatasetReference:
         return DatasetReference(project=self.project_name, dataset_id=self.dataset_name)
 
-    @staticmethod
-    def _execute_query(cursor: Any, query: str, **kwargs: Any) -> Any:
+    def _execute_query(self, cursor: Any, query: str, **kwargs: Any) -> Any:
         job_id = str(uuid.uuid4())
         cursor.job_id = job_id
         return cursor.execute(query, job_id=job_id, **kwargs)

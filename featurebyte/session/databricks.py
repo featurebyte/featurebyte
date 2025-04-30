@@ -27,7 +27,7 @@ try:
     from databricks import sql as databricks_sql
     from databricks.sdk import WorkspaceClient
     from databricks.sdk.mixins.files import DbfsExt
-    from databricks.sql.exc import ServerOperationError
+    from databricks.sql.exc import DatabaseError, ServerOperationError
     from databricks.sql.thrift_backend import ThriftBackend as BaseThriftBackend
 
     HAS_DATABRICKS_SQL_CONNECTOR = True
@@ -75,6 +75,23 @@ class DatabricksSession(BaseSparkSession):
             os.environ.pop("DATABRICKS_CLIENT_ID", None)
             os.environ.pop("DATABRICKS_CLIENT_SECRET", None)
             super().__init__(**data)
+
+    def _execute_query(self, cursor: Any, query: str, **kwargs: Any) -> Any:
+        try:
+            return super()._execute_query(cursor, query, **kwargs)
+        except DatabaseError as exc:
+            if "Invalid SessionHandle" in str(exc):
+                # This error is raised when the session is closed
+                # Re-initialize the connection and try again
+                logger.warning("Session closed, re-initializing connection")
+                self._initialize_connection()
+                # create a new cursor and replace all attributes of the old cursor with those from the new one
+                new_cursor = self._connection.cursor()
+                cursor.__dict__.clear()
+                cursor.__dict__.update(new_cursor.__dict__)
+                return super()._execute_query(cursor, query, **kwargs)
+            else:
+                raise
 
     def _initialize_connection(self) -> None:
         if not HAS_DATABRICKS_SQL_CONNECTOR:

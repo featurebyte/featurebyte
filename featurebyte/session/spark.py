@@ -141,8 +141,7 @@ class SparkSession(BaseSparkSession):
             return True
         return False
 
-    @staticmethod
-    def _execute_query(cursor: Any, query: str, **kwargs: Any) -> Any:
+    def _execute_query(self, cursor: Any, query: str, **kwargs: Any) -> Any:
         cursor.execute(query, async_=True)
         response = cursor.poll()
         while response.operationState in (
