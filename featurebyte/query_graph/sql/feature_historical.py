@@ -364,18 +364,13 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
             job_schedule_table_set=self.job_schedule_table_set,
         )
 
-        table_alias_mapping: dict[expressions.Expression, expressions.Identifier] = {}
+        table_alias_mapping: dict[str, expressions.Identifier] = {}
 
         def _replace_table_name(node: expressions.Expression) -> expressions.Expression:
             if isinstance(node, expressions.Identifier):
-                if node in table_alias_mapping:
-                    return table_alias_mapping[node]
-                if not node.quoted:
-                    # In some cases, the table name may not be quoted in the SQL expression for
-                    # legacy reasons (e.g. when referencing the original request table)
-                    try_quote = expressions.Identifier(this=node.this, quoted=True)
-                    if try_quote in table_alias_mapping:
-                        return table_alias_mapping[try_quote]
+                identifier_name = node.alias_or_name
+                if identifier_name in table_alias_mapping:
+                    return table_alias_mapping[identifier_name]
             return node
 
         adapter = get_sql_adapter(self.source_info)
@@ -386,22 +381,22 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
         if with_expr is not None:
             # Build mapping
             for cte_expr in with_expr.args["expressions"]:
-                cte_table_alias = cte_expr.args["alias"]
                 cte_table_name = cte_expr.alias
                 if "REQUEST_TABLE" in cte_table_name:
-                    table_alias_mapping[cte_table_alias] = expressions.Identifier(
-                        this=f"{temp_id}_{cte_table_name}",
+                    new_table_name = f"{temp_id}_{cte_table_name}"
+                    new_table_name = new_table_name.replace("/", "_").replace(" ", "_")
+                    table_alias_mapping[cte_table_name] = expressions.Identifier(
+                        this=new_table_name,
                         quoted=True,
                     )
 
             # Construct temp table queries by applying mapping
             new_with_expressions = []
             for cte_expr in with_expr.args["expressions"]:
-                cte_table_alias = cte_expr.args["alias"]
                 cte_table_name = cte_expr.alias
                 if "REQUEST_TABLE" in cte_table_name:
                     # CTE that should be materialized as a temp table
-                    new_table_name = table_alias_mapping[cte_table_alias].alias_or_name
+                    new_table_name = table_alias_mapping[cte_table_name].alias_or_name
                     temp_table_queries.append(
                         CreateTableQuery(
                             sql=sql_to_string(
