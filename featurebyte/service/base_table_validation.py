@@ -168,7 +168,10 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
                 ),
             )
             query_expr = (
-                select(column_expr).from_(source_table_expr).where(columns_not_null([column_name]))
+                select(column_expr)
+                .from_(source_table_expr)
+                .where(columns_not_null([column_name]))
+                .limit(num_records)
             )
             query = sql_to_string(query_expr, source_type=adapter.source_type)
             # check that the offset is valid for the first num_records
