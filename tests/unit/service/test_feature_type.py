@@ -9,6 +9,7 @@ from featurebyte.enum import DBVarType, FeatureType
 from featurebyte.query_graph.enum import NodeType
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "dtype,expected",
     [
@@ -35,14 +36,15 @@ from featurebyte.query_graph.enum import NodeType
         (DBVarType.STRUCT, FeatureType.OTHERS),
     ],
 )
-def test_detect_feature_type(app_container, dtype, expected):
+async def test_detect_feature_type(app_container, dtype, expected):
     """Test detect feature type"""
     feature_type_service = app_container.feature_type_service
     op_struct = Mock()
-    feature_type = feature_type_service.detect_feature_type_from(dtype, op_struct, {})
+    feature_type = await feature_type_service.detect_feature_type_from(dtype, op_struct, {})
     assert feature_type == expected
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "dtype,expected",
     [
@@ -51,7 +53,7 @@ def test_detect_feature_type(app_container, dtype, expected):
         (DBVarType.INT, FeatureType.NUMERIC),
     ],
 )
-def test_detect_feature_type__categorical(app_container, dtype, expected):
+async def test_detect_feature_type__categorical(app_container, dtype, expected):
     """Test detect feature type - categorical"""
     feature_type_service = app_container.feature_type_service
 
@@ -59,7 +61,7 @@ def test_detect_feature_type__categorical(app_container, dtype, expected):
     op_struct = Mock()
     op_struct.post_aggregation = None
     op_struct.aggregations = []
-    feature_type = feature_type_service.detect_feature_type_from(dtype, op_struct, {})
+    feature_type = await feature_type_service.detect_feature_type_from(dtype, op_struct, {})
     assert feature_type == expected
 
     # check categorical
@@ -67,18 +69,18 @@ def test_detect_feature_type__categorical(app_container, dtype, expected):
     aggregation = Mock()
     aggregation.aggregation_type = NodeType.LOOKUP
     op_struct.aggregations = [aggregation]
-    feature_type = feature_type_service.detect_feature_type_from(dtype, op_struct, {})
+    feature_type = await feature_type_service.detect_feature_type_from(dtype, op_struct, {})
     assert feature_type == FeatureType.CATEGORICAL
 
     # case 2: latest aggregation method
     aggregation.aggregation_type = NodeType.GROUPBY
     aggregation.method = AggFunc.LATEST
-    feature_type = feature_type_service.detect_feature_type_from(dtype, op_struct, {})
+    feature_type = await feature_type_service.detect_feature_type_from(dtype, op_struct, {})
     assert feature_type == FeatureType.CATEGORICAL
 
     # case 3: post aggregation with certain transformation
     post_aggregation = Mock()
     post_aggregation.transforms = ["timedelta_extract"]
     op_struct.post_aggregation = post_aggregation
-    feature_type = feature_type_service.detect_feature_type_from(dtype, op_struct, {})
+    feature_type = await feature_type_service.detect_feature_type_from(dtype, op_struct, {})
     assert feature_type == FeatureType.CATEGORICAL

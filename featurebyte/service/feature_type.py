@@ -65,7 +65,13 @@ class FeatureTypeService:
         for dtype, feature_types in dtype_to_feature_type.items():
             if len(feature_types) > 1:
                 more_than_one.add(dtype)
-        assert more_than_one == {DBVarType.INT, DBVarType.VARCHAR, DBVarType.CHAR, DBVarType.BOOL}
+        assert more_than_one == {
+            DBVarType.FLOAT,
+            DBVarType.INT,
+            DBVarType.VARCHAR,
+            DBVarType.CHAR,
+            DBVarType.BOOL,
+        }
         return dtype_to_feature_type
 
     def validate_feature_type(self, feature: FeatureModel, feature_type: FeatureType) -> None:
@@ -130,7 +136,29 @@ class FeatureTypeService:
                         return True
         return False
 
-    def detect_int_feature_type(
+    async def detect_float_feature_type(
+        self, op_struct: GroupOperationStructure, metadata: dict[str, Any]
+    ) -> FeatureType:
+        """
+        Detect the feature type of float feature
+
+        Parameters
+        ----------
+        op_struct: GroupOperationStructure
+            Operation structure
+        metadata: dict[str, Any]
+            Feature metadata
+
+        Returns
+        -------
+        FeatureType
+        """
+        _ = metadata
+        _ = self, op_struct, metadata
+        # by default, float is considered as numeric
+        return FeatureType.NUMERIC
+
+    async def detect_int_feature_type(
         self, op_struct: GroupOperationStructure, metadata: dict[str, Any]
     ) -> FeatureType:
         """
@@ -152,7 +180,7 @@ class FeatureTypeService:
             return FeatureType.CATEGORICAL
         return FeatureType.NUMERIC
 
-    def detect_varchar_feature_type(
+    async def detect_varchar_feature_type(
         self, op_struct: GroupOperationStructure, metadata: dict[str, Any]
     ) -> FeatureType:
         """
@@ -174,7 +202,7 @@ class FeatureTypeService:
             return FeatureType.CATEGORICAL
         return FeatureType.TEXT
 
-    def detect_bool_feature_type(
+    async def detect_bool_feature_type(
         self, op_struct: GroupOperationStructure, metadata: dict[str, Any]
     ) -> FeatureType:
         """
@@ -195,7 +223,7 @@ class FeatureTypeService:
         # by default, boolean is considered as categorical
         return FeatureType.CATEGORICAL
 
-    def detect_feature_type_from(
+    async def detect_feature_type_from(
         self, dtype: DBVarType, op_struct: GroupOperationStructure, metadata: dict[str, Any]
     ) -> FeatureType:
         """
@@ -226,12 +254,14 @@ class FeatureTypeService:
         if len(valid_feature_types) == 1:
             return next(iter(valid_feature_types))
 
+        if dtype == DBVarType.FLOAT:
+            return await self.detect_float_feature_type(op_struct=op_struct, metadata=metadata)
         if dtype == DBVarType.INT:
-            return self.detect_int_feature_type(op_struct=op_struct, metadata=metadata)
+            return await self.detect_int_feature_type(op_struct=op_struct, metadata=metadata)
         if dtype in {DBVarType.VARCHAR, DBVarType.CHAR}:
-            return self.detect_varchar_feature_type(op_struct=op_struct, metadata=metadata)
+            return await self.detect_varchar_feature_type(op_struct=op_struct, metadata=metadata)
         if dtype == DBVarType.BOOL:
-            return self.detect_bool_feature_type(op_struct=op_struct, metadata=metadata)
+            return await self.detect_bool_feature_type(op_struct=op_struct, metadata=metadata)
 
         # This should never happen
         raise ValueError(f"Feature type detection not implemented for {dtype}")
@@ -252,7 +282,7 @@ class FeatureTypeService:
         op_struct, metadata = await self.feature_or_target_metadata_extractor.extract_from_object(
             obj=feature
         )
-        feature_type = self.detect_feature_type_from(
+        feature_type = await self.detect_feature_type_from(
             dtype=feature.dtype, op_struct=op_struct, metadata=metadata
         )
         self.validate_feature_type(feature=feature, feature_type=feature_type)
