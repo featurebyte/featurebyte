@@ -11,6 +11,7 @@ from typing_extensions import Literal
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel, PydanticObjectId
+from featurebyte.models.periodic_task import Crontab
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.dtype import DBVarTypeInfo, DBVarTypeMetadata
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -2214,8 +2215,18 @@ class TimeSeriesWindowAggregateNode(AggregationOpStructMixin):
         else:
             blind_spot = fjs_blind_spot
 
+        if isinstance(fjs.crontab, Crontab):
+            crontab = ClassEnum.CRONTAB(
+                minute=fjs.crontab.minute,
+                hour=fjs.crontab.hour,
+                day_of_month=fjs.crontab.day_of_month,
+                month_of_year=fjs.crontab.month_of_year,
+                day_of_week=fjs.crontab.day_of_week,
+            )
+        else:
+            crontab = fjs.get_cron_expression()  # type: ignore
         feature_job_setting: ObjectClass = ClassEnum.CRON_FEATURE_JOB_SETTING(
-            crontab=fjs.get_cron_expression(),
+            crontab=crontab,
             timezone=fjs.timezone,
             reference_timezone=fjs.reference_timezone,
             blind_spot=blind_spot,
