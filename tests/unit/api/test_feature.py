@@ -2063,11 +2063,7 @@ def test_update_feature_type(
     _ = mock_api_object_cache
 
     assert saved_feature.feature_type == "numeric"
-    with pytest.raises(RecordUpdateException) as exc:
-        saved_feature.feature_namespace.update_feature_type("categorical")
-
-    expected_error = "Feature sum_1d has dtype FLOAT which is not valid for categorical"
-    assert expected_error in str(exc.value)
+    saved_feature.feature_namespace.update_feature_type("categorical")
 
     # update feature type
     snowflake_dimension_table["col_int"].as_entity(cust_id_entity.name)

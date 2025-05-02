@@ -379,7 +379,7 @@ class FeatureType(StrEnum):
         -------
         set[DBVarType]
         """
-        return {DBVarType.CHAR, DBVarType.VARCHAR, DBVarType.INT, DBVarType.BOOL}
+        return {DBVarType.CHAR, DBVarType.VARCHAR, DBVarType.INT, DBVarType.BOOL, DBVarType.FLOAT}
 
     @classmethod
     def valid_numeric_dtypes(cls) -> set[DBVarType]:
