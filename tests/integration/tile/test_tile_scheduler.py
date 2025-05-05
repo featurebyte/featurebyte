@@ -5,7 +5,7 @@ This module contains integration tests for TileManager scheduler
 # ruff:
 
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -52,7 +52,7 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
     task_id = uuid4()
     app_container.override_instances_for_test({
         "task_id": task_id,
-        "progress": Mock(),
+        "progress": AsyncMock(),
     })
     task_executor = TaskExecutor(
         payload=job_details.kwargs, task_id=task_id, app_container=app_container

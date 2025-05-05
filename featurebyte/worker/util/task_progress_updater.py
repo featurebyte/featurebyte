@@ -92,4 +92,4 @@ class TaskProgressUpdater:
 
         if self.progress:
             # publish to redis
-            self.progress.put(progress_dict)
+            await self.progress.put(progress_dict)
