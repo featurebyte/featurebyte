@@ -3,6 +3,7 @@ from bson import ObjectId
 from featurebyte import CalendarWindow
 from featurebyte import CronFeatureJobSetting
 from featurebyte import TimeSeriesTable
+from featurebyte.models.periodic_task import Crontab
 
 time_series_table = TimeSeriesTable.get_by_id(
     ObjectId("{table_id}")
@@ -20,7 +21,9 @@ grouped = time_series_view.groupby(
     windows=[CalendarWindow(unit="MONTH", size=3)],
     feature_names=["col_float_sum_3month"],
     feature_job_setting=CronFeatureJobSetting(
-        crontab="0 8 1 * *",
+        crontab=Crontab(
+            minute=0, hour=8, day_of_month=1, month_of_year="*", day_of_week="*"
+        ),
         timezone="Etc/UTC",
         reference_timezone=None,
         blind_spot=CalendarWindow(unit="MONTH", size=1),

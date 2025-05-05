@@ -247,6 +247,7 @@ class ClassEnum(Enum):
     # others
     COLUMN_INFO = ("featurebyte.query_graph.model.column_info", "ColumnInfo")
     FEATURE_JOB_SETTING = ("featurebyte", "FeatureJobSetting")
+    CRONTAB = ("featurebyte.models.periodic_task", "Crontab")
     CRON_FEATURE_JOB_SETTING = ("featurebyte", "CronFeatureJobSetting")
     TO_TIMEDELTA = ("featurebyte", "to_timedelta")
     TO_TIMESTAMP_FROM_EPOCH = ("featurebyte", "to_timestamp_from_epoch")

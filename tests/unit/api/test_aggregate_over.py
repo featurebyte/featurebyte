@@ -210,15 +210,18 @@ def test_count_distinct_agg_func(snowflake_event_view_with_entity, cust_id_entit
     feature.save()
 
 
-def test_time_series_view_aggregate_over(snowflake_time_series_table_with_entity):
+@pytest.mark.parametrize("is_int_type_crontab", [True, False])
+def test_time_series_view_aggregate_over(
+    snowflake_time_series_table_with_entity, is_int_type_crontab
+):
     """
     Test aggregate_over for time series view
     """
     snowflake_time_series_table_with_entity.update_default_feature_job_setting(
         feature_job_setting=CronFeatureJobSetting(
             crontab=Crontab(
-                minute=0,
-                hour=1,
+                minute=0 if is_int_type_crontab else "0",
+                hour=1 if is_int_type_crontab else "1",
                 day_of_week="*",
                 day_of_month="*",
                 month_of_year="*",
@@ -260,8 +263,8 @@ def test_time_series_view_aggregate_over(snowflake_time_series_table_with_entity
             "names": ["col_float_sum_3month"],
             "feature_job_setting": {
                 "crontab": {
-                    "minute": 0,
-                    "hour": 1,
+                    "minute": 0 if is_int_type_crontab else "0",
+                    "hour": 1 if is_int_type_crontab else "1",
                     "day_of_month": "*",
                     "month_of_year": "*",
                     "day_of_week": "*",
