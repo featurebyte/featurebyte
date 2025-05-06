@@ -394,7 +394,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
             new_with_expressions = []
             for cte_expr in with_expr.args["expressions"]:
                 cte_table_name = cte_expr.alias
-                if "REQUEST_TABLE" in cte_table_name:
+                if cte_table_name in table_alias_mapping:
                     # CTE that should be materialized as a temp table
                     new_table_name = table_alias_mapping[cte_table_name].alias_or_name
                     temp_table_queries.append(
