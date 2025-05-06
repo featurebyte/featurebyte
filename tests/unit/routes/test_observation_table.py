@@ -5,7 +5,9 @@ Tests for ObservationTable routes
 import copy
 import os
 import tempfile
+import textwrap
 from http import HTTPStatus
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -79,6 +81,65 @@ class TestObservationTableApi(BaseMaterializedTableTestSuite):
         Patch ObservationTableService so validate_materialized_table_and_get_metadata always passes
         """
         _ = patched_observation_table_service
+
+    def test_create_201__without_specifying_id_field(self, test_api_client_persistent):
+        with patch("featurebyte.session.base.BaseSession.create_table_as") as mock:
+            super().test_create_201__without_specifying_id_field(test_api_client_persistent)
+
+        # check create_table_as expression
+        create_table_as_calls = mock.call_args_list
+        expected_non_missing_expr = textwrap.dedent("""
+        SELECT
+          "cust_id",
+          "POINT_IN_TIME",
+          "target"
+        FROM (
+          SELECT
+            "cust_id" AS "cust_id",
+            "POINT_IN_TIME" AS "POINT_IN_TIME",
+            "target" AS "target"
+          FROM (
+            SELECT
+              *
+            FROM "sf_database"."sf_schema"."sf_table"
+          )
+        )
+        WHERE
+            "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
+              "POINT_IN_TIME" IS NOT NULL AND
+              "cust_id" IS NOT NULL
+        """).strip()
+        assert (
+            create_table_as_calls[0].kwargs["select_expr"].sql(pretty=True)
+            == expected_non_missing_expr
+        )
+
+        expected_missing_expr = textwrap.dedent("""
+        SELECT
+          "cust_id",
+          "POINT_IN_TIME",
+          "target"
+        FROM (
+          SELECT
+            "cust_id" AS "cust_id",
+            "POINT_IN_TIME" AS "POINT_IN_TIME",
+            "target" AS "target"
+          FROM (
+            SELECT
+              *
+            FROM "sf_database"."sf_schema"."sf_table"
+          )
+        )
+        WHERE
+            "POINT_IN_TIME" < CAST('2011-03-06T15:37:00' AS TIMESTAMP) AND
+            (
+                "POINT_IN_TIME" IS NULL OR
+                "cust_id" IS NULL
+            )
+        """).strip()
+        assert (
+            create_table_as_calls[1].kwargs["select_expr"].sql(pretty=True) == expected_missing_expr
+        )
 
     def test_info_200(self, test_api_client_persistent, create_success_response):
         """Test info route"""
