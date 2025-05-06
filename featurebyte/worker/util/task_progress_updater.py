@@ -2,6 +2,7 @@
 Task progress updater
 """
 
+import asyncio
 import os
 from datetime import datetime
 from typing import Any, Optional
@@ -73,6 +74,7 @@ class TaskProgressUpdater:
         )
 
         # retrieve progress history & check if it needs to be compressed
+        tasks = []
         result = await self.persistent.find_one(
             collection_name=Task.collection_name(),
             query_filter={"_id": str(self.task_id)},
@@ -82,14 +84,19 @@ class TaskProgressUpdater:
             progress_history = ProgressHistory(**result["progress_history"])
             if len(progress_history.data) > self.max_progress_history:
                 progress_history = progress_history.compress(max_messages=self.max_progress_history)
-                await self.persistent.update_one(
-                    collection_name=Task.collection_name(),
-                    query_filter={"_id": str(self.task_id)},
-                    update={"$set": {"progress_history": progress_history.model_dump()}},
-                    disable_audit=True,
-                    user_id=self.user.id,
+                tasks.append(
+                    self.persistent.update_one(
+                        collection_name=Task.collection_name(),
+                        query_filter={"_id": str(self.task_id)},
+                        update={"$set": {"progress_history": progress_history.model_dump()}},
+                        disable_audit=True,
+                        user_id=self.user.id,
+                    )
                 )
 
         if self.progress:
             # publish to redis
-            await self.progress.put(progress_dict)
+            tasks.append(self.progress.put(progress_dict))
+
+        if tasks:
+            await asyncio.gather(*tasks)
