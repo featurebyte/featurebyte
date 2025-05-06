@@ -232,7 +232,7 @@ def get_non_missing_and_missing_condition_pair(columns: list[str]) -> Tuple[Expr
         )
         for col in columns
     ]
-    missing_condition = expressions.Or(expressions=missing_expressions)
+    missing_condition = expressions.Paren(this=expressions.Or(expressions=missing_expressions))
     return non_missing_condition, missing_condition
 
 
