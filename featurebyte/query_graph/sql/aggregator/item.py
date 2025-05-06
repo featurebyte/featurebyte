@@ -11,12 +11,12 @@ from sqlglot.expressions import Select, select
 
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    CommonTable,
     LeftJoinableSubquery,
     NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.common import (
-    CteStatements,
     get_qualified_column_identifier,
     quoted_identifier,
 )
@@ -164,7 +164,7 @@ class ItemAggregator(NonTileBasedAggregator[ItemAggregationSpec]):
             table_expr=table_expr, current_query_index=current_query_index, queries=queries
         )
 
-    def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
+    def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
         return self.non_time_aware_request_table_plan.construct_request_table_ctes(
             request_table_name
         )

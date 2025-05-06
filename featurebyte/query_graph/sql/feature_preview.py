@@ -14,7 +14,8 @@ from featurebyte.logging import get_logger
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.sql.common import CteStatement, quoted_identifier, sql_to_string
+from featurebyte.query_graph.sql.aggregator.base import CommonTable
+from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.query_graph.sql.cron import JobScheduleTableSet
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
@@ -69,7 +70,7 @@ def get_feature_or_target_preview_sql(
     execution_plan = planner.generate_plan(nodes)
 
     exclude_columns = set()
-    cte_statements: List[CteStatement] = []
+    cte_statements: List[CommonTable] = []
     request_table_columns: Optional[List[str]] = None
 
     if point_in_time_and_serving_name_list:
@@ -79,7 +80,7 @@ def get_feature_or_target_preview_sql(
         request_table_sql = construct_dataframe_sql_expr(
             df_request, [SpecialColumnName.POINT_IN_TIME]
         )
-        cte_statements = [(request_table_name, request_table_sql)]
+        cte_statements = [CommonTable(request_table_name, request_table_sql, quoted=False)]
         request_table_columns = cast(List[str], df_request.columns.tolist())
 
         if parent_serving_preparation is not None:
@@ -91,7 +92,9 @@ def get_feature_or_target_preview_sql(
             )
             request_table_name = parent_serving_result.new_request_table_name
             request_table_columns = parent_serving_result.new_request_table_columns
-            cte_statements.append((request_table_name, parent_serving_result.table_expr))
+            cte_statements.append(
+                CommonTable(request_table_name, parent_serving_result.table_expr, quoted=False)
+            )
             exclude_columns.update(parent_serving_result.parent_entity_columns)
 
         elapsed = time.time() - tic
@@ -105,7 +108,9 @@ def get_feature_or_target_preview_sql(
         )
         for node in nodes:
             tile_compute_plan.process_node(graph, node)
-        tile_compute_ctes = sorted(tile_compute_plan.construct_on_demand_tile_ctes())
+        tile_compute_ctes = sorted(
+            tile_compute_plan.construct_on_demand_tile_ctes(), key=lambda x: x.name
+        )
         cte_statements.extend(tile_compute_ctes)
         elapsed = time.time() - tic
         logger.debug(f"Constructing required tiles SQL took {elapsed:.2}s")
@@ -120,10 +125,12 @@ def get_feature_or_target_preview_sql(
                     InternalName.CRON_JOB_SCHEDULE_DATETIME_UTC,
                 ],
             )
-            cte_statements.append((
-                quoted_identifier(job_schedule_table.table_name),
-                job_schedule_table_sql,
-            ))
+            cte_statements.append(
+                CommonTable(
+                    job_schedule_table.table_name,
+                    job_schedule_table_sql,
+                )
+            )
 
     tic = time.time()
     preview_sql = sql_to_string(

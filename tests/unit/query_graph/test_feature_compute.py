@@ -137,7 +137,8 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     assert len(ctes) == 1
 
     cte = ctes[0]
-    assert cte[0].sql() == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
+    assert cte.name == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
+    assert cte.quoted is True
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -155,7 +156,7 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
       FROM REQUEST_TABLE
     )
     """
-    assert_sql_equal(cte[1].sql(pretty=True), expected_sql)
+    assert_sql_equal(cte.expr.sql(pretty=True), expected_sql)
 
 
 def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d, source_info):
@@ -177,8 +178,9 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d, source
     assert len(ctes) == 2
 
     # check expanded table for 2h
-    name, sql = ctes[0]
-    assert name.sql() == '"REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"'
+    name, sql = ctes[0].name, ctes[0].expr
+    assert name == "REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"
+    assert ctes[0].quoted is True
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -199,8 +201,9 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d, source
     assert_sql_equal(sql.sql(pretty=True), expected_sql)
 
     # check expanded table for 1d
-    name, sql = ctes[1]
-    assert name.sql() == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
+    name, sql = ctes[1].name, ctes[1].expr
+    assert name == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
+    assert ctes[1].quoted is True
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -230,7 +233,7 @@ def test_non_time_aware_request_table_plan(item_agg_spec):
     assert plan.get_request_table_name(item_agg_spec) == "REQUEST_TABLE_OID"
     ctes = plan.construct_request_table_ctes(REQUEST_TABLE_NAME)
     assert len(ctes) == 1
-    name, sql = ctes[0]  # noqa: F841
+    name, sql = ctes[0].name, ctes[0].expr  # noqa: F841
     expected_sql = """
     SELECT DISTINCT
       "OID"

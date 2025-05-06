@@ -14,7 +14,8 @@ from featurebyte.enum import InternalName
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
-from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
+from featurebyte.query_graph.sql.aggregator.base import CommonTable
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter, TileGenSql
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tile_util import (
@@ -158,7 +159,7 @@ class OnDemandTileComputePlan:
 
         return tile_sqls
 
-    def construct_on_demand_tile_ctes(self) -> CteStatements:
+    def construct_on_demand_tile_ctes(self) -> list[CommonTable]:
         """Construct the CTE statements that would compute all the required tiles
 
         Returns
@@ -168,7 +169,7 @@ class OnDemandTileComputePlan:
         cte_statements = []
         tile_sqls = self.construct_tile_sqls()
         for tile_table_id, tile_sql_expr in tile_sqls.items():
-            cte_statements.append((tile_table_id, tile_sql_expr))
+            cte_statements.append(CommonTable(tile_table_id, tile_sql_expr, quoted=False))
         return cte_statements
 
 

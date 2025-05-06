@@ -9,9 +9,13 @@ from typing import Any
 
 from sqlglot.expressions import Select
 
-from featurebyte.query_graph.sql.aggregator.base import AggregationResult, TileBasedAggregator
+from featurebyte.query_graph.sql.aggregator.base import (
+    AggregationResult,
+    CommonTable,
+    TileBasedAggregator,
+)
 from featurebyte.query_graph.sql.aggregator.window import TileBasedAggregationSpecSet
-from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.scd_helper import Table, get_scd_join_expr
 from featurebyte.query_graph.sql.specs import TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
@@ -121,5 +125,5 @@ class LatestAggregator(TileBasedAggregator):
     def get_common_table_expressions(
         self,
         request_table_name: str,
-    ) -> CteStatements:
+    ) -> list[CommonTable]:
         return []

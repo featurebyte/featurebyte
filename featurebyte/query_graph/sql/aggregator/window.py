@@ -4,7 +4,7 @@ SQL generation for aggregation with time windows
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Optional, Tuple, cast
+from typing import Any, Iterable, Optional, Tuple
 
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select, alias_, select
@@ -13,6 +13,7 @@ from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    CommonTable,
     LeftJoinableSubquery,
     TileBasedAggregator,
 )
@@ -22,7 +23,7 @@ from featurebyte.query_graph.sql.aggregator.range_join import (
     range_join_tables,
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
-from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.groupby_helper import (
     GroupbyColumn,
     GroupbyKey,
@@ -155,7 +156,7 @@ class TileBasedRequestTablePlan:
     def construct_request_tile_indices_ctes(
         self,
         request_table_name: str,
-    ) -> CteStatements:
+    ) -> list[CommonTable]:
         """
         Construct SQL statements that build the expanded request tables
 
@@ -187,8 +188,8 @@ class TileBasedRequestTablePlan:
                 serving_names=list(serving_names),
                 request_table_name=request_table_name,
             )
-            expanded_request_ctes.append((quoted_identifier(table_name), expanded_table_sql))
-        return cast(CteStatements, expanded_request_ctes)
+            expanded_request_ctes.append(CommonTable(name=table_name, expr=expanded_table_sql))
+        return expanded_request_ctes
 
     def construct_expanded_request_table_sql(
         self,
@@ -740,5 +741,5 @@ class WindowAggregator(TileBasedAggregator):
             table_expr=table_expr, current_query_index=current_query_index, queries=queries
         )
 
-    def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
+    def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
         return self.request_table_plan.construct_request_tile_indices_ctes(request_table_name)

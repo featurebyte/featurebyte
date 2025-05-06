@@ -27,7 +27,7 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import FeatureStoreDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
-from featurebyte.query_graph.sql.aggregator.base import TileBasedAggregator
+from featurebyte.query_graph.sql.aggregator.base import CommonTable, TileBasedAggregator
 from featurebyte.query_graph.sql.aggregator.forward import ForwardAggregator
 from featurebyte.query_graph.sql.aggregator.forward_asat import ForwardAsAtAggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
@@ -41,8 +41,6 @@ from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
-    CteStatement,
-    CteStatements,
     SQLType,
     construct_cte_sql,
     quoted_identifier,
@@ -357,7 +355,7 @@ class FeatureExecutionPlan:
         request_table_name: str,
         point_in_time_column: str,
         request_table_columns: Optional[list[str]],
-    ) -> tuple[CteStatement, list[str]]:
+    ) -> tuple[CommonTable, list[str]]:
         """Construct SQL code for all aggregations
 
         Parameters
@@ -400,7 +398,9 @@ class FeatureExecutionPlan:
             current_columns += agg_result.column_names
             agg_result_names += agg_result.column_names
 
-        return (self.AGGREGATION_TABLE_NAME, table_expr), agg_result_names
+        return CommonTable(
+            name=self.AGGREGATION_TABLE_NAME, expr=table_expr, quoted=False
+        ), agg_result_names
 
     def construct_post_aggregation_sql(
         self,
@@ -502,7 +502,7 @@ class FeatureExecutionPlan:
         request_table_name: str,
         point_in_time_column: str,
         request_table_columns: Optional[list[str]],
-        prior_cte_statements: Optional[CteStatements] = None,
+        prior_cte_statements: Optional[list[CommonTable]] = None,
         exclude_post_aggregation: bool = False,
         exclude_columns: Optional[set[str]] = None,
     ) -> expressions.Select:
@@ -516,7 +516,7 @@ class FeatureExecutionPlan:
             Point in time column
         request_table_columns : Optional[list[str]]
             Request table columns
-        prior_cte_statements : Optional[list[tuple[str, str]]]
+        prior_cte_statements : Optional[list[CommonTable]]
             Other CTE statements to incorporate to the final SQL (namely the request data SQL and
             on-demand tile SQL)
         exclude_post_aggregation: bool
@@ -529,10 +529,11 @@ class FeatureExecutionPlan:
         -------
         str
         """
-        cte_statements = []
+        common_tables = []
+
         if prior_cte_statements is not None:
             assert isinstance(prior_cte_statements, list)
-            cte_statements.extend(prior_cte_statements)
+            common_tables.extend(prior_cte_statements)
 
         if exclude_columns is None:
             exclude_columns = set()
@@ -549,7 +550,9 @@ class FeatureExecutionPlan:
                 request_table_columns=request_table_columns,
             )
             request_table_name = "JOINED_PARENTS_" + request_table_name
-            cte_statements.append((request_table_name, updated_request_table_expr))
+            common_tables.append(
+                CommonTable(name=request_table_name, expr=updated_request_table_expr, quoted=False)
+            )
             request_table_columns = request_table_columns + list(new_columns)
             exclude_columns.update(new_columns)
 
@@ -565,21 +568,25 @@ class FeatureExecutionPlan:
                     job_schedule_table.table_name,
                     self.adapter,
                 )
-                cte_statements.append((
-                    quoted_identifier(request_table_with_schedule_name),
-                    request_table_with_schedule_expr,
-                ))
+                common_tables.append(
+                    CommonTable(
+                        name=request_table_with_schedule_name,
+                        expr=request_table_with_schedule_expr,
+                    )
+                )
 
         for aggregator in self.iter_aggregators():
-            cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))
+            common_tables.extend(aggregator.get_common_table_expressions(request_table_name))
 
         agg_cte, agg_result_names = self.construct_combined_aggregation_cte(
             request_table_name,
             point_in_time_column,
             request_table_columns,
         )
-        cte_statements.append(agg_cte)
-        cte_context = construct_cte_sql(cte_statements)
+        common_tables.append(agg_cte)
+        cte_context = construct_cte_sql([
+            common_table.to_cte_statement() for common_table in common_tables
+        ])
 
         post_aggregation_sql = self.construct_post_aggregation_sql(
             cte_context=cte_context,

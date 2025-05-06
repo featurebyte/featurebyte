@@ -23,6 +23,7 @@ from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
+from featurebyte.query_graph.sql.aggregator.base import CommonTable
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.batch_helper import (
     CreateTableQuery,
@@ -210,7 +211,7 @@ def get_online_store_retrieval_expr(
         request_table_details=request_table_details,
     )
     request_table_name = "ONLINE_" + REQUEST_TABLE_NAME
-    ctes = [(request_table_name, request_query)]
+    ctes = [CommonTable(request_table_name, request_query, quoted=False)]
 
     output_expr = plan.construct_combined_sql(
         request_table_name=request_table_name,

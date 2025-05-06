@@ -16,7 +16,7 @@ from featurebyte.enum import DBVarType, InternalName
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
-    CteStatements,
+    CteStatement,
     get_qualified_column_identifier,
     quoted_identifier,
 )
@@ -88,6 +88,31 @@ class LeftJoinableSubquery:
         _ = main_alias
         _ = adapter
         return get_qualified_column_identifier(column_name, join_alias, quote_table=True)
+
+
+@dataclass
+class CommonTable:
+    """
+    Represents a common table expression (CTE) required for aggregation
+
+    TODO: move to sql/common.py?
+    """
+
+    name: str
+    expr: expressions.Select
+    quoted: bool = True
+
+    def to_cte_statement(self) -> CteStatement:
+        """
+        Convert to a CTE statement
+
+        Returns
+        -------
+        CteStatement
+        """
+        if self.quoted:
+            return quoted_identifier(self.name), self.expr
+        return self.name, self.expr
 
 
 class Aggregator(Generic[AggregationSpecT], ABC):
@@ -292,7 +317,7 @@ class Aggregator(Generic[AggregationSpecT], ABC):
         return wrapped_table_expr
 
     @abstractmethod
-    def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
+    def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
         """
         Construct any common table expressions (CTE) required to support the aggregation, typically
         the original request table processed in some ways. This will be used to form the WITH
@@ -305,9 +330,8 @@ class Aggregator(Generic[AggregationSpecT], ABC):
 
         Returns
         -------
-        CteStatements
-            List of common table expressions as tuples. The first element of the tuple is the name
-            of the CTE and the second element is the corresponding sql expression.
+        list[CommonTable]
+            List of common table expressions
         """
 
 

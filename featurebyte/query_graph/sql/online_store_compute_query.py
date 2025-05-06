@@ -16,6 +16,7 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.adapter import BaseAdapter, get_sql_adapter
+from featurebyte.query_graph.sql.aggregator.base import CommonTable
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
@@ -154,7 +155,9 @@ class OnlineStorePrecomputePlan:
                 request_table_name=REQUEST_TABLE_NAME,
                 point_in_time_column=SpecialColumnName.POINT_IN_TIME,
                 request_table_columns=params.universe.columns,
-                prior_cte_statements=[(REQUEST_TABLE_NAME, params.universe.expr)],
+                prior_cte_statements=[
+                    CommonTable(REQUEST_TABLE_NAME, params.universe.expr, quoted=False)
+                ],
                 exclude_post_aggregation=True,
             ),
             serving_names=sorted(params.agg_spec.serving_names),
