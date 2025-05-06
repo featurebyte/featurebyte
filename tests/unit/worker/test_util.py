@@ -2,7 +2,7 @@
 Unit tests for worker/util directory
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from bson import ObjectId
@@ -32,7 +32,7 @@ async def test_progress_update(persistent, user_id):
         disable_audit=True,
     )
 
-    progress = Mock()
+    progress = AsyncMock()
     progress_updater = TaskProgressUpdater(
         persistent=persistent, task_id=task_id, user=User(id=user_id), progress=progress
     )

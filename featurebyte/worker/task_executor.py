@@ -291,7 +291,8 @@ class BaseCeleryTask(Task):
             return return_val
         finally:
             # indicate stream is closed
-            progress.put({"percent": -1})
+            await progress.put({"percent": -1})
+            await progress.close()
 
     @abstractmethod
     def run(self: Any, *args: Any, **payload: Any) -> Any:

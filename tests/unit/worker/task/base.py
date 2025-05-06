@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 from abc import abstractmethod
 from typing import Any, Dict, Optional
-from unittest.mock import Mock
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
@@ -69,7 +69,7 @@ class BaseTaskTestSuite:
         """
         Mock progress
         """
-        yield Mock()
+        yield AsyncMock()
 
     async def execute_task(
         self,

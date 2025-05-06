@@ -13,7 +13,7 @@ from datetime import datetime
 from functools import partial
 from pathlib import Path
 from unittest import mock
-from unittest.mock import Mock, PropertyMock, patch
+from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 from uuid import UUID, uuid4
 
 import httpx
@@ -2764,7 +2764,7 @@ def app_container_no_catalog_fixture(persistent, user, storage, temp_storage):
             "storage": storage,
             "catalog_id": None,
             "task_id": uuid4(),
-            "progress": Mock(),
+            "progress": AsyncMock(),
             "redis_uri": TEST_REDIS_URI,
         },
     )
@@ -2790,7 +2790,7 @@ def app_container_fixture(persistent, user, catalog, storage, temp_storage):
             "storage": storage,
             "catalog_id": catalog.id,
             "task_id": uuid4(),
-            "progress": Mock(),
+            "progress": AsyncMock(),
             "redis_uri": TEST_REDIS_URI,
         },
     )
@@ -2852,7 +2852,7 @@ def mock_task_manager(request, persistent, storage, temp_storage):
                     instance_map=instance_map,
                 )
                 app_container.override_instance_for_test("task_id", UUID(task_id))
-                app_container.override_instance_for_test("progress", Mock())
+                app_container.override_instance_for_test("progress", AsyncMock())
                 task = app_container.get(TEST_TASK_REGISTRY_MAP[payload.command])
 
                 task_result = None

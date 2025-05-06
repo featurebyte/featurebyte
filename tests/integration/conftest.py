@@ -17,7 +17,7 @@ from pathlib import Path
 from pprint import pprint
 from typing import Dict, List, cast
 from unittest import mock
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 from uuid import UUID, uuid4
 
 import numpy as np
@@ -2002,7 +2002,7 @@ def mock_task_manager(request, persistent, storage):
                     app_container_config=app_container_config, instance_map=instance_map
                 )
                 app_container.override_instance_for_test("task_id", UUID(task_id))
-                app_container.override_instance_for_test("progress", Mock())
+                app_container.override_instance_for_test("progress", AsyncMock())
                 task = app_container.get(TASK_REGISTRY_MAP[payload.command])
                 try:
                     task_payload = task.get_payload_obj(kwargs)
