@@ -31,7 +31,7 @@ from featurebyte.query_graph.sql.cron import JobScheduleTableSet
 from featurebyte.query_graph.sql.feature_compute import (
     FeatureExecutionPlanner,
     FeatureQuery,
-    FeatureSql,
+    FeatureQueryPlan,
 )
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.session.base import BaseSession
@@ -259,7 +259,7 @@ def get_historical_features_expr(
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
-) -> FeatureSql:
+) -> FeatureQueryPlan:
     """Construct the SQL code that extracts historical features
 
     Parameters
@@ -286,7 +286,7 @@ def get_historical_features_expr(
 
     Returns
     -------
-    FeatureSql
+    FeatureQueryPlan
     """
     planner = FeatureExecutionPlanner(
         graph,

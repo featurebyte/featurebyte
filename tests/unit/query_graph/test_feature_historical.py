@@ -23,9 +23,9 @@ from tests.util.helper import assert_equal_with_expected_fixture, feature_query_
 
 def get_historical_features_sql(**kwargs):
     """Get historical features SQL"""
-    expr, _ = get_historical_features_expr(**kwargs)
+    query_plan = get_historical_features_expr(**kwargs)
     source_info = kwargs["source_info"]
-    return sql_to_string(expr, source_type=source_info.source_type)
+    return sql_to_string(query_plan.get_standalone_expr(), source_type=source_info.source_type)
 
 
 @pytest.fixture(name="output_table_details")

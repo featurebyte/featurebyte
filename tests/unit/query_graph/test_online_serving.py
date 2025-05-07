@@ -225,7 +225,7 @@ def test_complex_features(complex_feature_query_graph, adapter, update_fixtures,
     )
 
     # Check retrieval sql
-    expr, feature_names = get_online_store_retrieval_expr(
+    query_plan = get_online_store_retrieval_expr(
         request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
         request_table_columns=["CUSTOMER_ID"],
         graph=pruned_graph,
@@ -234,11 +234,11 @@ def test_complex_features(complex_feature_query_graph, adapter, update_fixtures,
         source_info=source_info,
     )
     assert_equal_with_expected_fixture(
-        expr.sql(pretty=True),
+        query_plan.get_standalone_expr().sql(pretty=True),
         "tests/fixtures/expected_online_feature_retrieval_complex.sql",
         update_fixture=update_fixtures,
     )
-    assert feature_names == ["a_2h_avg_by_user_div_7d_by_biz"]
+    assert query_plan.feature_names == ["a_2h_avg_by_user_div_7d_by_biz"]
 
 
 def test_online_store_feature_retrieval_sql__all_eligible(
@@ -248,7 +248,7 @@ def test_online_store_feature_retrieval_sql__all_eligible(
     Test constructing feature retrieval sql for online store
     """
     graph, *nodes = query_graph_with_groupby_and_feature_nodes
-    expr, feature_names = get_online_store_retrieval_expr(
+    query_plan = get_online_store_retrieval_expr(
         request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
         request_table_columns=["CUSTOMER_ID"],
         graph=graph,
@@ -257,11 +257,11 @@ def test_online_store_feature_retrieval_sql__all_eligible(
         source_info=source_info,
     )
     assert_equal_with_expected_fixture(
-        expr.sql(pretty=True),
+        query_plan.get_standalone_expr().sql(pretty=True),
         "tests/fixtures/expected_online_feature_retrieval_simple.sql",
         update_fixture=update_fixtures,
     )
-    assert feature_names == ["a_2h_average", "a_48h_average plus 123"]
+    assert query_plan.feature_names == ["a_2h_average", "a_48h_average plus 123"]
 
 
 def test_online_store_feature_retrieval_sql__mixed(
@@ -272,7 +272,7 @@ def test_online_store_feature_retrieval_sql__mixed(
     from the online store and has to be computed on demand
     """
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    expr, feature_names = get_online_store_retrieval_expr(
+    query_plan = get_online_store_retrieval_expr(
         request_table_details=TableDetails(table_name="MY_REQUEST_TABLE"),
         request_table_columns=["CUSTOMER_ID", "order_id"],
         graph=graph,
@@ -281,11 +281,11 @@ def test_online_store_feature_retrieval_sql__mixed(
         source_info=source_info,
     )
     assert_equal_with_expected_fixture(
-        expr.sql(pretty=True),
+        query_plan.get_standalone_expr().sql(pretty=True),
         "tests/fixtures/expected_online_feature_retrieval_mixed.sql",
         update_fixture=update_fixtures,
     )
-    assert feature_names == ["a_48h_average", "order_size"]
+    assert query_plan.feature_names == ["a_48h_average", "order_size"]
 
 
 def test_online_store_feature_retrieval_sql__request_subquery(
@@ -298,7 +298,7 @@ def test_online_store_feature_retrieval_sql__request_subquery(
     request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
 
     graph, *nodes = mixed_point_in_time_and_item_aggregations_features
-    expr, feature_names = get_online_store_retrieval_expr(
+    query_plan = get_online_store_retrieval_expr(
         request_table_expr=request_table_expr,
         request_table_columns=["CUSTOMER_ID"],
         graph=graph,
@@ -307,11 +307,11 @@ def test_online_store_feature_retrieval_sql__request_subquery(
         source_info=source_info,
     )
     assert_equal_with_expected_fixture(
-        expr.sql(pretty=True),
+        query_plan.get_standalone_expr().sql(pretty=True),
         "tests/fixtures/expected_online_feature_retrieval_request_subquery.sql",
         update_fixture=update_fixtures,
     )
-    assert feature_names == ["a_48h_average", "order_size"]
+    assert query_plan.feature_names == ["a_48h_average", "order_size"]
 
 
 def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column(
@@ -323,7 +323,7 @@ def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column
     df = pd.DataFrame({"CUSTOMER_ID": [1001, 1002, 1003]})
     request_table_expr = construct_dataframe_sql_expr(df, date_cols=[])
 
-    expr, feature_names = get_online_store_retrieval_expr(
+    query_plan = get_online_store_retrieval_expr(
         request_table_expr=request_table_expr,
         request_table_columns=["CUSTOMER_ID"],
         graph=global_graph,
@@ -332,11 +332,11 @@ def test_online_store_feature_retrieval_sql__scd_lookup_with_current_flag_column
         source_info=source_info,
     )
     assert_equal_with_expected_fixture(
-        expr.sql(pretty=True),
+        query_plan.get_standalone_expr().sql(pretty=True),
         "tests/fixtures/expected_online_feature_retrieval_scd_current_flag.sql",
         update_fixture=update_fixtures,
     )
-    assert feature_names == ["Current Membership Status"]
+    assert query_plan.feature_names == ["Current Membership Status"]
 
 
 def test_online_store_feature_retrieval_sql__version_placeholders_filled(

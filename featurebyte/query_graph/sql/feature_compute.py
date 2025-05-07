@@ -118,10 +118,11 @@ class FeatureQuery:
 
 
 @dataclass
-class FeatureSql:
+class FeatureQueryPlan:
     """
-    FeatureSql is a class that contains the information needed to generate the SQL for a feature
-    table. It is produced by FeatureExecutionPlan after processing each node in the query graph.
+    FeatureQueryPlan is a class that contains the information needed to generate the SQL queries for
+    a feature table. It is produced by FeatureExecutionPlan after processing each node in the query
+    graph.
     """
 
     common_tables: list[CommonTable]
@@ -181,7 +182,8 @@ class FeatureSql:
         table_name: str
             Name of the table to be created
         node_names: list[str]
-            List of node names
+            List of node names. This is attached as a metadata to the FeatureQuery object and not
+            used actively when generating the queries.
         source_info: SourceInfo
             Source information
 
@@ -687,7 +689,7 @@ class FeatureExecutionPlan:
         prior_cte_statements: Optional[list[CommonTable]] = None,
         exclude_post_aggregation: bool = False,
         exclude_columns: Optional[set[str]] = None,
-    ) -> FeatureSql:
+    ) -> FeatureQueryPlan:
         """Construct combined SQL that will generate the features
 
         Parameters
@@ -774,7 +776,7 @@ class FeatureExecutionPlan:
             agg_result_names=agg_result_names,
             exclude_columns=exclude_columns,
         )
-        return FeatureSql(
+        return FeatureQueryPlan(
             common_tables=common_tables,
             post_aggregation_sql=post_aggregation_sql,
             feature_names=self.feature_names,

@@ -618,13 +618,17 @@ def test_feature_execution_planner__entity_relationships_context(
     }
 
     # Check combined sql
-    sql = plan.construct_combined_sql(
-        request_table_name="REQUEST_TABLE",
-        point_in_time_column="POINT_IN_TIME",
-        request_table_columns=["a", "b", "c"],
-        prior_cte_statements=[],
-        exclude_columns=None,
-    ).sql(pretty=True)
+    sql = (
+        plan.construct_combined_sql(
+            request_table_name="REQUEST_TABLE",
+            point_in_time_column="POINT_IN_TIME",
+            request_table_columns=["a", "b", "c"],
+            prior_cte_statements=[],
+            exclude_columns=None,
+        )
+        .get_standalone_expr()
+        .sql(pretty=True)
+    )
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_combined_sql_with_relationships.sql",

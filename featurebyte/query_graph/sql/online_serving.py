@@ -46,7 +46,7 @@ from featurebyte.query_graph.sql.feature_compute import (
     CreateTableQuery,
     FeatureExecutionPlanner,
     FeatureQuery,
-    FeatureSql,
+    FeatureQueryPlan,
 )
 from featurebyte.query_graph.sql.online_serving_util import get_version_placeholder
 from featurebyte.query_graph.sql.source_info import SourceInfo
@@ -167,7 +167,7 @@ def get_online_store_retrieval_expr(
     request_table_details: Optional[TableDetails] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
-) -> FeatureSql:
+) -> FeatureQueryPlan:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
 
@@ -195,7 +195,7 @@ def get_online_store_retrieval_expr(
 
     Returns
     -------
-    expressions.Select
+    FeatureQueryPlan
     """
     planner = FeatureExecutionPlanner(
         graph,
