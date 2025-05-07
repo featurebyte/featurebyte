@@ -98,7 +98,7 @@ sys.setrecursionlimit(10000)
 @dataclass
 class CreateTableQuery:
     """
-    Query to create a temporary table
+    Query to create a table
     """
 
     sql: str
@@ -108,7 +108,8 @@ class CreateTableQuery:
 @dataclass
 class FeatureQuery:
     """
-    FeatureQuery represents a sql query that materializes a temporary table for a set of features
+    FeatureQuery represents a set of sql queries needed to compute a feature table. It contains
+    the SQL queries to create temporary tables and the final query to create the feature table.
     """
 
     temp_table_queries: list[CreateTableQuery]

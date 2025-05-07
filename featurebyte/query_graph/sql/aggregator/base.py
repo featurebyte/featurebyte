@@ -94,8 +94,6 @@ class LeftJoinableSubquery:
 class CommonTable:
     """
     Represents a common table expression (CTE) required for aggregation
-
-    TODO: move to sql/common.py?
     """
 
     name: str
