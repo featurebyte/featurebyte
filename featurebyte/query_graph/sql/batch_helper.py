@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
 
 from sqlglot import expressions
 
@@ -14,35 +13,13 @@ from featurebyte.enum import InternalName
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.common import get_qualified_column_identifier, quoted_identifier
-from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
+from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner, FeatureQuery
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.specs import NonTileBasedAggregationSpec, TileBasedAggregationSpec
 from featurebyte.query_graph.sql.tile_compute_combine import get_tile_compute_spec_signature
 
 NUM_FEATURES_PER_QUERY = 20
-
-
-@dataclass
-class CreateTableQuery:
-    """
-    Query to create a temporary table
-    """
-
-    sql: str
-    table_name: str
-
-
-@dataclass
-class FeatureQuery:
-    """
-    FeatureQuery represents a sql query that materializes a temporary table for a set of features
-    """
-
-    temp_table_queries: list[CreateTableQuery]
-    feature_table_query: CreateTableQuery
-    feature_names: list[str]
-    node_names: list[str]
 
 
 def split_nodes(

@@ -101,6 +101,7 @@ class CommonTable:
     name: str
     expr: expressions.Select
     quoted: bool = True
+    should_materialize: bool = False
 
     def to_cte_statement(self) -> CteStatement:
         """

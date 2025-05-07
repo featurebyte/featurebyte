@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 import pandas as pd
 from sqlglot import expressions
@@ -26,8 +26,6 @@ from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import CommonTable
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.batch_helper import (
-    CreateTableQuery,
-    FeatureQuery,
     get_feature_names,
 )
 from featurebyte.query_graph.sql.common import (
@@ -44,7 +42,12 @@ from featurebyte.query_graph.sql.entity import (
     get_combined_serving_names,
     get_combined_serving_names_expr,
 )
-from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
+from featurebyte.query_graph.sql.feature_compute import (
+    CreateTableQuery,
+    FeatureExecutionPlanner,
+    FeatureQuery,
+    FeatureSql,
+)
 from featurebyte.query_graph.sql.online_serving_util import get_version_placeholder
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
@@ -164,7 +167,7 @@ def get_online_store_retrieval_expr(
     request_table_details: Optional[TableDetails] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
-) -> Tuple[expressions.Select, list[str]]:
+) -> FeatureSql:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
 
@@ -213,7 +216,7 @@ def get_online_store_retrieval_expr(
     request_table_name = "ONLINE_" + REQUEST_TABLE_NAME
     ctes = [CommonTable(request_table_name, request_query, quoted=False)]
 
-    output_expr = plan.construct_combined_sql(
+    output = plan.construct_combined_sql(
         request_table_name=request_table_name,
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=request_table_columns,
@@ -221,7 +224,7 @@ def get_online_store_retrieval_expr(
         exclude_columns={SpecialColumnName.POINT_IN_TIME},
     )
 
-    return output_expr, plan.feature_names
+    return output
 
 
 def get_current_timestamp_expr(
@@ -339,7 +342,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
 
     def generate_feature_query(self, node_names: list[str], table_name: str) -> FeatureQuery:
         nodes = [self.graph.get_node_by_name(node_name) for node_name in node_names]
-        feature_set_expr, feature_names = get_online_store_retrieval_expr(
+        feature_set_sql = get_online_store_retrieval_expr(
             graph=self.graph,
             nodes=nodes,
             current_timestamp_expr=self.current_timestamp_expr,
@@ -350,6 +353,8 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
             parent_serving_preparation=self.parent_serving_preparation,
             job_schedule_table_set=self.job_schedule_table_set,
         )
+        # TODO: online feature query should be using materialized common tables as well
+        feature_set_expr = feature_set_sql.get_standalone_expr()
         feature_set_expr = fill_version_placeholders(feature_set_expr, self.versions)
         query = sql_to_string(
             get_sql_adapter(self.source_info).create_table_as(
@@ -364,7 +369,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
                 sql=query,
                 table_name=table_name,
             ),
-            feature_names=feature_names,
+            feature_names=feature_set_sql.feature_names,
             node_names=node_names,
         )
 

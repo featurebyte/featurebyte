@@ -23,9 +23,9 @@ from featurebyte.models.feature_query_set import FeatureQuerySet
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.batch_helper import (
     NUM_FEATURES_PER_QUERY,
-    FeatureQuery,
 )
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
+from featurebyte.query_graph.sql.feature_compute import FeatureQuery
 from featurebyte.session.base import BaseSession
 from featurebyte.utils.async_helper import asyncio_gather
 

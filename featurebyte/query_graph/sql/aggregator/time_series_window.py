@@ -266,10 +266,12 @@ class TimeSeriesRequestTablePlan:
             CommonTable(
                 name=processed_request_table_pair.distinct_by_point_in_time.name,
                 expr=point_in_time_distinct_expr,
+                should_materialize=True,
             ),
             CommonTable(
                 name=processed_request_table_pair.distinct_by_scheduled_job_time.name,
                 expr=scheduled_job_time_distinct_expr,
+                should_materialize=True,
             ),
         ]
 

@@ -140,7 +140,7 @@ def get_feature_or_target_preview_sql(
             request_table_columns=request_table_columns,
             prior_cte_statements=cte_statements,
             exclude_columns=exclude_columns,
-        ),
+        ).get_standalone_expr(),
         source_type=source_info.source_type,
     )
     elapsed = time.time() - tic

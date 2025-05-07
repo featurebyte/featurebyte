@@ -159,7 +159,7 @@ class OnlineStorePrecomputePlan:
                     CommonTable(REQUEST_TABLE_NAME, params.universe.expr, quoted=False)
                 ],
                 exclude_post_aggregation=True,
-            ),
+            ).get_standalone_expr(),
             serving_names=sorted(params.agg_spec.serving_names),
             result_name=params.agg_spec.agg_result_name,
         )

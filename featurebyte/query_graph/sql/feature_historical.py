@@ -6,11 +6,10 @@ from __future__ import annotations
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, cast
 
 import numpy as np
 import pandas as pd
-from bson import ObjectId
 from pandas.api.types import is_datetime64_any_dtype
 from sqlglot import expressions
 
@@ -27,14 +26,13 @@ from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.query_graph.sql.adapter import get_sql_adapter
-from featurebyte.query_graph.sql.batch_helper import (
-    CreateTableQuery,
-    FeatureQuery,
-)
-from featurebyte.query_graph.sql.common import get_fully_qualified_table_name, sql_to_string
+from featurebyte.query_graph.sql.common import get_fully_qualified_table_name
 from featurebyte.query_graph.sql.cron import JobScheduleTableSet
-from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
+from featurebyte.query_graph.sql.feature_compute import (
+    FeatureExecutionPlanner,
+    FeatureQuery,
+    FeatureSql,
+)
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.session.base import BaseSession
 
@@ -261,7 +259,7 @@ def get_historical_features_expr(
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
-) -> Tuple[expressions.Select, list[str]]:
+) -> FeatureSql:
     """Construct the SQL code that extracts historical features
 
     Parameters
@@ -288,8 +286,7 @@ def get_historical_features_expr(
 
     Returns
     -------
-    Tuple[expressions.Select], list[str]
-        Tuple of feature query syntax tree and the list of feature names
+    FeatureSql
     """
     planner = FeatureExecutionPlanner(
         graph,
@@ -302,13 +299,12 @@ def get_historical_features_expr(
     )
     plan = planner.generate_plan(nodes)
 
-    historical_features_expr = plan.construct_combined_sql(
+    historical_features_sql = plan.construct_combined_sql(
         request_table_name=request_table_name,
         point_in_time_column=SpecialColumnName.POINT_IN_TIME,
         request_table_columns=request_table_columns,
     )
-    feature_names = plan.feature_names
-    return historical_features_expr, feature_names
+    return historical_features_sql
 
 
 class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
@@ -352,7 +348,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
 
     def generate_feature_query(self, node_names: list[str], table_name: str) -> FeatureQuery:
         nodes = [self.graph.get_node_by_name(node_name) for node_name in node_names]
-        feature_set_expr, feature_names = get_historical_features_expr(
+        feature_set_sql = get_historical_features_expr(
             graph=self.graph,
             nodes=nodes,
             request_table_columns=[InternalName.TABLE_ROW_INDEX.value] + self.request_table_columns,
@@ -363,79 +359,12 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
             on_demand_tile_tables=self.on_demand_tile_tables,
             job_schedule_table_set=self.job_schedule_table_set,
         )
-
-        table_alias_mapping: dict[str, expressions.Identifier] = {}
-
-        def _replace_table_name(node: expressions.Expression) -> expressions.Expression:
-            if isinstance(node, expressions.Identifier):
-                identifier_name = node.alias_or_name
-                if identifier_name in table_alias_mapping:
-                    return table_alias_mapping[identifier_name]
-            return node
-
-        adapter = get_sql_adapter(self.source_info)
-        temp_table_queries = []
-        with_expr = feature_set_expr.args.get("with")
-        temp_id = f"__TEMP_FEATURE_QUERY_{ObjectId()}".upper()
-
-        if with_expr is not None:
-            # Build mapping
-            for cte_expr in with_expr.args["expressions"]:
-                cte_table_name = cte_expr.alias
-                if "REQUEST_TABLE" in cte_table_name:
-                    new_table_name = f"{temp_id}_{cte_table_name}"
-                    new_table_name = new_table_name.replace("/", "_").replace(" ", "_")
-                    table_alias_mapping[cte_table_name] = expressions.Identifier(
-                        this=new_table_name,
-                        quoted=True,
-                    )
-
-            # Construct temp table queries by applying mapping
-            new_with_expressions = []
-            for cte_expr in with_expr.args["expressions"]:
-                cte_table_name = cte_expr.alias
-                if cte_table_name in table_alias_mapping:
-                    # CTE that should be materialized as a temp table
-                    new_table_name = table_alias_mapping[cte_table_name].alias_or_name
-                    temp_table_queries.append(
-                        CreateTableQuery(
-                            sql=sql_to_string(
-                                adapter.create_table_as(
-                                    table_details=TableDetails(table_name=new_table_name),
-                                    select_expr=cte_expr.this.transform(_replace_table_name),
-                                ),
-                                source_type=self.source_info.source_type,
-                            ),
-                            table_name=new_table_name,
-                        ),
-                    )
-                else:
-                    # CTE that should be kept as is but rewritten to reference temp tables
-                    new_with_expressions.append(cte_expr.transform(_replace_table_name))
-
-            # Rewrite main query to reference temp tables
-            feature_set_expr = cast(
-                expressions.Select, feature_set_expr.transform(_replace_table_name)
-            )
-
-            feature_set_expr.args["with"].args["expressions"] = new_with_expressions
-
-        query = sql_to_string(
-            adapter.create_table_as(
-                table_details=TableDetails(table_name=table_name),
-                select_expr=feature_set_expr,
-            ),
-            self.source_info.source_type,
-        )
-        return FeatureQuery(
-            temp_table_queries=temp_table_queries,
-            feature_table_query=CreateTableQuery(
-                sql=query,
-                table_name=table_name,
-            ),
-            feature_names=feature_names,
+        feature_query = feature_set_sql.get_feature_query(
+            table_name=table_name,
             node_names=node_names,
+            source_info=self.source_info,
         )
+        return feature_query
 
 
 def get_historical_features_query_set(
