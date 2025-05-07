@@ -127,7 +127,6 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
     ) -> None:
         adapter = session.adapter
         assert timestamp_schema.format_string is not None
-        await session.execute_query_long_running("SET use_cached_result = false")
 
         source_table_expr = get_fully_qualified_table_name(
             table_model.tabular_source.table_details.model_dump()
