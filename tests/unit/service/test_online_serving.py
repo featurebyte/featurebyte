@@ -254,12 +254,14 @@ async def test_get_online_features_multiple_queries__dataframe(
             schema_name="sf_schema",
             table_name="__TEMP_000000000000000000000000_0",
             if_exists=True,
+            timeout=86400,
         ),
         call(
             database_name="sf_db",
             schema_name="sf_schema",
             table_name="__TEMP_000000000000000000000000_1",
             if_exists=True,
+            timeout=86400,
         ),
         call(table_name="REQUEST_TABLE_1", schema_name="sf_schema", database_name="sf_db"),
     ]
@@ -301,11 +303,13 @@ async def test_get_online_features_multiple_queries__batch_request_table(
             schema_name="sf_schema",
             table_name="__TEMP_000000000000000000000000_0",
             if_exists=True,
+            timeout=86400,
         ),
         call(
             database_name="sf_db",
             schema_name="sf_schema",
             table_name="__TEMP_000000000000000000000000_1",
             if_exists=True,
+            timeout=86400,
         ),
     ]
