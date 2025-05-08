@@ -14,6 +14,7 @@ from pandas.testing import assert_frame_equal
 from sqlglot import expressions
 
 from featurebyte.common.utils import dataframe_from_json, dataframe_to_arrow_bytes
+from featurebyte.query_graph.sql.feature_compute import FeatureQueryPlan
 from tests.unit.routes.base import BaseMaterializedTableTestSuite
 
 
@@ -106,7 +107,11 @@ class TestHistoricalFeatureTableApi(BaseMaterializedTableTestSuite):
         _ = mocked_compute_tiles_on_demand
         with patch(
             "featurebyte.query_graph.sql.feature_historical.get_historical_features_expr",
-            return_value=(expressions.select("*").from_("my_table"), ["sum_30m"]),
+            return_value=FeatureQueryPlan(
+                common_tables=[],
+                post_aggregation_sql=expressions.select("*").from_("my_table"),
+                feature_names=["sum_30m"],
+            ),
         ):
             yield
 

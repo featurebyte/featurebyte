@@ -287,8 +287,8 @@ def test_asat_aggregate_scd_table_without_end_timestamp(
         FROM REQUEST_TABLE
         """
     ).strip()
-    assert request_table_ctes[0][0] == '"REQUEST_TABLE_POINT_IN_TIME_serving_cust_id"'
-    assert request_table_ctes[0][1].sql(pretty=True) == expected
+    assert request_table_ctes[0].name == "REQUEST_TABLE_POINT_IN_TIME_serving_cust_id"
+    assert request_table_ctes[0].expr.sql(pretty=True) == expected
 
 
 def test_asat_aggregate_scd_table_with_end_timestamp(

@@ -1,0 +1,37 @@
+CREATE TABLE "__temp_feature_query_000000000000000000000000__fb_b" AS
+WITH "_FB_A" AS (
+  SELECT
+    *
+  FROM SOME_TABLE
+)
+SELECT
+  *
+FROM _FB_A;
+
+CREATE TABLE "__temp_feature_query_000000000000000000000000__fb_d" AS
+WITH "_FB_A" AS (
+  SELECT
+    *
+  FROM SOME_TABLE
+), "_FB_C" AS (
+  SELECT
+    *
+  FROM "__temp_feature_query_000000000000000000000000__fb_b"
+)
+SELECT
+  *
+FROM _FB_C;
+
+CREATE TABLE "MY_FEATURE_TABLE" AS
+WITH "_FB_A" AS (
+  SELECT
+    *
+  FROM SOME_TABLE
+), "_FB_C" AS (
+  SELECT
+    *
+  FROM "__temp_feature_query_000000000000000000000000__fb_b"
+)
+SELECT
+  *
+FROM "__temp_feature_query_000000000000000000000000__fb_d"

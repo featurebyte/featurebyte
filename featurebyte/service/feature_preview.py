@@ -529,7 +529,7 @@ class FeaturePreviewService(PreviewService):
             feature_cluster.node_names[0]
         ).parameters.feature_store_details.type
 
-        expr, _ = get_historical_features_expr(
+        feature_sql = get_historical_features_expr(
             request_table_name=REQUEST_TABLE_NAME,
             graph=feature_cluster.graph,
             nodes=feature_cluster.nodes,
@@ -537,7 +537,7 @@ class FeaturePreviewService(PreviewService):
             source_info=self._get_dummy_source_info(source_type),
             serving_names_mapping=featurelist_get_historical_features.serving_names_mapping,
         )
-        return sql_to_string(expr, source_type=source_type)
+        return sql_to_string(feature_sql.get_standalone_expr(), source_type=source_type)
 
     @classmethod
     def _get_dummy_source_info(cls, source_type: SourceType) -> SourceInfo:

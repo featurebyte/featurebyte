@@ -18,17 +18,21 @@ from featurebyte.models.parent_serving import (
     EntityRelationshipsContext,
 )
 from featurebyte.query_graph.node.generic import ItemGroupbyParameters
+from featurebyte.query_graph.sql.aggregator.base import CommonTable
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.aggregator.window import TileBasedRequestTablePlan
 from featurebyte.query_graph.sql.common import REQUEST_TABLE_NAME, quoted_identifier
-from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner
+from featurebyte.query_graph.sql.feature_compute import FeatureExecutionPlanner, FeatureQueryPlan
 from featurebyte.query_graph.sql.specs import (
     AggregationSource,
     FeatureSpec,
     ItemAggregationSpec,
     TileBasedAggregationSpec,
 )
-from tests.util.helper import assert_equal_with_expected_fixture
+from tests.util.helper import (
+    assert_equal_with_expected_fixture,
+    feature_query_to_string,
+)
 
 
 @pytest.fixture(name="agg_spec_template")
@@ -137,7 +141,8 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
     assert len(ctes) == 1
 
     cte = ctes[0]
-    assert cte[0].sql() == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
+    assert cte.name == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
+    assert cte.quoted is True
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -155,7 +160,7 @@ def test_request_table_plan__share_expanded_table(agg_spec_sum_1d, agg_spec_max_
       FROM REQUEST_TABLE
     )
     """
-    assert_sql_equal(cte[1].sql(pretty=True), expected_sql)
+    assert_sql_equal(cte.expr.sql(pretty=True), expected_sql)
 
 
 def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d, source_info):
@@ -177,8 +182,9 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d, source
     assert len(ctes) == 2
 
     # check expanded table for 2h
-    name, sql = ctes[0]
-    assert name.sql() == '"REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"'
+    name, sql = ctes[0].name, ctes[0].expr
+    assert name == "REQUEST_TABLE_W7200_F3600_BS120_M1800_CID"
+    assert ctes[0].quoted is True
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -199,8 +205,9 @@ def test_request_table_plan__no_sharing(agg_spec_max_2h, agg_spec_max_1d, source
     assert_sql_equal(sql.sql(pretty=True), expected_sql)
 
     # check expanded table for 1d
-    name, sql = ctes[1]
-    assert name.sql() == '"REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"'
+    name, sql = ctes[1].name, ctes[1].expr
+    assert name == "REQUEST_TABLE_W86400_F3600_BS120_M1800_CID"
+    assert ctes[1].quoted is True
     expected_sql = """
     SELECT
       "POINT_IN_TIME",
@@ -230,7 +237,7 @@ def test_non_time_aware_request_table_plan(item_agg_spec):
     assert plan.get_request_table_name(item_agg_spec) == "REQUEST_TABLE_OID"
     ctes = plan.construct_request_table_ctes(REQUEST_TABLE_NAME)
     assert len(ctes) == 1
-    name, sql = ctes[0]  # noqa: F841
+    name, sql = ctes[0].name, ctes[0].expr  # noqa: F841
     expected_sql = """
     SELECT DISTINCT
       "OID"
@@ -615,15 +622,60 @@ def test_feature_execution_planner__entity_relationships_context(
     }
 
     # Check combined sql
-    sql = plan.construct_combined_sql(
-        request_table_name="REQUEST_TABLE",
-        point_in_time_column="POINT_IN_TIME",
-        request_table_columns=["a", "b", "c"],
-        prior_cte_statements=[],
-        exclude_columns=None,
-    ).sql(pretty=True)
+    sql = (
+        plan.construct_combined_sql(
+            request_table_name="REQUEST_TABLE",
+            point_in_time_column="POINT_IN_TIME",
+            request_table_columns=["a", "b", "c"],
+            prior_cte_statements=[],
+            exclude_columns=None,
+        )
+        .get_standalone_expr()
+        .sql(pretty=True)
+    )
     assert_equal_with_expected_fixture(
         sql,
         "tests/fixtures/expected_combined_sql_with_relationships.sql",
         update_fixture=update_fixtures,
+    )
+
+
+def test_feature_query_plan(source_info, update_fixtures):
+    """
+    Test FeatureQueryPlan
+    """
+    feature_query_plan = FeatureQueryPlan(
+        common_tables=[
+            CommonTable(
+                name="_FB_A",
+                expr=select("*").from_("SOME_TABLE"),
+                should_materialize=False,
+            ),
+            CommonTable(
+                name="_FB_B",
+                expr=select("*").from_("_FB_A"),
+                should_materialize=True,
+            ),
+            CommonTable(
+                name="_FB_C",
+                expr=select("*").from_("_FB_B"),
+                should_materialize=False,
+            ),
+            CommonTable(
+                name="_FB_D",
+                expr=select("*").from_("_FB_C"),
+                should_materialize=True,
+            ),
+        ],
+        post_aggregation_sql=select("*").from_("_FB_D"),
+        feature_names=["a"],
+    )
+    feature_query = feature_query_plan.get_feature_query(
+        table_name="MY_FEATURE_TABLE", node_names=["node_1"], source_info=source_info
+    )
+    queries = feature_query_to_string(feature_query)
+    assert_equal_with_expected_fixture(
+        queries,
+        "tests/fixtures/expected_feature_query_plan.sql",
+        update_fixtures,
     )

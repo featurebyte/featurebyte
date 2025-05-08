@@ -14,12 +14,12 @@ from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.batch_helper import (
-    FeatureQuery,
     construct_join_feature_sets_query,
     get_feature_names,
     split_nodes,
 )
 from featurebyte.query_graph.sql.common import sql_to_string
+from featurebyte.query_graph.sql.feature_compute import FeatureQuery
 from featurebyte.query_graph.sql.source_info import SourceInfo
 
 

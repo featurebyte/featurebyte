@@ -10,7 +10,8 @@ from sqlglot import expressions
 from sqlglot.expressions import select
 
 from featurebyte.enum import SpecialColumnName
-from featurebyte.query_graph.sql.common import CteStatements, quoted_identifier
+from featurebyte.query_graph.sql.aggregator.base import CommonTable
+from featurebyte.query_graph.sql.common import quoted_identifier
 from featurebyte.query_graph.sql.specs import AggregationSpec
 
 AggSpecEntityIDs = Tuple[str, ...]
@@ -81,7 +82,7 @@ class RequestTablePlan:
     def construct_request_table_ctes(
         self,
         request_table_name: str,
-    ) -> CteStatements:
+    ) -> list[CommonTable]:
         """
         Construct SQL statements that build the processed request tables
 
@@ -98,7 +99,7 @@ class RequestTablePlan:
         for key, table_name in self.request_table_names.items():
             agg_spec = self.agg_specs[key]
             request_table_expr = self.construct_request_table_expr(agg_spec, request_table_name)
-            ctes.append((quoted_identifier(table_name).sql(), request_table_expr))
+            ctes.append(CommonTable(name=table_name, expr=request_table_expr))
         return ctes
 
     def construct_request_table_expr(

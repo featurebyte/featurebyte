@@ -14,7 +14,7 @@ from featurebyte.query_graph.node.metadata.operation import (
     PostAggregationColumn,
     SourceDataColumn,
 )
-from featurebyte.query_graph.sql.aggregator.base import Aggregator
+from featurebyte.query_graph.sql.aggregator.base import Aggregator, CommonTable
 from featurebyte.query_graph.sql.ast.base import SQLNodeContext
 from featurebyte.query_graph.sql.ast.generic import StrExpressionNode
 from featurebyte.query_graph.sql.common import SQLType, construct_cte_sql
@@ -143,7 +143,10 @@ def get_combined_aggregation_expr_from_aggregator(
         0,
     )
     result_expr = result.updated_table_expr
-    select_with_ctes = construct_cte_sql(aggregator.get_common_table_expressions("REQUEST_TABLE"))
+    select_with_ctes = construct_cte_sql([
+        CommonTable.to_cte_statement(item)
+        for item in aggregator.get_common_table_expressions("REQUEST_TABLE")
+    ])
     result_expr.args["with"] = select_with_ctes.args["with"]
     return result_expr
 

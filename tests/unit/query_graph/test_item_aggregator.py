@@ -202,5 +202,5 @@ def test_item_aggregation(aggregation_specs, source_info):
         FROM REQUEST_TABLE
         """
     ).strip()
-    assert request_table_ctes[0][0] == '"REQUEST_TABLE_new_serving_order_id"'
-    assert request_table_ctes[0][1].sql(pretty=True) == expected
+    assert request_table_ctes[0].name == "REQUEST_TABLE_new_serving_order_id"
+    assert request_table_ctes[0].expr.sql(pretty=True) == expected

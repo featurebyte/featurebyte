@@ -13,13 +13,13 @@ from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import SpecialColumnName
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    CommonTable,
     LeftJoinableSubquery,
     NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.aggregator.request_table import RequestTablePlan
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
-    CteStatements,
     get_qualified_column_identifier,
     quoted_identifier,
 )
@@ -36,7 +36,7 @@ class ForwardAggregator(NonTileBasedAggregator[ForwardAggregateSpec]):
         super().__init__(*args, **kwargs)
         self.request_table_plan = RequestTablePlan(is_time_aware=True)
 
-    def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
+    def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
         return self.request_table_plan.construct_request_table_ctes(request_table_name)
 
     def additional_update(self, aggregation_spec: ForwardAggregateSpec) -> None:

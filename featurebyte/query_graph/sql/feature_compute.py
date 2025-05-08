@@ -6,12 +6,14 @@ from __future__ import annotations
 
 import sys
 from collections import defaultdict
-from typing import Iterable, Optional, Sequence, Set, Type, Union
+from dataclasses import dataclass
+from typing import Iterable, Optional, Sequence, Set, Type, Union, cast
 
 from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import select
 
+from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.parent_serving import (
     EntityLookupStep,
@@ -24,10 +26,10 @@ from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.model.entity_lookup_plan import EntityColumn, EntityLookupPlanner
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
-from featurebyte.query_graph.node.schema import FeatureStoreDetails
+from featurebyte.query_graph.node.schema import FeatureStoreDetails, TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.asat import AsAtAggregator
-from featurebyte.query_graph.sql.aggregator.base import TileBasedAggregator
+from featurebyte.query_graph.sql.aggregator.base import CommonTable, TileBasedAggregator
 from featurebyte.query_graph.sql.aggregator.forward import ForwardAggregator
 from featurebyte.query_graph.sql.aggregator.forward_asat import ForwardAsAtAggregator
 from featurebyte.query_graph.sql.aggregator.item import ItemAggregator
@@ -41,11 +43,10 @@ from featurebyte.query_graph.sql.ast.base import TableNode
 from featurebyte.query_graph.sql.ast.generic import AliasNode, Project
 from featurebyte.query_graph.sql.builder import SQLOperationGraph
 from featurebyte.query_graph.sql.common import (
-    CteStatement,
-    CteStatements,
     SQLType,
     construct_cte_sql,
     quoted_identifier,
+    sql_to_string,
 )
 from featurebyte.query_graph.sql.cron import (
     JobScheduleTableSet,
@@ -93,6 +94,197 @@ AggregatorType = Union[
 AggregationSpecType = Union[TileBasedAggregationSpec, NonTileBasedAggregationSpec]
 
 sys.setrecursionlimit(10000)
+
+
+@dataclass
+class CreateTableQuery:
+    """
+    Query to create a table
+    """
+
+    sql: str
+    table_name: str
+
+
+@dataclass
+class FeatureQuery:
+    """
+    FeatureQuery represents a set of sql queries needed to compute a feature table. It contains
+    the SQL queries to create temporary tables and the final query to create the feature table.
+    """
+
+    temp_table_queries: list[CreateTableQuery]
+    feature_table_query: CreateTableQuery
+    feature_names: list[str]
+    node_names: list[str]
+
+
+@dataclass
+class FeatureQueryPlan:
+    """
+    FeatureQueryPlan is a class that contains the information needed to generate the SQL queries for
+    a feature table. It is produced by FeatureExecutionPlan after processing each node in the query
+    graph.
+    """
+
+    common_tables: list[CommonTable]
+    post_aggregation_sql: expressions.Select
+    feature_names: list[str]
+
+    @classmethod
+    def get_select_statement_with_common_tables(
+        cls, common_tables: list[CommonTable], select_expr: expressions.Select
+    ) -> expressions.Select:
+        """
+        Get a single SQL expression with common tables as CTEs
+
+        Parameters
+        ----------
+        common_tables: list[CommonTable]
+            List of common tables to be included in the SQL expression
+        select_expr: expressions.Select
+            SQL expression to be used as the main query
+
+        Returns
+        -------
+        expressions.Select
+            SQL expression with common tables as CTEs
+        """
+        if not common_tables:
+            return select_expr
+        cte_context = construct_cte_sql([
+            common_table.to_cte_statement() for common_table in common_tables
+        ])
+        select_expr = select_expr.copy()
+        select_expr.args["with"] = cte_context.args["with"]
+        return select_expr
+
+    def get_standalone_expr(self) -> expressions.Select:
+        """
+        Get the combined SQL expression without materializing any common tables
+
+        Returns
+        -------
+        expressions.Select
+        """
+        return self.get_select_statement_with_common_tables(
+            self.common_tables,
+            self.post_aggregation_sql,
+        )
+
+    def get_feature_query(
+        self, table_name: str, node_names: list[str], source_info: SourceInfo
+    ) -> FeatureQuery:
+        """
+        Generate a FeatureQuery object that determines the actual SQL queries to run to materialize
+        common tables as necessary and compute the feature table
+
+        Parameters
+        ----------
+        table_name: str
+            Name of the table to be created
+        node_names: list[str]
+            List of node names. This is attached as a metadata to the FeatureQuery object and not
+            used actively when generating the queries.
+        source_info: SourceInfo
+            Source information
+
+        Returns
+        -------
+        FeatureQuery
+        """
+
+        table_alias_mapping: dict[str, expressions.Identifier] = {}
+
+        def _replace_table_name(node: expressions.Expression) -> expressions.Expression:
+            if isinstance(node, expressions.Identifier):
+                identifier_name = node.alias_or_name
+                if identifier_name in table_alias_mapping:
+                    return table_alias_mapping[identifier_name]
+            return node
+
+        def _sanitize_table_name(name: str) -> str:
+            # Replace special characters since actual table names have more restrictions
+            return sanitize_identifier(
+                name.replace("/", "_").replace(" ", "_").replace("*", "ANY"), max_length=None
+            )
+
+        adapter = get_sql_adapter(source_info)
+        temp_id = f"__TEMP_FEATURE_QUERY_{ObjectId()}".upper()
+
+        # Build mapping for common tables that should be materialized
+        for common_table in self.common_tables:
+            if common_table.should_materialize:
+                new_table_name = _sanitize_table_name(f"{temp_id}_{common_table.name}")
+                table_alias_mapping[common_table.name] = expressions.Identifier(
+                    this=new_table_name,
+                    quoted=True,
+                )
+
+        # Construct temp table queries by applying mapping
+        temp_table_queries = []
+        updated_common_tables: list[CommonTable] = []
+        for common_table in self.common_tables:
+            cte_table_name = common_table.name
+            if cte_table_name in table_alias_mapping:
+                # CTE that should be materialized as a temp table
+                new_table_name = table_alias_mapping[cte_table_name].alias_or_name
+                new_table_expr = self.get_select_statement_with_common_tables(
+                    updated_common_tables,
+                    cast(
+                        expressions.Select,
+                        common_table.expr.transform(_replace_table_name),
+                    ),
+                )
+                temp_table_queries.append(
+                    CreateTableQuery(
+                        sql=sql_to_string(
+                            adapter.create_table_as(
+                                table_details=TableDetails(table_name=new_table_name),
+                                select_expr=new_table_expr,
+                            ),
+                            source_type=source_info.source_type,
+                        ),
+                        table_name=new_table_name,
+                    ),
+                )
+            else:
+                # CTE that should be kept as is but rewritten to reference temp tables
+                updated_common_tables.append(
+                    CommonTable(
+                        expr=cast(
+                            expressions.Select, common_table.expr.transform(_replace_table_name)
+                        ),
+                        name=common_table.name,
+                        quoted=common_table.quoted,
+                    )
+                )
+
+        # Rewrite main query to reference temp tables
+        post_aggregation_sql = cast(
+            expressions.Select, self.post_aggregation_sql.transform(_replace_table_name)
+        )
+        post_aggregation_sql = self.get_select_statement_with_common_tables(
+            updated_common_tables,
+            post_aggregation_sql,
+        )
+
+        query = sql_to_string(
+            adapter.create_table_as(
+                table_details=TableDetails(table_name=table_name),
+                select_expr=post_aggregation_sql,
+            ),
+            source_info.source_type,
+        )
+        return FeatureQuery(
+            temp_table_queries=temp_table_queries,
+            feature_table_query=CreateTableQuery(
+                sql=query,
+                table_name=table_name,
+            ),
+            feature_names=self.feature_names,
+            node_names=node_names,
+        )
 
 
 class FeatureExecutionPlan:
@@ -357,7 +549,7 @@ class FeatureExecutionPlan:
         request_table_name: str,
         point_in_time_column: str,
         request_table_columns: Optional[list[str]],
-    ) -> tuple[CteStatement, list[str]]:
+    ) -> tuple[CommonTable, list[str]]:
         """Construct SQL code for all aggregations
 
         Parameters
@@ -400,11 +592,12 @@ class FeatureExecutionPlan:
             current_columns += agg_result.column_names
             agg_result_names += agg_result.column_names
 
-        return (self.AGGREGATION_TABLE_NAME, table_expr), agg_result_names
+        return CommonTable(
+            name=self.AGGREGATION_TABLE_NAME, expr=table_expr, quoted=False
+        ), agg_result_names
 
     def construct_post_aggregation_sql(
         self,
-        cte_context: expressions.Select,
         request_table_columns: Optional[list[str]],
         exclude_post_aggregation: bool,
         agg_result_names: list[str],
@@ -420,8 +613,6 @@ class FeatureExecutionPlan:
 
         Parameters
         ----------
-        cte_context : expressions.Select
-            A partial Select statement with CTEs defined
         request_table_columns : Optional[list[str]]
             Columns in the input request table
         exclude_post_aggregation: bool
@@ -462,8 +653,8 @@ class FeatureExecutionPlan:
         else:
             request_table_column_names = []
 
-        table_expr = cte_context.select(*request_table_column_names, *columns, copy=False).from_(
-            f"{self.AGGREGATION_TABLE_NAME} AS AGG", copy=False
+        table_expr = select(*request_table_column_names, *columns).from_(
+            f"{self.AGGREGATION_TABLE_NAME} AS AGG"
         )
         return table_expr
 
@@ -502,10 +693,10 @@ class FeatureExecutionPlan:
         request_table_name: str,
         point_in_time_column: str,
         request_table_columns: Optional[list[str]],
-        prior_cte_statements: Optional[CteStatements] = None,
+        prior_cte_statements: Optional[list[CommonTable]] = None,
         exclude_post_aggregation: bool = False,
         exclude_columns: Optional[set[str]] = None,
-    ) -> expressions.Select:
+    ) -> FeatureQueryPlan:
         """Construct combined SQL that will generate the features
 
         Parameters
@@ -516,7 +707,7 @@ class FeatureExecutionPlan:
             Point in time column
         request_table_columns : Optional[list[str]]
             Request table columns
-        prior_cte_statements : Optional[list[tuple[str, str]]]
+        prior_cte_statements : Optional[list[CommonTable]]
             Other CTE statements to incorporate to the final SQL (namely the request data SQL and
             on-demand tile SQL)
         exclude_post_aggregation: bool
@@ -529,10 +720,11 @@ class FeatureExecutionPlan:
         -------
         str
         """
-        cte_statements = []
+        common_tables = []
+
         if prior_cte_statements is not None:
             assert isinstance(prior_cte_statements, list)
-            cte_statements.extend(prior_cte_statements)
+            common_tables.extend(prior_cte_statements)
 
         if exclude_columns is None:
             exclude_columns = set()
@@ -549,7 +741,9 @@ class FeatureExecutionPlan:
                 request_table_columns=request_table_columns,
             )
             request_table_name = "JOINED_PARENTS_" + request_table_name
-            cte_statements.append((request_table_name, updated_request_table_expr))
+            common_tables.append(
+                CommonTable(name=request_table_name, expr=updated_request_table_expr, quoted=False)
+            )
             request_table_columns = request_table_columns + list(new_columns)
             exclude_columns.update(new_columns)
 
@@ -565,30 +759,35 @@ class FeatureExecutionPlan:
                     job_schedule_table.table_name,
                     self.adapter,
                 )
-                cte_statements.append((
-                    quoted_identifier(request_table_with_schedule_name),
-                    request_table_with_schedule_expr,
-                ))
+                common_tables.append(
+                    CommonTable(
+                        name=request_table_with_schedule_name,
+                        expr=request_table_with_schedule_expr,
+                        should_materialize=True,
+                    )
+                )
 
         for aggregator in self.iter_aggregators():
-            cte_statements.extend(aggregator.get_common_table_expressions(request_table_name))
+            common_tables.extend(aggregator.get_common_table_expressions(request_table_name))
 
         agg_cte, agg_result_names = self.construct_combined_aggregation_cte(
             request_table_name,
             point_in_time_column,
             request_table_columns,
         )
-        cte_statements.append(agg_cte)
-        cte_context = construct_cte_sql(cte_statements)
+        common_tables.append(agg_cte)
 
         post_aggregation_sql = self.construct_post_aggregation_sql(
-            cte_context=cte_context,
             request_table_columns=request_table_columns,
             exclude_post_aggregation=exclude_post_aggregation,
             agg_result_names=agg_result_names,
             exclude_columns=exclude_columns,
         )
-        return post_aggregation_sql
+        return FeatureQueryPlan(
+            common_tables=common_tables,
+            post_aggregation_sql=post_aggregation_sql,
+            feature_names=self.feature_names,
+        )
 
 
 class FeatureExecutionPlanner:

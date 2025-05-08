@@ -58,7 +58,7 @@ def test_multiple_windows_complex_feature(
             nodes=[non_tile_window_aggregate_complex_feature_node],
             request_table_columns=["POINT_IN_TIME", "CUSTOMER_ID"],
             source_info=source_info,
-        )[0],
+        ).get_standalone_expr(),
         source_info.source_type,
     )
     assert_equal_with_expected_fixture(

@@ -5,7 +5,7 @@ SQL generation for time series window aggregation
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple, cast
+from typing import Any, Dict, Optional, Tuple
 
 from sqlglot import expressions
 from sqlglot.expressions import Select, alias_, select
@@ -18,6 +18,7 @@ from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    CommonTable,
     LeftJoinableSubquery,
     NonTileBasedAggregator,
 )
@@ -31,8 +32,6 @@ from featurebyte.query_graph.sql.aggregator.range_join import (
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
-    CteStatement,
-    CteStatements,
     get_qualified_column_identifier,
     quoted_identifier,
 )
@@ -145,7 +144,7 @@ class TimeSeriesRequestTablePlan:
         key = self._get_request_table_key(aggregation_spec)
         return self.processed_request_tables[key]
 
-    def construct_request_table_ctes(self, request_table_name: str) -> CteStatements:
+    def construct_request_table_ctes(self, request_table_name: str) -> list[CommonTable]:
         """
         Get the CTEs for all the processed request tables
 
@@ -165,13 +164,13 @@ class TimeSeriesRequestTablePlan:
                 processed_request_table_pair=processed_request_table_pair,
             )
             request_table_ctes.extend(processed_tables)
-        return cast(CteStatements, request_table_ctes)
+        return request_table_ctes
 
     def _construct_processed_request_table_sql(
         self,
         request_table_name: str,
         processed_request_table_pair: ProcessedRequestTablePair,
-    ) -> list[CteStatement]:
+    ) -> list[CommonTable]:
         """
         Get a Select statement that applies necessary transformations to the request table to
         prepare for the aggregation.
@@ -185,7 +184,7 @@ class TimeSeriesRequestTablePlan:
 
         Returns
         -------
-        Select
+        list[CommonTable]
         """
         aggregation_spec = processed_request_table_pair.aggregation_spec
 
@@ -264,13 +263,15 @@ class TimeSeriesRequestTablePlan:
         ).from_(scheduled_job_time_distinct_expr.subquery())
 
         return [
-            (
-                quoted_identifier(processed_request_table_pair.distinct_by_point_in_time.name),
-                point_in_time_distinct_expr,
+            CommonTable(
+                name=processed_request_table_pair.distinct_by_point_in_time.name,
+                expr=point_in_time_distinct_expr,
+                should_materialize=True,
             ),
-            (
-                quoted_identifier(processed_request_table_pair.distinct_by_scheduled_job_time.name),
-                scheduled_job_time_distinct_expr,
+            CommonTable(
+                name=processed_request_table_pair.distinct_by_scheduled_job_time.name,
+                expr=scheduled_job_time_distinct_expr,
+                should_materialize=True,
             ),
         ]
 
@@ -745,13 +746,13 @@ class TimeSeriesWindowAggregator(NonTileBasedAggregator[TimeSeriesWindowAggregat
             join_keys=[SpecialColumnName.POINT_IN_TIME.value] + spec.serving_names,
         )
 
-    def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
-        out: list[CteStatement] = []
+    def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
+        out: list[CommonTable] = []
         out.extend(self.request_table_plan.construct_request_table_ctes(request_table_name))
         for table_name, view_expr in self.aggregation_source_views.items():
-            out.append((quoted_identifier(table_name), view_expr))
+            out.append(CommonTable(table_name, view_expr))
         for table_name, view_expr in self.distinct_reference_datetime_views.items():
-            out.append((quoted_identifier(table_name), view_expr))
+            out.append(CommonTable(table_name, view_expr))
         for table_name, view_expr in self.bucketed_source_views.items():
-            out.append((quoted_identifier(table_name), view_expr))
+            out.append(CommonTable(table_name, view_expr))
         return out

@@ -17,12 +17,12 @@ from featurebyte.query_graph.node.generic import SCDLookupParameters
 from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.aggregator.base import (
     AggregationResult,
+    CommonTable,
     LeftJoinableSubquery,
     NonTileBasedAggregator,
 )
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
-    CteStatements,
     get_qualified_column_identifier,
     quoted_identifier,
 )
@@ -341,6 +341,6 @@ class BaseLookupAggregator(NonTileBasedAggregator[LookupSpecT]):
 
         return table_expr, scd_agg_result_names
 
-    def get_common_table_expressions(self, request_table_name: str) -> CteStatements:
+    def get_common_table_expressions(self, request_table_name: str) -> list[CommonTable]:
         _ = request_table_name
         return []

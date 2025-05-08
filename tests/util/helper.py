@@ -1121,6 +1121,17 @@ def safe_freeze_time(frozen_datetime):
         yield
 
 
+def feature_query_to_string(feature_query):
+    """
+    Helper function that given a FeatureQuery, return the full query string
+    """
+    queries = []
+    for temp_table_query in feature_query.temp_table_queries:
+        queries.append(temp_table_query.sql)
+    queries.append(feature_query.feature_table_query.sql)
+    return ";\n\n".join(queries)
+
+
 def feature_query_set_to_string(
     feature_query_set,
     nodes,
@@ -1143,7 +1154,9 @@ def feature_query_set_to_string(
         feature_query = generator.generate_feature_query(
             [node.name for node in nodes], f"__TEMP_{i}"
         )
-        queries.append(feature_query.sql)
+        for temp_table_query in feature_query.temp_table_queries:
+            queries.append(temp_table_query.sql)
+        queries.append(feature_query.feature_table_query.sql)
         feature_query_set.add_completed_feature_query(feature_query)
     queries.append(feature_query_set.construct_output_query(source_info))
     return ";\n\n".join(queries)
