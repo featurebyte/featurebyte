@@ -161,13 +161,12 @@ async def execute_feature_query(
                 f" Feature names: {formatted_feature_names}"
             )
     finally:
-        for temp_table_name in materialized_temp_tables:
-            await session.drop_table(
-                database_name=session.database_name,
-                schema_name=session.schema_name,
-                table_name=temp_table_name,
-                if_exists=True,
-            )
+        await session.drop_tables(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+            table_names=materialized_temp_tables,
+            if_exists=True,
+        )
 
     await done_callback(len(feature_query.node_names))
     return feature_query
