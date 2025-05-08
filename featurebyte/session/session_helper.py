@@ -13,6 +13,7 @@ from bson import ObjectId
 from redis import Redis
 from sqlglot import expressions
 
+from featurebyte.common.env_util import is_feature_query_debug_enabled
 from featurebyte.common.progress import divide_progress_callback
 from featurebyte.common.utils import timer
 from featurebyte.enum import InternalName
@@ -161,12 +162,13 @@ async def execute_feature_query(
                 f" Feature names: {formatted_feature_names}"
             )
     finally:
-        await session.drop_tables(
-            database_name=session.database_name,
-            schema_name=session.schema_name,
-            table_names=materialized_temp_tables,
-            if_exists=True,
-        )
+        if not is_feature_query_debug_enabled():
+            await session.drop_tables(
+                database_name=session.database_name,
+                schema_name=session.schema_name,
+                table_names=materialized_temp_tables,
+                if_exists=True,
+            )
 
     await done_callback(len(feature_query.node_names))
     return feature_query
@@ -296,13 +298,12 @@ async def execute_feature_query_set(
         return FeatureQuerySetResult(dataframe=result, failed_node_names=failed_node_names)
 
     finally:
-        for table_name in materialized_feature_table:
-            await session.drop_table(
-                database_name=session.database_name,
-                schema_name=session.schema_name,
-                table_name=table_name,
-                if_exists=True,
-            )
+        await session.drop_tables(
+            database_name=session.database_name,
+            schema_name=session.schema_name,
+            table_names=materialized_feature_table,
+            if_exists=True,
+        )
 
 
 async def execute_queries_for_node_groups(
