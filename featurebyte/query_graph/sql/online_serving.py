@@ -32,7 +32,6 @@ from featurebyte.query_graph.sql.common import (
     REQUEST_TABLE_NAME,
     get_fully_qualified_table_name,
     get_qualified_column_identifier,
-    sql_to_string,
 )
 from featurebyte.query_graph.sql.cron import JobScheduleTableSet, get_cron_feature_job_settings
 from featurebyte.query_graph.sql.dataframe import construct_dataframe_sql_expr
@@ -43,7 +42,6 @@ from featurebyte.query_graph.sql.entity import (
     get_combined_serving_names_expr,
 )
 from featurebyte.query_graph.sql.feature_compute import (
-    CreateTableQuery,
     FeatureExecutionPlanner,
     FeatureQuery,
     FeatureQueryPlan,
@@ -342,7 +340,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
 
     def generate_feature_query(self, node_names: list[str], table_name: str) -> FeatureQuery:
         nodes = [self.graph.get_node_by_name(node_name) for node_name in node_names]
-        feature_set_sql = get_online_store_retrieval_expr(
+        feature_query_plan = get_online_store_retrieval_expr(
             graph=self.graph,
             nodes=nodes,
             current_timestamp_expr=self.current_timestamp_expr,
@@ -353,24 +351,9 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
             parent_serving_preparation=self.parent_serving_preparation,
             job_schedule_table_set=self.job_schedule_table_set,
         )
-        # TODO: online feature query should be using materialized common tables as well
-        feature_set_expr = feature_set_sql.get_standalone_expr()
-        feature_set_expr = fill_version_placeholders(feature_set_expr, self.versions)
-        query = sql_to_string(
-            get_sql_adapter(self.source_info).create_table_as(
-                table_details=TableDetails(table_name=table_name),
-                select_expr=feature_set_expr,
-            ),
-            self.source_info.source_type,
-        )
-        return FeatureQuery(
-            temp_table_queries=[],
-            feature_table_query=CreateTableQuery(
-                sql=query,
-                table_name=table_name,
-            ),
-            feature_names=feature_set_sql.feature_names,
-            node_names=node_names,
+        feature_query_plan.transform(lambda x: fill_version_placeholders(x, self.versions))
+        return feature_query_plan.get_feature_query(
+            table_name=table_name, node_names=node_names, source_info=self.source_info
         )
 
 
