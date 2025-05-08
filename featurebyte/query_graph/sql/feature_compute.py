@@ -13,6 +13,7 @@ from bson import ObjectId
 from sqlglot import expressions
 from sqlglot.expressions import select
 
+from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType, SourceType
 from featurebyte.models.parent_serving import (
     EntityLookupStep,
@@ -204,7 +205,9 @@ class FeatureQueryPlan:
 
         def _sanitize_table_name(name: str) -> str:
             # Replace special characters since actual table names have more restrictions
-            return name.replace("/", "_").replace(" ", "_").replace("*", "ANY")
+            return sanitize_identifier(
+                name.replace("/", "_").replace(" ", "_").replace("*", "ANY"), max_length=None
+            )
 
         adapter = get_sql_adapter(source_info)
         temp_id = f"__TEMP_FEATURE_QUERY_{ObjectId()}".upper()

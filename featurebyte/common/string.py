@@ -7,7 +7,7 @@ import unicodedata
 from typing import Optional
 
 
-def sanitize_identifier(string: str) -> str:
+def sanitize_identifier(string: str, max_length: Optional[int] = 64) -> str:
     """
     Sanitizes a string to make it a valid identifier for database tables and columns.
 
@@ -15,6 +15,8 @@ def sanitize_identifier(string: str) -> str:
     ----------
     string: str
         The string to be sanitized.
+    max_length: Optional[int]
+        The maximum length of the sanitized string. If None, no truncation is performed.
 
     Returns
     --------
@@ -32,8 +34,8 @@ def sanitize_identifier(string: str) -> str:
         sanitized = "_" + sanitized
 
     # Truncate to a reasonable length
-    max_length = 64
-    sanitized = sanitized[:max_length]
+    if max_length:
+        sanitized = sanitized[:max_length]
 
     # Convert to lower case for uniformity
     sanitized = sanitized.lower()
