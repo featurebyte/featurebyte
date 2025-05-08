@@ -202,14 +202,17 @@ class FeatureQueryPlan:
                     return table_alias_mapping[identifier_name]
             return node
 
+        def _sanitize_table_name(name: str) -> str:
+            # Replace special characters since actual table names have more restrictions
+            return name.replace("/", "_").replace(" ", "_").replace("*", "ANY")
+
         adapter = get_sql_adapter(source_info)
         temp_id = f"__TEMP_FEATURE_QUERY_{ObjectId()}".upper()
 
         # Build mapping for common tables that should be materialized
         for common_table in self.common_tables:
             if common_table.should_materialize:
-                new_table_name = f"{temp_id}_{common_table.name}"
-                new_table_name = new_table_name.replace("/", "_").replace(" ", "_")
+                new_table_name = _sanitize_table_name(f"{temp_id}_{common_table.name}")
                 table_alias_mapping[common_table.name] = expressions.Identifier(
                     this=new_table_name,
                     quoted=True,

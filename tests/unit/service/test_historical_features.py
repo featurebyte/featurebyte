@@ -304,7 +304,7 @@ async def test_get_historical_features__intermediate_tables_dropped(
         call(
             database_name="sf_db",
             schema_name="sf_schema",
-            table_name="__TEMP_FEATURE_QUERY_000000000000000000000000_REQUEST_TABLE_1_0_0_*_*_*_Etc_UTC_None",
+            table_name="__TEMP_FEATURE_QUERY_000000000000000000000000_REQUEST_TABLE_1_0_0_ANY_ANY_ANY_Etc_UTC_None",
             if_exists=True,
         ),
         call(
