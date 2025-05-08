@@ -128,18 +128,19 @@ def test_historical_feature_query_dynamic_batching(feature_list_with_combined_fe
         Patch construct_combined_sql to deliberately cause error when there are more than 6 columns
         in the select statement. This is to test dynamic batching of historical feature queries.
         """
-        select_expr = original_construct_combined_sql(*args, **kwargs)
+        query_plan = original_construct_combined_sql(*args, **kwargs)
         if kwargs.get("exclude_post_aggregation", False):
             # Online serving related query, skip
-            return select_expr
+            return query_plan
+        select_expr = query_plan.post_aggregation_sql
         if len(select_expr.expressions) > 6:
-            select_expr = select_expr.select(
+            query_plan.post_aggregation_sql = select_expr.select(
                 expressions.alias_(
                     expressions.Anonymous(this="FAIL_NOW"), alias="_debug_col", quoted=True
                 )
             )
             num_patched_queries["count"] += 1
-        return select_expr
+        return query_plan
 
     df_training_events, df_historical_expected = get_training_events_and_expected_result()
 
