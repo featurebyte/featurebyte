@@ -242,11 +242,7 @@ class QueryCacheManagerService:
         cache_key = self._get_cache_key(feature_store_id, query, QueryCacheType.DATAFRAME)
 
         # Upload to storage
-        path = f"query_cache/{feature_store_id}/{cache_key}.parquet"
-        try:
-            await self.storage.delete(Path(path))
-        except FileNotFoundError:
-            pass
+        path = f"query_cache/{feature_store_id}/{ObjectId()}.parquet"
         try:
             await self.storage.put_dataframe(dataframe, Path(path))
         except pyarrow.ArrowException:
