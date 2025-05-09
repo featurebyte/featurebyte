@@ -426,14 +426,13 @@ async def cleanup_historical_features_temp_tables(
             database_name=warehouse_table.location.table_details.database_name,
             if_exists=True,
         )
-    await session.drop_tables(
-        table_names=[
-            job_schedule_table.table_name for job_schedule_table in job_schedule_table_set.tables
-        ],
-        schema_name=session.schema_name,
-        database_name=session.database_name,
-        if_exists=True,
-    )
+    for job_schedule_table in job_schedule_table_set.tables:
+        await session.drop_table(
+            table_name=job_schedule_table.table_name,
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+            if_exists=True,
+        )
 
 
 async def get_target(
@@ -534,13 +533,12 @@ async def get_target(
         feature_compute_seconds = time.time() - tic
         logger.debug(f"compute_targets in total took {feature_compute_seconds:.2f}s")
     finally:
-        if not is_feature_query_debug_enabled():
-            await session.drop_table(
-                table_name=request_table_name,
-                schema_name=session.schema_name,
-                database_name=session.database_name,
-                if_exists=True,
-            )
+        await session.drop_table(
+            table_name=request_table_name,
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+            if_exists=True,
+        )
     return FeaturesComputationResult(
         historical_features_metrics=HistoricalFeaturesMetrics(
             tile_compute_seconds=0,

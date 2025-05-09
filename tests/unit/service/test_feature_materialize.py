@@ -355,7 +355,6 @@ async def test_materialize_features(
             schema_name="sf_schema",
             table_name="__TEMP_000000000000000000000000_0",
             if_exists=True,
-            timeout=86400,
         ),
         call(
             table_name="TEMP_REQUEST_TABLE_000000000000000000000000",
