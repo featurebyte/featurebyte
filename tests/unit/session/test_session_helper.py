@@ -156,6 +156,7 @@ async def test_execute_feature_query_set(
             schema_name="sf_schema",
             table_name="__TEMP_000000000000000000000000_0",
             if_exists=True,
+            timeout=86400,
         ),
     ]
 

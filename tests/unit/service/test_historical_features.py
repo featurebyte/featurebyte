@@ -306,12 +306,14 @@ async def test_get_historical_features__intermediate_tables_dropped(
             schema_name="sf_schema",
             table_name="__temp_feature_query_000000000000000000000000_request_table_1_0_0_any_any_any_etc_utc_none",
             if_exists=True,
+            timeout=86400,
         ),
         call(
             database_name="sf_db",
             schema_name="sf_schema",
             table_name="__TEMP_000000000000000000000000_0",
             if_exists=True,
+            timeout=86400,
         ),
         call(
             table_name="REQUEST_TABLE_1",
@@ -324,6 +326,7 @@ async def test_get_historical_features__intermediate_tables_dropped(
             schema_name="sf_schema",
             database_name="sf_db",
             if_exists=True,
+            timeout=86400,
         ),
     ]
 
@@ -409,6 +412,7 @@ async def test_get_historical_features__tile_tables_dropped(
             schema_name="sf_schema",
             table_name="__TEMP_000000000000000000000000_0",
             if_exists=True,
+            timeout=86400,
         ),
         call(
             table_name="REQUEST_TABLE_1",

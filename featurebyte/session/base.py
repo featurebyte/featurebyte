@@ -937,22 +937,18 @@ class BaseSession(BaseModel):
             If multiple errors occurred
         """
         # Create tasks for all drop operations
-        tasks = [
-            self.drop_table(
-                table_name=table_name,
-                schema_name=schema_name,
-                database_name=database_name,
-                if_exists=if_exists,
-                timeout=timeout,
-            )
-            for table_name in table_names
-        ]
-
-        # Run all tasks concurrently and collect results/exceptions
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        # Filter out exceptions from the results
-        errors = [result for result in results if isinstance(result, Exception)]
+        errors = []
+        for table_name in table_names:
+            try:
+                await self.drop_table(
+                    table_name=table_name,
+                    schema_name=schema_name,
+                    database_name=database_name,
+                    if_exists=if_exists,
+                    timeout=timeout,
+                )
+            except Exception as exc:
+                errors.append(exc)
 
         # If there are any errors, raise an aggregated exception
         if errors:
