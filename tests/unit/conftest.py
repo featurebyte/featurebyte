@@ -2606,7 +2606,6 @@ def mock_snowflake_session_fixture():
     session.get_source_info.return_value = SourceInfo(
         database_name="sf_db", schema_name="sf_schema", source_type=SourceType.SNOWFLAKE
     )
-    session.drop_tables.side_effect = partial(SnowflakeSession.drop_tables, session)
     type(session).adapter = PropertyMock(
         side_effect=lambda: get_sql_adapter(session.get_source_info())
     )
