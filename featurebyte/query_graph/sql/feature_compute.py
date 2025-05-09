@@ -7,7 +7,7 @@ from __future__ import annotations
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Iterable, Optional, Sequence, Set, Type, Union, cast
+from typing import Callable, Iterable, Optional, Sequence, Set, Type, Union, cast
 
 from bson import ObjectId
 from sqlglot import expressions
@@ -285,6 +285,19 @@ class FeatureQueryPlan:
             feature_names=self.feature_names,
             node_names=node_names,
         )
+
+    def transform(self, transform_func: Callable[[expressions.Select], expressions.Select]) -> None:
+        """
+        Transform each Select statement in the FeatureQueryPlan using the provided function
+
+        Parameters
+        ----------
+        transform_func: Callable[[expressions.Select], expressions.Select]
+            Function to transform the Select statements
+        """
+        for common_table in self.common_tables:
+            common_table.expr = transform_func(common_table.expr)
+        self.post_aggregation_sql = transform_func(self.post_aggregation_sql)
 
 
 class FeatureExecutionPlan:
