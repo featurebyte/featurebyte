@@ -13,6 +13,7 @@ from sqlglot.expressions import select
 from featurebyte.common.model_util import get_utc_now
 from featurebyte.enum import DBVarType
 from featurebyte.exception import TableValidationError
+from featurebyte.models.column_statistics import ColumnStatisticsModel, StatisticsModel
 from featurebyte.models.entity_universe import columns_not_null
 from featurebyte.models.feature_store import TableModel, TableValidation, TableValidationStatus
 from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
@@ -32,6 +33,7 @@ from featurebyte.service.base_table_document import (
     DocumentUpdate,
 )
 from featurebyte.service.catalog import CatalogService
+from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.mixin import Document
 from featurebyte.service.session_manager import SessionManagerService
@@ -50,12 +52,14 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         feature_store_service: FeatureStoreService,
         session_manager_service: SessionManagerService,
         table_document_service: BaseTableDocumentService[Document, DocumentCreate, DocumentUpdate],
+        column_statistics_service: ColumnStatisticsService,
     ):
         self.catalog_id = catalog_id
         self.catalog_service = catalog_service
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
         self.table_document_service = table_document_service
+        self.column_statistics_service = column_statistics_service
 
     async def validate_and_update(self, table_id: ObjectId) -> None:
         """
@@ -87,6 +91,7 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
             table_id,
             self.table_document_service.document_update_class(validation=new_validation_state),
         )
+        await self.compute_column_statistics(session, table_model)
 
     @classmethod
     def table_needs_validation(cls, table_model: Document) -> bool:
@@ -102,6 +107,8 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         -------
         bool
         """
+        if cls._get_compute_column_statistics_columns(table_model):
+            return True
         assert isinstance(table_model, TableModel)
         for col_info in table_model.columns_info:
             if (
@@ -244,3 +251,66 @@ class BaseTableValidationService(Generic[Document, DocumentCreate, DocumentUpdat
         _ = session
         _ = table_model
         _ = num_records
+
+    async def compute_column_statistics(self, session: BaseSession, table_model: Document) -> None:
+        """
+        Compute column statistics for the table
+
+        Parameters
+        ----------
+        session: BaseSession
+            Session object
+        table_model: Document
+            Table model
+        """
+        columns = self._get_compute_column_statistics_columns(table_model)
+        if not columns:
+            return
+        exprs = []
+        for column in columns:
+            exprs.append(
+                expressions.alias_(
+                    expressions.Count(
+                        this=expressions.Distinct(expressions=[quoted_identifier(column)])
+                    ),
+                    alias=column,
+                    quoted=True,
+                )
+            )
+        assert isinstance(table_model, TableModel)
+        source_table_expr = get_fully_qualified_table_name(
+            table_model.tabular_source.table_details.model_dump()
+        )
+        query_expr = select(*exprs).from_(source_table_expr)
+        result = await session.execute_query_long_running(
+            sql_to_string(query_expr, source_type=session.adapter.source_type)
+        )
+        if result is not None:
+            for column in columns:
+                if column in result:
+                    column_statistics = ColumnStatisticsModel(
+                        table_id=table_model.id,
+                        column_name=column,
+                        stats=StatisticsModel(
+                            distinct_count=result[column].iloc[0],
+                        ),
+                    )
+                    await self.column_statistics_service.create_document(column_statistics)
+
+    @classmethod
+    def _get_compute_column_statistics_columns(cls, table_model: Document) -> list[str]:
+        """
+        Get the columns to compute statistics for
+
+        Parameters
+        ----------
+        table_model: Document
+            Table model
+
+        Returns
+        -------
+        list[str]
+            List of columns to compute statistics for
+        """
+        _ = table_model
+        return []

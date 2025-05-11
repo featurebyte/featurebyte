@@ -15,6 +15,7 @@ from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.schema.scd_table import SCDTableCreate
+from featurebyte.schema.time_series_table import TimeSeriesTableCreate
 
 
 @pytest.fixture(name="document_service")
@@ -59,6 +60,38 @@ async def table_model_fixture(document_service, feature_store):
         ],
         natural_key_column="cust_id",
         effective_timestamp_column="effective_date",
+    )
+    return await document_service.create_document(payload)
+
+
+@pytest_asyncio.fixture(name="time_series_table_model")
+async def time_series_table_model_fixture(document_service, feature_store):
+    """
+    Time series table model fixture
+    """
+    payload = TimeSeriesTableCreate(
+        name="my_time_series_table",
+        tabular_source=TabularSource(
+            feature_store_id=feature_store.id,
+            table_details=TableDetails(
+                database_name="my_db",
+                schema_name="my_schema",
+                table_name="my_table",
+            ),
+        ),
+        columns_info=[
+            ColumnSpecWithDescription(
+                name="snapshot_date",
+                dtype=DBVarType.VARCHAR,
+            ),
+            ColumnSpecWithDescription(
+                name="cust_id",
+                dtype=DBVarType.INT,
+            ),
+        ],
+        reference_datetime_column="snapshot_date",
+        reference_datetime_schema=TimestampSchema(format_string="%Y-%m-%d"),
+        series_id_column="effective_date",
     )
     return await document_service.create_document(payload)
 

@@ -50,6 +50,7 @@ def test_catalog_specific_model_classes(app_container):
     assert sorted(class_names) == [
         "BatchFeatureTableModel",
         "BatchRequestTableModel",
+        "ColumnStatisticsModel",
         "ContextModel",
         "DeploymentModel",
         "EntityModel",
