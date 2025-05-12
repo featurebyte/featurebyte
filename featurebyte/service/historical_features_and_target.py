@@ -219,6 +219,8 @@ async def get_historical_features(
         Cron helper for simulating feature job schedules
     warehouse_table_service: WarehouseTableService
         Warehouse table service
+    column_statistics_service: ColumnStatisticsService
+        Column statistics service
     graph : QueryGraph
         Query graph
     nodes : list[Node]

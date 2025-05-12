@@ -418,6 +418,8 @@ def get_historical_features_query_set(
     job_schedule_table_set: Optional[JobScheduleTableSet]
         Job schedule table set if available. These will be used to compute features that are using
         a cron-based feature job setting.
+    column_statistics_info: Optional[ColumnStatisticsInfo]
+        Column statistics information
     output_include_row_index: bool
         Whether to include the TABLE_ROW_INDEX column in the output
     progress_message : str
