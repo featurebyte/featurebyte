@@ -584,7 +584,11 @@ def test_get_feature_preview_sql__non_tile_window_aggregate(
 
 
 def test_get_feature_preview_sql__time_series_window_aggregate(
-    global_graph, time_series_window_aggregate_feature_node, source_info, update_fixtures
+    global_graph,
+    time_series_window_aggregate_feature_node,
+    source_info,
+    column_statistics_info,
+    update_fixtures,
 ):
     """Test generated preview SQL for time series window aggregate"""
     point_in_time_and_serving_name = {
@@ -619,6 +623,7 @@ def test_get_feature_preview_sql__time_series_window_aggregate(
         point_in_time_and_serving_name_list=[point_in_time_and_serving_name],
         source_info=source_info,
         job_schedule_table_set=job_schedule_table_set,
+        column_statistics_info=column_statistics_info,
     )
     assert_equal_with_expected_fixture(
         preview_sql,

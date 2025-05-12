@@ -254,6 +254,12 @@ def cron_helper_fixture(app_container):
     return app_container.cron_helper
 
 
+@pytest.fixture(name="column_statistics_service")
+def column_statistics_service_fixture(app_container):
+    """CronHelper fixture"""
+    return app_container.column_statistics_service
+
+
 @pytest.fixture(name="tile_job_log_service")
 def tile_job_log_service(app_container):
     """

@@ -38,6 +38,7 @@ from featurebyte.query_graph.sql.common import (
 from featurebyte.query_graph.sql.materialisation import get_source_expr
 from featurebyte.query_graph.transform.definition import DefinitionHashExtractor
 from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_from_graph
+from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature_list import FeatureListService
@@ -96,6 +97,7 @@ class FeatureTableCacheService:
         feature_list_service: FeatureListService,
         warehouse_table_service: WarehouseTableService,
         cron_helper: CronHelper,
+        column_statistics_service: ColumnStatisticsService,
         redis: Redis[Any],
     ):
         self.feature_table_cache_metadata_service = feature_table_cache_metadata_service
@@ -106,6 +108,7 @@ class FeatureTableCacheService:
         self.feature_list_service = feature_list_service
         self.warehouse_table_service = warehouse_table_service
         self.cron_helper = cron_helper
+        self.column_statistics_service = column_statistics_service
         self.redis = redis
 
     async def definition_hashes_for_nodes(
@@ -431,6 +434,7 @@ class FeatureTableCacheService:
                 tile_cache_service=self.tile_cache_service,
                 warehouse_table_service=self.warehouse_table_service,
                 cron_helper=self.cron_helper,
+                column_statistics_service=self.column_statistics_service,
                 graph=graph,
                 nodes=nodes_only,
                 observation_set=observation_table,

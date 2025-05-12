@@ -16,6 +16,7 @@ from sqlglot import expressions
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.exception import MissingPointInTimeColumnError, TooRecentPointInTimeError
 from featurebyte.logging import get_logger
+from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.feature_query_set import (
     FeatureQueryGenerator,
     FeatureQuerySet,
@@ -259,6 +260,7 @@ def get_historical_features_expr(
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
+    column_statistics_info: Optional[ColumnStatisticsInfo] = None,
 ) -> FeatureQueryPlan:
     """Construct the SQL code that extracts historical features
 
@@ -283,6 +285,8 @@ def get_historical_features_expr(
     job_schedule_table_set: Optional[JobScheduleTableSet]
         Job schedule table set if available. These will be used to compute features that are using
         a cron-based feature job setting.
+    column_statistics_info: Optional[ColumnStatisticsInfo]
+        Column statistics information
 
     Returns
     -------
@@ -296,6 +300,7 @@ def get_historical_features_expr(
         parent_serving_preparation=parent_serving_preparation,
         on_demand_tile_tables=on_demand_tile_tables,
         job_schedule_table_set=job_schedule_table_set,
+        column_statistics_info=column_statistics_info,
     )
     plan = planner.generate_plan(nodes)
 
@@ -326,6 +331,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
         parent_serving_preparation: Optional[ParentServingPreparation] = None,
         on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
         job_schedule_table_set: Optional[JobScheduleTableSet] = None,
+        column_statistics_info: Optional[ColumnStatisticsInfo] = None,
     ):
         self.request_table_name = request_table_name
         self.graph = graph
@@ -339,6 +345,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
         self.on_demand_tile_tables = on_demand_tile_tables
         self.job_schedule_table_set = job_schedule_table_set
         self.output_include_row_index = output_include_row_index
+        self.column_statistics_info = column_statistics_info
 
     def get_query_graph(self) -> QueryGraph:
         return self.graph
@@ -358,6 +365,7 @@ class HistoricalFeatureQueryGenerator(FeatureQueryGenerator):
             parent_serving_preparation=self.parent_serving_preparation,
             on_demand_tile_tables=self.on_demand_tile_tables,
             job_schedule_table_set=self.job_schedule_table_set,
+            column_statistics_info=self.column_statistics_info,
         )
         feature_query = feature_set_sql.get_feature_query(
             table_name=table_name,
@@ -379,6 +387,7 @@ def get_historical_features_query_set(
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
+    column_statistics_info: Optional[ColumnStatisticsInfo] = None,
     output_include_row_index: bool = False,
     progress_message: str = PROGRESS_MESSAGE_COMPUTING_FEATURES,
 ) -> FeatureQuerySet:
@@ -431,6 +440,7 @@ def get_historical_features_query_set(
         parent_serving_preparation=parent_serving_preparation,
         on_demand_tile_tables=on_demand_tile_tables,
         job_schedule_table_set=job_schedule_table_set,
+        column_statistics_info=column_statistics_info,
     )
     feature_query_set = FeatureQuerySet(
         feature_query_generator=feature_query_generator,

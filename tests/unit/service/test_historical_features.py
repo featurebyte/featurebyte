@@ -154,6 +154,7 @@ async def test_get_historical_features__missing_point_in_time(
     tile_cache_service,
     warehouse_table_service,
     cron_helper,
+    column_statistics_service,
     snowflake_feature_store,
 ):
     """Test validation of missing point in time for historical features"""
@@ -166,6 +167,7 @@ async def test_get_historical_features__missing_point_in_time(
             tile_cache_service=tile_cache_service,
             warehouse_table_service=warehouse_table_service,
             cron_helper=cron_helper,
+            column_statistics_service=column_statistics_service,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             observation_set=observation_set,
@@ -186,6 +188,7 @@ async def test_get_historical_features__too_recent_point_in_time(
     tile_cache_service,
     warehouse_table_service,
     cron_helper,
+    column_statistics_service,
     snowflake_feature_store,
 ):
     """Test validation of too recent point in time for historical features"""
@@ -202,6 +205,7 @@ async def test_get_historical_features__too_recent_point_in_time(
             tile_cache_service=tile_cache_service,
             warehouse_table_service=warehouse_table_service,
             cron_helper=cron_helper,
+            column_statistics_service=column_statistics_service,
             graph=mock_snowflake_feature.graph,
             nodes=[mock_snowflake_feature.node],
             observation_set=observation_set,
@@ -223,6 +227,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
     tile_cache_service,
     warehouse_table_service,
     cron_helper,
+    column_statistics_service,
     snowflake_feature_store,
 ):
     """
@@ -242,6 +247,7 @@ async def test_get_historical_features__point_in_time_dtype_conversion(
         tile_cache_service=tile_cache_service,
         warehouse_table_service=warehouse_table_service,
         cron_helper=cron_helper,
+        column_statistics_service=column_statistics_service,
         graph=float_feature.graph,
         nodes=[float_feature.node],
         observation_set=df_request,
@@ -267,6 +273,7 @@ async def test_get_historical_features__intermediate_tables_dropped(
     tile_cache_service,
     warehouse_table_service,
     cron_helper,
+    column_statistics_service,
     snowflake_feature_store,
 ):
     """
@@ -294,6 +301,7 @@ async def test_get_historical_features__intermediate_tables_dropped(
             tile_cache_service=tile_cache_service,
             warehouse_table_service=warehouse_table_service,
             cron_helper=cron_helper,
+            column_statistics_service=column_statistics_service,
             graph=float_feature.graph,
             nodes=[float_feature.node],
             observation_set=df_request,
@@ -340,6 +348,7 @@ async def test_get_historical_features__tile_tables_dropped(
     tile_cache_service,
     warehouse_table_service,
     cron_helper,
+    column_statistics_service,
     snowflake_feature_store,
 ):
     """
@@ -396,6 +405,7 @@ async def test_get_historical_features__tile_tables_dropped(
             tile_cache_service=tile_cache_service,
             warehouse_table_service=warehouse_table_service,
             cron_helper=cron_helper,
+            column_statistics_service=column_statistics_service,
             graph=float_feature.graph,
             nodes=[float_feature.node],
             observation_set=df_request,
@@ -439,6 +449,7 @@ async def test_not_raise_on_error__tile_compute_error(
     warehouse_table_service,
     snowflake_feature_store,
     cron_helper,
+    column_statistics_service,
     update_fixtures,
 ):
     """
@@ -469,6 +480,7 @@ async def test_not_raise_on_error__tile_compute_error(
             tile_cache_service=tile_cache_service,
             warehouse_table_service=warehouse_table_service,
             cron_helper=cron_helper,
+            column_statistics_service=column_statistics_service,
             graph=graph,
             nodes=nodes,
             observation_set=df_request,
@@ -498,6 +510,7 @@ async def test_not_raise_on_error__feature_compute_error(
     warehouse_table_service,
     snowflake_feature_store,
     cron_helper,
+    column_statistics_service,
     update_fixtures,
 ):
     """
@@ -528,6 +541,7 @@ async def test_not_raise_on_error__feature_compute_error(
             tile_cache_service=tile_cache_service,
             warehouse_table_service=warehouse_table_service,
             cron_helper=cron_helper,
+            column_statistics_service=column_statistics_service,
             graph=graph,
             nodes=nodes,
             observation_set=df_request,

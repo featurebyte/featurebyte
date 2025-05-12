@@ -30,6 +30,7 @@ class ColumnStatisticsService(
         list[ColumnStatisticsModel]
             List of column statistics models
         """
+        # TODO: still needed?
         output = []
         async for model in self.list_documents_iterator(query_filter={}):
             output.append(model)

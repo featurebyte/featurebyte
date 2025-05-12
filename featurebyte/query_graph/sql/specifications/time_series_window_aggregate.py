@@ -9,7 +9,7 @@ from typing import Any, List, Optional, cast
 
 from bson import ObjectId
 
-from featurebyte.enum import AggFunc, DBVarType, TableDataType
+from featurebyte.enum import AggFunc, DBVarType
 from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.window import CalendarWindow
@@ -18,6 +18,7 @@ from featurebyte.query_graph.node.generic import (
     TimeSeriesWindowAggregateNode,
     TimeSeriesWindowAggregateParameters,
 )
+from featurebyte.query_graph.node.input import InputNode, TimeSeriesTableInputNodeParameters
 from featurebyte.query_graph.sql.specs import (
     AggregationSource,
     AggregationType,
@@ -134,19 +135,10 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
         is_time_series_table = False
         if graph is not None:
             input_node = graph.get_input_node(node.name)
-            if input_node is not None:
-                if (
-                    input_node.parameters.type == TableDataType.TIME_SERIES_TABLE
-                    and column_statistics_info is not None
-                ):
-                    column_statistics = column_statistics_info.get_column_statistics(
-                        input_node.parameters.id, input_node.parameters.reference_datetime_column
-                    )
-                    if column_statistics is not None:
-                        is_time_series_table = (
-                            column_statistics.stats.distinct_count
-                            < DISTINCT_REFERENCE_DATETIME_JOIN_THRESHOLD
-                        )
+            is_time_series_table = cls._is_time_series_with_small_distinct_reference_datetime_count(
+                input_node=input_node,
+                column_statistics_info=column_statistics_info,
+            )
 
         specs = []
         for feature_name, window in zip(node.parameters.names, node.parameters.windows):
@@ -172,3 +164,42 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
                 )
             )
         return specs
+
+    @classmethod
+    def _is_time_series_with_small_distinct_reference_datetime_count(
+        cls,
+        input_node: InputNode,
+        column_statistics_info: Optional[ColumnStatisticsInfo],
+    ) -> bool:
+        """
+        Check if the time series table has a small number of distinct reference datetime values.
+
+        This is used to determine if a join optimized for snapshot tables can be used.
+
+        Parameters
+        ----------
+        input_node: InputNode
+            Input node to check
+        column_statistics_info: ColumnStatisticsInfo
+            Column statistics information
+
+        Returns
+        -------
+        bool
+        """
+        parameters = input_node.parameters
+        if isinstance(parameters, TimeSeriesTableInputNodeParameters):
+            if (
+                parameters.id is not None
+                and parameters.reference_datetime_column is not None
+                and column_statistics_info is not None
+            ):
+                column_statistics = column_statistics_info.get_column_statistics(
+                    parameters.id, parameters.reference_datetime_column
+                )
+                if column_statistics is not None:
+                    return (
+                        column_statistics.stats.distinct_count
+                        < DISTINCT_REFERENCE_DATETIME_JOIN_THRESHOLD
+                    )
+        return False
