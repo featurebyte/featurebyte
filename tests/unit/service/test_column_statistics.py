@@ -45,9 +45,13 @@ async def saved_column_statistics_fixture(service, table_id):
 
 
 @pytest.mark.asyncio
-async def test_get_catalog_column_statistics(service, saved_column_statistics):
+async def test_get_catalog_column_statistics(service, table_id, saved_column_statistics):
     """
     Test get_catalog_column_statistics
     """
-    column_statistics = await service.get_catalog_column_statistics()
-    assert sorted(column_statistics, key=lambda x: x.column_name) == saved_column_statistics
+    column_statistics = await service.get_column_statistics_info()
+    for saved_model in saved_column_statistics:
+        assert (
+            column_statistics.get_column_statistics(table_id, saved_model.column_name)
+            == saved_model
+        )

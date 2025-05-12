@@ -114,9 +114,13 @@ async def test_validate_and_update(
     }
 
     # Check column statistics
-    column_statistics = await column_statistics_service.get_catalog_column_statistics()
-    assert len(column_statistics) == 1
-    assert column_statistics[0].model_dump(include={"table_id", "column_name", "stats"}) == {
+    column_statistics = await column_statistics_service.get_column_statistics_info()
+    assert len(column_statistics.all_column_statistics) == 1
+    assert len(column_statistics.all_column_statistics[table_model.id]) == 1
+    model = column_statistics.get_column_statistics(
+        table_model.id, table_model.reference_datetime_column
+    )
+    assert model.model_dump(include={"table_id", "column_name", "stats"}) == {
         "table_id": table_model.id,
         "column_name": "snapshot_date",
         "stats": {"distinct_count": 100},

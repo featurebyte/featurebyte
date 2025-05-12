@@ -21,21 +21,6 @@ class ColumnStatisticsService(
 
     document_class = ColumnStatisticsModel
 
-    async def get_catalog_column_statistics(self) -> list[ColumnStatisticsModel]:
-        """
-        Get column statistics for tables in the catalog
-
-        Returns
-        -------
-        list[ColumnStatisticsModel]
-            List of column statistics models
-        """
-        # TODO: still needed?
-        output = []
-        async for model in self.list_documents_iterator(query_filter={}):
-            output.append(model)
-        return output
-
     async def get_column_statistics_info(self) -> ColumnStatisticsInfo:
         """
         Get column statistics information for all tables in the catalog
