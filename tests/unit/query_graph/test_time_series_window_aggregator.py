@@ -16,7 +16,9 @@ from tests.util.helper import assert_equal_with_expected_fixture
 
 
 @pytest.fixture(name="base_agg_spec")
-def base_agg_spec_fixture(global_graph, time_series_window_aggregate_feature_node, source_info):
+def base_agg_spec_fixture(
+    global_graph, time_series_window_aggregate_feature_node, column_statistics_info, source_info
+):
     """
     Fixture of TimeSeriesAggregateSpec
     """
@@ -28,6 +30,7 @@ def base_agg_spec_fixture(global_graph, time_series_window_aggregate_feature_nod
         graph=global_graph,
         source_info=source_info,
         agg_result_name_include_serving_names=True,
+        column_statistics_info=column_statistics_info,
     )[0]
 
 

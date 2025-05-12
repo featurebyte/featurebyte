@@ -10,6 +10,7 @@ from typing import Any, List, Optional, cast
 from bson import ObjectId
 
 from featurebyte.enum import AggFunc, DBVarType, TableDataType
+from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.model.window import CalendarWindow
 from featurebyte.query_graph.node import Node
@@ -23,6 +24,10 @@ from featurebyte.query_graph.sql.specs import (
     NonTileBasedAggregationSpec,
 )
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
+
+# Use a join optimised for snapshot tables if the number of distinct reference datetime is less
+# than this threshold
+DISTINCT_REFERENCE_DATETIME_JOIN_THRESHOLD = 10000
 
 
 @dataclass
@@ -102,6 +107,7 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
+        column_statistics_info: Optional[ColumnStatisticsInfo],
     ) -> list[TimeSeriesWindowAggregateSpec]:
         assert isinstance(node, TimeSeriesWindowAggregateNode)
 
@@ -129,7 +135,18 @@ class TimeSeriesWindowAggregateSpec(NonTileBasedAggregationSpec):
         if graph is not None:
             input_node = graph.get_input_node(node.name)
             if input_node is not None:
-                is_time_series_table = input_node.parameters.type == TableDataType.TIME_SERIES_TABLE
+                if (
+                    input_node.parameters.type == TableDataType.TIME_SERIES_TABLE
+                    and column_statistics_info is not None
+                ):
+                    column_statistics = column_statistics_info.get_column_statistics(
+                        input_node.parameters.id, input_node.parameters.reference_datetime_column
+                    )
+                    if column_statistics is not None:
+                        is_time_series_table = (
+                            column_statistics.stats.distinct_count
+                            < DISTINCT_REFERENCE_DATETIME_JOIN_THRESHOLD
+                        )
 
         specs = []
         for feature_name, window in zip(node.parameters.names, node.parameters.windows):

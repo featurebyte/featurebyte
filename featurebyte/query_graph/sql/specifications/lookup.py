@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import LookupNode
@@ -32,6 +33,7 @@ class LookupSpec(BaseLookupSpec):
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
+        column_statistics_info: Optional[ColumnStatisticsInfo],
     ) -> list[LookupSpec]:
         assert isinstance(node, LookupNode)
         params = node.parameters

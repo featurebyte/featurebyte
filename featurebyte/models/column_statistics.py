@@ -2,7 +2,7 @@
 ColumnStatistics class
 """
 
-from typing import List
+from typing import List, Optional
 
 from pymongo import IndexModel
 
@@ -43,3 +43,31 @@ class ColumnStatisticsModel(FeatureByteCatalogBaseDocumentModel):
             IndexModel("table_id"),
             IndexModel("column_name"),
         ]
+
+
+class ColumnStatisticsInfo(FeatureByteBaseModel):
+    """
+    Column statistics information
+    """
+
+    all_column_statistics: dict[PydanticObjectId, dict[str, ColumnStatisticsModel]]
+
+    def get_column_statistics(
+        self, table_id: PydanticObjectId, column_name: str
+    ) -> Optional[ColumnStatisticsModel]:
+        """
+        Get column statistics for a specific table and column
+
+        Parameters
+        ----------
+        table_id : PydanticObjectId
+            Table ID
+        column_name : str
+            Column name
+
+        Returns
+        -------
+        Optional[ColumnStatisticsModel]
+            Column statistics model
+        """
+        return self.all_column_statistics.get(table_id, {}).get(column_name)
