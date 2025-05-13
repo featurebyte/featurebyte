@@ -1974,12 +1974,12 @@ def dimension_view_fixture(dimension_table):
     return dimension_table.get_view()
 
 
-@pytest.fixture(autouse=True, scope="module")
-def mock_task_manager(request, persistent, storage):
+@pytest.fixture(autouse=True, scope="session")
+def mock_task_manager(persistent, storage):
     """
     Mock celery task manager for testing
     """
-    if request.module.__name__ == "test_task_manager":
+    if os.getenv("DISABLE_TASK_MANAGER_MOCK") == "1":
         yield
     else:
         task_status = {}
