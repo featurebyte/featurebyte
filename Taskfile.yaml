@@ -130,7 +130,25 @@ tasks:
       REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1 --cov=featurebyte tests/integration --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
+      - poetry run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1 --cov=featurebyte tests/integration --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations --ignore=tests/integration/worker/test_task_manager.py
+      - task: test-teardown
+
+  test-integration-task-manager:
+    desc: Runs integration tests against Snowflake
+    deps:
+      - task: install
+    vars:
+      # Default to 1 split 1 group
+      PYTEST_GROUP:
+        sh: printenv PYTEST_GROUP || echo "1"
+      PYTEST_SPLITS:
+        sh: printenv PYTEST_SPLITS || echo "1"
+    env:
+      MONGODB_URI: mongodb://localhost:37017/?replicaSet=rs0
+      REDIS_URI: redis://localhost:36379
+    cmds:
+      - task: test-setup
+      - DISABLE_TASK_MANAGER_MOCK=1 poetry run pytest --timeout=360 --timeout-method=thread --junitxml=pytest.xml.1b --cov=featurebyte tests/integration/worker/test_task_manager.py --source-types none,snowflake --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
       - task: test-teardown
 
   test-reset:

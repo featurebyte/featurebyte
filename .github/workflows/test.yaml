@@ -204,6 +204,79 @@ jobs:
           path: .test_durations.1.${{ matrix.pytest-group }}
           overwrite: true
           include-hidden-files: true
+  test-integration-task-manager:
+    needs:
+      - build-jar
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - 3.10.14
+        pytest-group:
+          - 1
+    env:
+      PYTEST_SPLITS: 1  # This needs to be EQ the count of strategy.matrix.pytest-group
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          version: 3.x
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v3
+        with:
+          poetry-version: 1.8.2
+      - name: Configure Poetry
+        run: poetry config virtualenvs.in-project true
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'poetry'
+      - name: Install packages needed for build
+        run: |-
+          sudo apt-get update
+          sudo apt-get install libkrb5-dev libsasl2-dev libpython3-dev g++ gcc
+      - name: Install wkhtmltopdf
+        run: |-
+          sudo apt-get update
+          sudo apt-get install wkhtmltopdf
+      - name: Download hive-udf
+        uses: actions/download-artifact@v4
+        with:
+          name: hive-udf
+          path: featurebyte/sql/spark/
+      - name: Run tests
+        env:
+          PYTEST_GROUP: ${{ matrix.pytest-group }}
+        run: task test-integration-task-manager
+      - name: Renaming test assets
+        run: |
+          mv .coverage .coverage.1b.${{ matrix.pytest-group }}
+          mv pytest.xml.1b pytest.xml.1b.${{ matrix.pytest-group }}
+          mv .test_durations .test_durations.1b.${{ matrix.pytest-group }}
+      - name: Upload test results
+        uses: actions/upload-artifact@v4.5.0
+        with:
+          name: python-${{ matrix.python-version }}-pytest.xml.1b.${{ matrix.pytest-group }}
+          path: pytest.xml.1b.${{ matrix.pytest-group }}
+          overwrite: true
+      - name: Upload coverage results
+        uses: actions/upload-artifact@v4.5.0
+        with:
+          name: python-${{ matrix.python-version }}-.coverage.1b.${{ matrix.pytest-group }}
+          path: .coverage.1b.${{ matrix.pytest-group }}
+          overwrite: true
+          include-hidden-files: true
+      - name: Upload test durations
+        uses: actions/upload-artifact@v4.5.0
+        with:
+          name: python-${{ matrix.python-version }}-.test_durations.1b.${{ matrix.pytest-group }}
+          path: .test_durations.1b.${{ matrix.pytest-group }}
+          overwrite: true
+          include-hidden-files: true
   test-integration-spark:
     needs:
       - build-jar
