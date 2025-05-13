@@ -256,7 +256,7 @@ def cron_helper_fixture(app_container):
 
 @pytest.fixture(name="column_statistics_service")
 def column_statistics_service_fixture(app_container):
-    """CronHelper fixture"""
+    """ColumnStatisticsService fixture"""
     return app_container.column_statistics_service
 
 
