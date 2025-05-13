@@ -81,6 +81,7 @@ from featurebyte.routes.user_defined_function.controller import UserDefinedFunct
 from featurebyte.service.batch_feature_table import BatchFeatureTableService
 from featurebyte.service.batch_request_table import BatchRequestTableService
 from featurebyte.service.catalog import AllCatalogService, CatalogService
+from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.context import ContextService
 from featurebyte.service.credential import CredentialService
 from featurebyte.service.cron_helper import CronHelper
@@ -273,6 +274,7 @@ app_container_config.register_class(
 app_container_config.register_class(CredentialController)
 app_container_config.register_class(CredentialService)
 app_container_config.register_class(SpecializedDtypeDetectionService)
+app_container_config.register_class(ColumnStatisticsService)
 app_container_config.register_class(ContextService)
 app_container_config.register_class(CronHelper)
 app_container_config.register_class(DataWarehouseMigrationMixin)

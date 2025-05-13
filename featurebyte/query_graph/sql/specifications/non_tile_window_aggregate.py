@@ -11,6 +11,7 @@ from bson import ObjectId
 
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import DBVarType
+from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
@@ -91,6 +92,7 @@ class NonTileWindowAggregateSpec(NonTileBasedAggregationSpec):
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
+        column_statistics_info: Optional[ColumnStatisticsInfo],
     ) -> list[NonTileWindowAggregateSpec]:
         assert isinstance(node, NonTileWindowAggregateNode)
         specs = []

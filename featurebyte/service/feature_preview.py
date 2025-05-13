@@ -31,6 +31,7 @@ from featurebyte.schema.feature_list import (
     PreviewObservationSet,
 )
 from featurebyte.schema.preview import FeatureOrTargetPreview, FeaturePreview, TargetPreview
+from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
@@ -67,6 +68,7 @@ class FeaturePreviewService(PreviewService):
         target_service: TargetService,
         query_cache_manager_service: QueryCacheManagerService,
         cron_helper: CronHelper,
+        column_statistics_service: ColumnStatisticsService,
         redis: Redis[Any],
     ):
         super().__init__(
@@ -78,6 +80,7 @@ class FeaturePreviewService(PreviewService):
         self.feature_service = feature_service
         self.target_service = target_service
         self.cron_helper = cron_helper
+        self.column_statistics_service = column_statistics_service
 
     @property
     def feature_list_preview_max_features_number(self) -> int:
@@ -269,6 +272,7 @@ class FeaturePreviewService(PreviewService):
         job_schedule_table_set = self._get_cron_job_schedule_table_set(
             point_in_time_and_serving_name_list, graph, [feature_node]
         )
+        column_statistics_info = await self.column_statistics_service.get_column_statistics_info()
         preview_sql = get_feature_or_target_preview_sql(
             request_table_name=f"{REQUEST_TABLE_NAME}_{session.generate_session_unique_id()}",
             graph=graph,
@@ -277,6 +281,7 @@ class FeaturePreviewService(PreviewService):
             source_info=feature_store.get_source_info(),
             parent_serving_preparation=parent_serving_preparation,
             job_schedule_table_set=job_schedule_table_set,
+            column_statistics_info=column_statistics_info,
         )
         result = await session.execute_query(preview_sql)
         if result is None:
@@ -407,6 +412,9 @@ class FeaturePreviewService(PreviewService):
                 feature_cluster.graph,
                 feature_cluster.nodes,
             )
+            column_statistics_info = (
+                await self.column_statistics_service.get_column_statistics_info()
+            )
             db_session = await self.session_manager_service.get_feature_store_session(
                 feature_store=feature_store,
             )
@@ -418,6 +426,7 @@ class FeaturePreviewService(PreviewService):
                 source_info=feature_store.get_source_info(),
                 parent_serving_preparation=parent_serving_preparation,
                 job_schedule_table_set=job_schedule_table_set,
+                column_statistics_info=column_statistics_info,
             )
             _result = await db_session.execute_query(preview_sql)
             if result is None:

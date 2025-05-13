@@ -11,6 +11,7 @@ import pandas as pd
 
 from featurebyte.enum import InternalName, SpecialColumnName
 from featurebyte.logging import get_logger
+from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.parent_serving import ParentServingPreparation
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -34,6 +35,7 @@ def get_feature_or_target_preview_sql(
     point_in_time_and_serving_name_list: Optional[list[dict[str, Any]]] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
+    column_statistics_info: Optional[ColumnStatisticsInfo] = None,
 ) -> str:
     """
     Get SQL code for previewing SQL for features or targets.
@@ -56,6 +58,8 @@ def get_feature_or_target_preview_sql(
     job_schedule_table_set: Optional[JobScheduleTableSet]
         Job schedule table set if available. These will be used to compute features that are using
         a cron-based feature job setting.
+    column_statistics_info: Optional[ColumnStatisticsInfo]
+        Column statistics information
 
     Returns
     -------
@@ -66,6 +70,7 @@ def get_feature_or_target_preview_sql(
         source_info=source_info,
         is_online_serving=False,
         job_schedule_table_set=job_schedule_table_set,
+        column_statistics_info=column_statistics_info,
     )
     execution_plan = planner.generate_plan(nodes)
 

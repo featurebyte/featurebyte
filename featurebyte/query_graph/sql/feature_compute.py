@@ -15,6 +15,7 @@ from sqlglot.expressions import select
 
 from featurebyte.common.string import sanitize_identifier
 from featurebyte.enum import DBVarType, SourceType
+from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.models.parent_serving import (
     EntityLookupStep,
     EntityRelationshipsContext,
@@ -828,6 +829,7 @@ class FeatureExecutionPlanner:
         parent_serving_preparation: ParentServingPreparation | None = None,
         on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
         job_schedule_table_set: Optional[JobScheduleTableSet] = None,
+        column_statistics_info: Optional[ColumnStatisticsInfo] = None,
     ):
         if source_info is None:
             source_info = SourceInfo(
@@ -855,6 +857,8 @@ class FeatureExecutionPlanner:
             }
         else:
             self.on_demand_tile_tables_mapping = None
+
+        self.column_statistics_info = column_statistics_info
 
     def generate_plan(self, nodes: list[Node]) -> FeatureExecutionPlan:
         """Generate FeatureExecutionPlan for given list of query graph Nodes
@@ -1021,6 +1025,7 @@ class FeatureExecutionPlanner:
             serving_names_mapping=self.serving_names_mapping,
             is_online_serving=self.is_online_serving,
             agg_result_name_include_serving_names=self.agg_result_name_include_serving_names,
+            column_statistics_info=self.column_statistics_info,
         )
 
     def update_feature_specs(

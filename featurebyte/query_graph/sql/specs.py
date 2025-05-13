@@ -15,6 +15,7 @@ from bson import ObjectId
 from sqlglot.expressions import Expression, Select
 
 from featurebyte.enum import AggFunc, DBVarType, StrEnum
+from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.query_graph.enum import NodeOutputType, NodeType
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -483,6 +484,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
+        column_statistics_info: Optional[ColumnStatisticsInfo],
     ) -> list[NonTileBasedAggregationSpecT]:
         """
         Construct the list of specifications
@@ -499,6 +501,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Query graph
         agg_result_name_include_serving_names: bool
             Whether to include serving names in the aggregation result names
+        column_statistics_info: Optional[ColumnStatisticsInfo]
+            Column statistics information
         """
 
     @classmethod
@@ -537,6 +541,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
         serving_names_mapping: Optional[dict[str, str]] = None,
         is_online_serving: Optional[bool] = None,
         event_table_timestamp_filter: Optional[EventTableTimestampFilter] = None,
+        column_statistics_info: Optional[ColumnStatisticsInfo] = None,
     ) -> list[NonTileBasedAggregationSpecT]:
         """Construct NonTileBasedAggregationSpec objects given a query graph node
 
@@ -558,6 +563,8 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             Whether the query is for online serving
         event_table_timestamp_filter: Optional[EventTableTimestampFilter]
             Event table timestamp filter to apply if applicable
+        column_statistics_info: Optional[ColumnStatisticsInfo]
+            Column statistics information
 
         Returns
         -------
@@ -584,6 +591,7 @@ class NonTileBasedAggregationSpec(AggregationSpec):
             serving_names_mapping=serving_names_mapping,
             graph=graph,
             agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+            column_statistics_info=column_statistics_info,
         )
 
 
@@ -632,6 +640,7 @@ class ItemAggregationSpec(NonTileBasedAggregationSpec):
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
+        column_statistics_info: Optional[ColumnStatisticsInfo],
     ) -> list[ItemAggregationSpec]:
         assert isinstance(node, ItemGroupbyNode)
         return [
@@ -689,6 +698,7 @@ class ForwardAggregateSpec(NonTileBasedAggregationSpec):
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
+        column_statistics_info: Optional[ColumnStatisticsInfo],
     ) -> list[ForwardAggregateSpec]:
         assert isinstance(node, ForwardAggregateNode)
         return [

@@ -10,6 +10,7 @@ from typing import Any, List, Optional, cast
 from bson import ObjectId
 
 from featurebyte.enum import DBVarType
+from featurebyte.models.column_statistics import ColumnStatisticsInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
@@ -76,6 +77,7 @@ class BaseAggregateAsAtSpec(NonTileBasedAggregationSpec):
         serving_names_mapping: Optional[dict[str, str]],
         graph: Optional[QueryGraphModel],
         agg_result_name_include_serving_names: bool,
+        column_statistics_info: Optional[ColumnStatisticsInfo],
     ) -> list[BaseAggregateAsAtSpec]:
         assert isinstance(node, (AggregateAsAtNode, ForwardAggregateAsAtNode))
         return [

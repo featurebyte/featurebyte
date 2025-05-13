@@ -38,6 +38,7 @@ from featurebyte.query_graph.sql.feature_historical import (
     validate_request_schema,
 )
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
+from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
@@ -195,6 +196,7 @@ async def get_historical_features(
     tile_cache_service: TileCacheService,
     warehouse_table_service: WarehouseTableService,
     cron_helper: CronHelper,
+    column_statistics_service: ColumnStatisticsService,
     graph: QueryGraph,
     nodes: list[Node],
     observation_set: Union[pd.DataFrame, ObservationTableModel],
@@ -217,6 +219,8 @@ async def get_historical_features(
         Cron helper for simulating feature job schedules
     warehouse_table_service: WarehouseTableService
         Warehouse table service
+    column_statistics_service: ColumnStatisticsService
+        Column statistics service
     graph : QueryGraph
         Query graph
     nodes : list[Node]
@@ -267,6 +271,9 @@ async def get_historical_features(
         request_table_name=request_table_name,
         cron_feature_job_settings=cron_feature_job_settings,
     )
+
+    # Get column statistics info
+    column_statistics_info = await column_statistics_service.get_column_statistics_info()
 
     temp_tile_tables_tag = f"historical_features_{output_table_details.table_name}"
     try:
@@ -336,6 +343,7 @@ async def get_historical_features(
             parent_serving_preparation=parent_serving_preparation,
             on_demand_tile_tables=tile_compute_result.on_demand_tile_tables,
             job_schedule_table_set=job_schedule_table_set,
+            column_statistics_info=column_statistics_info,
             output_include_row_index=output_include_row_index,
             progress_message=PROGRESS_MESSAGE_COMPUTING_FEATURES,
         )

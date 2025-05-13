@@ -12,6 +12,11 @@ from featurebyte import Crontab, MissingValueImputation
 from featurebyte.core.frame import Frame
 from featurebyte.enum import DBVarType
 from featurebyte.models import DimensionTableModel, EntityModel
+from featurebyte.models.column_statistics import (
+    ColumnStatisticsInfo,
+    ColumnStatisticsModel,
+    StatisticsModel,
+)
 from featurebyte.models.parent_serving import (
     EntityLookupStepCreator,
     FeatureNodeRelationshipsInfo,
@@ -1797,6 +1802,26 @@ def time_series_window_aggregate_with_blind_spot_feature_node_fixture(
         input_nodes=[global_graph.get_node_by_name(aggregate_node.name)],
     )
     return feature_node
+
+
+@pytest.fixture(name="column_statistics_info")
+def column_statistics_info_fixture(time_series_table_input_node):
+    """
+    Fixture of ColumnStatisticsInfo
+    """
+    return ColumnStatisticsInfo(
+        all_column_statistics={
+            time_series_table_input_node.parameters.id: {
+                time_series_table_input_node.parameters.reference_datetime_column: ColumnStatisticsModel(
+                    table_id=time_series_table_input_node.parameters.id,
+                    column_name=time_series_table_input_node.parameters.reference_datetime_column,
+                    stats=StatisticsModel(
+                        distinct_count=100,
+                    ),
+                )
+            }
+        }
+    )
 
 
 @pytest.fixture(name="feature_nodes_all_types")

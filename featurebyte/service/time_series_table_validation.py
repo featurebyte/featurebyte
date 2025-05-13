@@ -17,3 +17,7 @@ class TimeSeriesTableValidationService(
     """
     TimeSeriesTableValidationService class
     """
+
+    @classmethod
+    def _get_compute_column_statistics_columns(cls, table_model: TimeSeriesTableModel) -> list[str]:
+        return [table_model.reference_datetime_column]
