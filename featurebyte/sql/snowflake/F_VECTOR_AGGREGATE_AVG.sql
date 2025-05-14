@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION VECTOR_AGGREGATE_AVG(vector ARRAY, vector_count FLOAT)
     RETURNS TABLE (vector_agg_result ARRAY)
     LANGUAGE python
-    RUNTIME_VERSION=3.8
+    RUNTIME_VERSION=3.11
     HANDLER='VectorAggregateAvg'
 as $$
 class VectorAggregateAvg:
