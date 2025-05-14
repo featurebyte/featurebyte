@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION VECTOR_AGGREGATE_SIMPLE_AVERAGE(vector ARRAY)
     RETURNS TABLE (vector_agg_result ARRAY)
     LANGUAGE python
-    RUNTIME_VERSION=3.8
+    RUNTIME_VERSION=3.11
     HANDLER='VectorAggregateSimpleAvg'
 as $$
 class VectorAggregateSimpleAvg:
