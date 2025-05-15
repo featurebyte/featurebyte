@@ -25,6 +25,7 @@ class SystemMetricsType(StrEnum):
     HISTORICAL_FEATURES = "historical_features"
     TILE_TASK = "tile_task"
     SCHEDULED_FEATURE_MATERIALIZE = "scheduled_feature_materialize"
+    DEPLOYMENT_ENABLEMENT = "deployment_enablement"
 
 
 class TileComputeMetrics(FeatureByteBaseModel):
@@ -82,8 +83,28 @@ class ScheduledFeatureMaterializeMetrics(FeatureByteBaseModel):
     )
 
 
+class DeploymentEnablementMetrics(FeatureByteBaseModel):
+    """
+    DeploymentEnablementMetrics class
+    """
+
+    deployment_id: PydanticObjectId
+    tile_tables_seconds: Optional[float] = None
+    offline_feature_tables_seconds: Optional[float] = None
+    precompute_lookup_feature_tables_seconds: Optional[float] = None
+    total_seconds: Optional[float] = None
+    metrics_type: Literal[SystemMetricsType.DEPLOYMENT_ENABLEMENT] = (
+        SystemMetricsType.DEPLOYMENT_ENABLEMENT
+    )
+
+
 SystemMetricsData = Annotated[
-    Union[HistoricalFeaturesMetrics, TileTaskMetrics, ScheduledFeatureMaterializeMetrics],
+    Union[
+        HistoricalFeaturesMetrics,
+        TileTaskMetrics,
+        ScheduledFeatureMaterializeMetrics,
+        DeploymentEnablementMetrics,
+    ],
     Field(discriminator="metrics_type"),
 ]
 
@@ -103,5 +124,6 @@ class SystemMetricsModel(FeatureByteCatalogBaseDocumentModel):
             IndexModel("metrics_data.historical_feature_table_id"),
             IndexModel("metrics_data.tile_table_id"),
             IndexModel("metrics_data.offline_store_feature_table_id"),
+            IndexModel("metrics_data.deployment_id"),
         ]
         auditable = False
