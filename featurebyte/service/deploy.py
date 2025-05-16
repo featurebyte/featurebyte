@@ -2,6 +2,7 @@
 DeployService class
 """
 
+import time
 import traceback
 from typing import Any, AsyncIterator, Callable, Coroutine, Dict, List, Optional, Sequence, Set
 
@@ -23,6 +24,7 @@ from featurebyte.models.feature import FeatureModel
 from featurebyte.models.feature_list import FeatureListModel, ServingEntity
 from featurebyte.models.feature_list_namespace import FeatureListStatus
 from featurebyte.models.feature_namespace import FeatureReadiness
+from featurebyte.models.system_metrics import DeploymentEnablementMetrics
 from featurebyte.query_graph.node.schema import ColumnSpec
 from featurebyte.schema.deployment import DeploymentServiceUpdate
 from featurebyte.schema.feature import FeatureServiceUpdate
@@ -41,6 +43,7 @@ from featurebyte.service.offline_store_feature_table_manager import (
     OfflineStoreFeatureTableManagerService,
 )
 from featurebyte.service.online_enable import OnlineEnableService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.table import TableService
 from featurebyte.service.use_case import UseCaseService
 from featurebyte.worker.util.task_progress_updater import TaskProgressUpdater
@@ -710,6 +713,7 @@ class DeployService:
         deployment_serving_entity_service: DeploymentServingEntityService,
         feast_integration_service: FeastIntegrationService,
         task_progress_updater: TaskProgressUpdater,
+        system_metrics_service: SystemMetricsService,
     ):
         self.deployment_service = deployment_service
         self.feature_list_management_service = deploy_feature_list_management_service
@@ -717,6 +721,7 @@ class DeployService:
         self.feast_integration_service = feast_integration_service
         self.task_progress_updater = task_progress_updater
         self.deployment_serving_entity_service = deployment_serving_entity_service
+        self.system_metrics_service = system_metrics_service
 
     async def _update_progress(self, percent: int, message: Optional[str] = None) -> None:
         await self.task_progress_updater.update_progress(percent=percent, message=message)
@@ -734,6 +739,7 @@ class DeployService:
         deployment: DeploymentModel,
         feature_list: FeatureListModel,
     ) -> None:
+        _tic = time.time()
         await self._update_progress(percent=1, message="Validating deployment enablement...")
         await self._validate_deployment_enablement(feature_list)
 
@@ -750,14 +756,17 @@ class DeployService:
             self.task_progress_updater.update_progress, 2, 70
         )
         features_offline_feature_table_to_update = []
+        tile_table_seconds = 0.0
         for i, feature_id in enumerate(feature_list.feature_ids):
             feature = await self.feature_management_service.feature_service.get_document(
                 document_id=feature_id
             )
+            tic = time.time()
             feature = await self.feature_management_service.online_enable_feature(
                 feature=feature,
                 feast_registry=feast_registry,
             )
+            tile_table_seconds += time.time() - tic
             if not feature.online_enabled:
                 features_offline_feature_table_to_update.append(feature)
 
@@ -766,6 +775,7 @@ class DeployService:
                 f"Enabling feature online ({feature.name}) ...",
             )
 
+        tic = time.time()
         if feast_registry:
             await self.feast_integration_service.handle_online_enabled_features(
                 features=features_offline_feature_table_to_update,
@@ -775,6 +785,7 @@ class DeployService:
                     self.task_progress_updater.update_progress, 72, 95
                 ),
             )
+        offline_feature_tables_seconds = time.time() - tic
 
         features = []
         for feature_id in feature_list.feature_ids:
@@ -789,11 +800,13 @@ class DeployService:
             features.append(updated_feature)
 
         # update offline feature table deployment reference
+        tic = time.time()
         await self.feature_management_service.update_offline_feature_table_deployment_reference(
             feature_ids=feature_list.feature_ids,
             deployment_id=deployment.id,
             to_enable=True,
         )
+        precompute_lookup_feature_tables_seconds = time.time() - tic
 
         if feast_registry:
             await self._update_progress(
@@ -814,6 +827,18 @@ class DeployService:
             return_document=False,
         )
         await self._update_progress(100, "Deployment enabled successfully!")
+
+        # update system metrics
+        total_seconds = time.time() - _tic
+        await self.system_metrics_service.create_metrics(
+            DeploymentEnablementMetrics(
+                deployment_id=deployment.id,
+                tile_tables_seconds=tile_table_seconds,
+                offline_feature_tables_seconds=offline_feature_tables_seconds,
+                precompute_lookup_feature_tables_seconds=precompute_lookup_feature_tables_seconds,
+                total_seconds=total_seconds,
+            )
+        )
 
     async def _check_feature_list_used_in_other_deployment(
         self, feature_list_id: ObjectId, exclude_deployment_id: ObjectId
