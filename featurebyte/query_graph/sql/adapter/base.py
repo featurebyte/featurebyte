@@ -357,7 +357,7 @@ class BaseAdapter(ABC):
         # Limit number of categories to max_num_categories, ordering by the inner aggregated result
         # (the dict values)
         if max_num_categories is None:
-            max_num_categories = 50000
+            max_num_categories = 500
         ordering_column_name = "__fb_object_agg_row_number"
         ordering_expr = expressions.Window(
             this=expressions.RowNumber(),
