@@ -183,7 +183,7 @@ def test_item_aggregation(aggregation_specs, source_info):
               )
             )
             WHERE
-              "__fb_object_agg_row_number" <= 50000
+              "__fb_object_agg_row_number" <= 500
           ) AS INNER_
           GROUP BY
             INNER_."new_serving_order_id"

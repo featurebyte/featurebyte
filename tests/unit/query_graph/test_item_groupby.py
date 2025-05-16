@@ -116,7 +116,7 @@ def test_item_groupby_sql_node(
                 )
               )
               WHERE
-                "__fb_object_agg_row_number" <= 50000
+                "__fb_object_agg_row_number" <= 500
             ) AS INNER_
             GROUP BY
               INNER_."order_id"
