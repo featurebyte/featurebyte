@@ -43,9 +43,11 @@ async def list_metrics(
     historical_feature_table_id: Optional[PyObjectId] = Query(default=None),
     tile_table_id: Optional[str] = Query(default=None),
     offline_store_feature_table_id: Optional[PyObjectId] = Query(default=None),
+    deployment_id: Optional[PyObjectId] = Query(default=None),
+    batch_feature_table_id: Optional[PyObjectId] = Query(default=None),
 ) -> SystemMetricsList:
     """
-    List Table
+    List system metrics
     """
     controller: SystemMetricsController = request.state.app_container.system_metrics_controller
 
@@ -65,6 +67,12 @@ async def list_metrics(
 
     if offline_store_feature_table_id is not None:
         _add_metrics_data_filter("offline_store_feature_table_id", offline_store_feature_table_id)
+
+    if deployment_id is not None:
+        _add_metrics_data_filter("deployment_id", deployment_id)
+
+    if batch_feature_table_id is not None:
+        _add_metrics_data_filter("batch_feature_table_id", batch_feature_table_id)
 
     system_metrics_list = await controller.list(
         page=page,
