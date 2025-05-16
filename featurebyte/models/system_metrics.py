@@ -23,6 +23,7 @@ class SystemMetricsType(StrEnum):
     """
 
     HISTORICAL_FEATURES = "historical_features"
+    BATCH_FEATURES = "batch_features"
     TILE_TASK = "tile_task"
     SCHEDULED_FEATURE_MATERIALIZE = "scheduled_feature_materialize"
     DEPLOYMENT_ENABLEMENT = "deployment_enablement"
@@ -51,6 +52,16 @@ class HistoricalFeaturesMetrics(FeatureByteBaseModel):
     metrics_type: Literal[SystemMetricsType.HISTORICAL_FEATURES] = (
         SystemMetricsType.HISTORICAL_FEATURES
     )
+
+
+class BatchFeaturesMetrics(FeatureByteBaseModel):
+    """
+    BatchFeaturesMetrics class
+    """
+
+    batch_feature_table_id: Optional[PydanticObjectId] = None
+    total_seconds: Optional[float] = None
+    metrics_type: Literal[SystemMetricsType.BATCH_FEATURES] = SystemMetricsType.BATCH_FEATURES
 
 
 class TileTaskMetrics(FeatureByteBaseModel):
@@ -101,6 +112,7 @@ class DeploymentEnablementMetrics(FeatureByteBaseModel):
 SystemMetricsData = Annotated[
     Union[
         HistoricalFeaturesMetrics,
+        BatchFeaturesMetrics,
         TileTaskMetrics,
         ScheduledFeatureMaterializeMetrics,
         DeploymentEnablementMetrics,
@@ -125,5 +137,6 @@ class SystemMetricsModel(FeatureByteCatalogBaseDocumentModel):
             IndexModel("metrics_data.tile_table_id"),
             IndexModel("metrics_data.offline_store_feature_table_id"),
             IndexModel("metrics_data.deployment_id"),
+            IndexModel("metrics_data.batch_feature_table_id"),
         ]
         auditable = False

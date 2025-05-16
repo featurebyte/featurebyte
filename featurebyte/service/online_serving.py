@@ -35,6 +35,7 @@ from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.deployment import DeploymentModel
 from featurebyte.models.entity_validation import EntityInfo
 from featurebyte.models.feature_list import FeatureListModel
+from featurebyte.models.system_metrics import BatchFeaturesMetrics
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.entity import (
     get_combined_serving_names,
@@ -54,6 +55,7 @@ from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.table import TableService
 from featurebyte.session.session_helper import SessionHandler
 
@@ -89,6 +91,7 @@ class OnlineServingService:
         entity_serving_names_service: EntityServingNamesService,
         feature_list_service: FeatureListService,
         cron_helper: CronHelper,
+        system_metrics_service: SystemMetricsService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -102,12 +105,14 @@ class OnlineServingService:
         self.entity_serving_names_service = entity_serving_names_service
         self.feature_list_service = feature_list_service
         self.cron_helper = cron_helper
+        self.system_metrics_service = system_metrics_service
 
     async def get_online_features_from_feature_list(
         self,
         feature_list: FeatureListModel,
         request_data: Union[List[Dict[str, Any]], BatchRequestTableModel],
         output_table_details: Optional[TableDetails] = None,
+        batch_feature_table_id: Optional[PydanticObjectId] = None,
     ) -> Optional[OnlineFeaturesResponseModel]:
         """
         Get online features for a Feature List given a list of entity serving names
@@ -120,6 +125,8 @@ class OnlineServingService:
             Request data containing entity serving names
         output_table_details: Optional[TableDetails]
             Output table details
+        batch_feature_table_id: Optional[PydanticObjectId]
+            Batch feature table ID to track the time taken for the online serving request
 
         Returns
         -------
@@ -139,6 +146,7 @@ class OnlineServingService:
         if not feature_list.deployed:
             raise FeatureListNotOnlineEnabledError("Feature List is not online enabled")
 
+        _tic = time.time()
         feature_cluster = feature_list.feature_clusters[0]
         feature_store = await self.feature_store_service.get_document(
             document_id=feature_cluster.feature_store_id
@@ -177,6 +185,13 @@ class OnlineServingService:
             output_table_details=output_table_details,
             online_store_table_version_service=self.online_store_table_version_service,
         )
+        if batch_feature_table_id is not None:
+            await self.system_metrics_service.create_metrics(
+                BatchFeaturesMetrics(
+                    batch_feature_table_id=batch_feature_table_id,
+                    total_seconds=time.time() - _tic,
+                )
+            )
         if features is None:
             return None
         return OnlineFeaturesResponseModel(features=features)
