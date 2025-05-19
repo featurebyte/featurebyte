@@ -128,7 +128,7 @@ async def test_validate_scd_table__valid_with_null_values(
             "2022-04-20 10:00:00",
             "2022-04-20 10:00:00",
         ]),
-        "cust_id": [None, None, None, None],
+        "cust_id": [None, None, 1000, 1001],
         "value": [1, 1, 2, 2],
     })
     await session.register_table(table_name, df_scd)
