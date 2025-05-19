@@ -12,6 +12,8 @@ INNER JOIN (
     "effective_date",
     "end_date"
   FROM "my_db"."my_schema"."my_table"
+  WHERE
+    "cust_id" IS NOT NULL
 ) AS SCD
   ON SCD."effective_date" <= REQ."POINT_IN_TIME"
   AND (
@@ -33,6 +35,8 @@ FROM (
     "cust_id",
     "effective_date"
   FROM "my_db"."my_schema"."my_table"
+  WHERE
+    "cust_id" IS NOT NULL
 )
 GROUP BY
   "effective_date",
