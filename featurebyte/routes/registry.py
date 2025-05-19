@@ -92,6 +92,8 @@ from featurebyte.service.deploy import (
     DeployService,
     FeastIntegrationService,
 )
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
+from featurebyte.service.deployed_tile_table_manager import DeployedTileTableManagerService
 from featurebyte.service.deployment import AllDeploymentService, DeploymentService
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.dimension_table_validation import DimensionTableValidationService
@@ -282,6 +284,8 @@ app_container_config.register_class(DeployFeatureManagementService)
 app_container_config.register_class(DeployFeatureListManagementService)
 app_container_config.register_class(FeastIntegrationService)
 app_container_config.register_class(DeployService)
+app_container_config.register_class(DeployedTileTableManagerService)
+app_container_config.register_class(DeployedTileTableService)
 app_container_config.register_class(DeploymentController)
 app_container_config.register_class(DeploymentService)
 app_container_config.register_class(DeploymentServingEntityService)
