@@ -108,6 +108,34 @@ async def test_validate_scd_table__valid(
     await service._validate_table(session, table_model)
 
 
+@pytest.mark.parametrize("table_name", ["test_validate_scd_table__valid_with_null_values"])
+@pytest.mark.asyncio
+async def test_validate_scd_table__valid_with_null_values(
+    service,
+    document_service,
+    scd_create_payload,
+    session_without_datasets,
+    table_name,
+):
+    """
+    Test validate SCD table (valid case)
+    """
+    session = session_without_datasets
+    df_scd = pd.DataFrame({
+        "effective_ts": pd.to_datetime([
+            "2022-04-12 10:00:00",
+            "2022-04-12 10:00:00",
+            "2022-04-20 10:00:00",
+            "2022-04-20 10:00:00",
+        ]),
+        "cust_id": [None, None, None, None],
+        "value": [1, 1, 2, 2],
+    })
+    await session.register_table(table_name, df_scd)
+    table_model = await document_service.create_document(scd_create_payload)
+    await service._validate_table(session, table_model)
+
+
 @pytest.mark.parametrize("table_name", ["test_validate_scd_table__invalid_multiple_active_records"])
 @pytest.mark.asyncio
 async def test_validate_scd_table__invalid_multiple_active_records(
