@@ -10,7 +10,6 @@ from featurebyte.logging import get_logger
 from featurebyte.models import FeatureModel
 from featurebyte.models.deployed_tile_table import (
     DeployedTileTableModel,
-    DeployedTileTableUpdate,
     TileIdentifier,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
@@ -69,7 +68,10 @@ class DeployedTileTableManagerService:
                 continue
             interpreter = GraphInterpreter(feature.graph, source_info=source_info)
             for tile_info in interpreter.construct_tile_gen_sql(feature.node, is_on_demand=False):
-                if tile_info.aggregation_id not in unique_tile_infos:
+                if (
+                    tile_info.aggregation_id not in deployed_aggregation_ids
+                    and tile_info.aggregation_id not in unique_tile_infos
+                ):
                     unique_tile_infos[tile_info.aggregation_id] = tile_info
 
         if not unique_tile_infos:
@@ -113,30 +115,24 @@ class DeployedTileTableManagerService:
         Handle online disabled features by removing deployed tile tables that are no longer needed.
         """
 
-        # Get the aggregation IDs of online disabled features
-        online_disabled_feature_ids = await self.feature_service.get_online_disabled_feature_ids()
-        aggregation_ids_to_remove = set()
+        # Get the aggregation IDs across all online enabled features
+        online_enabled_feature_ids = await self.feature_service.get_online_enabled_feature_ids()
+        required_aggregation_ids = set()
         async for feature_doc in self.feature_service.list_documents_as_dict_iterator(
-            query_filter={"_id": {"$in": online_disabled_feature_ids}},
+            query_filter={"_id": {"$in": online_enabled_feature_ids}},
             projection={"aggregation_ids": 1},
         ):
-            aggregation_ids_to_remove.update(feature_doc.get("aggregation_ids", []))
+            required_aggregation_ids.update(feature_doc.get("aggregation_ids", []))
 
         # Remove deployed tile tables that are no longer needed
-        async for (
-            deployed_tile_table
-        ) in self.deployed_tile_table_service.list_deployed_tile_tables_by_aggregation_ids(
-            aggregation_ids_to_remove,
+        async for deployed_tile_table in self.deployed_tile_table_service.list_documents_iterator(
+            query_filter={}
         ):
             new_tile_identifiers = [
                 tile_identifier
                 for tile_identifier in deployed_tile_table.tile_identifiers
-                if tile_identifier.aggregation_id not in aggregation_ids_to_remove
+                if tile_identifier.aggregation_id in required_aggregation_ids
             ]
-            if new_tile_identifiers:
-                await self.deployed_tile_table_service.update_document(
-                    deployed_tile_table.id,
-                    DeployedTileTableUpdate(tile_identifiers=new_tile_identifiers),
-                )
-            else:
+            if not new_tile_identifiers:
+                # Only undeploy a deployed tile table if all tile identifiers are not needed
                 await self.deployed_tile_table_service.delete_document(deployed_tile_table.id)
