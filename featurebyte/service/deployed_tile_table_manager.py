@@ -101,7 +101,7 @@ class DeployedTileTableManagerService:
                 tile_compute_query=tile_info.tile_compute_spec.get_tile_compute_query(),
                 entity_column_names=tile_info.entity_columns,
                 value_column_names=tile_info.tile_value_columns,
-                tile_value_types=tile_info.tile_value_types,
+                value_column_types=tile_info.tile_value_types,
                 frequency_minute=tile_info.frequency // 60,
                 time_modulo_frequency_second=tile_info.time_modulo_frequency,
                 blind_spot_second=tile_info.blind_spot,
