@@ -112,8 +112,9 @@ class SCDTableValidationService(
                 f"Multiple records found for the same effective timestamp and natural key combination. Examples of invalid natural keys: {invalid_keys}"
             )
 
-    @staticmethod
+    @classmethod
     def _get_rows_with_duplicate_timestamp_and_key(
+        cls,
         adapter: BaseAdapter,
         table_details: TableDetails,
         effective_timestamp_column: str,
@@ -121,7 +122,9 @@ class SCDTableValidationService(
         num_records: int = 10,
     ) -> str:
         required_columns = [natural_key_column, effective_timestamp_column]
-        scd_expr = get_source_expr(source=table_details, column_names=required_columns)
+        scd_expr = cls._exclude_null_values(
+            get_source_expr(source=table_details, column_names=required_columns), natural_key_column
+        )
         query_expr = (
             select(
                 quoted_identifier(effective_timestamp_column),
@@ -150,8 +153,9 @@ class SCDTableValidationService(
             source_type=adapter.source_type,
         )
 
-    @staticmethod
+    @classmethod
     def _get_rows_with_multiple_active_records(
+        cls,
         adapter: BaseAdapter,
         table_details: TableDetails,
         effective_timestamp_column: str,
@@ -162,7 +166,10 @@ class SCDTableValidationService(
         num_records: int = 10,
     ) -> str:
         required_columns = [natural_key_column, effective_timestamp_column, end_timestamp_column]
-        scd_expr = get_source_expr(source=table_details, column_names=required_columns)
+        scd_expr = cls._exclude_null_values(
+            get_source_expr(source=table_details, column_names=required_columns),
+            natural_key_column,
+        )
         point_in_time_expr = adapter.normalize_timestamp_before_comparison(
             get_qualified_column_identifier(SpecialColumnName.POINT_IN_TIME, "REQ")
         )
@@ -229,4 +236,15 @@ class SCDTableValidationService(
         return sql_to_string(
             query_expr,
             source_type=adapter.source_type,
+        )
+
+    @classmethod
+    def _exclude_null_values(
+        cls, source_expr: expressions.Select, natural_key_column: str
+    ) -> expressions.Select:
+        return source_expr.where(
+            expressions.Is(
+                this=quoted_identifier(natural_key_column),
+                expression=expressions.Not(this=expressions.Null()),
+            )
         )
