@@ -79,17 +79,20 @@ jobs:
             exit 1
           fi
           echo "SHORT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v3
-        with:
-          poetry-version: 1.8.2
-      - name: Configure Poetry
-        run: poetry config virtualenvs.in-project true
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'poetry'
+      - name: Setup cache
+        uses: actions/cache@v4
+        with:
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          path: .venv
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+      - name: Install Poetry + Configure
+        run: |-
+          pip install poetry==2.1.2
+          poetry config virtualenvs.in-project true
       - name: Additional Configure Poetry
         run: |-
           poetry config repositories.test-pypi https://test.pypi.org/legacy/
