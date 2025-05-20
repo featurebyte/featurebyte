@@ -8,7 +8,11 @@ import pytest_asyncio
 from featurebyte import SourceType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.common import sql_to_string
-from tests.util.helper import assert_equal_with_expected_fixture, deploy_feature
+from tests.util.helper import (
+    assert_equal_with_expected_fixture,
+    deploy_feature,
+    undeploy_feature,
+)
 
 
 @pytest.fixture(name="deployed_tile_table_service")
@@ -67,10 +71,10 @@ async def multiple_features_fixture(
         features.append(feature)
 
     # Deploy the features
-    deployed_features = []
+    deployed_features = {}
     for feature in features:
         deployed_feature = await deploy_feature(app_container, feature)
-        deployed_features.append(deployed_feature)
+        deployed_features[feature.name] = deployed_feature
     return deployed_features
 
 
@@ -125,7 +129,7 @@ async def test_handle_online_enabled_features(
     Test handle_online_enabled_features
     """
     await deployed_tile_table_manager_service.handle_online_enabled_features(
-        multiple_deployed_features, source_info
+        list(multiple_deployed_features.values()), source_info
     )
     deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
     assert len(deployed_tile_table_models) == 2
@@ -206,3 +210,46 @@ async def test_handle_online_enabled_features(
         "tests/fixtures/deployed_tile_table/expected_tile_sql_2.sql",
         update_fixtures,
     )
+
+
+@pytest.mark.asyncio
+async def test_handle_online_disabled_features(
+    deployed_tile_table_service,
+    deployed_tile_table_manager_service,
+    multiple_deployed_features,
+    source_info,
+):
+    """
+    Test handle_online_disabled_features
+    """
+    await deployed_tile_table_manager_service.handle_online_enabled_features(
+        list(multiple_deployed_features.values()), source_info
+    )
+    deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
+    assert len(deployed_tile_table_models) == 2
+
+    # Undeploy the first feature. The deployed tile table should be retained since it's still used
+    # by other features.
+    undeploy_feature(multiple_deployed_features["sum_1d_10m"])
+    await deployed_tile_table_manager_service.handle_online_disabled_features()
+    deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
+    assert len(deployed_tile_table_models) == 2
+
+    # Undeploy more features. The first deployed tile table should be removed since it's no longer
+    # used by any features.
+    undeploy_feature(multiple_deployed_features["min_1d_10m"])
+    undeploy_feature(multiple_deployed_features["max_1d_10m"])
+    await deployed_tile_table_manager_service.handle_online_disabled_features()
+    deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
+    assert len(deployed_tile_table_models) == 1
+    assert (
+        deployed_tile_table_models[0].table_name
+        == "__FB_DEPLOYED_TILE_TABLE_000000000000000000000001"
+    )
+
+    # Undeploy remaining features
+    undeploy_feature(multiple_deployed_features["avg_1d_5m"])
+    undeploy_feature(multiple_deployed_features["std_1d_5m"])
+    await deployed_tile_table_manager_service.handle_online_disabled_features()
+    deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
+    assert len(deployed_tile_table_models) == 0
