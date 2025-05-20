@@ -133,6 +133,8 @@ aioboto3 = { version = "^14.1.0", optional = true}
 server = ["cachetools", "databricks-sdk", "fastapi", "motor", "snowflake-connector-python", "uvicorn", "pdfkit", "pyhive", "thrift-sasl", "smart-open", "celery", "redis", "celerybeat-mongo", "databricks-sql-connector", "featurebyte-freeware", "gevent", "requests-kerberos", "feast", "asyncache", "google-cloud-bigquery", "google-cloud-bigquery-storage", "aioboto3"]
 
 [tool.poetry.group.dev.dependencies]
+setuptools = "^78.1.1"
+tornado = "^6.5.0"
 freezegun = "^1.2.1"
 junitparser = "^2.8.0"
 jupyterlab = "^4.2.5"
