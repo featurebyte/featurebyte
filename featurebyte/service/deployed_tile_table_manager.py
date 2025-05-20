@@ -49,6 +49,7 @@ class DeployedTileTableManagerService:
             Source information for the features
         """
 
+        # Retrieve the aggregation ids that are already deployed in DeployedTileTable collection
         all_aggregation_ids = set()
         for feature in features:
             all_aggregation_ids.update(feature.aggregation_ids)
@@ -58,6 +59,7 @@ class DeployedTileTableManagerService:
             )
         )
 
+        # Extract aggregation_ids that are not deployed yet
         unique_tile_infos = {}
         for feature in features:
             pending_aggregation_ids = []
@@ -77,6 +79,8 @@ class DeployedTileTableManagerService:
         if not unique_tile_infos:
             return
 
+        # Combine tile compute queries that are compatible and create a DeployedTileTable for each
+        # combined query. It will remain immutable after creation.
         combined_infos = combine_tile_compute_specs(list(unique_tile_infos.values()))
 
         logger.info(
