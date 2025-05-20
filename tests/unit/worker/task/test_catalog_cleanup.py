@@ -52,6 +52,7 @@ def test_catalog_specific_model_classes(app_container):
         "BatchRequestTableModel",
         "ColumnStatisticsModel",
         "ContextModel",
+        "DeployedTileTableModel",
         "DeploymentModel",
         "EntityModel",
         "FeatureJobSettingAnalysisModel",

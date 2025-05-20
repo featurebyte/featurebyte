@@ -15,7 +15,6 @@ from featurebyte.models.base import (
 from featurebyte.models.tile_compute_query import TileComputeQuery
 from featurebyte.models.tile_registry import BackfillMetadata, LastRunMetadata
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
 
 
 class TileIdentifier(FeatureByteBaseModel):
@@ -76,11 +75,3 @@ class DeployedTileTableModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("tile_identifiers.tile_id"),
             pymongo.operations.IndexModel("tile_identifiers.aggregation_id"),
         ]
-
-
-class DeployedTileTableUpdate(BaseDocumentServiceUpdateSchema):
-    """
-    DeployedTileTableUpdate class
-    """
-
-    tile_identifiers: list[TileIdentifier]
