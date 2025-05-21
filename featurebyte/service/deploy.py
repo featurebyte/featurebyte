@@ -903,7 +903,6 @@ class DeployService:
         feature_list: FeatureListModel
             Feature list of the deployment
         """
-        # enable features online
         if not await self._check_feature_list_used_in_other_deployment(
             feature_list_id=feature_list.id, exclude_deployment_id=deployment.id
         ):
