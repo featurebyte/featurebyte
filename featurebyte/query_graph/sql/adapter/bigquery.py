@@ -42,6 +42,7 @@ class BigQueryAdapter(BaseAdapter):
         """
 
         FLOAT = "FLOAT64"
+        BOOLEAN = "BOOLEAN"
         OBJECT = "JSON"
         TIMESTAMP = "TIMESTAMP"
         STRING = "STRING"
@@ -52,6 +53,7 @@ class BigQueryAdapter(BaseAdapter):
         mapping = {
             DBVarType.INT: cls.DataType.FLOAT,
             DBVarType.FLOAT: cls.DataType.FLOAT,
+            DBVarType.BOOL: cls.DataType.BOOLEAN,
             DBVarType.VARCHAR: cls.DataType.STRING,
             DBVarType.TIMESTAMP: cls.DataType.TIMESTAMP,
             DBVarType.TIMESTAMP_TZ: cls.DataType.TIMESTAMP,
