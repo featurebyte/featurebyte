@@ -17,7 +17,11 @@ from tests.integration.api.feature_preview_utils import (
     convert_preview_param_dict_to_feature_preview_resp,
 )
 from tests.integration.api.test_feature_correctness import sum_func
-from tests.util.helper import fb_assert_frame_equal, tz_localize_if_needed
+from tests.util.helper import (
+    create_observation_table_from_dataframe,
+    fb_assert_frame_equal,
+    tz_localize_if_needed,
+)
 
 
 @dataclass
@@ -248,3 +252,37 @@ def test_forward_aggregate_with_count_and_value_column_none(event_table, source_
         "count_target": 12,
         **convert_preview_param_dict_to_feature_preview_resp(preview_params),
     }
+
+
+@pytest.mark.asyncio
+async def test_bool_target(event_table, source_type, session, data_source):
+    """
+    Test boolean type target
+    """
+    event_view = event_table.get_view()
+    count_target = event_view.groupby("ÜSER ID").forward_aggregate(
+        method=AggFunc.COUNT,
+        value_column=None,
+        window="7d",
+        target_name="count_target",
+        fill_value=None,
+    )
+    new_target = count_target > 3
+    new_target.name = "count_target_bool"
+    new_target.save()
+    df_preview = pd.DataFrame([
+        {"POINT_IN_TIME": pd.Timestamp("2001-11-15 10:00:00"), "üser id": 1}
+    ])
+    observation_table = await create_observation_table_from_dataframe(
+        session,
+        df_preview,
+        data_source,
+    )
+    target_table = new_target.compute_target_table(
+        observation_table, "target table (test_bool_target)"
+    )
+    df_target_table = target_table.to_pandas()
+    df_expected = df_preview.copy()
+    df_expected["count_target_bool"] = True
+    fb_assert_frame_equal(df_target_table, df_expected)
+    assert df_target_table["count_target_bool"].dtype == "bool"

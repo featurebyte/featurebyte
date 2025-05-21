@@ -36,6 +36,7 @@ class DatabricksAdapter(BaseAdapter):
         """
 
         FLOAT = "DOUBLE"
+        BOOLEAN = "BOOLEAN"
         TIMESTAMP = "TIMESTAMP"
         STRING = "STRING"
         MAP = "MAP<STRING, DOUBLE>"
@@ -188,6 +189,7 @@ class DatabricksAdapter(BaseAdapter):
         mapping = {
             DBVarType.INT: cls.DataType.FLOAT,
             DBVarType.FLOAT: cls.DataType.FLOAT,
+            DBVarType.BOOL: cls.DataType.BOOLEAN,
             DBVarType.VARCHAR: cls.DataType.STRING,
             DBVarType.OBJECT: cls.DataType.MAP,
             DBVarType.TIMESTAMP: cls.DataType.TIMESTAMP,
