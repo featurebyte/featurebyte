@@ -17,6 +17,29 @@ class TestSparkAdapter(BaseAdapterTest):
     """
 
     adapter = get_sql_adapter_from_source_type(SourceType.SPARK)
+    expected_physical_type_from_dtype_mapping = {
+        "BOOL": "BOOLEAN",
+        "CHAR": "STRING",
+        "DATE": "STRING",
+        "FLOAT": "DOUBLE",
+        "INT": "DOUBLE",
+        "TIME": "STRING",
+        "TIMESTAMP": "TIMESTAMP",
+        "TIMESTAMP_TZ": "STRING",
+        "VARCHAR": "STRING",
+        "ARRAY": "ARRAY<STRING>",
+        "DICT": "STRING",
+        "TIMEDELTA": "STRING",
+        "EMBEDDING": "ARRAY<DOUBLE>",
+        "FLAT_DICT": "STRING",
+        "OBJECT": "MAP<STRING, DOUBLE>",
+        "TIMESTAMP_TZ_TUPLE": "STRING",
+        "UNKNOWN": "STRING",
+        "BINARY": "STRING",
+        "VOID": "STRING",
+        "MAP": "STRING",
+        "STRUCT": "STRING",
+    }
 
     def test_dateadd_seconds(self):
         """
