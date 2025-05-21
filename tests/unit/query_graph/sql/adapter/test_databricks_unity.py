@@ -8,7 +8,39 @@ from featurebyte.enum import SourceType
 from featurebyte.query_graph.sql.adapter import DatabricksUnityAdapter
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.source_info import SourceInfo
-from tests.util.helper import assert_equal_with_expected_fixture
+from tests.unit.query_graph.sql.adapter.base_adapter_test import BaseAdapterTest
+from tests.util.helper import assert_equal_with_expected_fixture, get_sql_adapter_from_source_type
+
+
+class TestDatabricksUnityAdapter(BaseAdapterTest):
+    """
+    Test databricks unity adapter class
+    """
+
+    adapter = get_sql_adapter_from_source_type(SourceType.DATABRICKS_UNITY)
+    expected_physical_type_from_dtype_mapping = {
+        "BOOL": "BOOLEAN",
+        "CHAR": "STRING",
+        "DATE": "STRING",
+        "FLOAT": "DOUBLE",
+        "INT": "DOUBLE",
+        "TIME": "STRING",
+        "TIMESTAMP": "TIMESTAMP",
+        "TIMESTAMP_TZ": "STRING",
+        "VARCHAR": "STRING",
+        "ARRAY": "ARRAY<STRING>",
+        "DICT": "STRING",
+        "TIMEDELTA": "STRING",
+        "EMBEDDING": "ARRAY<DOUBLE>",
+        "FLAT_DICT": "STRING",
+        "OBJECT": "MAP<STRING, DOUBLE>",
+        "TIMESTAMP_TZ_TUPLE": "STRING",
+        "UNKNOWN": "STRING",
+        "BINARY": "STRING",
+        "VOID": "STRING",
+        "MAP": "STRING",
+        "STRUCT": "STRING",
+    }
 
 
 @pytest.mark.parametrize(

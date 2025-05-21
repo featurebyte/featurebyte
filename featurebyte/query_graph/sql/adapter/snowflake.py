@@ -41,6 +41,7 @@ class SnowflakeAdapter(BaseAdapter):
         """
 
         FLOAT = "FLOAT"
+        BOOLEAN = "BOOLEAN"
         OBJECT = "OBJECT"
         TIMESTAMP_NTZ = "TIMESTAMP_NTZ"
         TIMESTAMP_TZ = "TIMESTAMP_TZ"
@@ -125,6 +126,7 @@ class SnowflakeAdapter(BaseAdapter):
             DBVarType.INT: cls.SnowflakeDataType.FLOAT,
             DBVarType.FLOAT: cls.SnowflakeDataType.FLOAT,
             DBVarType.VARCHAR: cls.SnowflakeDataType.VARCHAR,
+            DBVarType.BOOL: cls.SnowflakeDataType.BOOLEAN,
             DBVarType.TIMESTAMP: cls.SnowflakeDataType.TIMESTAMP_NTZ,
             DBVarType.TIMESTAMP_TZ: cls.SnowflakeDataType.TIMESTAMP_TZ,
             DBVarType.ARRAY: cls.SnowflakeDataType.ARRAY,
