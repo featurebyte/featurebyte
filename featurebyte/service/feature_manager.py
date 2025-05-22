@@ -128,8 +128,8 @@ class FeatureManagerService:
             extra={"unscheduled_result_names": list(unscheduled_result_names)},
         )
 
-        # insert records into tile-feature mapping table
-        await self._update_tile_feature_mapping_table(feature_spec, unscheduled_result_names)
+        # create online store compute queries for the unscheduled result names
+        await self._create_precompute_queries(feature_spec, unscheduled_result_names)
 
         # backfill historical tiles if required
         aggregation_id_to_tile_spec = {}
@@ -400,13 +400,13 @@ class FeatureManagerService:
                 backfill_start_date=start_ts,
             )
 
-    async def _update_tile_feature_mapping_table(
+    async def _create_precompute_queries(
         self,
         feature_spec: OnlineFeatureSpec,
         unscheduled_result_names: Set[str],
     ) -> None:
         """
-        Insert records into tile-feature mapping table
+        Create OnlineStorePrecomputeQuery documents for the unscheduled result names
 
         Parameters
         ----------
