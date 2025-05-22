@@ -13,10 +13,10 @@ from featurebyte.models.deployed_tile_table import (
     TileIdentifier,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tile_compute_combine import combine_tile_compute_specs
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_store import FeatureStoreService
 
 logger = get_logger(__name__)
 
@@ -31,13 +31,13 @@ class DeployedTileTableManagerService:
         self,
         deployed_tile_table_service: DeployedTileTableService,
         feature_service: FeatureService,
+        feature_store_service: FeatureStoreService,
     ) -> None:
         self.deployed_tile_table_service = deployed_tile_table_service
         self.feature_service = feature_service
+        self.feature_store_service = feature_store_service
 
-    async def handle_online_enabled_features(
-        self, features: list[FeatureModel], source_info: SourceInfo
-    ) -> None:
+    async def handle_online_enabled_features(self, features: list[FeatureModel]) -> None:
         """
         Handle online enabled features by creating deployed tile tables for the features.
 
@@ -45,9 +45,9 @@ class DeployedTileTableManagerService:
         ----------
         features: list[FeatureModel]
             List of features to handle
-        source_info: SourceInfo
-            Source information for the features
         """
+        if not features:
+            return
 
         # Retrieve the aggregation ids that are already deployed in DeployedTileTable collection
         all_aggregation_ids = set()
@@ -60,6 +60,11 @@ class DeployedTileTableManagerService:
         )
 
         # Extract aggregation_ids that are not deployed yet
+        source_info = (
+            await self.feature_store_service.get_document(
+                document_id=features[0].tabular_source.feature_store_id
+            )
+        ).get_source_info()
         unique_tile_infos = {}
         for feature in features:
             pending_aggregation_ids = []
