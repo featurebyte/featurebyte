@@ -10,7 +10,9 @@ import pytest
 
 from featurebyte.common.model_util import get_version
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.online_store_spec import OnlineFeatureSpec
+from featurebyte.query_graph.sql.online_store_compute_query import (
+    get_online_store_precompute_queries,
+)
 
 
 @pytest.fixture(name="mock_snowflake_feature")
@@ -18,8 +20,10 @@ def mock_snowflake_feature_fixture(mock_snowflake_feature):
     """
     ExtendedFeatureModel object fixture
     """
+    mock_snowflake_feature.save()
+    feature_model = mock_snowflake_feature.cached_model
     return ExtendedFeatureModel(
-        **mock_snowflake_feature.model_dump(exclude={"version": True}),
+        **feature_model.model_dump(exclude={"version": True}, by_alias=True),
         version=get_version(),
     )
 
@@ -37,16 +41,18 @@ def feature_spec_fixture(mock_snowflake_feature):
     """
     OnlineFeatureSpec object fixture
     """
-    feature_spec = OnlineFeatureSpec(
-        feature=mock_snowflake_feature,
-        feature_sql="select * from temp",
-        feature_store_table_name="feature_store_table_1",
+    feature_model = mock_snowflake_feature
+    precompute_queries = get_online_store_precompute_queries(
+        graph=feature_model.graph,
+        node=feature_model.node,
+        source_info=feature_model.get_source_info(),
+        agg_result_name_include_serving_names=feature_model.agg_result_name_include_serving_names,
     )
     with mock.patch(
         "featurebyte.service.feature_manager.FeatureManagerService._get_unscheduled_aggregation_result_names",
-        AsyncMock(return_value=[feature_spec.precompute_queries[0].result_name]),
+        AsyncMock(return_value=[precompute_queries[0].result_name]),
     ):
-        yield feature_spec
+        yield mock_snowflake_feature
 
 
 @pytest.fixture(name="feature_spec_with_scheduled_aggregations")
@@ -54,16 +60,11 @@ def feature_spec_with_scheduled_aggregations_fixture(mock_snowflake_feature):
     """
     OnlineFeatureSpec object fixture
     """
-    feature_spec = OnlineFeatureSpec(
-        feature=mock_snowflake_feature,
-        feature_sql="select * from temp",
-        feature_store_table_name="feature_store_table_1",
-    )
     with mock.patch(
         "featurebyte.service.feature_manager.FeatureManagerService._get_unscheduled_aggregation_result_names",
         AsyncMock(return_value=[]),
     ):
-        yield feature_spec
+        yield mock_snowflake_feature
 
 
 @mock.patch("featurebyte.service.tile_manager.TileManagerService.schedule_online_tiles")
@@ -207,13 +208,6 @@ async def test_online_disable(
     """
     Test online_enable
     """
-
-    feature_spec = OnlineFeatureSpec(
-        feature=mock_snowflake_feature,
-        feature_sql="select * from temp",
-        feature_store_table_name="feature_store_table_1",
-    )
-
     mock_snowflake_session.execute_query.side_effect = [None, None, None, None]
     with mock.patch(
         "featurebyte.service.tile_manager.TileManagerService.remove_tile_jobs"
@@ -222,6 +216,8 @@ async def test_online_disable(
         with mock.patch(
             "featurebyte.service.online_store_compute_query_service.OnlineStoreComputeQueryService.delete_by_result_name"
         ) as mock_delete_by_result_name:
-            await feature_manager_service.online_disable(mock_snowflake_session, feature_spec)
+            await feature_manager_service.online_disable(
+                mock_snowflake_session, mock_snowflake_feature
+            )
 
     mock_delete_by_result_name.assert_called_once()

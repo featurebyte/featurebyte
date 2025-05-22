@@ -50,12 +50,10 @@ from featurebyte.api.request_column import RequestColumn
 from featurebyte.app import User, app, get_celery
 from featurebyte.enum import AggFunc, InternalName, SourceType
 from featurebyte.exception import DuplicatedRecordException, ObjectHasBeenSavedError
-from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import CONSOLE_LOG_FORMATTER
 from featurebyte.models.credential import CredentialModel
 from featurebyte.models.feature_namespace import FeatureReadiness
 from featurebyte.models.online_store import MySQLOnlineStoreDetails
-from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.periodic_task import Crontab
 from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.task import Task as TaskModel
@@ -66,6 +64,9 @@ from featurebyte.query_graph.model.timestamp_schema import TimestampSchema, Time
 from featurebyte.query_graph.node.schema import TableDetails
 from featurebyte.query_graph.sql.adapter import get_sql_adapter
 from featurebyte.query_graph.sql.feature_historical import HistoricalFeatureQueryGenerator
+from featurebyte.query_graph.sql.online_store_compute_query import (
+    get_online_store_precompute_queries,
+)
 from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
@@ -3022,10 +3023,14 @@ def mock_update_data_warehouse(app_container):
 
     async def mock_func(feature, target_online_enabled):
         _ = target_online_enabled
-        extended_feature_model = ExtendedFeatureModel(**feature.model_dump(by_alias=True))
-        online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
         if target_online_enabled:
-            for query in online_feature_spec.precompute_queries:
+            precompute_queries = get_online_store_precompute_queries(
+                graph=feature.graph,
+                node=feature.node,
+                source_info=feature.get_source_info(),
+                agg_result_name_include_serving_names=feature.agg_result_name_include_serving_names,
+            )
+            for query in precompute_queries:
                 await app_container.online_store_compute_query_service.create_document(query)
 
     with patch(

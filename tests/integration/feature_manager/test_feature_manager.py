@@ -14,9 +14,11 @@ from bson import ObjectId
 from featurebyte.api.feature_list import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
+from featurebyte.query_graph.sql.online_store_compute_query import (
+    get_online_store_precompute_queries,
+)
 
 
 @contextlib.contextmanager
@@ -124,9 +126,14 @@ async def list_online_store_cleanup_tasks(
     List online store cleanup tasks for the given feature
     """
     feature_model = await feature_service.get_document(saved_feature.id)
-    feature_spec = OnlineFeatureSpec(feature=feature_model.model_dump(by_alias=True))
+    precompute_queries = get_online_store_precompute_queries(
+        graph=feature_model.graph,
+        node=feature_model.node,
+        source_info=feature_model.get_source_info(),
+        agg_result_name_include_serving_names=feature_model.agg_result_name_include_serving_names,
+    )
     out = []
-    for query in feature_spec.precompute_queries:
+    for query in precompute_queries:
         task = await online_store_cleanup_scheduler_service.get_periodic_task(query.table_name)
         if task is not None:
             out.append(task)
@@ -308,10 +315,8 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     """
     assert session.source_type == "snowflake"
 
-    online_feature_spec = OnlineFeatureSpec(
-        feature=ExtendedFeatureModel(**online_enabled_feature_sum_30h.model_dump(by_alias=True))
-    )
-    tile_spec = online_feature_spec.feature.tile_specs[0]
+    feature_spec = ExtendedFeatureModel(**online_enabled_feature_sum_30h.model_dump(by_alias=True))
+    tile_spec = feature_spec.tile_specs[0]
 
     tile_model = await tile_registry_service.get_tile_model(
         tile_spec.tile_id, tile_spec.aggregation_id
@@ -320,7 +325,7 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
     last_tile_start_ts = tile_model.last_run_metadata_offline.tile_end_date
 
     # disable/un-deploy
-    await feature_manager_service.online_disable(session, online_feature_spec)
+    await feature_manager_service.online_disable(session, online_enabled_feature_sum_30h)
 
     # re-deploy and verify that the tile start ts is the same as the last tile start ts
     with patch(
@@ -330,6 +335,6 @@ async def test_online_enable__re_deploy_from_latest_tile_start(
             # simulate re-deploy at a later date; otherwise this will be a no-op since no new tiles
             # need to be generated and generate_tiles won't be called
             mock_datetime.utcnow.return_value = last_tile_start_ts + timedelta(days=1)
-            await feature_manager_service.online_enable(session, online_feature_spec)
+            await feature_manager_service.online_enable(session, feature_spec)
         _, kwargs = mock_generate_tiles.call_args
         assert kwargs["start_ts_str"] == last_tile_start_ts.strftime("%Y-%m-%dT%H:%M:%S")

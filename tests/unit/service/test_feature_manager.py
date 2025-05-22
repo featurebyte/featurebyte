@@ -10,7 +10,6 @@ import pytest
 from bson import ObjectId
 
 from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.tile_registry import BackfillMetadata, LastRunMetadata, TileUpdate
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from tests.util.helper import assert_equal_with_expected_fixture, extract_session_executed_queries
@@ -109,8 +108,7 @@ def get_online_feature_spec(feature_model):
     Helper function to get an OnlineFeatureSpec from a feature
     """
     extended_feature_model = ExtendedFeatureModel(**feature_model.model_dump(by_alias=True))
-    online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
-    return online_feature_spec
+    return extended_feature_model
 
 
 async def get_tile_model(app_container, feature_model):
@@ -427,7 +425,7 @@ async def test_enable_with_backfill_metadata_but_not_last_run_metadata(
     # Online disable the feature
     await feature_manager_service.online_disable(
         session=mock_snowflake_session,
-        feature_spec=get_online_feature_spec(feature_2h.cached_model),
+        feature=feature_2h.cached_model,
     )
 
     # Simulate missing last run metadata by unsetting it
