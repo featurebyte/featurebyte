@@ -28,6 +28,9 @@ class TileScheduleOnlineStore(BaseSqlModel):
     aggregation_id: str
     job_schedule_ts_str: str
     aggregation_result_name: Optional[str] = Field(default=None)
+    # This is for backward compatibility and should be set to False in existing tile tasks. For new
+    # deployment enabling and new tile tasks, we always use deployed tile table.
+    use_deployed_tile_table: bool = Field(default=False)
     online_store_table_version_service: OnlineStoreTableVersionService
     online_store_compute_query_service: OnlineStoreComputeQueryService
 
@@ -131,15 +134,20 @@ class TileScheduleOnlineStore(BaseSqlModel):
 
     async def _retrieve_online_store_compute_queries(self) -> List[OnlineStoreComputeQueryModel]:
         if self.aggregation_result_name is not None:
-            # Retrieve compute queries for a specific result name (e.g. sum_30d)
-            iterator = self.online_store_compute_query_service.list_by_result_names([
-                self.aggregation_result_name
-            ])
+            # Retrieve compute queries for a specific result name (e.g. sum_30d). This is called
+            # when populating internal online store as part of enabling deployment.
+            iterator = self.online_store_compute_query_service.list_by_result_names(
+                [
+                    self.aggregation_result_name,
+                ],
+                use_deployed_tile_table=self.use_deployed_tile_table,
+            )
         else:
             # Retrieve all compute queries associated with an aggregation_id (e.g. sum_1d, sum_7d,
-            # sum_30d, etc)
+            # sum_30d, etc). This is called during a scheduled tile task.
             iterator = self.online_store_compute_query_service.list_by_aggregation_id(
-                self.aggregation_id
+                self.aggregation_id,
+                use_deployed_tile_table=self.use_deployed_tile_table,
             )
         out = []
         async for doc in iterator:

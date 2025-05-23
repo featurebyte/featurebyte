@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Callable, Coroutine, List, Optional
 
+from bson import ObjectId
 from redis import Redis
 
 from featurebyte.common.progress import ProgressCallbackType
@@ -21,6 +22,7 @@ from featurebyte.models.tile import (
     TileSpec,
     TileType,
 )
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
@@ -51,6 +53,7 @@ class TileManagerService:
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
         warehouse_table_service: WarehouseTableService,
+        deployed_tile_table_service: DeployedTileTableService,
         redis: Redis[Any],
     ):
         self.online_store_table_version_service = online_store_table_version_service
@@ -60,6 +63,7 @@ class TileManagerService:
         self.feature_service = feature_service
         self.feature_store_service = feature_store_service
         self.warehouse_table_service = warehouse_table_service
+        self.deployed_tile_table_service = deployed_tile_table_service
         self.redis = redis
 
     async def generate_tiles_on_demand(
@@ -227,7 +231,7 @@ class TileManagerService:
     async def populate_feature_store(
         self,
         session: BaseSession,
-        tile_spec: TileSpec,
+        aggregation_id: str,
         job_schedule_ts_str: str,
         aggregation_result_name: str,
     ) -> None:
@@ -238,8 +242,8 @@ class TileManagerService:
         ----------
         session: BaseSession
             Instance of BaseSession to interact with the data warehouse
-        tile_spec: TileSpec
-            the input TileSpec
+        aggregation_id: str
+            aggregation id
         job_schedule_ts_str: str
             timestamp string of the job schedule
         aggregation_result_name: str
@@ -247,11 +251,12 @@ class TileManagerService:
         """
         executor = TileScheduleOnlineStore(
             session=session,
-            aggregation_id=tile_spec.aggregation_id,
+            aggregation_id=aggregation_id,
             job_schedule_ts_str=job_schedule_ts_str,
             online_store_table_version_service=self.online_store_table_version_service,
             online_store_compute_query_service=self.online_store_compute_query_service,
             aggregation_result_name=aggregation_result_name,
+            use_deployed_tile_table=True,
         )
         await executor.execute()
 
@@ -263,11 +268,13 @@ class TileManagerService:
         start_ts_str: Optional[str],
         end_ts_str: Optional[str],
         update_last_run_metadata: bool = False,
+        deployed_tile_table_id: Optional[ObjectId] = None,
     ) -> TileGenerate:
         return TileGenerate(
             session=session,
             feature_store_id=tile_spec.feature_store_id,
             tile_id=tile_spec.tile_id,
+            deployed_tile_table_id=deployed_tile_table_id,
             time_modulo_frequency_second=tile_spec.time_modulo_frequency_second,
             blind_spot_second=tile_spec.blind_spot_second,
             frequency_minute=tile_spec.frequency_minute,
@@ -283,6 +290,7 @@ class TileManagerService:
             aggregation_id=tile_spec.aggregation_id,
             tile_registry_service=self.tile_registry_service,
             warehouse_table_service=self.warehouse_table_service,
+            deployed_tile_table_service=self.deployed_tile_table_service,
         )
 
     async def generate_tiles(
@@ -292,6 +300,7 @@ class TileManagerService:
         tile_type: TileType,
         start_ts_str: Optional[str],
         end_ts_str: Optional[str],
+        deployed_tile_table_id: Optional[ObjectId],
         update_last_run_metadata: bool = False,
     ) -> TileComputeMetrics:
         """
@@ -324,6 +333,7 @@ class TileManagerService:
             start_ts_str=start_ts_str,
             end_ts_str=end_ts_str,
             update_last_run_metadata=update_last_run_metadata,
+            deployed_tile_table_id=deployed_tile_table_id,
         )
         return await tile_generate_ins.execute()
 

@@ -17,12 +17,14 @@ from featurebyte.exception import DocumentNotFoundError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureModel
+from featurebyte.models.deployed_tile_table import DeployedTileTableModel
 from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.tile import TileSpec, TileType
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
 )
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_store_cleanup_scheduler import OnlineStoreCleanupSchedulerService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
@@ -77,6 +79,7 @@ class FeatureManagerService:
         online_store_compute_query_service: OnlineStoreComputeQueryService,
         online_store_cleanup_scheduler_service: OnlineStoreCleanupSchedulerService,
         feature_service: FeatureService,
+        deployed_tile_table_service: DeployedTileTableService,
     ):
         self.catalog_id = catalog_id
         self.tile_manager_service = tile_manager_service
@@ -84,6 +87,7 @@ class FeatureManagerService:
         self.online_store_compute_query_service = online_store_compute_query_service
         self.online_store_cleanup_scheduler_service = online_store_cleanup_scheduler_service
         self.feature_service = feature_service
+        self.deployed_tile_table_service = deployed_tile_table_service
 
     async def online_enable(
         self,
@@ -133,11 +137,17 @@ class FeatureManagerService:
         )
 
         # create online store compute queries for the unscheduled result names
+        deployed_tile_table_info = (
+            await self.deployed_tile_table_service.get_deployed_tile_table_info(
+                set(feature_spec.aggregation_ids),
+            )
+        )
         precompute_queries = get_online_store_precompute_queries(
             graph=feature_spec.graph,
             node=feature_spec.node,
             source_info=feature_spec.get_source_info(),
             agg_result_name_include_serving_names=feature_spec.agg_result_name_include_serving_names,
+            deployed_tile_table_info=deployed_tile_table_info,
         )
         await self._create_precompute_queries(
             precompute_queries,
@@ -150,11 +160,16 @@ class FeatureManagerService:
         tile_specs_to_be_scheduled = []
         for tile_spec in feature_spec.tile_specs:
             aggregation_id_to_tile_spec[tile_spec.aggregation_id] = tile_spec
-            tile_job_exists = await self.tile_manager_service.tile_job_exists(tile_spec=tile_spec)
-            if not tile_job_exists:
-                tile_specs_to_be_scheduled.append(tile_spec)
+            # tile_job_exists = await self.tile_manager_service.tile_job_exists(tile_spec=tile_spec)
+            # if not tile_job_exists:
+            #     tile_specs_to_be_scheduled.append(tile_spec)
+
+        for deployed_tile_table in deployed_tile_table_info.deployed_tile_tables:
             await self._backfill_tiles(
-                session=session, tile_spec=tile_spec, schedule_time=schedule_time
+                session=session,
+                deployed_tile_table=deployed_tile_table,
+                tile_specs=feature_spec.tile_specs,
+                schedule_time=schedule_time,
             )
 
         # populate feature store. if this is called when recreating the schema, we need to run all
@@ -239,11 +254,15 @@ class FeatureManagerService:
         )
         job_schedule_ts_str = job_schedule_ts.strftime("%Y-%m-%d %H:%M:%S")
         await self.tile_manager_service.populate_feature_store(
-            session, tile_spec, job_schedule_ts_str, aggregation_result_name
+            session, tile_spec.aggregation_id, job_schedule_ts_str, aggregation_result_name
         )
 
     async def _backfill_tiles(
-        self, session: BaseSession, tile_spec: TileSpec, schedule_time: datetime
+        self,
+        session: BaseSession,
+        deployed_tile_table: DeployedTileTableModel,
+        tile_specs: List[TileSpec],
+        schedule_time: datetime,
     ) -> None:
         """
         Backfill tiles required to populate internal online store
@@ -283,31 +302,41 @@ class FeatureManagerService:
         ----------
         session: BaseSession
             Instance of BaseSession to interact with the data warehouse
-        tile_spec: TileSpec
-            Instance of TileSpec
+        deployed_tile_table: DeployedTileTableModel
+            DeployedTileTableModel instance
         schedule_time: datetime
             The moment of enabling the feature
         """
         # Derive the tile end date based on expected previous job time
         job_schedule_ts = get_previous_job_datetime(
             input_dt=schedule_time,
-            frequency_minutes=tile_spec.frequency_minute,
-            time_modulo_frequency_seconds=tile_spec.time_modulo_frequency_second,
+            frequency_minutes=deployed_tile_table.frequency_minute,
+            time_modulo_frequency_seconds=deployed_tile_table.time_modulo_frequency_second,
         )
-        end_ts = job_schedule_ts - timedelta(seconds=tile_spec.blind_spot_second)
+        end_ts = job_schedule_ts - timedelta(seconds=deployed_tile_table.blind_spot_second)
 
         # Determine the earliest tiles required to compute the features for offline store. This is
         # determined by the largest feature derivation window.
         max_window_seconds: Optional[int] = None
-        for window in tile_spec.windows:
-            if window is None:
-                max_window_seconds = None
-                break
-            window_seconds = parse_duration_string(window)
-            if tile_spec.offset is not None:
-                window_seconds += parse_duration_string(tile_spec.offset)
-            if max_window_seconds is None or window_seconds > max_window_seconds:
-                max_window_seconds = window_seconds
+        deployed_tile_table_aggregation_ids = {
+            tile_identifier.aggregation_id
+            for tile_identifier in deployed_tile_table.tile_identifiers
+        }
+        tile_specs = [
+            tile_spec
+            for tile_spec in tile_specs
+            if tile_spec.aggregation_id in deployed_tile_table_aggregation_ids
+        ]
+        for tile_spec in tile_specs:
+            for window in tile_spec.windows:
+                if window is None:
+                    max_window_seconds = None
+                    break
+                window_seconds = parse_duration_string(window)
+                if tile_spec.offset is not None:
+                    window_seconds += parse_duration_string(tile_spec.offset)
+                if max_window_seconds is None or window_seconds > max_window_seconds:
+                    max_window_seconds = window_seconds
 
         if max_window_seconds is None:
             # Need to backfill all the way back for features without a bounded window
@@ -321,22 +350,21 @@ class FeatureManagerService:
         start_ts_2: Optional[datetime] = None
         end_ts_2: Optional[datetime] = None
 
-        tile_model = await self.tile_registry_service.get_tile_model(
-            tile_spec.tile_id, tile_spec.aggregation_id
-        )
-        if tile_model is not None and tile_model.backfill_metadata is not None:
-            if start_ts.replace(tzinfo=None) < tile_model.backfill_metadata.start_date:
+        if deployed_tile_table.backfill_metadata is not None:
+            if start_ts.replace(tzinfo=None) < deployed_tile_table.backfill_metadata.start_date:
                 # Need to compute tiles up to previous backfill start date
                 start_ts_1 = start_ts
-                end_ts_1 = tile_model.backfill_metadata.start_date
-            if tile_model.last_run_metadata_offline is None:
+                end_ts_1 = deployed_tile_table.backfill_metadata.start_date
+            if deployed_tile_table.last_run_metadata_offline is None:
                 # Note: unlikely to happen as there should already be a tile job running, but we
                 # still need to handle this case in case of bad state / error
-                start_ts_2 = tile_model.backfill_metadata.start_date
+                start_ts_2 = deployed_tile_table.backfill_metadata.start_date
                 end_ts_2 = end_ts
-            elif tile_model.last_run_metadata_offline.tile_end_date < end_ts.replace(tzinfo=None):
+            elif deployed_tile_table.last_run_metadata_offline.tile_end_date < end_ts.replace(
+                tzinfo=None
+            ):
                 # Need to compute tiles from last run tile end date to end_ts
-                start_ts_2 = tile_model.last_run_metadata_offline.tile_end_date
+                start_ts_2 = deployed_tile_table.last_run_metadata_offline.tile_end_date
                 end_ts_2 = end_ts
             to_init_backfill_metadata = False
         else:
@@ -358,7 +386,7 @@ class FeatureManagerService:
         if start_ts_1 is not None and end_ts_1 is not None:
             await self._backfill_tiles_with_start_end(
                 session=session,
-                tile_spec=tile_spec,
+                deployed_tile_table=deployed_tile_table,
                 start_ts=start_ts_1,
                 end_ts=end_ts_1,
                 update_last_run_metadata=False,
@@ -368,7 +396,7 @@ class FeatureManagerService:
         if start_ts_2 is not None and end_ts_2 is not None:
             await self._backfill_tiles_with_start_end(
                 session=session,
-                tile_spec=tile_spec,
+                deployed_tile_table=deployed_tile_table,
                 start_ts=start_ts_2,
                 end_ts=end_ts_2,
                 update_last_run_metadata=True,
@@ -378,13 +406,14 @@ class FeatureManagerService:
     async def _backfill_tiles_with_start_end(
         self,
         session: BaseSession,
-        tile_spec: TileSpec,
+        deployed_tile_table: DeployedTileTableModel,
         start_ts: datetime,
         end_ts: datetime,
         update_last_run_metadata: bool,
         update_backfill_start_date: bool,
     ) -> None:
         # Align the start timestamp to the tile boundary
+        tile_spec = deployed_tile_table.to_tile_spec()
         start_ind = date_util.timestamp_utc_to_tile_index(
             start_ts,
             tile_spec.time_modulo_frequency_second,
@@ -405,12 +434,12 @@ class FeatureManagerService:
             tile_type=TileType.OFFLINE,
             end_ts_str=end_ts_str,
             start_ts_str=start_ts_str,
+            deployed_tile_table_id=deployed_tile_table.id,
             update_last_run_metadata=update_last_run_metadata,
         )
         if update_backfill_start_date:
-            await self.tile_registry_service.update_backfill_metadata(
-                tile_id=tile_spec.tile_id,
-                aggregation_id=tile_spec.aggregation_id,
+            await self.deployed_tile_table_service.update_backfill_metadata(
+                document_id=deployed_tile_table.id,
                 backfill_start_date=start_ts,
             )
 

@@ -60,10 +60,9 @@ class DeployedTileTableManagerService:
         )
 
         # Extract aggregation_ids that are not deployed yet
+        feature_store_id = features[0].tabular_source.feature_store_id
         source_info = (
-            await self.feature_store_service.get_document(
-                document_id=features[0].tabular_source.feature_store_id
-            )
+            await self.feature_store_service.get_document(document_id=feature_store_id)
         ).get_source_info()
         unique_tile_infos = {}
         for feature in features:
@@ -105,12 +104,14 @@ class DeployedTileTableManagerService:
             ]
             tile_info = combined_info.tile_info
             deployed_tile_table = DeployedTileTableModel(
+                feature_store_id=feature_store_id,
                 table_name=table_name,
                 tile_identifiers=tile_identifiers,
                 tile_compute_query=tile_info.tile_compute_spec.get_tile_compute_query(),
                 entity_column_names=tile_info.entity_columns,
                 value_column_names=tile_info.tile_value_columns,
                 value_column_types=tile_info.tile_value_types,
+                value_by_column=tile_info.value_by_column,
                 frequency_minute=tile_info.frequency // 60,
                 time_modulo_frequency_second=tile_info.time_modulo_frequency,
                 blind_spot_second=tile_info.blind_spot,
