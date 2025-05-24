@@ -50,6 +50,7 @@ from featurebyte.query_graph.sql.online_serving import (
     get_online_features,
 )
 from featurebyte.service.cron_helper import CronHelper
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity_validation import EntityValidationService
 from featurebyte.service.feature import FeatureService
@@ -221,6 +222,7 @@ class FeatureMaterializeService:
         feature_materialize_run_service: FeatureMaterializeRunService,
         cron_helper: CronHelper,
         system_metrics_service: SystemMetricsService,
+        deployed_tile_table_service: DeployedTileTableService,
         redis: Redis[Any],
     ):
         self.feature_service = feature_service
@@ -235,6 +237,7 @@ class FeatureMaterializeService:
         self.feature_materialize_run_service = feature_materialize_run_service
         self.cron_helper = cron_helper
         self.system_metrics_service = system_metrics_service
+        self.deployed_tile_table_service = deployed_tile_table_service
         self.redis = redis
 
     @asynccontextmanager
@@ -333,6 +336,9 @@ class FeatureMaterializeService:
                 request_column_names=set(feature_table_model.serving_names),
                 feature_store=feature_store,
             )
+            on_demand_tile_tables = (
+                await self.deployed_tile_table_service.get_deployed_tile_table_info()
+            ).on_demand_tile_tables
             await get_online_features(
                 session_handler=SessionHandler(
                     session=session, redis=self.redis, feature_store=feature_store
@@ -347,6 +353,7 @@ class FeatureMaterializeService:
                 request_timestamp=feature_timestamp,
                 parent_serving_preparation=parent_serving_preparation,
                 concatenate_serving_names=feature_table_model.serving_names,
+                on_demand_tile_tables=on_demand_tile_tables,
             )
 
             column_names = []

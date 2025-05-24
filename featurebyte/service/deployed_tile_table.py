@@ -5,7 +5,7 @@ DeployedTileTableService class
 from __future__ import annotations
 
 from datetime import datetime
-from typing import AsyncIterator
+from typing import AsyncIterator, Optional
 
 from bson import ObjectId
 
@@ -50,14 +50,14 @@ class DeployedTileTableService(
         return deployed_aggregation_ids.intersection(aggregation_ids)
 
     async def get_deployed_tile_table_info(
-        self, aggregation_ids: set[str]
+        self, aggregation_ids: Optional[set[str]] = None
     ) -> DeployedTileTableInfo:
         """
         Get deployed tile table information
 
         Parameters
         ----------
-        aggregation_ids: set[str]
+        aggregation_ids: Optional[set[str]]
             Set of aggregation_ids to filter the deployed tile tables
 
         Returns
@@ -66,7 +66,11 @@ class DeployedTileTableService(
             Deployed tile table information
         """
         deployed_tile_tables = []
-        async for doc in self.list_deployed_tile_tables_by_aggregation_ids(aggregation_ids):
+        if aggregation_ids is not None:
+            docs = self.list_deployed_tile_tables_by_aggregation_ids(aggregation_ids)
+        else:
+            docs = self.list_documents_iterator(query_filter={})
+        async for doc in docs:
             deployed_tile_tables.append(doc)
         return DeployedTileTableInfo(deployed_tile_tables=deployed_tile_tables)
 

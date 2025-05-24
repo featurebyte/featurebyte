@@ -45,6 +45,7 @@ from featurebyte.query_graph.sql.online_serving import get_online_features
 from featurebyte.schema.deployment import OnlineFeaturesResponseModel
 from featurebyte.schema.info import DeploymentRequestCodeTemplate
 from featurebyte.service.cron_helper import CronHelper
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.entity_serving_names import EntityServingNamesService
 from featurebyte.service.entity_validation import EntityValidationService
@@ -92,6 +93,7 @@ class OnlineServingService:
         feature_list_service: FeatureListService,
         cron_helper: CronHelper,
         system_metrics_service: SystemMetricsService,
+        deployed_tile_table_service: DeployedTileTableService,
     ):
         self.feature_store_service = feature_store_service
         self.session_manager_service = session_manager_service
@@ -106,6 +108,7 @@ class OnlineServingService:
         self.feature_list_service = feature_list_service
         self.cron_helper = cron_helper
         self.system_metrics_service = system_metrics_service
+        self.deployed_tile_table_service = deployed_tile_table_service
 
     async def get_online_features_from_feature_list(
         self,
@@ -170,6 +173,9 @@ class OnlineServingService:
         db_session = await self.session_manager_service.get_feature_store_session(
             feature_store=feature_store,
         )
+        on_demand_tile_tables = (
+            await self.deployed_tile_table_service.get_deployed_tile_table_info()
+        ).on_demand_tile_tables
         features = await get_online_features(
             session_handler=SessionHandler(
                 session=db_session,
@@ -184,6 +190,7 @@ class OnlineServingService:
             parent_serving_preparation=parent_serving_preparation,
             output_table_details=output_table_details,
             online_store_table_version_service=self.online_store_table_version_service,
+            on_demand_tile_tables=on_demand_tile_tables,
         )
         if batch_feature_table_id is not None:
             await self.system_metrics_service.create_metrics(
