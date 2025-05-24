@@ -79,9 +79,19 @@ class TileTaskExecutor:
             final_status = "success"
         finally:
             if params.tile_type.upper() == "ONLINE":
+                if params.deployed_tile_table_id is None:
+                    # legacy tile job only updates a specific aggregation_id
+                    aggregation_ids = [params.aggregation_id]
+                else:
+                    # deployed tile job updates all aggregation_ids in the deployed tile table
+                    aggregation_ids = (
+                        await self.deployed_tile_table_service.get_document(
+                            params.deployed_tile_table_id
+                        )
+                    ).aggregation_ids
                 await self.feature_materialize_sync_service.update_tile_prerequisite(
                     tile_task_ts=dateutil.parser.isoparse(used_job_schedule_ts),
-                    aggregation_id=params.aggregation_id,
+                    aggregation_ids=aggregation_ids,
                     status=final_status,
                 )
 

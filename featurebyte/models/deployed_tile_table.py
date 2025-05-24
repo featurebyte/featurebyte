@@ -66,6 +66,30 @@ class DeployedTileTableModel(FeatureByteCatalogBaseDocumentModel):
     def warehouse_tables(self) -> list[TableDetails]:
         return [TableDetails(table_name=self.table_name)]
 
+    @property
+    def aggregation_ids(self) -> List[str]:
+        """
+        Get the aggregation IDs associated with this deployed tile table
+
+        Returns
+        -------
+        List[str]
+            List of aggregation IDs
+        """
+        return [tile_identifier.aggregation_id for tile_identifier in self.tile_identifiers]
+
+    @property
+    def tile_ids(self) -> List[str]:
+        """
+        Get the tile IDs associated with this deployed tile table
+
+        Returns
+        -------
+        List[str]
+            List of tile IDs
+        """
+        return [tile_identifier.tile_id for tile_identifier in self.tile_identifiers]
+
     class Settings(FeatureByteCatalogBaseDocumentModel.Settings):
         """
         MongoDB settings
@@ -141,8 +165,7 @@ class DeployedTileTableInfo(FeatureByteBaseModel):
         """
         mapping = {}
         for doc in self.deployed_tile_tables:
-            for tile_identifier in doc.tile_identifiers:
-                tile_id = tile_identifier.tile_id
+            for tile_id in doc.tile_ids:
                 if tile_id not in mapping:
                     mapping[tile_id] = doc.table_name
         return mapping

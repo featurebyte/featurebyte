@@ -546,4 +546,4 @@ class TileManagerService:
         ), "Only one of aggregation_id or deployed_tile_table_id can be provided"
         if aggregation_id:
             return f"{tile_type}_{aggregation_id}"
-        return f"deployed_tile_table_{tile_type}_{deployed_tile_table_id}".upper()
+        return f"deployed_tile_table_{tile_type}_{deployed_tile_table_id}"

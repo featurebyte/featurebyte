@@ -327,10 +327,7 @@ class FeatureManagerService:
         # Determine the earliest tiles required to compute the features for offline store. This is
         # determined by the largest feature derivation window.
         max_window_seconds: Optional[int] = None
-        deployed_tile_table_aggregation_ids = {
-            tile_identifier.aggregation_id
-            for tile_identifier in deployed_tile_table.tile_identifiers
-        }
+        deployed_tile_table_aggregation_ids = set(deployed_tile_table.aggregation_ids)
         tile_specs = [
             tile_spec
             for tile_spec in tile_specs

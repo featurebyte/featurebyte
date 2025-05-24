@@ -379,23 +379,23 @@ class OfflineStoreFeatureTableService(
         ):
             yield doc
 
-    async def list_feature_tables_for_aggregation_id(
-        self, aggregation_id: str
+    async def list_feature_tables_for_aggregation_ids(
+        self, aggregation_ids: list[str]
     ) -> AsyncIterator[OfflineStoreFeatureTableModel]:
         """
-        Retrieve list of offline store feature tables associated with an aggregation_id
+        Retrieve list of offline store feature tables associated with any of the given aggregation_ids
 
         Parameters
         ----------
-        aggregation_id: str
-            Aggregation id of interest
+        aggregation_ids: list[str]
+            List of aggregation IDs of interest
 
         Yields
         ------
         AsyncIterator[OfflineStoreFeatureTableModel]
-            List query output
+            Matching feature tables
         """
         async for doc in self.list_documents_iterator(
-            query_filter={"aggregation_ids": aggregation_id}
+            query_filter={"aggregation_ids": {"$in": aggregation_ids}}
         ):
             yield doc
