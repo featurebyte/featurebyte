@@ -17,6 +17,7 @@ from featurebyte.query_graph.sql.tile_compute_combine import combine_tile_comput
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.tile_manager import TileManagerService
 
 logger = get_logger(__name__)
 
@@ -32,10 +33,12 @@ class DeployedTileTableManagerService:
         deployed_tile_table_service: DeployedTileTableService,
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
+        tile_manager_service: TileManagerService,
     ) -> None:
         self.deployed_tile_table_service = deployed_tile_table_service
         self.feature_service = feature_service
         self.feature_store_service = feature_store_service
+        self.tile_manager_service = tile_manager_service
 
     async def handle_online_enabled_features(self, features: list[FeatureModel]) -> None:
         """
@@ -146,3 +149,6 @@ class DeployedTileTableManagerService:
             if not new_tile_identifiers:
                 # Only undeploy a deployed tile table if all tile identifiers are not needed
                 await self.deployed_tile_table_service.delete_document(deployed_tile_table.id)
+                await self.tile_manager_service.remove_deployed_tile_table_job(
+                    deployed_tile_table_id=deployed_tile_table.id,
+                )

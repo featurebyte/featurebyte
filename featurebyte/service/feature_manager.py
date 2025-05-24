@@ -157,14 +157,16 @@ class FeatureManagerService:
 
         # backfill historical tiles if required
         aggregation_id_to_tile_spec = {}
-        tile_specs_to_be_scheduled = []
         for tile_spec in feature_spec.tile_specs:
             aggregation_id_to_tile_spec[tile_spec.aggregation_id] = tile_spec
-            # tile_job_exists = await self.tile_manager_service.tile_job_exists(tile_spec=tile_spec)
-            # if not tile_job_exists:
-            #     tile_specs_to_be_scheduled.append(tile_spec)
 
+        deployed_tile_tables_to_be_scheduled = []
         for deployed_tile_table in deployed_tile_table_info.deployed_tile_tables:
+            job_exists = await self.tile_manager_service.tile_job_exists(
+                info=deployed_tile_table.id
+            )
+            if not job_exists:
+                deployed_tile_tables_to_be_scheduled.append(deployed_tile_table)
             await self._backfill_tiles(
                 session=session,
                 deployed_tile_table=deployed_tile_table,
@@ -195,13 +197,20 @@ class FeatureManagerService:
             )
 
         # enable tile generation with scheduled jobs
-        for tile_spec in tile_specs_to_be_scheduled:
+        for deployed_tile_table in deployed_tile_tables_to_be_scheduled:
             # enable online tiles scheduled job
-            await self.tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
+            tile_spec = deployed_tile_table.to_tile_spec()
+            await self.tile_manager_service.schedule_online_tiles(
+                tile_spec=tile_spec,
+                deployed_tile_table_id=deployed_tile_table.id,
+            )
             logger.debug(f"Done schedule_online_tiles for {tile_spec.aggregation_id}")
 
             # enable offline tiles scheduled job
-            await self.tile_manager_service.schedule_offline_tiles(tile_spec=tile_spec)
+            await self.tile_manager_service.schedule_offline_tiles(
+                tile_spec=tile_spec,
+                deployed_tile_table_id=deployed_tile_table.id,
+            )
             logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
     async def _get_unscheduled_aggregation_result_names(
@@ -491,7 +500,8 @@ class FeatureManagerService:
 
         # disable tile scheduled jobs
         for aggregation_id in feature.aggregation_ids:
-            await self.tile_manager_service.remove_tile_jobs(aggregation_id)
+            # disable legacy tile jobs if any
+            await self.tile_manager_service.remove_legacy_tile_jobs(aggregation_id)
 
         await self.remove_online_store_cleanup_jobs(session, feature.online_store_table_names)
 

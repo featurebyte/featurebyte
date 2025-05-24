@@ -4,7 +4,7 @@ TileManagerService class
 
 from __future__ import annotations
 
-from typing import Any, Callable, Coroutine, List, Optional
+from typing import Any, Callable, Coroutine, List, Optional, Union
 
 from bson import ObjectId
 from redis import Redis
@@ -212,20 +212,33 @@ class TileManagerService:
             await progress_callback()
         return result
 
-    async def tile_job_exists(self, tile_spec: TileSpec) -> bool:
+    async def tile_job_exists(self, info: Union[TileSpec, ObjectId]) -> bool:
         """
         Get existing tile jobs for the given tile_spec
 
         Parameters
         ----------
-        tile_spec: TileSpec
-            the input TileSpec
+        info: TileSpec or ObjectId
+            aggregation_id or deployed_tile_table_id to check for existing tile jobs
 
         Returns
         -------
             whether the tile jobs already exist
         """
-        job_id = f"{TileType.ONLINE}_{tile_spec.aggregation_id}"
+        if isinstance(info, TileSpec):
+            # Check for legacy tile jobs
+            aggregation_id = info.aggregation_id
+            deployed_tile_table_id = None
+        else:
+            # Check for new tile jobs (targeting a deployed tile table)
+            assert isinstance(info, ObjectId)
+            aggregation_id = None
+            deployed_tile_table_id = info
+        job_id = self._get_job_id(
+            TileType.ONLINE,
+            aggregation_id=aggregation_id,
+            deployed_tile_table_id=deployed_tile_table_id,
+        )
         return await self.tile_scheduler_service.get_job_details(job_id=job_id) is not None
 
     async def populate_feature_store(
@@ -340,6 +353,7 @@ class TileManagerService:
     async def schedule_online_tiles(
         self,
         tile_spec: TileSpec,
+        deployed_tile_table_id: ObjectId,
         monitor_periods: int = 10,
     ) -> Optional[str]:
         """
@@ -349,6 +363,8 @@ class TileManagerService:
         ----------
         tile_spec: TileSpec
             the input TileSpec
+        deployed_tile_table_id: ObjectId
+            deployed tile table id to be used for the online tile job
         monitor_periods: int
             number of tile periods to monitor and re-generate. Default is 10
 
@@ -360,6 +376,7 @@ class TileManagerService:
             tile_spec=tile_spec,
             tile_type=TileType.ONLINE,
             monitor_periods=monitor_periods,
+            deployed_tile_table_id=deployed_tile_table_id,
         )
 
         return sql
@@ -367,6 +384,7 @@ class TileManagerService:
     async def schedule_offline_tiles(
         self,
         tile_spec: TileSpec,
+        deployed_tile_table_id: ObjectId,
         offline_minutes: int = 1440,
     ) -> Optional[str]:
         """
@@ -376,6 +394,8 @@ class TileManagerService:
         ----------
         tile_spec: TileSpec
             the input TileSpec
+        deployed_tile_table_id: ObjectId
+            deployed tile table id to be used for the offline tile job
         offline_minutes: int
             offline tile lookback minutes to monitor and re-generate. Default is 1440
 
@@ -388,6 +408,7 @@ class TileManagerService:
             tile_spec=tile_spec,
             tile_type=TileType.OFFLINE,
             offline_minutes=offline_minutes,
+            deployed_tile_table_id=deployed_tile_table_id,
         )
 
         return sql
@@ -396,6 +417,7 @@ class TileManagerService:
         self,
         tile_spec: TileSpec,
         tile_type: TileType,
+        deployed_tile_table_id: ObjectId,
         offline_minutes: int = 1440,
         monitor_periods: int = 10,
     ) -> Optional[str]:
@@ -418,8 +440,12 @@ class TileManagerService:
             generated sql to be executed or None if the tile job already exists
         """
 
-        logger.info(f"Scheduling {tile_type} tile job for {tile_spec.aggregation_id}")
-        job_id = f"{tile_type}_{tile_spec.aggregation_id}"
+        logger.info(f"Scheduling {tile_type} tile job for {deployed_tile_table_id}")
+        job_id = self._get_job_id(
+            tile_type=tile_type,
+            aggregation_id=None,
+            deployed_tile_table_id=deployed_tile_table_id,
+        )
 
         assert tile_spec.feature_store_id is not None
         exist_job = await self.tile_scheduler_service.get_job_details(job_id=job_id)
@@ -440,6 +466,7 @@ class TileManagerService:
                 offline_period_minute=offline_minutes,
                 monitor_periods=monitor_periods,
                 aggregation_id=tile_spec.aggregation_id,
+                deployed_tile_table_id=deployed_tile_table_id,
             )
             interval_seconds = (
                 tile_spec.frequency_minute * 60
@@ -458,7 +485,7 @@ class TileManagerService:
 
         return None
 
-    async def remove_tile_jobs(self, aggregation_id: str) -> None:
+    async def remove_legacy_tile_jobs(self, aggregation_id: str) -> None:
         """
         Remove tiles
 
@@ -479,4 +506,44 @@ class TileManagerService:
             # online enabled features
             logger.info("Stopping job with custom scheduler")
             for t_type in [TileType.ONLINE, TileType.OFFLINE]:
-                await self.tile_scheduler_service.stop_job(job_id=f"{t_type}_{aggregation_id}")
+                job_id = self._get_job_id(
+                    tile_type=t_type,
+                    aggregation_id=aggregation_id,
+                    deployed_tile_table_id=None,
+                )
+                await self.tile_scheduler_service.stop_job(job_id=job_id)
+
+    async def remove_deployed_tile_table_job(self, deployed_tile_table_id: ObjectId) -> None:
+        """
+        Remove deployed tile table job
+
+        Parameters
+        ----------
+        deployed_tile_table_id: ObjectId
+            Deployed tile table id that identifies the tile job to be removed
+        """
+        logger.info("Stopping job with custom scheduler")
+        for tile_type in [TileType.ONLINE, TileType.OFFLINE]:
+            job_id = self._get_job_id(
+                tile_type=tile_type,
+                aggregation_id=None,
+                deployed_tile_table_id=deployed_tile_table_id,
+            )
+            await self.tile_scheduler_service.stop_job(job_id=job_id)
+
+    @classmethod
+    def _get_job_id(
+        cls,
+        tile_type: TileType,
+        aggregation_id: Optional[str],
+        deployed_tile_table_id: Optional[ObjectId],
+    ) -> str:
+        assert not (
+            aggregation_id is None and deployed_tile_table_id is None
+        ), "Either aggregation_id or deployed_tile_table_id must be provided"
+        assert (
+            aggregation_id is None or deployed_tile_table_id is None
+        ), "Only one of aggregation_id or deployed_tile_table_id can be provided"
+        if aggregation_id:
+            return f"{tile_type}_{aggregation_id}"
+        return f"deployed_tile_table_{tile_type}_{deployed_tile_table_id}".upper()

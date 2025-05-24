@@ -210,7 +210,7 @@ async def test_online_disable(
     """
     mock_snowflake_session.execute_query.side_effect = [None, None, None, None]
     with mock.patch(
-        "featurebyte.service.tile_manager.TileManagerService.remove_tile_jobs"
+        "featurebyte.service.tile_manager.TileManagerService.remove_legacy_tile_jobs"
     ) as mock_tile_manager:
         mock_tile_manager.side_effect = None
         with mock.patch(
