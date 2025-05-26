@@ -89,7 +89,7 @@ async def test_online_enable(
         "featurebyte.service.tile_manager.TileManagerService.tile_job_exists"
     ) as mock_tile_job_exists:
         with mock.patch(
-            "featurebyte.service.tile_registry_service.TileRegistryService.update_backfill_metadata"
+            "featurebyte.service.deployed_tile_table.DeployedTileTableService.update_backfill_metadata"
         ):
             mock_tile_job_exists.return_value = False
             await feature_manager_service.online_enable(mock_snowflake_session, feature_spec)

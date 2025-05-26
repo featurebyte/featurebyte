@@ -148,6 +148,7 @@ class DeployedTileTableManagerService:
             ]
             if not new_tile_identifiers:
                 # Only undeploy a deployed tile table if all tile identifiers are not needed
+                # TODO: drop table in the warehouse
                 await self.deployed_tile_table_service.delete_document(deployed_tile_table.id)
                 await self.tile_manager_service.remove_deployed_tile_table_job(
                     deployed_tile_table_id=deployed_tile_table.id,
