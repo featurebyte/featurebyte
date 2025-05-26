@@ -16,8 +16,9 @@ from bson import ObjectId
 from featurebyte import FeatureList
 from featurebyte.enum import InternalName
 from featurebyte.exception import RecordRetrievalException
-from featurebyte.feature_manager.model import ExtendedFeatureModel
-from featurebyte.models.online_store_spec import OnlineFeatureSpec
+from featurebyte.query_graph.sql.online_store_compute_query import (
+    get_online_store_precompute_queries,
+)
 from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 from tests.util.helper import create_batch_request_table_from_dataframe, fb_assert_frame_equal
@@ -185,20 +186,20 @@ async def test_online_serving_sql(
         assert deployment.enabled is False
 
 
-def get_online_feature_spec(feature):
-    """
-    Helper function to create an online feature spec from a feature
-    """
-    return OnlineFeatureSpec(feature=ExtendedFeatureModel(**feature.model_dump(by_alias=True)))
-
-
 def get_online_store_table_name_to_aggregation_id(feature_list):
     """
     Helper function to get a mapping from online store table name to aggregation ids
     """
     online_store_table_name_to_aggregation_id = defaultdict(set)
     for _, feature_object in feature_list.feature_objects.items():
-        for query in get_online_feature_spec(feature_object).precompute_queries:
+        feature_model = feature_object.cached_model
+        precompute_queries = get_online_store_precompute_queries(
+            graph=feature_model.graph,
+            node=feature_model.node,
+            source_info=feature_model.get_source_info(),
+            agg_result_name_include_serving_names=feature_model.agg_result_name_include_serving_names,
+        )
+        for query in precompute_queries:
             online_store_table_name_to_aggregation_id[query.table_name].add(query.aggregation_id)
     return online_store_table_name_to_aggregation_id
 

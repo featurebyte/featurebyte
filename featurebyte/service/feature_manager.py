@@ -14,11 +14,15 @@ from featurebyte.common.date_util import get_next_job_datetime
 from featurebyte.common.model_util import parse_duration_string
 from featurebyte.enum import SourceType
 from featurebyte.exception import DocumentNotFoundError
+from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.logging import get_logger
+from featurebyte.models import FeatureModel
 from featurebyte.models.deployment import FeastIntegrationSettings
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
-from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.models.tile import TileSpec, TileType
+from featurebyte.query_graph.sql.online_store_compute_query import (
+    get_online_store_precompute_queries,
+)
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.online_store_cleanup_scheduler import OnlineStoreCleanupSchedulerService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
@@ -84,7 +88,7 @@ class FeatureManagerService:
     async def online_enable(
         self,
         session: BaseSession,
-        feature_spec: OnlineFeatureSpec,
+        feature_spec: ExtendedFeatureModel,
         schedule_time: Optional[datetime] = None,
         is_recreating_schema: bool = False,
     ) -> None:
@@ -95,8 +99,8 @@ class FeatureManagerService:
         ----------
         session: BaseSession
             Instance of BaseSession to interact with the data warehouse
-        feature_spec: OnlineFeatureSpec
-            Instance of OnlineFeatureSpec
+        feature_spec: ExtendedFeatureModel
+            Instance of ExtendedFeatureModel
         schedule_time: Optional[datetime]
             the moment of scheduling the job
         is_recreating_schema: bool
@@ -116,7 +120,7 @@ class FeatureManagerService:
 
         logger.info(
             "Online enabling a feature",
-            extra={"feature_name": feature_spec.feature.name, "schedule_time": schedule_time},
+            extra={"feature_name": feature_spec.name, "schedule_time": schedule_time},
         )
 
         # get aggregation result names that need to be populated
@@ -128,13 +132,23 @@ class FeatureManagerService:
             extra={"unscheduled_result_names": list(unscheduled_result_names)},
         )
 
-        # insert records into tile-feature mapping table
-        await self._update_tile_feature_mapping_table(feature_spec, unscheduled_result_names)
+        # create online store compute queries for the unscheduled result names
+        precompute_queries = get_online_store_precompute_queries(
+            graph=feature_spec.graph,
+            node=feature_spec.node,
+            source_info=feature_spec.get_source_info(),
+            agg_result_name_include_serving_names=feature_spec.agg_result_name_include_serving_names,
+        )
+        await self._create_precompute_queries(
+            precompute_queries,
+            unscheduled_result_names,
+            feature_spec.tabular_source.feature_store_id,
+        )
 
         # backfill historical tiles if required
         aggregation_id_to_tile_spec = {}
         tile_specs_to_be_scheduled = []
-        for tile_spec in feature_spec.feature.tile_specs:
+        for tile_spec in feature_spec.tile_specs:
             aggregation_id_to_tile_spec[tile_spec.aggregation_id] = tile_spec
             tile_job_exists = await self.tile_manager_service.tile_job_exists(tile_spec=tile_spec)
             if not tile_job_exists:
@@ -146,7 +160,7 @@ class FeatureManagerService:
         # populate feature store. if this is called when recreating the schema, we need to run all
         # the online store compute queries since the tables need to be regenerated.
         for query in self._filter_precompute_queries(
-            feature_spec, None if is_recreating_schema else unscheduled_result_names
+            precompute_queries, None if is_recreating_schema else unscheduled_result_names
         ):
             await self._populate_feature_store(
                 session=session,
@@ -176,7 +190,7 @@ class FeatureManagerService:
             logger.debug(f"Done schedule_offline_tiles for {tile_spec.aggregation_id}")
 
     async def _get_unscheduled_aggregation_result_names(
-        self, feature_spec: OnlineFeatureSpec
+        self, feature_spec: ExtendedFeatureModel
     ) -> Set[str]:
         """
         Get the aggregation result names that are not yet scheduled
@@ -187,14 +201,14 @@ class FeatureManagerService:
 
         Parameters
         ----------
-        feature_spec: OnlineFeatureSpec
-            Instance of OnlineFeatureSpec
+        feature_spec: ExtendedFeatureModel
+            Instance of ExtendedFeatureModel
 
         Returns
         -------
         Set[str]
         """
-        result_names = {query.result_name for query in feature_spec.precompute_queries}
+        result_names = {result_name for result_name in feature_spec.aggregation_result_names}
         async for query in self.online_store_compute_query_service.list_by_result_names(
             list(result_names)
         ):
@@ -203,10 +217,10 @@ class FeatureManagerService:
 
     @staticmethod
     def _filter_precompute_queries(
-        feature_spec: OnlineFeatureSpec, includes: Optional[Set[str]]
+        precompute_queries: list[OnlineStoreComputeQueryModel], includes: Optional[Set[str]]
     ) -> List[OnlineStoreComputeQueryModel]:
         out = []
-        for query in feature_spec.precompute_queries:
+        for query in precompute_queries:
             if includes is None or query.result_name in includes:
                 out.append(query)
         return out
@@ -400,29 +414,30 @@ class FeatureManagerService:
                 backfill_start_date=start_ts,
             )
 
-    async def _update_tile_feature_mapping_table(
+    async def _create_precompute_queries(
         self,
-        feature_spec: OnlineFeatureSpec,
+        precompute_queries: List[OnlineStoreComputeQueryModel],
         unscheduled_result_names: Set[str],
+        feature_store_id: ObjectId,
     ) -> None:
         """
-        Insert records into tile-feature mapping table
+        Create OnlineStorePrecomputeQuery documents for the unscheduled result names
 
         Parameters
         ----------
-        feature_spec: OnlineFeatureSpec
-            Instance of OnlineFeatureSpec
+        precompute_queries: List[OnlineStoreComputeQueryModel]
+            List of OnlineStoreComputeQueryModel to be created if needed
         unscheduled_result_names: Set[str]
             Set of unscheduled result names. These result names are not in the online store mapping
             table yet and should be inserted.
+        feature_store_id: ObjectId
+            Feature store ID to be used for the OnlineStoreComputeQuery documents
         """
-        for query in self._filter_precompute_queries(feature_spec, unscheduled_result_names):
-            query.feature_store_id = feature_spec.feature.tabular_source.feature_store_id
+        for query in self._filter_precompute_queries(precompute_queries, unscheduled_result_names):
+            query.feature_store_id = feature_store_id
             await self.online_store_compute_query_service.create_document(query)
 
-    async def online_disable(
-        self, session: Optional[BaseSession], feature_spec: OnlineFeatureSpec
-    ) -> None:
+    async def online_disable(self, session: Optional[BaseSession], feature: FeatureModel) -> None:
         """
         Schedule both online and offline tile jobs
 
@@ -430,8 +445,8 @@ class FeatureManagerService:
         ----------
         session: Optional[BaseSession]
             Instance of BaseSession to interact with the data warehouse
-        feature_spec: OnlineFeatureSpec
-            input feature instance
+        feature: FeatureModel
+            Instance of FeatureModel
         """
         if (
             FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED
@@ -440,20 +455,16 @@ class FeatureManagerService:
         ):
             # Remove Databricks UDF for on-demand feature
             assert isinstance(session, DatabricksUnitySession)
-            await self.remove_databricks_udf_for_on_demand_feature_if_exists(session, feature_spec)
+            await self.remove_databricks_udf_for_on_demand_feature_if_exists(session, feature)
 
         # cleaning online store compute queries
-        await self.remove_online_store_compute_queries(
-            feature_spec.feature.aggregation_result_names
-        )
+        await self.remove_online_store_compute_queries(feature.aggregation_result_names)
 
         # disable tile scheduled jobs
-        for aggregation_id in feature_spec.feature.aggregation_ids:
+        for aggregation_id in feature.aggregation_ids:
             await self.tile_manager_service.remove_tile_jobs(aggregation_id)
 
-        await self.remove_online_store_cleanup_jobs(
-            session, feature_spec.feature.online_store_table_names
-        )
+        await self.remove_online_store_cleanup_jobs(session, feature.online_store_table_names)
 
     async def remove_online_store_compute_queries(
         self, aggregation_result_names: List[str]
@@ -526,7 +537,7 @@ class FeatureManagerService:
 
     @staticmethod
     async def may_register_databricks_udf_for_on_demand_feature(
-        session: DatabricksUnitySession, feature_spec: OnlineFeatureSpec
+        session: DatabricksUnitySession, feature: FeatureModel
     ) -> None:
         """
         Register Databricks UDF for on-demand feature.
@@ -535,16 +546,16 @@ class FeatureManagerService:
         ----------
         session: DatabricksUnitySession
             Instance of DatabricksUnitySession to interact with the data warehouse
-        feature_spec: OnlineFeatureSpec
-            Instance of OnlineFeatureSpec
+        feature: FeatureModel
+            Instance of FeatureModel
         """
-        offline_store_info = feature_spec.feature.offline_store_info
+        offline_store_info = feature.offline_store_info
         if offline_store_info and offline_store_info.udf_info and offline_store_info.udf_info.codes:
             udf_info = offline_store_info.udf_info
             logger.debug(
                 "Registering Databricks UDF for on-demand feature",
                 extra={
-                    "feature_name": feature_spec.feature.name,
+                    "feature_name": feature.name,
                     "function_name": udf_info.sql_function_name,
                 },
             )
@@ -553,7 +564,7 @@ class FeatureManagerService:
 
     @staticmethod
     async def remove_databricks_udf_for_on_demand_feature_if_exists(
-        session: DatabricksUnitySession, feature_spec: OnlineFeatureSpec
+        session: DatabricksUnitySession, feature: FeatureModel
     ) -> None:
         """
         Remove Databricks UDF for on-demand feature.
@@ -562,10 +573,10 @@ class FeatureManagerService:
         ----------
         session: DatabricksUnitySession
             Instance of DatabricksUnitySession to interact with the data warehouse
-        feature_spec: OnlineFeatureSpec
-            Instance of OnlineFeatureSpec
+        feature: FeatureModel
+            Instance of FeatureModel
         """
-        offline_store_info = feature_spec.feature.offline_store_info
+        offline_store_info = feature.offline_store_info
         if (
             offline_store_info
             and offline_store_info.udf_info
@@ -575,7 +586,7 @@ class FeatureManagerService:
             logger.debug(
                 "Removing Databricks UDF for on-demand feature",
                 extra={
-                    "feature_name": feature_spec.feature.name,
+                    "feature_name": feature.name,
                     "function_name": udf_info.sql_function_name,
                 },
             )
