@@ -950,6 +950,9 @@ class DeployService:
                 feature_list=feature_list,
             )
 
+            # update deployed tile tables
+            await self.deployed_tile_table_manager_service.handle_online_disabled_features()
+
         # check if feast integration is enabled for the catalog
         if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
             feast_registry = await self.feast_integration_service.get_feast_registry(deployment)
