@@ -13,6 +13,7 @@ from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.query_graph.sql.online_store_compute_query import (
     get_online_store_precompute_queries,
 )
+from tests.unit.service.test_feature_manager import feature_manager_deployment_setup
 
 
 @pytest.fixture(name="mock_snowflake_feature")
@@ -75,6 +76,7 @@ async def test_online_enable(
     mock_generate_tiles,
     mock_schedule_offline_tiles,
     mock_schedule_online_tiles,
+    app_container,
     mock_snowflake_feature,
     feature_spec,
     feature_manager_service,
@@ -92,6 +94,7 @@ async def test_online_enable(
             "featurebyte.service.deployed_tile_table.DeployedTileTableService.update_backfill_metadata"
         ):
             mock_tile_job_exists.return_value = False
+            await feature_manager_deployment_setup(app_container, mock_snowflake_feature)
             await feature_manager_service.online_enable(mock_snowflake_session, feature_spec)
 
     mock_schedule_online_tiles.assert_called_once()
@@ -123,6 +126,7 @@ async def test_online_enable_duplicate_tile_task(
     mock_snowflake_session,
     feature_spec,
     feature_manager_service,
+    app_container,
 ):
     """
     Test online_enable
@@ -148,6 +152,7 @@ async def test_online_enable_duplicate_tile_task(
                 "featurebyte.service.feature_manager.FeatureManagerService._populate_feature_store"
             ) as _:
                 mock_tile_job_exists.return_value = True
+                await feature_manager_deployment_setup(app_container, mock_snowflake_feature)
                 await feature_manager_service.online_enable(mock_snowflake_session, feature_spec)
 
     mock_schedule_online_tiles.assert_not_called()
@@ -165,6 +170,7 @@ async def test_online_enable_aggregation_results_already_scheduled(
     mock_snowflake_session,
     feature_spec_with_scheduled_aggregations,
     feature_manager_service,
+    app_container,
 ):
     """
     Test online_enable
@@ -190,6 +196,7 @@ async def test_online_enable_aggregation_results_already_scheduled(
                 "featurebyte.service.feature_manager.FeatureManagerService._populate_feature_store"
             ) as _:
                 mock_tile_job_exists.return_value = True
+                await feature_manager_deployment_setup(app_container, mock_snowflake_feature)
                 await feature_manager_service.online_enable(
                     mock_snowflake_session, feature_spec_with_scheduled_aggregations
                 )

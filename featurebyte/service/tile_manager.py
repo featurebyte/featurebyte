@@ -439,7 +439,7 @@ class TileManagerService:
         -------
             generated sql to be executed or None if the tile job already exists
         """
-
+        # TODO: add tests
         logger.info(f"Scheduling {tile_type} tile job for {deployed_tile_table_id}")
         job_id = self._get_job_id(
             tile_type=tile_type,

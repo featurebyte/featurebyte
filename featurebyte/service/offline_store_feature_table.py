@@ -10,6 +10,7 @@ from typing import Any, AsyncIterator, Dict, Optional
 
 from bson import ObjectId, json_util
 from redis.lock import Lock
+from typeguard import typechecked
 
 from featurebyte.models.feature_list import FeatureCluster
 from featurebyte.models.offline_store_feature_table import (
@@ -379,6 +380,7 @@ class OfflineStoreFeatureTableService(
         ):
             yield doc
 
+    @typechecked
     async def list_feature_tables_for_aggregation_ids(
         self, aggregation_ids: list[str]
     ) -> AsyncIterator[OfflineStoreFeatureTableModel]:

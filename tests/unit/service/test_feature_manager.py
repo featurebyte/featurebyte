@@ -101,7 +101,7 @@ def get_online_feature_spec(feature_model):
     return extended_feature_model
 
 
-async def deployment_enable_setup(app_container, feature_model):
+async def feature_manager_deployment_setup(app_container, feature_model):
     """
     Run necessary setup as part of the full online enabling process for a feature. This is assumed
     to be done when FeatureManager's online_enable() or online_disable() is called
@@ -138,7 +138,7 @@ async def test_enable_new_feature(
     assert deployed_tile_table is None
 
     # Online enable a feature
-    await deployment_enable_setup(app_container, feature_model)
+    await feature_manager_deployment_setup(app_container, feature_model)
     mock_snowflake_session.table_exists.side_effect = lambda _: False
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
@@ -183,7 +183,7 @@ async def test_enable_feature_with_existing_backfill_metadata(
 
     # Enable feature_2h. This sets up the backfill metadata of the deployed tile table model
     mock_snowflake_session.table_exists.side_effect = lambda _: False
-    await deployment_enable_setup(app_container, feature_2h.cached_model)
+    await feature_manager_deployment_setup(app_container, feature_2h.cached_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_2h.cached_model),
@@ -198,7 +198,7 @@ async def test_enable_feature_with_existing_backfill_metadata(
     }
     mock_snowflake_session.reset_mock()
     mock_snowflake_session.table_exists.side_effect = lambda _: True
-    await deployment_enable_setup(app_container, feature_4h.cached_model)
+    await feature_manager_deployment_setup(app_container, feature_4h.cached_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_4h.cached_model),
@@ -244,7 +244,7 @@ async def test_enable_feature_with_required_tiles_available(
 
     # Enable feature_4h. This sets up the tile registry metadata
     mock_snowflake_session.table_exists.side_effect = lambda _: False
-    await deployment_enable_setup(app_container, feature_4h.cached_model)
+    await feature_manager_deployment_setup(app_container, feature_4h.cached_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_4h.cached_model),
@@ -265,7 +265,7 @@ async def test_enable_feature_with_required_tiles_available(
     # Enable feature_2h. No tiles need to be generated again because feature_4h has already
     # generated the required tiles
     mock_snowflake_session.reset_mock()
-    await deployment_enable_setup(app_container, feature_2h.cached_model)
+    await feature_manager_deployment_setup(app_container, feature_2h.cached_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_2h.cached_model),
@@ -313,7 +313,7 @@ async def test_enable_second_feature_later_date(
 
     # Enable feature_2h. This sets up the tile registry metadata
     mock_snowflake_session.table_exists.side_effect = lambda _: False
-    await deployment_enable_setup(app_container, feature_2h.cached_model)
+    await feature_manager_deployment_setup(app_container, feature_2h.cached_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_2h.cached_model),
@@ -338,7 +338,7 @@ async def test_enable_second_feature_later_date(
     }
     mock_snowflake_session.reset_mock()
     mock_snowflake_session.table_exists.side_effect = lambda _: True
-    await deployment_enable_setup(app_container, feature_4h.cached_model)
+    await feature_manager_deployment_setup(app_container, feature_4h.cached_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_4h.cached_model),
@@ -385,7 +385,7 @@ async def test_enable_second_feature_much_later_date(
 
     # Enable feature_2h. This sets up the tile registry metadata
     mock_snowflake_session.table_exists.side_effect = lambda _: False
-    await deployment_enable_setup(app_container, feature_2h.cached_model)
+    await feature_manager_deployment_setup(app_container, feature_2h.cached_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_2h.cached_model),
@@ -412,7 +412,7 @@ async def test_enable_second_feature_much_later_date(
     }
     mock_snowflake_session.reset_mock()
     mock_snowflake_session.table_exists.side_effect = lambda _: True
-    await deployment_enable_setup(app_container, feature_4h.cached_model)
+    await feature_manager_deployment_setup(app_container, feature_4h.cached_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_4h.cached_model),
@@ -458,7 +458,7 @@ async def test_enable_with_backfill_metadata_but_not_last_run_metadata(
 
     # Enable feature_2h. This sets up the tile registry metadata
     mock_snowflake_session.table_exists.side_effect = lambda _: False
-    await deployment_enable_setup(app_container, feature_2h.cached_model)
+    await feature_manager_deployment_setup(app_container, feature_2h.cached_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_2h.cached_model),
@@ -506,7 +506,7 @@ async def test_enable_with_backfill_metadata_but_not_last_run_metadata(
     }
     mock_snowflake_session.reset_mock()
     mock_snowflake_session.table_exists.side_effect = lambda _: True
-    await deployment_enable_setup(app_container, feature_2h.cached_model)
+    await feature_manager_deployment_setup(app_container, feature_2h.cached_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_2h.cached_model),
@@ -551,7 +551,7 @@ async def test_enable_feature_with_offset(
     assert deployed_tile_table is None
 
     mock_snowflake_session.table_exists.side_effect = lambda _: False
-    await deployment_enable_setup(app_container, feature_model)
+    await feature_manager_deployment_setup(app_container, feature_model)
     await feature_manager_service.online_enable(
         session=mock_snowflake_session,
         feature_spec=get_online_feature_spec(feature_model),
