@@ -2627,7 +2627,7 @@ def mock_snowflake_session_fixture():
 
 
 @pytest.fixture
-def mock_snowflake_tile():
+def mock_snowflake_tile(snowflake_feature_store_id):
     """
     Pytest Fixture for TileSnowflake instance
     """
@@ -2647,7 +2647,7 @@ def mock_snowflake_tile():
         value_column_names=["col2"],
         value_column_types=["FLOAT"],
         entity_column_names=["col1"],
-        feature_store_id=ObjectId(),
+        feature_store_id=snowflake_feature_store_id,
         windows=["1d"],
     )
 

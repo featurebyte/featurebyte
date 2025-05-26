@@ -331,6 +331,8 @@ class TileManagerService:
             start_timestamp of tile. ie. 2022-06-20 15:00:00
         end_ts_str: str
             end_timestamp of tile. ie. 2022-06-21 15:00:00
+        deployed_tile_table_id: Optional[ObjectId]
+            deployed tile table id to be used for the tile
         update_last_run_metadata: bool
             whether to update last run metadata (intended to be set when enabling deployment and
             when running scheduled tile jobs)
@@ -353,7 +355,7 @@ class TileManagerService:
     async def schedule_online_tiles(
         self,
         tile_spec: TileSpec,
-        deployed_tile_table_id: ObjectId,
+        deployed_tile_table_id: Optional[ObjectId],
         monitor_periods: int = 10,
     ) -> Optional[str]:
         """
@@ -363,7 +365,7 @@ class TileManagerService:
         ----------
         tile_spec: TileSpec
             the input TileSpec
-        deployed_tile_table_id: ObjectId
+        deployed_tile_table_id: Optional[ObjectId]
             deployed tile table id to be used for the online tile job
         monitor_periods: int
             number of tile periods to monitor and re-generate. Default is 10
@@ -384,7 +386,7 @@ class TileManagerService:
     async def schedule_offline_tiles(
         self,
         tile_spec: TileSpec,
-        deployed_tile_table_id: ObjectId,
+        deployed_tile_table_id: Optional[ObjectId],
         offline_minutes: int = 1440,
     ) -> Optional[str]:
         """
@@ -394,7 +396,7 @@ class TileManagerService:
         ----------
         tile_spec: TileSpec
             the input TileSpec
-        deployed_tile_table_id: ObjectId
+        deployed_tile_table_id: Optional[ObjectId]
             deployed tile table id to be used for the offline tile job
         offline_minutes: int
             offline tile lookback minutes to monitor and re-generate. Default is 1440
@@ -439,11 +441,10 @@ class TileManagerService:
         -------
             generated sql to be executed or None if the tile job already exists
         """
-        # TODO: add tests
         logger.info(f"Scheduling {tile_type} tile job for {deployed_tile_table_id}")
         job_id = self._get_job_id(
             tile_type=tile_type,
-            aggregation_id=None,
+            aggregation_id=tile_spec.aggregation_id if deployed_tile_table_id is None else None,
             deployed_tile_table_id=deployed_tile_table_id,
         )
 
