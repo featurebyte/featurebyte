@@ -2,6 +2,8 @@
 Unit tests for DeployedTileTableManagerService
 """
 
+from unittest.mock import call, patch
+
 import pytest
 import pytest_asyncio
 from bson import ObjectId
@@ -88,7 +90,7 @@ def feature_set_3_fixture(feature_set_1):
 
 
 @pytest_asyncio.fixture(name="multiple_deployed_features")
-async def multiple_features_fixture(
+async def multiple_deployed_features_fixture(
     feature_set_1,
     feature_set_2,
     app_container,
@@ -157,6 +159,18 @@ async def deployed_feature_set_1_then_feature_set_3_fixture(
         feature_list_name=str(ObjectId()),
         feature_ids=[feature.id for feature in feature_set_3],
     )
+
+
+@pytest.fixture(name="mock_get_feature_store_session")
+def mock_get_feature_store_session_fixture(mock_snowflake_session):
+    """
+    Patch get_feature_store_session to return a mock session
+    """
+    with patch(
+        "featurebyte.service.deployed_tile_table_manager.DeployedTileTableManagerService._get_feature_store_session",
+    ) as patched_get_feature_store_session:
+        patched_get_feature_store_session.return_value = mock_snowflake_session
+        yield patched_get_feature_store_session
 
 
 async def get_deployed_tile_table_models(deployed_tile_table_service):
@@ -294,6 +308,7 @@ async def test_handle_online_enabled_features(
     )
 
 
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_handle_online_disabled_features(
     deployed_tile_table_service,
@@ -301,6 +316,7 @@ async def test_handle_online_disabled_features(
     multiple_deployed_features,
     multiple_individually_deployed_features,
     source_info,
+    mock_snowflake_session,
 ):
     """
     Test handle_online_disabled_features
@@ -341,6 +357,22 @@ async def test_handle_online_disabled_features(
     await deployed_tile_table_manager_service.handle_online_disabled_features()
     deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
     assert len(deployed_tile_table_models) == 0
+
+    # Check that the drop_table method was called for the removed deployed tile tables
+    assert mock_snowflake_session.drop_table.call_args_list == [
+        call(
+            "__FB_DEPLOYED_TILE_TABLE_000000000000000000000000",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            if_exists=True,
+        ),
+        call(
+            "__FB_DEPLOYED_TILE_TABLE_000000000000000000000001",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            if_exists=True,
+        ),
+    ]
 
 
 @pytest.mark.usefixtures("deployed_feature_set_1_then_feature_set_3")

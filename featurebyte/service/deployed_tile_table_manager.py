@@ -17,7 +17,9 @@ from featurebyte.query_graph.sql.tile_compute_combine import combine_tile_comput
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.service.tile_manager import TileManagerService
+from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
 
@@ -34,11 +36,13 @@ class DeployedTileTableManagerService:
         feature_service: FeatureService,
         feature_store_service: FeatureStoreService,
         tile_manager_service: TileManagerService,
+        session_manager_service: SessionManagerService,
     ) -> None:
         self.deployed_tile_table_service = deployed_tile_table_service
         self.feature_service = feature_service
         self.feature_store_service = feature_store_service
         self.tile_manager_service = tile_manager_service
+        self.session_manager_service = session_manager_service
 
     async def handle_online_enabled_features(self, features: list[FeatureModel]) -> None:
         """
@@ -148,8 +152,29 @@ class DeployedTileTableManagerService:
             ]
             if not new_tile_identifiers:
                 # Only undeploy a deployed tile table if all tile identifiers are not needed
-                # TODO: drop table in the warehouse
-                await self.deployed_tile_table_service.delete_document(deployed_tile_table.id)
-                await self.tile_manager_service.remove_deployed_tile_table_job(
-                    deployed_tile_table_id=deployed_tile_table.id,
-                )
+                await self._remove_deployed_tile_table(deployed_tile_table)
+
+    async def _remove_deployed_tile_table(
+        self, deployed_tile_table: DeployedTileTableModel
+    ) -> None:
+        # Remove the deployed tile table document
+        await self.deployed_tile_table_service.delete_document(deployed_tile_table.id)
+
+        # Remove scheduled tile jobs
+        await self.tile_manager_service.remove_deployed_tile_table_jobs(
+            deployed_tile_table_id=deployed_tile_table.id,
+        )
+
+        # Drop the tile table from the feature store
+        session = await self._get_feature_store_session(deployed_tile_table.feature_store_id)
+        await session.drop_table(
+            deployed_tile_table.table_name,
+            schema_name=session.schema_name,
+            database_name=session.database_name,
+            if_exists=True,
+        )
+
+    async def _get_feature_store_session(self, feature_store_id: ObjectId) -> BaseSession:
+        feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
+        session = await self.session_manager_service.get_feature_store_session(feature_store)
+        return session

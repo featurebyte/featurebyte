@@ -86,7 +86,7 @@ async def test_schedule_tile_job__deployed_tile_table(
     }
 
     # Test removal of deployed tile table job
-    await service.remove_deployed_tile_table_job(deployed_tile_table_id)
+    await service.remove_deployed_tile_table_jobs(deployed_tile_table_id)
     periodic_tasks = await periodic_task_service.list_documents(query_filter={})
     assert len(periodic_tasks) == 0
 

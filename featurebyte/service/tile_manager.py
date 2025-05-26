@@ -514,9 +514,9 @@ class TileManagerService:
                 )
                 await self.tile_scheduler_service.stop_job(job_id=job_id)
 
-    async def remove_deployed_tile_table_job(self, deployed_tile_table_id: ObjectId) -> None:
+    async def remove_deployed_tile_table_jobs(self, deployed_tile_table_id: ObjectId) -> None:
         """
-        Remove deployed tile table job
+        Remove deployed tile table jobs
 
         Parameters
         ----------
