@@ -9,6 +9,7 @@ from bson import ObjectId
 from featurebyte.logging import get_logger
 from featurebyte.models.base import User
 from featurebyte.persistent import Persistent
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_manager import FeatureManagerService
 from featurebyte.service.online_enable import OnlineEnableService
@@ -50,12 +51,14 @@ class WorkingSchemaService:
         feature_service: FeatureService,
         feature_manager_service: FeatureManagerService,
         tile_registry_service: TileRegistryService,
+        deployed_tile_table_service: DeployedTileTableService,
     ):
         self.user = user
         self.persistent = persistent
         self.feature_service = feature_service
         self.feature_manager_service = feature_manager_service
         self.tile_registry_service = tile_registry_service
+        self.deployed_tile_table_service = deployed_tile_table_service
 
     async def recreate_working_schema(
         self, feature_store_id: ObjectId, session: BaseSession
@@ -79,6 +82,18 @@ class WorkingSchemaService:
         await self.persistent.delete_many(
             collection_name=self.tile_registry_service.collection_name,
             query_filter={"feature_store_id": ObjectId(feature_store_id)},
+            user_id=self.user.id,
+        )
+        await self.persistent.update_many(
+            collection_name=self.deployed_tile_table_service.collection_name,
+            query_filter={"feature_store_id": ObjectId(feature_store_id)},
+            update={
+                "$set": {
+                    "backfill_metadata": None,
+                    "last_run_metadata_online": None,
+                    "last_run_metadata_offline": None,
+                },
+            },
             user_id=self.user.id,
         )
 

@@ -191,6 +191,7 @@ class TileTaskExecutor:
             session=session,
             feature_store_id=params.feature_store_id,
             tile_id=tile_table_name,
+            deployed_tile_table_id=params.deployed_tile_table_id,
             time_modulo_frequency_second=params.time_modulo_frequency_second,
             blind_spot_second=params.blind_spot_second,
             frequency_minute=params.frequency_minute,

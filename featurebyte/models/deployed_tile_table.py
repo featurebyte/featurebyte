@@ -104,6 +104,8 @@ class DeployedTileTableModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("tile_identifiers.aggregation_id"),
         ]
 
+        auditable = False
+
     def to_tile_spec(self) -> TileSpec:
         """
         Returns a TileSpec object for this deployed tile table

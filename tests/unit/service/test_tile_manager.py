@@ -48,6 +48,7 @@ async def test_schedule_tile_job__deployed_tile_table(
         tile_spec=mock_snowflake_tile,
         deployed_tile_table_id=deployed_tile_table_id,
     )
+    assert (await service.tile_job_exists(info=deployed_tile_table_id)) is True
 
     # Check if the periodic task was created correctly
     periodic_tasks = await periodic_task_service.list_documents(query_filter={})
@@ -89,6 +90,7 @@ async def test_schedule_tile_job__deployed_tile_table(
     await service.remove_deployed_tile_table_jobs(deployed_tile_table_id)
     periodic_tasks = await periodic_task_service.list_documents(query_filter={})
     assert len(periodic_tasks) == 0
+    assert (await service.tile_job_exists(info=deployed_tile_table_id)) is False
 
 
 @pytest.mark.asyncio
@@ -105,6 +107,7 @@ async def test_schedule_tile_job__legacy(
         tile_spec=mock_snowflake_tile,
         deployed_tile_table_id=None,
     )
+    assert (await service.tile_job_exists(info=mock_snowflake_tile)) is True
 
     # Check if the periodic task was created correctly
     periodic_tasks = await periodic_task_service.list_documents(query_filter={})
@@ -146,3 +149,4 @@ async def test_schedule_tile_job__legacy(
     await service.remove_legacy_tile_jobs(mock_snowflake_tile.aggregation_id)
     periodic_tasks = await periodic_task_service.list_documents(query_filter={})
     assert len(periodic_tasks) == 0
+    assert (await service.tile_job_exists(info=mock_snowflake_tile)) is False
