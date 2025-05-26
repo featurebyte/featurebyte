@@ -315,6 +315,9 @@ class FeatureManagerService:
             DeployedTileTableModel instance
         schedule_time: datetime
             The moment of enabling the feature
+        tile_specs: List[TileSpec]
+            TileSpec objects for the feature. Used to determine the largest feature derivation
+            window.
         """
         # Derive the tile end date based on expected previous job time
         job_schedule_ts = get_previous_job_datetime(

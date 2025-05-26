@@ -419,7 +419,7 @@ class TileManagerService:
         self,
         tile_spec: TileSpec,
         tile_type: TileType,
-        deployed_tile_table_id: ObjectId,
+        deployed_tile_table_id: Optional[ObjectId],
         offline_minutes: int = 1440,
         monitor_periods: int = 10,
     ) -> Optional[str]:
@@ -432,6 +432,8 @@ class TileManagerService:
             the input TileSpec
         tile_type: TileType
             ONLINE or OFFLINE
+        deployed_tile_table_id: Optional[ObjectId]
+            deployed tile table id to be used for the tile job
         offline_minutes: int
             offline tile lookback minutes
         monitor_periods: int

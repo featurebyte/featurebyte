@@ -192,6 +192,8 @@ def get_online_store_retrieval_expr(
     job_schedule_table_set: Optional[JobScheduleTableSet]
         Job schedule table set if available. These will be used to compute features that are using
         a cron-based feature job setting.
+    on_demand_tile_tables: Optional[List[OnDemandTileTable]]
+        List of on-demand tile tables to be used in the query
 
     Returns
     -------
@@ -442,6 +444,8 @@ def get_online_features_query_set(
         a cron-based feature job setting.
     concatenate_serving_names: Optional[list[str]]
         List of serving names to concatenate as a new column, if specified
+    on_demand_tile_tables: Optional[List[OnDemandTileTable]]
+        List of on-demand tile tables to be used in the query
 
     Returns
     -------
@@ -527,6 +531,8 @@ async def get_online_features(
         Request timestamp to use if provided
     concatenate_serving_names: Optional[list[str]]
         List of serving names to concatenate as a new column, if specified
+    on_demand_tile_tables: Optional[List[OnDemandTileTable]]
+        List of on-demand tile tables to be used in the query
 
     Returns
     -------

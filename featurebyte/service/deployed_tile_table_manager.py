@@ -4,6 +4,8 @@ DeployedTileTableManagerService class
 
 from __future__ import annotations
 
+from typing import Optional
+
 from bson import ObjectId
 
 from featurebyte.logging import get_logger
@@ -167,14 +169,21 @@ class DeployedTileTableManagerService:
 
         # Drop the tile table from the feature store
         session = await self._get_feature_store_session(deployed_tile_table.feature_store_id)
-        await session.drop_table(
-            deployed_tile_table.table_name,
-            schema_name=session.schema_name,
-            database_name=session.database_name,
-            if_exists=True,
-        )
+        if session is not None:
+            await session.drop_table(
+                deployed_tile_table.table_name,
+                schema_name=session.schema_name,
+                database_name=session.database_name,
+                if_exists=True,
+            )
 
-    async def _get_feature_store_session(self, feature_store_id: ObjectId) -> BaseSession:
+    async def _get_feature_store_session(self, feature_store_id: ObjectId) -> Optional[BaseSession]:
         feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
-        session = await self.session_manager_service.get_feature_store_session(feature_store)
+        try:
+            session = await self.session_manager_service.get_feature_store_session(feature_store)
+        except ValueError:
+            logger.warning(
+                "Feature store session could not be created, skipping tile table removal"
+            )
+            return None
         return session
