@@ -21,7 +21,7 @@ from typing import (
     cast,
 )
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from typing_extensions import Annotated, Literal
 
 from featurebyte.enum import DBVarType, SpecialColumnName, ViewMode
@@ -32,6 +32,7 @@ from featurebyte.query_graph.enum import (
     NodeOutputType,
     NodeType,
 )
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
@@ -188,9 +189,29 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     feature_job_setting: Optional[FeatureJobSettingUnion]
     has_ttl: bool
     offline_store_table_name: str
-    output_dtype: DBVarType
+    output_dtype_info: DBVarTypeInfo
     primary_entity_dtypes: List[DBVarType]
     null_filling_value: Optional[Scalar] = Field(default=None)
+
+    @property
+    def output_dtype(self) -> DBVarType:
+        """
+        Output dtype of the offline store metadata
+
+        Returns
+        -------
+        DBVarType
+        """
+        return self.output_dtype_info.dtype
+
+    @model_validator(mode="before")
+    @classmethod
+    def _handle_backward_compatibility_for_output_dtype_info(
+        cls, values: dict[str, Any]
+    ) -> dict[str, Any]:
+        if values.get("output_dtype_info") is None and values.get("output_dtype"):
+            values["output_dtype_info"] = DBVarTypeInfo(dtype=DBVarType(values["output_dtype"]))
+        return values
 
 
 class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraphNodeParameters):

@@ -52,7 +52,7 @@ from featurebyte.query_graph.transform.definition import (
     DefinitionHashExtractor,
     DefinitionHashOutput,
 )
-from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_from_graph
+from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_info_from_graph
 from featurebyte.query_graph.transform.operation_structure import OperationStructureExtractor
 from featurebyte.query_graph.ttl_handling_util import is_ttl_handling_required
 
@@ -199,9 +199,10 @@ class BaseFeatureModel(QueryGraphMixin, FeatureByteCatalogBaseDocumentModel):
 
             # extract dtype from the graph
             exception_message = "Feature or target graph must have exactly one aggregation output"
-            self.__dict__["dtype"] = extract_dtype_from_graph(
+            dtype_info = extract_dtype_info_from_graph(
                 graph=graph, output_node=node, exception_message=exception_message
             )
+            self.__dict__["dtype"] = dtype_info.dtype
 
         return self
 

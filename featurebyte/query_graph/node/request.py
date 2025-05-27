@@ -3,7 +3,7 @@ Request data related node classes
 """
 
 import textwrap
-from typing import List, Optional, Sequence, Tuple
+from typing import Any, List, Sequence, Tuple
 
 from pydantic import StrictStr, model_validator
 from typing_extensions import Literal
@@ -65,10 +65,10 @@ class RequestColumnNode(BaseNode):
         @model_validator(mode="before")
         @classmethod
         def _handle_backward_compatibility_for_dtype_info(
-            cls, values: dict[str, Optional[DBVarTypeInfo]]
-        ) -> dict[str, Optional[DBVarTypeInfo]]:
+            cls, values: dict[str, Any]
+        ) -> dict[str, Any]:
             if values.get("dtype_info") is None and values.get("dtype"):
-                values["dtype_info"] = DBVarTypeInfo(dtype=DBVarType(values["dtype"]))  # type: ignore
+                values["dtype_info"] = DBVarTypeInfo(dtype=DBVarType(values["dtype"]))
             return values
 
     type: Literal[NodeType.REQUEST_COLUMN] = NodeType.REQUEST_COLUMN

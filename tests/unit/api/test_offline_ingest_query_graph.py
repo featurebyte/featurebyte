@@ -665,7 +665,7 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
 
     # check the actual code
     expected = """
-    CREATE FUNCTION udf_txn_cardtransactiondescription_representation_in_card_txn_count__6597d113acaf7f23202c6f74(x_1 STRING, x_2 MAP<STRING, DOUBLE>, x_3 MAP<STRING, DOUBLE>)
+    CREATE FUNCTION udf_txn_cardtransactiondescription_representation_in_card_txn_count__6597d113acaf7f23202c6f74(x_1 MAP<STRING, DOUBLE>, x_2 STRING, x_3 MAP<STRING, DOUBLE>)
     RETURNS DOUBLE
     LANGUAGE PYTHON
     COMMENT ''
@@ -678,12 +678,12 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
 
 
     def user_defined_function(
-        col_1: str, col_2: dict[str, float], col_3: dict[str, float]
+        col_1: dict[str, float], col_2: str, col_3: dict[str, float]
     ) -> float:
-        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
-        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
+        # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
         # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
-        feat_1 = np.nan if pd.isna(col_2) else col_2
+        feat_1 = np.nan if pd.isna(col_1) else col_1
 
         def get_relative_frequency(input_dict, key):
             if pd.isna(input_dict) or pd.isna(key):
@@ -701,11 +701,11 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
             key_frequency = input_dict.get(key, 0)
             return key_frequency / total_count
 
-        feat_2 = get_relative_frequency(feat_1, key=col_1)
+        feat_2 = get_relative_frequency(feat_1, key=col_2)
         flag_1 = pd.isna(feat_2)
         feat_3 = 0 if flag_1 else feat_2
         feat_4 = np.nan if pd.isna(col_3) else col_3
-        feat_5 = get_relative_frequency(feat_4, key=col_1)
+        feat_5 = get_relative_frequency(feat_4, key=col_2)
         flag_2 = pd.isna(feat_5)
         feat_6 = 0 if flag_2 else feat_5
         feat_7 = (

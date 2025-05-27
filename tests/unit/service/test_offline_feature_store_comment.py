@@ -231,16 +231,16 @@ async def test_column_comment(service, deployed_features):
     comments = await service.generate_column_comments([deployed_features["complex_feature"]])
     assert comments == [
         ColumnComment(
-            table_name="cat1_cust_id_30m",
-            column_name="__Complex Feature_V231227__part0",
+            table_name="cat1_transaction_id_1d",
+            column_name="__Complex Feature_V231227__part1",
             comment=(
                 "This intermediate feature is used to compute the feature Complex Feature (version: V231227). "
                 "Description of Complex Feature: This is a complex feature"
             ),
         ),
         ColumnComment(
-            table_name="cat1_transaction_id_1d",
-            column_name="__Complex Feature_V231227__part1",
+            table_name="cat1_cust_id_30m",
+            column_name="__Complex Feature_V231227__part0",
             comment=(
                 "This intermediate feature is used to compute the feature Complex Feature (version: V231227). "
                 "Description of Complex Feature: This is a complex feature"
