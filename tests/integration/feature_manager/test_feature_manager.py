@@ -129,7 +129,7 @@ async def list_online_store_compute_queries(
     assert len(feature_model.aggregation_ids) == 1
     agg_id = feature_model.aggregation_ids[0]
     out = []
-    async for query in online_store_compute_query_service.list_by_aggregation_ids({agg_id}):
+    async for query in online_store_compute_query_service.list_by_aggregation_ids([agg_id]):
         out.append(query)
     return out
 
