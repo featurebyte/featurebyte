@@ -97,7 +97,8 @@ class NullFillingValueExtractor(
             node_to_insert = RequestColumnNode(
                 name="",
                 parameters=RequestColumnNode.RequestColumnNodeParameters(
-                    column_name="agg_col", dtype=op_struct.aggregations[0].dtype
+                    column_name="agg_col",
+                    dtype_info=op_struct.aggregations[0].dtype_info,
                 ),
                 output_type=NodeOutputType.SERIES,
             )

@@ -4,6 +4,8 @@ Utility functions for query graph node module
 
 from typing import Sequence
 
+from featurebyte.enum import SourceType
+
 
 def subset_frame_column_expr(frame_name: str, column_name: str) -> str:
     """
@@ -60,3 +62,33 @@ def filter_series_or_frame_expr(series_or_frame_name: str, filter_expression: st
         Filter series or frame expression
     """
     return f"{series_or_frame_name}[{filter_expression}]"
+
+
+def get_parse_timestamp_tz_tuple_function_string(func_name: str, source_type: SourceType) -> str:
+    """
+    Get parse timestamp tz tuple function string
+
+    Returns
+    -------
+    str
+        Parse timestamp tz tuple function string
+    """
+    if source_type == SourceType.SNOWFLAKE:
+        func_string = f"""
+        def {func_name}(timestamp_tz_tuple):
+            if pd.isna(timestamp_tz_tuple):
+                return pd.NaT
+
+            time_data = json.loads(timestamp_tz_tuple)
+            return pd.Timestamp(time_data["timestamp"], tz=time_data["timezone"])
+        """
+    else:
+        func_string = f"""
+        def {func_name}(timestamp_tz_tuple):
+            if pd.isna(timestamp_tz_tuple):
+                return pd.NaT
+
+            tokens = [token.strip() for token in timestamp_tz_tuple.strip("{{}}").split(",")]
+            return pd.Timestamp(tokens[0], tz=tokens[1])
+        """
+    return func_string

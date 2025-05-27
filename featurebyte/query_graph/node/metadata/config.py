@@ -94,6 +94,8 @@ class OnDemandFunctionCodeGenConfig(BaseCodeGenConfig):
             return "dict[str, float]"
         if dtype in DBVarType.array_types():
             return "list[float]"
+        if dtype == DBVarType.TIMESTAMP_TZ_TUPLE:
+            return "str"
         raise ValueError(f"Unsupported dtype: {dtype}")
 
     @classmethod
