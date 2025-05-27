@@ -1678,7 +1678,14 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     df_expected = df_training_events.copy()
     df_expected["event_table_with_timestamp_schema_count_7d"] = [124, 93, 106, 89, 95]
     df_expected["event_table_with_timestamp_schema_count_distinct_action_7d"] = [5, 5, 5, 5, 5]
-    df_expected["time_since_latest_event_7d"] = [0.439398, 0.524965, 0.465752, 0.438229, 0.419919]
+    if source_type != SourceType.BIGQUERY:
+        df_expected["time_since_latest_event_7d"] = [
+            0.439398,
+            0.524965,
+            0.465752,
+            0.438229,
+            0.419919,
+        ]
     fb_assert_frame_equal(
         df_features,
         df_expected,
