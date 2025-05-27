@@ -6,10 +6,11 @@ import pytest
 import pytest_asyncio
 
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
+from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 
 
 @pytest.fixture(name="service")
-def service_fixture(app_container):
+def service_fixture(app_container) -> OnlineStoreComputeQueryService:
     """
     OnlineStoreComputeQueryService object fixture
     """
@@ -71,26 +72,51 @@ async def saved_models(
     ]
 
 
+@pytest.mark.parametrize(
+    "use_deployed_tile_table, expected_sql",
+    [
+        (False, "SELECT * FROM tile_1"),
+        (True, "SELECT * FROM deployed_tile_table_001"),
+    ],
+)
 @pytest.mark.usefixtures("saved_models")
 @pytest.mark.asyncio
-async def test_list_by_result_names(service):
+async def test_list_by_result_names(service, use_deployed_tile_table, expected_sql):
     """
     Test listing online store compute queries by result names
     """
     models = [
         doc
-        async for doc in service.list_by_result_names(["result_1"], use_deployed_tile_table=False)
+        async for doc in service.list_by_result_names(
+            ["result_1"], use_deployed_tile_table=use_deployed_tile_table
+        )
     ]
     assert len(models) == 1
     model = models[0]
     assert model.result_name == "result_1"
-    assert model.sql == "SELECT * FROM tile_1"
+    assert model.sql == expected_sql
 
+
+@pytest.mark.parametrize(
+    "use_deployed_tile_table, expected_sql",
+    [
+        (False, "SELECT * FROM tile_1"),
+        (True, "SELECT * FROM deployed_tile_table_001"),
+    ],
+)
+@pytest.mark.usefixtures("saved_models")
+@pytest.mark.asyncio
+async def test_list_by_aggregation_ids(service, use_deployed_tile_table, expected_sql):
+    """
+    Test listing online store compute queries by aggregation ids
+    """
     models = [
         doc
-        async for doc in service.list_by_result_names(["result_1"], use_deployed_tile_table=True)
+        async for doc in service.list_by_aggregation_ids(
+            ["agg_1"], use_deployed_tile_table=use_deployed_tile_table
+        )
     ]
     assert len(models) == 1
     model = models[0]
     assert model.result_name == "result_1"
-    assert model.sql == "SELECT * FROM deployed_tile_table_001"
+    assert model.sql == expected_sql

@@ -28,16 +28,16 @@ class OnlineStoreComputeQueryService(
 
     document_class = OnlineStoreComputeQueryModel
 
-    async def list_by_aggregation_id(
-        self, aggregation_id: str, use_deployed_tile_table: bool = True
+    async def list_by_aggregation_ids(
+        self, aggregation_ids: list[str], use_deployed_tile_table: bool = True
     ) -> AsyncIterator[OnlineStoreComputeQueryModel]:
         """
         List all documents by aggregation_id
 
         Parameters
         ----------
-        aggregation_id: str
-            Aggregation id
+        aggregation_ids: list[str]
+            Aggregation ids
         use_deployed_tile_table: bool
             Whether to retrieve sql queries that uses deployed tile table
 
@@ -47,9 +47,11 @@ class OnlineStoreComputeQueryService(
             List of OnlineStoreComputeQueryModel
         """
         async for model in self.list_documents_iterator(
-            query_filter={"aggregation_id": aggregation_id}
+            query_filter={"aggregation_id": {"$in": aggregation_ids}}
         ):
-            if model.use_deployed_tile_table and not use_deployed_tile_table:
+            if (model.use_deployed_tile_table and not use_deployed_tile_table) or (
+                not model.use_deployed_tile_table and use_deployed_tile_table
+            ):
                 continue
             yield model
 

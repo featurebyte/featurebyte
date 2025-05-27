@@ -263,7 +263,10 @@ class FeatureManagerService:
         )
         job_schedule_ts_str = job_schedule_ts.strftime("%Y-%m-%d %H:%M:%S")
         await self.tile_manager_service.populate_feature_store(
-            session, tile_spec.aggregation_id, job_schedule_ts_str, aggregation_result_name
+            session,
+            tile_spec.aggregation_id,
+            job_schedule_ts_str,
+            aggregation_result_name,
         )
 
     async def _backfill_tiles(

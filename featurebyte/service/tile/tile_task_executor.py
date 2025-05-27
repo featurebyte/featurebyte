@@ -216,7 +216,8 @@ class TileTaskExecutor:
             job_schedule_ts_str=corrected_job_ts.strftime(DATE_FORMAT),
             online_store_table_version_service=self.online_store_table_version_service,
             online_store_compute_query_service=self.online_store_compute_query_service,
-            use_deployed_tile_table=params.deployed_tile_table_id is not None,
+            deployed_tile_table_id=params.deployed_tile_table_id,
+            deployed_tile_table_service=self.deployed_tile_table_service,
         )
 
         step_specs: List[Dict[str, Any]] = [

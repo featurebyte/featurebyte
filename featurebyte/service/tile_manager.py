@@ -268,8 +268,8 @@ class TileManagerService:
             job_schedule_ts_str=job_schedule_ts_str,
             online_store_table_version_service=self.online_store_table_version_service,
             online_store_compute_query_service=self.online_store_compute_query_service,
+            deployed_tile_table_service=self.deployed_tile_table_service,
             aggregation_result_name=aggregation_result_name,
-            use_deployed_tile_table=True,
         )
         await executor.execute()
 
