@@ -1725,7 +1725,7 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     df_expected = pd.DataFrame(entity_serving_names)
 
     if source_type != SourceType.BIGQUERY:
-        df_expected["time_since_latest_event_7d"] = 0
+        df_expected["time_since_latest_event_7d"] = 0.087812
     df_expected["event_table_with_timestamp_schema_count_distinct_action_7d"] = 5
     df_expected["event_table_with_timestamp_schema_count_7d"] = 107
     fb_assert_frame_equal(df_features, df_expected)

@@ -53,7 +53,13 @@ class RequestColumnNode(BaseNode):
 
         @property
         def dtype(self) -> DBVarType:
-            """Return the data type of the request column"""
+            """
+            Return the data type of the request column
+
+            Returns
+            -------
+            DBVarType
+            """
             return self.dtype_info.dtype
 
         @model_validator(mode="before")

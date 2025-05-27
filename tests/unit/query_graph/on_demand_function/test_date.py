@@ -318,20 +318,20 @@ def test_datetime_extract_with_timestamp_schema(
     [
         (
             "day",
-            "pd.to_timedelta(feat).dt.total_seconds() // 86400",
-            "pd.to_timedelta(feat).total_seconds() // 86400",
+            "pd.to_timedelta(feat).dt.total_seconds() / 86400",
+            "pd.to_timedelta(feat).total_seconds() / 86400",
             [0, 0, 5],
         ),  # 86400 = 24 * 60 * 60
         (
             "hour",
-            "pd.to_timedelta(feat).dt.total_seconds() // 3600",
-            "pd.to_timedelta(feat).total_seconds() // 3600",
+            "pd.to_timedelta(feat).dt.total_seconds() / 3600",
+            "pd.to_timedelta(feat).total_seconds() / 3600",
             [0, 3, 120],
         ),  # 3600 = 60 * 60
         (
             "minute",
-            "pd.to_timedelta(feat).dt.total_seconds() // 60",
-            "pd.to_timedelta(feat).total_seconds() // 60",
+            "pd.to_timedelta(feat).dt.total_seconds() / 60",
+            "pd.to_timedelta(feat).total_seconds() / 60",
             [1, 180, 7219],
         ),
         (

@@ -223,7 +223,7 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         inputs.loc[~mask, "__feature_V231227__part0"] = np.nan
         feat_2 = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
         feat_3 = pd.to_datetime(feat_1, utc=True) - pd.to_datetime(feat_2, utc=True)
-        feat_4 = pd.to_timedelta(feat_3).dt.total_seconds() // 86400
+        feat_4 = pd.to_timedelta(feat_3).dt.total_seconds() / 86400
         feat_5 = pd.Series(
             np.where(
                 pd.isna(feat_4) | pd.isna(inputs["__feature_V231227__part1"]),
@@ -329,7 +329,7 @@ def test_feature__ttl_item_aggregate_request_column(
         feat_1 = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
             feat, utc=True
         )
-        feat_2 = pd.to_timedelta(feat_1).dt.total_seconds() // 86400
+        feat_2 = pd.to_timedelta(feat_1).dt.total_seconds() / 86400
 
         # TTL handling for __composite_feature_V231227__part0 column
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)

@@ -28,7 +28,7 @@ def user_defined_function(
     feat_6 = (
         np.nan
         if pd.isna(feat_5)
-        else pd.to_timedelta(feat_5).total_seconds() // 86400
+        else pd.to_timedelta(feat_5).total_seconds() / 86400
     )
     feat_7 = np.nan if pd.isna(feat_6) or pd.isna(col_2) else feat_6 + col_2
     return feat_7

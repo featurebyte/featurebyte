@@ -68,6 +68,13 @@ def get_parse_timestamp_tz_tuple_function_string(func_name: str, source_type: So
     """
     Get parse timestamp tz tuple function string
 
+    Parameters
+    ----------
+    func_name: str
+        Function name
+    source_type: SourceType
+        Source type, used to determine the implementation of the function
+
     Returns
     -------
     str
