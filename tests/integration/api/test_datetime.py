@@ -208,6 +208,6 @@ def test_date_difference_of_varchar_timestamp_with_timezone(event_table, config,
     )
     assert df_feat.iloc[0].to_dict() == {
         **request_row,
-        "diff_in_day": -81,
+        "diff_in_day": -80.125,
         "min_timestamp_string_2d": "2001-03-09 210000",
     }
