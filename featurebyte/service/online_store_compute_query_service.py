@@ -74,7 +74,9 @@ class OnlineStoreComputeQueryService(
         async for model in self.list_documents_iterator(
             query_filter={"result_name": {"$in": result_names}}
         ):
-            if model.use_deployed_tile_table and not use_deployed_tile_table:
+            if (model.use_deployed_tile_table and not use_deployed_tile_table) or (
+                not model.use_deployed_tile_table and use_deployed_tile_table
+            ):
                 continue
             yield model
 
