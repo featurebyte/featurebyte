@@ -68,7 +68,7 @@ class RequestColumnNode(BaseNode):
             cls, values: dict[str, Optional[DBVarTypeInfo]]
         ) -> dict[str, Optional[DBVarTypeInfo]]:
             if values.get("dtype_info") is None and values.get("dtype"):
-                values["dtype_info"] = DBVarTypeInfo(dtype=DBVarType(values["dtype"]))
+                values["dtype_info"] = DBVarTypeInfo(dtype=DBVarType(values["dtype"]))  # type: ignore
             return values
 
     type: Literal[NodeType.REQUEST_COLUMN] = NodeType.REQUEST_COLUMN
@@ -151,7 +151,7 @@ class RequestColumnNode(BaseNode):
             return [statement], var_name
         if self.parameters.dtype == DBVarType.TIMESTAMP_TZ_TUPLE:
             func_name = "parse_timestamp_tz_tuple"
-            statements = []
+            statements: List[StatementT] = []
             if var_name_generator.should_insert_function(function_name=func_name):
                 statements.append(
                     StatementStr(
@@ -165,7 +165,7 @@ class RequestColumnNode(BaseNode):
                 variable_name_prefix=var_name_prefix, node_name=self.name
             )
             if is_databricks_udf:
-                statements.append((var_name, f"{func_name}({input_var_name_expr})"))
+                statements.append((var_name, ExpressionStr(f"{func_name}({input_var_name_expr})")))
             else:
                 parse_timestamp_expr = ExpressionStr(f"{input_var_name_expr}.apply({func_name})")
                 statements.append((var_name, parse_timestamp_expr))
