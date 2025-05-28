@@ -32,7 +32,10 @@ def test_point_in_time_request_column():
         "name": "request_column_1",
         "type": "request_column",
         "output_type": "series",
-        "parameters": {"column_name": "POINT_IN_TIME", "dtype": "TIMESTAMP"},
+        "parameters": {
+            "column_name": "POINT_IN_TIME",
+            "dtype_info": {"dtype": "TIMESTAMP", "metadata": None},
+        },
     }
 
 

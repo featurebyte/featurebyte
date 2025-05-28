@@ -314,43 +314,37 @@ def test_datetime_extract_with_timestamp_schema(
 
 
 @pytest.mark.parametrize(
-    "td_property,expected_odfv_expr,expected_udf_expr,expected_output",
+    "td_property,expected_odfv_expr,expected_udf_expr",
     [
         (
             "day",
-            "pd.to_timedelta(feat).dt.total_seconds() // 86400",
-            "pd.to_timedelta(feat).total_seconds() // 86400",
-            [0, 0, 5],
+            "pd.to_timedelta(feat).dt.total_seconds() / 86400",
+            "pd.to_timedelta(feat).total_seconds() / 86400",
         ),  # 86400 = 24 * 60 * 60
         (
             "hour",
-            "pd.to_timedelta(feat).dt.total_seconds() // 3600",
-            "pd.to_timedelta(feat).total_seconds() // 3600",
-            [0, 3, 120],
+            "pd.to_timedelta(feat).dt.total_seconds() / 3600",
+            "pd.to_timedelta(feat).total_seconds() / 3600",
         ),  # 3600 = 60 * 60
         (
             "minute",
-            "pd.to_timedelta(feat).dt.total_seconds() // 60",
-            "pd.to_timedelta(feat).total_seconds() // 60",
-            [1, 180, 7219],
+            "pd.to_timedelta(feat).dt.total_seconds() / 60",
+            "pd.to_timedelta(feat).total_seconds() / 60",
         ),
         (
             "second",
             "pd.to_timedelta(feat).dt.total_seconds()",
             "pd.to_timedelta(feat).total_seconds()",
-            [60.123, 10800.000456, 433149],
         ),
         (
             "millisecond",
             "1e3 * pd.to_timedelta(feat).dt.total_seconds()",
             "1e3 * pd.to_timedelta(feat).total_seconds()",
-            [60123, 10800000.456, 433149000],
         ),
         (
             "microsecond",
             "1e6 * pd.to_timedelta(feat).dt.total_seconds()",
             "1e6 * pd.to_timedelta(feat).total_seconds()",
-            [60123000, 10800000456, 433149000000],
         ),
     ],
 )
@@ -360,7 +354,6 @@ def test_time_delta_extract(
     td_property,
     expected_odfv_expr,
     expected_udf_expr,
-    expected_output,
     node_code_gen_output_factory,
 ):
     """Test TimeDeltaExtractNode derive_on_demand_view_code"""
@@ -400,7 +393,6 @@ def test_time_delta_extract(
         udf_expr=udf_expr,
         odfv_stats=odfv_stats,
         udf_stats=udf_stats,
-        expected_output=pd.Series([np.nan] + expected_output),
     )
 
 

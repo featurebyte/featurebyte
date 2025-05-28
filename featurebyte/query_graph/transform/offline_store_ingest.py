@@ -5,8 +5,8 @@ This module contains offline store ingest query extraction related classes.
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set
 
-from featurebyte.enum import DBVarType
 from featurebyte.query_graph.graph_node.base import GraphNode
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.graph import QueryGraphModel
 from featurebyte.query_graph.node import Node
@@ -26,9 +26,9 @@ from featurebyte.query_graph.transform.operation_structure import OperationStruc
 from featurebyte.query_graph.transform.quick_pruning import QuickGraphStructurePruningTransformer
 
 
-def extract_dtype_from_graph(
+def extract_dtype_info_from_graph(
     graph: QueryGraphModel, output_node: Node, exception_message: Optional[str] = None
-) -> DBVarType:
+) -> DBVarTypeInfo:
     """
     Extract dtype from the given graph and node name
 
@@ -43,8 +43,7 @@ def extract_dtype_from_graph(
 
     Returns
     -------
-    DBVarType
-        DType
+    DBVarTypeInfo
 
     Raises
     ------
@@ -60,7 +59,7 @@ def extract_dtype_from_graph(
         if exception_message is None:
             exception_message = "Graph must have exactly one aggregation output"
         raise ValueError(exception_message)
-    return op_struct.aggregations[0].dtype
+    return op_struct.aggregations[0].dtype_info
 
 
 @dataclass
@@ -228,13 +227,15 @@ class OfflineStoreIngestQueryGraphTransformer(
 
         assert len(set(feature_job_settings)) <= 1, "Only 1 feature job setting is allowed"
         feature_job_setting = feature_job_settings[0] if feature_job_settings else None
-        output_dtype = extract_dtype_from_graph(graph=subgraph, output_node=subgraph_output_node)
+        output_dtype_info = extract_dtype_info_from_graph(
+            graph=subgraph, output_node=subgraph_output_node
+        )
         parameters = {
             "aggregation_nodes_info": agg_nodes_info,
             "feature_job_setting": feature_job_setting,
             "has_ttl": aggregation_info.has_ttl_agg_type,
             "offline_store_table_name": "",  # will be set later
-            "output_dtype": output_dtype,
+            "output_dtype_info": output_dtype_info,
         }
         return parameters
 
