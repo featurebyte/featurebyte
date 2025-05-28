@@ -899,8 +899,7 @@ class BaseGraphNode(BasePrunableNode):
             func_name = "parse_timestamp_tz_tuple"
             if var_name_generator.should_insert_function(function_name=func_name):
                 parse_func_string = get_parse_timestamp_tz_tuple_function_string(
-                    func_name=func_name,
-                    source_type=config.source_type,
+                    func_name=func_name
                 )
                 statements.append(StatementStr(textwrap.dedent(parse_func_string)))
             if is_databricks_udf:

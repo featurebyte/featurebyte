@@ -1655,17 +1655,16 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     )[feature_name]
 
     features = [feature_1, feature_2]
-    if source_type != SourceType.BIGQUERY:
-        feature_name = "event_table_with_timestamp_schema_latest_event_7d"
-        feature_latest_event = event_view.groupby("ÜSER ID").aggregate_over(
-            value_column="ËVENT_TIMESTAMP",
-            method="latest",
-            feature_names=[feature_name],
-            windows=["7d"],
-        )[feature_name]
-        feature_3 = (RequestColumn.point_in_time() - feature_latest_event).dt.day
-        feature_3.name = "time_since_latest_event_7d"
-        features.append(feature_3)
+    feature_name = "event_table_with_timestamp_schema_latest_event_7d"
+    feature_latest_event = event_view.groupby("ÜSER ID").aggregate_over(
+        value_column="ËVENT_TIMESTAMP",
+        method="latest",
+        feature_names=[feature_name],
+        windows=["7d"],
+    )[feature_name]
+    feature_3 = (RequestColumn.point_in_time() - feature_latest_event).dt.day
+    feature_3.name = "time_since_latest_event_7d"
+    features.append(feature_3)
 
     feature_list = FeatureList(features, name="test_event_view_with_timestamp_schema_list")
 
@@ -1678,14 +1677,7 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     df_expected = df_training_events.copy()
     df_expected["event_table_with_timestamp_schema_count_7d"] = [124, 93, 106, 89, 95]
     df_expected["event_table_with_timestamp_schema_count_distinct_action_7d"] = [5, 5, 5, 5, 5]
-    if source_type != SourceType.BIGQUERY:
-        df_expected["time_since_latest_event_7d"] = [
-            0.439398,
-            0.524965,
-            0.465752,
-            0.438229,
-            0.419919,
-        ]
+    df_expected["time_since_latest_event_7d"] = [0.439398, 0.524965, 0.465752, 0.438229, 0.419919]
     fb_assert_frame_equal(
         df_features,
         df_expected,
@@ -1723,9 +1715,7 @@ def test_event_view_with_timestamp_schema(event_table_with_timestamp_schema, sou
     assert res.status_code == 200
     df_features = pd.DataFrame(res.json()["features"])
     df_expected = pd.DataFrame(entity_serving_names)
-
-    if source_type != SourceType.BIGQUERY:
-        df_expected["time_since_latest_event_7d"] = 0.087812
+    df_expected["time_since_latest_event_7d"] = 0.087812
     df_expected["event_table_with_timestamp_schema_count_distinct_action_7d"] = 5
     df_expected["event_table_with_timestamp_schema_count_7d"] = 107
     fb_assert_frame_equal(df_features, df_expected)

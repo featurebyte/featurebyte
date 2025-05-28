@@ -155,9 +155,7 @@ class RequestColumnNode(BaseNode):
             if var_name_generator.should_insert_function(function_name=func_name):
                 statements.append(
                     StatementStr(
-                        textwrap.dedent(
-                            get_parse_timestamp_tz_tuple_function_string(func_name, source_type)
-                        )
+                        textwrap.dedent(get_parse_timestamp_tz_tuple_function_string(func_name))
                     )
                 )
 
