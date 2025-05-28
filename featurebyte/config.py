@@ -566,6 +566,7 @@ class Configurations:
             Websocket client
         """
         url = str(self.profile.api_url).replace("http://", "ws://").replace("https://", "wss://")
+        url = url.rstrip("/")
         url = f"{url}/ws/{task_id}"
         websocket_client = WebsocketClient(
             url=url, access_token=self.profile.api_token, ssl_verify=self.profile.ssl_verify
