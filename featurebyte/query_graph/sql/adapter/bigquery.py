@@ -17,7 +17,6 @@ from featurebyte.query_graph.sql.adapter import BaseAdapter
 from featurebyte.query_graph.sql.ast.literal import make_literal_value
 from featurebyte.query_graph.sql.common import (
     get_fully_qualified_function_call,
-    quoted_identifier,
     sql_to_string,
 )
 from featurebyte.typing import DatetimeSupportedPropertyType
@@ -59,6 +58,7 @@ class BigQueryAdapter(BaseAdapter):
             DBVarType.TIMESTAMP_TZ: cls.DataType.TIMESTAMP,
             DBVarType.ARRAY: cls.DataType.ARRAY,
             DBVarType.EMBEDDING: cls.DataType.ARRAY,
+            DBVarType.TIMESTAMP_TZ_TUPLE: cls.DataType.STRING,
         }
         for dict_dtype in DBVarType.dictionary_types():
             mapping[dict_dtype] = cls.DataType.OBJECT
@@ -418,7 +418,7 @@ class BigQueryAdapter(BaseAdapter):
     def zip_timestamp_string_and_timezone(
         cls, timestamp_str_expr: Expression, timezone_expr: Expression
     ) -> Expression:
-        return expressions.Anonymous(
+        struct_expr = expressions.Anonymous(
             this="STRUCT",
             expressions=[
                 expressions.alias_(
@@ -433,15 +433,21 @@ class BigQueryAdapter(BaseAdapter):
                 ),
             ],
         )
+        return expressions.Anonymous(this="TO_JSON_STRING", expressions=[struct_expr])
 
     @classmethod
     def unzip_timestamp_string_and_timezone(
         cls, zipped_expr: Expression
     ) -> Tuple[Expression, Expression]:
-        timestamp_str_expr = expressions.Dot(
-            this=zipped_expr, expression=quoted_identifier(cls.ZIPPED_TIMESTAMP_FIELD)
-        )
-        timezone_expr = expressions.Dot(
-            this=zipped_expr, expression=quoted_identifier(cls.ZIPPED_TIMEZONE_FIELD)
-        )
+        def _get_value_from_json(key: str) -> Expression:
+            return expressions.Anonymous(
+                this="JSON_VALUE",
+                expressions=[
+                    zipped_expr,
+                    make_literal_value(f"$.{key}"),
+                ],
+            )
+
+        timestamp_str_expr = _get_value_from_json(cls.ZIPPED_TIMESTAMP_FIELD)
+        timezone_expr = _get_value_from_json(cls.ZIPPED_TIMEZONE_FIELD)
         return timestamp_str_expr, timezone_expr

@@ -6,8 +6,8 @@ SELECT
     hour,
     CONVERT_TIMEZONE(
       'UTC',
-      CAST(GET("ts", 'timezone') AS VARCHAR),
-      TO_TIMESTAMP(CAST(GET("ts", 'timestamp') AS VARCHAR), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+      CAST(GET(PARSE_JSON("ts"), 'timezone') AS VARCHAR),
+      TO_TIMESTAMP(CAST(GET(PARSE_JSON("ts"), 'timestamp') AS VARCHAR), 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
     )
   ) AS "hour"
 FROM "db"."public"."event_table"
