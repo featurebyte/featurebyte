@@ -41,7 +41,7 @@ async def saved_online_store_compute_query_use_deployed_tile_table_fixture(
     service, snowflake_feature_store_id
 ):
     """
-    Fixture for saved online store compute query with use_deployed_tile_table set to False
+    Fixture for saved online store compute query with use_deployed_tile_table set to True
     """
     model = OnlineStoreComputeQueryModel(
         tile_id="tile_1",
