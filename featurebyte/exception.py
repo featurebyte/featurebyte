@@ -577,7 +577,7 @@ class InvalidDefaultFeatureJobSettingError(FeatureByteException):
     """
 
 
-class DeploymentNotOnlineEnabledError(BaseUnprocessableEntityError):
+class DeploymentNotOnlineEnabledError(FeatureByteException):
     """
     Raise when online features are requested for a deployment that is not online enabled
     """
