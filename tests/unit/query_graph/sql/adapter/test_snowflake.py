@@ -35,7 +35,7 @@ class TestSnowflakeAdapter(BaseAdapterTest):
         "EMBEDDING": "ARRAY",
         "FLAT_DICT": "OBJECT",
         "OBJECT": "OBJECT",
-        "TIMESTAMP_TZ_TUPLE": "VARIANT",
+        "TIMESTAMP_TZ_TUPLE": "VARCHAR",
         "UNKNOWN": "VARIANT",
         "BINARY": "VARIANT",
         "VOID": "VARIANT",
