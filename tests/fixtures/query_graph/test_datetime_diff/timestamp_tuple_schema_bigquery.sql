@@ -1,7 +1,7 @@
 (
   TIMESTAMP_DIFF(
-    CAST(CAST(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', zipped_column_1.`timestamp`) AS DATETIME) AS DATETIME),
-    CAST(CAST(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', zipped_column_2.`timestamp`) AS DATETIME) AS DATETIME),
+    CAST(CAST(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', JSON_VALUE(zipped_column_1, '$.timestamp')) AS DATETIME) AS DATETIME),
+    CAST(CAST(PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%SZ', JSON_VALUE(zipped_column_2, '$.timestamp')) AS DATETIME) AS DATETIME),
     MICROSECOND
   ) * CAST(1 AS INT64) / CAST(1000000 AS INT64)
 )

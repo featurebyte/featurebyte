@@ -195,6 +195,7 @@ class DatabricksAdapter(BaseAdapter):
             DBVarType.TIMESTAMP: cls.DataType.TIMESTAMP,
             DBVarType.ARRAY: cls.DataType.ARRAY,
             DBVarType.EMBEDDING: cls.DataType.EMBEDDING,
+            DBVarType.TIMESTAMP_TZ_TUPLE: cls.DataType.STRING,
         }
         if dtype in mapping:
             return mapping[dtype]
@@ -370,7 +371,7 @@ class DatabricksAdapter(BaseAdapter):
     def zip_timestamp_string_and_timezone(
         cls, timestamp_str_expr: Expression, timezone_expr: Expression
     ) -> Expression:
-        return expressions.Anonymous(
+        named_struct_expr = expressions.Anonymous(
             this="named_struct",
             expressions=[
                 make_literal_value(cls.ZIPPED_TIMESTAMP_FIELD),
@@ -379,15 +380,21 @@ class DatabricksAdapter(BaseAdapter):
                 timezone_expr,
             ],
         )
+        return expressions.Anonymous(this="to_json", expressions=[named_struct_expr])
 
     @classmethod
     def unzip_timestamp_string_and_timezone(
         cls, zipped_expr: Expression
     ) -> Tuple[Expression, Expression]:
-        timestamp_str_expr = expressions.Dot(
-            this=zipped_expr, expression=expressions.Identifier(this=cls.ZIPPED_TIMESTAMP_FIELD)
-        )
-        timezone_expr = expressions.Dot(
-            this=zipped_expr, expression=expressions.Identifier(this=cls.ZIPPED_TIMEZONE_FIELD)
-        )
+        def _get_value_from_json(key: str) -> Expression:
+            return expressions.Anonymous(
+                this="get_json_object",
+                expressions=[
+                    zipped_expr,
+                    make_literal_value(f"$.{key}"),
+                ],
+            )
+
+        timestamp_str_expr = _get_value_from_json(cls.ZIPPED_TIMESTAMP_FIELD)
+        timezone_expr = _get_value_from_json(cls.ZIPPED_TIMEZONE_FIELD)
         return timestamp_str_expr, timezone_expr
