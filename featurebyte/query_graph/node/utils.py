@@ -60,3 +60,28 @@ def filter_series_or_frame_expr(series_or_frame_name: str, filter_expression: st
         Filter series or frame expression
     """
     return f"{series_or_frame_name}[{filter_expression}]"
+
+
+def get_parse_timestamp_tz_tuple_function_string(func_name: str) -> str:
+    """
+    Get parse timestamp tz tuple function string
+
+    Parameters
+    ----------
+    func_name: str
+        Function name
+
+    Returns
+    -------
+    str
+        Parse timestamp tz tuple function string
+    """
+    func_string = f"""
+    def {func_name}(timestamp_tz_tuple):
+        if pd.isna(timestamp_tz_tuple):
+            return pd.NaT
+
+        time_data = json.loads(timestamp_tz_tuple)
+        return pd.Timestamp(time_data["timestamp"], tz=time_data["timezone"])
+    """
+    return func_string

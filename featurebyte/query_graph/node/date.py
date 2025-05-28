@@ -304,7 +304,7 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
         if self.parameters.property == "second":
             return f"pd.to_timedelta({operand}).dt.total_seconds()"
 
-        return f"pd.to_timedelta({operand}).dt.total_seconds() // {self.unit_to_seconds[self.parameters.property]}"
+        return f"pd.to_timedelta({operand}).dt.total_seconds() / {self.unit_to_seconds[self.parameters.property]}"
 
     def generate_udf_expression(self, operand: str) -> str:
         if self.parameters.property == "millisecond":
@@ -314,7 +314,7 @@ class TimeDeltaExtractNode(BaseSeriesOutputWithSingleOperandNode):
         if self.parameters.property == "second":
             return f"pd.to_timedelta({operand}).total_seconds()"
 
-        return f"pd.to_timedelta({operand}).total_seconds() // {self.unit_to_seconds[self.parameters.property]}"
+        return f"pd.to_timedelta({operand}).total_seconds() / {self.unit_to_seconds[self.parameters.property]}"
 
 
 class DateDifferenceParameters(FeatureByteBaseModel):

@@ -37,7 +37,7 @@ from featurebyte.query_graph.sql.common import (
 )
 from featurebyte.query_graph.sql.materialisation import get_source_expr
 from featurebyte.query_graph.transform.definition import DefinitionHashExtractor
-from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_from_graph
+from featurebyte.query_graph.transform.offline_store_ingest import extract_dtype_info_from_graph
 from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.entity_validation import EntityValidationService
@@ -475,7 +475,9 @@ class FeatureTableCacheService:
         columns_expr = [
             expressions.ColumnDef(
                 this=quoted_identifier(definition.feature_name),
-                kind=adapter.get_physical_type_from_dtype(extract_dtype_from_graph(graph, node)),
+                kind=adapter.get_physical_type_from_dtype(
+                    extract_dtype_info_from_graph(graph, node).dtype
+                ),
             )
             for node, definition in non_cached_nodes
             if definition.feature_name is not None

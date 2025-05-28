@@ -3,6 +3,7 @@ This module contains nested graph related node classes
 """
 
 import json
+import textwrap
 
 # DO NOT include "from __future__ import annotations" as it will trigger issue for pydantic model nested definition
 from abc import ABC, abstractmethod
@@ -20,7 +21,7 @@ from typing import (
     cast,
 )
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from typing_extensions import Annotated, Literal
 
 from featurebyte.enum import DBVarType, SpecialColumnName, ViewMode
@@ -31,6 +32,7 @@ from featurebyte.query_graph.enum import (
     NodeOutputType,
     NodeType,
 )
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.model.feature_job_setting import (
     CronFeatureJobSetting,
     FeatureJobSetting,
@@ -62,7 +64,10 @@ from featurebyte.query_graph.node.metadata.sdk_code import (
     VarNameExpressionInfo,
     get_object_class_from_function_call,
 )
-from featurebyte.query_graph.node.utils import subset_frame_column_expr
+from featurebyte.query_graph.node.utils import (
+    get_parse_timestamp_tz_tuple_function_string,
+    subset_frame_column_expr,
+)
 from featurebyte.typing import Scalar
 
 
@@ -184,9 +189,29 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     feature_job_setting: Optional[FeatureJobSettingUnion]
     has_ttl: bool
     offline_store_table_name: str
-    output_dtype: DBVarType
+    output_dtype_info: DBVarTypeInfo
     primary_entity_dtypes: List[DBVarType]
     null_filling_value: Optional[Scalar] = Field(default=None)
+
+    @property
+    def output_dtype(self) -> DBVarType:
+        """
+        Output dtype of the offline store metadata
+
+        Returns
+        -------
+        DBVarType
+        """
+        return self.output_dtype_info.dtype
+
+    @model_validator(mode="before")
+    @classmethod
+    def _handle_backward_compatibility_for_output_dtype_info(
+        cls, values: dict[str, Any]
+    ) -> dict[str, Any]:
+        if values.get("output_dtype_info") is None and values.get("output_dtype"):
+            values["output_dtype_info"] = DBVarTypeInfo(dtype=DBVarType(values["output_dtype"]))
+        return values
 
 
 class OfflineStoreIngestQueryGraphNodeParameters(OfflineStoreMetadata, BaseGraphNodeParameters):
@@ -816,7 +841,7 @@ class BaseGraphNode(BasePrunableNode):
         json_conversion_func: Callable[[VarNameExpressionInfo], ExpressionStr],
         null_filling_func: Callable[[VarNameExpressionInfo, ValueStr], ExpressionStr],
         is_databricks_udf: bool,
-        config_for_ttl: Optional[OnDemandViewCodeGenConfig] = None,
+        config: Union[OnDemandViewCodeGenConfig, OnDemandFunctionCodeGenConfig],
         ttl_handling_column: Optional[str] = None,
         ttl_seconds: Optional[int] = None,
     ) -> Tuple[List[StatementT], VarNameExpressionInfo]:
@@ -835,9 +860,9 @@ class BaseGraphNode(BasePrunableNode):
             input_var_name_expr = var
 
         if ttl_handling_column is not None:
-            assert config_for_ttl is not None
             assert ttl_seconds is not None
-            input_df_name = config_for_ttl.input_df_name
+            assert isinstance(config, OnDemandViewCodeGenConfig)
+            input_df_name = config.input_df_name
             feat_ts_col = f"{ttl_handling_column}{FEAST_TIMESTAMP_POSTFIX}"
             if isinstance(node_params.feature_job_setting, FeatureJobSetting):
                 statements = self._add_ttl_handling_statements_for_feature_job_setting(
@@ -869,6 +894,21 @@ class BaseGraphNode(BasePrunableNode):
             ))
             return statements, var_name
 
+        if node_params.output_dtype == DBVarType.TIMESTAMP_TZ_TUPLE:
+            var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
+            func_name = "parse_timestamp_tz_tuple"
+            if var_name_generator.should_insert_function(function_name=func_name):
+                parse_func_string = get_parse_timestamp_tz_tuple_function_string(
+                    func_name=func_name
+                )
+                statements.append(StatementStr(textwrap.dedent(parse_func_string)))
+            if is_databricks_udf:
+                statements.append((var_name, ExpressionStr(f"{func_name}({input_var_name_expr})")))
+            else:
+                parse_timestamp_expr = ExpressionStr(f"{input_var_name_expr}.apply({func_name})")
+                statements.append((var_name, parse_timestamp_expr))
+            return statements, var_name
+
         if node_params.output_dtype in DBVarType.json_conversion_types():
             var_name = var_name_generator.convert_to_variable_name("feat", node_name=self.name)
             json_conv_expr = json_conversion_func(input_var_name_expr)
@@ -897,12 +937,10 @@ class BaseGraphNode(BasePrunableNode):
             subset_frame_column_expr(frame_name=input_df_name, column_name=column_name)
         )
         ttl_handling_column = None
-        config_for_ttl = None
         ttl_seconds = None
         assert isinstance(self.parameters, OfflineStoreIngestQueryGraphNodeParameters)
         if self.parameters.has_ttl:
             ttl_handling_column = column_name
-            config_for_ttl = config
             assert self.parameters.feature_job_setting is not None
             ttl_seconds = self.parameters.feature_job_setting.extract_ttl_seconds()
 
@@ -911,7 +949,7 @@ class BaseGraphNode(BasePrunableNode):
             input_var_name_expr=input_var_name_expr,
             json_conversion_func=_json_conversion_func,
             null_filling_func=lambda expr, val: ExpressionStr(f"{expr}.fillna({val.as_input()})"),
-            config_for_ttl=config_for_ttl,
+            config=config,
             ttl_handling_column=ttl_handling_column,
             ttl_seconds=ttl_seconds,
             is_databricks_udf=False,
@@ -947,4 +985,5 @@ class BaseGraphNode(BasePrunableNode):
                 f"{val.as_input()} if pd.isna({expr}) else {expr}"
             ),
             is_databricks_udf=True,
+            config=config,
         )
