@@ -129,6 +129,7 @@ def filter_aggregate_input_for_window_aggregate(
     aggregate_input_expr: Select,
     feature_job_settings: FeatureJobSetting,
     windows: list[Optional[str]],
+    offset: Optional[str],
     timestamp: str,
     timestamp_schema: Optional[TimestampSchema],
     adapter: BaseAdapter,
@@ -144,6 +145,8 @@ def filter_aggregate_input_for_window_aggregate(
         Feature job settings containing period, offset, and blind spot information
     windows: list[Optional[str]]
         List of window sizes to consider for filtering
+    offset: Optional[str]
+        The offset to apply to the window sizes, if applicable
     timestamp: str
         The timestamp column to filter on
     timestamp_schema: Optional[TimestampSchema]
@@ -167,6 +170,12 @@ def filter_aggregate_input_for_window_aggregate(
         this=job_epoch_expr,
         expression=make_literal_value(feature_job_settings.blind_spot_seconds),
     )
+    if offset is not None:
+        offset_duration = parse_duration_string(offset)
+        range_end_expr = expressions.Sub(
+            this=range_end_expr,
+            expression=make_literal_value(offset_duration),
+        )
     range_start_expr = expressions.Sub(
         this=range_end_expr,
         expression=make_literal_value(
@@ -510,6 +519,7 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
             aggregate_input_expr=self.aggregate_input_expr,
             feature_job_settings=node.parameters.feature_job_setting,
             windows=node.parameters.windows,
+            offset=node.parameters.offset,
             timestamp=node.parameters.timestamp,
             timestamp_schema=node.parameters.timestamp_schema,
             adapter=self.adapter,
@@ -588,6 +598,7 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
             aggregate_input_expr=self.aggregate_input_expr,
             feature_job_settings=node.parameters.feature_job_setting,
             windows=node.parameters.windows,
+            offset=node.parameters.offset,
             timestamp=node.parameters.timestamp,
             timestamp_schema=node.parameters.timestamp_schema,
             adapter=self.adapter,
