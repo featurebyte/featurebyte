@@ -15,11 +15,12 @@ from featurebyte import FeatureList
 from featurebyte.api.deployment import Deployment
 from featurebyte.config import Configurations
 from featurebyte.exception import (
-    FeatureListNotOnlineEnabledError,
+    DeploymentNotEnabledError,
     RecordCreationException,
     RecordRetrievalException,
 )
 from featurebyte.query_graph.node.nested import AggregationNodeInfo
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 
 
 @pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
@@ -80,7 +81,7 @@ def test_info(deployment):
 
 def test_get_online_serving_code_not_deployed(deployment):
     """Test feature get_online_serving_code on un-deployed feature list"""
-    with pytest.raises(FeatureListNotOnlineEnabledError) as exc:
+    with pytest.raises(DeploymentNotEnabledError) as exc:
         deployment.get_online_serving_code()
     assert "Deployment is not enabled." in str(exc.value)
 
@@ -121,7 +122,40 @@ def test_list_deployment(deployment, snowflake_feature_store):
     assert response.json() == {"num_feature_list": 1, "num_feature": 1}
 
 
-def test_get_online_serving_code(deployment, catalog, config_file):
+def test_get_online_serving_code_no_online_store_configured(deployment, config_file):
+    """Test feature get_online_serving_code fails when no online store is configured"""
+    # Use config
+    config = Configurations(config_file, force=True)
+
+    deployment.enable()
+    assert deployment.enabled is True
+
+    # Expect an exception when trying to get online serving code
+    with pytest.raises(
+        RecordRetrievalException,
+        match="Deployment is not online enabled. Configure online store for the catalog to enable online feature requests.",
+    ):
+        deployment.get_online_serving_code()
+
+    # Expect an exception when trying to get online features
+    client = config.get_client()
+    entity_serving_names = [
+        {
+            "üser id": 5,
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+    response = client.post(f"/deployment/{deployment.id}/online_features", json=data.dict())
+    assert response.status_code == 500
+    assert response.json() == {
+        "detail": "Deployment is not online enabled. Configure online store for the catalog to enable online feature requests."
+    }
+
+
+@patch(
+    "featurebyte.routes.deployment.controller.DeploymentController._validate_deployment_is_online_enabled"
+)
+def test_get_online_serving_code(mock_validate, deployment, catalog, config_file):
     """Test feature get_online_serving_code"""
     # Use config
     Configurations(config_file, force=True)
@@ -349,7 +383,10 @@ def test_deployment_with_unbounded_window(
     deployment.disable()
 
 
-def test_get_online_serving_code_uses_deployment_entities(deployment, config_file):
+@patch(
+    "featurebyte.routes.deployment.controller.DeploymentController._validate_deployment_is_online_enabled"
+)
+def test_get_online_serving_code_uses_deployment_entities(mock_validate, deployment, config_file):
     """Test feature get_online_serving_code"""
     # Use config
     Configurations(config_file, force=True)

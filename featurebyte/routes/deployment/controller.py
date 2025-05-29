@@ -11,9 +11,10 @@ from bson import ObjectId
 from fastapi import HTTPException
 
 from featurebyte.exception import (
+    DeploymentNotEnabledError,
+    DeploymentNotOnlineEnabledError,
     DocumentCreationError,
     DocumentDeletionError,
-    FeatureListNotOnlineEnabledError,
 )
 from featurebyte.feast.service.feature_store import FeastFeatureStoreService
 from featurebyte.models.deployment import DeploymentModel
@@ -245,15 +246,19 @@ class DeploymentController(
         HTTPException
             Invalid request payload
         """
-        document = await self.service.get_document(deployment_id)
-        feature_list = await self.feature_list_service.get_document(document.feature_list_id)
+        deployment = await self.service.get_document(deployment_id)
+
+        # deployment must be online enabled
+        await self._validate_deployment_is_online_enabled(deployment)
+
+        feature_list = await self.feature_list_service.get_document(deployment.feature_list_id)
         catalog = await self.catalog_service.get_document(feature_list.catalog_id)
         try:
             result: Optional[OnlineFeaturesResponseModel]
             if feature_list.feast_enabled and catalog.online_store_id is not None:
                 feast_store = (
                     await self.feast_feature_store_service.get_feast_feature_store_for_deployment(
-                        deployment=document
+                        deployment=deployment
                     )
                 )
             else:
@@ -268,7 +273,7 @@ class DeploymentController(
             if feast_store and feature_list.versioned_name in feast_feature_services:
                 result = await self.online_serving_service.get_online_features_by_feast(
                     feature_list=feature_list,
-                    deployment=document,
+                    deployment=deployment,
                     feast_store=feast_store,
                     request_data=data.entity_serving_names,
                 )
@@ -277,12 +282,32 @@ class DeploymentController(
                     feature_list=feature_list,
                     request_data=data.entity_serving_names,
                 )
-        except (FeatureListNotOnlineEnabledError, RuntimeError) as exc:
+        except (DeploymentNotEnabledError, RuntimeError) as exc:
             raise HTTPException(
                 status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail=exc.args[0]
             ) from exc
         assert result is not None, result
         return result
+
+    async def _validate_deployment_is_online_enabled(self, deployment: DeploymentModel) -> None:
+        """
+        Validate deployment is online enabled.
+
+        Parameters
+        ----------
+        deployment: DeploymentModel
+            Deployment to validate
+
+        Raises
+        ------
+        DeploymentNotOnlineEnabledError
+            Deployment is not online enabled
+        """
+        catalog = await self.catalog_service.get_document(document_id=deployment.catalog_id)
+        if catalog.online_store_id is None:
+            raise DeploymentNotOnlineEnabledError(
+                "Deployment is not online enabled. Configure online store for the catalog to enable online feature requests."
+            )
 
     async def get_request_code_template(
         self, deployment_id: ObjectId, language: Literal["python", "sh"]
@@ -304,13 +329,15 @@ class DeploymentController(
 
         Raises
         ------
-        FeatureListNotOnlineEnabledError
+        DeploymentNotEnabledError
             Feature list is not online enabled
         """
         deployment: DeploymentModel = await self.service.get_document(deployment_id)
-
         if not deployment.enabled:
-            raise FeatureListNotOnlineEnabledError("Deployment is not enabled.")
+            raise DeploymentNotEnabledError("Deployment is not enabled.")
+
+        # deployment must be online enabled
+        await self._validate_deployment_is_online_enabled(deployment)
 
         return await self.online_serving_service.get_request_code_template(
             deployment=deployment,

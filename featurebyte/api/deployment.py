@@ -27,7 +27,7 @@ from featurebyte.common.formatting_util import CodeStr
 from featurebyte.config import Configurations
 from featurebyte.exception import (
     DeploymentDataBricksAccessorError,
-    FeatureListNotOnlineEnabledError,
+    DeploymentNotEnabledError,
     RecordRetrievalException,
 )
 from featurebyte.models.base import PydanticObjectId
@@ -284,7 +284,7 @@ class Deployment(DeletableApiObject):
 
         Raises
         ------
-        FeatureListNotOnlineEnabledError
+        DeploymentNotEnabledError
             Feature list not deployed
         NotImplementedError
             Serving code not available
@@ -358,7 +358,7 @@ class Deployment(DeletableApiObject):
             response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
             and response_dict["detail"] == "Deployment is not enabled."
         ):
-            raise FeatureListNotOnlineEnabledError(response_dict["detail"])
+            raise DeploymentNotEnabledError(response_dict["detail"])
         if response.status_code != HTTPStatus.OK:
             raise RecordRetrievalException(response)
 
