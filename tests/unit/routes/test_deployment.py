@@ -44,17 +44,6 @@ class TestDeploymentApi(BaseAsyncApiTestSuite, BaseCatalogApiTestSuite):
         """
         Patch app.get_storage for all tests in this module
         """
-        with patch(
-            "featurebyte.routes.deployment.controller.DeploymentController._validate_deployment_is_online_enabled",
-            return_value=None,
-        ):
-            yield
-
-    @pytest.fixture(autouse=True)
-    def _always_patch_deployment_online_fixture(self, storage):
-        """
-        Patch app.get_storage for all tests in this module
-        """
         with patch("featurebyte.app.get_storage", return_value=storage):
             yield
 

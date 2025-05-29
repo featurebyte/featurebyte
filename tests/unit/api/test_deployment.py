@@ -20,6 +20,7 @@ from featurebyte.exception import (
     RecordRetrievalException,
 )
 from featurebyte.query_graph.node.nested import AggregationNodeInfo
+from featurebyte.schema.feature_list import OnlineFeaturesRequestPayload
 
 
 @pytest.fixture(name="mock_warehouse_update_for_deployment", autouse=True)
@@ -119,6 +120,36 @@ def test_list_deployment(deployment, snowflake_feature_store):
     fb.Catalog.activate(original_catalog.name)
     response = client.get("/deployment/summary/")
     assert response.json() == {"num_feature_list": 1, "num_feature": 1}
+
+
+def test_get_online_serving_code_no_online_store_configured(deployment, config_file):
+    """Test feature get_online_serving_code fails when no online store is configured"""
+    # Use config
+    config = Configurations(config_file, force=True)
+
+    deployment.enable()
+    assert deployment.enabled is True
+
+    # Expect an exception when trying to get online serving code
+    with pytest.raises(
+        RecordRetrievalException,
+        match="Deployment is not online enabled. Configure online store for the catalog to enable online feature requests.",
+    ):
+        deployment.get_online_serving_code()
+
+    # Expect an exception when trying to get online features
+    client = config.get_client()
+    entity_serving_names = [
+        {
+            "üser id": 5,
+        }
+    ]
+    data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
+    response = client.post(f"/deployment/{deployment.id}/online_features", json=data.dict())
+    assert response.status_code == 500
+    assert response.json() == {
+        "detail": "Deployment is not online enabled. Configure online store for the catalog to enable online feature requests."
+    }
 
 
 @patch(
