@@ -189,20 +189,10 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
     feature_job_setting: Optional[FeatureJobSettingUnion]
     has_ttl: bool
     offline_store_table_name: str
+    output_dtype: DBVarType  # deprecated, keep it for old client compatibility
     output_dtype_info: DBVarTypeInfo
     primary_entity_dtypes: List[DBVarType]
     null_filling_value: Optional[Scalar] = Field(default=None)
-
-    @property
-    def output_dtype(self) -> DBVarType:
-        """
-        Output dtype of the offline store metadata
-
-        Returns
-        -------
-        DBVarType
-        """
-        return self.output_dtype_info.dtype
 
     @model_validator(mode="before")
     @classmethod
@@ -210,7 +200,15 @@ class OfflineStoreMetadata(FeatureByteBaseModel):
         cls, values: dict[str, Any]
     ) -> dict[str, Any]:
         if values.get("output_dtype_info") is None and values.get("output_dtype"):
+            # handle backward compatibility old way of specifying output_dtype
             values["output_dtype_info"] = DBVarTypeInfo(dtype=DBVarType(values["output_dtype"]))
+
+        if values.get("output_dtype") is None and values.get("output_dtype_info"):
+            # handle backward compatibility for graph that breaks old client
+            output_dtype_info = values["output_dtype_info"]
+            if isinstance(output_dtype_info, dict):
+                values["output_dtype_info"] = DBVarTypeInfo(**output_dtype_info)
+            values["output_dtype"] = values["output_dtype_info"].dtype
         return values
 
 
