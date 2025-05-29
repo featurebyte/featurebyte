@@ -905,27 +905,27 @@ async def test_feast_registry(
                 "àdd": 27.1,
             }
         ],
-        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}": [623.1500244140625],
-        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS_{version}": [np.cos(62315.0)],
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_{version}": [612.9199829101562],
+        f"EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS_{version}": [np.cos(61292)],
         f"EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h_{version}": [
             [
-                0.5365338952415342,
-                0.4908373917748641,
-                0.42408493050514906,
-                0.5512648363475837,
-                0.5269536439690168,
-                0.4490616290417775,
-                0.41383692828120605,
-                0.4543201999832706,
-                0.5041296835615285,
-                0.4379877816657862,
+                0.5147396926226291,
+                0.5105985934506334,
+                0.4033489230325782,
+                0.5249651077128239,
+                0.5478807119010883,
+                0.4721197245416274,
+                0.4021979871512357,
+                0.4755591916849737,
+                0.4894565525521825,
+                0.4121823297275281,
             ]
         ],
-        f"EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}": [667.059326171875],
+        f"EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE_{version}": [656.8292846679688],
         f"EXTERNAL_FS_COSINE_SIMILARITY_{version}": [0.0],
-        f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.9171356558799744],
+        f"EXTERNAL_FS_COSINE_SIMILARITY_VEC_{version}": [0.9210227727890015],
         f"EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d_{version}": [43],
-        f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [194],
+        f"EXTERNAL_FS_COUNT_OVERALL_7d_{version}": [200],
         f"Most Frequent Item Type by Order_{version}": ["type_24"],
         f"User Status Feature_{version}": ["STÀTUS_CODE_26"],
         f"Complex Feature by User_{version}": ["STÀTUS_CODE_26_1"],
@@ -1047,34 +1047,34 @@ def test_online_features__all_entities_provided(config, deployed_feature_list, s
         "EXTERNAL_CATEGORY_AMOUNT_SUM_BY_USER_ID_7d": {
             "__MISSING__": 234.77,
             "detail": 235.24,
-            "purchase": 225.78,
+            "purchase": 302.64,
             "rëmove": 11.39,
             "àdd": 338.51,
         },
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 475.3800048828125,
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS": np.cos(47538.0),
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 552.239990234375,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS": 0.4675004780292511,
         "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
-            0.41825654595626777,
-            0.3459365542614712,
-            0.5725510296687925,
-            0.424307035963231,
-            0.4930920411475925,
-            0.4502761817462119,
-            0.3192654242159094,
-            0.40611594238301874,
-            0.6493784232675229,
-            0.38572185913993623,
+            0.4131900194993384,
+            0.3647896782902609,
+            0.5372172175764314,
+            0.4364497061486116,
+            0.5284909604747903,
+            0.4423862862877522,
+            0.3146524937754731,
+            0.3935903526211379,
+            0.6550828931554313,
+            0.3655393355048817,
         ],
         "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": None,
         "EXTERNAL_FS_COSINE_SIMILARITY": 0.0,
-        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.895897626876831,
+        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.8980490565299988,
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": None,
-        "EXTERNAL_FS_COUNT_OVERALL_7d": 194,
+        "EXTERNAL_FS_COUNT_OVERALL_7d": 200,
         "Most Frequent Item Type by Order": "type_12",
         "Relative Frequency 7d": None,
         "PRODUCT_ACTION": "detail",
         "User Status Feature": None,
-        "Latest Amount by User": 41.08000183105469,
+        "Latest Amount by User": 76.86000061035156,
         "Latest Amount by User Offset 1d": 78.93000030517578,
         "cust_id": 761,
         "order_id": "T1230",
@@ -1094,7 +1094,7 @@ def expected_features_order_id_T3850(source_type):
     Expected features for entity order_id T3850
     """
     expected = {
-        "Amount Sum by Customer x Product Action 24d": 169.76999999999998,
+        "Amount Sum by Customer x Product Action 24d": 169.77000427246094,
         "Latest Amount by User": 91.31999969482422,
         "Latest Amount by User Offset 1d": 10.229999542236328,
         "Complex Feature by User": "STÀTUS_CODE_26_1",
@@ -1106,25 +1106,25 @@ def expected_features_order_id_T3850(source_type):
             "rëmove": 102.37,
             "àdd": 27.1,
         },
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 623.15,
-        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS": np.cos(62315.0),
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h": 612.9199829101562,
+        "EXTERNAL_FS_AMOUNT_SUM_BY_USER_ID_24h_TIMES_100_COS": 0.8903552293777466,
         "EXTERNAL_FS_ARRAY_AVG_BY_USER_ID_24h": [
-            0.5365338952415342,
-            0.4908373917748641,
-            0.42408493050514906,
-            0.5512648363475837,
-            0.5269536439690168,
-            0.4490616290417774,
-            0.41383692828120616,
-            0.4543201999832706,
-            0.5041296835615284,
-            0.43798778166578617,
+            0.5147396926226291,
+            0.5105985934506334,
+            0.4033489230325783,
+            0.5249651077128239,
+            0.5478807119010886,
+            0.4721197245416274,
+            0.4021979871512356,
+            0.4755591916849737,
+            0.4894565525521825,
+            0.4121823297275281,
         ],
-        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 667.0592974268257,
+        "EXTERNAL_FS_COMPLEX_USER_X_PRODUCTION_ACTION_FEATURE": 656.8292846679688,
         "EXTERNAL_FS_COSINE_SIMILARITY": 0.0,
-        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.9171356659119657,
+        "EXTERNAL_FS_COSINE_SIMILARITY_VEC": 0.9210227727890015,
         "EXTERNAL_FS_COUNT_BY_PRODUCT_ACTION_7d": 43,
-        "EXTERNAL_FS_COUNT_OVERALL_7d": 194,
+        "EXTERNAL_FS_COUNT_OVERALL_7d": 200,
         "Most Frequent Item Type by Order": "type_24",
         "User Status Feature": "STÀTUS_CODE_26",
         "order_id": "T3850",
@@ -1250,7 +1250,7 @@ def test_online_features__non_existing_order_id(
         for feature_name in expected_features_order_id_T3850
         if feature_name != "order_id"
     })
-    expected_non_existing_order_id_features["EXTERNAL_FS_COUNT_OVERALL_7d"] = 194
+    expected_non_existing_order_id_features["EXTERNAL_FS_COUNT_OVERALL_7d"] = 200
     if source_type != SourceType.DATABRICKS_UNITY:
         expected_non_existing_order_id_features["EXTERNAL_FS_COSINE_SIMILARITY_VEC"] = 0
     assert_dict_approx_equal(features[0], expected_features_order_id_T3850)
@@ -1347,7 +1347,9 @@ async def test_simulated_materialize__ttl_feature_table(
     # Check calling scheduled_materialize_features()
     service = app_container.feature_materialize_service
     feature_table_model = user_entity_ttl_feature_table
-    await service.scheduled_materialize_features(feature_table_model=feature_table_model)
+    with patch("featurebyte.service.feature_materialize.datetime") as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 13)
+        await service.scheduled_materialize_features(feature_table_model=feature_table_model)
     df = await session.execute_query(
         sql_to_string(
             parse_one(f'SELECT * FROM "{feature_table_model.name}"'), session.source_type
@@ -1377,7 +1379,9 @@ async def test_simulated_materialize__ttl_feature_table(
     assert df["üser id"].isnull().sum() == 0
 
     # Materialize one more time
-    await service.scheduled_materialize_features(feature_table_model=feature_table_model)
+    with patch("featurebyte.service.feature_materialize.datetime") as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 14)
+        await service.scheduled_materialize_features(feature_table_model=feature_table_model)
     df = await session.execute_query(
         sql_to_string(
             parse_one(f'SELECT * FROM "{feature_table_model.name}"'),
@@ -1394,7 +1398,9 @@ async def test_simulated_materialize__ttl_feature_table(
         offline_store_feature_table_name=feature_table_model.name,
         offline_store_feature_table_id=feature_table_model.id,
     )
-    await app_container.task_manager.submit(task_payload)
+    with patch("featurebyte.service.feature_materialize.datetime") as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2001, 1, 2, 15)
+        await app_container.task_manager.submit(task_payload)
     df = await session.execute_query(
         sql_to_string(
             parse_one(f'SELECT * FROM "{feature_table_model.name}"'),
