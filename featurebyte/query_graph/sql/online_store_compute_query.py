@@ -11,6 +11,7 @@ from sqlglot import expressions, parse_one
 from sqlglot.expressions import Expression, alias_, select
 
 from featurebyte.enum import InternalName, SpecialColumnName
+from featurebyte.models.deployed_tile_table import DeployedTileTableInfo
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
@@ -77,9 +78,14 @@ class OnlineStorePrecomputePlan:
         node: Node,
         adapter: BaseAdapter,
         agg_result_name_include_serving_names: bool,
+        deployed_tile_table_info: Optional[DeployedTileTableInfo] = None,
     ):
         self.adapter = adapter
         self.params_by_agg_result_name: dict[str, PrecomputeQueryParams] = {}
+        self.deployed_tile_table_info = deployed_tile_table_info
+        self._tile_table_mapping = (
+            deployed_tile_table_info.tile_table_mapping if deployed_tile_table_info else {}
+        )
         self._update(graph, node, agg_result_name_include_serving_names)
 
     def construct_online_store_precompute_queries(
@@ -142,6 +148,9 @@ class OnlineStorePrecomputePlan:
             params.agg_spec.pruned_graph,
             source_info=source_info,
             is_online_serving=False,
+            on_demand_tile_tables=self.deployed_tile_table_info.on_demand_tile_tables
+            if self.deployed_tile_table_info
+            else None,
         )
         plan = planner.generate_plan([params.agg_spec.pruned_node])
 
@@ -173,6 +182,7 @@ class OnlineStorePrecomputePlan:
             result_name=params.agg_spec.agg_result_name,
             result_type=result_type,
             serving_names=sorted(params.agg_spec.serving_names),
+            use_deployed_tile_table=self.deployed_tile_table_info is not None,
         )
 
     @staticmethod
@@ -243,6 +253,9 @@ class OnlineStorePrecomputePlan:
         first_index, last_index = self._get_first_and_last_indices(agg_spec)
 
         tile_id = agg_spec.tile_table_id
+        if tile_id in self._tile_table_mapping:
+            tile_id = self._tile_table_mapping[tile_id]
+
         serving_names = agg_spec.serving_names
         keys = agg_spec.keys
 
@@ -310,6 +323,7 @@ def get_online_store_precompute_queries(
     node: Node,
     source_info: SourceInfo,
     agg_result_name_include_serving_names: bool,
+    deployed_tile_table_info: Optional[DeployedTileTableInfo] = None,
 ) -> list[OnlineStoreComputeQueryModel]:
     """
     Construct the SQL code that can be scheduled for online store feature pre-computation
@@ -324,6 +338,9 @@ def get_online_store_precompute_queries(
         Source information
     agg_result_name_include_serving_names: bool
         Whether to include serving names in the aggregation result names
+    deployed_tile_table_info: Optional[DeployedTileTableInfo]
+        Deployed tile table information. When provided, the sql query will reference the deployed
+        tile tables instead of the original tile_id placeholder.
 
     Returns
     -------
@@ -334,6 +351,7 @@ def get_online_store_precompute_queries(
         node,
         adapter=get_sql_adapter(source_info),
         agg_result_name_include_serving_names=agg_result_name_include_serving_names,
+        deployed_tile_table_info=deployed_tile_table_info or DeployedTileTableInfo(),
     )
     queries = universe_plan.construct_online_store_precompute_queries(source_info=source_info)
     return queries

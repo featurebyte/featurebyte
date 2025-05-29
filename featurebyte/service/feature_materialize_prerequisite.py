@@ -99,7 +99,7 @@ class FeatureMaterializePrerequisiteService(
         self,
         offline_store_feature_table_id: ObjectId,
         scheduled_job_ts: datetime,
-        prerequisite_tile_task: PrerequisiteTileTask,
+        prerequisite_tile_tasks: list[PrerequisiteTileTask],
     ) -> None:
         """
         Insert a completed task item into an existing prerequisite document
@@ -110,7 +110,7 @@ class FeatureMaterializePrerequisiteService(
             Offline store feature table identifier
         scheduled_job_ts: datetime
             Scheduled job time used to identify the current job cycle
-        prerequisite_tile_task: PrerequisiteTileTask
+        prerequisite_tile_tasks: list[PrerequisiteTileTask]
             Representation of a completed tile task
         """
         document = await self.get_or_create_for_feature_table(
@@ -119,5 +119,13 @@ class FeatureMaterializePrerequisiteService(
         query_filter = await self.construct_get_query_filter(document.id)
         await self.update_documents(
             query_filter=query_filter,
-            update={"$push": {"completed": prerequisite_tile_task.model_dump(by_alias=True)}},
+            update={
+                "$push": {
+                    "completed": {
+                        "$each": [
+                            task.model_dump(by_alias=True) for task in prerequisite_tile_tasks
+                        ]
+                    }
+                }
+            },
         )

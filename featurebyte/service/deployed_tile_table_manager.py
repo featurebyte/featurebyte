@@ -4,6 +4,8 @@ DeployedTileTableManagerService class
 
 from __future__ import annotations
 
+from typing import Optional
+
 from bson import ObjectId
 
 from featurebyte.logging import get_logger
@@ -13,10 +15,13 @@ from featurebyte.models.deployed_tile_table import (
     TileIdentifier,
 )
 from featurebyte.query_graph.sql.interpreter import GraphInterpreter
-from featurebyte.query_graph.sql.source_info import SourceInfo
 from featurebyte.query_graph.sql.tile_compute_combine import combine_tile_compute_specs
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.feature import FeatureService
+from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.service.tile_manager import TileManagerService
+from featurebyte.session.base import BaseSession
 
 logger = get_logger(__name__)
 
@@ -31,13 +36,17 @@ class DeployedTileTableManagerService:
         self,
         deployed_tile_table_service: DeployedTileTableService,
         feature_service: FeatureService,
+        feature_store_service: FeatureStoreService,
+        tile_manager_service: TileManagerService,
+        session_manager_service: SessionManagerService,
     ) -> None:
         self.deployed_tile_table_service = deployed_tile_table_service
         self.feature_service = feature_service
+        self.feature_store_service = feature_store_service
+        self.tile_manager_service = tile_manager_service
+        self.session_manager_service = session_manager_service
 
-    async def handle_online_enabled_features(
-        self, features: list[FeatureModel], source_info: SourceInfo
-    ) -> None:
+    async def handle_online_enabled_features(self, features: list[FeatureModel]) -> None:
         """
         Handle online enabled features by creating deployed tile tables for the features.
 
@@ -45,9 +54,9 @@ class DeployedTileTableManagerService:
         ----------
         features: list[FeatureModel]
             List of features to handle
-        source_info: SourceInfo
-            Source information for the features
         """
+        if not features:
+            return
 
         # Retrieve the aggregation ids that are already deployed in DeployedTileTable collection
         all_aggregation_ids = set()
@@ -60,6 +69,10 @@ class DeployedTileTableManagerService:
         )
 
         # Extract aggregation_ids that are not deployed yet
+        feature_store_id = features[0].tabular_source.feature_store_id
+        source_info = (
+            await self.feature_store_service.get_document(document_id=feature_store_id)
+        ).get_source_info()
         unique_tile_infos = {}
         for feature in features:
             pending_aggregation_ids = []
@@ -100,12 +113,14 @@ class DeployedTileTableManagerService:
             ]
             tile_info = combined_info.tile_info
             deployed_tile_table = DeployedTileTableModel(
+                feature_store_id=feature_store_id,
                 table_name=table_name,
                 tile_identifiers=tile_identifiers,
                 tile_compute_query=tile_info.tile_compute_spec.get_tile_compute_query(),
                 entity_column_names=tile_info.entity_columns,
                 value_column_names=tile_info.tile_value_columns,
                 value_column_types=tile_info.tile_value_types,
+                value_by_column=tile_info.value_by_column,
                 frequency_minute=tile_info.frequency // 60,
                 time_modulo_frequency_second=tile_info.time_modulo_frequency,
                 blind_spot_second=tile_info.blind_spot,
@@ -139,4 +154,36 @@ class DeployedTileTableManagerService:
             ]
             if not new_tile_identifiers:
                 # Only undeploy a deployed tile table if all tile identifiers are not needed
-                await self.deployed_tile_table_service.delete_document(deployed_tile_table.id)
+                await self._remove_deployed_tile_table(deployed_tile_table)
+
+    async def _remove_deployed_tile_table(
+        self, deployed_tile_table: DeployedTileTableModel
+    ) -> None:
+        # Remove the deployed tile table document
+        await self.deployed_tile_table_service.delete_document(deployed_tile_table.id)
+
+        # Remove scheduled tile jobs
+        await self.tile_manager_service.remove_deployed_tile_table_jobs(
+            deployed_tile_table_id=deployed_tile_table.id,
+        )
+
+        # Drop the tile table from the feature store
+        session = await self._get_feature_store_session(deployed_tile_table.feature_store_id)
+        if session is not None:
+            await session.drop_table(
+                deployed_tile_table.table_name,
+                schema_name=session.schema_name,
+                database_name=session.database_name,
+                if_exists=True,
+            )
+
+    async def _get_feature_store_session(self, feature_store_id: ObjectId) -> Optional[BaseSession]:
+        feature_store = await self.feature_store_service.get_document(document_id=feature_store_id)
+        try:
+            session = await self.session_manager_service.get_feature_store_session(feature_store)
+        except ValueError:
+            logger.warning(
+                "Feature store session could not be created, skipping tile table removal"
+            )
+            return None
+        return session

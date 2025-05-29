@@ -41,7 +41,9 @@ async def test_generate_tiles_with_scheduler__verify_scheduling_and_execution(
 
     tile_scheduler_service, tile_spec, job_id = scheduler_fixture
 
-    await tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
+    await tile_manager_service.schedule_online_tiles(
+        tile_spec=tile_spec, deployed_tile_table_id=None
+    )
 
     job_details = await tile_scheduler_service.get_job_details(job_id=job_id)
     assert job_details is not None
@@ -78,10 +80,14 @@ async def test_generate_tiles_with_scheduler__avoid_duplicate_tile(
     Test generate_tiles with scheduler - avoid duplicate tile job
     """
     tile_scheduler, tile_spec, job_id = scheduler_fixture
-    sql = await tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
+    sql = await tile_manager_service.schedule_online_tiles(
+        tile_spec=tile_spec, deployed_tile_table_id=None
+    )
     assert sql is not None
 
-    sql = await tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
+    sql = await tile_manager_service.schedule_online_tiles(
+        tile_spec=tile_spec, deployed_tile_table_id=None
+    )
     assert sql is None
 
 
@@ -94,11 +100,13 @@ async def test_generate_tiles_with_scheduler__tile_job_exists(
     """
     tile_scheduler, tile_spec, job_id = scheduler_fixture
 
-    exists = await tile_manager_service.tile_job_exists(tile_spec=tile_spec)
+    exists = await tile_manager_service.tile_job_exists(info=tile_spec)
     assert exists is False
 
-    sql = await tile_manager_service.schedule_online_tiles(tile_spec=tile_spec)
+    sql = await tile_manager_service.schedule_online_tiles(
+        tile_spec=tile_spec, deployed_tile_table_id=None
+    )
     assert sql is not None
 
-    exists = await tile_manager_service.tile_job_exists(tile_spec=tile_spec)
+    exists = await tile_manager_service.tile_job_exists(info=tile_spec)
     assert exists is True

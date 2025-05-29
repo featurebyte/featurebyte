@@ -88,7 +88,7 @@ async def test_add_completed_task(
         status="success",
     )
     await service.add_completed_prerequisite(
-        offline_store_feature_table_id, scheduled_job_ts, tile_task_1
+        offline_store_feature_table_id, scheduled_job_ts, [tile_task_1]
     )
 
     # Add task item 2
@@ -97,7 +97,7 @@ async def test_add_completed_task(
         status="failure",
     )
     await service.add_completed_prerequisite(
-        offline_store_feature_table_id, scheduled_job_ts, tile_task_2
+        offline_store_feature_table_id, scheduled_job_ts, [tile_task_2]
     )
 
     # Check document is correctly updated
@@ -122,7 +122,7 @@ async def test_add_completed_task_not_found(
         status="success",
     )
     await service.add_completed_prerequisite(
-        offline_store_feature_table_id, scheduled_job_ts, tile_task_1
+        offline_store_feature_table_id, scheduled_job_ts, [tile_task_1]
     )
     docs = await service.list_documents_as_dict()
     assert len(docs["data"]) == 1

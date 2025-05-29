@@ -105,7 +105,7 @@ class FeatureMaterializeSyncService:
     async def update_tile_prerequisite(
         self,
         tile_task_ts: datetime,
-        aggregation_id: str,
+        aggregation_ids: list[str],
         status: PrerequisiteTileTaskStatusType,
     ) -> None:
         """
@@ -118,8 +118,8 @@ class FeatureMaterializeSyncService:
         ----------
         tile_task_ts: datetime
             Start time of the tile task
-        aggregation_id: str
-            Aggregation id corresponding to the tile task
+        aggregation_ids: list[str]
+            Aggregation ids corresponding to the tile task
         status: PrerequisiteTileTaskStatusType
             Status of the tile task
         """
@@ -127,14 +127,14 @@ class FeatureMaterializeSyncService:
             "Updating tile prerequisite",
             extra={
                 "tile_tasks_ts": str(tile_task_ts),
-                "aggregation_id": aggregation_id,
+                "aggregation_ids": aggregation_ids,
                 "status": status,
             },
         )
         async for (
             feature_table_model
-        ) in self.offline_store_feature_table_service.list_feature_tables_for_aggregation_id(
-            aggregation_id
+        ) in self.offline_store_feature_table_service.list_feature_tables_for_aggregation_ids(
+            aggregation_ids
         ):
             if feature_table_model.feature_job_setting is None:
                 continue
@@ -142,14 +142,21 @@ class FeatureMaterializeSyncService:
                 input_dt=tile_task_ts,
                 feature_job_setting=feature_table_model.feature_job_setting,
             )
-            prerequisite_tile_task = PrerequisiteTileTask(
-                aggregation_id=aggregation_id,
-                status=status,
+            # Only update the prerequisite for aggregation ids that are part of the feature table
+            common_aggregation_ids = set(aggregation_ids).intersection(
+                feature_table_model.aggregation_ids
             )
+            prerequisite_tile_tasks = [
+                PrerequisiteTileTask(
+                    aggregation_id=aggregation_id,
+                    status=status,
+                )
+                for aggregation_id in common_aggregation_ids
+            ]
             await self.feature_materialize_prerequisite_service.add_completed_prerequisite(
                 offline_store_feature_table_id=feature_table_model.id,
                 scheduled_job_ts=schedule_job_datetime,
-                prerequisite_tile_task=prerequisite_tile_task,
+                prerequisite_tile_tasks=prerequisite_tile_tasks,
             )
 
     async def run_feature_materialize(self, offline_store_feature_table_id: ObjectId) -> None:

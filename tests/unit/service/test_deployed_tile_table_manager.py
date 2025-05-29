@@ -2,15 +2,19 @@
 Unit tests for DeployedTileTableManagerService
 """
 
+from unittest.mock import call, patch
+
 import pytest
 import pytest_asyncio
+from bson import ObjectId
 
-from featurebyte import SourceType
+from featurebyte import Deployment, SourceType
 from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.sql.common import sql_to_string
 from tests.util.helper import (
     assert_equal_with_expected_fixture,
     deploy_feature,
+    deploy_feature_ids,
     undeploy_feature,
 )
 
@@ -46,6 +50,7 @@ def feature_set_1_fixture(snowflake_event_view_with_entity):
             feature_job_setting=feature_job_setting,
             feature_names=[f"{method}_1d_10m"],
         )[f"{method}_1d_10m"]
+        feature.save()
         features.append(feature)
     return features
 
@@ -65,6 +70,7 @@ def feature_set_2_fixture(snowflake_event_view_with_entity):
             feature_job_setting=feature_job_setting,
             feature_names=[f"{method}_1d_5m"],
         )[f"{method}_1d_5m"]
+        feature.save()
         features.append(feature)
     return features
 
@@ -78,12 +84,13 @@ def feature_set_3_fixture(feature_set_1):
     for feature in feature_set_1:
         new_feature = feature + 123
         new_feature.name = f"{feature.name}_plus_123"
+        new_feature.save()
         features.append(new_feature)
     return features
 
 
 @pytest_asyncio.fixture(name="multiple_deployed_features")
-async def multiple_features_fixture(
+async def multiple_deployed_features_fixture(
     feature_set_1,
     feature_set_2,
     app_container,
@@ -96,6 +103,25 @@ async def multiple_features_fixture(
     _ = mock_update_data_warehouse
     _ = mock_offline_store_feature_manager_dependencies
 
+    features = feature_set_1 + feature_set_2
+
+    # Deploy the features
+    return await deploy_feature_ids(
+        app_container,
+        feature_list_name=str(ObjectId()),
+        feature_ids=[feature.id for feature in features],
+    )
+
+
+@pytest_asyncio.fixture(name="multiple_individually_deployed_features")
+async def multiple_individually_deployed_features_fixture(
+    feature_set_1,
+    feature_set_2,
+    app_container,
+):
+    """
+    Fixture for individually deployed features
+    """
     features = feature_set_1 + feature_set_2
 
     # Deploy the features
@@ -113,8 +139,6 @@ async def deployed_feature_set_1_then_feature_set_3_fixture(
     app_container,
     mock_update_data_warehouse,
     mock_offline_store_feature_manager_dependencies,
-    deployed_tile_table_manager_service,
-    source_info,
 ):
     """
     Fixture for deployed feature set 1 then feature set 3
@@ -123,29 +147,30 @@ async def deployed_feature_set_1_then_feature_set_3_fixture(
     _ = mock_offline_store_feature_manager_dependencies
 
     # Deploy the features in feature_set_1
-    deployed_features_1 = {}
-    for feature in feature_set_1:
-        deployed_feature = await deploy_feature(app_container, feature)
-        deployed_features_1[feature.name] = deployed_feature
-    await deployed_tile_table_manager_service.handle_online_enabled_features(
-        list(deployed_features_1.values()),
-        source_info=source_info,
+    await deploy_feature_ids(
+        app_container,
+        feature_list_name=str(ObjectId()),
+        feature_ids=[feature.id for feature in feature_set_1],
     )
 
     # Deploy the features in feature_set_3
-    deployed_features_3 = {}
-    for feature in feature_set_3:
-        deployed_feature = await deploy_feature(app_container, feature)
-        deployed_features_3[feature.name] = deployed_feature
-    await deployed_tile_table_manager_service.handle_online_enabled_features(
-        list(deployed_features_3.values()),
-        source_info=source_info,
+    await deploy_feature_ids(
+        app_container,
+        feature_list_name=str(ObjectId()),
+        feature_ids=[feature.id for feature in feature_set_3],
     )
 
-    deployed_features = {}
-    deployed_features.update(deployed_features_1)
-    deployed_features.update(deployed_features_3)
-    return deployed_features
+
+@pytest.fixture(name="mock_get_feature_store_session")
+def mock_get_feature_store_session_fixture(mock_snowflake_session):
+    """
+    Patch get_feature_store_session to return a mock session
+    """
+    with patch(
+        "featurebyte.service.deployed_tile_table_manager.DeployedTileTableManagerService._get_feature_store_session",
+    ) as patched_get_feature_store_session:
+        patched_get_feature_store_session.return_value = mock_snowflake_session
+        yield patched_get_feature_store_session
 
 
 async def get_deployed_tile_table_models(deployed_tile_table_service):
@@ -187,20 +212,17 @@ def check_deployed_tile_table_model(
     assert deployed_tile_table_dict == expected_deployed_tile_table_dict
 
 
+@pytest.mark.usefixtures("multiple_deployed_features")
 @pytest.mark.asyncio
 async def test_handle_online_enabled_features(
     deployed_tile_table_service,
     deployed_tile_table_manager_service,
-    multiple_deployed_features,
     source_info,
     update_fixtures,
 ):
     """
     Test handle_online_enabled_features
     """
-    await deployed_tile_table_manager_service.handle_online_enabled_features(
-        list(multiple_deployed_features.values()), source_info
-    )
     deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
     assert len(deployed_tile_table_models) == 2
 
@@ -212,6 +234,7 @@ async def test_handle_online_enabled_features(
             "block_modification_by": [],
             "description": None,
             "entity_column_names": ["cust_id"],
+            "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
             "frequency_minute": 30,
             "is_deleted": False,
             "last_run_metadata_offline": None,
@@ -233,6 +256,7 @@ async def test_handle_online_enabled_features(
                 },
             ],
             "time_modulo_frequency_second": 300,
+            "value_by_column": None,
             "value_column_names": [
                 "value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
                 "value_min_9f45e3acb4c92c3e7965894a8f4ae4fbd7c01dda",
@@ -251,6 +275,7 @@ async def test_handle_online_enabled_features(
             "block_modification_by": [],
             "description": None,
             "entity_column_names": ["cust_id"],
+            "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
             "frequency_minute": 30,
             "is_deleted": False,
             "last_run_metadata_offline": None,
@@ -268,6 +293,7 @@ async def test_handle_online_enabled_features(
                 },
             ],
             "time_modulo_frequency_second": 300,
+            "value_by_column": None,
             "value_column_names": [
                 "sum_value_avg_ce0c9886ef9c14b43e37879200b1410d9d97e460",
                 "count_value_avg_ce0c9886ef9c14b43e37879200b1410d9d97e460",
@@ -282,33 +308,41 @@ async def test_handle_online_enabled_features(
     )
 
 
+@pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_handle_online_disabled_features(
     deployed_tile_table_service,
     deployed_tile_table_manager_service,
     multiple_deployed_features,
+    multiple_individually_deployed_features,
     source_info,
+    mock_snowflake_session,
 ):
     """
     Test handle_online_disabled_features
     """
-    await deployed_tile_table_manager_service.handle_online_enabled_features(
-        list(multiple_deployed_features.values()), source_info
-    )
+    deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
+    assert len(deployed_tile_table_models) == 2
+
+    # Undeploy the feature list. The deployed tile table should be retained since it's still used
+    # by the individually deployed features.
+    deployed_feature_list = multiple_deployed_features
+    deployment = Deployment.get(deployed_feature_list.name)
+    deployment.disable()
     deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
     assert len(deployed_tile_table_models) == 2
 
     # Undeploy the first feature. The deployed tile table should be retained since it's still used
     # by other features.
-    undeploy_feature(multiple_deployed_features["sum_1d_10m"])
+    undeploy_feature(multiple_individually_deployed_features["sum_1d_10m"])
     await deployed_tile_table_manager_service.handle_online_disabled_features()
     deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
     assert len(deployed_tile_table_models) == 2
 
     # Undeploy more features. The first deployed tile table should be removed since it's no longer
     # used by any features.
-    undeploy_feature(multiple_deployed_features["min_1d_10m"])
-    undeploy_feature(multiple_deployed_features["max_1d_10m"])
+    undeploy_feature(multiple_individually_deployed_features["min_1d_10m"])
+    undeploy_feature(multiple_individually_deployed_features["max_1d_10m"])
     await deployed_tile_table_manager_service.handle_online_disabled_features()
     deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
     assert len(deployed_tile_table_models) == 1
@@ -318,24 +352,38 @@ async def test_handle_online_disabled_features(
     )
 
     # Undeploy remaining features
-    undeploy_feature(multiple_deployed_features["avg_1d_5m"])
-    undeploy_feature(multiple_deployed_features["std_1d_5m"])
+    undeploy_feature(multiple_individually_deployed_features["avg_1d_5m"])
+    undeploy_feature(multiple_individually_deployed_features["std_1d_5m"])
     await deployed_tile_table_manager_service.handle_online_disabled_features()
     deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
     assert len(deployed_tile_table_models) == 0
 
+    # Check that the drop_table method was called for the removed deployed tile tables
+    assert mock_snowflake_session.drop_table.call_args_list == [
+        call(
+            "__FB_DEPLOYED_TILE_TABLE_000000000000000000000000",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            if_exists=True,
+        ),
+        call(
+            "__FB_DEPLOYED_TILE_TABLE_000000000000000000000001",
+            schema_name="sf_schema",
+            database_name="sf_db",
+            if_exists=True,
+        ),
+    ]
 
+
+@pytest.mark.usefixtures("deployed_feature_set_1_then_feature_set_3")
 @pytest.mark.asyncio
 async def test_deployed_feature_set_1_then_feature_set_3(
     deployed_tile_table_service,
-    deployed_feature_set_1_then_feature_set_3,
     update_fixtures,
 ):
     """
     Test deployed feature set 1 then feature set 3
     """
-    _ = deployed_feature_set_1_then_feature_set_3
-
     # There should be only one deployed tile table since the features in feature_set_3 share the
     # same tiles as the features in feature_set_1.
     deployed_tile_table_models = await get_deployed_tile_table_models(deployed_tile_table_service)
@@ -349,6 +397,7 @@ async def test_deployed_feature_set_1_then_feature_set_3(
             "block_modification_by": [],
             "description": None,
             "entity_column_names": ["cust_id"],
+            "feature_store_id": ObjectId("646f6c190ed28a5271fb02a1"),
             "frequency_minute": 30,
             "is_deleted": False,
             "last_run_metadata_offline": None,
@@ -370,6 +419,7 @@ async def test_deployed_feature_set_1_then_feature_set_3(
                 },
             ],
             "time_modulo_frequency_second": 300,
+            "value_by_column": None,
             "value_column_names": [
                 "value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295",
                 "value_min_9f45e3acb4c92c3e7965894a8f4ae4fbd7c01dda",

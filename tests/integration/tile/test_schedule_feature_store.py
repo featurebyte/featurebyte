@@ -41,6 +41,7 @@ async def test_schedule_update_feature_store__update_feature_value(
     base_sql_model,
     online_store_table_version_service,
     online_store_compute_query_service,
+    deployed_tile_table_service,
 ):
     """
     Test the stored procedure for updating feature store
@@ -55,6 +56,7 @@ async def test_schedule_update_feature_store__update_feature_value(
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
         online_store_compute_query_service=online_store_compute_query_service,
+        deployed_tile_table_service=deployed_tile_table_service,
     )
     await tile_online_store_ins.execute()
 
@@ -87,6 +89,7 @@ async def test_schedule_update_feature_store__update_feature_value(
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
         online_store_compute_query_service=online_store_compute_query_service,
+        deployed_tile_table_service=deployed_tile_table_service,
     )
     await tile_online_store_ins.execute()
 
@@ -105,6 +108,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
     base_sql_model,
     online_store_table_version_service,
     online_store_compute_query_service,
+    deployed_tile_table_service,
 ):
     """
     Test the stored procedure for updating feature store
@@ -119,6 +123,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
         online_store_compute_query_service=online_store_compute_query_service,
+        deployed_tile_table_service=deployed_tile_table_service,
     )
     await tile_online_store_ins.execute()
 
@@ -158,6 +163,7 @@ async def test_schedule_update_feature_store__insert_with_new_feature_column(
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
         online_store_compute_query_service=online_store_compute_query_service,
+        deployed_tile_table_service=deployed_tile_table_service,
     )
     await tile_online_store_ins.execute()
 
@@ -187,6 +193,7 @@ async def test_schedule_online_feature_store__change_entity_universe(
     base_sql_model,
     online_store_table_version_service,
     online_store_compute_query_service,
+    deployed_tile_table_service,
 ):
     """
     Test the stored procedure for updating feature store
@@ -201,6 +208,7 @@ async def test_schedule_online_feature_store__change_entity_universe(
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
         online_store_compute_query_service=online_store_compute_query_service,
+        deployed_tile_table_service=deployed_tile_table_service,
     )
     await tile_online_store_ins.execute()
 
@@ -232,6 +240,7 @@ async def test_schedule_online_feature_store__change_entity_universe(
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
         online_store_compute_query_service=online_store_compute_query_service,
+        deployed_tile_table_service=deployed_tile_table_service,
     )
     await tile_online_store_ins.execute()
 
@@ -255,6 +264,7 @@ async def test_online_store_table_cleanup(
     online_store_table_version_service,
     online_store_compute_query_service,
     online_store_cleanup_service,
+    deployed_tile_table_service,
     feature_store,
 ):
     """
@@ -271,6 +281,7 @@ async def test_online_store_table_cleanup(
         job_schedule_ts_str=date_ts_str,
         online_store_table_version_service=online_store_table_version_service,
         online_store_compute_query_service=online_store_compute_query_service,
+        deployed_tile_table_service=deployed_tile_table_service,
     )
     await tile_online_store_ins.execute()
     await tile_online_store_ins.execute()
