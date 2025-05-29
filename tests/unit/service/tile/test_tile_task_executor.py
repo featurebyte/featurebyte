@@ -86,7 +86,7 @@ def patched_tile_classes_fixture():
     """
     mocks = {}
     patchers = []
-    classes_to_patch = ["TileGenerate", "TileScheduleOnlineStore"]
+    classes_to_patch = ["TileGenerate"]
     for class_name in classes_to_patch:
         patcher = patch(f"featurebyte.service.tile.tile_task_executor.{class_name}", autospec=True)
         mocks[class_name] = patcher.start()
@@ -94,22 +94,6 @@ def patched_tile_classes_fixture():
     yield mocks
     for patcher in patchers:
         patcher.stop()
-
-
-@pytest.mark.asyncio
-async def test_online_store_job_schedule_ts(
-    tile_task_executor, tile_task_parameters, session, patched_tile_classes
-):
-    """
-    Test that the job_schedule_ts_str parameter passed to TileScheduleOnlineStore is correct
-    """
-    # The scheduled task is run 1 second past the intended schedule
-    tile_task_parameters.job_schedule_ts = "2023-01-15 10:00:11"
-    await tile_task_executor.execute(session, tile_task_parameters)
-
-    # The online store calculation should use the corrected schedule time as point in time
-    _, kwargs = patched_tile_classes["TileScheduleOnlineStore"].call_args
-    assert kwargs["job_schedule_ts_str"] == "2023-01-15 10:00:10"
 
 
 @pytest.mark.usefixtures("patched_tile_classes")

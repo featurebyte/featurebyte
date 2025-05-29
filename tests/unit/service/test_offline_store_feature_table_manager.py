@@ -729,10 +729,27 @@ async def test_feature_table_one_feature_deployed(
                     """
                     SELECT DISTINCT
                       CAST("cust_id" AS BIGINT) AS "cust_id"
-                    FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
+                    FROM (
+                      SELECT
+                        "col_int" AS "col_int",
+                        "col_float" AS "col_float",
+                        "col_char" AS "col_char",
+                        "col_text" AS "col_text",
+                        "col_binary" AS "col_binary",
+                        "col_boolean" AS "col_boolean",
+                        "event_timestamp" AS "event_timestamp",
+                        "cust_id" AS "cust_id"
+                      FROM "sf_database"."sf_schema"."sf_table"
+                      WHERE
+                        "event_timestamp" >= CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                        ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+                        AND "event_timestamp" < CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                        ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                    )
                     WHERE
-                      "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
-                      AND "cust_id" IS NOT NULL
+                      "cust_id" IS NOT NULL
                     """
                 ).strip(),
                 "source_type": "snowflake",
@@ -877,10 +894,27 @@ async def test_feature_table_two_features_deployed(
                     """
                     SELECT DISTINCT
                       CAST("cust_id" AS BIGINT) AS "cust_id"
-                    FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
+                    FROM (
+                      SELECT
+                        "col_int" AS "col_int",
+                        "col_float" AS "col_float",
+                        "col_char" AS "col_char",
+                        "col_text" AS "col_text",
+                        "col_binary" AS "col_binary",
+                        "col_boolean" AS "col_boolean",
+                        "event_timestamp" AS "event_timestamp",
+                        "cust_id" AS "cust_id"
+                      FROM "sf_database"."sf_schema"."sf_table"
+                      WHERE
+                        "event_timestamp" >= CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                        ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+                        AND "event_timestamp" < CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                        ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                    )
                     WHERE
-                      "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
-                      AND "cust_id" IS NOT NULL
+                      "cust_id" IS NOT NULL
                     """
                 ).strip(),
                 "source_type": "snowflake",
@@ -981,10 +1015,27 @@ async def test_feature_table_undeploy(
                     """
                     SELECT DISTINCT
                       CAST("cust_id" AS BIGINT) AS "cust_id"
-                    FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
+                    FROM (
+                      SELECT
+                        "col_int" AS "col_int",
+                        "col_float" AS "col_float",
+                        "col_char" AS "col_char",
+                        "col_text" AS "col_text",
+                        "col_binary" AS "col_binary",
+                        "col_boolean" AS "col_boolean",
+                        "event_timestamp" AS "event_timestamp",
+                        "cust_id" AS "cust_id"
+                      FROM "sf_database"."sf_schema"."sf_table"
+                      WHERE
+                        "event_timestamp" >= CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                        ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+                        AND "event_timestamp" < CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                        ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                    )
                     WHERE
-                      "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
-                      AND "cust_id" IS NOT NULL
+                      "cust_id" IS NOT NULL
                     """
                 ).strip(),
                 "source_type": "snowflake",
@@ -1122,10 +1173,27 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                     """
                     SELECT DISTINCT
                       CAST("cust_id" AS BIGINT) AS "cust_id"
-                    FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
+                    FROM (
+                      SELECT
+                        "col_int" AS "col_int",
+                        "col_float" AS "col_float",
+                        "col_char" AS "col_char",
+                        "col_text" AS "col_text",
+                        "col_binary" AS "col_binary",
+                        "col_boolean" AS "col_boolean",
+                        "event_timestamp" AS "event_timestamp",
+                        "cust_id" AS "cust_id"
+                      FROM "sf_database"."sf_schema"."sf_table"
+                      WHERE
+                        "event_timestamp" >= CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                        ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+                        AND "event_timestamp" < CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                        ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                    )
                     WHERE
-                      "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
-                      AND "cust_id" IS NOT NULL
+                      "cust_id" IS NOT NULL
                     """
                 ).strip(),
                 "source_type": "snowflake",
@@ -1176,10 +1244,27 @@ async def test_feature_table_two_features_different_feature_job_settings_deploye
                     """
                     SELECT DISTINCT
                       CAST("cust_id" AS BIGINT) AS "cust_id"
-                    FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
+                    FROM (
+                      SELECT
+                        "col_int" AS "col_int",
+                        "col_float" AS "col_float",
+                        "col_char" AS "col_char",
+                        "col_text" AS "col_text",
+                        "col_binary" AS "col_binary",
+                        "col_boolean" AS "col_boolean",
+                        "event_timestamp" AS "event_timestamp",
+                        "cust_id" AS "cust_id"
+                      FROM "sf_database"."sf_schema"."sf_table"
+                      WHERE
+                        "event_timestamp" >= CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+                        ) / 10800) * 10800 + 5 - 900 - 86400 AS TIMESTAMP)
+                        AND "event_timestamp" < CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+                        ) / 10800) * 10800 + 5 - 900 AS TIMESTAMP)
+                    )
                     WHERE
-                      "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
-                      AND "cust_id" IS NOT NULL
+                      "cust_id" IS NOT NULL
                     """
                 ).strip(),
                 "source_type": "snowflake",
@@ -1878,11 +1963,62 @@ async def test_item_view_window_aggregate(
                 "formatted_expression": textwrap.dedent(
                     """
                     SELECT DISTINCT
-                      "item_type"
-                    FROM ONLINE_STORE_22F02BBC16545D0E730D39EFFC50176C1D1F6299
+                      "item_type" AS "item_type"
+                    FROM (
+                      SELECT
+                        L."event_id_col" AS "event_id_col",
+                        L."item_id_col" AS "item_id_col",
+                        L."item_type" AS "item_type",
+                        L."item_amount" AS "item_amount",
+                        L."created_at" AS "created_at",
+                        L."event_timestamp" AS "event_timestamp",
+                        R."event_timestamp" AS "event_timestamp_event"
+                      FROM (
+                        SELECT
+                          "event_id_col" AS "event_id_col",
+                          "item_id_col" AS "item_id_col",
+                          "item_type" AS "item_type",
+                          "item_amount" AS "item_amount",
+                          "created_at" AS "created_at",
+                          "event_timestamp" AS "event_timestamp"
+                        FROM "sf_database"."sf_schema"."items_table"
+                      ) AS L
+                      INNER JOIN (
+                        SELECT
+                          "col_int",
+                          ANY_VALUE("col_float") AS "col_float",
+                          ANY_VALUE("col_char") AS "col_char",
+                          ANY_VALUE("col_text") AS "col_text",
+                          ANY_VALUE("col_binary") AS "col_binary",
+                          ANY_VALUE("col_boolean") AS "col_boolean",
+                          ANY_VALUE("event_timestamp") AS "event_timestamp",
+                          ANY_VALUE("cust_id") AS "cust_id"
+                        FROM (
+                          SELECT
+                            "col_int" AS "col_int",
+                            "col_float" AS "col_float",
+                            "col_char" AS "col_char",
+                            "col_text" AS "col_text",
+                            "col_binary" AS "col_binary",
+                            "col_boolean" AS "col_boolean",
+                            "event_timestamp" AS "event_timestamp",
+                            "cust_id" AS "cust_id"
+                          FROM "sf_database"."sf_schema"."sf_table"
+                        )
+                        GROUP BY
+                          "col_int"
+                      ) AS R
+                        ON L."event_id_col" = R."col_int"
+                      WHERE
+                        "event_timestamp_event" >= CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                        ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+                        AND "event_timestamp_event" < CAST(FLOOR((
+                          DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+                        ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+                    )
                     WHERE
-                      "AGGREGATION_RESULT_NAME" = '_fb_internal_item_type_window_w86400_sum_2e4057b32df81d547bde013cd755a1189af7e615'
-                      AND "item_type" IS NOT NULL
+                      "item_type" IS NOT NULL
                     """
                 ).strip(),
                 "source_type": "snowflake",

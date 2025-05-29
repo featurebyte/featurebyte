@@ -1,6 +1,23 @@
 SELECT DISTINCT
   CAST("cust_id" AS BIGINT) AS "cust_id"
-FROM ONLINE_STORE_1D1BC6C6B7E37001082CDC2F77E909B292FA4E50
+FROM (
+  SELECT
+    "col_int" AS "col_int",
+    "col_float" AS "col_float",
+    "col_char" AS "col_char",
+    "col_text" AS "col_text",
+    "col_binary" AS "col_binary",
+    "col_boolean" AS "col_boolean",
+    "event_timestamp" AS "event_timestamp",
+    "cust_id" AS "cust_id"
+  FROM "sf_database"."sf_schema"."sf_table"
+  WHERE
+    "event_timestamp" >= CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+    ) / 1800) * 1800 + 300 - 600 - 7776000 AS TIMESTAMP)
+    AND "event_timestamp" < CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+    ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+)
 WHERE
-  "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w7776000_latest_d9b2a8ebb02e7a6916ae36e9cc223759433c01e2'
-  AND "cust_id" IS NOT NULL
+  "cust_id" IS NOT NULL
