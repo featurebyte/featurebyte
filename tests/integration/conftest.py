@@ -75,6 +75,7 @@ from featurebyte.routes.lazy_app_container import LazyAppContainer
 from featurebyte.routes.registry import app_container_config
 from featurebyte.schema.task import TaskStatus
 from featurebyte.schema.worker.task.base import BaseTaskPayload
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.service.session_manager import SessionManagerService
@@ -2174,6 +2175,14 @@ def online_store_compute_query_service_fixture(app_container) -> OnlineStoreComp
     Online store compute query service fixture
     """
     return app_container.online_store_compute_query_service
+
+
+@pytest.fixture(name="deployed_tile_table_service")
+def deployed_tile_table_service_fixture(app_container) -> DeployedTileTableService:
+    """
+    DeployedTileTableService fixture
+    """
+    return app_container.deployed_tile_table_service
 
 
 @pytest.fixture(name="feature_store_service")

@@ -6,12 +6,14 @@ import textwrap
 from datetime import datetime
 from typing import List, Optional
 
+from bson import ObjectId
 from pydantic import ConfigDict, Field
 
 from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.online_store_compute_query import OnlineStoreComputeQueryModel
 from featurebyte.models.online_store_table_version import OnlineStoreTableVersion
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
 from featurebyte.service.online_store_table_version import OnlineStoreTableVersionService
 from featurebyte.sql.base import BaseSqlModel
@@ -28,8 +30,12 @@ class TileScheduleOnlineStore(BaseSqlModel):
     aggregation_id: str
     job_schedule_ts_str: str
     aggregation_result_name: Optional[str] = Field(default=None)
+    # This is for backward compatibility and should be set to None in existing tile tasks. For new
+    # deployment enabling and new tile tasks, we always use deployed tile table.
+    deployed_tile_table_id: Optional[ObjectId] = Field(None)
     online_store_table_version_service: OnlineStoreTableVersionService
     online_store_compute_query_service: OnlineStoreComputeQueryService
+    deployed_tile_table_service: DeployedTileTableService
 
     # pydantic model configuration
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -131,15 +137,30 @@ class TileScheduleOnlineStore(BaseSqlModel):
 
     async def _retrieve_online_store_compute_queries(self) -> List[OnlineStoreComputeQueryModel]:
         if self.aggregation_result_name is not None:
-            # Retrieve compute queries for a specific result name (e.g. sum_30d)
-            iterator = self.online_store_compute_query_service.list_by_result_names([
-                self.aggregation_result_name
-            ])
+            # Retrieve compute queries for a specific result name (e.g. sum_30d). This is called
+            # when populating internal online store as part of enabling deployment. Since this is
+            # only called for new deployments, always set use_deployed_tile_table to True.
+            iterator = self.online_store_compute_query_service.list_by_result_names(
+                [
+                    self.aggregation_result_name,
+                ],
+                use_deployed_tile_table=True,
+            )
         else:
             # Retrieve all compute queries associated with an aggregation_id (e.g. sum_1d, sum_7d,
-            # sum_30d, etc)
-            iterator = self.online_store_compute_query_service.list_by_aggregation_id(
-                self.aggregation_id
+            # sum_30d, etc). This is called during a scheduled tile task.
+            if self.deployed_tile_table_id is None:
+                # Legacy tile jobs - use the aggregation_id directly
+                aggregation_ids = [self.aggregation_id]
+            else:
+                # For all new deployments, use the deployed tile table to get the aggregation ids
+                deployed_tile_table = await self.deployed_tile_table_service.get_document(
+                    self.deployed_tile_table_id
+                )
+                aggregation_ids = deployed_tile_table.aggregation_ids
+            iterator = self.online_store_compute_query_service.list_by_aggregation_ids(
+                aggregation_ids,
+                use_deployed_tile_table=self.deployed_tile_table_id is not None,
             )
         out = []
         async for doc in iterator:

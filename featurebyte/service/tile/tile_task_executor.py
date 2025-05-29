@@ -15,6 +15,7 @@ from featurebyte.models.feature_materialize_prerequisite import PrerequisiteTile
 from featurebyte.models.system_metrics import TileTaskMetrics
 from featurebyte.models.tile import TileScheduledJobParameters, TileType
 from featurebyte.models.tile_job_log import TileJobLogModel
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.feature import FeatureService
 from featurebyte.service.feature_materialize_sync import FeatureMaterializeSyncService
 from featurebyte.service.online_store_compute_query_service import OnlineStoreComputeQueryService
@@ -48,6 +49,7 @@ class TileTaskExecutor:
         feature_materialize_sync_service: FeatureMaterializeSyncService,
         system_metrics_service: SystemMetricsService,
         warehouse_table_service: WarehouseTableService,
+        deployed_tile_table_service: DeployedTileTableService,
     ):
         self.online_store_table_version_service = online_store_table_version_service
         self.online_store_compute_query_service = online_store_compute_query_service
@@ -57,6 +59,7 @@ class TileTaskExecutor:
         self.feature_materialize_sync_service = feature_materialize_sync_service
         self.system_metrics_service = system_metrics_service
         self.warehouse_table_service = warehouse_table_service
+        self.deployed_tile_table_service = deployed_tile_table_service
 
     async def execute(self, session: BaseSession, params: TileScheduledJobParameters) -> None:
         """
@@ -76,9 +79,19 @@ class TileTaskExecutor:
             final_status = "success"
         finally:
             if params.tile_type.upper() == "ONLINE":
+                if params.deployed_tile_table_id is None:
+                    # legacy tile job only updates a specific aggregation_id
+                    aggregation_ids = [params.aggregation_id]
+                else:
+                    # deployed tile job updates all aggregation_ids in the deployed tile table
+                    aggregation_ids = (
+                        await self.deployed_tile_table_service.get_document(
+                            params.deployed_tile_table_id
+                        )
+                    ).aggregation_ids
                 await self.feature_materialize_sync_service.update_tile_prerequisite(
                     tile_task_ts=dateutil.parser.isoparse(used_job_schedule_ts),
-                    aggregation_id=params.aggregation_id,
+                    aggregation_ids=aggregation_ids,
                     status=final_status,
                 )
 
@@ -165,10 +178,20 @@ class TileTaskExecutor:
             },
         )
 
+        # Use deployed tile table as the tile table name if it is provided. Not strictly needed as
+        # the tile_id of the params should have been set to the same value.
+        if params.deployed_tile_table_id is not None:
+            tile_table_name = (
+                await self.deployed_tile_table_service.get_document(params.deployed_tile_table_id)
+            ).table_name
+        else:
+            tile_table_name = tile_id
+
         tile_generate_ins = TileGenerate(
             session=session,
             feature_store_id=params.feature_store_id,
-            tile_id=tile_id,
+            tile_id=tile_table_name,
+            deployed_tile_table_id=params.deployed_tile_table_id,
             time_modulo_frequency_second=params.time_modulo_frequency_second,
             blind_spot_second=params.blind_spot_second,
             frequency_minute=params.frequency_minute,
@@ -184,6 +207,7 @@ class TileTaskExecutor:
             aggregation_id=params.aggregation_id,
             tile_registry_service=self.tile_registry_service,
             warehouse_table_service=self.warehouse_table_service,
+            deployed_tile_table_service=self.deployed_tile_table_service,
         )
 
         tile_online_store_ins = TileScheduleOnlineStore(
@@ -192,6 +216,8 @@ class TileTaskExecutor:
             job_schedule_ts_str=corrected_job_ts.strftime(DATE_FORMAT),
             online_store_table_version_service=self.online_store_table_version_service,
             online_store_compute_query_service=self.online_store_compute_query_service,
+            deployed_tile_table_id=params.deployed_tile_table_id,
+            deployed_tile_table_service=self.deployed_tile_table_service,
         )
 
         step_specs: List[Dict[str, Any]] = [

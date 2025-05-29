@@ -19,7 +19,7 @@ def service_fixture(app_container):
 
 
 @pytest_asyncio.fixture(name="deployed_tile_tables")
-async def deployed_tile_tables_fixture(service, source_info):
+async def deployed_tile_tables_fixture(service, source_info, snowflake_feature_store_id):
     """
     Fixture for DeployedTileTableModel models
     """
@@ -41,8 +41,10 @@ async def deployed_tile_tables_fixture(service, source_info):
             ),
         ),
         entity_column_names=["cust_id"],
+        feature_store_id=snowflake_feature_store_id,
         value_column_names=["aggregation_1_col", "aggregation_2_col"],
         value_column_types=["FLOAT", "FLOAT"],
+        value_by_column=None,
         frequency_minute=60,
         time_modulo_frequency_second=120,
         blind_spot_second=600,
@@ -61,6 +63,8 @@ async def deployed_tile_tables_fixture(service, source_info):
             ),
         ),
         entity_column_names=["cust_id"],
+        feature_store_id=snowflake_feature_store_id,
+        value_by_column=None,
         value_column_names=["aggregation_3_col"],
         value_column_types=["INT"],
         frequency_minute=60,

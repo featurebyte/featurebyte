@@ -31,6 +31,7 @@ from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.schema.feature_list import FeatureListServiceUpdate
 from featurebyte.schema.feature_list_namespace import FeatureListNamespaceServiceUpdate
 from featurebyte.service.context import ContextService
+from featurebyte.service.deployed_tile_table_manager import DeployedTileTableManagerService
 from featurebyte.service.deployment import DeploymentService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.feature import FeatureService
@@ -711,6 +712,7 @@ class DeployService:
         deploy_feature_list_management_service: DeployFeatureListManagementService,
         deploy_feature_management_service: DeployFeatureManagementService,
         deployment_serving_entity_service: DeploymentServingEntityService,
+        deployed_tile_table_manager_service: DeployedTileTableManagerService,
         feast_integration_service: FeastIntegrationService,
         task_progress_updater: TaskProgressUpdater,
         system_metrics_service: SystemMetricsService,
@@ -721,6 +723,7 @@ class DeployService:
         self.feast_integration_service = feast_integration_service
         self.task_progress_updater = task_progress_updater
         self.deployment_serving_entity_service = deployment_serving_entity_service
+        self.deployed_tile_table_manager_service = deployed_tile_table_manager_service
         self.system_metrics_service = system_metrics_service
 
     async def _update_progress(self, percent: int, message: Optional[str] = None) -> None:
@@ -751,16 +754,25 @@ class DeployService:
             )
             deployment = await self.deployment_service.get_document(document_id=deployment.id)
 
+        feature_models = []
+        for feature_id in feature_list.feature_ids:
+            feature = await self.feature_management_service.feature_service.get_document(
+                document_id=feature_id
+            )
+            feature_models.append(feature)
+
+        # register deployed tile table models
+        await self.deployed_tile_table_manager_service.handle_online_enabled_features(
+            features=[feature for feature in feature_models if not feature.online_enabled],
+        )
+
         # enable features online
         feature_update_progress = get_ranged_progress_callback(
             self.task_progress_updater.update_progress, 2, 70
         )
         features_offline_feature_table_to_update = []
         tile_table_seconds = 0.0
-        for i, feature_id in enumerate(feature_list.feature_ids):
-            feature = await self.feature_management_service.feature_service.get_document(
-                document_id=feature_id
-            )
+        for i, feature in enumerate(feature_models):
             tic = time.time()
             feature = await self.feature_management_service.online_enable_feature(
                 feature=feature,
@@ -937,6 +949,9 @@ class DeployService:
             feature_list = await self.feature_list_management_service.undeploy_feature_list(
                 feature_list=feature_list,
             )
+
+            # update deployed tile tables
+            await self.deployed_tile_table_manager_service.handle_online_disabled_features()
 
         # check if feast integration is enabled for the catalog
         if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
