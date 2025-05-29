@@ -133,5 +133,4 @@ class WorkingSchemaService:
                     feature_manager_service=self.feature_manager_service,
                     feature=feature,
                     target_online_enabled=True,
-                    is_recreating_schema=True,
                 )
