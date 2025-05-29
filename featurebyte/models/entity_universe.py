@@ -13,14 +13,16 @@ from sqlglot import expressions
 from sqlglot.expressions import Expression, Query, Select, select
 
 from featurebyte.common.model_util import parse_duration_string
-from featurebyte.enum import DBVarType, InternalName
+from featurebyte.enum import DBVarType
 from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.item_table import ItemTableModel
 from featurebyte.models.parent_serving import EntityLookupStep
 from featurebyte.models.proxy_table import TableModel
 from featurebyte.models.sqlglot_expression import SqlglotExpressionModel
 from featurebyte.query_graph.enum import NodeType
+from featurebyte.query_graph.model.feature_job_setting import FeatureJobSetting
 from featurebyte.query_graph.model.graph import QueryGraphModel
+from featurebyte.query_graph.model.timestamp_schema import TimestampSchema
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.generic import (
     AggregateAsAtNode,
@@ -44,9 +46,7 @@ from featurebyte.query_graph.sql.common import (
     quoted_identifier,
 )
 from featurebyte.query_graph.sql.feature_job import get_previous_job_epoch_expr_from_settings
-from featurebyte.query_graph.sql.online_serving_util import get_online_store_table_name
 from featurebyte.query_graph.sql.source_info import SourceInfo
-from featurebyte.query_graph.sql.specs import AggregationType, TileBasedAggregationSpec
 from featurebyte.query_graph.sql.template import SqlExpressionTemplate
 from featurebyte.query_graph.sql.tile_util import calculate_last_tile_index_expr
 from featurebyte.query_graph.sql.timestamp_helper import (
@@ -123,6 +123,79 @@ def get_timestamp_expr_from_scd_lookup_parameters(
             adapter=adapter,
         )
     return ts_col
+
+
+def filter_aggregate_input_for_window_aggregate(
+    aggregate_input_expr: Select,
+    feature_job_settings: FeatureJobSetting,
+    windows: list[Optional[str]],
+    timestamp: str,
+    timestamp_schema: Optional[TimestampSchema],
+    adapter: BaseAdapter,
+) -> Select:
+    """
+    Filter the aggregate input expression for window-based aggregation
+
+    Parameters
+    ----------
+    aggregate_input_expr: Select
+        The aggregate input expression to filter
+    feature_job_settings: FeatureJobSetting
+        Feature job settings containing period, offset, and blind spot information
+    windows: list[Optional[str]]
+        List of window sizes to consider for filtering
+    timestamp: str
+        The timestamp column to filter on
+    timestamp_schema: Optional[TimestampSchema]
+        The schema of the timestamp column, if applicable
+    adapter: BaseAdapter
+        SQL adapter
+
+    Returns
+    -------
+    Select
+    """
+    feature_timestamp_epoch = adapter.to_epoch_seconds(
+        quoted_identifier(CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER)
+    )
+    job_epoch_expr = get_previous_job_epoch_expr_from_settings(
+        point_in_time_epoch_expr=feature_timestamp_epoch,
+        period_seconds=feature_job_settings.period_seconds,
+        offset_seconds=feature_job_settings.offset_seconds,
+    )
+    range_end_expr = expressions.Sub(
+        this=job_epoch_expr,
+        expression=make_literal_value(feature_job_settings.blind_spot_seconds),
+    )
+    range_start_expr = expressions.Sub(
+        this=range_end_expr,
+        expression=make_literal_value(
+            max(parse_duration_string(window) for window in windows if window is not None)
+        ),
+    )
+    window_end_timestamp_expr = adapter.from_epoch_seconds(range_end_expr)
+    window_start_timestamp_expr = adapter.from_epoch_seconds(range_start_expr)
+    timestamp_expr = quoted_identifier(timestamp)
+    if timestamp_schema is not None:
+        timestamp_expr = convert_timestamp_to_utc(
+            column_expr=timestamp_expr,
+            timestamp_schema=timestamp_schema,
+            adapter=adapter,
+        )
+    timestamp_expr = adapter.normalize_timestamp_before_comparison(timestamp_expr)
+    filtered_aggregate_input_expr = aggregate_input_expr.where(
+        expressions.and_(
+            expressions.GTE(
+                this=timestamp_expr,
+                expression=window_start_timestamp_expr,
+            ),
+            expressions.LT(
+                this=timestamp_expr,
+                expression=window_end_timestamp_expr,
+            ),
+        )
+    )
+    return filtered_aggregate_input_expr
 
 
 DUMMY_ENTITY_UNIVERSE = get_dummy_entity_universe()
@@ -416,54 +489,43 @@ class TileBasedAggregateNodeEntityUniverseConstructor(BaseEntityUniverseConstruc
         if not node.parameters.serving_names:
             return [DUMMY_ENTITY_UNIVERSE]
 
-        agg_specs = TileBasedAggregationSpec.from_groupby_query_node(
-            graph=self.graph,
-            groupby_node=node,
-            adapter=self.adapter,
-            agg_result_name_include_serving_names=True,
-        )
-        out = []
-        for agg_spec in agg_specs:
-            if agg_spec.aggregation_type == AggregationType.WINDOW:
-                universe = self._get_universe_expr_from_internal_online_store(node, agg_spec)
+        has_unbounded_window = False
+        bounded_windows = []
+        for window in node.parameters.windows:
+            if window is None:
+                has_unbounded_window = True
             else:
-                universe = self._get_entity_universe_from_source(node)
-            out.append(universe)
+                bounded_windows.append(window)
+
+        out: List[Expression] = []
+        if bounded_windows:
+            out.append(self._get_universe_expr_for_bounded_windows(node))
+        if has_unbounded_window:
+            out.append(self._get_universe_for_unbounded_window(node))
+
         return out
 
-    def _get_universe_expr_from_internal_online_store(
-        self, node: GroupByNode, agg_spec: TileBasedAggregationSpec
-    ) -> Expression:
-        result_type = self.adapter.get_physical_type_from_dtype(agg_spec.dtype)
-        online_store_table_name = get_online_store_table_name(
-            set(agg_spec.entity_ids if agg_spec.entity_ids is not None else []),
-            result_type=result_type,
-        )
-        online_store_table_condition = expressions.EQ(
-            this=quoted_identifier(InternalName.ONLINE_STORE_RESULT_NAME_COLUMN),
-            expression=make_literal_value(agg_spec.agg_result_name),
+    def _get_universe_expr_for_bounded_windows(self, node: GroupByNode) -> Expression:
+        filtered_aggregate_input_expr = filter_aggregate_input_for_window_aggregate(
+            aggregate_input_expr=self.aggregate_input_expr,
+            feature_job_settings=node.parameters.feature_job_setting,
+            windows=node.parameters.windows,
+            timestamp=node.parameters.timestamp,
+            timestamp_schema=node.parameters.timestamp_schema,
+            adapter=self.adapter,
         )
         universe_expr = (
             select(*[
-                self.get_entity_column(
-                    serving_name,
-                    entity_column_to_get_dtype=entity_column,
-                )
-                for entity_column, serving_name in zip(
-                    node.parameters.keys, node.parameters.serving_names
-                )
+                expressions.alias_(self.get_entity_column(key), alias=serving_name, quoted=True)
+                for key, serving_name in zip(node.parameters.keys, node.parameters.serving_names)
             ])
             .distinct()
-            .from_(expressions.Table(this=expressions.Identifier(this=online_store_table_name)))
-            .where(
-                expressions.and_(
-                    online_store_table_condition, columns_not_null(node.parameters.serving_names)
-                )
-            )
+            .from_(filtered_aggregate_input_expr.subquery())
+            .where(columns_not_null(node.parameters.keys))
         )
         return universe_expr
 
-    def _get_entity_universe_from_source(self, node: GroupByNode) -> Expression:
+    def _get_universe_for_unbounded_window(self, node: GroupByNode) -> Expression:
         ts_col = node.parameters.timestamp
         last_tile_index_expr = calculate_last_tile_index_expr(
             adapter=self.adapter,
@@ -522,50 +584,13 @@ class NonTileWindowAggregateNodeEntityUniverseConstructor(BaseEntityUniverseCons
         if not node.parameters.serving_names:
             return [DUMMY_ENTITY_UNIVERSE]
 
-        feature_job_settings = node.parameters.feature_job_setting
-        feature_timestamp_epoch = self.adapter.to_epoch_seconds(
-            quoted_identifier(CURRENT_FEATURE_TIMESTAMP_PLACEHOLDER)
-        )
-        job_epoch_expr = get_previous_job_epoch_expr_from_settings(
-            point_in_time_epoch_expr=feature_timestamp_epoch,
-            period_seconds=feature_job_settings.period_seconds,
-            offset_seconds=feature_job_settings.offset_seconds,
-        )
-        range_end_expr = expressions.Sub(
-            this=job_epoch_expr,
-            expression=make_literal_value(feature_job_settings.blind_spot_seconds),
-        )
-        range_start_expr = expressions.Sub(
-            this=range_end_expr,
-            expression=make_literal_value(
-                max(
-                    parse_duration_string(window)
-                    for window in node.parameters.windows
-                    if window is not None
-                )
-            ),
-        )
-        window_end_timestamp_expr = self.adapter.from_epoch_seconds(range_end_expr)
-        window_start_timestamp_expr = self.adapter.from_epoch_seconds(range_start_expr)
-        timestamp_expr = quoted_identifier(node.parameters.timestamp)
-        if node.parameters.timestamp_schema is not None:
-            timestamp_expr = convert_timestamp_to_utc(
-                column_expr=timestamp_expr,
-                timestamp_schema=node.parameters.timestamp_schema,
-                adapter=self.adapter,
-            )
-        timestamp_expr = self.adapter.normalize_timestamp_before_comparison(timestamp_expr)
-        filtered_aggregate_input_expr = self.aggregate_input_expr.where(
-            expressions.and_(
-                expressions.GTE(
-                    this=timestamp_expr,
-                    expression=window_start_timestamp_expr,
-                ),
-                expressions.LT(
-                    this=timestamp_expr,
-                    expression=window_end_timestamp_expr,
-                ),
-            )
+        filtered_aggregate_input_expr = filter_aggregate_input_for_window_aggregate(
+            aggregate_input_expr=self.aggregate_input_expr,
+            feature_job_settings=node.parameters.feature_job_setting,
+            windows=node.parameters.windows,
+            timestamp=node.parameters.timestamp,
+            timestamp_schema=node.parameters.timestamp_schema,
+            adapter=self.adapter,
         )
         universe_expr = (
             select(*[

@@ -391,9 +391,10 @@ def removed_relationships_fixture(
 async def _deploy_feature_list(app_container, saved_feature_list, deployment_name):
     deploy_service = app_container.deploy_service
     with patch(
-        "featurebyte.service.feature_manager.get_next_job_datetime",
-        return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
-    ):
+        "featurebyte.service.feature_manager.datetime", autospec=True
+    ) as mock_feature_manager_datetime:
+        mock_feature_manager_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
+        mock_feature_manager_datetime.side_effect = datetime
         deployment = saved_feature_list.deploy(deployment_name)
         with patch(
             "featurebyte.service.feature_materialize.datetime", autospec=True
@@ -521,9 +522,10 @@ async def deployed_features_list_composite_entities_order_use_case_fixture(
 
     deploy_service = app_container.deploy_service
     with patch(
-        "featurebyte.service.feature_manager.get_next_job_datetime",
-        return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
-    ):
+        "featurebyte.service.feature_manager.datetime",
+        autospec=True,
+    ) as mock_feature_manager_datetime:
+        mock_feature_manager_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
         deployment = feature_list.deploy(
             "deployment order use case", use_case_name=order_use_case.name
         )
@@ -591,9 +593,9 @@ async def deployed_feature_list_item_use_case_fixture(
     """
     deploy_service = app_container.deploy_service
     with patch(
-        "featurebyte.service.feature_manager.get_next_job_datetime",
-        return_value=pd.Timestamp("2001-01-02 12:00:00").to_pydatetime(),
-    ):
+        "featurebyte.service.feature_manager.datetime", autospec=True
+    ) as mock_feature_manager_datetime:
+        mock_feature_manager_datetime.utcnow.return_value = datetime(2001, 1, 2, 12)
         deployment = saved_feature_list_item_type_feature.deploy(
             "deployment item use case", use_case_name=item_use_case.name
         )

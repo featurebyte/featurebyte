@@ -176,25 +176,25 @@ class FeatureManagerService:
 
         # populate feature store. if this is called when recreating the schema, we need to run all
         # the online store compute queries since the tables need to be regenerated.
-        for query in self._filter_precompute_queries(
-            precompute_queries, None if is_recreating_schema else unscheduled_result_names
-        ):
-            await self._populate_feature_store(
-                session=session,
-                tile_spec=aggregation_id_to_tile_spec[query.aggregation_id],
-                schedule_time=schedule_time,
-                aggregation_result_name=query.result_name,
-            )
-            if is_recreating_schema:
-                # If re-creating schema, the cleanup job would have been already scheduled, and this
-                # part can be skipped
-                continue
-            assert query.feature_store_id is not None
-            await self.online_store_cleanup_scheduler_service.start_job_if_not_exist(
-                catalog_id=self.catalog_id,
-                feature_store_id=query.feature_store_id,
-                online_store_table_name=query.table_name,
-            )
+        # for query in self._filter_precompute_queries(
+        #     precompute_queries, None if is_recreating_schema else unscheduled_result_names
+        # ):
+        #     await self._populate_feature_store(
+        #         session=session,
+        #         tile_spec=aggregation_id_to_tile_spec[query.aggregation_id],
+        #         schedule_time=schedule_time,
+        #         aggregation_result_name=query.result_name,
+        #     )
+        #     if is_recreating_schema:
+        #         # If re-creating schema, the cleanup job would have been already scheduled, and this
+        #         # part can be skipped
+        #         continue
+        #     assert query.feature_store_id is not None
+        #     await self.online_store_cleanup_scheduler_service.start_job_if_not_exist(
+        #         catalog_id=self.catalog_id,
+        #         feature_store_id=query.feature_store_id,
+        #         online_store_table_name=query.table_name,
+        #     )
 
         # enable tile generation with scheduled jobs
         for deployed_tile_table in deployed_tile_tables_to_be_scheduled:
