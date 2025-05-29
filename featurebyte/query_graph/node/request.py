@@ -49,18 +49,8 @@ class RequestColumnNode(BaseNode):
         """Node parameters"""
 
         column_name: StrictStr
+        dtype: DBVarType  # deprecated, keep it for old client compatibility
         dtype_info: DBVarTypeInfo
-
-        @property
-        def dtype(self) -> DBVarType:
-            """
-            Return the data type of the request column
-
-            Returns
-            -------
-            DBVarType
-            """
-            return self.dtype_info.dtype
 
         @model_validator(mode="before")
         @classmethod
@@ -68,7 +58,15 @@ class RequestColumnNode(BaseNode):
             cls, values: dict[str, Any]
         ) -> dict[str, Any]:
             if values.get("dtype_info") is None and values.get("dtype"):
+                # handle backward compatibility old way of specifying dtype
                 values["dtype_info"] = DBVarTypeInfo(dtype=DBVarType(values["dtype"]))
+
+            if values.get("dtype") is None and values.get("dtype_info"):
+                # handle backward compatibility for graph that breaks old client
+                dtype_info = values["dtype_info"]
+                if isinstance(dtype_info, dict):
+                    values["dtype_info"] = DBVarTypeInfo(**dtype_info)
+                values["dtype"] = values["dtype_info"].dtype
             return values
 
     type: Literal[NodeType.REQUEST_COLUMN] = NodeType.REQUEST_COLUMN

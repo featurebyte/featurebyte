@@ -210,12 +210,12 @@ def expected_feature_view_specs_fixture(expected_cust_id_via_transaction_id_tabl
                 {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
                 {"name": f"sum_1d_{version}", "valueType": "FLOAT"},
                 {
-                    "name": f"__composite_feature_ttl_req_col_{version}__part2",
-                    "valueType": "UNIX_TIMESTAMP",
+                    "name": f"__composite_feature_ttl_req_col_{version}__part1",
+                    "valueType": "FLOAT",
                 },
                 {
                     "name": f"__composite_feature_ttl_req_col_{version}__part0",
-                    "valueType": "FLOAT",
+                    "valueType": "UNIX_TIMESTAMP",
                 },
             ],
             "ttl": "3600s",
@@ -239,7 +239,7 @@ def expected_feature_view_specs_fixture(expected_cust_id_via_transaction_id_tabl
                     "valueType": "FLOAT",
                 },
                 {
-                    "name": f"__composite_feature_ttl_req_col_{version}__part1",
+                    "name": f"__composite_feature_ttl_req_col_{version}__part2",
                     "valueType": "FLOAT",
                 },
             ],
@@ -280,12 +280,12 @@ def expected_feature_view_specs_fixture(expected_cust_id_via_transaction_id_tabl
                 {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
                 {"name": f"sum_1d_{version}", "valueType": "FLOAT"},
                 {
-                    "name": f"__composite_feature_ttl_req_col_{version}__part2",
-                    "valueType": "UNIX_TIMESTAMP",
+                    "name": f"__composite_feature_ttl_req_col_{version}__part1",
+                    "valueType": "FLOAT",
                 },
                 {
                     "name": f"__composite_feature_ttl_req_col_{version}__part0",
-                    "valueType": "FLOAT",
+                    "valueType": "UNIX_TIMESTAMP",
                 },
             ],
             "ttl": "3600s",
