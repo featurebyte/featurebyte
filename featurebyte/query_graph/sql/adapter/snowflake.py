@@ -41,6 +41,7 @@ class SnowflakeAdapter(BaseAdapter):
         """
 
         FLOAT = "FLOAT"
+        BOOLEAN = "BOOLEAN"
         OBJECT = "OBJECT"
         TIMESTAMP_NTZ = "TIMESTAMP_NTZ"
         TIMESTAMP_TZ = "TIMESTAMP_TZ"
@@ -125,8 +126,10 @@ class SnowflakeAdapter(BaseAdapter):
             DBVarType.INT: cls.SnowflakeDataType.FLOAT,
             DBVarType.FLOAT: cls.SnowflakeDataType.FLOAT,
             DBVarType.VARCHAR: cls.SnowflakeDataType.VARCHAR,
+            DBVarType.BOOL: cls.SnowflakeDataType.BOOLEAN,
             DBVarType.TIMESTAMP: cls.SnowflakeDataType.TIMESTAMP_NTZ,
             DBVarType.TIMESTAMP_TZ: cls.SnowflakeDataType.TIMESTAMP_TZ,
+            DBVarType.TIMESTAMP_TZ_TUPLE: cls.SnowflakeDataType.VARCHAR,
             DBVarType.ARRAY: cls.SnowflakeDataType.ARRAY,
             DBVarType.EMBEDDING: cls.SnowflakeDataType.ARRAY,
         }
@@ -606,7 +609,7 @@ class SnowflakeAdapter(BaseAdapter):
     def zip_timestamp_string_and_timezone(
         cls, timestamp_str_expr: Expression, timezone_expr: Expression
     ) -> Expression:
-        return expressions.Anonymous(
+        object_expr = expressions.Anonymous(
             this="OBJECT_CONSTRUCT",
             expressions=[
                 make_literal_value(cls.ZIPPED_TIMESTAMP_FIELD),
@@ -615,11 +618,13 @@ class SnowflakeAdapter(BaseAdapter):
                 timezone_expr,
             ],
         )
+        return expressions.Anonymous(this="TO_JSON", expressions=[object_expr])
 
     @classmethod
     def unzip_timestamp_string_and_timezone(
         cls, zipped_expr: Expression
     ) -> Tuple[Expression, Expression]:
+        zipped_expr = expressions.Anonymous(this="PARSE_JSON", expressions=[zipped_expr])
         timestamp_str_expr = cls.cast_to_string(
             expressions.Anonymous(
                 this="GET",

@@ -195,6 +195,33 @@ def expected_feature_view_specs_fixture(expected_cust_id_via_transaction_id_tabl
     return [
         {
             **common_params,
+            "name": expected_cust_id_via_transaction_id_table_name,
+            "batchSource": {
+                **common_batch_source,
+                "name": expected_cust_id_via_transaction_id_table_name,
+                "snowflakeOptions": {
+                    **common_snowflake_options,
+                    "table": expected_cust_id_via_transaction_id_table_name,
+                },
+            },
+            "entities": ["transaction_id"],
+            "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
+            "features": [
+                {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
+                {"name": f"sum_1d_{version}", "valueType": "FLOAT"},
+                {
+                    "name": f"__composite_feature_ttl_req_col_{version}__part1",
+                    "valueType": "FLOAT",
+                },
+                {
+                    "name": f"__composite_feature_ttl_req_col_{version}__part0",
+                    "valueType": "UNIX_TIMESTAMP",
+                },
+            ],
+            "ttl": "3600s",
+        },
+        {
+            **common_params,
             "name": "cat1_transaction_id_1d",
             "batchSource": {
                 **common_batch_source,
@@ -253,39 +280,12 @@ def expected_feature_view_specs_fixture(expected_cust_id_via_transaction_id_tabl
                 {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
                 {"name": f"sum_1d_{version}", "valueType": "FLOAT"},
                 {
-                    "name": f"__composite_feature_ttl_req_col_{version}__part0",
-                    "valueType": "UNIX_TIMESTAMP",
-                },
-                {
                     "name": f"__composite_feature_ttl_req_col_{version}__part1",
                     "valueType": "FLOAT",
                 },
-            ],
-            "ttl": "3600s",
-        },
-        {
-            **common_params,
-            "name": expected_cust_id_via_transaction_id_table_name,
-            "batchSource": {
-                **common_batch_source,
-                "name": expected_cust_id_via_transaction_id_table_name,
-                "snowflakeOptions": {
-                    **common_snowflake_options,
-                    "table": expected_cust_id_via_transaction_id_table_name,
-                },
-            },
-            "entities": ["transaction_id"],
-            "entityColumns": [{"name": "transaction_id", "valueType": "STRING"}],
-            "features": [
-                {"name": "__feature_timestamp", "valueType": "UNIX_TIMESTAMP"},
-                {"name": f"sum_1d_{version}", "valueType": "FLOAT"},
                 {
                     "name": f"__composite_feature_ttl_req_col_{version}__part0",
                     "valueType": "UNIX_TIMESTAMP",
-                },
-                {
-                    "name": f"__composite_feature_ttl_req_col_{version}__part1",
-                    "valueType": "FLOAT",
                 },
             ],
             "ttl": "3600s",

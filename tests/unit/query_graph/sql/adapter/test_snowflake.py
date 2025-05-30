@@ -19,6 +19,29 @@ class TestSnowflakeAdapter(BaseAdapterTest):
     """
 
     adapter = get_sql_adapter_from_source_type(SourceType.SNOWFLAKE)
+    expected_physical_type_from_dtype_mapping = {
+        "BOOL": "BOOLEAN",
+        "CHAR": "VARIANT",
+        "DATE": "VARIANT",
+        "FLOAT": "FLOAT",
+        "INT": "FLOAT",
+        "TIME": "VARIANT",
+        "TIMESTAMP": "TIMESTAMP_NTZ",
+        "TIMESTAMP_TZ": "TIMESTAMP_TZ",
+        "VARCHAR": "VARCHAR",
+        "ARRAY": "ARRAY",
+        "DICT": "OBJECT",
+        "TIMEDELTA": "VARIANT",
+        "EMBEDDING": "ARRAY",
+        "FLAT_DICT": "OBJECT",
+        "OBJECT": "OBJECT",
+        "TIMESTAMP_TZ_TUPLE": "VARCHAR",
+        "UNKNOWN": "VARIANT",
+        "BINARY": "VARIANT",
+        "VOID": "VARIANT",
+        "MAP": "OBJECT",
+        "STRUCT": "OBJECT",
+    }
 
     @classmethod
     def get_group_by_expected_result(cls) -> str:

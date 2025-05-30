@@ -207,6 +207,11 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
+        feat = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
+            request_col, utc=True
+        )
+        feat_1 = pd.to_datetime(request_col, utc=True) + pd.to_timedelta(feat)
 
         # TTL handling for __feature_V231227__part0 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -216,14 +221,9 @@ def test_feature__request_column_ttl_and_non_ttl_components(
         )
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
         inputs.loc[~mask, "__feature_V231227__part0"] = np.nan
-        feat = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
-        feat_1 = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
-            request_col, utc=True
-        )
-        feat_2 = pd.to_datetime(request_col, utc=True) + pd.to_timedelta(feat_1)
-        feat_3 = pd.to_datetime(feat_2, utc=True) - pd.to_datetime(feat, utc=True)
-        feat_4 = pd.to_timedelta(feat_3).dt.total_seconds() // 86400
+        feat_2 = pd.to_datetime(inputs["__feature_V231227__part0"], utc=True)
+        feat_3 = pd.to_datetime(feat_1, utc=True) - pd.to_datetime(feat_2, utc=True)
+        feat_4 = pd.to_timedelta(feat_3).dt.total_seconds() / 86400
         feat_5 = pd.Series(
             np.where(
                 pd.isna(feat_4) | pd.isna(inputs["__feature_V231227__part1"]),
@@ -313,6 +313,7 @@ def test_feature__ttl_item_aggregate_request_column(
         inputs: pd.DataFrame,
     ) -> pd.DataFrame:
         df = pd.DataFrame()
+        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
 
         # TTL handling for __composite_feature_V231227__part0 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -325,11 +326,10 @@ def test_feature__ttl_item_aggregate_request_column(
         feat = pd.to_datetime(
             inputs["__composite_feature_V231227__part0"], utc=True
         )
-        request_col = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         feat_1 = pd.to_datetime(request_col, utc=True) - pd.to_datetime(
             feat, utc=True
         )
-        feat_2 = pd.to_timedelta(feat_1).dt.total_seconds() // 86400
+        feat_2 = pd.to_timedelta(feat_1).dt.total_seconds() / 86400
 
         # TTL handling for __composite_feature_V231227__part1 column
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
@@ -681,8 +681,8 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         col_1: str, col_2: dict[str, float], col_3: dict[str, float]
     ) -> float:
         # col_1: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part1
-        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
-        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
+        # col_2: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2
+        # col_3: __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0
         feat_1 = np.nan if pd.isna(col_2) else col_2
 
         def get_relative_frequency(input_dict, key):
@@ -710,8 +710,8 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         feat_6 = 0 if flag_2 else feat_5
         feat_7 = (
             np.nan
-            if pd.isna(feat_3) or pd.isna(feat_6)
-            else np.divide(feat_3, feat_6)
+            if pd.isna(feat_6) or pd.isna(feat_3)
+            else np.divide(feat_6, feat_3)
         )
         return feat_7
 
@@ -734,12 +734,12 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
     ) -> pd.DataFrame:
         df = pd.DataFrame()
 
-        # TTL handling for __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0 column
+        # TTL handling for __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2 column
         request_time = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff = request_time - pd.Timedelta(seconds=172800)
         feat_ts = pd.to_datetime(
             inputs[
-                "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0__ts"
+                "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2__ts"
             ],
             utc=True,
             unit="s",
@@ -747,10 +747,10 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         mask = (feat_ts >= cutoff) & (feat_ts <= request_time)
         inputs.loc[
             ~mask,
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0",
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2",
         ] = np.nan
         feat = inputs[
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
 
         def get_relative_frequency(input_dict, key):
@@ -778,12 +778,12 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         mask_1 = feat_1.isnull()
         feat_1[mask_1] = 0
 
-        # TTL handling for __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2 column
+        # TTL handling for __TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0 column
         request_time_1 = pd.to_datetime(inputs["POINT_IN_TIME"], utc=True)
         cutoff_1 = request_time_1 - pd.Timedelta(seconds=172800)
         feat_ts_1 = pd.to_datetime(
             inputs[
-                "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2__ts"
+                "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0__ts"
             ],
             utc=True,
             unit="s",
@@ -791,10 +791,10 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         mask_2 = (feat_ts_1 >= cutoff_1) & (feat_ts_1 <= request_time_1)
         inputs.loc[
             ~mask_2,
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2",
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0",
         ] = np.nan
         feat_2 = inputs[
-            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part2"
+            "__TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105__part0"
         ].apply(lambda x: np.nan if pd.isna(x) else json.loads(x))
         feat_3 = feat_2.combine(
             inputs[
@@ -806,9 +806,9 @@ async def test_on_demand_feature_view_code_generation__card_transaction_descript
         feat_3[mask_3] = 0
         feat_4 = pd.Series(
             np.where(
-                pd.isna(feat_1) | pd.isna(feat_3), np.nan, np.divide(feat_1, feat_3)
+                pd.isna(feat_3) | pd.isna(feat_1), np.nan, np.divide(feat_3, feat_1)
             ),
-            index=feat_1.index,
+            index=feat_3.index,
         )
         df[
             "TXN_CardTransactionDescription_Representation_in_CARD_Txn_Count_90d_V240105"

@@ -143,7 +143,7 @@ def test_date_diff_with_varchar_timestamp(
             ).dt.tz_localize("Asia/Singapore").dt.tz_convert("UTC") - pd.to_datetime(
                 request_col, utc=True
             )
-            feat_1 = pd.to_timedelta(feat).dt.total_seconds() // 86400
+            feat_1 = pd.to_timedelta(feat).dt.total_seconds() / 86400
             df["diff_in_day_V250101"] = feat_1
             return df
         """

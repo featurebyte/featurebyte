@@ -296,14 +296,6 @@ def test_databricks_specs(
             },
         ),
         FeatureLookup(
-            table_name="feature_engineering.some_schema.cat1__no_entity_15m",
-            lookup_key=["__featurebyte_dummy_entity"],
-            timestamp_lookup_key=timestamp_lookup_key,
-            lookback_window=None,
-            feature_names=["__relative_frequency_V240103__part0"],
-            rename_outputs={},
-        ),
-        FeatureLookup(
             table_name="feature_engineering.some_schema.cat1_transaction_id_1d",
             lookup_key=["transaction_id"],
             timestamp_lookup_key=timestamp_lookup_key,
@@ -311,11 +303,19 @@ def test_databricks_specs(
             feature_names=["__relative_frequency_V240103__part1"],
             rename_outputs={},
         ),
+        FeatureLookup(
+            table_name="feature_engineering.some_schema.cat1__no_entity_15m",
+            lookup_key=["__featurebyte_dummy_entity"],
+            timestamp_lookup_key=timestamp_lookup_key,
+            lookback_window=None,
+            feature_names=["__relative_frequency_V240103__part0"],
+            rename_outputs={},
+        ),
         FeatureFunction(
             udf_name="feature_engineering.some_schema.udf_relative_frequency_v240103_[FEATURE_ID3]",
             input_bindings={
-                "x_1": "__relative_frequency_V240103__part1",
-                "x_2": "__relative_frequency_V240103__part0",
+                "x_1": "__relative_frequency_V240103__part0",
+                "x_2": "__relative_frequency_V240103__part1",
             },
             output_name="relative_frequency",
         ),

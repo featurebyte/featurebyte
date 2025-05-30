@@ -26,6 +26,7 @@ class BaseAdapterTest:
     """
 
     adapter: BaseAdapter
+    expected_physical_type_from_dtype_mapping: dict[str, str] = {}
 
     @classmethod
     def get_group_by_expected_result(cls) -> str:
@@ -158,3 +159,13 @@ class BaseAdapterTest:
         lon_node_2_expr = get_qualified_column_identifier("lon2", "TABLE")
         expr = adapter.haversine(lat_node_1_expr, lon_node_1_expr, lat_node_2_expr, lon_node_2_expr)
         assert expr.sql(pretty=True) == self.get_expected_haversine_sql()
+
+    def test_get_physical_type_from_dtype(self):
+        """
+        Test get_physical_type_from_dtype
+        """
+        adapter = self.adapter
+        mapping = {}
+        for dtype in DBVarType:
+            mapping[dtype.value] = str(adapter.get_physical_type_from_dtype(dtype))
+        assert mapping == self.expected_physical_type_from_dtype_mapping

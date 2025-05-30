@@ -15,6 +15,7 @@ from featurebyte.models.offline_store_ingest_query import (
 )
 from featurebyte.query_graph.enum import GraphNodeType
 from featurebyte.query_graph.graph import QueryGraph
+from featurebyte.query_graph.model.dtype import DBVarTypeInfo
 from featurebyte.query_graph.model.entity_lookup_plan import EntityLookupPlanner
 from featurebyte.query_graph.model.entity_relationship_info import EntityRelationshipInfo
 from featurebyte.query_graph.model.feature_job_setting import (
@@ -297,7 +298,7 @@ class OfflineStoreInfoInitializationService:
                 has_ttl=has_ttl,
                 offline_store_table_name=table_name,
                 output_column_name=feature.versioned_name,
-                output_dtype=feature.dtype,
+                output_dtype_info=DBVarTypeInfo(dtype=feature.dtype),
                 primary_entity_ids=feature.primary_entity_ids,
                 primary_entity_dtypes=[
                     entity_id_to_dtype[entity_id] for entity_id in feature.primary_entity_ids
