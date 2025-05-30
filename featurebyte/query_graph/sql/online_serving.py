@@ -202,7 +202,7 @@ def get_online_store_retrieval_expr(
     planner = FeatureExecutionPlanner(
         graph,
         source_info=source_info,
-        is_online_serving=True,
+        is_online_serving=False,
         parent_serving_preparation=parent_serving_preparation,
         job_schedule_table_set=job_schedule_table_set,
         on_demand_tile_tables=on_demand_tile_tables,

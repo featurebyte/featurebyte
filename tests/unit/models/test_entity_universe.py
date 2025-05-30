@@ -7,11 +7,14 @@ from datetime import datetime
 
 import pytest
 from bson import ObjectId
+from sqlglot import expressions
 
+from featurebyte import FeatureJobSetting
 from featurebyte.enum import SourceType
 from featurebyte.models.entity_universe import (
     EntityUniverseModel,
     EntityUniverseParams,
+    filter_aggregate_input_for_window_aggregate,
     get_combined_universe,
     get_entity_universe_constructor,
 )
@@ -635,10 +638,27 @@ def test_combined_universe__exclude_dummy_entity_universe(
         """
         SELECT DISTINCT
           CAST("cust_id" AS BIGINT) AS "cust_id"
-        FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+          WHERE
+            "event_timestamp" >= CAST(FLOOR((
+              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+            ) / 10800) * 10800 + 5 - 900 - 86400 AS TIMESTAMP)
+            AND "event_timestamp" < CAST(FLOOR((
+              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+            ) / 10800) * 10800 + 5 - 900 AS TIMESTAMP)
+        )
         WHERE
-          "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
-          AND "cust_id" IS NOT NULL
+          "cust_id" IS NOT NULL
         """
     ).strip()
     assert universe.sql(pretty=True) == expected
@@ -675,24 +695,51 @@ def test_combined_universe__window_aggregate_multiple_windows(
         """
         SELECT DISTINCT
           CAST("cust_id" AS BIGINT) AS "cust_id"
-        FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+          WHERE
+            "event_timestamp" >= CAST(FLOOR((
+              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+            ) / 1800) * 1800 + 300 - 600 - 86400 AS TIMESTAMP)
+            AND "event_timestamp" < CAST(FLOOR((
+              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 300
+            ) / 1800) * 1800 + 300 - 600 AS TIMESTAMP)
+        )
         WHERE
-          "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
-          AND "cust_id" IS NOT NULL
+          "cust_id" IS NOT NULL
         UNION
         SELECT DISTINCT
           CAST("cust_id" AS BIGINT) AS "cust_id"
-        FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
+        FROM (
+          SELECT
+            "col_int" AS "col_int",
+            "col_float" AS "col_float",
+            "col_char" AS "col_char",
+            "col_text" AS "col_text",
+            "col_binary" AS "col_binary",
+            "col_boolean" AS "col_boolean",
+            "event_timestamp" AS "event_timestamp",
+            "cust_id" AS "cust_id"
+          FROM "sf_database"."sf_schema"."sf_table"
+          WHERE
+            "event_timestamp" >= CAST(FLOOR((
+              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+            ) / 10800) * 10800 + 5 - 900 - 86400 AS TIMESTAMP)
+            AND "event_timestamp" < CAST(FLOOR((
+              DATE_PART(EPOCH_SECOND, "__fb_current_feature_timestamp") - 5
+            ) / 10800) * 10800 + 5 - 900 AS TIMESTAMP)
+        )
         WHERE
-          "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w7200_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'
-          AND "cust_id" IS NOT NULL
-        UNION
-        SELECT DISTINCT
-          CAST("cust_id" AS BIGINT) AS "cust_id"
-        FROM ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C
-        WHERE
-          "AGGREGATION_RESULT_NAME" = '_fb_internal_cust_id_window_w86400_sum_420f46a4414d6fc926c85a1349835967a96bf4c2'
-          AND "cust_id" IS NOT NULL
+          "cust_id" IS NOT NULL
         """
     ).strip()
     assert universe.sql(pretty=True) == expected
@@ -770,6 +817,44 @@ def test_time_series_window_aggregate_universe(
     model = EntityUniverseModel(query_template=SqlglotExpressionModel.create(universe, source_type))
     actual = sql_to_string(model.query_template.expr, source_type)
     fixture_filename = f"tests/fixtures/entity_universe/ts_window_aggregate_{source_type}.sql"
+    assert_equal_with_expected_fixture(
+        actual,
+        fixture_filename,
+        update_fixtures,
+    )
+
+
+@pytest.mark.parametrize(
+    "case_name, params",
+    [
+        ("case_1", {"offset": None}),
+        ("case_2", {"offset": "3h"}),
+    ],
+)
+def test_filter_aggregate_input_for_window_aggregate(adapter, case_name, params, update_fixtures):
+    """
+    Test filter_aggregate_input_for_window_aggregate function
+    """
+    aggregate_input_expr = expressions.select("ts", "cust_id", "value").from_("my_table")
+    feature_job_setting = FeatureJobSetting(
+        blind_spot="15m",
+        offset="30m",
+        period="1h",
+    )
+    windows = ["2h", "24h"]
+    kwargs = {
+        "aggregate_input_expr": aggregate_input_expr,
+        "feature_job_settings": feature_job_setting,
+        "windows": windows,
+        "offset": None,
+        "timestamp": "ts",
+        "timestamp_schema": None,
+        "adapter": adapter,
+    }
+    kwargs.update(params)
+    result = filter_aggregate_input_for_window_aggregate(**kwargs)
+    actual = sql_to_string(result, adapter.source_type)
+    fixture_filename = f"tests/fixtures/entity_universe/filter_aggregate_input_for_window_aggregate_{case_name}.sql"
     assert_equal_with_expected_fixture(
         actual,
         fixture_filename,

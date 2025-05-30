@@ -27,7 +27,6 @@ from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
 from featurebyte.sql.tile_common import TileCommon
 from featurebyte.sql.tile_generate import TileGenerate
-from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 logger = get_logger(__name__)
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -210,16 +209,6 @@ class TileTaskExecutor:
             deployed_tile_table_service=self.deployed_tile_table_service,
         )
 
-        tile_online_store_ins = TileScheduleOnlineStore(
-            session=session,
-            aggregation_id=params.aggregation_id,
-            job_schedule_ts_str=corrected_job_ts.strftime(DATE_FORMAT),
-            online_store_table_version_service=self.online_store_table_version_service,
-            online_store_compute_query_service=self.online_store_compute_query_service,
-            deployed_tile_table_id=params.deployed_tile_table_id,
-            deployed_tile_table_service=self.deployed_tile_table_service,
-        )
-
         step_specs: List[Dict[str, Any]] = [
             {
                 "name": "tile_generate",
@@ -229,15 +218,6 @@ class TileTaskExecutor:
                     "success": "GENERATED",
                 },
                 "metric_field_name": "tile_compute_seconds",
-            },
-            {
-                "name": "tile_online_store",
-                "trigger": tile_online_store_ins,
-                "status": {
-                    "fail": "ONLINE_STORE_FAILED",
-                    "success": "COMPLETED",
-                },
-                "metric_field_name": "internal_online_compute_seconds",
             },
         ]
 

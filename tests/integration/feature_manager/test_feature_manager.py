@@ -12,7 +12,6 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte.api.feature_list import FeatureList
-from featurebyte.enum import InternalName
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.periodic_task import Interval
 from featurebyte.models.tile import TileType
@@ -217,29 +216,12 @@ async def test_online_enabled_feature_spec(
             query_filter={"aggregation_id": expected_aggregation_id}
         )
     ]
-    assert len(result) == 1
-    result = result[0]
-    assert result.aggregation_id == expected_aggregation_id
-    assert result.result_name.startswith("_fb_internal_üser id_window_w108000_sum")
-    assert result.result_type == "FLOAT"
-    assert result.table_name == expected_online_store_table_name
-    assert result.serving_names == ["üser id"]
+    assert len(result) == 0
 
     # validate generate historical tiles
     sql = f"SELECT * FROM {deployed_tile_tables[0].table_name}"
     result = await session.execute_query(sql)
     assert len(result) > 0
-
-    # validate populate Online Store result
-    sql = f"SELECT * FROM {expected_online_store_table_name}"
-    result = await session.execute_query(sql)
-    assert len(result) > 0
-    expect_cols = [
-        "üser id",
-        InternalName.ONLINE_STORE_RESULT_NAME_COLUMN,
-        InternalName.ONLINE_STORE_VALUE_COLUMN,
-    ]
-    assert list(result)[:3] == expect_cols
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
@@ -266,56 +248,17 @@ async def test_online_disable(
             assert len(tasks1) > 0
             assert set(tasks1) == set(tasks2)
 
-            # Both features share the same compute query
-            online_store_compute_queries = await list_online_store_compute_queries(
-                online_store_compute_query_service, feature_service, feature_sum_30h_transformed
-            )
-            assert len(online_store_compute_queries) == 1
-
-            # Check clean up task
-            cleanup_tasks = await list_online_store_cleanup_tasks(
-                online_store_cleanup_scheduler_service, feature_service, feature_sum_30h
-            )
-            assert len(cleanup_tasks) == 1
-            assert await online_store_table_exists(session, feature_service, feature_sum_30h)
-
             # 2. Disable the first feature. Since the tile is still used by the second feature, the
             # tile tasks should not be removed.
             deployment1.disable()
             tasks = await list_scheduled_tasks(app_container, feature_sum_30h_transformed)
             assert set(tasks) == set(tasks2)
 
-            # The query should still exist because it is still used by the second feature
-            online_store_compute_queries = await list_online_store_compute_queries(
-                online_store_compute_query_service, feature_service, feature_sum_30h_transformed
-            )
-            assert len(online_store_compute_queries) == 1
-
-            # Clean up task still required
-            cleanup_tasks = await list_online_store_cleanup_tasks(
-                online_store_cleanup_scheduler_service, feature_service, feature_sum_30h_transformed
-            )
-            assert len(cleanup_tasks) == 1
-            assert await online_store_table_exists(session, feature_service, feature_sum_30h)
-
             # 3. Disable the second feature. Since the tile is no longer used by any feature, the
             # tile tasks should be removed.
             deployment2.disable()
             tasks = await list_scheduled_tasks(app_container, feature_sum_30h_transformed)
             assert len(tasks) == 0
-
-            # The query should be removed now
-            online_store_compute_queries = await list_online_store_compute_queries(
-                online_store_compute_query_service, feature_service, feature_sum_30h_transformed
-            )
-            assert len(online_store_compute_queries) == 0
-
-            # Clean up task should be removed
-            cleanup_tasks = await list_online_store_cleanup_tasks(
-                online_store_cleanup_scheduler_service, feature_service, feature_sum_30h_transformed
-            )
-            assert len(cleanup_tasks) == 0
-            assert not await online_store_table_exists(session, feature_service, feature_sum_30h)
 
 
 @pytest.mark.parametrize("source_type", ["snowflake"], indirect=True)
