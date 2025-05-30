@@ -186,21 +186,99 @@ WITH ONLINE_REQUEST_TABLE AS (
   FROM JOINED_PARENTS_ONLINE_REQUEST_TABLE
 ), _FB_AGGREGATED AS (
   SELECT
-    REQ."__FB_TABLE_ROW_INDEX",
-    REQ."cust_id",
-    REQ."POINT_IN_TIME",
-    REQ."cust_id_000000000000000000000000",
-    "T0"."_fb_internal_cust_id_lookup_col_boolean_project_1" AS "_fb_internal_cust_id_lookup_col_boolean_project_1",
-    "T1"."_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1" AS "_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1"
-  FROM JOINED_PARENTS_ONLINE_REQUEST_TABLE AS REQ
-  LEFT JOIN (
+    REQ."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
+    REQ."cust_id" AS "cust_id",
+    REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
+    REQ."cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000",
+    REQ."_fb_internal_cust_id_lookup_col_boolean_project_1" AS "_fb_internal_cust_id_lookup_col_boolean_project_1",
+    "T0"."_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1" AS "_fb_internal_cust_id_000000000000000000000000_as_at_count_None_col_boolean_None_project_1"
+  FROM (
     SELECT
-      "cust_id",
-      ANY_VALUE("_fb_internal_cust_id_lookup_col_boolean_project_1") AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
+      L."__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
+      L."cust_id" AS "cust_id",
+      L."POINT_IN_TIME" AS "POINT_IN_TIME",
+      L."cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000",
+      R."col_boolean" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
     FROM (
       SELECT
-        "col_text" AS "cust_id",
-        "col_boolean" AS "_fb_internal_cust_id_lookup_col_boolean_project_1"
+        "__FB_KEY_COL_0",
+        "__FB_LAST_TS",
+        "__FB_TS_COL",
+        "__FB_TABLE_ROW_INDEX",
+        "cust_id",
+        "POINT_IN_TIME",
+        "cust_id_000000000000000000000000"
+      FROM (
+        SELECT
+          "__FB_KEY_COL_0",
+          LAG("__FB_EFFECTIVE_TS_COL") IGNORE NULLS OVER (PARTITION BY "__FB_KEY_COL_0" ORDER BY "__FB_TS_COL" NULLS FIRST, "__FB_TS_TIE_BREAKER_COL") AS "__FB_LAST_TS",
+          "__FB_TS_COL",
+          "__FB_TABLE_ROW_INDEX",
+          "cust_id",
+          "POINT_IN_TIME",
+          "cust_id_000000000000000000000000",
+          "__FB_EFFECTIVE_TS_COL"
+        FROM (
+          SELECT
+            CAST(CONVERT_TIMEZONE('UTC', "POINT_IN_TIME") AS TIMESTAMP) AS "__FB_TS_COL",
+            "cust_id" AS "__FB_KEY_COL_0",
+            NULL AS "__FB_EFFECTIVE_TS_COL",
+            2 AS "__FB_TS_TIE_BREAKER_COL",
+            "__FB_TABLE_ROW_INDEX" AS "__FB_TABLE_ROW_INDEX",
+            "cust_id" AS "cust_id",
+            "POINT_IN_TIME" AS "POINT_IN_TIME",
+            "cust_id_000000000000000000000000" AS "cust_id_000000000000000000000000"
+          FROM (
+            SELECT
+              REQ."__FB_TABLE_ROW_INDEX",
+              REQ."cust_id",
+              REQ."POINT_IN_TIME",
+              REQ."cust_id_000000000000000000000000"
+            FROM JOINED_PARENTS_ONLINE_REQUEST_TABLE AS REQ
+          )
+          UNION ALL
+          SELECT
+            CAST(CONVERT_TIMEZONE('UTC', "effective_timestamp") AS TIMESTAMP) AS "__FB_TS_COL",
+            "col_text" AS "__FB_KEY_COL_0",
+            "effective_timestamp" AS "__FB_EFFECTIVE_TS_COL",
+            1 AS "__FB_TS_TIE_BREAKER_COL",
+            NULL AS "__FB_TABLE_ROW_INDEX",
+            NULL AS "cust_id",
+            NULL AS "POINT_IN_TIME",
+            NULL AS "cust_id_000000000000000000000000"
+          FROM (
+            SELECT
+              "col_int" AS "col_int",
+              "col_float" AS "col_float",
+              "col_text" AS "col_text",
+              "col_binary" AS "col_binary",
+              "col_boolean" AS "col_boolean",
+              "effective_timestamp" AS "effective_timestamp",
+              "end_timestamp" AS "end_timestamp",
+              "date_of_birth" AS "date_of_birth",
+              "created_at" AS "created_at",
+              "cust_id" AS "cust_id"
+            FROM "sf_database"."sf_schema"."scd_table"
+            WHERE
+              "effective_timestamp" IS NOT NULL
+          )
+        )
+      )
+      WHERE
+        "__FB_EFFECTIVE_TS_COL" IS NULL
+    ) AS L
+    LEFT JOIN (
+      SELECT
+        ANY_VALUE("col_int") AS "col_int",
+        ANY_VALUE("col_float") AS "col_float",
+        "col_text",
+        ANY_VALUE("col_binary") AS "col_binary",
+        ANY_VALUE("col_boolean") AS "col_boolean",
+        "effective_timestamp",
+        ANY_VALUE("end_timestamp") AS "end_timestamp",
+        ANY_VALUE("date_of_birth") AS "date_of_birth",
+        ANY_VALUE("created_at") AS "created_at",
+        ANY_VALUE("cust_id") AS "cust_id"
       FROM (
         SELECT
           "col_int" AS "col_int",
@@ -215,13 +293,19 @@ WITH ONLINE_REQUEST_TABLE AS (
           "cust_id" AS "cust_id"
         FROM "sf_database"."sf_schema"."scd_table"
         WHERE
-          "is_active" = TRUE
+          "effective_timestamp" IS NOT NULL
       )
-    )
-    GROUP BY
-      "cust_id"
-  ) AS T0
-    ON REQ."cust_id" = T0."cust_id"
+      GROUP BY
+        "effective_timestamp",
+        "col_text"
+    ) AS R
+      ON L."__FB_LAST_TS" = R."effective_timestamp"
+      AND L."__FB_KEY_COL_0" = R."col_text"
+      AND (
+        L."__FB_TS_COL" < CAST(CONVERT_TIMEZONE('UTC', R."end_timestamp") AS TIMESTAMP)
+        OR R."end_timestamp" IS NULL
+      )
+  ) AS REQ
   LEFT JOIN (
     SELECT
       REQ."POINT_IN_TIME" AS "POINT_IN_TIME",
@@ -252,9 +336,9 @@ WITH ONLINE_REQUEST_TABLE AS (
     GROUP BY
       REQ."POINT_IN_TIME",
       REQ."cust_id_000000000000000000000000"
-  ) AS T1
-    ON REQ."POINT_IN_TIME" = T1."POINT_IN_TIME"
-    AND REQ."cust_id_000000000000000000000000" = T1."cust_id_000000000000000000000000"
+  ) AS T0
+    ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
+    AND REQ."cust_id_000000000000000000000000" = T0."cust_id_000000000000000000000000"
 )
 SELECT
   AGG."__FB_TABLE_ROW_INDEX",

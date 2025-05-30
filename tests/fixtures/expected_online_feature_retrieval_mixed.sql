@@ -4,6 +4,38 @@ WITH ONLINE_REQUEST_TABLE AS (
     REQ."order_id",
     SYSDATE() AS POINT_IN_TIME
   FROM "MY_REQUEST_TABLE" AS REQ
+), "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS (
+  SELECT
+    "POINT_IN_TIME",
+    "CUSTOMER_ID",
+    CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
+    ) / 3600) AS BIGINT) AS __FB_LAST_TILE_INDEX,
+    CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
+    ) / 3600) AS BIGINT) - 2 AS __FB_FIRST_TILE_INDEX
+  FROM (
+    SELECT DISTINCT
+      "POINT_IN_TIME",
+      "CUSTOMER_ID"
+    FROM ONLINE_REQUEST_TABLE
+  )
+), "REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID" AS (
+  SELECT
+    "POINT_IN_TIME",
+    "CUSTOMER_ID",
+    CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
+    ) / 3600) AS BIGINT) AS __FB_LAST_TILE_INDEX,
+    CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 1800
+    ) / 3600) AS BIGINT) - 48 AS __FB_FIRST_TILE_INDEX
+  FROM (
+    SELECT DISTINCT
+      "POINT_IN_TIME",
+      "CUSTOMER_ID"
+    FROM ONLINE_REQUEST_TABLE
+  )
 ), "REQUEST_TABLE_order_id" AS (
   SELECT DISTINCT
     "order_id"
@@ -14,52 +46,83 @@ WITH ONLINE_REQUEST_TABLE AS (
     REQ."order_id",
     REQ."POINT_IN_TIME",
     "T0"."_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f" AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f",
-    "T0"."_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f" AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f",
-    "T1"."_fb_internal_order_id_item_count_None_order_id_None_input_2" AS "_fb_internal_order_id_item_count_None_order_id_None_input_2"
+    "T1"."_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f" AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f",
+    "T2"."_fb_internal_order_id_item_count_None_order_id_None_input_2" AS "_fb_internal_order_id_item_count_None_order_id_None_input_2"
   FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
-      "CUSTOMER_ID" AS "CUSTOMER_ID",
-      "_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f" AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f",
-      "_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f" AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f"
+      "POINT_IN_TIME",
+      "CUSTOMER_ID",
+      SUM(sum_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f) / SUM(count_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f) AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f"
     FROM (
       SELECT
-        "CUSTOMER_ID",
-        "'_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f'" AS "_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f",
-        "'_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f'" AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f"
-      FROM (
-        SELECT
-          "CUSTOMER_ID",
-          "AGGREGATION_RESULT_NAME",
-          "VALUE"
-        FROM (
-          SELECT
-            R.*
-          FROM (
-            SELECT
-              "AGGREGATION_RESULT_NAME",
-              "LATEST_VERSION"
-            FROM (VALUES
-              (
-                '_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f',
-                _fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f_VERSION_PLACEHOLDER
-              ),
-              (
-                '_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f',
-                _fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f_VERSION_PLACEHOLDER
-              )) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
-          ) AS L
-          INNER JOIN ONLINE_STORE_B3BAD6F0A450E950306704A0EF7BD384756A05CC AS R
-            ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
-            AND R."VERSION" = L."LATEST_VERSION"
-        )
-        WHERE
-          "AGGREGATION_RESULT_NAME" IN ('_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f', '_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f')
-      )
-      PIVOT(MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_CUSTOMER_ID_window_w7200_avg_13c45b8622761dd28afb4640ac3ed355d57d789f', '_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f'))
+        REQ."POINT_IN_TIME",
+        REQ."CUSTOMER_ID",
+        TILE.INDEX,
+        TILE.count_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f,
+        TILE.sum_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f
+      FROM "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
+      INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 2) = FLOOR(TILE.INDEX / 2)
+        AND REQ."CUSTOMER_ID" = TILE."cust_id"
+      WHERE
+        TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
+      UNION ALL
+      SELECT
+        REQ."POINT_IN_TIME",
+        REQ."CUSTOMER_ID",
+        TILE.INDEX,
+        TILE.count_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f,
+        TILE.sum_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f
+      FROM "REQUEST_TABLE_W7200_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
+      INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 2) - 1 = FLOOR(TILE.INDEX / 2)
+        AND REQ."CUSTOMER_ID" = TILE."cust_id"
+      WHERE
+        TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
     )
+    GROUP BY
+      "POINT_IN_TIME",
+      "CUSTOMER_ID"
   ) AS T0
-    ON REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
+    ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME" AND REQ."CUSTOMER_ID" = T0."CUSTOMER_ID"
+  LEFT JOIN (
+    SELECT
+      "POINT_IN_TIME",
+      "CUSTOMER_ID",
+      SUM(sum_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f) / SUM(count_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f) AS "_fb_internal_CUSTOMER_ID_window_w172800_avg_13c45b8622761dd28afb4640ac3ed355d57d789f"
+    FROM (
+      SELECT
+        REQ."POINT_IN_TIME",
+        REQ."CUSTOMER_ID",
+        TILE.INDEX,
+        TILE.count_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f,
+        TILE.sum_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f
+      FROM "REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
+      INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 48) = FLOOR(TILE.INDEX / 48)
+        AND REQ."CUSTOMER_ID" = TILE."cust_id"
+      WHERE
+        TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
+      UNION ALL
+      SELECT
+        REQ."POINT_IN_TIME",
+        REQ."CUSTOMER_ID",
+        TILE.INDEX,
+        TILE.count_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f,
+        TILE.sum_value_avg_13c45b8622761dd28afb4640ac3ed355d57d789f
+      FROM "REQUEST_TABLE_W172800_F3600_BS900_M1800_CUSTOMER_ID" AS REQ
+      INNER JOIN TILE_F3600_M1800_B900_8502F6BC497F17F84385ABE4346FD392F2F56725 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 48) - 1 = FLOOR(TILE.INDEX / 48)
+        AND REQ."CUSTOMER_ID" = TILE."cust_id"
+      WHERE
+        TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
+    )
+    GROUP BY
+      "POINT_IN_TIME",
+      "CUSTOMER_ID"
+  ) AS T1
+    ON REQ."POINT_IN_TIME" = T1."POINT_IN_TIME" AND REQ."CUSTOMER_ID" = T1."CUSTOMER_ID"
   LEFT JOIN (
     SELECT
       REQ."order_id" AS "order_id",
@@ -76,8 +139,8 @@ WITH ONLINE_REQUEST_TABLE AS (
       ON REQ."order_id" = ITEM."order_id"
     GROUP BY
       REQ."order_id"
-  ) AS T1
-    ON REQ."order_id" = T1."order_id"
+  ) AS T2
+    ON REQ."order_id" = T2."order_id"
 )
 SELECT
   AGG."CUSTOMER_ID",

@@ -12,6 +12,7 @@ import sys
 import tempfile
 import textwrap
 from contextlib import ExitStack, asynccontextmanager, contextmanager
+from datetime import datetime
 from pathlib import Path
 from typing import Generator
 from unittest.mock import Mock, patch
@@ -452,15 +453,22 @@ def iet_entropy(view, group_by_col, window, name, feature_job_setting=None):
     return feature
 
 
-def make_online_request(client, deployment, entity_serving_names):
+def make_online_request(
+    client, deployment, entity_serving_names, mock_online_serving_datetime=None
+):
     """
     Helper function to make an online request via REST API
     """
     data = OnlineFeaturesRequestPayload(entity_serving_names=entity_serving_names)
-    res = client.post(
-        f"/deployment/{deployment.id}/online_features",
-        json=data.json_dict(),
-    )
+    with patch("featurebyte.service.online_serving.datetime", autospec=True) as mock_datetime:
+        if mock_online_serving_datetime is not None:
+            mock_datetime.utcnow.return_value = mock_online_serving_datetime
+        else:
+            mock_datetime.utcnow.side_effect = datetime.utcnow
+        res = client.post(
+            f"/deployment/{deployment.id}/online_features",
+            json=data.json_dict(),
+        )
     return res
 
 

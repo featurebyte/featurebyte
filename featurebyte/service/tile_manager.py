@@ -33,7 +33,6 @@ from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
 from featurebyte.session.session_helper import run_coroutines
 from featurebyte.sql.tile_generate import TileComputeResult, TileComputeSuccess, TileGenerate
-from featurebyte.sql.tile_schedule_online_store import TileScheduleOnlineStore
 
 logger = get_logger(__name__)
 
@@ -240,38 +239,6 @@ class TileManagerService:
             deployed_tile_table_id=deployed_tile_table_id,
         )
         return await self.tile_scheduler_service.get_job_details(job_id=job_id) is not None
-
-    async def populate_feature_store(
-        self,
-        session: BaseSession,
-        aggregation_id: str,
-        job_schedule_ts_str: str,
-        aggregation_result_name: str,
-    ) -> None:
-        """
-        Populate feature store with the given tile_spec and timestamp string
-
-        Parameters
-        ----------
-        session: BaseSession
-            Instance of BaseSession to interact with the data warehouse
-        aggregation_id: str
-            aggregation id
-        job_schedule_ts_str: str
-            timestamp string of the job schedule
-        aggregation_result_name: str
-            aggregation result name to populate
-        """
-        executor = TileScheduleOnlineStore(
-            session=session,
-            aggregation_id=aggregation_id,
-            job_schedule_ts_str=job_schedule_ts_str,
-            online_store_table_version_service=self.online_store_table_version_service,
-            online_store_compute_query_service=self.online_store_compute_query_service,
-            deployed_tile_table_service=self.deployed_tile_table_service,
-            aggregation_result_name=aggregation_result_name,
-        )
-        await executor.execute()
 
     def _get_tile_generate_object_from_tile_spec(
         self,
