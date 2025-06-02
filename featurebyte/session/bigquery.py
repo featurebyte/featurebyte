@@ -309,6 +309,10 @@ class BigQuerySession(BaseSession):
         cursor.job_id = job_id
         return cursor.execute(query, job_id=job_id, **kwargs)
 
+    @staticmethod
+    def get_query_id(cursor: Any) -> str | None:
+        return cursor.job_id if hasattr(cursor, "job_id") else None
+
     async def _cancel_query(self, cursor: Any, query: str) -> bool:
         try:
             self._client.cancel_job(

@@ -18,6 +18,7 @@ from featurebyte.session.base import (
     INTERACTIVE_QUERY_TIMEOUT_SECONDS,
     BaseSchemaInitializer,
     BaseSession,
+    QueryResult,
 )
 
 
@@ -112,7 +113,11 @@ class SQLiteSession(BaseSession):
         raise NotImplementedError()
 
     async def execute_query(
-        self, query: str, timeout: float = 600, to_log_error: bool = True
+        self,
+        query: str,
+        timeout: float = 600,
+        to_log_error: bool = True,
+        query_result: QueryResult | None = None,
     ) -> pd.DataFrame | None:
         # sqlite session cannot be used in across threads
         _ = timeout

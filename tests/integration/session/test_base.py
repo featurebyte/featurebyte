@@ -4,6 +4,7 @@ Test base session
 
 import asyncio
 from io import BytesIO
+from uuid import UUID
 
 import pandas as pd
 import pyarrow as pa
@@ -301,3 +302,21 @@ async def test_timestamp_with_high_precision_date(config, session_without_datase
     query = "SELECT CAST('2012-12-31T05:00:00.123456123' AS TIMESTAMP) AS TIMESTAMP"
     result = await session.execute_query(query)
     assert result.TIMESTAMP.tolist()[0] == pd.Timestamp("2012-12-31 05:00:00.123456")
+
+
+@pytest.mark.parametrize(
+    "source_type", ["spark", "databricks_unity", "snowflake", "bigquery"], indirect=True
+)
+@pytest.mark.asyncio
+async def test_execute_query_long_running_with_query_id(config, test_session):
+    """
+    Test execute query with query ID.
+    """
+    _ = config
+    session = test_session
+    result = await session.execute_query_long_running_with_query_id("SELECT 1 AS VALUE")
+    assert_frame_equal(result.result, pd.DataFrame({"VALUE": [1]}), check_dtype=False)
+
+    # check query ID is present and a valid UUID
+    assert result.query_id is not None
+    UUID(result.query_id)
