@@ -43,10 +43,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v3
+      - name: Setup cache
+        uses: actions/cache@v4
         with:
-          poetry-version: 1.8.2
+          key: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}-${{ github.job }}
+          path: .venv
+          restore-keys: poetry-cache-${{ runner.os }}-${{ matrix.python-version }}
+      - name: Install Poetry + Configure
+        run: |-
+          pip install poetry==2.1.2
+          poetry config virtualenvs.in-project true
       - name: Check pyproject.toml and poetry.lock are consistent
         run: task check-poetry
       - name: Build package (branch)
@@ -97,9 +103,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-      - uses: abatilo/actions-poetry@v3
-        with:
-          poetry-version: "1.8.2"
+      - name: Install Poetry + Configure
+        run: |-
+          pip install poetry==2.1.2
+          poetry config virtualenvs.in-project true
       - uses: bushwhackr/poetry-diff@v1
         id: poetry-diff
       - uses: mshick/add-pr-comment@v2
