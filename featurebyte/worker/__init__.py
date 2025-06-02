@@ -21,6 +21,7 @@ from featurebyte.models.periodic_task import PeriodicTask
 from featurebyte.models.task import Task
 from featurebyte.utils.messaging import REDIS_URI
 from featurebyte.utils.persistent import DATABASE_NAME, MONGO_URI
+from featurebyte.worker.loader import NoPrefetchTaskLoader
 
 ASYNCIO_LOOP: asyncio.AbstractEventLoop | None = None
 
@@ -211,6 +212,7 @@ def get_celery(
         accept_content=["json"],
         result_serializer="json",
         enable_utc=True,
+        loader=NoPrefetchTaskLoader,
     )
 
     # Celery configuration options:
