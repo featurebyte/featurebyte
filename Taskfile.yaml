@@ -219,7 +219,7 @@ tasks:
       REDIS_URI: redis://localhost:36379
     cmds:
       - task: test-setup
-      - poetry run pytest --timeout=900 --junitxml=pytest.xml.5 --cov=featurebyte tests/integration --source-types bigquery --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
+      - poetry run pytest --timeout=1800 --junitxml=pytest.xml.5 --cov=featurebyte tests/integration --source-types bigquery --splits={{.PYTEST_SPLITS}} --group={{.PYTEST_GROUP}} --store-durations --clean-durations
       - task: test-teardown
 
   test-docs:
