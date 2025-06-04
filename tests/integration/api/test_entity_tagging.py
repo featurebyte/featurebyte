@@ -6,9 +6,11 @@ import pandas as pd
 import pytest
 
 import featurebyte as fb
+from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
 from tests.util.helper import fb_assert_frame_equal
 
 
+@pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
 async def test_entity_different_dtypes(session_without_datasets, data_source):
     """
