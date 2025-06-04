@@ -254,7 +254,9 @@ class TableColumnsInfoService(OpsServiceMixin):
             )
 
     async def _validate_column_info(
-        self, table: TableModel, columns_info: List[ColumnInfo], source_type: SourceType
+        self,
+        table: TableModel,
+        columns_info: List[ColumnInfo],
     ) -> None:
         # validate columns info based on column names & columns info
         columns_info_validator(table, columns_info)
@@ -272,6 +274,7 @@ class TableColumnsInfoService(OpsServiceMixin):
                 )
 
         # validate entity dtype
+        source_type = await self._get_source_type(table)
         if source_type == SourceType.BIGQUERY:
             await self.entity_dtype_initialization_and_validation_service.validate_entity_dtype(
                 table=table, target_columns_info=columns_info
@@ -324,10 +327,7 @@ class TableColumnsInfoService(OpsServiceMixin):
                 )
 
             # validate other columns info
-            feature_store = await self.feature_store_service.get_document(
-                document.tabular_source.feature_store_id
-            )
-            await self._validate_column_info(document, columns_info, feature_store.type)
+            await self._validate_column_info(document, columns_info)
 
             async with self.persistent.start_transaction():
                 # update columns info
@@ -345,6 +345,12 @@ class TableColumnsInfoService(OpsServiceMixin):
                 await self.entity_dtype_initialization_and_validation_service.update_entity_dtype(
                     table=document, target_columns_info=columns_info
                 )
+
+    async def _get_source_type(self, document: TableModel) -> SourceType:
+        feature_store = await self.feature_store_service.get_document(
+            document.tabular_source.feature_store_id
+        )
+        return feature_store.type
 
     async def _update_entity_table_reference(
         self,

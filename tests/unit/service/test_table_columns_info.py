@@ -10,7 +10,7 @@ import pytest_asyncio
 from bson import ObjectId
 
 from featurebyte import Relationship
-from featurebyte.enum import DBVarType
+from featurebyte.enum import DBVarType, SourceType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.entity import ParentEntity
@@ -23,6 +23,18 @@ from featurebyte.schema.item_table import ItemTableServiceUpdate
 from featurebyte.schema.relationship_info import RelationshipInfoCreate
 from featurebyte.schema.scd_table import SCDTableServiceUpdate
 from tests.util.helper import compare_pydantic_obj
+
+
+@pytest.fixture(autouse=True)
+def patch_source_type_as_bigquery():
+    """
+    Patch the source type to BigQuery for all tests in this module.
+    """
+    with patch(
+        "featurebyte.service.table_columns_info.TableColumnsInfoService._get_source_type",
+        return_value=SourceType.BIGQUERY,
+    ):
+        yield
 
 
 @pytest.mark.asyncio
