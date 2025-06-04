@@ -2,17 +2,20 @@
 Integration tests related to entity tagging
 """
 
+from datetime import datetime
+
 import pandas as pd
 import pytest
 
 import featurebyte as fb
 from tests.source_types import SNOWFLAKE_SPARK_DATABRICKS_UNITY
+from tests.util.deployment import deploy_and_get_online_features
 from tests.util.helper import fb_assert_frame_equal
 
 
 @pytest.mark.parametrize("source_type", SNOWFLAKE_SPARK_DATABRICKS_UNITY, indirect=True)
 @pytest.mark.asyncio
-async def test_entity_different_dtypes(session_without_datasets, data_source):
+async def test_entity_different_dtypes(session_without_datasets, data_source, config):
     """
     Test registering an entity with different dtypes
     """
@@ -60,6 +63,7 @@ async def test_entity_different_dtypes(session_without_datasets, data_source):
     view = view.join(dimension_table.get_view())
     feature = view["dimension_value"].as_feature("my_feature")
 
+    # Test preview
     preview_params = pd.DataFrame({
         "POINT_IN_TIME": pd.to_datetime(["2022-05-01", "2022-05-01"]),
         "cust_id": ["1000", "1001"],
@@ -71,3 +75,14 @@ async def test_entity_different_dtypes(session_without_datasets, data_source):
         "my_feature": ["A", "B"],
     })
     fb_assert_frame_equal(df_preview, df_expected)
+
+    # Test online serving
+    request_data = preview_params[["cust_id"]].to_dict(orient="records")
+    df_online_features = deploy_and_get_online_features(
+        client=config.get_client(),
+        feature_list=fb.FeatureList([feature], "test_entity_different_dtypes"),
+        deploy_at=datetime(2022, 5, 1, 12, 0, 0),
+        request_data=request_data,
+    )
+    df_expected = df_expected[["cust_id", "my_feature"]]
+    fb_assert_frame_equal(df_online_features, df_expected)
