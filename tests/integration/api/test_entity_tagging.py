@@ -19,6 +19,10 @@ async def test_entity_different_dtypes(session_without_datasets, data_source, co
     """
     Test registering an entity with different dtypes
     """
+
+    def _unique_serving_name(serving_name: str) -> str:
+        return "test_entity_different_dtypes__" + serving_name
+
     session = session_without_datasets
     df_scd = pd.DataFrame({
         "effective_ts": pd.to_datetime([
@@ -55,10 +59,13 @@ async def test_entity_different_dtypes(session_without_datasets, data_source, co
     )
 
     # Tagging entities with different dtypes
-    entity = fb.Entity.create("test_entity_different_dtypes_entity", ["cust_id"])
+    entity = fb.Entity.create(
+        "test_entity_different_dtypes_entity", [_unique_serving_name("cust_id")]
+    )
     scd_table["cust_id"].as_entity(entity.name)
     dimension_table["cust_id"].as_entity(entity.name)
 
+    # Feature with cust_id entity
     view = scd_table.get_view()
     view = view.join(dimension_table.get_view())
     feature = view["dimension_value"].as_feature("my_feature")
@@ -66,23 +73,23 @@ async def test_entity_different_dtypes(session_without_datasets, data_source, co
     # Test preview
     preview_params = pd.DataFrame({
         "POINT_IN_TIME": pd.to_datetime(["2022-05-01", "2022-05-01"]),
-        "cust_id": ["1000", "1001"],
+        _unique_serving_name("cust_id"): ["1000", "1001"],
     })
     df_preview = feature.preview(preview_params)
     df_expected = pd.DataFrame({
         "POINT_IN_TIME": pd.to_datetime(["2022-05-01", "2022-05-01"]),
-        "cust_id": ["1000", "1001"],
+        _unique_serving_name("cust_id"): ["1000", "1001"],
         "my_feature": ["A", "B"],
     })
     fb_assert_frame_equal(df_preview, df_expected)
 
     # Test online serving
-    request_data = preview_params[["cust_id"]].to_dict(orient="records")
+    request_data = preview_params[[_unique_serving_name("cust_id")]].to_dict(orient="records")
     df_online_features = deploy_and_get_online_features(
         client=config.get_client(),
         feature_list=fb.FeatureList([feature], "test_entity_different_dtypes"),
         deploy_at=datetime(2022, 5, 1, 12, 0, 0),
         request_data=request_data,
     )
-    df_expected = df_expected[["cust_id", "my_feature"]]
+    df_expected = df_expected[[_unique_serving_name("cust_id"), "my_feature"]]
     fb_assert_frame_equal(df_online_features, df_expected)
