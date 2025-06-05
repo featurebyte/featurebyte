@@ -20,7 +20,7 @@ from typeguard import TypeCheckError
 from featurebyte import Configurations, TimestampSchema, TimeZoneColumn
 from featurebyte.api.entity import Entity
 from featurebyte.api.event_table import EventTable
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.exception import (
     DuplicatedRecordException,
     ObjectHasBeenSavedError,
@@ -1302,7 +1302,11 @@ def test_associate_conflicting_dtype_to_different_tables(
     # check exception raised when associating conflicting dtype to different tables
     assert saved_scd_table.col_text.info.dtype == DBVarType.VARCHAR
     with pytest.raises(RecordUpdateException) as exc:
-        saved_scd_table.col_text.as_entity(cust_id_entity.name)
+        with patch(
+            "featurebyte.service.table_columns_info.TableColumnsInfoService._get_source_type",
+            return_value=SourceType.BIGQUERY,
+        ):
+            saved_scd_table.col_text.as_entity(cust_id_entity.name)
     expected_msg = (
         f"Column col_text (Table ID: {saved_scd_table.id}, Name: sf_scd_table) has dtype VARCHAR which does not "
         f"match the entity dtype INT."

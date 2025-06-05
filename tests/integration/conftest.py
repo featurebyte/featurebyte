@@ -290,14 +290,6 @@ def always_patch_app_get_storage_fixture(storage):
         yield
 
 
-@pytest.fixture(autouse=True)
-def always_patch_initialize_entity_dtype_service(patch_initialize_entity_dtype):
-    """
-    Patch the initialize entity dtype service for all tests in this module
-    """
-    yield patch_initialize_entity_dtype
-
-
 @pytest.fixture(name="config", scope="session")
 def config_fixture(storage):
     """

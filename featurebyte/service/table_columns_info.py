@@ -12,7 +12,7 @@ from pymongo.errors import OperationFailure
 from tenacity import retry, retry_if_exception_type, wait_chain, wait_random
 
 from featurebyte.common.validator import columns_info_validator
-from featurebyte.enum import DBVarType, TableDataType
+from featurebyte.enum import DBVarType, SourceType, TableDataType
 from featurebyte.exception import DocumentUpdateError
 from featurebyte.models.base import PydanticObjectId, User
 from featurebyte.models.entity import EntityModel, ParentEntity
@@ -26,6 +26,7 @@ from featurebyte.schema.table import TableColumnsInfoUpdate
 from featurebyte.service.dimension_table import DimensionTableService
 from featurebyte.service.entity import EntityService
 from featurebyte.service.event_table import EventTableService
+from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.item_table import ItemTableService
 from featurebyte.service.mixin import OpsServiceMixin
 from featurebyte.service.relationship import EntityRelationshipService
@@ -208,6 +209,7 @@ class TableColumnsInfoService(OpsServiceMixin):
         relationship_info_service: RelationshipInfoService,
         entity_relationship_service: EntityRelationshipService,
         entity_dtype_initialization_and_validation_service: EntityDtypeInitializationAndValidationService,
+        feature_store_service: FeatureStoreService,
     ):
         self.user = user
         self.persistent = persistent
@@ -218,6 +220,7 @@ class TableColumnsInfoService(OpsServiceMixin):
         self.entity_dtype_initialization_and_validation_service = (
             entity_dtype_initialization_and_validation_service
         )
+        self.feature_store_service = feature_store_service
 
     @staticmethod
     async def _validate_column_info_id_field_values(
@@ -251,7 +254,9 @@ class TableColumnsInfoService(OpsServiceMixin):
             )
 
     async def _validate_column_info(
-        self, table: TableModel, columns_info: List[ColumnInfo]
+        self,
+        table: TableModel,
+        columns_info: List[ColumnInfo],
     ) -> None:
         # validate columns info based on column names & columns info
         columns_info_validator(table, columns_info)
@@ -269,9 +274,11 @@ class TableColumnsInfoService(OpsServiceMixin):
                 )
 
         # validate entity dtype
-        await self.entity_dtype_initialization_and_validation_service.validate_entity_dtype(
-            table=table, target_columns_info=columns_info
-        )
+        source_type = await self._get_source_type(table)
+        if source_type == SourceType.BIGQUERY:
+            await self.entity_dtype_initialization_and_validation_service.validate_entity_dtype(
+                table=table, target_columns_info=columns_info
+            )
 
     @retry(
         retry=retry_if_exception_type(OperationFailure),
@@ -338,6 +345,12 @@ class TableColumnsInfoService(OpsServiceMixin):
                 await self.entity_dtype_initialization_and_validation_service.update_entity_dtype(
                     table=document, target_columns_info=columns_info
                 )
+
+    async def _get_source_type(self, document: TableModel) -> SourceType:
+        feature_store = await self.feature_store_service.get_document(
+            document.tabular_source.feature_store_id
+        )
+        return feature_store.type
 
     async def _update_entity_table_reference(
         self,
