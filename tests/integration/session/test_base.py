@@ -18,6 +18,7 @@ from featurebyte.exception import (
     DataWarehouseOperationError,
     QueryExecutionTimeOut,
 )
+from featurebyte.session.base import QueryMetadata
 from tests.util.helper import truncate_timestamps
 
 
@@ -314,9 +315,12 @@ async def test_execute_query_long_running_with_query_id(config, test_session):
     """
     _ = config
     session = test_session
-    result = await session.execute_query_long_running_with_query_id("SELECT 1 AS VALUE")
-    assert_frame_equal(result.result, pd.DataFrame({"VALUE": [1]}), check_dtype=False)
+    query_metadata = QueryMetadata()
+    result = await session.execute_query_long_running(
+        "SELECT 1 AS VALUE", query_metadata=query_metadata
+    )
+    assert_frame_equal(result, pd.DataFrame({"VALUE": [1]}), check_dtype=False)
 
     # check query ID is present and a valid UUID
-    assert result.query_id is not None
-    UUID(result.query_id)
+    assert query_metadata.query_id is not None
+    UUID(query_metadata.query_id)

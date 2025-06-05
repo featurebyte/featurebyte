@@ -137,17 +137,15 @@ async def to_thread(
         raise
 
 
-class QueryResult(BaseModel):
+class QueryMetadata(BaseModel):
     """
-    Query result model
+    Query metadata model
     """
 
-    result: Optional[pd.DataFrame] = None
     query_id: Optional[str] = None
 
     model_config = ConfigDict(
         validate_assignment=True,
-        arbitrary_types_allowed=True,
     )
 
 
@@ -568,7 +566,7 @@ class BaseSession(BaseModel):
         self,
         query: str,
         timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
-        query_result: QueryResult | None = None,
+        query_metadata: QueryMetadata | None = None,
     ) -> AsyncGenerator[pa.RecordBatch, None]:
         """
         Generate results from asynchronous query as pyarrow record batches
@@ -579,8 +577,8 @@ class BaseSession(BaseModel):
             sql query to execute
         timeout: float
             timeout in seconds
-        query_result: QueryResult | None
-            Query result object to store the result and query ID
+        query_metadata: QueryMetadata | None
+            Query metadata object
 
         Yields
         ------
@@ -605,8 +603,8 @@ class BaseSession(BaseModel):
                 **self.get_additional_execute_query_kwargs(),
             )
 
-            if query_result:
-                query_result.query_id = self.get_query_id(cursor)
+            if query_metadata:
+                query_metadata.query_id = self.get_query_id(cursor)
 
             if not cursor.description:
                 return
@@ -703,7 +701,7 @@ class BaseSession(BaseModel):
         query: str,
         timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS,
         to_log_error: bool = True,
-        query_result: QueryResult | None = None,
+        query_metadata: QueryMetadata | None = None,
     ) -> pd.DataFrame | None:
         """
         Execute SQL query
@@ -716,8 +714,8 @@ class BaseSession(BaseModel):
             timeout in seconds
         to_log_error: bool
             If True, log error
-        query_result: QueryResult | None
-            Query result object to store the result and query ID
+        query_metadata: QueryMetadata | None
+            Query metadata object
 
         Returns
         -------
@@ -731,15 +729,12 @@ class BaseSession(BaseModel):
         """
         try:
             batch_records = self.get_async_query_generator(
-                query=query, timeout=timeout, query_result=query_result
+                query=query, timeout=timeout, query_metadata=query_metadata
             )
             batches = [batch_record async for batch_record in batch_records]
             if not batches:
                 return None
-            result = dataframe_from_arrow_table(pa.Table.from_batches(batches))
-            if query_result is not None:
-                query_result.result = result
-            return result
+            return dataframe_from_arrow_table(pa.Table.from_batches(batches))
         except Exception as exc:
             if to_log_error:
                 logger.error(
@@ -776,6 +771,7 @@ class BaseSession(BaseModel):
         query: str,
         timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
         to_log_error: bool = True,
+        query_metadata: QueryMetadata | None = None,
     ) -> pd.DataFrame | None:
         """
         Execute SQL query that is expected to run for a long time
@@ -788,13 +784,17 @@ class BaseSession(BaseModel):
             timeout in seconds
         to_log_error: bool
             If True, log error
+        query_metadata: QueryMetadata | None
+            Query metadata object
 
         Returns
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
         """
-        return await self.execute_query(query=query, timeout=timeout, to_log_error=to_log_error)
+        return await self.execute_query(
+            query=query, timeout=timeout, to_log_error=to_log_error, query_metadata=query_metadata
+        )
 
     @staticmethod
     def get_query_id(cursor: Any) -> str | None:
@@ -813,35 +813,6 @@ class BaseSession(BaseModel):
         """
         _ = cursor
         return None
-
-    async def execute_query_long_running_with_query_id(
-        self,
-        query: str,
-        timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
-        to_log_error: bool = True,
-    ) -> QueryResult:
-        """
-        Execute SQL query that is expected to run for a long time
-
-        Parameters
-        ----------
-        query: str
-            sql query to execute
-        timeout: float
-            timeout in seconds
-        to_log_error: bool
-            If True, log error
-
-        Returns
-        -------
-        QueryResult
-            Query result
-        """
-        query_result = QueryResult()
-        await self.execute_query(
-            query=query, timeout=timeout, to_log_error=to_log_error, query_result=query_result
-        )
-        return query_result
 
     def execute_query_blocking(self, query: str) -> pd.DataFrame | None:
         """
