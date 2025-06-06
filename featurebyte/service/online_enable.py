@@ -12,7 +12,6 @@ from featurebyte.exception import DataWarehouseConnectionError
 from featurebyte.feature_manager.model import ExtendedFeatureModel
 from featurebyte.models.base import PydanticObjectId
 from featurebyte.models.feature import FeatureModel
-from featurebyte.models.online_store_spec import OnlineFeatureSpec
 from featurebyte.persistent import Persistent
 from featurebyte.schema.feature import FeatureServiceUpdate
 from featurebyte.service.feature import FeatureService
@@ -96,7 +95,6 @@ class OnlineEnableService:
         feature_manager_service: FeatureManagerService,
         feature: FeatureModel,
         target_online_enabled: bool,
-        is_recreating_schema: bool = False,
     ) -> None:
         """
         Update data warehouse registry upon changes to online enable status, such as enabling or
@@ -112,20 +110,13 @@ class OnlineEnableService:
             Feature used to update the data warehouse
         target_online_enabled: bool
             Target online enabled status
-        is_recreating_schema: bool
-            Whether we are recreating the working schema from scratch. Only set as True when called
-            by WorkingSchemaService.
         """
-        extended_feature_model = ExtendedFeatureModel(**feature.model_dump(by_alias=True))
-        online_feature_spec = OnlineFeatureSpec(feature=extended_feature_model)
-
         if target_online_enabled:
             assert session is not None
-            await feature_manager_service.online_enable(
-                session, online_feature_spec, is_recreating_schema=is_recreating_schema
-            )
+            extended_feature_model = ExtendedFeatureModel(**feature.model_dump(by_alias=True))
+            await feature_manager_service.online_enable(session, extended_feature_model)
         else:
-            await feature_manager_service.online_disable(session, online_feature_spec)
+            await feature_manager_service.online_disable(session, feature)
 
     async def update_data_warehouse(
         self, feature: FeatureModel, target_online_enabled: bool

@@ -15,6 +15,7 @@ from featurebyte.enum import InternalName
 from featurebyte.logging import get_logger
 from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.tile import TileType
+from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.sql.tile_common import TileCommon
@@ -63,6 +64,7 @@ class TileGenerate(TileCommon):
     update_last_run_metadata: Optional[bool]
     tile_registry_service: TileRegistryService
     warehouse_table_service: WarehouseTableService
+    deployed_tile_table_service: DeployedTileTableService
 
     async def execute(self) -> TileComputeMetrics:
         """
@@ -261,13 +263,21 @@ class TileGenerate(TileCommon):
                 extra={"tile_end_ts_str": self.tile_end_ts_str, "ind_value": ind_value},
             )
 
-            await self.tile_registry_service.update_last_run_metadata(
-                tile_id=self.tile_id,
-                aggregation_id=self.aggregation_id,
-                tile_type=self.tile_type,
-                tile_index=ind_value,
-                tile_end_date=tile_end_date,
-            )
+            if self.deployed_tile_table_id is None:
+                await self.tile_registry_service.update_last_run_metadata(
+                    tile_id=self.tile_id,
+                    aggregation_id=self.aggregation_id,
+                    tile_type=self.tile_type,
+                    tile_index=ind_value,
+                    tile_end_date=tile_end_date,
+                )
+            else:
+                await self.deployed_tile_table_service.update_last_run_metadata(
+                    document_id=self.deployed_tile_table_id,
+                    tile_type=self.tile_type,
+                    tile_index=ind_value,
+                    tile_end_date=tile_end_date,
+                )
 
     def _construct_tile_sql_with_index(self, tile_sql: str) -> str:
         if self.entity_column_names:

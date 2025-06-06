@@ -159,7 +159,7 @@ async def test_update_tile_prerequisite(
     # Simulate tile task completion update
     await service.update_tile_prerequisite(
         tile_task_ts=datetime(2024, 1, 15, 9, 20, 0),
-        aggregation_id="agg_id_x",
+        aggregation_ids=["agg_id_x"],
         status="success",
     )
 
@@ -193,12 +193,12 @@ async def test_update_tile_prerequisite_multiple_tables(
     # Simulate tile task completion update
     await service.update_tile_prerequisite(
         tile_task_ts=datetime(2024, 1, 15, 9, 20, 0),
-        aggregation_id="agg_id_x",
+        aggregation_ids=["agg_id_x"],
         status="success",
     )
     await service.update_tile_prerequisite(
         tile_task_ts=datetime(2024, 1, 15, 9, 25, 0),
-        aggregation_id="agg_id_y",
+        aggregation_ids=["agg_id_y"],
         status="failure",
     )
 
@@ -287,7 +287,7 @@ async def test_run_feature_materialize__prerequisite_met(
         await asyncio.sleep(1)
         await service.update_tile_prerequisite(
             tile_task_ts=datetime(2024, 1, 15, 9, 20, 0),
-            aggregation_id="agg_id_x",
+            aggregation_ids=["agg_id_x"],
             status="success",
         )
 

@@ -19,6 +19,7 @@ from featurebyte.models.base import FeatureByteBaseModel
 from featurebyte.models.batch_request_table import BatchRequestTableModel
 from featurebyte.models.feature_query_set import FeatureQueryGenerator, FeatureQuerySet
 from featurebyte.models.parent_serving import ParentServingPreparation
+from featurebyte.models.tile import OnDemandTileTable
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.node.schema import TableDetails
@@ -165,6 +166,7 @@ def get_online_store_retrieval_expr(
     request_table_details: Optional[TableDetails] = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
+    on_demand_tile_tables: Optional[List[OnDemandTileTable]] = None,
 ) -> FeatureQueryPlan:
     """
     Construct SQL code that can be used to lookup pre-computed features from online store
@@ -190,6 +192,8 @@ def get_online_store_retrieval_expr(
     job_schedule_table_set: Optional[JobScheduleTableSet]
         Job schedule table set if available. These will be used to compute features that are using
         a cron-based feature job setting.
+    on_demand_tile_tables: Optional[List[OnDemandTileTable]]
+        List of on-demand tile tables to be used in the query
 
     Returns
     -------
@@ -198,9 +202,10 @@ def get_online_store_retrieval_expr(
     planner = FeatureExecutionPlanner(
         graph,
         source_info=source_info,
-        is_online_serving=True,
+        is_online_serving=False,
         parent_serving_preparation=parent_serving_preparation,
         job_schedule_table_set=job_schedule_table_set,
+        on_demand_tile_tables=on_demand_tile_tables,
     )
     plan = planner.generate_plan(nodes)
 
@@ -319,6 +324,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
         parent_serving_preparation: Optional[ParentServingPreparation] = None,
         job_schedule_table_set: Optional[JobScheduleTableSet] = None,
         concatenate_serving_names: Optional[list[str]] = None,
+        on_demand_tile_tables: Optional[list[OnDemandTileTable]] = None,
     ):
         self.graph = graph
         self.nodes = nodes
@@ -331,6 +337,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
         self.parent_serving_preparation = parent_serving_preparation
         self.job_schedule_table_set = job_schedule_table_set
         self.concatenate_serving_names = concatenate_serving_names
+        self.on_demand_tile_tables = on_demand_tile_tables
 
     def get_query_graph(self) -> QueryGraph:
         return self.graph
@@ -350,6 +357,7 @@ class OnlineFeatureQueryGenerator(FeatureQueryGenerator):
             source_info=self.source_info,
             parent_serving_preparation=self.parent_serving_preparation,
             job_schedule_table_set=self.job_schedule_table_set,
+            on_demand_tile_tables=self.on_demand_tile_tables,
         )
         feature_query_plan.transform(lambda x: fill_version_placeholders(x, self.versions))
         return feature_query_plan.get_feature_query(
@@ -398,6 +406,7 @@ def get_online_features_query_set(
     output_include_row_index: bool = False,
     concatenate_serving_names: Optional[list[str]] = None,
     job_schedule_table_set: Optional[JobScheduleTableSet] = None,
+    on_demand_tile_tables: Optional[List[OnDemandTileTable]] = None,
 ) -> FeatureQuerySet:
     """
     Construct a FeatureQuerySet object to compute the online features
@@ -435,6 +444,8 @@ def get_online_features_query_set(
         a cron-based feature job setting.
     concatenate_serving_names: Optional[list[str]]
         List of serving names to concatenate as a new column, if specified
+    on_demand_tile_tables: Optional[List[OnDemandTileTable]]
+        List of on-demand tile tables to be used in the query
 
     Returns
     -------
@@ -453,6 +464,7 @@ def get_online_features_query_set(
         parent_serving_preparation=parent_serving_preparation,
         job_schedule_table_set=job_schedule_table_set,
         concatenate_serving_names=concatenate_serving_names,
+        on_demand_tile_tables=on_demand_tile_tables,
     )
     feature_query_set = OnlineFeatureQuerySet(
         feature_query_generator=feature_query_generator,
@@ -489,6 +501,7 @@ async def get_online_features(
     output_table_details: Optional[TableDetails] = None,
     request_timestamp: Optional[datetime] = None,
     concatenate_serving_names: Optional[list[str]] = None,
+    on_demand_tile_tables: Optional[List[OnDemandTileTable]] = None,
 ) -> Optional[List[Dict[str, Any]]]:
     """
     Get online features
@@ -518,6 +531,8 @@ async def get_online_features(
         Request timestamp to use if provided
     concatenate_serving_names: Optional[list[str]]
         List of serving names to concatenate as a new column, if specified
+    on_demand_tile_tables: Optional[List[OnDemandTileTable]]
+        List of on-demand tile tables to be used in the query
 
     Returns
     -------
@@ -576,6 +591,7 @@ async def get_online_features(
             output_include_row_index=request_table_details is None,
             concatenate_serving_names=concatenate_serving_names,
             job_schedule_table_set=job_schedule_table_set,
+            on_demand_tile_tables=on_demand_tile_tables,
         )
         logger.debug(f"OnlineServingService sql prep elapsed: {time.time() - tic:.6f}s")
 

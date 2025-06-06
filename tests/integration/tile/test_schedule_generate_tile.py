@@ -87,11 +87,6 @@ async def test_schedule_generate_tile_online(
     result = await session.execute_query(sql)
     assert result["TILE_COUNT"].iloc[0] == (tile_monitor + 1)
 
-    # verify that feature store has been updated
-    sql = f"SELECT COUNT(*) as COUNT FROM {feature_store_table_name}"
-    result = await session.execute_query(sql)
-    assert result["COUNT"].iloc[0] == 2
-
     # verify tile job logs
     result = []
     async for doc in tile_job_log_service.list_documents_as_dict_iterator(
@@ -99,7 +94,7 @@ async def test_schedule_generate_tile_online(
     ):
         result.append(doc)
     result = sorted(result, key=lambda x: x["created_at"])
-    assert [res["status"] for res in result] == ["STARTED", "GENERATED", "COMPLETED"]
+    assert [res["status"] for res in result] == ["STARTED", "GENERATED"]
 
     session_id = result[0]["session_id"]
     assert "|" in session_id

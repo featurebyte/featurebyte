@@ -38,6 +38,7 @@ class OnlineStoreComputeQueryModel(FeatureByteCatalogBaseDocumentModel):
     table_name: str
     serving_names: List[StrictStr]
     feature_store_id: Optional[PydanticObjectId] = Field(default=None)
+    use_deployed_tile_table: bool = Field(default=False)
 
     @property
     def warehouse_tables(self) -> list[TableDetails]:
@@ -61,5 +62,6 @@ class OnlineStoreComputeQueryModel(FeatureByteCatalogBaseDocumentModel):
             pymongo.operations.IndexModel("feature_store_id"),
             pymongo.operations.IndexModel("aggregation_id"),
             pymongo.operations.IndexModel("result_name"),
+            pymongo.operations.IndexModel("use_deployed_tile_table"),
         ]
         auditable = False

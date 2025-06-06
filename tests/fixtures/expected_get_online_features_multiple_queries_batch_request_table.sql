@@ -5,6 +5,22 @@ WITH ONLINE_REQUEST_TABLE AS (
     REQ."cust_id",
     SYSDATE() AS POINT_IN_TIME
   FROM "req_db_name"."req_schema_name"."req_table_name" AS REQ
+), "REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id" AS (
+  SELECT
+    "POINT_IN_TIME",
+    "cust_id",
+    CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 300
+    ) / 1800) AS BIGINT) AS __FB_LAST_TILE_INDEX,
+    CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 300
+    ) / 1800) AS BIGINT) - 48 AS __FB_FIRST_TILE_INDEX
+  FROM (
+    SELECT DISTINCT
+      "POINT_IN_TIME",
+      "cust_id"
+    FROM ONLINE_REQUEST_TABLE
+  )
 ), _FB_AGGREGATED AS (
   SELECT
     REQ."__FB_TABLE_ROW_INDEX",
@@ -14,41 +30,39 @@ WITH ONLINE_REQUEST_TABLE AS (
   FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
-      "cust_id" AS "cust_id",
-      "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295" AS "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
+      "POINT_IN_TIME",
+      "cust_id",
+      SUM(value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295) AS "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
     FROM (
       SELECT
-        """cust_id""" AS "cust_id",
-        "'_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'" AS "_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295"
-      FROM (
-        SELECT
-          "cust_id",
-          "AGGREGATION_RESULT_NAME",
-          "VALUE"
-        FROM (
-          SELECT
-            R.*
-          FROM (
-            SELECT
-              "AGGREGATION_RESULT_NAME",
-              "LATEST_VERSION"
-            FROM (VALUES
-              (
-                '_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295',
-                _fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295_VERSION_PLACEHOLDER
-              )) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
-          ) AS L
-          INNER JOIN ONLINE_STORE_377553E5920DD2DB8B17F21DDD52F8B1194A780C AS R
-            ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
-            AND R."VERSION" = L."LATEST_VERSION"
-        )
-        WHERE
-          "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295')
-      )
-      PIVOT(MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_cust_id_window_w86400_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295'))
+        REQ."POINT_IN_TIME",
+        REQ."cust_id",
+        TILE.INDEX,
+        TILE.value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295
+      FROM "REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id" AS REQ
+      INNER JOIN __FB_DEPLOYED_TILE_TABLE_000000000000000000000000 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 48) = FLOOR(TILE.INDEX / 48)
+        AND REQ."cust_id" = TILE."cust_id"
+      WHERE
+        TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
+      UNION ALL
+      SELECT
+        REQ."POINT_IN_TIME",
+        REQ."cust_id",
+        TILE.INDEX,
+        TILE.value_sum_e8c51d7d1ec78e1f35195fc0cf61221b3f830295
+      FROM "REQUEST_TABLE_W86400_F1800_BS600_M300_cust_id" AS REQ
+      INNER JOIN __FB_DEPLOYED_TILE_TABLE_000000000000000000000000 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 48) - 1 = FLOOR(TILE.INDEX / 48)
+        AND REQ."cust_id" = TILE."cust_id"
+      WHERE
+        TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
     )
+    GROUP BY
+      "POINT_IN_TIME",
+      "cust_id"
   ) AS T0
-    ON REQ."cust_id" = T0."cust_id"
+    ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME" AND REQ."cust_id" = T0."cust_id"
 )
 SELECT
   AGG."__FB_TABLE_ROW_INDEX",
@@ -67,6 +81,20 @@ WITH ONLINE_REQUEST_TABLE AS (
     REQ."cust_id",
     SYSDATE() AS POINT_IN_TIME
   FROM "req_db_name"."req_schema_name"."req_table_name" AS REQ
+), "REQUEST_TABLE_W86400_F86400_BS7200_M3600_" AS (
+  SELECT
+    "POINT_IN_TIME",
+    CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 3600
+    ) / 86400) AS BIGINT) AS __FB_LAST_TILE_INDEX,
+    CAST(FLOOR((
+      DATE_PART(EPOCH_SECOND, "POINT_IN_TIME") - 3600
+    ) / 86400) AS BIGINT) - 1 AS __FB_FIRST_TILE_INDEX
+  FROM (
+    SELECT DISTINCT
+      "POINT_IN_TIME"
+    FROM ONLINE_REQUEST_TABLE
+  )
 ), _FB_AGGREGATED AS (
   SELECT
     REQ."__FB_TABLE_ROW_INDEX",
@@ -76,38 +104,33 @@ WITH ONLINE_REQUEST_TABLE AS (
   FROM ONLINE_REQUEST_TABLE AS REQ
   LEFT JOIN (
     SELECT
-      "_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64" AS "_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64"
+      "POINT_IN_TIME",
+      SUM(value_count_3178e5d8142ed182c5db45462cb780d18205bd64) AS "_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64"
     FROM (
       SELECT
-        "'_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64'" AS "_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64"
-      FROM (
-        SELECT
-          "AGGREGATION_RESULT_NAME",
-          "VALUE"
-        FROM (
-          SELECT
-            R.*
-          FROM (
-            SELECT
-              "AGGREGATION_RESULT_NAME",
-              "LATEST_VERSION"
-            FROM (VALUES
-              (
-                '_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64',
-                _fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64_VERSION_PLACEHOLDER
-              )) AS version_table("AGGREGATION_RESULT_NAME", "LATEST_VERSION")
-          ) AS L
-          INNER JOIN ONLINE_STORE_E4D5F4DFF76DEA2D344A4CC284D7881E0B183981 AS R
-            ON R."AGGREGATION_RESULT_NAME" = L."AGGREGATION_RESULT_NAME"
-            AND R."VERSION" = L."LATEST_VERSION"
-        )
-        WHERE
-          "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64')
-      )
-      PIVOT(MAX("VALUE") FOR "AGGREGATION_RESULT_NAME" IN ('_fb_internal_window_w86400_count_3178e5d8142ed182c5db45462cb780d18205bd64'))
+        REQ."POINT_IN_TIME",
+        TILE.INDEX,
+        TILE.value_count_3178e5d8142ed182c5db45462cb780d18205bd64
+      FROM "REQUEST_TABLE_W86400_F86400_BS7200_M3600_" AS REQ
+      INNER JOIN __FB_DEPLOYED_TILE_TABLE_000000000000000000000001 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1) = FLOOR(TILE.INDEX / 1)
+      WHERE
+        TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
+      UNION ALL
+      SELECT
+        REQ."POINT_IN_TIME",
+        TILE.INDEX,
+        TILE.value_count_3178e5d8142ed182c5db45462cb780d18205bd64
+      FROM "REQUEST_TABLE_W86400_F86400_BS7200_M3600_" AS REQ
+      INNER JOIN __FB_DEPLOYED_TILE_TABLE_000000000000000000000001 AS TILE
+        ON FLOOR(REQ.__FB_LAST_TILE_INDEX / 1) - 1 = FLOOR(TILE.INDEX / 1)
+      WHERE
+        TILE.INDEX >= REQ.__FB_FIRST_TILE_INDEX AND TILE.INDEX < REQ.__FB_LAST_TILE_INDEX
     )
+    GROUP BY
+      "POINT_IN_TIME"
   ) AS T0
-    ON TRUE
+    ON REQ."POINT_IN_TIME" = T0."POINT_IN_TIME"
 )
 SELECT
   AGG."__FB_TABLE_ROW_INDEX",

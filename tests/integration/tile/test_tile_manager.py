@@ -22,6 +22,7 @@ async def test_generate_tiles(tile_spec, session, tile_manager_service):
         TileType.ONLINE,
         "2022-06-05 23:33:00",
         "2022-06-05 23:58:00",
+        deployed_tile_table_id=None,
     )
 
     sql = f"SELECT COUNT(*) as TILE_COUNT FROM {tile_spec.tile_id}"

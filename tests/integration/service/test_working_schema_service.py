@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import patch
 
 import pandas as pd
@@ -38,11 +39,18 @@ def deployed_feature_list_and_deployment_fixture(event_table):
     )
     features.save()
 
-    next_job_datetime = pd.Timestamp("2001-01-02 12:00:00").to_pydatetime()
-    with patch(
-        "featurebyte.service.feature_manager.get_next_job_datetime",
-        return_value=next_job_datetime,
+    schedule_time = pd.Timestamp("2001-01-02 12:00:00").to_pydatetime()
+    with (
+        patch(
+            "featurebyte.service.feature_manager.datetime",
+            autospec=True,
+        ) as mock_feature_manager_datetime,
+        patch(
+            "featurebyte.service.feature_materialize.datetime", autospec=True
+        ) as mock_feature_materialize_datetime,
     ):
+        mock_feature_manager_datetime.utcnow.return_value = schedule_time
+        mock_feature_materialize_datetime.utcnow.return_value = schedule_time
         deployment = features.deploy(make_production_ready=True)
         deployment.enable()
 
@@ -151,7 +159,7 @@ async def test_drop_all_and_recreate(
     client = config.get_client()
 
     # Make an online request for reference
-    res = make_online_request(client, deployment, entity_serving_names)
+    res = make_online_request(client, deployment, entity_serving_names, datetime(2001, 1, 2, 12))
     assert res.status_code == 200
     expected_online_result = res.json()
 
@@ -169,7 +177,7 @@ async def test_drop_all_and_recreate(
     assert num_functions < init_num_functions
 
     # Check online requests can no longer be made
-    res = make_online_request(client, deployment, entity_serving_names)
+    res = make_online_request(client, deployment, entity_serving_names, datetime(2001, 1, 2, 12))
     if FeastIntegrationSettings().FEATUREBYTE_FEAST_INTEGRATION_ENABLED:
         assert res.status_code == 200
         response_dict = res.json()
@@ -197,7 +205,7 @@ async def test_drop_all_and_recreate(
     assert restored_metadata["MIGRATION_VERSION"] == 8
 
     # Check online request can be made and produces same result
-    res = make_online_request(client, deployment, entity_serving_names)
+    res = make_online_request(client, deployment, entity_serving_names, datetime(2001, 1, 2, 12))
     assert res.status_code == 200
     assert res.json() == expected_online_result
 

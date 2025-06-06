@@ -237,12 +237,12 @@ async def test_list_feature_tables_for_aggregation_id(service, offline_store_fea
     Test listing documents given an aggregation_id
     """
     docs = []
-    async for doc in service.list_feature_tables_for_aggregation_id("agg_id_1"):
+    async for doc in service.list_feature_tables_for_aggregation_ids(["agg_id_1"]):
         docs.append(doc)
     assert len(docs) == 1
     assert docs[0].id == offline_store_feature_table.id
 
     docs = []
-    async for doc in service.list_feature_tables_for_aggregation_id("agg_id_unknown"):
+    async for doc in service.list_feature_tables_for_aggregation_ids(["agg_id_unknown"]):
         docs.append(doc)
     assert len(docs) == 0

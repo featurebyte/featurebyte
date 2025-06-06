@@ -192,6 +192,7 @@ class TileCommonParameters(FeatureByteBaseModel):
     feature_store_id: PydanticObjectId
     tile_id: str
     aggregation_id: str
+    deployed_tile_table_id: Optional[PydanticObjectId] = Field(default=None)
     time_modulo_frequency_second: int
     blind_spot_second: int
     frequency_minute: int

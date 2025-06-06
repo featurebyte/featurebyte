@@ -28,16 +28,18 @@ class OnlineStoreComputeQueryService(
 
     document_class = OnlineStoreComputeQueryModel
 
-    async def list_by_aggregation_id(
-        self, aggregation_id: str
+    async def list_by_aggregation_ids(
+        self, aggregation_ids: list[str], use_deployed_tile_table: bool = True
     ) -> AsyncIterator[OnlineStoreComputeQueryModel]:
         """
         List all documents by aggregation_id
 
         Parameters
         ----------
-        aggregation_id: str
-            Aggregation id
+        aggregation_ids: list[str]
+            Aggregation ids
+        use_deployed_tile_table: bool
+            Whether to retrieve sql queries that uses deployed tile table
 
         Yields
         ------
@@ -45,12 +47,16 @@ class OnlineStoreComputeQueryService(
             List of OnlineStoreComputeQueryModel
         """
         async for model in self.list_documents_iterator(
-            query_filter={"aggregation_id": aggregation_id}
+            query_filter={"aggregation_id": {"$in": aggregation_ids}}
         ):
+            if (model.use_deployed_tile_table and not use_deployed_tile_table) or (
+                not model.use_deployed_tile_table and use_deployed_tile_table
+            ):
+                continue
             yield model
 
     async def list_by_result_names(
-        self, result_names: list[str]
+        self, result_names: list[str], use_deployed_tile_table: bool = True
     ) -> AsyncIterator[OnlineStoreComputeQueryModel]:
         """
         List all documents by aggregation result names
@@ -59,6 +65,8 @@ class OnlineStoreComputeQueryService(
         ----------
         result_names: list[str]
             Result names
+        use_deployed_tile_table: bool
+            Whether to retrieve sql queries that uses deployed tile table
 
         Yields
         ------
@@ -68,6 +76,10 @@ class OnlineStoreComputeQueryService(
         async for model in self.list_documents_iterator(
             query_filter={"result_name": {"$in": result_names}}
         ):
+            if (model.use_deployed_tile_table and not use_deployed_tile_table) or (
+                not model.use_deployed_tile_table and use_deployed_tile_table
+            ):
+                continue
             yield model
 
     async def delete_by_result_name(self, result_name: str) -> None:
