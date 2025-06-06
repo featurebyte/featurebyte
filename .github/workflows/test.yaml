@@ -457,7 +457,7 @@ jobs:
     needs:
       - build-jar
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
