@@ -1263,8 +1263,12 @@ def test_shape(snowflake_time_series_table, snowflake_query_map):
     Test creating ObservationTable from an EventView
     """
 
-    def side_effect(query, timeout=None, to_log_error=True):
-        _ = timeout, to_log_error
+    def side_effect(query, timeout=None, to_log_error=True, query_metadata=None):
+        _ = (
+            timeout,
+            to_log_error,
+            query_metadata,
+        )
         res = snowflake_query_map.get(query)
         if res is not None:
             return pd.DataFrame(res)
