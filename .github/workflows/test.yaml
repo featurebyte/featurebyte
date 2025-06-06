@@ -282,7 +282,7 @@ jobs:
       - build-jar
     runs-on:
       group: Public Runners
-    timeout-minutes: 90
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
