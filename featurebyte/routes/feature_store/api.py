@@ -38,6 +38,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
     FeatureStoreList,
     FeatureStorePreview,
+    FeatureStoreQueryPreview,
     FeatureStoreSample,
     FeatureStoreShape,
     FeatureStoreUpdate,
@@ -111,6 +112,12 @@ class FeatureStoreRouter(
         self.router.add_api_route(
             "/table_preview",
             self.get_table_preview,
+            methods=["POST"],
+            response_model=Dict[str, Any],
+        )
+        self.router.add_api_route(
+            "/sql_preview",
+            self.get_sql_preview,
             methods=["POST"],
             response_model=Dict[str, Any],
         )
@@ -325,6 +332,18 @@ class FeatureStoreRouter(
         """
         controller: FeatureStoreController = request.state.app_container.feature_store_controller
         return await controller.preview(preview=preview, limit=limit)
+
+    @staticmethod
+    async def get_sql_preview(
+        request: Request,
+        preview: FeatureStoreQueryPreview,
+        limit: int = Query(default=PREVIEW_DEFAULT, gt=0, le=PREVIEW_LIMIT),
+    ) -> Dict[str, Any]:
+        """
+        Retrieve data preview for query graph node
+        """
+        controller: FeatureStoreController = request.state.app_container.feature_store_controller
+        return await controller.sql_preview(preview=preview, limit=limit)
 
     @staticmethod
     async def get_table_preview(
