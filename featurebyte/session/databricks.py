@@ -2,6 +2,8 @@
 DatabricksSession class
 """
 
+from __future__ import annotations
+
 import os
 import time
 from io import BytesIO
@@ -123,6 +125,10 @@ class DatabricksSession(BaseSparkSession):
                 _use_arrow_native_complex_types=False,
                 **additional_connection_params,
             )
+
+    @staticmethod
+    def get_query_id(cursor: Any) -> str | None:
+        return cursor.query_id if cursor.query_id else None
 
     async def _cancel_query(self, cursor: Any, query: str) -> bool:
         if cursor.active_op_handle:
