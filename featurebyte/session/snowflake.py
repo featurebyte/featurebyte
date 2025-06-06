@@ -121,6 +121,10 @@ class SnowflakeSession(BaseSession):
             "ALTER SESSION SET TIMEZONE='UTC', TIMESTAMP_OUTPUT_FORMAT='YYYY-MM-DD HH24:MI:SS.FF9 TZHTZM'"
         )
 
+    @staticmethod
+    def get_query_id(cursor: Any) -> str | None:
+        return str(cursor._request_id) if cursor._request_id else None
+
     async def _cancel_query(self, cursor: Any, query: str) -> bool:
         cursor._SnowflakeCursor__cancel_query(query)  # pylint: disable=protected-access
         return True
