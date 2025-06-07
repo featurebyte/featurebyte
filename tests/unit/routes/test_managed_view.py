@@ -217,6 +217,7 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
             ),
             "timeout": 86400,
             "to_log_error": True,
+            "query_metadata": None,
         }
 
     def test_delete_sql(
