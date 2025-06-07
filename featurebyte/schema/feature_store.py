@@ -5,10 +5,13 @@ FeatureStore API payload schema
 from datetime import datetime
 from typing import Any, List, Optional
 
+import sqlglot
 from bson import ObjectId
 from pydantic import BaseModel, Field, model_validator
+from sqlglot import ParseError
 
 from featurebyte.enum import SourceType
+from featurebyte.exception import InvalidViewSQL
 from featurebyte.models.base import FeatureByteBaseModel, NameStr, PydanticObjectId
 from featurebyte.models.credential import DatabaseCredential, StorageCredential
 from featurebyte.models.feature_store import FeatureStoreModel
@@ -66,6 +69,49 @@ class FeatureStorePreview(FeatureByteBaseModel):
                 values["graph"] = QueryGraph(**sub_graph.model_dump(by_alias=True))
                 values["node_name"] = node_name_map[values["node_name"]]
         return values
+
+
+def validate_select_sql(sql: str) -> sqlglot.expressions.Select:
+    """
+    Validate that the sql is a valid SQL SELECT statement.
+
+    Parameters
+    ----------
+    sql: str
+        SQL query string
+
+    Returns
+    -------
+    sqlglot.expressions.Select
+        Validated SQL select expression
+
+    Raises
+    ------
+    InvalidViewSQL
+        If the query is not a valid SELECT statement
+    """
+    # validate that the SQL is a single select statement
+    if not sql:
+        raise InvalidViewSQL("SQL query cannot be empty.")
+
+    try:
+        exprs = sqlglot.parse(sql)
+    except ParseError as exc:
+        raise InvalidViewSQL(f"Invalid SQL statement: {exc}") from exc
+
+    if len(exprs) != 1 or not isinstance(exprs[0], sqlglot.expressions.Select):
+        raise InvalidViewSQL("SQL query must contain a single SELECT statement.")
+
+    return exprs[0]
+
+
+class FeatureStoreQueryPreview(FeatureByteBaseModel):
+    """
+    Preview schema for SQL queries in Feature Store
+    """
+
+    feature_store_id: PydanticObjectId
+    sql: str
 
 
 class FeatureStoreSample(FeatureStorePreview):

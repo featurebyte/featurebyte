@@ -24,6 +24,7 @@ from featurebyte.schema.feature_store import (
     FeatureStoreCreate,
     FeatureStoreList,
     FeatureStorePreview,
+    FeatureStoreQueryPreview,
     FeatureStoreSample,
     FeatureStoreShape,
     FeatureStoreUpdate,
@@ -337,6 +338,24 @@ class FeatureStoreController(
         return await self.preview_service.preview(
             preview=preview, limit=limit, allow_long_running=False
         )
+
+    async def sql_preview(self, preview: FeatureStoreQueryPreview, limit: int) -> dict[str, Any]:
+        """
+        Retrieve data preview for sql statement
+
+        Parameters
+        ----------
+        preview: FeatureStoreQueryPreview
+            FeatureStoreQueryPreview object
+        limit: int
+            Row limit on preview results
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        return await self.feature_store_warehouse_service.sql_preview(preview=preview, limit=limit)
 
     async def table_preview(self, location: TabularSource, limit: int) -> dict[str, Any]:
         """

@@ -738,6 +738,36 @@ class MaterializedTableNamePrefix(StrEnum):
         return [c.value for c in cls if c.value != cls.FEATURE_TABLE_CACHE]
 
 
+class ViewNamePrefix(StrEnum):
+    """
+    Prefixes for the view names stored in the feature store schema
+    """
+
+    MANAGED_VIEW = "MANAGED_VIEW"
+
+    @classmethod
+    def all(cls) -> list[str]:
+        """
+        List all prefixes
+
+        Returns
+        -------
+        list[str]
+        """
+        return [c.value for c in cls]
+
+    @classmethod
+    def visible(cls) -> list[str]:
+        """
+        List all prefixes for visible tables
+
+        Returns
+        -------
+        list[str]
+        """
+        return cls.all()
+
+
 class FunctionParameterInputForm(StrEnum):
     """Generic function's parameter input form type"""
 

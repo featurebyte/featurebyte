@@ -29,6 +29,7 @@ from featurebyte.service.feature_namespace import FeatureNamespaceService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.historical_feature_table import HistoricalFeatureTableService
 from featurebyte.service.item_table import ItemTableService
+from featurebyte.service.managed_view import ManagedViewService
 from featurebyte.service.mixin import DEFAULT_PAGE_SIZE, Document
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.online_store import OnlineStoreService
@@ -83,6 +84,7 @@ DocumentServiceT = TypeVar(
     UseCaseService,
     SystemMetricsService,
     TimeSeriesTableService,
+    ManagedViewService,
 )
 
 
