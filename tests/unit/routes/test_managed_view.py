@@ -37,15 +37,15 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
         [
             (
                 "INSERT INTO some_table VALUES (1, 2)",
-                "SQL query must contain a single SELECT statement.",
+                "SQL must be a SELECT statement.",
             ),
             (
                 "SELECT * FROM some_table; SELECT * FROM another_table",
-                "SQL query must contain a single SELECT statement.",
+                "SQL must be a single statement.",
             ),
             (
                 "SELECT * FROM some_table; INSERT INTO some_table VALUES (1, 2)",
-                "SQL query must contain a single SELECT statement.",
+                "SQL must be a single statement.",
             ),
             (
                 "SELECT FROM * AS some_table",
@@ -234,3 +234,82 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
             snowflake_execute_query.call_args[0][0]
             == f'DROP TABLE "sf_database"."sf_schema"."{view_name}"'
         )
+
+    def test_get_schema(self, test_api_client_persistent, create_success_response):
+        """Test get route response schema"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+
+        response = test_api_client.get(url=f"{self.base_route}/{response_dict['_id']}")
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == {
+            "_id": "646f6c190ed28a5271fb02e9",
+            "user_id": "63f9506dd478b94127123456",
+            "name": "My Managed View",
+            "created_at": "2025-06-08T13:23:31.402000",
+            "updated_at": None,
+            "block_modification_by": [],
+            "description": "This is a managed view",
+            "is_deleted": False,
+            "catalog_id": "646f6c1c0ed28a5271fb02db",
+            "sql": "SELECT * FROM my_table",
+            "tabular_source": {
+                "feature_store_id": "646f6c190ed28a5271fb02a1",
+                "table_details": {
+                    "database_name": "sf_database",
+                    "schema_name": "sf_schema",
+                    "table_name": "MANAGED_VIEW_646f6c190ed28a5271fb02e9",
+                },
+            },
+            "columns_info": [
+                {
+                    "name": "col1",
+                    "dtype": "FLOAT",
+                    "dtype_metadata": None,
+                    "description": None,
+                    "entity_id": None,
+                    "semantic_id": None,
+                    "critical_data_info": None,
+                }
+            ],
+        }
+
+    def test_create_global_managed_view(self, test_api_client_persistent, create_success_response):
+        """Test create global managed view"""
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        assert response_dict["catalog_id"] is not None
+        catalog_managed_view_id = response_dict["_id"]
+
+        payload = self.payload.copy()
+        payload["_id"] = str(ObjectId())
+        payload["is_global"] = True
+        response = test_api_client.post(self.base_route, json=payload)
+        assert response.status_code == HTTPStatus.CREATED
+        response_dict = response.json()
+        global_managed_view_id = response_dict["_id"]
+
+        response = test_api_client.get(url=f"{self.base_route}/{response_dict['_id']}")
+        assert response.status_code == HTTPStatus.OK
+        assert (
+            response.json()["catalog_id"] is None
+        )  # Global managed view does not have a catalog_id
+
+        # test listing with current active catalog
+        response = test_api_client.get(self.base_route)
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        assert response_dict["total"] == 2
+        assert {doc["_id"] for doc in response_dict["data"]} == {
+            catalog_managed_view_id,
+            global_managed_view_id,
+        }
+
+        # test listing with different active catalog
+        response = test_api_client.get(
+            self.base_route, headers={"active-catalog-id": str(ObjectId())}
+        )
+        assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
+        assert response_dict["total"] == 1
+        assert {doc["_id"] for doc in response_dict["data"]} == {global_managed_view_id}

@@ -18,6 +18,7 @@ from featurebyte.models.feature_store import FeatureStoreModel
 from featurebyte.query_graph.enum import NodeType
 from featurebyte.query_graph.graph import QueryGraph
 from featurebyte.query_graph.node.schema import DatabaseDetails
+from featurebyte.query_graph.sql.dialects import get_dialect_from_source_type
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema, PaginationMixin
 
 
@@ -71,7 +72,7 @@ class FeatureStorePreview(FeatureByteBaseModel):
         return values
 
 
-def validate_select_sql(sql: str) -> sqlglot.expressions.Select:
+def validate_select_sql(sql: str, source_type: SourceType) -> sqlglot.expressions.Select:
     """
     Validate that the sql is a valid SQL SELECT statement.
 
@@ -79,6 +80,8 @@ def validate_select_sql(sql: str) -> sqlglot.expressions.Select:
     ----------
     sql: str
         SQL query string
+    source_type: SourceType
+        Source type of the SQL query, used for parsing
 
     Returns
     -------
@@ -95,12 +98,14 @@ def validate_select_sql(sql: str) -> sqlglot.expressions.Select:
         raise InvalidViewSQL("SQL query cannot be empty.")
 
     try:
-        exprs = sqlglot.parse(sql)
+        exprs = sqlglot.parse(sql, dialect=get_dialect_from_source_type(source_type))
     except ParseError as exc:
         raise InvalidViewSQL(f"Invalid SQL statement: {exc}") from exc
 
-    if len(exprs) != 1 or not isinstance(exprs[0], sqlglot.expressions.Select):
-        raise InvalidViewSQL("SQL query must contain a single SELECT statement.")
+    if len(exprs) != 1:
+        raise InvalidViewSQL("SQL must be a single statement.")
+    if not isinstance(exprs[0], sqlglot.expressions.Select):
+        raise InvalidViewSQL("SQL must be a SELECT statement.")
 
     return exprs[0]
 

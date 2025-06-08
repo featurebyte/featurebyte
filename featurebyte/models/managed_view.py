@@ -2,12 +2,16 @@
 Model for Managed View.
 """
 
-from typing import List
+from typing import List, Optional
 
 import pymongo
 from pydantic import StrictStr
 
-from featurebyte.models.base import FeatureByteBaseDocumentModel, UniqueValuesConstraint
+from featurebyte.models.base import (
+    FeatureByteBaseDocumentModel,
+    PydanticObjectId,
+    UniqueValuesConstraint,
+)
 from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.model.common_table import TabularSource
 
@@ -17,6 +21,7 @@ class ManagedViewModel(FeatureByteBaseDocumentModel):
     Model for Managed View.
     """
 
+    catalog_id: Optional[PydanticObjectId]
     sql: StrictStr
     tabular_source: TabularSource
     columns_info: List[ColumnInfo]

@@ -911,7 +911,7 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             "/feature_store/sql_preview", json=query_preview.json_dict()
         )
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-        assert response.json() == {"detail": "SQL query must contain a single SELECT statement."}
+        assert response.json() == {"detail": "SQL must be a SELECT statement."}
 
     @pytest.mark.asyncio
     async def test_credentials_stored(self, test_api_client_persistent):

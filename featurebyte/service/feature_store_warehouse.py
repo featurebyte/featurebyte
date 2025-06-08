@@ -436,7 +436,7 @@ class FeatureStoreWarehouseService:
             feature_store=feature_store, timeout=self.session_initialization_timeout
         )
         # validate that the SQL is a single select statement
-        sql_expr = validate_select_sql(preview.sql)
+        sql_expr = validate_select_sql(preview.sql, db_session.source_type)
 
         # apply limit
         sql_expr = sql_expr.limit(limit)
