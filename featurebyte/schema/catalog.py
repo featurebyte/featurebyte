@@ -53,6 +53,7 @@ class CatalogOnlineStoreUpdate(BaseDocumentServiceUpdateSchema):
     """
 
     online_store_id: Optional[PydanticObjectId] = Field(default=None)
+    populate_offline_feature_tables: Optional[bool] = Field(default=None)
 
 
 class CatalogServiceUpdate(BaseDocumentServiceUpdateSchema):

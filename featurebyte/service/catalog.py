@@ -40,10 +40,17 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         """
         document = await self.get_document(document_id=document_id)
 
+        update_dict = data.model_dump()
+
+        # Handle fields that should not be updated if None (fields that should not be unset; for
+        # example, online_store_id can be unset)
+        if update_dict["populate_offline_feature_tables"] is None:
+            update_dict.pop("populate_offline_feature_tables")
+
         # update document to persistent
         await self._update_document(
             document=document,
-            update_dict=data.model_dump(),
+            update_dict=update_dict,
             update_document_class=None,
         )
 
@@ -67,14 +74,20 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         Optional[CatalogOnlineStoreInitializeTaskPayload]
         """
         document = await self.get_document(document_id=document_id)
-        if document.online_store_id == data.online_store_id:
-            return None
-        return CatalogOnlineStoreInitializeTaskPayload(
+        payload = CatalogOnlineStoreInitializeTaskPayload(
             user_id=self.user.id,
             catalog_id=document_id,
             online_store_id=data.online_store_id,
+            populate_offline_feature_tables=data.populate_offline_feature_tables,
             output_document_id=document.id,
         )
+        # Only return task payload if there is work to do (i.e., online store is being set or unset
+        # or populate_offline_feature_tables is being set or unset)
+        if data.online_store_id != document.online_store_id:
+            return payload
+        if data.populate_offline_feature_tables != document.populate_offline_feature_tables:
+            return payload
+        return None
 
 
 class AllCatalogService(CatalogService):

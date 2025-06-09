@@ -65,6 +65,16 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
     async def execute(self, payload: CatalogOnlineStoreInitializeTaskPayload) -> Any:
         logger.info(f"Starting task: {await self.get_task_description(payload)}")
 
+        # Check if we need to populate offline store tables based on the new desired states
+        need_offline_store_tables = (
+            payload.populate_offline_feature_tables is True or payload.online_store_id is not None
+        )
+
+        # Need to populate offline store tables if they are not already populated
+        catalog_model = await self.catalog_service.get_document(payload.catalog_id)
+        if need_offline_store_tables and catalog_model.populate_offline_feature_tables is not True:
+            await self._populate_offline_store_tables(payload)
+
         if payload.online_store_id is not None:
             await self._run_materialize(payload)
 
@@ -74,8 +84,42 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
         )
         await self.catalog_service.update_online_store(
             document_id=payload.catalog_id,
-            data=CatalogOnlineStoreUpdate(online_store_id=payload.online_store_id),
+            data=CatalogOnlineStoreUpdate(
+                online_store_id=payload.online_store_id,
+                populate_offline_feature_tables=payload.populate_offline_feature_tables,
+            ),
         )
+
+    async def _populate_offline_store_tables(
+        self,
+        payload: CatalogOnlineStoreInitializeTaskPayload,
+    ) -> None:
+        logger.info(
+            "Populating offline store feature tables for catalog",
+            extra={"catalog_id": payload.catalog_id},
+        )
+
+        offline_store_tables = []
+        async for (
+            feature_table_model
+        ) in self.offline_store_feature_table_service.list_source_feature_tables():
+            offline_store_tables.append(feature_table_model)
+
+        for current_table_index, feature_table_model in enumerate(offline_store_tables):
+            logger.info(
+                "Populating offline store feature table",
+                extra={
+                    "feature_table_name": feature_table_model.name,
+                    "catalog_id": payload.catalog_id,
+                },
+            )
+            await self.task_progress_updater.update_progress(
+                int(50 * (current_table_index + 1) / len(offline_store_tables)),
+                message=f"Populating offline store table {feature_table_model.name}",
+            )
+            await self.feature_materialize_service.scheduled_populate_offline_feature_table(
+                feature_table_model=feature_table_model,
+            )
 
     async def _run_materialize(self, payload: CatalogOnlineStoreInitializeTaskPayload) -> None:
         session = None
@@ -95,7 +139,7 @@ class CatalogOnlineStoreUpdateTask(BaseTask[CatalogOnlineStoreInitializeTaskPayl
                 },
             )
             await self.task_progress_updater.update_progress(
-                int(100.0 * (current_table_index + 1) / total_count),
+                int(50 + 50 * (current_table_index + 1) / total_count),
                 message=f"Updating online store for offline store_table {feature_table_model.name}",
             )
             current_table_index += 1

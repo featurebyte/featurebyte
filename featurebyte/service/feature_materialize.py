@@ -49,6 +49,7 @@ from featurebyte.query_graph.sql.online_serving import (
     TemporaryBatchRequestTable,
     get_online_features,
 )
+from featurebyte.service.catalog import CatalogService
 from featurebyte.service.cron_helper import CronHelper
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
 from featurebyte.service.deployment import DeploymentService
@@ -223,6 +224,7 @@ class FeatureMaterializeService:
         cron_helper: CronHelper,
         system_metrics_service: SystemMetricsService,
         deployed_tile_table_service: DeployedTileTableService,
+        catalog_service: CatalogService,
         redis: Redis[Any],
     ):
         self.feature_service = feature_service
@@ -238,6 +240,7 @@ class FeatureMaterializeService:
         self.cron_helper = cron_helper
         self.system_metrics_service = system_metrics_service
         self.deployed_tile_table_service = deployed_tile_table_service
+        self.catalog_service = catalog_service
         self.redis = redis
 
     @asynccontextmanager
@@ -247,6 +250,7 @@ class FeatureMaterializeService:
         selected_columns: Optional[List[str]] = None,
         session: Optional[BaseSession] = None,
         use_last_materialized_timestamp: bool = True,
+        empty_universe: bool = False,
         metrics: Optional[ScheduledFeatureMaterializeMetrics] = None,
     ) -> AsyncIterator[MaterializedFeaturesSet]:
         """
@@ -264,6 +268,10 @@ class FeatureMaterializeService:
             Whether to specify the last materialized timestamp of feature_table_model when creating
             the entity universe. This is set to True on scheduled task, and False on initialization
             of new columns.
+        empty_universe: bool
+            If True, the entity universe will be made empty on purpose, and no features will be
+            materialized. This is used to retrieve the expected output columns for initialization
+            purpose.
         metrics: Optional[ScheduledFeatureMaterializeMetrics]
             Metrics object to be updated in place if specified
 
@@ -298,6 +306,8 @@ class FeatureMaterializeService:
                 else None
             ),
         )
+        if empty_universe:
+            select_expr = select_expr.limit(0)
         await session.create_table_as(
             table_details=batch_request_table.table_details,
             select_expr=select_expr,
@@ -650,17 +660,70 @@ class FeatureMaterializeService:
                 feature_materialize_run_id, datetime.utcnow(), "success"
             )
 
-        metrics_data.total_seconds = time.time() - first_tic
-        await self.system_metrics_service.create_metrics(metrics_data)
+        if metrics_data is not None:
+            metrics_data.total_seconds = time.time() - first_tic
+            await self.system_metrics_service.create_metrics(metrics_data)
 
     async def _scheduled_materialize_features(
         self,
         feature_table_model: OfflineStoreFeatureTableModel,
-    ) -> ScheduledFeatureMaterializeMetrics:
-        session = await self._get_session(feature_table_model)
-        feature_tables = []
-        feature_timestamp = None
+    ) -> Optional[ScheduledFeatureMaterializeMetrics]:
+        # Exit early if the catalog does not require offline store feature tables to be populated
+        need_offline_store_tables = await self._catalog_needs_offline_store_tables(
+            feature_table_model
+        )
+        if not need_offline_store_tables:
+            return None
 
+        session = await self._get_session(feature_table_model)
+
+        # Update offline store feature tables
+        (
+            feature_timestamp,
+            feature_tables,
+            metrics_data,
+        ) = await self.scheduled_populate_offline_feature_table(
+            feature_table_model=feature_table_model,
+            session=session,
+        )
+
+        # Feast online materialize
+        tic = time.time()
+        for current_feature_table in feature_tables:
+            if current_feature_table.deployment_ids:
+                service = self.feast_feature_store_service
+                feature_store = await service.get_feast_feature_store_for_feature_materialization(
+                    feature_table_model=current_feature_table, online_store_id=None
+                )
+                if feature_store and feature_store.config.online_store is not None:
+                    online_store_last_materialized_at = (
+                        current_feature_table.get_online_store_last_materialized_at(
+                            feature_store.online_store_id  # type: ignore
+                        )
+                    )
+                    await self._materialize_online(
+                        session=session,
+                        feature_store=feature_store,
+                        feature_table=current_feature_table,
+                        columns=feature_table_model.output_column_names,
+                        start_date=online_store_last_materialized_at,
+                        end_date=feature_timestamp,  # type: ignore
+                    )
+        metrics_data.online_materialize_seconds = time.time() - tic
+        return metrics_data
+
+    async def scheduled_populate_offline_feature_table(
+        self,
+        feature_table_model: OfflineStoreFeatureTableModel,
+        session: Optional[BaseSession] = None,
+    ) -> Tuple[
+        Optional[datetime], List[OfflineStoreFeatureTableModel], ScheduledFeatureMaterializeMetrics
+    ]:
+        if session is None:
+            session = await self._get_session(feature_table_model)
+
+        feature_timestamp = None
+        feature_tables = []
         metrics_data = ScheduledFeatureMaterializeMetrics(
             offline_store_feature_table_id=feature_table_model.id,
             num_columns=len(feature_table_model.output_column_names),
@@ -692,30 +755,7 @@ class FeatureMaterializeService:
                 )
             metrics_data.update_feature_tables_seconds = time.time() - tic
 
-        # Feast online materialize
-        tic = time.time()
-        for current_feature_table in feature_tables:
-            if current_feature_table.deployment_ids:
-                service = self.feast_feature_store_service
-                feature_store = await service.get_feast_feature_store_for_feature_materialization(
-                    feature_table_model=current_feature_table, online_store_id=None
-                )
-                if feature_store and feature_store.config.online_store is not None:
-                    online_store_last_materialized_at = (
-                        current_feature_table.get_online_store_last_materialized_at(
-                            feature_store.online_store_id  # type: ignore
-                        )
-                    )
-                    await self._materialize_online(
-                        session=session,
-                        feature_store=feature_store,
-                        feature_table=current_feature_table,
-                        columns=feature_table_model.output_column_names,
-                        start_date=online_store_last_materialized_at,
-                        end_date=feature_timestamp,  # type: ignore
-                    )
-        metrics_data.online_materialize_seconds = time.time() - tic
-        return metrics_data
+        return feature_timestamp, feature_tables, metrics_data
 
     async def initialize_new_columns(
         self,
@@ -744,11 +784,16 @@ class FeatureMaterializeService:
         else:
             selected_columns = None
 
+        need_offline_store_tables = await self._catalog_needs_offline_store_tables(
+            feature_table_model
+        )
+
         async with self.materialize_features(
             session=session,
             feature_table_model=feature_table_model,
             selected_columns=selected_columns,
             use_last_materialized_timestamp=False,
+            empty_universe=not need_offline_store_tables,
         ) as materialized_features_set:
             for (
                 current_feature_table,
@@ -761,6 +806,7 @@ class FeatureMaterializeService:
                     current_feature_table=current_feature_table,
                     source_feature_table=feature_table_model,
                     materialized_features=materialized_features,
+                    should_update_last_materialized_at=need_offline_store_tables,
                 )
 
     async def initialize_precomputed_lookup_feature_table(
@@ -794,6 +840,10 @@ class FeatureMaterializeService:
             # together by initialize_new_columns() later.
             return
 
+        need_offline_store_tables = await self._catalog_needs_offline_store_tables(
+            source_feature_table
+        )
+
         # The source feature table already exists, but precomputed lookup tables don't. In this
         # case, need to initialize lookup feature tables to have the same columns as the source
         # feature table.
@@ -822,6 +872,7 @@ class FeatureMaterializeService:
                         current_feature_table=lookup_feature_table,
                         source_feature_table=source_feature_table,
                         materialized_features=materialized_lookup_features,
+                        should_update_last_materialized_at=need_offline_store_tables,
                     )
                 finally:
                     await session.drop_table(
@@ -922,6 +973,7 @@ class FeatureMaterializeService:
         current_feature_table: OfflineStoreFeatureTableModel,
         source_feature_table: OfflineStoreFeatureTableModel,
         materialized_features: MaterializedFeatures,
+        should_update_last_materialized_at: bool,
     ) -> None:
         with self.get_table_update_lock(current_feature_table.name):
             offline_info = await self._initialize_new_columns_offline(
@@ -936,7 +988,7 @@ class FeatureMaterializeService:
             )
         if offline_info is not None:
             column_names, materialize_end_date, is_new_table = offline_info
-            if is_new_table:
+            if is_new_table and should_update_last_materialized_at:
                 await self._update_offline_last_materialized_at(
                     current_feature_table, materialized_features.feature_timestamp
                 )
@@ -1473,3 +1525,25 @@ class FeatureMaterializeService:
             )
             for column_name, column_data_type in columns_and_types.items()
         ]
+
+    async def _catalog_needs_offline_store_tables(
+        self, feature_table_model: OfflineStoreFeatureTableModel
+    ) -> bool:
+        """
+        Check if the catalog requires offline store feature tables to be populated.
+
+        Parameters
+        ----------
+        feature_table_model: OfflineStoreFeatureTableModel
+            OfflineStoreFeatureTableModel object
+
+        Returns
+        -------
+        bool
+            True if offline store feature tables need to be populated, False otherwise.
+        """
+        catalog_model = await self.catalog_service.get_document(feature_table_model.catalog_id)
+        return (
+            catalog_model.populate_offline_feature_tables is True
+            or catalog_model.online_store_id is not None
+        )
