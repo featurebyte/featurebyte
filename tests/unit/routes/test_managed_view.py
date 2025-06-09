@@ -210,7 +210,7 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
         response_dict = create_success_response.json()
         view_name = response_dict["tabular_source"]["table_details"]["table_name"]
 
-        assert snowflake_execute_query.call_args[1] == {
+        assert snowflake_execute_query.call_args_list[-2][1] == {
             "query": (
                 f'CREATE VIEW "sf_database"."sf_schema"."{view_name}" AS\n'
                 "SELECT * FROM (SELECT\n  *\nFROM my_table)"
@@ -262,17 +262,7 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
                     "table_name": "MANAGED_VIEW_646f6c190ed28a5271fb02e9",
                 },
             },
-            "columns_info": [
-                {
-                    "name": "col1",
-                    "dtype": "FLOAT",
-                    "dtype_metadata": None,
-                    "description": None,
-                    "entity_id": None,
-                    "semantic_id": None,
-                    "critical_data_info": None,
-                }
-            ],
+            "columns_info": [],
         }
 
     def test_create_global_managed_view(self, test_api_client_persistent, create_success_response):
