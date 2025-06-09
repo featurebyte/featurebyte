@@ -160,7 +160,7 @@ class ManagedViewController(
         return [
             (
                 self.table_service,
-                {"tabular_source": document.tabular_source.model_dump(by_alias=True)},
+                {"managed_view_id": document.id},
             )
         ]
 

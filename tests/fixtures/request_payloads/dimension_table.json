@@ -81,6 +81,7 @@
     ],
     "description": "test dimension table",
     "dimension_id_column": "col_int",
+    "managed_view_id": null,
     "name": "sf_dimension_table",
     "record_creation_timestamp_column": "created_at",
     "tabular_source": {

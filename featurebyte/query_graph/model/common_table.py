@@ -55,6 +55,7 @@ class BaseTableData(FeatureByteBaseModel):
 
     columns_info: List[ColumnInfo]
     tabular_source: TabularSource
+    managed_view_id: Optional[PydanticObjectId] = Field(default=None)
 
     # pydantic validators
     _validator = field_validator("columns_info")(columns_info_validator)

@@ -976,6 +976,7 @@ def test_default_feature_job_setting_history(saved_time_series_table):
         "catalog_id",
         "block_modification_by",
         "is_deleted",
+        "managed_view_id",
         "validation",
         "reference_datetime_schema.is_utc_time",
         "reference_datetime_schema.format_string",
