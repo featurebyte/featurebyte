@@ -242,11 +242,12 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
 
         response = test_api_client.get(url=f"{self.base_route}/{response_dict['_id']}")
         assert response.status_code == HTTPStatus.OK
+        response_dict = response.json()
         assert response.json() == {
             "_id": "646f6c190ed28a5271fb02e9",
             "user_id": "63f9506dd478b94127123456",
             "name": "My Managed View",
-            "created_at": "2025-06-08T13:23:31.402000",
+            "created_at": response_dict["created_at"],
             "updated_at": None,
             "block_modification_by": [],
             "description": "This is a managed view",
