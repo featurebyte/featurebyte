@@ -28,7 +28,6 @@ class ManagedViewCreateBase(FeatureByteBaseModel):
     name: NameStr
     description: Optional[StrictStr] = Field(default=None)
     sql: StrictStr
-    columns_info: List[ColumnInfo]
 
 
 class ManagedViewCreate(ManagedViewCreateBase):
@@ -47,6 +46,7 @@ class ManagedViewServiceCreate(ManagedViewCreateBase):
 
     catalog_id: Optional[PydanticObjectId] = Field(default=None)
     tabular_source: TabularSource
+    columns_info: Optional[List[ColumnInfo]] = Field(default=None)
 
 
 class ManagedViewList(PaginationMixin):

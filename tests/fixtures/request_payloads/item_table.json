@@ -59,6 +59,7 @@
     "event_id_column": "event_id_col",
     "event_table_id": "6337f9651050ee7d5980660d",
     "item_id_column": "item_id_col",
+    "managed_view_id": null,
     "name": "sf_item_table",
     "record_creation_timestamp_column": null,
     "tabular_source": {

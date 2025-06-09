@@ -5,17 +5,6 @@
         "Run `pytest --update-fixtures` to update it."
     ],
     "_id": "646f6c190ed28a5271fb02e9",
-    "columns_info": [
-        {
-            "critical_data_info": null,
-            "description": null,
-            "dtype": "FLOAT",
-            "dtype_metadata": null,
-            "entity_id": null,
-            "name": "col1",
-            "semantic_id": null
-        }
-    ],
     "description": "This is a managed view",
     "feature_store_id": "646f6c190ed28a5271fb02a1",
     "is_global": false,

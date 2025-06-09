@@ -17,6 +17,7 @@ from featurebyte.exception import (
 from featurebyte.models.managed_view import ManagedViewModel
 from featurebyte.models.persistent import QueryFilter
 from featurebyte.persistent import Persistent
+from featurebyte.query_graph.model.column_info import ColumnInfo
 from featurebyte.query_graph.sql.common import sql_to_string
 from featurebyte.routes.block_modification_handler import BlockModificationHandler
 from featurebyte.schema.common.base import BaseDocumentServiceUpdateSchema
@@ -25,7 +26,9 @@ from featurebyte.schema.managed_view import ManagedViewServiceCreate
 from featurebyte.service.base_document import BaseDocumentService
 from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
+from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS
 from featurebyte.storage import Storage
 
 
@@ -47,6 +50,7 @@ class ManagedViewService(
         catalog_id: Optional[ObjectId],
         catalog_service: CatalogService,
         feature_store_service: FeatureStoreService,
+        feature_store_warehouse_service: FeatureStoreWarehouseService,
         session_manager_service: SessionManagerService,
         block_modification_handler: BlockModificationHandler,
         storage: Storage,
@@ -62,6 +66,7 @@ class ManagedViewService(
         )
         self.catalog_service = catalog_service
         self.feature_store_service = feature_store_service
+        self.feature_store_warehouse_service = feature_store_warehouse_service
         self.session_manager_service = session_manager_service
 
     async def construct_get_query_filter(
@@ -130,6 +135,18 @@ class ManagedViewService(
             kind="VIEW",
         )
 
+        # populate columns info of the created view
+        source_info = feature_store.get_source_info()
+        table_details = data.tabular_source.table_details
+        column_specs = await self.feature_store_warehouse_service.list_columns(
+            feature_store=feature_store,
+            database_name=table_details.database_name or source_info.database_name,
+            schema_name=table_details.schema_name or source_info.schema_name,
+            table_name=table_details.table_name,
+        )
+        columns_info = [ColumnInfo(**dict(col)) for col in column_specs]
+        data.columns_info = columns_info
+
         return await super().create_document(data=data)
 
     async def delete_document(
@@ -154,6 +171,7 @@ class ManagedViewService(
                 database_name=table_details.database_name or source_info.database_name,
                 schema_name=table_details.schema_name or source_info.schema_name,
                 table_name=table_details.table_name,
+                timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS,
             )
         except Exception as exc:
             raise InvalidViewSQL(f"Failed to drop managed view: {exc}") from exc

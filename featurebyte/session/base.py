@@ -904,6 +904,7 @@ class BaseSession(BaseModel):
         database_name: str,
         if_exists: bool = False,
         timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+        table_is_view: bool = False,
     ) -> None:
         """
         Drop a table
@@ -920,6 +921,8 @@ class BaseSession(BaseModel):
             If True, drop the table only if it exists
         timeout : float
             Timeout in seconds
+        table_is_view : bool
+            If True, drop the table as a view
 
         Raises
         ------
@@ -943,18 +946,21 @@ class BaseSession(BaseModel):
             )
             await self.execute_query(query, timeout=timeout)
 
-        try:
-            await _drop(is_view=False)
-        except Exception as exc:
-            msg = str(exc)
-            if "VIEW" in msg:
-                try:
-                    await _drop(is_view=True)
-                    return
-                except Exception as exc_view:
-                    msg = str(exc_view)
-                    raise DataWarehouseOperationError(msg) from exc_view
-            raise DataWarehouseOperationError(msg) from exc
+        if table_is_view:
+            await _drop(is_view=table_is_view)
+        else:
+            try:
+                await _drop(is_view=False)
+            except Exception as exc:
+                msg = str(exc)
+                if "VIEW" in msg:
+                    try:
+                        await _drop(is_view=True)
+                        return
+                    except Exception as exc_view:
+                        msg = str(exc_view)
+                        raise DataWarehouseOperationError(msg) from exc_view
+                raise DataWarehouseOperationError(msg) from exc
 
     async def drop_tables(
         self,
