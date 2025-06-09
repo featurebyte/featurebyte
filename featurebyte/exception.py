@@ -581,3 +581,15 @@ class DeploymentNotOnlineEnabledError(FeatureByteException):
     """
     Raise when online features are requested for a deployment that is not online enabled
     """
+
+
+class FeatureStoreNotInCatalogError(BaseUnprocessableEntityError):
+    """
+    Raise when the feature store is not in the specified catalog
+    """
+
+
+class InvalidViewSQL(BaseUnprocessableEntityError):
+    """
+    Raise when the SQL for a view is invalid
+    """

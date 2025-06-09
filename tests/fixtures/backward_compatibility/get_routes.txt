@@ -17,6 +17,7 @@
 /feature_store
 /historical_feature_table
 /item_table
+/managed_view
 /observation_table
 /online_store
 /periodic_task

@@ -10,7 +10,7 @@ import os
 from typing import Any, AsyncGenerator, List, Optional, Tuple
 
 from featurebyte.common.utils import dataframe_to_json
-from featurebyte.enum import InternalName, MaterializedTableNamePrefix
+from featurebyte.enum import InternalName, MaterializedTableNamePrefix, ViewNamePrefix
 from featurebyte.exception import (
     DatabaseNotFoundError,
     LimitExceededError,
@@ -29,7 +29,11 @@ from featurebyte.query_graph.sql.materialisation import (
     get_source_count_expr,
     get_source_expr,
 )
-from featurebyte.schema.feature_store import FeatureStoreShape
+from featurebyte.schema.feature_store import (
+    FeatureStoreQueryPreview,
+    FeatureStoreShape,
+    validate_select_sql,
+)
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.session_manager import SessionManagerService
 from featurebyte.session.base import (
@@ -142,6 +146,9 @@ class FeatureStoreWarehouseService:
             return False
         if not filter_featurebyte_tables:
             return True
+        for prefix in ViewNamePrefix.visible():
+            if table_name.startswith(prefix):
+                return True
         # quick filter for materialized tables
         if "TABLE" not in table_name:
             return False
@@ -400,6 +407,44 @@ class FeatureStoreWarehouseService:
         if result is not None and InternalName.TABLE_ROW_INDEX in result.columns:
             result.drop(columns=[InternalName.TABLE_ROW_INDEX], inplace=True)
 
+        return dataframe_to_json(result)
+
+    async def sql_preview(
+        self,
+        preview: FeatureStoreQueryPreview,
+        limit: int,
+    ) -> dict[str, Any]:
+        """
+        Preview table from location.
+
+        Parameters
+        ----------
+        preview: FeatureStoreQueryPreview
+            Preview object containing SQL query and feature store ID
+        limit: int
+            Row limit on preview results
+
+        Returns
+        -------
+        dict[str, Any]
+            Dataframe converted to json string
+        """
+        feature_store = await self.feature_store_service.get_document(
+            document_id=preview.feature_store_id
+        )
+        db_session = await self.session_manager_service.get_feature_store_session(
+            feature_store=feature_store, timeout=self.session_initialization_timeout
+        )
+        # validate that the SQL is a single select statement
+        sql_expr = validate_select_sql(preview.sql, db_session.source_type)
+
+        # apply limit
+        sql_expr = sql_expr.limit(limit)
+        sql = sql_to_string(
+            sql_expr,
+            source_type=db_session.source_type,
+        )
+        result = await db_session.execute_query(sql)
         return dataframe_to_json(result)
 
     async def download_table(
