@@ -110,6 +110,7 @@ def test_event_table_model(snowflake_feature_store, feature_job_setting):
         "block_modification_by": [],
         "description": None,
         "is_deleted": False,
+        "managed_view_id": None,
         "validation": None,
     }
     assert event_table.model_dump() == expected_event_table_dict

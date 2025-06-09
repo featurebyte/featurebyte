@@ -102,6 +102,7 @@
     "effective_timestamp_schema": null,
     "end_timestamp_column": "end_timestamp",
     "end_timestamp_schema": null,
+    "managed_view_id": null,
     "name": "sf_scd_table",
     "natural_key_column": "col_text",
     "record_creation_timestamp_column": null,

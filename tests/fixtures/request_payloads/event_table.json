@@ -91,6 +91,7 @@
     "event_timestamp_schema": null,
     "event_timestamp_timezone_offset": null,
     "event_timestamp_timezone_offset_column": null,
+    "managed_view_id": null,
     "name": "sf_event_table",
     "record_creation_timestamp_column": "created_at",
     "tabular_source": {

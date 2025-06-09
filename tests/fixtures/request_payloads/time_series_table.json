@@ -76,6 +76,7 @@
     ],
     "default_feature_job_setting": null,
     "description": "test time series table",
+    "managed_view_id": null,
     "name": "sf_time_series_table",
     "record_creation_timestamp_column": "created_at",
     "reference_datetime_column": "date",
