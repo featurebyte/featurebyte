@@ -28,6 +28,7 @@ from featurebyte.service.catalog import CatalogService
 from featurebyte.service.feature_store import FeatureStoreService
 from featurebyte.service.feature_store_warehouse import FeatureStoreWarehouseService
 from featurebyte.service.session_manager import SessionManagerService
+from featurebyte.session.base import INTERACTIVE_SESSION_TIMEOUT_SECONDS
 from featurebyte.storage import Storage
 
 
@@ -170,6 +171,7 @@ class ManagedViewService(
                 database_name=table_details.database_name or source_info.database_name,
                 schema_name=table_details.schema_name or source_info.schema_name,
                 table_name=table_details.table_name,
+                timeout=INTERACTIVE_SESSION_TIMEOUT_SECONDS,
             )
         except Exception as exc:
             raise InvalidViewSQL(f"Failed to drop managed view: {exc}") from exc

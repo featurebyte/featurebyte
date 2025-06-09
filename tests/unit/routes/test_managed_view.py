@@ -126,7 +126,7 @@ class TestManagedViewApi(BaseCatalogApiTestSuite):
 
         # check delete view used by registered table
         payload = self.load_payload("tests/fixtures/request_payloads/event_table.json")
-        payload["tabular_source"] = response_dict["tabular_source"]
+        payload["managed_view_id"] = response_dict["_id"]
         response = test_api_client.post("/event_table", json=payload)
         assert response.status_code == HTTPStatus.CREATED
 
