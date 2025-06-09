@@ -61,6 +61,7 @@ from featurebyte.routes.feature_namespace.controller import FeatureNamespaceCont
 from featurebyte.routes.feature_store.controller import FeatureStoreController
 from featurebyte.routes.historical_feature_table.controller import HistoricalFeatureTableController
 from featurebyte.routes.item_table.controller import ItemTableController
+from featurebyte.routes.managed_view.controller import ManagedViewController
 from featurebyte.routes.observation_table.controller import ObservationTableController
 from featurebyte.routes.online_store.controller import OnlineStoreController
 from featurebyte.routes.periodic_tasks.controller import PeriodicTaskController
@@ -140,6 +141,7 @@ from featurebyte.service.historical_features import (
 )
 from featurebyte.service.item_table import ExtendedItemTableService, ItemTableService
 from featurebyte.service.item_table_validation import ItemTableValidationService
+from featurebyte.service.managed_view import ManagedViewService
 from featurebyte.service.namespace_handler import NamespaceHandler
 from featurebyte.service.observation_table import ObservationTableService
 from featurebyte.service.offline_store_feature_table import OfflineStoreFeatureTableService
@@ -343,6 +345,8 @@ app_container_config.register_class(
 app_container_config.register_class(HistoricalFeaturesValidationParametersService)
 app_container_config.register_class(ItemTableController)
 app_container_config.register_class(ItemTableService)
+app_container_config.register_class(ManagedViewController)
+app_container_config.register_class(ManagedViewService)
 app_container_config.register_class(NamespaceHandler)
 app_container_config.register_class(NonInteractivePreviewService)
 app_container_config.register_class(NonInteractiveFeatureStoreWarehouseService)
