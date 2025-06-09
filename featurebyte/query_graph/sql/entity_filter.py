@@ -74,14 +74,24 @@ def get_table_filtered_by_entity(
         )
         join_conditions.append(condition)
 
+    # Only filter by timestamp if no transform has to be applied to the timestamp column
     if timestamp_column is not None:
-        timestamp_expr = get_qualified_column_identifier(timestamp_column, "R")
+        original_timestamp_expr = get_qualified_column_identifier(timestamp_column, "R")
         if timestamp_metadata is not None and timestamp_metadata.timestamp_schema is not None:
-            timestamp_expr = convert_timestamp_to_utc(
-                timestamp_expr,
+            timestamp_for_filtering_expr = convert_timestamp_to_utc(
+                original_timestamp_expr,
                 timestamp_metadata.timestamp_schema,
                 adapter,
             )
+            should_filter_by_timestamp = timestamp_for_filtering_expr == original_timestamp_expr
+        else:
+            should_filter_by_timestamp = True
+    else:
+        should_filter_by_timestamp = False
+
+    if should_filter_by_timestamp:
+        assert timestamp_column is not None
+        timestamp_expr = get_qualified_column_identifier(timestamp_column, "R")
         normalized_timestamp_column = adapter.normalize_timestamp_before_comparison(timestamp_expr)
         join_conditions.append(
             expressions.GTE(
