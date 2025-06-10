@@ -85,7 +85,10 @@ class CatalogService(BaseDocumentService[CatalogModel, CatalogCreate, CatalogSer
         # or populate_offline_feature_tables is being set or unset)
         if data.online_store_id != document.online_store_id:
             return payload
-        if data.populate_offline_feature_tables != document.populate_offline_feature_tables:
+        if (
+            data.populate_offline_feature_tables is not None
+            and data.populate_offline_feature_tables != document.populate_offline_feature_tables
+        ):
             return payload
         return None
 
