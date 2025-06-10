@@ -27,6 +27,7 @@ from featurebyte.query_graph.sql.batch_helper import (
 )
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureQuery
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.session.base import BaseSession
 from featurebyte.utils.async_helper import asyncio_gather
 
@@ -175,10 +176,17 @@ async def execute_feature_query(
 
 
 class SessionHandler:
-    def __init__(self, session: BaseSession, redis: Redis[Any], feature_store: FeatureStoreModel):
+    def __init__(
+        self,
+        session: BaseSession,
+        redis: Redis[Any],
+        feature_store: FeatureStoreModel,
+        system_metrics_service: SystemMetricsService,
+    ):
         self.session = session
         self.redis = redis
         self.feature_store = feature_store
+        self.system_metrics_service = system_metrics_service
 
 
 @dataclass

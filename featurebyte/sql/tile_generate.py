@@ -16,6 +16,7 @@ from featurebyte.logging import get_logger
 from featurebyte.models.system_metrics import TileComputeMetrics
 from featurebyte.models.tile import TileType
 from featurebyte.service.deployed_tile_table import DeployedTileTableService
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.tile_registry_service import TileRegistryService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.sql.tile_common import TileCommon
@@ -65,6 +66,7 @@ class TileGenerate(TileCommon):
     tile_registry_service: TileRegistryService
     warehouse_table_service: WarehouseTableService
     deployed_tile_table_service: DeployedTileTableService
+    system_metrics_service: SystemMetricsService
 
     async def execute(self) -> TileComputeMetrics:
         """

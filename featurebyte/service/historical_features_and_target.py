@@ -40,6 +40,7 @@ from featurebyte.query_graph.sql.feature_historical import (
 from featurebyte.query_graph.sql.parent_serving import construct_request_table_with_parent_entities
 from featurebyte.service.column_statistics import ColumnStatisticsService
 from featurebyte.service.cron_helper import CronHelper
+from featurebyte.service.system_metrics import SystemMetricsService
 from featurebyte.service.tile_cache import TileCacheService
 from featurebyte.service.warehouse_table_service import WarehouseTableService
 from featurebyte.session.base import BaseSession
@@ -197,6 +198,7 @@ async def get_historical_features(
     warehouse_table_service: WarehouseTableService,
     cron_helper: CronHelper,
     column_statistics_service: ColumnStatisticsService,
+    system_metrics_service: SystemMetricsService,
     graph: QueryGraph,
     nodes: list[Node],
     observation_set: Union[pd.DataFrame, ObservationTableModel],
@@ -221,6 +223,8 @@ async def get_historical_features(
         Warehouse table service
     column_statistics_service: ColumnStatisticsService
         Column statistics service
+    system_metrics_service: SystemMetricsService
+        System metrics service
     graph : QueryGraph
         Query graph
     nodes : list[Node]
@@ -352,6 +356,7 @@ async def get_historical_features(
                 session=session,
                 redis=tile_cache_service.tile_manager_service.redis,
                 feature_store=feature_store,
+                system_metrics_service=system_metrics_service,
             ),
             feature_query_set=historical_feature_query_set,
             progress_callback=(
@@ -452,6 +457,7 @@ async def get_target(
     observation_set: Union[pd.DataFrame, ObservationTableModel],
     feature_store: FeatureStoreModel,
     output_table_details: TableDetails,
+    system_metrics_service: SystemMetricsService,
     serving_names_mapping: dict[str, str] | None = None,
     parent_serving_preparation: Optional[ParentServingPreparation] = None,
     progress_callback: Optional[Callable[[int, str | None], Coroutine[Any, Any, None]]] = None,
@@ -526,7 +532,10 @@ async def get_target(
         tic = time.time()
         await execute_feature_query_set(
             session_handler=SessionHandler(
-                session=session, redis=redis, feature_store=feature_store
+                session=session,
+                redis=redis,
+                feature_store=feature_store,
+                system_metrics_service=system_metrics_service,
             ),
             feature_query_set=historical_feature_query_set,
             progress_callback=(

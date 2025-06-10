@@ -55,7 +55,7 @@ def mock_redis_fixture(is_output_row_index_valid):
 
 
 @pytest.fixture(name="session_handler")
-def session_handler_fixture(mock_snowflake_session, mock_redis):
+def session_handler_fixture(mock_snowflake_session, mock_redis, app_container):
     """
     Fixture for a mock SessionHandler
     """
@@ -63,6 +63,7 @@ def session_handler_fixture(mock_snowflake_session, mock_redis):
         session=mock_snowflake_session,
         redis=mock_redis,
         feature_store=Mock(id=ObjectId(), max_query_concurrency=None),
+        system_metrics_service=app_container.system_metrics_service,
     )
 
 

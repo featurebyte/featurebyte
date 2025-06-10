@@ -181,6 +181,7 @@ class OnlineServingService:
                 session=db_session,
                 redis=self.online_store_table_version_service.redis,
                 feature_store=feature_store,
+                system_metrics_service=self.system_metrics_service,
             ),
             cron_helper=self.cron_helper,
             graph=feature_cluster.graph,

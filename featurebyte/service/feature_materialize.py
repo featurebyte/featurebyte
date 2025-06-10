@@ -341,7 +341,10 @@ class FeatureMaterializeService:
             ).on_demand_tile_tables
             await get_online_features(
                 session_handler=SessionHandler(
-                    session=session, redis=self.redis, feature_store=feature_store
+                    session=session,
+                    redis=self.redis,
+                    feature_store=feature_store,
+                    system_metrics_service=self.system_metrics_service,
                 ),
                 cron_helper=self.cron_helper,
                 graph=feature_table_model.feature_cluster.graph,
