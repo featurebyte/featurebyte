@@ -165,6 +165,7 @@ async def test_list_tables(
         TableSpec(name="BATCH_REQUEST_TABLE", description="batch request table"),
         TableSpec(name="BATCH_FEATURE_TABLE", description="batch feature table"),
         TableSpec(name="TARGET_TABLE", description="target table"),
+        TableSpec(name="MANAGED_VIEW", description="managed view"),
         TableSpec(name="table1", description="table1"),
         TableSpec(name="table2", description="table2"),
     ]
@@ -183,6 +184,6 @@ async def test_list_tables(
         == 'SELECT\n  "FEATURE_STORE_ID"\nFROM "db_name"."schema_name"."METADATA_SCHEMA"'
     )
     if featurebyte_schema:
-        assert tables == table_specs[2:7]
+        assert tables == table_specs[2:8]
     else:
         assert tables == table_specs[1:]

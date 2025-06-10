@@ -22,7 +22,7 @@ import pandas as pd
 import pyarrow as pa
 from bson import ObjectId
 from cachetools import TTLCache
-from pydantic import BaseModel, PrivateAttr
+from pydantic import BaseModel, ConfigDict, PrivateAttr
 from sqlglot import expressions
 from sqlglot.expressions import Expression, Select
 
@@ -135,6 +135,18 @@ async def to_thread(
         if tid:
             _raise_exception_in_thread(thread_info["tid"])
         raise
+
+
+class QueryMetadata(BaseModel):
+    """
+    Query metadata model
+    """
+
+    query_id: Optional[str] = None
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+    )
 
 
 class BaseSession(BaseModel):
@@ -551,7 +563,10 @@ class BaseSession(BaseModel):
         return cursor.execute(query, **kwargs)
 
     async def get_async_query_generator(
-        self, query: str, timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS
+        self,
+        query: str,
+        timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+        query_metadata: QueryMetadata | None = None,
     ) -> AsyncGenerator[pa.RecordBatch, None]:
         """
         Generate results from asynchronous query as pyarrow record batches
@@ -562,6 +577,8 @@ class BaseSession(BaseModel):
             sql query to execute
         timeout: float
             timeout in seconds
+        query_metadata: QueryMetadata | None
+            Query metadata object
 
         Yields
         ------
@@ -585,6 +602,10 @@ class BaseSession(BaseModel):
                 query,
                 **self.get_additional_execute_query_kwargs(),
             )
+
+            if query_metadata:
+                query_metadata.query_id = self.get_query_id(cursor)
+
             if not cursor.description:
                 return
 
@@ -680,6 +701,7 @@ class BaseSession(BaseModel):
         query: str,
         timeout: float = DEFAULT_EXECUTE_QUERY_TIMEOUT_SECONDS,
         to_log_error: bool = True,
+        query_metadata: QueryMetadata | None = None,
     ) -> pd.DataFrame | None:
         """
         Execute SQL query
@@ -692,6 +714,8 @@ class BaseSession(BaseModel):
             timeout in seconds
         to_log_error: bool
             If True, log error
+        query_metadata: QueryMetadata | None
+            Query metadata object
 
         Returns
         -------
@@ -704,7 +728,9 @@ class BaseSession(BaseModel):
             If query execution fails
         """
         try:
-            batch_records = self.get_async_query_generator(query=query, timeout=timeout)
+            batch_records = self.get_async_query_generator(
+                query=query, timeout=timeout, query_metadata=query_metadata
+            )
             batches = [batch_record async for batch_record in batch_records]
             if not batches:
                 return None
@@ -745,6 +771,7 @@ class BaseSession(BaseModel):
         query: str,
         timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
         to_log_error: bool = True,
+        query_metadata: QueryMetadata | None = None,
     ) -> pd.DataFrame | None:
         """
         Execute SQL query that is expected to run for a long time
@@ -757,13 +784,35 @@ class BaseSession(BaseModel):
             timeout in seconds
         to_log_error: bool
             If True, log error
+        query_metadata: QueryMetadata | None
+            Query metadata object
 
         Returns
         -------
         pd.DataFrame | None
             Query result as a pandas DataFrame if the query expects result
         """
-        return await self.execute_query(query=query, timeout=timeout, to_log_error=to_log_error)
+        return await self.execute_query(
+            query=query, timeout=timeout, to_log_error=to_log_error, query_metadata=query_metadata
+        )
+
+    @staticmethod
+    def get_query_id(cursor: Any) -> str | None:
+        """
+        Get query ID from the cursor
+
+        Parameters
+        ----------
+        cursor: Any
+            The connection cursor
+
+        Returns
+        -------
+        str | None
+            Query ID if available, otherwise None
+        """
+        _ = cursor
+        return None
 
     def execute_query_blocking(self, query: str) -> pd.DataFrame | None:
         """
@@ -855,6 +904,7 @@ class BaseSession(BaseModel):
         database_name: str,
         if_exists: bool = False,
         timeout: float = LONG_RUNNING_EXECUTE_QUERY_TIMEOUT_SECONDS,
+        table_is_view: bool = False,
     ) -> None:
         """
         Drop a table
@@ -871,6 +921,8 @@ class BaseSession(BaseModel):
             If True, drop the table only if it exists
         timeout : float
             Timeout in seconds
+        table_is_view : bool
+            If True, drop the table as a view
 
         Raises
         ------
@@ -894,18 +946,21 @@ class BaseSession(BaseModel):
             )
             await self.execute_query(query, timeout=timeout)
 
-        try:
-            await _drop(is_view=False)
-        except Exception as exc:
-            msg = str(exc)
-            if "VIEW" in msg:
-                try:
-                    await _drop(is_view=True)
-                    return
-                except Exception as exc_view:
-                    msg = str(exc_view)
-                    raise DataWarehouseOperationError(msg) from exc_view
-            raise DataWarehouseOperationError(msg) from exc
+        if table_is_view:
+            await _drop(is_view=table_is_view)
+        else:
+            try:
+                await _drop(is_view=False)
+            except Exception as exc:
+                msg = str(exc)
+                if "VIEW" in msg:
+                    try:
+                        await _drop(is_view=True)
+                        return
+                    except Exception as exc_view:
+                        msg = str(exc_view)
+                        raise DataWarehouseOperationError(msg) from exc_view
+                raise DataWarehouseOperationError(msg) from exc
 
     async def drop_tables(
         self,

@@ -127,6 +127,7 @@ def test_time_series_table_model(snowflake_feature_store, feature_job_setting):
         "block_modification_by": [],
         "description": None,
         "is_deleted": False,
+        "managed_view_id": None,
         "validation": None,
     }
     assert time_series_table.model_dump() == expected_time_series_table_dict

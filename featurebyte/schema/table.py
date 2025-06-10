@@ -31,6 +31,7 @@ class TableCreate(FeatureByteBaseModel):
     columns_info: List[ColumnSpecWithDescription]
     record_creation_timestamp_column: Optional[StrictStr] = Field(default=None)
     description: Optional[StrictStr] = Field(default=None)
+    managed_view_id: Optional[PydanticObjectId] = Field(default=None)
 
     # pydantic validators
     _columns_info_validator = field_validator("columns_info")(columns_info_validator)

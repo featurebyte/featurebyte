@@ -28,7 +28,11 @@ from featurebyte.query_graph.model.column_info import ColumnSpecWithDescription
 from featurebyte.query_graph.model.common_table import TabularSource
 from featurebyte.query_graph.model.table import TableSpec
 from featurebyte.query_graph.node.schema import TableDetails
-from featurebyte.schema.feature_store import FeatureStorePreview, FeatureStoreSample
+from featurebyte.schema.feature_store import (
+    FeatureStorePreview,
+    FeatureStoreQueryPreview,
+    FeatureStoreSample,
+)
 from tests.unit.routes.base import BaseApiTestSuite
 from tests.util.helper import assert_equal_with_expected_fixture
 
@@ -805,6 +809,14 @@ class TestFeatureStoreApi(BaseApiTestSuite):
             ),
         )
 
+    @pytest.fixture(name="query_preview")
+    def query_preview_fixture(self, create_success_response):
+        """Query preview fixture"""
+        return FeatureStoreQueryPreview(
+            feature_store_id=create_success_response.json()["_id"],
+            sql='SELECT *, 1 AS new_col FROM "sf_database"."sf_schema"."sf_table"',
+        )
+
     def test_table_shape_200(self, test_api_client_persistent, tabular_source, mock_get_session):
         """Test table shape (success)"""
         test_api_client, _ = test_api_client_persistent
@@ -860,6 +872,46 @@ class TestFeatureStoreApi(BaseApiTestSuite):
                 """
             ).strip()
         )
+
+    def test_sql_preview_200(self, test_api_client_persistent, query_preview, mock_get_session):
+        """Test sql preview (success)"""
+        test_api_client, _ = test_api_client_persistent
+
+        expected_df = pd.DataFrame({
+            "col_int": [1, 2, 3],
+        })
+        mock_session = mock_get_session.return_value
+        mock_session.execute_query.return_value = expected_df
+        mock_session.generate_session_unique_id = Mock(return_value="1")
+
+        response = test_api_client.post(
+            "/feature_store/sql_preview?limit=3", json=query_preview.json_dict()
+        )
+        assert response.status_code == HTTPStatus.OK, response.json()
+        assert response.json() == dataframe_to_json(expected_df)
+        assert (
+            mock_session.execute_query.call_args[0][0]
+            == textwrap.dedent(
+                """
+                SELECT
+                  *,
+                  1 AS new_col
+                FROM "sf_database"."sf_schema"."sf_table"
+                LIMIT 3
+                """
+            ).strip()
+        )
+
+    def test_sql_preview_422(self, test_api_client_persistent, query_preview):
+        """Test sql preview (failure duw to invalid SQL)"""
+        test_api_client, _ = test_api_client_persistent
+
+        query_preview.sql = "DROP TABLE sf_database.sf_schema.sf_table"
+        response = test_api_client.post(
+            "/feature_store/sql_preview", json=query_preview.json_dict()
+        )
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+        assert response.json() == {"detail": "SQL must be a SELECT statement."}
 
     @pytest.mark.asyncio
     async def test_credentials_stored(self, test_api_client_persistent):

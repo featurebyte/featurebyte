@@ -35,6 +35,7 @@ from featurebyte.routes.feature_store.api import FeatureStoreRouter
 from featurebyte.routes.historical_feature_table.api import HistoricalFeatureTableRouter
 from featurebyte.routes.item_table.api import ItemTableRouter
 from featurebyte.routes.lazy_app_container import LazyAppContainer
+from featurebyte.routes.managed_view.api import ManagedViewRouter
 from featurebyte.routes.observation_table.api import ObservationTableRouter
 from featurebyte.routes.online_store.api import OnlineStoreRouter
 from featurebyte.routes.periodic_tasks.api import PeriodicTaskRouter
@@ -252,6 +253,7 @@ def get_app() -> FastAPI:
         TimeSeriesTableRouter(),
         UseCaseRouter(),
         UserDefinedFunctionRouter(),
+        ManagedViewRouter(),
     ]
     dependencies = _get_api_deps_with_catalog()
     for resource_api in catalog_specific_routers:

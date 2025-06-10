@@ -126,6 +126,14 @@ class SparkSession(BaseSparkSession):
         if hasattr(self, "_connection") and self._connection:
             self._connection.close()
 
+    @staticmethod
+    def get_query_id(cursor: Any) -> str | None:
+        return (
+            str(UUID(bytes=cursor._operationHandle.operationId.guid))
+            if cursor._operationHandle
+            else None
+        )  # pylint: disable=protected-access
+
     async def _cancel_query(self, cursor: Any, query: str) -> bool:
         if cursor._operationHandle:  # pylint: disable=protected-access
             if self._connection:
