@@ -48,7 +48,6 @@ tasks:
       - poetry.lock
     cmds:
       - poetry check
-      - poetry lock --check
 
   build-jar:
     desc: "Compile the hive jar files"
