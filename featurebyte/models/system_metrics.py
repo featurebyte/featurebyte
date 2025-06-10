@@ -27,6 +27,7 @@ class SystemMetricsType(StrEnum):
     TILE_TASK = "tile_task"
     SCHEDULED_FEATURE_MATERIALIZE = "scheduled_feature_materialize"
     DEPLOYMENT_ENABLEMENT = "deployment_enablement"
+    SQL_QUERY = "sql_query"
 
 
 class TileComputeMetrics(FeatureByteBaseModel):
@@ -109,6 +110,28 @@ class DeploymentEnablementMetrics(FeatureByteBaseModel):
     )
 
 
+class SqlQueryType(StrEnum):
+    """
+    SqlQueryType class
+    """
+
+    tile_compute = "tile_compute"
+    feature_compute = "feature_compute"
+
+
+class SqlQueryMetrics(FeatureByteBaseModel):
+    """
+    SqlQueryMetrics class
+    """
+
+    query: str
+    execution_seconds: float
+    query_type: SqlQueryType
+    query_id: Optional[str] = None
+    feature_names: Optional[list[str]] = None
+    metrics_type: Literal[SystemMetricsType.SQL_QUERY] = SystemMetricsType.SQL_QUERY
+
+
 SystemMetricsData = Annotated[
     Union[
         HistoricalFeaturesMetrics,
@@ -116,6 +139,7 @@ SystemMetricsData = Annotated[
         TileTaskMetrics,
         ScheduledFeatureMaterializeMetrics,
         DeploymentEnablementMetrics,
+        SqlQueryMetrics,
     ],
     Field(discriminator="metrics_type"),
 ]
