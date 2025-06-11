@@ -10,7 +10,8 @@ TBLPROPERTIES (
   'delta.minWriterVersion'='5'
 ) AS
 SELECT
-  1 AS `dummy_entity`;
+  1 AS `dummy_entity`
+LIMIT 0;
 
 CREATE OR REPLACE TABLE `sf_db`.`sf_schema`.`TEMP_REQUEST_TABLE_000000000000000000000000`
 USING DELTA

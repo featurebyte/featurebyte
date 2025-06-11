@@ -24,3 +24,4 @@ class CatalogOnlineStoreInitializeTaskPayload(BaseTaskPayload):
     # instance variables
     task_type: TaskType = Field(default=TaskType.CPU_TASK)
     online_store_id: Optional[PydanticObjectId]
+    populate_offline_feature_tables: Optional[bool] = Field(default=None)

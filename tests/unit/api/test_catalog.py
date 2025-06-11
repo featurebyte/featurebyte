@@ -525,6 +525,7 @@ def test_catalog_update_name(new_catalog, user_id):
             ("INSERT", 'insert: "grocery"', "is_deleted", np.nan, False),
             ("INSERT", 'insert: "grocery"', "name", np.nan, "grocery"),
             ("INSERT", 'insert: "grocery"', "online_store_id", np.nan, None),
+            ("INSERT", 'insert: "grocery"', "populate_offline_feature_tables", np.nan, False),
             ("INSERT", 'insert: "grocery"', "updated_at", np.nan, None),
             ("INSERT", 'insert: "grocery"', "user_id", np.nan, str(user_id)),
         ],

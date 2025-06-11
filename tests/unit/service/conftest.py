@@ -1091,6 +1091,14 @@ def is_online_store_registered_for_catalog_fixture():
     return True
 
 
+@pytest.fixture(name="populate_offline_feature_tables_for_catalog")
+def populate_offline_feature_tables_for_catalog_fixture():
+    """
+    Fixture to determine if offline feature tables should be populated for catalog
+    """
+    return True
+
+
 @pytest_asyncio.fixture(name="deployed_feature_list_requiring_parent_serving")
 async def deployed_feature_list_requiring_parent_serving_fixture(
     app_container,
@@ -1179,6 +1187,9 @@ async def deployed_feature_list_requiring_parent_serving_ttl_fixture(
     fl_requiring_parent_serving_deployment_id,
     mock_offline_store_feature_manager_dependencies,
     mock_update_data_warehouse,
+    is_online_store_registered_for_catalog,
+    populate_offline_feature_tables_for_catalog,
+    online_store,
 ):
     """
     Fixture a deployed feature list that require serving parent features with ttl
@@ -1199,6 +1210,18 @@ async def deployed_feature_list_requiring_parent_serving_ttl_fixture(
     new_feature = float_feature + non_time_based_feature
     new_feature.name = "feature_requiring_parent_serving_ttl"
     new_feature.save()
+
+    if is_online_store_registered_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
+        )
+
+    if populate_offline_feature_tables_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(populate_offline_feature_tables=True)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
+        )
 
     feature_list = await deploy_feature_ids(
         app_container,
@@ -1239,6 +1262,7 @@ async def deployed_feature_list_requiring_parent_serving_composite_entity_fixtur
     mock_offline_store_feature_manager_dependencies,
     mock_update_data_warehouse,
     is_online_store_registered_for_catalog,
+    populate_offline_feature_tables_for_catalog,
     online_store,
 ):
     """
@@ -1264,6 +1288,12 @@ async def deployed_feature_list_requiring_parent_serving_composite_entity_fixtur
 
     if is_online_store_registered_for_catalog:
         catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
+        )
+
+    if populate_offline_feature_tables_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(populate_offline_feature_tables=True)
         await app_container.catalog_service.update_document(
             document_id=app_container.catalog_id, data=catalog_update
         )

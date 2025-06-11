@@ -56,6 +56,10 @@ class CatalogModel(FeatureByteBaseDocumentModel):
         default=None,
         description="Online store ID that is associated with the catalog.",
     )
+    populate_offline_feature_tables: Optional[bool] = Field(
+        default=False,
+        description="Whether to populate offline feature tables when there is no associated online store.",
+    )
 
     # pydantic validators
     _sort_ids_validator = field_validator("default_feature_store_ids")(construct_sort_validator())
