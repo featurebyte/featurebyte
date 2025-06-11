@@ -128,10 +128,11 @@ class ManagedViewService(
 
         # validate that the SQL is a single select statement
         select_expr = validate_select_sql(data.sql, session.source_type)
+        data.sql = sql_to_string(select_expr, source_type=session.source_type)
 
         await session.create_table_as(
             table_details=data.tabular_source.table_details,
-            select_expr=sql_to_string(select_expr, source_type=session.source_type),
+            select_expr=data.sql,
             kind="VIEW",
         )
 
