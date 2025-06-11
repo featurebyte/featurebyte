@@ -140,11 +140,15 @@ async def test_enable_new_feature(
     # Online enable a feature
     await feature_manager_deployment_setup(app_container, feature_model)
     mock_snowflake_session.table_exists.side_effect = lambda _: False
-    await feature_manager_service.online_enable(
-        session=mock_snowflake_session,
-        feature_spec=get_online_feature_spec(feature_model),
-        schedule_time=pd.Timestamp("2022-05-15 10:00:00"),
-    )
+    with patch("featurebyte.service.feature_manager.datetime") as patched_datetime:
+        patched_datetime.utcnow.return_value = datetime(2025, 5, 15, 10, 0, 5)
+        await feature_manager_service.online_enable(
+            session=mock_snowflake_session,
+            feature_spec=get_online_feature_spec(feature_model),
+            schedule_time=pd.Timestamp("2022-05-15 10:00:00"),
+        )
+    feature_model = await app_container.feature_service.get_document(feature_2h.id)
+    assert feature_model.last_updated_by_scheduled_task_at == datetime(2025, 5, 15, 10, 0, 5)
 
     # Check tile registry metadata updated
     deployed_tile_table = await get_deployed_tile_table_model(app_container, feature_model)
