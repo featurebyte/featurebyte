@@ -480,6 +480,8 @@ async def get_target(
         Feature store. We need the feature store id and source type information.
     output_table_details: TableDetails
         Output table details to write the results to
+    system_metrics_service: SystemMetricsService
+        System metrics service
     serving_names_mapping : dict[str, str] | None
         Optional serving names mapping if the observations set has different serving name columns
         than those defined in Entities

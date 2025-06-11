@@ -17,6 +17,18 @@ from tests.integration.api.test_event_view_operations import get_training_events
 from tests.util.helper import create_observation_table_from_dataframe, fb_assert_frame_equal
 
 
+@pytest.fixture(autouse=True)
+def patched_sql_metrics_logging_threshold_seconds():
+    """
+    Patch the SQL metrics logging threshold to a low value for testing
+    """
+    with patch(
+        "featurebyte.session.session_helper.SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS",
+        1,
+    ):
+        yield
+
+
 @pytest.mark.asyncio
 async def test_get_historical_feature_tables_parallel(
     session, event_view, data_source, feature_table_cache_metadata_service

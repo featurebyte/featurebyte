@@ -410,6 +410,9 @@ async def execute_queries_for_node_groups(
             # Raise InvalidOutputRowIndexError immediately since that is likely a bug that cannot be
             # recovered from retrying
             raise feature_query_result
+        else:
+            # If the result is an exception, we will log it and continue
+            logger.error(f"Failed to materialize feature query: {feature_query_result}")
 
     failed_node_names = list(set(all_node_names) - set(completed_node_names))
     if failed_node_names:

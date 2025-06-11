@@ -1189,6 +1189,8 @@ class BaseSession(BaseModel):
                     sleep_interval=sleep_interval,
                     query_metadata=query_metadata,
                 )
+            if query_metadata is None:
+                return await self.execute_query_long_running(query)
             return await self.execute_query_long_running(query, query_metadata=query_metadata)
         except self.no_schema_error:
             if exists:

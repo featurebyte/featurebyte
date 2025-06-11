@@ -590,7 +590,8 @@ async def test_initialize_new_columns__table_does_not_exist(
     Test initialize_new_columns when feature table is not yet created
     """
 
-    def mock_execute_query(query):
+    def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             raise ValueError()
 
@@ -640,7 +641,8 @@ async def test_initialize_new_columns__table_exists(
         _ = kwargs
         return {"some_existing_col": "some_info"}
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             return pd.DataFrame({"RESULT": [10]})
         if 'MAX("__feature_timestamp")' in query:
@@ -689,7 +691,8 @@ async def test_initialize_new_columns__table_exists_but_empty(
         _ = kwargs
         return {"some_existing_col": "some_info"}
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             return pd.DataFrame({"RESULT": [0]})
 
@@ -736,7 +739,8 @@ async def test_initialize_new_columns__no_feature_columns(
         _ = kwargs
         return {"some_existing_col": "some_info"}
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             return pd.DataFrame({"RESULT": [10]})
         if 'MAX("__feature_timestamp")' in query:
@@ -773,7 +777,8 @@ async def test_initialize_new_columns__databricks_unity(
     Test initialize_new_columns when session is databricks_unity
     """
 
-    def mock_execute_query(query):
+    def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             raise ValueError()
 
@@ -899,7 +904,8 @@ async def test_materialize_features_no_entity_databricks_unity(
     """
     _ = mock_get_feature_store_session
 
-    def mock_execute_query(query):
+    def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)" in query:
             raise ValueError()
 
@@ -934,7 +940,8 @@ async def test_update_online_store__never_materialized_before(
     """
     offline_last_materialized_at = datetime(2022, 10, 15, 10, 0, 0)
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": offline_last_materialized_at.isoformat()}])
 
@@ -990,7 +997,8 @@ async def test_update_online_store__materialized_before(
     offline_last_materialized_at = datetime(2022, 12, 15, 10, 0, 0)
     online_last_materialized_at = datetime(2022, 10, 15, 10, 0, 0)
 
-    async def mock_execute_query(query):
+    async def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if 'MAX("__feature_timestamp")' in query:
             return pd.DataFrame([{"RESULT": offline_last_materialized_at.isoformat()}])
 
@@ -1094,7 +1102,8 @@ async def test_precomputed_lookup_feature_table__initialize_new_columns(
     """
     _ = mock_get_feature_store_session
 
-    def mock_execute_query(query):
+    def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)\nFROM" in query:
             raise ValueError()
 
@@ -1269,7 +1278,8 @@ async def test_precomputed_lookup_feature_table__initialize_new_table(
             )
         return schema
 
-    def mock_execute_query(query):
+    def mock_execute_query(query, **kwargs):
+        _ = kwargs
         if "COUNT(*)\nFROM" in query:
             # Simulate that source feature table exists and lookup feature table doesn't
             table_name = query.split("FROM", 1)[1].strip().replace('"', "")
