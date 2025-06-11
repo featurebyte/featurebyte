@@ -37,7 +37,9 @@ logger = get_logger(__name__)
 
 
 MAX_QUERY_CONCURRENCY = int(os.getenv("MAX_QUERY_CONCURRENCY", "3"))
-SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS = 10
+SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS = int(
+    os.getenv("FEATUREBYTE_SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS", "600")
+)
 
 
 async def validate_output_row_index(session: BaseSession, output_table_name: str) -> None:
