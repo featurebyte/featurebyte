@@ -1039,6 +1039,7 @@ class BaseSession(BaseModel):
         sql: str,
         retry_num: int = 10,
         sleep_interval: int = 5,
+        query_metadata: QueryMetadata | None = None,
     ) -> pd.DataFrame | None:
         """
         Retry sql operation
@@ -1051,6 +1052,8 @@ class BaseSession(BaseModel):
             Number of retries
         sleep_interval: int
             Sleep interval between retries
+        query_metadata: QueryMetadata | None
+            Query metadata object
 
         Returns
         -------
@@ -1065,7 +1068,7 @@ class BaseSession(BaseModel):
 
         for i in range(retry_num):
             try:
-                return await self.execute_query_long_running(sql)
+                return await self.execute_query_long_running(sql, query_metadata=query_metadata)
             except Exception as exc:
                 logger.warning(
                     "SQL query failed",
@@ -1120,6 +1123,7 @@ class BaseSession(BaseModel):
         retry: bool = False,
         retry_num: int = 10,
         sleep_interval: int = 5,
+        query_metadata: QueryMetadata | None = None,
     ) -> pd.DataFrame | None:
         """
         Create a table using a select statement
@@ -1144,6 +1148,8 @@ class BaseSession(BaseModel):
             Number of retries
         sleep_interval: int
             Sleep interval between retries
+        query_metadata: QueryMetadata | None
+            Query metadata object
 
         Returns
         -------
@@ -1178,9 +1184,12 @@ class BaseSession(BaseModel):
         try:
             if retry:
                 return await self.retry_sql(
-                    query, retry_num=retry_num, sleep_interval=sleep_interval
+                    query,
+                    retry_num=retry_num,
+                    sleep_interval=sleep_interval,
+                    query_metadata=query_metadata,
                 )
-            return await self.execute_query_long_running(query)
+            return await self.execute_query_long_running(query, query_metadata=query_metadata)
         except self.no_schema_error:
             if exists:
                 # Some connectors like Snowflake raise error even though CREATE TABLE IF EXISTS
