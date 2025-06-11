@@ -115,8 +115,8 @@ class SqlQueryType(StrEnum):
     SqlQueryType class
     """
 
-    tile_compute = "tile_compute"
-    feature_compute = "feature_compute"
+    TILE_COMPUTE = "TILE_COMPUTE"
+    FEATURE_COMPUTE = "FEATURE_COMPUTE"
 
 
 class SqlQueryMetrics(FeatureByteBaseModel):
@@ -125,7 +125,7 @@ class SqlQueryMetrics(FeatureByteBaseModel):
     """
 
     query: str
-    execution_seconds: float
+    total_seconds: float
     query_type: SqlQueryType
     query_id: Optional[str] = None
     feature_names: Optional[list[str]] = None

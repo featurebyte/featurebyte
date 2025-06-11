@@ -5,6 +5,7 @@ Session related helper functions
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, List, Optional
 
@@ -21,6 +22,7 @@ from featurebyte.exception import FeatureQueryExecutionError, InvalidOutputRowIn
 from featurebyte.logging import get_logger
 from featurebyte.models import FeatureStoreModel
 from featurebyte.models.feature_query_set import FeatureQuerySet
+from featurebyte.models.system_metrics import SqlQueryMetrics, SqlQueryType
 from featurebyte.query_graph.node import Node
 from featurebyte.query_graph.sql.batch_helper import (
     NUM_FEATURES_PER_QUERY,
@@ -28,13 +30,14 @@ from featurebyte.query_graph.sql.batch_helper import (
 from featurebyte.query_graph.sql.common import quoted_identifier, sql_to_string
 from featurebyte.query_graph.sql.feature_compute import FeatureQuery
 from featurebyte.service.system_metrics import SystemMetricsService
-from featurebyte.session.base import BaseSession
+from featurebyte.session.base import BaseSession, QueryMetadata
 from featurebyte.utils.async_helper import asyncio_gather
 
 logger = get_logger(__name__)
 
 
 MAX_QUERY_CONCURRENCY = int(os.getenv("MAX_QUERY_CONCURRENCY", "3"))
+SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS = 30
 
 
 async def validate_output_row_index(session: BaseSession, output_table_name: str) -> None:
@@ -121,6 +124,7 @@ async def execute_feature_query(
     session: BaseSession,
     feature_query: FeatureQuery,
     done_callback: Callable[[int], Coroutine[Any, Any, None]],
+    system_metrics_service: SystemMetricsService,
 ) -> FeatureQuery:
     """
     Process a single FeatureQuery
@@ -133,6 +137,8 @@ async def execute_feature_query(
         Instance of a FeatureQuery
     done_callback: Optional[Callable[[int], Coroutine[Any, Any, None]]]
         To be called when task is completed to update progress
+    system_metrics_service: SystemMetricsService
+        System metrics service
 
     Returns
     -------
@@ -153,7 +159,20 @@ async def execute_feature_query(
 
         feature_sql = feature_query.feature_table_query.sql
         feature_table_name = feature_query.feature_table_query.table_name
-        await session.execute_query_long_running(feature_sql)
+        tic = time.time()
+        query_metadata = QueryMetadata()
+        await session.execute_query_long_running(feature_sql, query_metadata=query_metadata)
+        elapsed = time.time() - tic
+        if elapsed > SQL_QUERY_METRICS_LOGGING_THRESHOLD_SECONDS:
+            await system_metrics_service.create_metrics(
+                SqlQueryMetrics(
+                    query=feature_sql,
+                    total_seconds=elapsed,
+                    query_type=SqlQueryType.FEATURE_COMPUTE,
+                    query_id=query_metadata.query_id,
+                    feature_names=sorted(feature_query.feature_names),
+                )
+            )
         try:
             await validate_output_row_index(session, feature_table_name)
         except InvalidOutputRowIndexError:
@@ -366,6 +385,7 @@ async def execute_queries_for_node_groups(
                 session=session_handler.session,
                 feature_query=feature_query,
                 done_callback=progress_callback,
+                system_metrics_service=session_handler.system_metrics_service,
             )
         )
         materialized_feature_table.append(feature_query.feature_table_query.table_name)
