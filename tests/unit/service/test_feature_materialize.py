@@ -56,6 +56,7 @@ async def deployed_feature_list_fixture(
     online_store,
     mock_update_data_warehouse,
     is_online_store_registered_for_catalog,
+    populate_offline_feature_tables_for_catalog,
 ):
     """
     Fixture for FeatureMaterializeService
@@ -66,6 +67,12 @@ async def deployed_feature_list_fixture(
         catalog_update = CatalogOnlineStoreUpdate(online_store_id=online_store.id)
         await app_container.catalog_service.update_document(
             document_id=production_ready_feature_list.catalog_id, data=catalog_update
+        )
+
+    if populate_offline_feature_tables_for_catalog:
+        catalog_update = CatalogOnlineStoreUpdate(populate_offline_feature_tables=True)
+        await app_container.catalog_service.update_document(
+            document_id=app_container.catalog_id, data=catalog_update
         )
 
     # TODO: use deploy_feature() helper
@@ -373,6 +380,7 @@ async def test_materialize_features(
 
 
 @pytest.mark.parametrize("is_online_store_registered_for_catalog", [True, False])
+@pytest.mark.parametrize("populate_offline_feature_tables_for_catalog", [True, False])
 @pytest.mark.usefixtures("mock_get_feature_store_session")
 @pytest.mark.asyncio
 async def test_scheduled_materialize_features(
@@ -382,6 +390,7 @@ async def test_scheduled_materialize_features(
     offline_store_feature_table,
     mock_materialize_partial,
     is_online_store_registered_for_catalog,
+    populate_offline_feature_tables_for_catalog,
     feature_materialize_run,
     update_fixtures,
     insert_credential,
@@ -394,11 +403,18 @@ async def test_scheduled_materialize_features(
     )
 
     executed_queries = extract_session_executed_queries(mock_snowflake_session)
-    assert_equal_with_expected_fixture(
-        executed_queries,
-        "tests/fixtures/feature_materialize/scheduled_materialize_features_queries.sql",
-        update_fixtures,
-    )
+
+    if (
+        not is_online_store_registered_for_catalog
+        and not populate_offline_feature_tables_for_catalog
+    ):
+        assert executed_queries == ""
+    else:
+        assert_equal_with_expected_fixture(
+            executed_queries,
+            "tests/fixtures/feature_materialize/scheduled_materialize_features_queries.sql",
+            update_fixtures,
+        )
 
     # Check online materialization called if there is a registered online store (note: start_date is
     # None because the initialize_new_columns is mocked when deploying)
@@ -421,7 +437,10 @@ async def test_scheduled_materialize_features(
     updated_feature_table = await app_container.offline_store_feature_table_service.get_document(
         offline_store_feature_table.id
     )
-    assert updated_feature_table.last_materialized_at == datetime(2022, 1, 1, 0, 0)
+    if populate_offline_feature_tables_for_catalog or is_online_store_registered_for_catalog:
+        assert updated_feature_table.last_materialized_at == datetime(2022, 1, 1, 0, 0)
+    else:
+        assert updated_feature_table.last_materialized_at is None
 
     # Check online last materialization timestamp updated
     if is_online_store_registered_for_catalog:

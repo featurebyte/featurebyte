@@ -250,6 +250,37 @@ class TestCatalogApi(BaseApiTestSuite):
         assert task_response.status_code == HTTPStatus.OK
         assert task_response.json() is None
 
+    def test_update_online_store_populate_offline_feature_tables(
+        self, create_success_response, test_api_client_persistent, mysql_online_store
+    ):
+        """
+        Test catalog online store update with populate_offline_feature_tables (success)
+        """
+        test_api_client, _ = test_api_client_persistent
+        response_dict = create_success_response.json()
+        catalog_id = response_dict["_id"]
+
+        # Update populate_offline_store_tables
+        task_response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store_async",
+            json={"populate_offline_feature_tables": True},
+        )
+        assert task_response.status_code == HTTPStatus.ACCEPTED
+        task_result = task_response.json()
+        response = test_api_client.get(task_result["output_path"])
+        assert response.status_code == HTTPStatus.OK
+        result = response.json()
+        assert result["online_store_id"] is None
+        assert result["populate_offline_feature_tables"] is True
+
+        # Update again with the same setting, should be no op.
+        task_response = test_api_client.patch(
+            f"{self.base_route}/{catalog_id}/online_store_async",
+            json={"populate_offline_feature_tables": True},
+        )
+        assert task_response.status_code == HTTPStatus.OK
+        assert task_response.json() is None
+
     def test_update_404(self, test_api_client_persistent):
         """
         Test catalog update (not found)

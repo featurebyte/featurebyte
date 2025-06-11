@@ -332,6 +332,20 @@ class OfflineStoreFeatureTableService(
         ):
             yield doc
 
+    async def list_source_feature_tables(self) -> AsyncIterator[OfflineStoreFeatureTableModel]:
+        """
+        Retrieve list of source feature tables in the catalog
+
+        Yields
+        -------
+        AsyncIterator[OfflineStoreFeatureTableModel]
+            List query output
+        """
+        async for doc in self.list_documents_iterator(
+            query_filter={"precomputed_lookup_feature_table_info": {"$eq": None}}
+        ):
+            yield doc
+
     async def list_precomputed_lookup_feature_tables_from_source(
         self,
         source_feature_table_id: ObjectId,
